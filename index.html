@@ -24,7 +24,7 @@
   --sidebar:64px;
 }
 html{font-size:14px;-webkit-font-smoothing:antialiased}
-body{font-family:'Poppins',sans-serif;background:var(--bg);color:var(--ink);min-height:100vh}
+body{margin:0;padding:0;font-family:'Poppins',sans-serif;background:var(--bg);color:var(--ink);min-height:100vh}
 
 /* ── LOGIN ── */
 #login{
@@ -246,12 +246,12 @@ body{font-family:'Poppins',sans-serif;background:var(--bg);color:var(--ink);min-
 .tb-logout:hover{color:var(--red)}
 
 /* ── PAGE ── */
-.body-wrap{flex:1;max-width:1200px;margin:0 auto;width:100%;padding:32px 28px 64px}
-.page{display:none}
-.page.on{display:block}
+.body-wrap{flex:1;max-width:1200px;margin:0 auto;width:100%;padding:20px 28px 64px}
+.page{display:none;margin:0;padding:0;height:0;overflow:hidden}
+.page.on{display:block;margin:0;padding:0;height:auto;overflow:visible}
 
 /* ── PAGE HEADER ── */
-.ph{display:flex;align-items:flex-end;justify-content:space-between;margin-bottom:28px}
+.ph{display:flex;align-items:flex-end;justify-content:space-between;margin-bottom:16px}
 .ph-title{font-size:22px;font-weight:700;color:var(--navy)}
 .ph-sub{font-size:13px;font-weight:300;color:var(--ink2);margin-top:3px}
 
@@ -2178,13 +2178,22 @@ textarea.rf-val{resize:vertical;min-height:72px;line-height:1.5}
       <div class="ph">
         <div>
           <div class="ph-title">Past Events</div>
-          <div class="ph-sub">Searchable archive of all completed events</div>
+          <div class="ph-sub">Completed events archive</div>
         </div>
+        <select class="search-inp" style="width:auto" onchange="filterPastMonth(this.value)">
+          <option value="">All Events</option>
+          <option value="2026">2026</option>
+          <option value="Jun 2026">Jun 2026</option>
+          <option value="May 2026">May 2026</option>
+          <option value="Apr 2026">Apr 2026</option>
+          <option value="Mar 2026">Mar 2026</option>
+          <option value="2025">2025</option>
+          <option value="Dec 2025">Dec 2025</option>
+          <option value="Nov 2025">Nov 2025</option>
+          <option value="Oct 2025">Oct 2025</option>
+        </select>
       </div>
-      <div class="search-row">
-        <input class="search-inp" type="text" placeholder="Search by event or client…">
-        <select class="search-inp"><option>All of 2026</option><option>All of 2025</option><option>All of 2024</option></select>
-      </div>
+      <input class="search-inp" type="text" placeholder="Search by event or client…" style="width:100%;margin-bottom:16px">
       <div class="ev-grid">
         <div class="ev-card" style="background:var(--navy);border:none;border-radius:12px;overflow:hidden;cursor:pointer;box-shadow:0 4px 16px rgba(0,0,0,0.15)">
           <div style="padding:20px 22px 16px">
@@ -2384,6 +2393,8 @@ function doLogout(){
   document.getElementById('login').style.display='flex';
   document.getElementById('app').style.display='none';
 }
+
+
 
 // ── BEO SECTIONS ──
 function tog(id){
@@ -3048,6 +3059,18 @@ function toggleStatus(el){
   el.textContent = next.text;
   el.setAttribute('style', next.style+';font-size:10px;font-weight:700;padding:3px 9px;border-radius:20px;white-space:nowrap;margin-left:10px;cursor:pointer');
   toast('Status → '+next.text);
+}
+
+function pastNav(dir){
+  const months = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+  const label = document.getElementById('past-month-label');
+  if(!label) return;
+  const current = label.textContent;
+  const allMonths = ['All Events', ...months.map(m=>m+' 2025'), ...months.map(m=>m+' 2026')];
+  let idx = allMonths.indexOf(current);
+  if(idx === -1) idx = 0;
+  idx = Math.max(0, Math.min(allMonths.length-1, idx+dir));
+  label.textContent = allMonths[idx];
 }
 // ── INIT ──
 window.addEventListener('keydown',e=>{if(e.key==='Enter'&&document.getElementById('login').style.display!=='none')doLogin();});

@@ -1488,6 +1488,24 @@ textarea.rf-val{resize:vertical;min-height:72px;line-height:1.5}
 .admin-ann-date{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--ink3);margin-bottom:4px}
 .admin-ann-text{font-size:13px;color:var(--ink);line-height:1.6}
 
+
+/* Month filter strip */
+.month-strip{
+  display:flex;gap:6px;margin-bottom:20px;
+  overflow-x:auto;padding-bottom:4px;
+  scrollbar-width:none;
+}
+.month-strip::-webkit-scrollbar{display:none}
+.month-tab{
+  padding:5px 14px;border-radius:20px;
+  font-size:12px;font-weight:600;
+  border:1.5px solid var(--line);
+  background:white;color:var(--ink2);
+  cursor:pointer;white-space:nowrap;
+  transition:all 0.15s;flex-shrink:0;
+}
+.month-tab:hover{border-color:var(--gold);color:var(--gold)}
+.month-tab.on{background:var(--navy);color:white;border-color:var(--navy)}
 </style>
 </head>
 <body>
@@ -1596,6 +1614,16 @@ textarea.rf-val{resize:vertical;min-height:72px;line-height:1.5}
       </div>
 
       <div class="sec-title" data-en="Active Events" data-id="Acara Aktif">Active Events</div>
+      <div class="month-strip" id="month-strip">
+        <div class="month-tab on" onclick="filterMonth('all',this)">All</div>
+        <div class="month-tab" onclick="filterMonth('Jun',this)">Jun</div>
+        <div class="month-tab" onclick="filterMonth('Jul',this)">Jul</div>
+        <div class="month-tab" onclick="filterMonth('Aug',this)">Aug</div>
+        <div class="month-tab" onclick="filterMonth('Sep',this)">Sep</div>
+        <div class="month-tab" onclick="filterMonth('Oct',this)">Oct</div>
+        <div class="month-tab" onclick="filterMonth('Nov',this)">Nov</div>
+        <div class="month-tab" onclick="filterMonth('Dec',this)">Dec</div>
+      </div>
       <div class="ev-grid">
         <div class="ev-card" onclick="nav('beo')" style="background:var(--navy);border:none;border-radius:12px;overflow:hidden;cursor:pointer;box-shadow:0 4px 16px rgba(0,0,0,0.15);transition:box-shadow 0.2s,transform 0.15s" onmouseover="this.style.transform='translateY(-3px)';this.style.boxShadow='0 12px 32px rgba(0,0,0,0.25)'" onmouseout="this.style.transform='';this.style.boxShadow='0 4px 16px rgba(0,0,0,0.15)'">
           <div style="padding:20px 22px 16px">
@@ -3214,6 +3242,13 @@ function pastNav(dir){
   if(idx === -1) idx = 0;
   idx = Math.max(0, Math.min(allMonths.length-1, idx+dir));
   label.textContent = allMonths[idx];
+}
+
+function filterMonth(month, el){
+  document.querySelectorAll('.month-tab').forEach(t=>t.classList.remove('on'));
+  el.classList.add('on');
+  // For now just visual - will connect to real data with Supabase
+  toast(month === 'all' ? 'Showing all events' : 'Filtering: ' + month + ' 2026');
 }
 // ── INIT ──
 window.addEventListener('keydown',e=>{if(e.key==='Enter'&&document.getElementById('login').style.display!=='none')doLogin();});

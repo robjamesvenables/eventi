@@ -2464,7 +2464,7 @@ let editMode=false;
 let beoAutoSaveTimer=null;
 let currentLang='en';
 
-function nav(id){
+function nav(id, pushState=true){
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('on'));
   document.querySelectorAll('.tb-link').forEach(b=>b.classList.remove('active'));
   const page=document.getElementById('p-'+id);
@@ -2477,7 +2477,16 @@ function nav(id){
   if(id==='cal'){calRender();}
   const floatBtn=document.getElementById('float-edit');
   if(floatBtn)floatBtn.style.display=id==='beo'?'block':'none';
+  if(pushState){
+    history.pushState({page:id}, '', '#'+id);
+  }
 }
+
+// Handle browser back/forward
+window.addEventListener('popstate', function(e){
+  const id = e.state ? e.state.page : 'dash';
+  nav(id, false);
+});
 
 function toast(msg){
   const t=document.getElementById('toastEl');

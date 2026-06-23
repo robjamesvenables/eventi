@@ -1506,6 +1506,35 @@ textarea.rf-val{resize:vertical;min-height:72px;line-height:1.5}
 }
 .month-tab:hover{border-color:var(--gold);color:var(--gold)}
 .month-tab.on{background:var(--navy);color:white;border-color:var(--navy)}
+
+/* ── KANBAN BOARD ── */
+.kanban-wrap{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:4px}
+.kanban-col{background:var(--bg);border-radius:10px;padding:12px;min-height:200px}
+.kanban-col-hd{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+.kanban-col-title{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1.2px;color:var(--ink2)}
+.kanban-col-count{font-size:11px;font-weight:700;background:rgba(0,0,0,0.08);color:var(--ink2);padding:2px 8px;border-radius:10px}
+.kanban-cards{min-height:80px;display:flex;flex-direction:column;gap:8px;transition:background 0.15s;border-radius:6px;padding:4px}
+.kanban-cards.drag-over{background:rgba(13,148,136,0.08);outline:2px dashed var(--teal);outline-offset:2px}
+.kanban-card{
+  background:white;border:1px solid var(--line);border-radius:8px;
+  padding:10px 12px;cursor:grab;
+  box-shadow:0 1px 3px rgba(0,0,0,0.06);
+  transition:box-shadow 0.15s,transform 0.15s;
+  user-select:none;
+}
+.kanban-card:hover{box-shadow:0 4px 12px rgba(0,0,0,0.1);transform:translateY(-1px)}
+.kanban-card.dragging{opacity:0.4;cursor:grabbing}
+.kanban-card-title{font-size:13px;font-weight:600;color:var(--navy);margin-bottom:4px}
+.kanban-card-meta{font-size:11px;color:var(--ink3);display:flex;align-items:center;justify-content:space-between}
+.kanban-card-assignee{font-size:10px;background:var(--bg);padding:2px 7px;border-radius:10px;color:var(--ink2);font-weight:500}
+.kanban-add-btn{width:100%;padding:7px;background:none;border:1.5px dashed var(--line);border-radius:6px;font-family:'Poppins',sans-serif;font-size:11px;font-weight:600;color:var(--ink3);cursor:pointer;margin-top:8px;transition:all 0.15s}
+.kanban-add-btn:hover{border-color:var(--teal);color:var(--teal)}
+.kanban-col-todo .kanban-col-title{color:#6B7280}
+.kanban-col-progress .kanban-col-title{color:#D97706}
+.kanban-col-progress .kanban-col-count{background:rgba(217,119,6,0.1);color:#D97706}
+.kanban-col-done .kanban-col-title{color:#059669}
+.kanban-col-done .kanban-col-count{background:rgba(5,150,105,0.1);color:#059669}
+.kanban-col-done .kanban-card-title{color:var(--ink2);text-decoration:line-through}
 </style>
 </head>
 <body>
@@ -3242,6 +3271,95 @@ function filterMonth(month, el){
   el.classList.add('on');
   // For now just visual - will connect to real data with Supabase
   toast(month === 'all' ? 'Showing all events' : 'Filtering: ' + month + ' 2026');
+}
+
+// ── KANBAN ──
+let dragCard = null;
+let touchDragCard = null;
+let touchClone = null;
+
+function kanbanDragStart(e){
+  dragCard = e.currentTarget;
+  setTimeout(()=>dragCard.classList.add('dragging'),0);
+  e.dataTransfer.effectAllowed='move';
+}
+
+function kanbanDragOver(e){
+  e.preventDefault();
+  e.currentTarget.classList.add('drag-over');
+}
+
+function kanbanDragLeave(e){
+  e.currentTarget.classList.remove('drag-over');
+}
+
+function kanbanDrop(e, colId){
+  e.preventDefault();
+  const col = document.getElementById('col-'+colId);
+  col.classList.remove('drag-over');
+  if(dragCard){
+    dragCard.classList.remove('dragging');
+    col.insertBefore(dragCard, col.querySelector('.kanban-add-btn'));
+    updateKanbanCounts();
+    dragCard = null;
+  }
+}
+
+function updateKanbanCounts(){
+  ['todo','progress','done'].forEach(id=>{
+    const col = document.getElementById('col-'+id);
+    const count = document.getElementById('count-'+id);
+    if(col && count) count.textContent = col.querySelectorAll('.kanban-card').length;
+  });
+}
+
+// Touch support for mobile/tablet
+function touchStart(e){
+  touchDragCard = e.currentTarget;
+  touchClone = touchDragCard.cloneNode(true);
+  touchClone.style.cssText = 'position:fixed;opacity:0.85;pointer-events:none;z-index:9999;width:'+touchDragCard.offsetWidth+'px;box-shadow:0 8px 24px rgba(0,0,0,0.2)';
+  document.body.appendChild(touchClone);
+  touchDragCard.style.opacity='0.4';
+}
+
+function touchMove(e){
+  if(!touchClone)return;
+  e.preventDefault();
+  const t = e.touches[0];
+  touchClone.style.left=(t.clientX-touchClone.offsetWidth/2)+'px';
+  touchClone.style.top=(t.clientY-30)+'px';
+}
+
+function touchEnd(e, defaultCol){
+  if(!touchClone)return;
+  const t = e.changedTouches[0];
+  touchClone.remove();
+  touchDragCard.style.opacity='1';
+  const el = document.elementFromPoint(t.clientX, t.clientY);
+  const targetCol = el ? el.closest('.kanban-cards') : null;
+  if(targetCol && touchDragCard){
+    targetCol.insertBefore(touchDragCard, targetCol.querySelector('.kanban-add-btn'));
+    updateKanbanCounts();
+  }
+  touchClone = null;
+  touchDragCard = null;
+}
+
+function addKanbanCard(colId){
+  const col = document.getElementById(colId);
+  if(!col)return;
+  const card = document.createElement('div');
+  card.className='kanban-card';
+  card.draggable=true;
+  card.innerHTML='<div class="kanban-card-title" contenteditable="true">New task</div><div class="kanban-card-meta"><span class="kanban-card-assignee" contenteditable="true">Assignee</span></div>';
+  card.addEventListener('dragstart', kanbanDragStart);
+  card.addEventListener('touchstart', touchStart);
+  card.addEventListener('touchmove', touchMove);
+  card.addEventListener('touchend', (e)=>touchEnd(e, colId));
+  col.insertBefore(card, col.querySelector('.kanban-add-btn'));
+  card.querySelector('.kanban-card-title').focus();
+  updateKanbanCounts();
+  toast('Task added');
 }
 // ── INIT ──
 window.addEventListener('keydown',e=>{if(e.key==='Enter'&&document.getElementById('login').style.display!=='none')doLogin();});

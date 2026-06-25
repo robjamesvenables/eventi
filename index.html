@@ -3670,115 +3670,204 @@ function kbFilterEvent(eventId, el){
 }
 // ── KANBAN ──
 (function(){
-  let dragging = null;
-  let clone = null;
-  let startX, startY, offsetX, offsetY;
-  const THRESHOLD = 5;
-  let moved = false;
+  let draggingId = null;
+  let draggingFromCol = null;
+  let overCol = null;
+  let overCardId = null;
 
-  function getCard(el){ return el.closest('.kanban-card'); }
-  function getCol(el){ return el.closest('.kanban-cards'); }
+  // Card data store
+  const kanbanState = {
+    todo: [
+      {id:1, title:'Chase client for F&B numbers', assignee:'Sarah', event:'horizon'},
+      {id:2, title:'Send guest list to security', assignee:'Tina', event:'solaris'},
+      {id:3, title:'Confirm stage plot with AV team', assignee:'David', event:'horizon'},
+    ],
+    progress: [
+      {id:4, title:'Finalise Event Rundown', assignee:'Robbie', event:'horizon'},
+      {id:5, title:'Collect 2nd deposit from client', assignee:'James', event:'solaris'},
+    ],
+    done: [
+      {id:6, title:'Send BEO to kitchen team', assignee:'Maria', event:'horizon'},
+      {id:7, title:'Venue walkthrough completed', assignee:'Tina', event:'wedding'},
+    ]
+  };
 
-  function startDrag(e, card){
-    dragging = card;
-    moved = false;
-    const rect = card.getBoundingClientRect();
-    const pt = e.touches ? e.touches[0] : e;
-    offsetX = pt.clientX - rect.left;
-    offsetY = pt.clientY - rect.top;
-    startX = pt.clientX;
-    startY = pt.clientY;
+  const colColors = {todo:'#6B7280', progress:'#D97706', done:'#059669'};
+  const colTitles = {todo:'To Do', progress:'In Progress', done:'Done'};
+  let nextId = 8;
+  let activeFilter = 'all';
+
+  function render(){
+    ['todo','progress','done'].forEach(colId => {
+      const col = document.getElementById('col-'+colId);
+      const countEl = document.getElementById('count-'+colId);
+      if(!col) return;
+
+      const cards = kanbanState[colId].filter(c => activeFilter === 'all' || c.event === activeFilter);
+      countEl.textContent = cards.length;
+
+      // Remove existing cards only
+      col.querySelectorAll('.kanban-card').forEach(c => c.remove());
+
+      const addBtn = col.querySelector('.kanban-add-btn');
+
+      cards.forEach(card => {
+        const div = document.createElement('div');
+        div.className = 'kanban-card';
+        div.dataset.id = card.id;
+        div.dataset.col = colId;
+        div.draggable = true;
+        div.style.cssText = `border-left:3px solid ${colColors[colId]};cursor:grab;user-select:none;transition:transform 0.1s,box-shadow 0.1s,opacity 0.1s`;
+        if(colId === 'done') div.style.opacity = '0.75';
+
+        const eventTag = card.event !== 'all' ? `<span class="kanban-card-event-tag">${card.event.charAt(0).toUpperCase()+card.event.slice(1)}</span>` : '';
+
+        div.innerHTML = `
+          <div class="kanban-card-title" contenteditable="true" spellcheck="false" style="${colId==='done'?'text-decoration:line-through;color:#9CA3AF':''}">${card.title}</div>
+          <div class="kanban-card-meta">
+            <span class="kanban-card-assignee" contenteditable="true" spellcheck="false">${card.assignee}</span>
+            ${eventTag}
+            <button class="kanban-del" onclick="event.stopPropagation();kanbanDelete(${card.id},'${colId}')">×</button>
+          </div>`;
+
+        // Save edits
+        div.querySelector('.kanban-card-title').addEventListener('blur', e => { card.title = e.target.textContent.trim(); });
+        div.querySelector('.kanban-card-assignee').addEventListener('blur', e => { card.assignee = e.target.textContent.trim(); });
+
+        // Drag events
+        div.addEventListener('dragstart', e => {
+          draggingId = card.id;
+          draggingFromCol = colId;
+          e.dataTransfer.effectAllowed = 'move';
+          e.dataTransfer.setData('text/plain', card.id);
+          setTimeout(() => { div.style.opacity = '0.35'; }, 0);
+        });
+        div.addEventListener('dragend', e => {
+          div.style.opacity = colId === 'done' ? '0.75' : '1';
+          clearHighlights();
+          draggingId = null;
+          draggingFromCol = null;
+        });
+        div.addEventListener('dragover', e => {
+          e.preventDefault();
+          e.stopPropagation();
+          e.dataTransfer.dropEffect = 'move';
+          overCardId = card.id;
+          overCol = colId;
+          div.style.transform = 'translateY(-3px)';
+        });
+        div.addEventListener('dragleave', e => {
+          div.style.transform = '';
+        });
+        div.addEventListener('drop', e => {
+          e.preventDefault();
+          e.stopPropagation();
+          div.style.transform = '';
+          if(draggingId === null || draggingId === card.id) return;
+          moveCard(draggingId, draggingFromCol, colId, card.id);
+        });
+
+        col.insertBefore(div, addBtn);
+      });
+    });
   }
 
-  function createClone(card){
-    const rect = card.getBoundingClientRect();
-    clone = card.cloneNode(true);
-    clone.style.cssText = `position:fixed;z-index:9999;width:${rect.width}px;opacity:0.92;pointer-events:none;box-shadow:0 16px 40px rgba(0,0,0,0.25);transform:rotate(1.5deg);transition:none;border-radius:8px;left:${rect.left}px;top:${rect.top}px`;
-    document.body.appendChild(clone);
-    card.style.opacity = '0.25';
-    card.style.transform = 'scale(0.97)';
+  function clearHighlights(){
+    document.querySelectorAll('.kanban-cards').forEach(c => {
+      c.classList.remove('drag-over');
+      c.style.background = '';
+      c.style.outline = '';
+    });
+    document.querySelectorAll('.kanban-card').forEach(c => { c.style.transform = ''; });
   }
 
-  function moveClone(e){
-    if(!clone) return;
-    const pt = e.touches ? e.touches[0] : e;
-    clone.style.left = (pt.clientX - offsetX) + 'px';
-    clone.style.top = (pt.clientY - offsetY) + 'px';
-    // Highlight drop target
-    clone.style.pointerEvents = 'none';
-    const el = document.elementFromPoint(pt.clientX, pt.clientY);
-    document.querySelectorAll('.kanban-cards').forEach(c => c.classList.remove('drag-over'));
-    const col = el ? el.closest('.kanban-cards') : null;
-    if(col && col !== getCol(dragging)) col.classList.add('drag-over');
-  }
-
-  function endDrag(e){
-    if(!dragging) return;
-    document.querySelectorAll('.kanban-cards').forEach(c => c.classList.remove('drag-over'));
-    if(clone){ clone.remove(); clone = null; }
-    dragging.style.opacity = '';
-    dragging.style.transform = '';
-    if(moved){
-      const pt = e.changedTouches ? e.changedTouches[0] : e;
-      const el = document.elementFromPoint(pt.clientX, pt.clientY);
-      const col = el ? el.closest('.kanban-cards') : null;
-      if(col && col !== getCol(dragging)){
-        const btn = col.querySelector('.kanban-add-btn');
-        col.insertBefore(dragging, btn);
-        updateKanbanCounts();
-        toast('Task moved ✓');
-      }
+  function moveCard(cardId, fromCol, toCol, beforeCardId){
+    const fromList = kanbanState[fromCol];
+    const idx = fromList.findIndex(c => c.id === cardId);
+    if(idx === -1) return;
+    const [card] = fromList.splice(idx, 1);
+    const toList = kanbanState[toCol];
+    if(beforeCardId){
+      const toIdx = toList.findIndex(c => c.id === beforeCardId);
+      toList.splice(toIdx, 0, card);
+    } else {
+      toList.push(card);
     }
-    dragging = null;
-    moved = false;
+    draggingId = null;
+    draggingFromCol = null;
+    clearHighlights();
+    render();
+    toast('Task moved ✓');
   }
 
-  // Mouse events
-  document.addEventListener('mousedown', e => {
-    const card = getCard(e.target);
-    if(!card || e.target.closest('[contenteditable]') || e.target.classList.contains('kanban-del')) return;
-    startDrag(e, card);
+  // Column drop zones
+  function setupColDrops(){
+    ['todo','progress','done'].forEach(colId => {
+      const col = document.getElementById('col-'+colId);
+      if(!col) return;
+      col.addEventListener('dragover', e => {
+        e.preventDefault();
+        e.dataTransfer.dropEffect = 'move';
+        col.style.background = 'rgba(13,148,136,0.06)';
+        col.style.outline = '2px dashed #0D9488';
+        col.style.borderRadius = '6px';
+      });
+      col.addEventListener('dragleave', e => {
+        if(!col.contains(e.relatedTarget)){
+          col.style.background = '';
+          col.style.outline = '';
+        }
+      });
+      col.addEventListener('drop', e => {
+        e.preventDefault();
+        col.style.background = '';
+        col.style.outline = '';
+        if(draggingId === null) return;
+        moveCard(draggingId, draggingFromCol, colId, null);
+      });
+    });
+  }
+
+  window.kanbanDelete = function(cardId, colId){
+    kanbanState[colId] = kanbanState[colId].filter(c => c.id !== cardId);
+    render();
+  };
+
+  window.addKanbanCard = function(colId){
+    const title = prompt('Task title:');
+    if(!title) return;
+    kanbanState[colId].push({id: nextId++, title, assignee:'—', event:'general'});
+    render();
+    toast('Task added');
+  };
+
+  window.kbFilterEvent = function(eventId, el){
+    document.querySelectorAll('#kb-event-filter .month-tab').forEach(t => t.classList.remove('on'));
+    el.classList.add('on');
+    activeFilter = eventId;
+    render();
+  };
+
+  window.updateKanbanCounts = function(){ render(); };
+
+  // Init when page loads
+  function init(){
+    setupColDrops();
+    render();
+  }
+
+  // Run init when kb tab is shown
+  const origNav = window.nav;
+  window.nav = function(id, pushState){
+    if(typeof origNav === 'function') origNav(id, pushState);
+    if(id === 'kb') setTimeout(init, 50);
+  };
+
+  // Also init on first load if already on kb
+  document.addEventListener('DOMContentLoaded', () => {
+    if(document.getElementById('p-kb') && document.getElementById('p-kb').classList.contains('on')) init();
   });
-  document.addEventListener('mousemove', e => {
-    if(!dragging) return;
-    const dx = Math.abs(e.clientX - startX);
-    const dy = Math.abs(e.clientY - startY);
-    if(!moved && dx*dx + dy*dy > THRESHOLD*THRESHOLD){
-      moved = true;
-      createClone(dragging);
-    }
-    if(moved) moveClone(e);
-  });
-  document.addEventListener('mouseup', e => { endDrag(e); });
-
-  // Touch events
-  document.addEventListener('touchstart', e => {
-    const card = getCard(e.target);
-    if(!card || e.target.closest('[contenteditable]') || e.target.classList.contains('kanban-del')) return;
-    startDrag(e, card);
-  }, {passive:true});
-  document.addEventListener('touchmove', e => {
-    if(!dragging) return;
-    const t = e.touches[0];
-    const dx = Math.abs(t.clientX - startX);
-    const dy = Math.abs(t.clientY - startY);
-    if(!moved && dx*dx + dy*dy > THRESHOLD*THRESHOLD){
-      moved = true;
-      createClone(dragging);
-    }
-    if(moved){ e.preventDefault(); moveClone(e); }
-  }, {passive:false});
-  document.addEventListener('touchend', e => { endDrag(e); });
-  document.addEventListener('touchcancel', e => { endDrag(e); });
 })();
-
-function updateKanbanCounts(){
-  ['todo','progress','done'].forEach(id=>{
-    const col = document.getElementById('col-'+id);
-    const count = document.getElementById('count-'+id);
-    if(col && count) count.textContent = col.querySelectorAll('.kanban-card').length;
-  });
-}
 
 // ── SOPs ──
 const sopData = {

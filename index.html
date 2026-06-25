@@ -1632,6 +1632,24 @@ textarea.rf-val{resize:vertical;min-height:72px;line-height:1.5}
 .sop-upload-del{border:none;background:none;color:var(--ink3);cursor:pointer;font-size:16px;padding:0 4px}
 .sop-back-btn{display:flex;align-items:center;gap:6px;background:none;border:none;font-family:'Poppins',sans-serif;font-size:13px;font-weight:600;color:var(--ink2);cursor:pointer;margin-bottom:20px;padding:0}
 .sop-back-btn:hover{color:var(--navy)}
+
+/* ── MUSIC ── */
+.music-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:4px}
+.music-card{
+  background:white;border:1px solid var(--line);border-radius:12px;
+  padding:20px;position:relative;transition:all 0.2s;
+  box-shadow:0 2px 8px rgba(0,0,0,0.06);
+}
+.music-card:hover{box-shadow:0 8px 24px rgba(0,0,0,0.1);transform:translateY(-2px)}
+.music-card-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:var(--ink3);margin-bottom:8px}
+.music-card-name{font-size:15px;font-weight:700;color:var(--navy);margin-bottom:4px}
+.music-card-desc{font-size:12px;color:var(--ink3);margin-bottom:14px;line-height:1.4}
+.music-card-open{display:inline-flex;align-items:center;gap:6px;background:#1DB954;color:white;border:none;border-radius:20px;padding:7px 16px;font-family:'Poppins',sans-serif;font-size:12px;font-weight:700;cursor:pointer;text-decoration:none;transition:opacity 0.15s}
+.music-card-open:hover{opacity:0.85}
+.music-card-del{position:absolute;top:12px;right:12px;border:none;background:none;color:var(--ink3);font-size:16px;cursor:pointer;opacity:0;transition:opacity 0.15s}
+.music-card:hover .music-card-del{opacity:1}
+.music-add-form{background:white;border:2px dashed var(--line);border-radius:12px;padding:24px;display:none}
+.music-add-form.open{display:block}
 </style>
 </head>
 <body>
@@ -1677,6 +1695,7 @@ textarea.rf-val{resize:vertical;min-height:72px;line-height:1.5}
       <button class="tb-link" id="n-cal" onclick="nav('cal')" data-en="Event Calendar" data-id="Kalender Acara">Event Calendar</button>
       <button class="tb-link" id="n-notes" onclick="nav('notes')" data-en="Meeting Notes" data-id="Catatan Rapat">Meeting Notes</button>
       <button class="tb-link" id="n-kb" onclick="nav('kb')">📌 Task Board</button>
+      <button class="tb-link" id="n-music" onclick="nav('music')">🎵 Music</button>
       <button class="tb-link" id="n-sop" onclick="nav('sop')">📋 SOPs</button>
       <button class="tb-link" id="n-admin" onclick="nav('admin')" data-en="Admin (Coming Soon)" data-id="Admin (Coming Soon)">Admin (Coming Soon)</button>
     </div>
@@ -1764,6 +1783,13 @@ textarea.rf-val{resize:vertical;min-height:72px;line-height:1.5}
           <div class="home-card-ico">✨</div>
           <div class="home-card-title" style="color:white">+ New Event Plan</div>
           <div class="home-card-sub" style="color:rgba(255,255,255,0.65)">Start a new BEO from scratch</div>
+        </div>
+
+        <!-- Music -->
+        <div class="home-card" onclick="nav('music')" style="background:#1DB954;border-color:#1DB954;position:relative;overflow:hidden">
+          <div class="home-card-ico">🎵</div>
+          <div class="home-card-title" style="color:white">Music</div>
+          <div class="home-card-sub" style="color:rgba(255,255,255,0.65)">Venue playlists — all in one place</div>
         </div>
 
         <!-- SOPs -->
@@ -2770,6 +2796,64 @@ textarea.rf-val{resize:vertical;min-height:72px;line-height:1.5}
 
       </div>
     </div>
+    <!-- MUSIC -->
+    <div class="page" id="p-music" style="padding:0 28px">
+      <div class="ph">
+        <div>
+          <div class="ph-title">🎵 Music</div>
+          <div class="ph-sub">Your venue playlists — click to open in Spotify</div>
+        </div>
+        <button class="btn btn-navy" onclick="musicShowAddForm()">+ Add Playlist</button>
+      </div>
+
+      <!-- Add form -->
+      <div class="music-add-form" id="music-add-form" style="margin-bottom:24px">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
+          <div>
+            <label class="lf-label">Label</label>
+            <select id="music-label-input" class="lf-input" style="padding:10px 14px">
+              <option>Breakfast</option>
+              <option>Lunch</option>
+              <option>Sunset</option>
+              <option>Dinner</option>
+              <option>Late Night</option>
+              <option>Events</option>
+              <option>Pool</option>
+              <option>Custom</option>
+            </select>
+          </div>
+          <div>
+            <label class="lf-label">Playlist Name</label>
+            <input id="music-name-input" class="lf-input" type="text" placeholder="e.g. Morning Chill Mix">
+          </div>
+        </div>
+        <div style="margin-bottom:12px">
+          <label class="lf-label">Spotify Link</label>
+          <input id="music-link-input" class="lf-input" type="url" placeholder="https://open.spotify.com/playlist/...">
+        </div>
+        <div style="margin-bottom:16px">
+          <label class="lf-label">Description (optional)</label>
+          <input id="music-desc-input" class="lf-input" type="text" placeholder="e.g. Pool area, 9am–12pm">
+        </div>
+        <div style="display:flex;gap:10px">
+          <button class="btn btn-navy" onclick="musicSavePlaylist()">Save Playlist</button>
+          <button class="btn btn-ghost" onclick="musicHideAddForm()">Cancel</button>
+        </div>
+      </div>
+
+      <!-- Playlist grid -->
+      <div class="music-grid" id="music-grid"></div>
+
+      <!-- Upsell -->
+      <div style="margin-top:40px;padding:20px 24px;background:rgba(29,185,84,0.06);border:1px solid rgba(29,185,84,0.2);border-radius:12px;display:flex;align-items:center;justify-content:space-between">
+        <div>
+          <div style="font-size:13px;font-weight:700;color:var(--navy);margin-bottom:2px">Need help curating your playlists?</div>
+          <div style="font-size:12px;color:var(--ink3)">We offer bespoke playlist curation for venues across Bali — get in touch.</div>
+        </div>
+        <button class="btn btn-navy" style="white-space:nowrap;margin-left:20px" onclick="nav('admin')">Get in Touch</button>
+      </div>
+    </div>
+
     <!-- SOP HOME -->
     <div class="page" id="p-sop" style="padding:0 28px">
       <div class="ph">
@@ -2909,6 +2993,7 @@ function nav(id, pushState=true){
   if(id==='notes'){mnRender();}
   if(id==='cal'){calRender();}
   if(id==='home'){initHome();}
+  if(id==='music'){musicRender();}
   const floatBtn=document.getElementById('float-edit');
   if(floatBtn)floatBtn.style.display=id==='beo'?'block':'none';
   if(pushState){
@@ -3963,6 +4048,67 @@ function sopNewDoc(){
   if(!name)return;
   sopData[currentSopDept].push({title:name, meta:'Just created', files:[]});
   sopOpenDept(currentSopDept, '', document.getElementById('sop-dept-title').textContent, '');
+}
+
+// ── MUSIC ──
+const musicPlaylists = [
+  {id:1, label:'Breakfast', name:'Morning Chill Mix', desc:'Pool area · 8am–12pm', link:'https://open.spotify.com/playlist/37i9dQZF1DX6ziVCJnEski'},
+  {id:2, label:'Lunch', name:'Midday Vibes', desc:'Restaurant & bar · 12pm–4pm', link:'https://open.spotify.com/playlist/37i9dQZF1DWXRqgorJj26U'},
+  {id:3, label:'Sunset', name:'Sundowner Mix', desc:'Pool & beach · 4pm–8pm', link:'https://open.spotify.com/playlist/37i9dQZF1DX4sWSpwq3LiO'},
+  {id:4, label:'Dinner', name:'Evening Jazz & Soul', desc:'Restaurant · 7pm–10pm', link:'https://open.spotify.com/playlist/37i9dQZF1DX4wta20PHill'},
+  {id:5, label:'Late Night', name:'Club Night', desc:'Main floor · 10pm–close', link:'https://open.spotify.com/playlist/37i9dQZF1DX0BF4ezvoh11'},
+  {id:6, label:'Events', name:'NYE 2026', desc:'Special events playlist', link:'https://open.spotify.com/playlist/37i9dQZF1DX0h0QnLkMBl4'},
+];
+let musicNextId = 7;
+
+function musicRender(){
+  const grid = document.getElementById('music-grid');
+  if(!grid) return;
+  if(!musicPlaylists.length){
+    grid.innerHTML = '<div style="grid-column:span 3;text-align:center;padding:40px;color:var(--ink3);font-size:13px">No playlists yet — add your first one above.</div>';
+    return;
+  }
+  grid.innerHTML = musicPlaylists.map(p => `
+    <div class="music-card">
+      <button class="music-card-del" onclick="musicDelete(${p.id})">×</button>
+      <div class="music-card-label">${p.label}</div>
+      <div class="music-card-name">${p.name}</div>
+      <div class="music-card-desc">${p.desc || ''}</div>
+      <a class="music-card-open" href="${p.link}" target="_blank">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="white"><path d="M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.66 0 12 0zm5.521 17.34c-.24.359-.66.48-1.021.24-2.82-1.74-6.36-2.101-10.561-1.141-.418.122-.779-.179-.899-.539-.12-.421.18-.78.54-.9 4.56-1.021 8.52-.6 11.64 1.32.42.18.479.659.301 1.02zm1.44-3.3c-.301.42-.841.6-1.262.3-3.239-1.98-8.159-2.58-11.939-1.38-.479.12-1.02-.12-1.14-.6-.12-.48.12-1.021.6-1.141C9.6 9.9 15 10.561 18.72 12.84c.361.181.54.78.241 1.2zm.12-3.36C15.24 8.4 8.82 8.16 5.16 9.301c-.6.179-1.2-.181-1.38-.721-.18-.601.18-1.2.72-1.381 4.26-1.26 11.28-1.02 15.721 1.621.539.3.719 1.02.419 1.56-.299.421-1.02.599-1.559.3z"/></svg>
+        Open in Spotify
+      </a>
+    </div>
+  `).join('');
+}
+
+function musicShowAddForm(){
+  document.getElementById('music-add-form').classList.add('open');
+  document.getElementById('music-name-input').focus();
+}
+
+function musicHideAddForm(){
+  document.getElementById('music-add-form').classList.remove('open');
+  document.getElementById('music-name-input').value='';
+  document.getElementById('music-link-input').value='';
+  document.getElementById('music-desc-input').value='';
+}
+
+function musicSavePlaylist(){
+  const label = document.getElementById('music-label-input').value;
+  const name = document.getElementById('music-name-input').value.trim();
+  const link = document.getElementById('music-link-input').value.trim();
+  const desc = document.getElementById('music-desc-input').value.trim();
+  if(!name || !link){ toast('Please enter a name and Spotify link'); return; }
+  musicPlaylists.push({id: musicNextId++, label, name, desc, link});
+  musicHideAddForm();
+  musicRender();
+  toast('Playlist added ✓');
+}
+
+function musicDelete(id){
+  const idx = musicPlaylists.findIndex(p => p.id === id);
+  if(idx > -1){ musicPlaylists.splice(idx,1); musicRender(); }
 }
 // ── INIT ──
 window.addEventListener('keydown',e=>{if(e.key==='Enter'&&document.getElementById('login').style.display!=='none')doLogin();});

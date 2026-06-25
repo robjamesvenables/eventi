@@ -1592,6 +1592,42 @@ textarea.rf-val{resize:vertical;min-height:72px;line-height:1.5}
 .home-quick-stat{background:var(--bg);border-radius:10px;padding:14px 16px}
 .home-quick-stat-val{font-size:22px;font-weight:800;color:var(--navy)}
 .home-quick-stat-lbl{font-size:11px;color:var(--ink3);margin-top:2px}
+
+/* ── SOPs ── */
+.sop-dept-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:4px}
+.sop-dept-card{
+  background:#0F1E2E;border-radius:12px;padding:24px;cursor:pointer;
+  position:relative;overflow:hidden;
+  transition:transform 0.2s,box-shadow 0.2s;
+  box-shadow:0 4px 16px rgba(0,0,0,0.12);
+}
+.sop-dept-card:hover{transform:translateY(-3px);box-shadow:0 12px 32px rgba(0,0,0,0.2)}
+.sop-dept-card-bar{position:absolute;top:0;left:0;right:0;height:4px}
+.sop-dept-ico{font-size:28px;margin-bottom:14px}
+.sop-dept-name{font-size:16px;font-weight:700;color:white;margin-bottom:4px}
+.sop-dept-count{font-size:12px;color:rgba(255,255,255,0.4)}
+.sop-list{display:flex;flex-direction:column;gap:10px;margin-top:8px}
+.sop-item{
+  background:white;border:1px solid var(--line);border-radius:10px;
+  padding:14px 18px;cursor:pointer;display:flex;align-items:center;gap:14px;
+  transition:all 0.15s;
+}
+.sop-item:hover{border-color:var(--teal);box-shadow:0 4px 12px rgba(0,0,0,0.08);transform:translateX(3px)}
+.sop-item-ico{font-size:20px;flex-shrink:0}
+.sop-item-title{font-size:14px;font-weight:600;color:var(--navy);flex:1}
+.sop-item-meta{font-size:11px;color:var(--ink3);margin-top:2px}
+.sop-item-arr{color:var(--ink3);font-size:14px}
+.sop-add-btn{width:100%;padding:12px;background:none;border:2px dashed var(--line);border-radius:10px;font-family:'Poppins',sans-serif;font-size:13px;font-weight:600;color:var(--ink3);cursor:pointer;margin-top:4px;transition:all 0.15s}
+.sop-add-btn:hover{border-color:var(--teal);color:var(--teal)}
+.sop-doc-wrap{background:white;border:1px solid var(--line);border-radius:12px;padding:28px;margin-bottom:20px}
+.sop-upload-zone{border:2px dashed var(--line);border-radius:10px;padding:32px;text-align:center;cursor:pointer;transition:all 0.15s;margin-bottom:12px}
+.sop-upload-zone:hover{border-color:var(--teal);background:rgba(13,148,136,0.03)}
+.sop-upload-list{display:flex;flex-direction:column;gap:8px;margin-bottom:12px}
+.sop-upload-item{display:flex;align-items:center;gap:10px;background:var(--bg);border-radius:8px;padding:10px 14px}
+.sop-upload-item-name{font-size:13px;font-weight:500;color:var(--navy);flex:1}
+.sop-upload-del{border:none;background:none;color:var(--ink3);cursor:pointer;font-size:16px;padding:0 4px}
+.sop-back-btn{display:flex;align-items:center;gap:6px;background:none;border:none;font-family:'Poppins',sans-serif;font-size:13px;font-weight:600;color:var(--ink2);cursor:pointer;margin-bottom:20px;padding:0}
+.sop-back-btn:hover{color:var(--navy)}
 </style>
 </head>
 <body>
@@ -1638,6 +1674,7 @@ textarea.rf-val{resize:vertical;min-height:72px;line-height:1.5}
       <button class="tb-link" id="n-cal" onclick="nav('cal')" data-en="Event Calendar" data-id="Kalender Acara">Event Calendar</button>
       <button class="tb-link" id="n-notes" onclick="nav('notes')" data-en="Meeting Notes" data-id="Catatan Rapat">Meeting Notes</button>
       <button class="tb-link" id="n-kb" onclick="nav('kb')">📌 Task Board</button>
+      <button class="tb-link" id="n-sop" onclick="nav('sop')">📋 SOPs</button>
       <button class="tb-link" id="n-admin" onclick="nav('admin')" data-en="Admin (Coming Soon)" data-id="Admin (Coming Soon)">Admin (Coming Soon)</button>
     </div>
     <div class="tb-right">
@@ -1727,7 +1764,7 @@ textarea.rf-val{resize:vertical;min-height:72px;line-height:1.5}
         </div>
 
         <!-- SOPs -->
-        <div class="home-card" onclick="nav('admin')" style="background:#B45309;border-color:#B45309;position:relative;overflow:hidden">
+        <div class="home-card" onclick="nav('sop')" style="background:#B45309;border-color:#B45309;position:relative;overflow:hidden">
           <div style="position:absolute;top:16px;right:16px;background:rgba(255,255,255,0.25);color:white;font-size:13px;font-weight:800;padding:5px 14px;border-radius:20px">Phase 2</div>
           <div class="home-card-ico">📋</div>
           <div class="home-card-title" style="color:white">SOPs</div>
@@ -2730,6 +2767,99 @@ textarea.rf-val{resize:vertical;min-height:72px;line-height:1.5}
 
       </div>
     </div>
+    <!-- SOP HOME -->
+    <div class="page" id="p-sop" style="padding:0 28px">
+      <div class="ph">
+        <div>
+          <div class="ph-title">📋 SOPs</div>
+          <div class="ph-sub">Standard Operating Procedures — select a department</div>
+        </div>
+      </div>
+      <div class="sop-dept-grid">
+
+        <div class="sop-dept-card" onclick="sopOpenDept('kitchen','🍳','Kitchen','#0D9488')">
+          <div class="sop-dept-card-bar" style="background:#0D9488"></div>
+          <div class="sop-dept-ico">🍳</div>
+          <div class="sop-dept-name">Kitchen</div>
+          <div class="sop-dept-count">3 SOPs</div>
+        </div>
+
+        <div class="sop-dept-card" onclick="sopOpenDept('bar','🍹','Bar','#C4973B')">
+          <div class="sop-dept-card-bar" style="background:#C4973B"></div>
+          <div class="sop-dept-ico">🍹</div>
+          <div class="sop-dept-name">Bar</div>
+          <div class="sop-dept-count">2 SOPs</div>
+        </div>
+
+        <div class="sop-dept-card" onclick="sopOpenDept('avit','🎬','AV & IT','#9F1239')">
+          <div class="sop-dept-card-bar" style="background:#9F1239"></div>
+          <div class="sop-dept-ico">🎬</div>
+          <div class="sop-dept-name">AV & IT</div>
+          <div class="sop-dept-count">2 SOPs</div>
+        </div>
+
+        <div class="sop-dept-card" onclick="sopOpenDept('housekeeping','🛏','Housekeeping','#7C3AED')">
+          <div class="sop-dept-card-bar" style="background:#7C3AED"></div>
+          <div class="sop-dept-ico">🛏</div>
+          <div class="sop-dept-name">Housekeeping</div>
+          <div class="sop-dept-count">2 SOPs</div>
+        </div>
+
+        <div class="sop-dept-card" onclick="sopOpenDept('gro','👥','GRO','#B45309')">
+          <div class="sop-dept-card-bar" style="background:#B45309"></div>
+          <div class="sop-dept-ico">👥</div>
+          <div class="sop-dept-name">GRO</div>
+          <div class="sop-dept-count">1 SOP</div>
+        </div>
+
+        <div class="sop-dept-card" onclick="sopOpenDept('security','🔒','Security','#1E293B')">
+          <div class="sop-dept-card-bar" style="background:#64748B"></div>
+          <div class="sop-dept-ico">🔒</div>
+          <div class="sop-dept-name">Security</div>
+          <div class="sop-dept-count">2 SOPs</div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- SOP DEPT LIST -->
+    <div class="page" id="p-sop-dept" style="padding:0 28px">
+      <button class="sop-back-btn" onclick="nav('sop')">← Back to SOPs</button>
+      <div class="ph" style="padding-top:0">
+        <div>
+          <div class="ph-title" id="sop-dept-title">Kitchen</div>
+          <div class="ph-sub">Click an SOP to view or upload documents</div>
+        </div>
+        <button class="btn btn-navy" onclick="sopNewDoc()">+ New SOP</button>
+      </div>
+      <div class="sop-list" id="sop-list-items"></div>
+    </div>
+
+    <!-- SOP DOCUMENT -->
+    <div class="page" id="p-sop-doc" style="padding:0 28px">
+      <button class="sop-back-btn" id="sop-doc-back" onclick="nav('sop-dept')">← Back to Department</button>
+      <div class="ph" style="padding-top:0">
+        <div>
+          <div class="ph-title" id="sop-doc-title">Opening Checklist</div>
+          <div class="ph-sub" id="sop-doc-dept">Kitchen</div>
+        </div>
+      </div>
+
+      <!-- Upload zone -->
+      <div class="sop-doc-wrap">
+        <div style="font-size:13px;font-weight:700;color:var(--navy);margin-bottom:14px">📎 Uploaded Documents</div>
+        <div class="sop-upload-list" id="sop-upload-list">
+          <!-- populated by JS -->
+        </div>
+        <label class="sop-upload-zone" for="sop-file-input">
+          <div style="font-size:32px;margin-bottom:8px">⬆️</div>
+          <div style="font-size:14px;font-weight:600;color:var(--navy);margin-bottom:4px">Upload a document</div>
+          <div style="font-size:12px;color:var(--ink3)">PDF, Word, Excel, images — any format</div>
+          <input type="file" id="sop-file-input" style="display:none" multiple onchange="sopHandleUpload(this)">
+        </label>
+      </div>
+    </div>
+
     <!-- ADMIN -->
     <div class="page" id="p-admin">
       <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:calc(100vh - 160px);text-align:center;padding:40px">
@@ -3646,6 +3776,99 @@ function initHome(){
   const dateLabel = document.getElementById('home-date-label');
   if(timeLabel) timeLabel.textContent = greeting;
   if(dateLabel) dateLabel.textContent = days[now.getDay()] + ', ' + now.getDate() + ' ' + months[now.getMonth()] + ' ' + now.getFullYear();
+}
+
+// ── SOPs ──
+const sopData = {
+  kitchen: [
+    {title:'Opening Checklist', meta:'Last updated: Jun 2026', files:[]},
+    {title:'F&B Service Protocol', meta:'Last updated: May 2026', files:[]},
+    {title:'Allergen Handling', meta:'Last updated: Apr 2026', files:[]}
+  ],
+  bar: [
+    {title:'Bar Setup Procedure', meta:'Last updated: Jun 2026', files:[]},
+    {title:'Closing Checklist', meta:'Last updated: May 2026', files:[]}
+  ],
+  avit: [
+    {title:'AV Load-in Procedure', meta:'Last updated: Jun 2026', files:[]},
+    {title:'IT Network Setup', meta:'Last updated: Mar 2026', files:[]}
+  ],
+  housekeeping: [
+    {title:'Room Turnover Checklist', meta:'Last updated: Jun 2026', files:[]},
+    {title:'Deep Clean Protocol', meta:'Last updated: Apr 2026', files:[]}
+  ],
+  gro: [
+    {title:'Guest Relations Protocol', meta:'Last updated: Jun 2026', files:[]}
+  ],
+  security: [
+    {title:'Entry & Exit Procedure', meta:'Last updated: Jun 2026', files:[]},
+    {title:'Emergency Protocol', meta:'Last updated: May 2026', files:[]}
+  ]
+};
+let currentSopDept = 'kitchen';
+let currentSopDoc = 0;
+
+function sopOpenDept(dept, ico, name, color){
+  currentSopDept = dept;
+  document.getElementById('sop-dept-title').textContent = ico + ' ' + name;
+  const list = document.getElementById('sop-list-items');
+  const items = sopData[dept] || [];
+  list.innerHTML = items.map((s,i) => `
+    <div class="sop-item" onclick="sopOpenDoc(${i})">
+      <div class="sop-item-ico">📄</div>
+      <div>
+        <div class="sop-item-title">${s.title}</div>
+        <div class="sop-item-meta">${s.meta} · ${s.files.length} file${s.files.length!==1?'s':''} uploaded</div>
+      </div>
+      <div class="sop-item-arr">›</div>
+    </div>
+  `).join('') + `<button class="sop-add-btn" onclick="sopNewDoc()">+ Add SOP</button>`;
+  nav('sop-dept');
+}
+
+function sopOpenDoc(idx){
+  currentSopDoc = idx;
+  const doc = sopData[currentSopDept][idx];
+  document.getElementById('sop-doc-title').textContent = doc.title;
+  document.getElementById('sop-doc-dept').textContent = document.getElementById('sop-dept-title').textContent;
+  sopRenderUploads();
+  nav('sop-doc');
+}
+
+function sopRenderUploads(){
+  const doc = sopData[currentSopDept][currentSopDoc];
+  const list = document.getElementById('sop-upload-list');
+  if(!doc.files.length){
+    list.innerHTML = '<div style="font-size:12px;color:var(--ink3);margin-bottom:12px">No documents uploaded yet.</div>';
+    return;
+  }
+  list.innerHTML = doc.files.map((f,i) => `
+    <div class="sop-upload-item">
+      <span style="font-size:18px">📄</span>
+      <span class="sop-upload-item-name">${f}</span>
+      <button class="sop-upload-del" onclick="sopDeleteFile(${i})">×</button>
+    </div>
+  `).join('');
+}
+
+function sopHandleUpload(input){
+  const doc = sopData[currentSopDept][currentSopDoc];
+  Array.from(input.files).forEach(f => doc.files.push(f.name));
+  sopRenderUploads();
+  input.value='';
+  toast('Document uploaded');
+}
+
+function sopDeleteFile(idx){
+  sopData[currentSopDept][currentSopDoc].files.splice(idx,1);
+  sopRenderUploads();
+}
+
+function sopNewDoc(){
+  const name = prompt('SOP title:');
+  if(!name)return;
+  sopData[currentSopDept].push({title:name, meta:'Just created', files:[]});
+  sopOpenDept(currentSopDept, '', document.getElementById('sop-dept-title').textContent, '');
 }
 // ── INIT ──
 window.addEventListener('keydown',e=>{if(e.key==='Enter'&&document.getElementById('login').style.display!=='none')doLogin();});

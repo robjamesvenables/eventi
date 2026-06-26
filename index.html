@@ -1517,6 +1517,11 @@ textarea.rf-val{resize:vertical;min-height:72px;line-height:1.5}
 
 /* ── KANBAN BOARD ── */
 .kanban-wrap{display:grid;grid-template-columns:repeat(3,1fr);gap:20px;margin-top:4px;max-width:100%}
+.kanban-wrap.mytodo-view{grid-template-columns:1fr}
+.kanban-col-mytodo{border-top:3px solid #A855F7}
+.kanban-col-mytodo .kanban-col-title{color:#7C3AED}
+.kanban-col-mytodo .kanban-col-count{background:rgba(168,85,247,0.1);color:#7C3AED}
+.kanban-col-mytodo .kanban-card{border-left-color:#A855F7}
 .kanban-col{background:var(--bg);border-radius:10px;padding:14px;min-height:200px}
 .kanban-col-hd{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
 .kanban-col-title{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1.2px;color:var(--ink2)}
@@ -2710,7 +2715,7 @@ textarea.rf-val{resize:vertical;min-height:72px;line-height:1.5}
 
       <!-- Project filter pills -->
       <div class="month-strip" id="kb-event-filter" style="margin-bottom:20px">
-        <div class="month-tab on" onclick="kbFilterEvent('all',this)">All Projects</div>
+        <div class="month-tab on" onclick="kbFilterEvent('mytodo',this)">My To-Do</div>
         <div class="month-tab" onclick="kbFilterEvent('horizon',this)">Horizon Tech Summit</div>
         <div class="month-tab" onclick="kbFilterEvent('solaris',this)">Solaris Beach Festival</div>
         <div class="month-tab" onclick="kbFilterEvent('playlist',this)">New Playlist Curation</div>
@@ -2719,7 +2724,17 @@ textarea.rf-val{resize:vertical;min-height:72px;line-height:1.5}
         <div class="month-tab" onclick="kbFilterEvent('training',this)">Staff Training</div>
       </div>
 
-      <div class="kanban-wrap">
+      <div class="kanban-wrap" id="kanban-wrap">
+
+        <!-- MY TO-DO (personal, hidden by default when project filter active) -->
+        <div class="kanban-col kanban-col-mytodo" id="mytodo-col" style="display:none">
+          <div class="kanban-col-hd">
+            <div class="kanban-col-title">My To-Do</div>
+            <div class="kanban-col-count" id="count-mytodo">0</div>
+          </div>
+          <div class="kanban-cards" id="col-mytodo"></div>
+          <button class="kanban-add-btn" onclick="addMyTodoCard()">+ Add personal task</button>
+        </div>
 
         <!-- TO DO -->
         <div class="kanban-col kanban-col-todo">
@@ -3989,7 +4004,7 @@ function kbFilterEvent(eventId, el){
   // Card data store
   const kanbanState = {
     todo: [
-      {id:1, title:'Chase client for F&B numbers', assignee:'Sarah', event:'horizon'},
+      {id:1, title:'Chase client for F&amp;B numbers', assignee:'Sarah', event:'horizon'},
       {id:2, title:'Upload Kitchen SOP documents', assignee:'Tina', event:'sops'},
       {id:3, title:'Confirm stage plot with AV team', assignee:'David', event:'horizon'},
       {id:4, title:'Book staff for training day', assignee:'James', event:'training'},
@@ -4006,15 +4021,63 @@ function kbFilterEvent(eventId, el){
       {id:11, title:'Venue walkthrough completed', assignee:'Tina', event:'wedding'},
       {id:12, title:'Add morning playlist to Spotify', assignee:'Robbie', event:'playlist'},
       {id:13, title:'Brief security team', assignee:'David', event:'training'},
+    ],
+    mytodo: [
+      {id:20, title:'Morning check-in with team', note:'9AM standup'},
+      {id:21, title:'Lunch with venue vendor', note:'12:30PM'},
+      {id:22, title:'Review Horizon BEO draft', note:''},
+      {id:23, title:'Call accountant re: invoice', note:''},
     ]
   };
 
   const colColors = {todo:'#6B7280', progress:'#D97706', done:'#059669'};
   const colTitles = {todo:'To Do', progress:'In Progress', done:'Done'};
-  let nextId = 8;
-  let activeFilter = 'all';
+  let nextId = 30;
+  let activeFilter = 'mytodo';
+
+  function renderMyTodo(){
+    const col = document.getElementById('col-mytodo');
+    const countEl = document.getElementById('count-mytodo');
+    if(!col) return;
+    col.querySelectorAll('.kanban-card').forEach(c => c.remove());
+    const addBtn = col.nextElementSibling;
+    countEl.textContent = kanbanState.mytodo.length;
+    kanbanState.mytodo.forEach(card => {
+      const div = document.createElement('div');
+      div.className = 'kanban-card';
+      div.dataset.id = card.id;
+      div.style.cssText = 'border-left:3px solid #A855F7;cursor:grab;user-select:none;transition:transform 0.1s,box-shadow 0.1s,opacity 0.1s';
+      div.innerHTML = `
+        <div class="kanban-card-title" contenteditable="true" spellcheck="false">${card.title}</div>
+        <div class="kanban-card-meta">
+          <span class="kanban-card-assignee" contenteditable="true" spellcheck="false" style="color:#7C3AED;background:rgba(168,85,247,0.08)">${card.note||'Add note...'}</span>
+          <button class="kanban-del" onclick="event.stopPropagation();mytodoDelete(${card.id})">×</button>
+        </div>`;
+      div.querySelector('.kanban-card-title').addEventListener('blur', e => { card.title = e.target.textContent.trim(); });
+      div.querySelector('.kanban-card-assignee').addEventListener('blur', e => { card.note = e.target.textContent.trim(); });
+      col.appendChild(div);
+    });
+  }
 
   function render(){
+    // Show/hide mytodo vs project columns
+    const isMytodo = activeFilter === 'mytodo';
+    const wrap = document.getElementById('kanban-wrap');
+    const mytodoCol = document.getElementById('mytodo-col');
+    const projectCols = document.querySelectorAll('.kanban-col-todo, .kanban-col-progress, .kanban-col-done');
+
+    if(isMytodo){
+      wrap.style.gridTemplateColumns = '1fr';
+      if(mytodoCol) mytodoCol.style.display = '';
+      projectCols.forEach(c => c.style.display = 'none');
+      renderMyTodo();
+      return;
+    } else {
+      wrap.style.gridTemplateColumns = 'repeat(3,1fr)';
+      if(mytodoCol) mytodoCol.style.display = 'none';
+      projectCols.forEach(c => c.style.display = '');
+    }
+
     ['todo','progress','done'].forEach(colId => {
       const col = document.getElementById('col-'+colId);
       const countEl = document.getElementById('count-'+colId);
@@ -4145,6 +4208,19 @@ function kbFilterEvent(eventId, el){
       });
     });
   }
+
+  window.mytodoDelete = function(cardId){
+    kanbanState.mytodo = kanbanState.mytodo.filter(c => c.id !== cardId);
+    renderMyTodo();
+  };
+
+  window.addMyTodoCard = function(){
+    const title = prompt('What do you need to do?');
+    if(!title) return;
+    kanbanState.mytodo.push({id: nextId++, title, note:''});
+    renderMyTodo();
+    toast('Personal task added');
+  };
 
   window.kanbanDelete = function(cardId, colId){
     kanbanState[colId] = kanbanState[colId].filter(c => c.id !== cardId);

@@ -1650,6 +1650,26 @@ textarea.rf-val{resize:vertical;min-height:72px;line-height:1.5}
 .music-card:hover .music-card-del{opacity:1}
 .music-add-form{background:white;border:2px dashed var(--line);border-radius:12px;padding:24px;display:none}
 .music-add-form.open{display:block}
+
+/* ── KITCHEN ── */
+.kitchen-tabs{display:flex;gap:4px;margin-bottom:24px;border-bottom:2px solid var(--line);padding-bottom:0}
+.kitchen-tab{padding:10px 20px;font-size:13px;font-weight:600;color:var(--ink2);cursor:pointer;border:none;background:none;font-family:"Poppins",sans-serif;border-bottom:2px solid transparent;margin-bottom:-2px;transition:all 0.15s}
+.kitchen-tab.on{color:#065F46;border-bottom-color:#065F46}
+.kitchen-tab:hover{color:#065F46}
+.kitchen-panel{display:none}
+.kitchen-panel.on{display:block}
+.recipe-card{background:white;border:1px solid var(--line);border-radius:12px;padding:20px;margin-bottom:12px}
+.recipe-card-name{font-size:15px;font-weight:700;color:var(--navy);margin-bottom:6px}
+.recipe-card-meta{display:flex;gap:12px;margin-bottom:10px}
+.recipe-badge{font-size:10px;font-weight:700;padding:3px 9px;border-radius:10px;background:var(--bg);color:var(--ink2)}
+.recipe-badge.red{background:rgba(239,68,68,0.1);color:#DC2626}
+.recipe-badge.amber{background:rgba(217,119,6,0.1);color:#D97706}
+.recipe-badge.green{background:rgba(5,150,105,0.1);color:#059669}
+.allergen-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:8px;margin-top:8px}
+.allergen-chip{background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:8px 12px;font-size:11px;font-weight:600;color:var(--navy);text-align:center}
+.allergen-chip.has{background:rgba(239,68,68,0.08);border-color:rgba(239,68,68,0.2);color:#DC2626}
+.kitchen-link-card{background:white;border:1px solid var(--line);border-radius:10px;padding:14px 18px;display:flex;align-items:center;gap:14px;margin-bottom:10px;transition:all 0.15s}
+.kitchen-link-card:hover{border-color:var(--teal);box-shadow:0 4px 12px rgba(0,0,0,0.06)}
 </style>
 </head>
 <body>
@@ -1695,6 +1715,7 @@ textarea.rf-val{resize:vertical;min-height:72px;line-height:1.5}
       <button class="tb-link" id="n-cal" onclick="nav('cal')" data-en="Event Calendar" data-id="Kalender Acara">Event Calendar</button>
       <button class="tb-link" id="n-notes" onclick="nav('notes')" data-en="Meeting Notes" data-id="Catatan Rapat">Meeting Notes</button>
       <button class="tb-link" id="n-kb" onclick="nav('kb')">📌 Task Board</button>
+      <button class="tb-link" id="n-kitchen" onclick="nav('kitchen')">🍳 Kitchen</button>
       <button class="tb-link" id="n-music" onclick="nav('music')">🎵 Music</button>
       <button class="tb-link" id="n-sop" onclick="nav('sop')">📋 SOPs</button>
       <button class="tb-link" id="n-admin" onclick="nav('admin')" data-en="Admin (Coming Soon)" data-id="Admin (Coming Soon)">Admin (Coming Soon)</button>
@@ -1783,6 +1804,13 @@ textarea.rf-val{resize:vertical;min-height:72px;line-height:1.5}
           <div class="home-card-ico">✨</div>
           <div class="home-card-title" style="color:white">+ New Event Plan</div>
           <div class="home-card-sub" style="color:rgba(255,255,255,0.65)">Start a new BEO from scratch</div>
+        </div>
+
+        <!-- Kitchen -->
+        <div class="home-card" onclick="nav('kitchen')" style="background:#065F46;border-color:#065F46;position:relative;overflow:hidden">
+          <div class="home-card-ico">🍳</div>
+          <div class="home-card-title" style="color:white">Kitchen</div>
+          <div class="home-card-sub" style="color:rgba(255,255,255,0.6)">Menus, recipes, allergens & links</div>
         </div>
 
         <!-- Music -->
@@ -2796,6 +2824,205 @@ textarea.rf-val{resize:vertical;min-height:72px;line-height:1.5}
 
       </div>
     </div>
+    <!-- KITCHEN -->
+    <div class="page" id="p-kitchen" style="padding:0 28px">
+      <div class="ph">
+        <div>
+          <div class="ph-title">🍳 Kitchen</div>
+          <div class="ph-sub">Menus, recipes, allergens and your kitchen links</div>
+        </div>
+      </div>
+
+      <!-- Tabs -->
+      <div class="kitchen-tabs">
+        <button class="kitchen-tab on" onclick="kitchenTab('menus',this)">📋 Menus</button>
+        <button class="kitchen-tab" onclick="kitchenTab('recipes',this)">🍲 Recipes</button>
+        <button class="kitchen-tab" onclick="kitchenTab('allergens',this)">⚠️ Allergens</button>
+        <button class="kitchen-tab" onclick="kitchenTab('links',this)">🔗 Links & Sheets</button>
+      </div>
+
+      <!-- MENUS PANEL -->
+      <div class="kitchen-panel on" id="kp-menus">
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:24px">
+          <div style="background:white;border:1px solid var(--line);border-radius:12px;padding:20px">
+            <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:var(--ink3);margin-bottom:8px">Breakfast Menu</div>
+            <div style="font-size:14px;font-weight:600;color:var(--navy);margin-bottom:12px">Current Version · Jun 2026</div>
+            <div style="display:flex;gap:8px">
+              <button class="btn btn-ghost" style="flex:1;font-size:11px" onclick="toast('Opening menu...')">👁 View</button>
+              <button class="btn btn-navy" style="flex:1;font-size:11px" onclick="document.getElementById('menu-upload').click()">⬆ Upload</button>
+            </div>
+          </div>
+          <div style="background:white;border:1px solid var(--line);border-radius:12px;padding:20px">
+            <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:var(--ink3);margin-bottom:8px">Lunch Menu</div>
+            <div style="font-size:14px;font-weight:600;color:var(--navy);margin-bottom:12px">Current Version · Jun 2026</div>
+            <div style="display:flex;gap:8px">
+              <button class="btn btn-ghost" style="flex:1;font-size:11px">👁 View</button>
+              <button class="btn btn-navy" style="flex:1;font-size:11px" onclick="document.getElementById('menu-upload').click()">⬆ Upload</button>
+            </div>
+          </div>
+          <div style="background:white;border:1px solid var(--line);border-radius:12px;padding:20px">
+            <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:var(--ink3);margin-bottom:8px">Dinner Menu</div>
+            <div style="font-size:14px;font-weight:600;color:var(--navy);margin-bottom:12px">Current Version · Jun 2026</div>
+            <div style="display:flex;gap:8px">
+              <button class="btn btn-ghost" style="flex:1;font-size:11px">👁 View</button>
+              <button class="btn btn-navy" style="flex:1;font-size:11px" onclick="document.getElementById('menu-upload').click()">⬆ Upload</button>
+            </div>
+          </div>
+          <div style="background:white;border:1px solid var(--line);border-radius:12px;padding:20px">
+            <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:var(--ink3);margin-bottom:8px">Specials</div>
+            <div style="font-size:14px;font-weight:600;color:var(--navy);margin-bottom:12px">Weekly Specials · Jun 2026</div>
+            <div style="display:flex;gap:8px">
+              <button class="btn btn-ghost" style="flex:1;font-size:11px">👁 View</button>
+              <button class="btn btn-navy" style="flex:1;font-size:11px" onclick="document.getElementById('menu-upload').click()">⬆ Upload</button>
+            </div>
+          </div>
+          <div style="background:white;border:1px solid var(--line);border-radius:12px;padding:20px">
+            <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:var(--ink3);margin-bottom:8px">Drinks Menu</div>
+            <div style="font-size:14px;font-weight:600;color:var(--navy);margin-bottom:12px">Current Version · Jun 2026</div>
+            <div style="display:flex;gap:8px">
+              <button class="btn btn-ghost" style="flex:1;font-size:11px">👁 View</button>
+              <button class="btn btn-navy" style="flex:1;font-size:11px" onclick="document.getElementById('menu-upload').click()">⬆ Upload</button>
+            </div>
+          </div>
+          <div style="background:white;border:2px dashed var(--line);border-radius:12px;padding:20px;display:flex;align-items:center;justify-content:center;cursor:pointer" onclick="toast('Add menu coming soon')">
+            <div style="text-align:center;color:var(--ink3)">
+              <div style="font-size:24px;margin-bottom:6px">+</div>
+              <div style="font-size:12px;font-weight:600">Add Menu</div>
+            </div>
+          </div>
+        </div>
+        <input type="file" id="menu-upload" style="display:none" onchange="toast('Menu uploaded ✓')">
+      </div>
+
+      <!-- RECIPES PANEL -->
+      <div class="kitchen-panel" id="kp-recipes">
+        <div style="display:flex;justify-content:flex-end;margin-bottom:16px">
+          <button class="btn btn-navy" onclick="toast('Add recipe — coming soon')">+ Add Recipe</button>
+        </div>
+        <div class="recipe-card">
+          <div class="recipe-card-name">Grilled Barramundi with Lemon Butter</div>
+          <div class="recipe-card-meta">
+            <span class="recipe-badge green">Main</span>
+            <span class="recipe-badge">Serves 1</span>
+            <span class="recipe-badge amber">Allergens: Fish, Dairy</span>
+          </div>
+          <div style="font-size:12px;color:var(--ink2);line-height:1.7"><strong>Ingredients:</strong> 200g barramundi fillet, 30g butter, 1 lemon, fresh herbs, salt, pepper<br><strong>Method:</strong> Season fish, grill 4 mins each side. Rest 2 mins. Finish with lemon butter sauce.</div>
+        </div>
+        <div class="recipe-card">
+          <div class="recipe-card-name">Truffle Mushroom Pasta</div>
+          <div class="recipe-card-meta">
+            <span class="recipe-badge green">Main</span>
+            <span class="recipe-badge">Serves 1</span>
+            <span class="recipe-badge red">Allergens: Gluten, Dairy, Egg</span>
+          </div>
+          <div style="font-size:12px;color:var(--ink2);line-height:1.7"><strong>Ingredients:</strong> 120g tagliatelle, mixed mushrooms, truffle oil, parmesan, cream, garlic, shallots<br><strong>Method:</strong> Sauté mushrooms with garlic. Add cream, reduce. Toss with pasta, finish with truffle oil and parmesan.</div>
+        </div>
+        <div class="recipe-card">
+          <div class="recipe-card-name">Acai Bowl</div>
+          <div class="recipe-card-meta">
+            <span class="recipe-badge green">Breakfast</span>
+            <span class="recipe-badge">Serves 1</span>
+            <span class="recipe-badge green">Vegan</span>
+          </div>
+          <div style="font-size:12px;color:var(--ink2);line-height:1.7"><strong>Ingredients:</strong> 150g frozen acai, banana, coconut milk, granola, fresh fruit, honey<br><strong>Method:</strong> Blend acai with banana and coconut milk. Pour into bowl. Top with granola and fruit.</div>
+        </div>
+      </div>
+
+      <!-- ALLERGENS PANEL -->
+      <div class="kitchen-panel" id="kp-allergens">
+        <div style="background:rgba(239,68,68,0.06);border:1px solid rgba(239,68,68,0.15);border-radius:10px;padding:14px 18px;margin-bottom:20px;font-size:13px;color:#DC2626;font-weight:500">
+          ⚠️ Always verify allergen information with your head chef before service. This is a reference guide only.
+        </div>
+        <div style="overflow-x:auto">
+          <table style="width:100%;border-collapse:collapse;font-size:12px">
+            <thead>
+              <tr style="background:var(--navy);color:white">
+                <th style="padding:10px 14px;text-align:left;border-radius:8px 0 0 0;font-weight:600">Dish</th>
+                <th style="padding:10px 8px;text-align:center">Gluten</th>
+                <th style="padding:10px 8px;text-align:center">Dairy</th>
+                <th style="padding:10px 8px;text-align:center">Egg</th>
+                <th style="padding:10px 8px;text-align:center">Fish</th>
+                <th style="padding:10px 8px;text-align:center">Shellfish</th>
+                <th style="padding:10px 8px;text-align:center">Nuts</th>
+                <th style="padding:10px 8px;text-align:center">Soy</th>
+                <th style="padding:10px 8px;text-align:center;border-radius:0 8px 0 0">Vegan</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr style="border-bottom:1px solid var(--line)">
+                <td style="padding:10px 14px;font-weight:600;color:var(--navy)">Grilled Barramundi</td>
+                <td style="text-align:center">—</td><td style="text-align:center;color:#DC2626">✓</td>
+                <td style="text-align:center">—</td><td style="text-align:center;color:#DC2626">✓</td>
+                <td style="text-align:center">—</td><td style="text-align:center">—</td>
+                <td style="text-align:center">—</td><td style="text-align:center">—</td>
+              </tr>
+              <tr style="border-bottom:1px solid var(--line);background:var(--bg)">
+                <td style="padding:10px 14px;font-weight:600;color:var(--navy)">Truffle Mushroom Pasta</td>
+                <td style="text-align:center;color:#DC2626">✓</td><td style="text-align:center;color:#DC2626">✓</td>
+                <td style="text-align:center;color:#DC2626">✓</td><td style="text-align:center">—</td>
+                <td style="text-align:center">—</td><td style="text-align:center">—</td>
+                <td style="text-align:center">—</td><td style="text-align:center">—</td>
+              </tr>
+              <tr style="border-bottom:1px solid var(--line)">
+                <td style="padding:10px 14px;font-weight:600;color:var(--navy)">Acai Bowl</td>
+                <td style="text-align:center">—</td><td style="text-align:center">—</td>
+                <td style="text-align:center">—</td><td style="text-align:center">—</td>
+                <td style="text-align:center">—</td><td style="text-align:center">—</td>
+                <td style="text-align:center">—</td><td style="text-align:center;color:#059669">✓</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <button class="btn btn-navy" style="margin-top:16px" onclick="toast('Add dish — coming soon')">+ Add Dish</button>
+      </div>
+
+      <!-- LINKS PANEL -->
+      <div class="kitchen-panel" id="kp-links">
+        <div style="font-size:13px;color:var(--ink2);margin-bottom:16px;background:rgba(13,148,136,0.06);border:1px solid rgba(13,148,136,0.15);border-radius:10px;padding:12px 16px">
+          💡 Paste links to your Google Sheets, Google Docs, or any external tool. Opens directly from here.
+        </div>
+        <div id="kitchen-links-list">
+          <div class="kitchen-link-card">
+            <span style="font-size:24px">📊</span>
+            <div style="flex:1">
+              <div style="font-size:13px;font-weight:700;color:var(--navy)">Weekly Food Cost Sheet</div>
+              <div style="font-size:11px;color:var(--ink3)">Google Sheets · Updated weekly</div>
+            </div>
+            <a href="https://sheets.google.com" target="_blank" class="btn btn-ghost" style="font-size:11px">Open →</a>
+          </div>
+          <div class="kitchen-link-card">
+            <span style="font-size:24px">📊</span>
+            <div style="flex:1">
+              <div style="font-size:13px;font-weight:700;color:var(--navy)">Monthly P&L — Kitchen</div>
+              <div style="font-size:11px;color:var(--ink3)">Google Sheets · Finance team</div>
+            </div>
+            <a href="https://sheets.google.com" target="_blank" class="btn btn-ghost" style="font-size:11px">Open →</a>
+          </div>
+          <div class="kitchen-link-card">
+            <span style="font-size:24px">📦</span>
+            <div style="flex:1">
+              <div style="font-size:13px;font-weight:700;color:var(--navy)">Stock & Inventory Tracker</div>
+              <div style="font-size:11px;color:var(--ink3)">Google Sheets · Daily update</div>
+            </div>
+            <a href="https://sheets.google.com" target="_blank" class="btn btn-ghost" style="font-size:11px">Open →</a>
+          </div>
+          <div class="kitchen-link-card">
+            <span style="font-size:24px">🛒</span>
+            <div style="flex:1">
+              <div style="font-size:13px;font-weight:700;color:var(--navy)">Supplier Order Template</div>
+              <div style="font-size:11px;color:var(--ink3)">Google Sheets · Weekly orders</div>
+            </div>
+            <a href="https://sheets.google.com" target="_blank" class="btn btn-ghost" style="font-size:11px">Open →</a>
+          </div>
+        </div>
+        <div style="margin-top:16px;display:flex;gap:10px">
+          <input id="kitchen-link-name" class="lf-input" style="flex:1" placeholder="Link name e.g. Weekly Food Cost Sheet">
+          <input id="kitchen-link-url" class="lf-input" style="flex:2" placeholder="Paste Google Sheets / Docs URL">
+          <button class="btn btn-navy" onclick="kitchenAddLink()">+ Add</button>
+        </div>
+      </div>
+    </div>
+
     <!-- MUSIC -->
     <div class="page" id="p-music" style="padding:0 28px">
       <div class="ph">
@@ -4175,6 +4402,35 @@ function musicSavePlaylist(){
 function musicDelete(id){
   const idx = musicPlaylists.findIndex(p => p.id === id);
   if(idx > -1){ musicPlaylists.splice(idx,1); musicRender(); }
+}
+
+// ── KITCHEN ──
+function kitchenTab(id, el){
+  document.querySelectorAll('.kitchen-tab').forEach(t => t.classList.remove('on'));
+  document.querySelectorAll('.kitchen-panel').forEach(p => p.classList.remove('on'));
+  el.classList.add('on');
+  document.getElementById('kp-'+id).classList.add('on');
+}
+
+function kitchenAddLink(){
+  const name = document.getElementById('kitchen-link-name').value.trim();
+  const url = document.getElementById('kitchen-link-url').value.trim();
+  if(!name || !url){ toast('Please enter a name and URL'); return; }
+  const list = document.getElementById('kitchen-links-list');
+  const div = document.createElement('div');
+  div.className = 'kitchen-link-card';
+  div.innerHTML = `
+    <span style="font-size:24px">🔗</span>
+    <div style="flex:1">
+      <div style="font-size:13px;font-weight:700;color:var(--navy)">${name}</div>
+      <div style="font-size:11px;color:var(--ink3)">${url.replace('https://','').substring(0,40)}...</div>
+    </div>
+    <a href="${url}" target="_blank" class="btn btn-ghost" style="font-size:11px">Open →</a>
+  `;
+  list.appendChild(div);
+  document.getElementById('kitchen-link-name').value = '';
+  document.getElementById('kitchen-link-url').value = '';
+  toast('Link added ✓');
 }
 // ── INIT ──
 window.addEventListener('keydown',e=>{if(e.key==='Enter'&&document.getElementById('login').style.display!=='none')doLogin();});

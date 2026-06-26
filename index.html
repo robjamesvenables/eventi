@@ -2726,16 +2726,6 @@ textarea.rf-val{resize:vertical;min-height:72px;line-height:1.5}
 
       <div class="kanban-wrap" id="kanban-wrap">
 
-        <!-- MY TO-DO (personal, hidden by default when project filter active) -->
-        <div class="kanban-col kanban-col-mytodo" id="mytodo-col" style="display:none">
-          <div class="kanban-col-hd">
-            <div class="kanban-col-title">My To-Do</div>
-            <div class="kanban-col-count" id="count-mytodo">0</div>
-          </div>
-          <div class="kanban-cards" id="col-mytodo"></div>
-          <button class="kanban-add-btn" onclick="addMyTodoCard()">+ Add personal task</button>
-        </div>
-
         <!-- TO DO -->
         <div class="kanban-col kanban-col-todo">
           <div class="kanban-col-hd">
@@ -4009,24 +3999,22 @@ function kbFilterEvent(eventId, el){
       {id:3, title:'Confirm stage plot with AV team', assignee:'David', event:'horizon'},
       {id:4, title:'Book staff for training day', assignee:'James', event:'training'},
       {id:5, title:'Curate sunset playlist', assignee:'Robbie', event:'playlist'},
+      {id:20, title:'Call accountant re: invoice', assignee:'John', event:'mytodo'},
+      {id:21, title:'Review Horizon BEO draft', assignee:'John', event:'mytodo'},
     ],
     progress: [
       {id:6, title:'Finalise Event Rundown', assignee:'Robbie', event:'horizon'},
       {id:7, title:'Collect 2nd deposit from client', assignee:'James', event:'solaris'},
       {id:8, title:'Write Bar SOP procedures', assignee:'Maria', event:'sops'},
       {id:9, title:'Confirm wedding florals', assignee:'Tina', event:'wedding'},
+      {id:22, title:'Lunch with venue vendor', assignee:'John', event:'mytodo'},
     ],
     done: [
       {id:10, title:'Send BEO to kitchen team', assignee:'Maria', event:'horizon'},
       {id:11, title:'Venue walkthrough completed', assignee:'Tina', event:'wedding'},
       {id:12, title:'Add morning playlist to Spotify', assignee:'Robbie', event:'playlist'},
       {id:13, title:'Brief security team', assignee:'David', event:'training'},
-    ],
-    mytodo: [
-      {id:20, title:'Morning check-in with team', note:'9AM standup'},
-      {id:21, title:'Lunch with venue vendor', note:'12:30PM'},
-      {id:22, title:'Review Horizon BEO draft', note:''},
-      {id:23, title:'Call accountant re: invoice', note:''},
+      {id:23, title:'Morning check-in with team', assignee:'John', event:'mytodo'},
     ]
   };
 
@@ -4035,58 +4023,28 @@ function kbFilterEvent(eventId, el){
   let nextId = 30;
   let activeFilter = 'mytodo';
 
-  function renderMyTodo(){
-    const col = document.getElementById('col-mytodo');
-    const countEl = document.getElementById('count-mytodo');
-    if(!col) return;
-    col.querySelectorAll('.kanban-card').forEach(c => c.remove());
-    const addBtn = col.nextElementSibling;
-    countEl.textContent = kanbanState.mytodo.length;
-    kanbanState.mytodo.forEach(card => {
-      const div = document.createElement('div');
-      div.className = 'kanban-card';
-      div.dataset.id = card.id;
-      div.style.cssText = 'border-left:3px solid #A855F7;cursor:grab;user-select:none;transition:transform 0.1s,box-shadow 0.1s,opacity 0.1s';
-      div.innerHTML = `
-        <div class="kanban-card-title" contenteditable="true" spellcheck="false">${card.title}</div>
-        <div class="kanban-card-meta">
-          <span class="kanban-card-assignee" contenteditable="true" spellcheck="false" style="color:#7C3AED;background:rgba(168,85,247,0.08)">${card.note||'Add note...'}</span>
-          <button class="kanban-del" onclick="event.stopPropagation();mytodoDelete(${card.id})">×</button>
-        </div>`;
-      div.querySelector('.kanban-card-title').addEventListener('blur', e => { card.title = e.target.textContent.trim(); });
-      div.querySelector('.kanban-card-assignee').addEventListener('blur', e => { card.note = e.target.textContent.trim(); });
-      col.appendChild(div);
-    });
-  }
-
   function render(){
-    // Show/hide mytodo vs project columns
-    const isMytodo = activeFilter === 'mytodo';
     const wrap = document.getElementById('kanban-wrap');
     const mytodoCol = document.getElementById('mytodo-col');
-    const projectCols = document.querySelectorAll('.kanban-col-todo, .kanban-col-progress, .kanban-col-done');
+    if(mytodoCol) mytodoCol.style.display = 'none';
+    wrap.style.gridTemplateColumns = 'repeat(3,1fr)';
+    document.querySelectorAll('.kanban-col-todo, .kanban-col-progress, .kanban-col-done').forEach(c => c.style.display = '');
 
-    if(isMytodo){
-      wrap.style.gridTemplateColumns = '1fr';
-      if(mytodoCol) mytodoCol.style.display = '';
-      projectCols.forEach(c => c.style.display = 'none');
-      renderMyTodo();
-      return;
-    } else {
-      wrap.style.gridTemplateColumns = 'repeat(3,1fr)';
-      if(mytodoCol) mytodoCol.style.display = 'none';
-      projectCols.forEach(c => c.style.display = '');
-    }
+    const isMytodo = activeFilter === 'mytodo';
+    const borderColors = isMytodo
+      ? {todo:'#A855F7', progress:'#A855F7', done:'#A855F7'}
+      : colColors;
 
     ['todo','progress','done'].forEach(colId => {
       const col = document.getElementById('col-'+colId);
       const countEl = document.getElementById('count-'+colId);
       if(!col) return;
 
-      const cards = kanbanState[colId].filter(c => activeFilter === 'all' || c.event === activeFilter);
+      const cards = kanbanState[colId].filter(c =>
+        activeFilter === 'all' || c.event === activeFilter
+      );
       countEl.textContent = cards.length;
 
-      // Remove existing cards only
       col.querySelectorAll('.kanban-card').forEach(c => c.remove());
 
       const addBtn = col.querySelector('.kanban-add-btn');
@@ -4097,11 +4055,11 @@ function kbFilterEvent(eventId, el){
         div.dataset.id = card.id;
         div.dataset.col = colId;
         div.draggable = true;
-        div.style.cssText = `border-left:3px solid ${colColors[colId]};cursor:grab;user-select:none;transition:transform 0.1s,box-shadow 0.1s,opacity 0.1s`;
+        div.style.cssText = `border-left:3px solid ${borderColors[colId]};cursor:grab;user-select:none;transition:transform 0.1s,box-shadow 0.1s,opacity 0.1s`;
         if(colId === 'done') div.style.opacity = '0.75';
 
         const eventLabels = {horizon:'Horizon',solaris:'Solaris',wedding:'Wedding',playlist:'Playlist',sops:'SOPs',training:'Training',general:'General'};
-        const eventTag = card.event ? `<span class="kanban-card-event-tag">${eventLabels[card.event]||card.event}</span>` : '';
+        const eventTag = (card.event && card.event !== 'mytodo') ? `<span class="kanban-card-event-tag">${eventLabels[card.event]||card.event}</span>` : '';
 
         div.innerHTML = `
           <div class="kanban-card-title" contenteditable="true" spellcheck="false" style="${colId==='done'?'text-decoration:line-through;color:#9CA3AF':''}">${card.title}</div>
@@ -4209,19 +4167,6 @@ function kbFilterEvent(eventId, el){
     });
   }
 
-  window.mytodoDelete = function(cardId){
-    kanbanState.mytodo = kanbanState.mytodo.filter(c => c.id !== cardId);
-    renderMyTodo();
-  };
-
-  window.addMyTodoCard = function(){
-    const title = prompt('What do you need to do?');
-    if(!title) return;
-    kanbanState.mytodo.push({id: nextId++, title, note:''});
-    renderMyTodo();
-    toast('Personal task added');
-  };
-
   window.kanbanDelete = function(cardId, colId){
     kanbanState[colId] = kanbanState[colId].filter(c => c.id !== cardId);
     render();
@@ -4230,7 +4175,8 @@ function kbFilterEvent(eventId, el){
   window.addKanbanCard = function(colId){
     const title = prompt('Task title:');
     if(!title) return;
-    kanbanState[colId].push({id: nextId++, title, assignee:'—', event:'general'});
+    const event = activeFilter === 'all' ? 'general' : activeFilter;
+    kanbanState[colId].push({id: nextId++, title, assignee: activeFilter === 'mytodo' ? 'John' : '—', event});
     render();
     toast('Task added');
   };
@@ -4239,6 +4185,14 @@ function kbFilterEvent(eventId, el){
     document.querySelectorAll('#kb-event-filter .month-tab').forEach(t => t.classList.remove('on'));
     el.classList.add('on');
     activeFilter = eventId;
+    // Purple column accents for My To-Do, default otherwise
+    const isMytodo = eventId === 'mytodo';
+    document.querySelectorAll('.kanban-col-todo,.kanban-col-progress,.kanban-col-done').forEach(col => {
+      col.style.borderTopColor = isMytodo ? '#A855F7' : '';
+    });
+    document.querySelectorAll('.kanban-col-todo .kanban-col-title,.kanban-col-progress .kanban-col-title,.kanban-col-done .kanban-col-title').forEach(el => {
+      el.style.color = isMytodo ? '#7C3AED' : '';
+    });
     render();
   };
 

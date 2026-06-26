@@ -4603,7 +4603,6 @@ function myDriveRenderFolders(){
     <div class="myd-folder-tile" style="background:${f.color}" onclick="myDriveOpenFolder(${f.id})">
       <button class="myd-folder-tile-del" onclick="event.stopPropagation();myDriveDeleteFolder(${f.id})">×</button>
       <div>
-        <div class="myd-folder-tile-ico">${f.ico}</div>
         <div class="myd-folder-tile-name">${f.name}</div>
         <div class="myd-folder-tile-count">${f.files.length} link${f.files.length!==1?'s':''}</div>
       </div>
@@ -4617,7 +4616,7 @@ function myDriveRenderFolders(){
 function myDriveRenderFiles(){
   const folder = driveFolders.find(f=>f.id===driveActiveFolder);
   if(!folder) return;
-  document.getElementById('myd-folder-title').textContent = folder.ico + ' ' + folder.name;
+  document.getElementById('myd-folder-title').textContent = folder.name;
   const list = document.getElementById('myd-file-list');
   const empty = document.getElementById('myd-file-empty');
   if(!list) return;
@@ -4652,13 +4651,20 @@ window.myDriveBack = function(){ driveActiveFolder=null; myDriveRender(); };
 window.myDriveAddFolder = function(){
   const name = prompt('Folder name:');
   if(!name) return;
-  const icons = ['⭐','📋','💼','🎯','📌','🗂️','🔧','💡'];
-  const colors = ['#0D9488','#C4973B','#A855F7','#F43F5E','#3B82F6','#10B981','#F59E0B','#6366F1'];
-  const ico = icons[driveFolders.length % icons.length];
-  const color = colors[driveFolders.length % colors.length];
-  driveFolders.push({id:driveFolderNextId++, name, ico, color, files:[]});
-  myDriveRender();
-  toast('Folder created ✓');
+  const colors = ['#0D9488','#0F1E2E','#C4973B','#A855F7','#F43F5E','#3B82F6','#10B981','#F59E0B','#6366F1','#EC4899','#14B8A6','#F97316'];
+  const swatches = colors.map(c=>'<div onclick="window._mydPick(\''+c+'\')" style="width:40px;height:40px;border-radius:10px;background:'+c+';cursor:pointer;transition:transform 0.1s" onmouseover="this.style.transform=\'scale(1.15)\'" onmouseout="this.style.transform=\'scale(1)\'"></div>').join('');
+  const modal = document.createElement('div');
+  modal.id='myd-modal';
+  modal.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,0.45);display:flex;align-items:center;justify-content:center;z-index:9999';
+  modal.innerHTML='<div style="background:white;border-radius:16px;padding:28px;width:320px;box-shadow:0 20px 60px rgba(0,0,0,0.2)"><div style="font-size:16px;font-weight:800;color:#0F1E2E;margin-bottom:4px">Pick a colour</div><div style="font-size:13px;color:#94A3B8;margin-bottom:20px">for &quot;'+name+'&quot;</div><div style="display:grid;grid-template-columns:repeat(6,1fr);gap:10px;margin-bottom:24px">'+swatches+'</div><button onclick="document.body.removeChild(document.getElementById(\'myd-modal\'))" style="width:100%;padding:10px;background:#F1F5F9;border:none;border-radius:8px;font-family:\'Poppins\',sans-serif;font-size:13px;font-weight:600;color:#64748B;cursor:pointer">Cancel</button></div>';
+  document.body.appendChild(modal);
+  window._mydPick = function(color){
+    const m = document.getElementById('myd-modal');
+    if(m) document.body.removeChild(m);
+    driveFolders.push({id:driveFolderNextId++, name, ico:'', color, files:[]});
+    myDriveRender();
+    toast('Folder created ✓');
+  };
 };
 
 window.myDriveDeleteFolder = function(id){

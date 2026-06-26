@@ -1152,170 +1152,79 @@ textarea.rf-val{resize:vertical;min-height:72px;line-height:1.5}
 .cal-day-event-meta{font-size:12px;color:var(--ink2)}
 
 /* ── MEETING NOTES ── */
-.mn-wrap{
-  display:grid;
-  grid-template-columns:280px 1fr;
-  gap:0;
-  height:calc(100vh - 56px - 64px);
-  background:var(--w);
-  border:1.5px solid #CBD5E1;
-  border-radius:12px;
-  overflow:hidden;
+/* MEETING NOTES — week strip layout */
+.mn-week-strip{
+  display:flex;align-items:center;gap:0;
+  background:var(--w);border:1.5px solid #CBD5E1;
+  border-radius:12px;margin-bottom:16px;overflow:hidden;
 }
+.mn-week-nav{
+  width:44px;height:80px;background:#F8FAFC;
+  border:none;cursor:pointer;font-size:20px;
+  color:var(--ink2);transition:all 0.15s;flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;
+}
+.mn-week-nav:hover{background:#F1F5F9;color:var(--navy)}
+.mn-week-days{display:grid;grid-template-columns:repeat(7,1fr);flex:1}
+.mn-week-day{
+  padding:14px 8px;text-align:center;cursor:pointer;
+  border-right:1px solid #E2E8F0;
+  transition:background 0.15s;position:relative;
+}
+.mn-week-day:last-child{border-right:none}
+.mn-week-day:hover{background:#F8FAFC}
+.mn-week-day.active{background:var(--navy)}
+.mn-week-day.is-today{background:#F0FDF4}
+.mn-week-day.active.is-today{background:var(--teal)}
+.mn-wd-dow{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--ink3);margin-bottom:6px}
+.mn-week-day.active .mn-wd-dow{color:rgba(255,255,255,0.6)}
+.mn-wd-num{font-size:22px;font-weight:800;color:var(--navy);line-height:1}
+.mn-week-day.active .mn-wd-num{color:white}
+.mn-week-day.is-today .mn-wd-num{color:var(--teal)}
+.mn-week-day.active.is-today .mn-wd-num{color:white}
+.mn-wd-dot{width:6px;height:6px;border-radius:50%;background:var(--gold);margin:6px auto 0;display:none}
+.mn-week-day.has-notes .mn-wd-dot{display:block}
+.mn-week-day.active .mn-wd-dot{background:rgba(255,255,255,0.7)}
 
-/* Left: date list */
-.mn-sidebar{
-  border-right:1.5px solid #CBD5E1;
-  display:flex;
-  flex-direction:column;
-  overflow:hidden;
+/* Note area */
+.mn-note-wrap{
+  background:var(--w);border:1.5px solid #CBD5E1;
+  border-radius:12px;overflow:hidden;
+  display:flex;flex-direction:column;
+  min-height:420px;
+}
+.mn-note-empty{
+  flex:1;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;
+  padding:60px 20px;text-align:center;
+}
+.mn-note-hd{
+  padding:20px 28px;border-bottom:1.5px solid #CBD5E1;
+  display:flex;align-items:center;justify-content:space-between;
   background:#F8FAFC;
 }
-.mn-sidebar-top{
-  padding:20px;
-  border-bottom:1.5px solid #CBD5E1;
-  background:#F1F5F9;
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-  gap:8px;
+.mn-note-date{font-size:20px;font-weight:800;color:var(--navy)}
+.mn-note-sub{font-size:13px;color:var(--ink3);margin-top:3px}
+.mn-field-lbl{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;color:var(--ink3);padding:14px 0}
+.mn-field-input{border:none;outline:none;font-family:'Poppins',sans-serif;font-size:15px;font-weight:500;color:var(--navy);padding:14px 0 14px 16px;background:none;width:100%}
+.mn-doc-area{
+  flex:1;padding:28px;
+  font-family:'Poppins',sans-serif;font-size:16px;
+  font-weight:400;color:var(--ink);line-height:2;
+  border:none;outline:none;resize:none;
+  background:var(--w);min-height:220px;
 }
-.mn-month-nav{display:flex;align-items:center;gap:10px}
-.mn-month-btn{
-  width:32px;height:32px;
-  background:var(--w);border:1.5px solid #CBD5E1;
-  border-radius:6px;cursor:pointer;
-  font-size:16px;color:var(--navy);
-  transition:all 0.15s;display:flex;
-  align-items:center;justify-content:center;
+.mn-doc-area::placeholder{color:#CBD5E1;font-weight:300}
+.mn-doc-footer{
+  padding:14px 28px;border-top:1.5px solid #CBD5E1;
+  background:#F8FAFC;display:flex;align-items:center;justify-content:space-between;
 }
-.mn-month-btn:hover{border-color:var(--gold);color:var(--gold)}
-.mn-month-label{font-size:16px;font-weight:800;color:var(--navy)}
-
-.mn-date-list{
-  flex:1;
-  overflow-y:auto;
-  padding:8px 0;
-}
-.mn-date-item{
-  display:flex;
-  align-items:center;
-  gap:14px;
-  padding:13px 20px;
-  cursor:pointer;
-  transition:background 0.1s;
-  border-left:4px solid transparent;
-  position:relative;
-}
-.mn-date-item:hover{background:#F1F5F9}
-.mn-date-item.active{background:#EFF6FF;border-left-color:var(--gold)}
-.mn-date-item.has-notes .mn-di-name{color:var(--navy);font-weight:700}
-.mn-date-item.is-today{background:#F0FDF4}
-.mn-date-item.is-today .mn-di-num{color:var(--green);font-weight:800}
-.mn-date-item.is-event .mn-di-num{color:var(--red);font-weight:800}
-
-.mn-di-num{
-  font-size:22px;font-weight:700;
-  color:var(--navy);
-  width:36px;text-align:center;
-  flex-shrink:0;
-  line-height:1;
-}
-.mn-di-right{flex:1;min-width:0}
-.mn-di-dow{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--ink3)}
-.mn-di-name{font-size:14px;font-weight:500;color:var(--ink2);margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.mn-di-dot{
-  width:8px;height:8px;
-  border-radius:50%;
-  background:var(--gold);
-  flex-shrink:0;
-}
-
-/* Right: document view */
-.mn-doc{
-  display:flex;
-  flex-direction:column;
-  overflow:hidden;
-}
-.mn-doc-header{
-  padding:24px 40px 20px;
-  border-bottom:1.5px solid #CBD5E1;
-  background:var(--w);
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-}
-.mn-doc-date{
-  font-size:24px;font-weight:800;
-  color:var(--navy);
-}
-.mn-doc-sub{font-size:14px;font-weight:400;color:var(--ink3);margin-top:4px}
-.mn-doc-status{
-  font-size:13px;font-weight:600;
-  color:var(--ink3);
-  display:flex;align-items:center;gap:6px;
-}
+.mn-doc-status{font-size:13px;font-weight:500;color:var(--ink3)}
 .mn-doc-status.saving{color:var(--amber)}
 .mn-doc-status.saved{color:var(--green)}
+.mn-wa-btn{display:inline-flex;align-items:center;gap:7px;padding:10px 20px;background:#25D366;border:none;border-radius:7px;font-family:'Poppins',sans-serif;font-size:14px;font-weight:700;color:white;cursor:pointer}
 
-.mn-doc-area{
-  flex:1;
-  padding:36px 40px;
-  font-family:'Poppins',sans-serif;
-  font-size:16px;
-  font-weight:400;
-  color:var(--ink);
-  line-height:2;
-  border:none;
-  outline:none;
-  resize:none;
-  background:var(--w);
-  overflow-y:auto;
-}
-.mn-doc-area::placeholder{color:#CBD5E1;font-weight:300;font-size:16px}
 
-.mn-doc-footer{
-  padding:14px 40px;
-  border-top:1.5px solid #CBD5E1;
-  background:#F8FAFC;
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-}
-.mn-doc-hint{font-size:13px;font-weight:400;color:var(--ink3)}
-
-/* Welcome state */
-.mn-date-item.dimmed{
-  opacity:0.25;
-  pointer-events:none;
-}
-.mn-date-item.spotlight{
-  background:var(--w);
-  box-shadow:0 2px 12px rgba(0,0,0,0.08);
-  border-left-color:var(--green);
-  opacity:1;
-  pointer-events:all;
-}
-.mn-date-list.focused .mn-date-item:not(.spotlight){
-  opacity:0.08;
-}
-.mn-date-list.focused .mn-date-item.spotlight{
-  background:var(--w);
-  border-left:3px solid var(--green);
-  box-shadow:0 2px 16px rgba(0,0,0,0.1);
-}
-
-.mn-welcome{
-  flex:1;
-  display:flex;
-  flex-direction:column;
-  align-items:center;
-  justify-content:center;
-  color:var(--ink3);
-  gap:10px;
-}
-.mn-welcome-ico{font-size:36px;opacity:0.3}
-.mn-welcome-txt{font-size:13px;font-weight:400}
 
 .vr-table{width:100%;border-collapse:collapse;border:1px solid var(--line);border-radius:8px;overflow:hidden;font-size:13px}
 .vr-table th{background:#FAFBFC;padding:10px 14px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;color:var(--ink2);text-align:left;border-bottom:1px solid var(--line)}
@@ -2760,17 +2669,41 @@ textarea.rf-val{resize:vertical;min-height:72px;line-height:1.5}
       <div class="ph" style="margin-bottom:0">
         <div>
           <div class="ph-title">Meeting Notes</div>
-          <div class="ph-sub">One entry per day · Shared with all team members · Autosaves</div>
+          <div class="ph-sub">One entry per day · Autosaves</div>
         </div>
         <button class="btn btn-ghost" id="mn-today-btn" onclick="mnGoToday()">Today</button>
       </div>
-      <div class="mn-wrap">
-        <div class="mn-sidebar" id="mn-sidebar"></div>
-        <div class="mn-doc" id="mn-doc">
-          <div class="mn-doc-empty">
-            <div style="font-size:32px;margin-bottom:12px">📝</div>
-            <div style="font-size:15px;font-weight:700;color:var(--navy);margin-bottom:6px">Select a date</div>
-            <div style="font-size:13px;color:var(--ink3)">Choose a date from the left to view or add notes</div>
+
+      <!-- Week strip -->
+      <div class="mn-week-strip" id="mn-week-strip"></div>
+
+      <!-- Note area -->
+      <div class="mn-note-wrap" id="mn-note-wrap">
+        <div class="mn-note-empty" id="mn-note-empty">
+          <div style="font-size:40px;margin-bottom:16px">📝</div>
+          <div style="font-size:18px;font-weight:700;color:var(--navy);margin-bottom:8px">Select a day above</div>
+          <div style="font-size:14px;color:var(--ink3)">Tap any day to view or add notes</div>
+        </div>
+        <div id="mn-note-inner" style="display:none;height:100%;display:none;flex-direction:column">
+          <div class="mn-note-hd" id="mn-note-hd"></div>
+          <div style="padding:20px 28px;border-bottom:1px solid var(--line);display:flex;flex-direction:column;gap:0">
+            <div style="display:grid;grid-template-columns:120px 1fr;border-bottom:1px solid var(--line);align-items:center">
+              <div class="mn-field-lbl">Meeting Title</div>
+              <input id="mn-title" class="mn-field-input" placeholder="e.g. Pre-Event Briefing">
+            </div>
+            <div style="display:grid;grid-template-columns:120px 1fr;border-bottom:1px solid var(--line);align-items:center">
+              <div class="mn-field-lbl">📍 Location</div>
+              <input id="mn-location" class="mn-field-input" placeholder="e.g. Main Office">
+            </div>
+            <div style="display:grid;grid-template-columns:120px 1fr;align-items:center">
+              <div class="mn-field-lbl">👥 Attendees</div>
+              <input id="mn-attendees" class="mn-field-input" placeholder="e.g. Robbie, Sarah, David">
+            </div>
+          </div>
+          <textarea id="mn-textarea" class="mn-doc-area" placeholder="What happened today..."></textarea>
+          <div class="mn-doc-footer">
+            <div class="mn-doc-status" id="mn-status-2">Start typing to save…</div>
+            <button onclick="mnCopyComms(mnActiveKey)" class="mn-wa-btn">💬 Copy for Comms</button>
           </div>
         </div>
       </div>
@@ -3759,50 +3692,105 @@ const mnNotes={
 };
 const mnMonths=['January','February','March','April','May','June','July','August','September','October','November','December'];
 let mnYear=2026,mnMonth=5,mnActiveKey=null,mnSaveTimer=null;
+// Init week start to Monday of current week
+(function(){
+  const t=new Date();
+  const day=t.getDay();
+  const diff=(day===0)?-6:1-day;
+  const mon=new Date(t);
+  mon.setDate(t.getDate()+diff);
+  mon.setHours(0,0,0,0);
+  window.mnWeekStart=mon;
+})();
 const mnEventDays=['2026-06-18'];
 
 function mnRender(){
-  const sidebar=document.getElementById('mn-sidebar');
-  if(!sidebar)return;
-  const today=new Date();
-  const daysInMonth=new Date(mnYear,mnMonth+1,0).getDate();
-  const dowNames=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
-  let html=`<div class="mn-month-hd"><button class="mn-nav" onclick="mnNav(-1)">‹</button><div class="mn-month-title">${mnMonths[mnMonth]} ${mnYear}</div><button class="mn-nav" onclick="mnNav(1)">›</button></div>`;
-  for(let d=1;d<=daysInMonth;d++){
-    const date=new Date(mnYear,mnMonth,d);
-    const dow=dowNames[date.getDay()];
-    const key=`${mnYear}-${String(mnMonth+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
-    const hasNotes=!!mnNotes[key];
-    const isToday=today.getFullYear()===mnYear&&today.getMonth()===mnMonth&&today.getDate()===d;
-    const isEvent=mnEventDays.includes(key);
-    let cls=`mn-date-item${hasNotes?' has-notes':''}${isToday?' is-today':''}${isEvent?' is-event':''}${mnActiveKey===key?' active':''}`;
-    html+=`<div class="${cls}" id="mndi-${key}" onclick="mnOpenDay('${key}',${d},'${dow}')"><div class="mn-di-date"><span class="mn-di-dow">${dow}</span> ${d}</div><div class="mn-di-name">${hasNotes?(mnNotes[key].title||'Notes').substring(0,22):isToday?'Today':''}</div>${hasNotes?'<div class="mn-di-dot"></div>':''}</div>`;
+  const strip = document.getElementById('mn-week-strip');
+  if(!strip) return;
+  const today = new Date();
+  const dowNames = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  // Get Monday of current week
+  const weekStart = new Date(mnWeekStart);
+  let html = `<button class="mn-week-nav" onclick="mnNav(-1)">‹</button><div class="mn-week-days">`;
+  for(let i=0;i<7;i++){
+    const date = new Date(weekStart);
+    date.setDate(weekStart.getDate()+i);
+    const d = date.getDate();
+    const m = date.getMonth();
+    const y = date.getFullYear();
+    const dow = dowNames[date.getDay()];
+    const key = `${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    const hasNotes = !!mnNotes[key];
+    const isToday = today.toDateString()===date.toDateString();
+    const isActive = mnActiveKey===key;
+    let cls = 'mn-week-day';
+    if(isActive) cls+=' active';
+    if(isToday) cls+=' is-today';
+    if(hasNotes) cls+=' has-notes';
+    html+=`<div class="${cls}" onclick="mnOpenDay('${key}',${d},'${dow}',${m},${y})">
+      <div class="mn-wd-dow">${dow}</div>
+      <div class="mn-wd-num">${d}</div>
+      <div class="mn-wd-dot"></div>
+    </div>`;
   }
-  sidebar.innerHTML=html;
+  html += `</div><button class="mn-week-nav" onclick="mnNav(1)">›</button>`;
+  strip.innerHTML = html;
 }
 
-function mnNav(dir){mnMonth+=dir;if(mnMonth>11){mnMonth=0;mnYear++;}if(mnMonth<0){mnMonth=11;mnYear--;}mnRender();}
+function mnNav(dir){
+  const d = new Date(mnWeekStart);
+  d.setDate(d.getDate() + dir*7);
+  mnWeekStart = d;
+  mnRender();
+}
 
 function mnGoToday(){
-  const t=new Date();mnYear=t.getFullYear();mnMonth=t.getMonth();mnRender();
-  const todayKey=`${mnYear}-${String(mnMonth+1).padStart(2,'0')}-${String(t.getDate()).padStart(2,'0')}`;
-  mnOpenDay(todayKey,t.getDate(),['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][t.getDay()]);
+  const t = new Date();
+  // Set week start to Monday of this week
+  const day = t.getDay();
+  const diff = (day===0)?-6:1-day;
+  const mon = new Date(t);
+  mon.setDate(t.getDate()+diff);
+  mon.setHours(0,0,0,0);
+  mnWeekStart = mon;
+  const key=`${t.getFullYear()}-${String(t.getMonth()+1).padStart(2,'0')}-${String(t.getDate()).padStart(2,'0')}`;
+  mnActiveKey = key;
+  mnRender();
+  mnOpenDay(key,t.getDate(),['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][t.getDay()],t.getMonth(),t.getFullYear());
 }
 
-function mnOpenDay(key,d,dow){
+function mnOpenDay(key,d,dow,m,y){
+  if(m===undefined){const p=key.split('-');y=parseInt(p[0]);m=parseInt(p[1])-1;}
   mnActiveKey=key;
-  document.querySelectorAll('.mn-date-item').forEach(el=>el.classList.remove('active'));
-  const di=document.getElementById('mndi-'+key);if(di)di.classList.add('active');
-  const fullDate=`${dow}, ${d} ${mnMonths[mnMonth]} ${mnYear}`;
+  const months=['January','February','March','April','May','June','July','August','September','October','November','December'];
+  const fullDate=`${dow}, ${d} ${months[m]} ${y}`;
+  mnRender();
   const existing=mnNotes[key]||null;
   const isEvent=mnEventDays.includes(key);
   const title=existing?existing.title||'':(isEvent?'★ Event Day':'');
   const location=existing?existing.location||'':'';
   const attendees=existing?existing.attendees||'':'';
   const notes=existing?existing.notes||'':'';
-  const doc=document.getElementById('mn-doc');
-  doc.innerHTML=`<div class="mn-doc-header"><div><div class="mn-doc-date">${fullDate}</div><div class="mn-doc-sub">Fill in the details below</div></div><div class="mn-doc-status${existing?' saved':''}" id="mn-status">${existing?'✓ Saved':'New note'}</div></div><div style="padding:20px 28px;display:flex;flex-direction:column;gap:0;border-bottom:1px solid var(--line)"><div style="display:grid;grid-template-columns:110px 1fr;border-bottom:1px solid var(--line);align-items:center"><div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;color:var(--ink3);padding:12px 0">Meeting Title</div><input id="mn-title" style="border:none;outline:none;font-family:'Poppins',sans-serif;font-size:14px;font-weight:600;color:var(--navy);padding:12px 0 12px 16px;background:none;width:100%" placeholder="e.g. Pre-Event Briefing" value="${title}" oninput="mnAutoSave('${key}')"></div><div style="display:grid;grid-template-columns:110px 1fr;border-bottom:1px solid var(--line);align-items:center"><div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;color:var(--ink3);padding:12px 0">📍 Location</div><input id="mn-location" style="border:none;outline:none;font-family:'Poppins',sans-serif;font-size:13px;padding:12px 0 12px 16px;background:none;width:100%" placeholder="e.g. Main Office" value="${location}" oninput="mnAutoSave('${key}')"></div><div style="display:grid;grid-template-columns:110px 1fr;align-items:flex-start"><div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;color:var(--ink3);padding:12px 0">👥 Attendees</div><input id="mn-attendees" style="border:none;outline:none;font-family:'Poppins',sans-serif;font-size:13px;padding:12px 0 12px 16px;background:none;width:100%" placeholder="e.g. Robbie, Sarah, David" value="${attendees}" oninput="mnAutoSave('${key}')"></div></div><textarea class="mn-doc-area" id="mn-textarea" placeholder="General notes…" oninput="mnAutoSave('${key}')" style="flex:1;min-height:200px">${notes}</textarea><div class="mn-doc-footer"><div class="mn-doc-status${existing?' saved':''}" id="mn-status-2">${existing?'✓ Autosaved':'Start typing to save…'}</div><button onclick="mnCopyComms('${key}')" style="display:inline-flex;align-items:center;gap:7px;padding:9px 18px;background:#25D366;border:none;border-radius:6px;font-family:'Poppins',sans-serif;font-size:12.5px;font-weight:700;color:white;cursor:pointer">💬 Copy for Comms</button></div>`;
-  document.getElementById('mn-title').focus();
+  const empty=document.getElementById('mn-note-empty');
+  const inner=document.getElementById('mn-note-inner');
+  const hd=document.getElementById('mn-note-hd');
+  if(empty) empty.style.display='none';
+  if(inner){inner.style.display='flex';}
+  if(hd) hd.innerHTML=`<div><div class="mn-note-date">${fullDate}</div><div class="mn-note-sub">Fill in the details below</div></div><div class="mn-doc-status${existing?' saved':''}" id="mn-status">${existing?'✓ Saved':'New note'}</div>`;
+  // Populate fields
+  const titleEl=document.getElementById('mn-title');
+  const locEl=document.getElementById('mn-location');
+  const attEl=document.getElementById('mn-attendees');
+  const taEl=document.getElementById('mn-textarea');
+  if(titleEl) titleEl.value=title;
+  if(locEl) locEl.value=location;
+  if(attEl) attEl.value=attendees;
+  if(taEl) taEl.value=notes;
+  ['mn-title','mn-location','mn-attendees','mn-textarea'].forEach(id=>{
+    const el=document.getElementById(id);
+    if(el) el.oninput=()=>mnAutoSave(key);
+  });
+  if(titleEl) titleEl.focus();
 }
 
 function mnAutoSave(key){

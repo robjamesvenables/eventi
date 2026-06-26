@@ -2687,20 +2687,20 @@ textarea.rf-val{resize:vertical;min-height:72px;line-height:1.5}
       <div class="ph">
         <div>
           <div class="ph-title">📌 Task Board</div>
-          <div class="ph-sub">Tasks organised per event — drag, drop, and edit</div>
+          <div class="ph-sub">Drag and drop tasks across projects — events, SOPs, training and more</div>
         </div>
         <button class="btn btn-navy" onclick="addKanbanCard('col-todo')">+ Add Task</button>
       </div>
 
-      <!-- Event filter pills -->
+      <!-- Project filter pills -->
       <div class="month-strip" id="kb-event-filter" style="margin-bottom:20px">
-        <div class="month-tab on" onclick="kbFilterEvent('all',this)">All Events</div>
+        <div class="month-tab on" onclick="kbFilterEvent('all',this)">All Projects</div>
         <div class="month-tab" onclick="kbFilterEvent('horizon',this)">Horizon Tech Summit</div>
         <div class="month-tab" onclick="kbFilterEvent('solaris',this)">Solaris Beach Festival</div>
+        <div class="month-tab" onclick="kbFilterEvent('playlist',this)">New Playlist Curation</div>
         <div class="month-tab" onclick="kbFilterEvent('wedding',this)">Bali Wedding</div>
-        <div class="month-tab" onclick="kbFilterEvent('potato',this)">Potato Head Pool Party</div>
-        <div class="month-tab" onclick="kbFilterEvent('atlas',this)">Atlas Beach Fest</div>
-        <div class="month-tab" onclick="kbFilterEvent('mandarin',this)">Corporate Gala</div>
+        <div class="month-tab" onclick="kbFilterEvent('sops',this)">Prepare SOPs</div>
+        <div class="month-tab" onclick="kbFilterEvent('training',this)">Staff Training</div>
       </div>
 
       <div class="kanban-wrap">
@@ -3767,16 +3767,22 @@ function kbFilterEvent(eventId, el){
   const kanbanState = {
     todo: [
       {id:1, title:'Chase client for F&B numbers', assignee:'Sarah', event:'horizon'},
-      {id:2, title:'Send guest list to security', assignee:'Tina', event:'solaris'},
+      {id:2, title:'Upload Kitchen SOP documents', assignee:'Tina', event:'sops'},
       {id:3, title:'Confirm stage plot with AV team', assignee:'David', event:'horizon'},
+      {id:4, title:'Book staff for training day', assignee:'James', event:'training'},
+      {id:5, title:'Curate sunset playlist', assignee:'Robbie', event:'playlist'},
     ],
     progress: [
-      {id:4, title:'Finalise Event Rundown', assignee:'Robbie', event:'horizon'},
-      {id:5, title:'Collect 2nd deposit from client', assignee:'James', event:'solaris'},
+      {id:6, title:'Finalise Event Rundown', assignee:'Robbie', event:'horizon'},
+      {id:7, title:'Collect 2nd deposit from client', assignee:'James', event:'solaris'},
+      {id:8, title:'Write Bar SOP procedures', assignee:'Maria', event:'sops'},
+      {id:9, title:'Confirm wedding florals', assignee:'Tina', event:'wedding'},
     ],
     done: [
-      {id:6, title:'Send BEO to kitchen team', assignee:'Maria', event:'horizon'},
-      {id:7, title:'Venue walkthrough completed', assignee:'Tina', event:'wedding'},
+      {id:10, title:'Send BEO to kitchen team', assignee:'Maria', event:'horizon'},
+      {id:11, title:'Venue walkthrough completed', assignee:'Tina', event:'wedding'},
+      {id:12, title:'Add morning playlist to Spotify', assignee:'Robbie', event:'playlist'},
+      {id:13, title:'Brief security team', assignee:'David', event:'training'},
     ]
   };
 
@@ -3808,7 +3814,8 @@ function kbFilterEvent(eventId, el){
         div.style.cssText = `border-left:3px solid ${colColors[colId]};cursor:grab;user-select:none;transition:transform 0.1s,box-shadow 0.1s,opacity 0.1s`;
         if(colId === 'done') div.style.opacity = '0.75';
 
-        const eventTag = card.event !== 'all' ? `<span class="kanban-card-event-tag">${card.event.charAt(0).toUpperCase()+card.event.slice(1)}</span>` : '';
+        const eventLabels = {horizon:'Horizon',solaris:'Solaris',wedding:'Wedding',playlist:'Playlist',sops:'SOPs',training:'Training',general:'General'};
+        const eventTag = card.event ? `<span class="kanban-card-event-tag">${eventLabels[card.event]||card.event}</span>` : '';
 
         div.innerHTML = `
           <div class="kanban-card-title" contenteditable="true" spellcheck="false" style="${colId==='done'?'text-decoration:line-through;color:#9CA3AF':''}">${card.title}</div>

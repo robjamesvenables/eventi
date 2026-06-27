@@ -1925,6 +1925,7 @@ textarea.rf-val{resize:vertical;min-height:72px;line-height:1.5}
       <div id="myd-files-view" style="display:none">
         <div class="myd-files-hd">
           <button class="myd-back-btn" onclick="myDriveBack()">← Back</button>
+          <button id="myd-edit-btn" class="myd-back-btn" style="margin-left:4px">✏️ Edit Folder</button>
           <div id="myd-folder-title" style="font-size:18px;font-weight:800;color:var(--navy)"></div>
           <button class="btn btn-navy" onclick="myDriveAddFile()">+ Add Link</button>
         </div>
@@ -4592,6 +4593,9 @@ function myDriveRender(){
     foldersView.style.display='none';
     filesView.style.display='';
     if(addBtn){addBtn.textContent='+ Add Link';addBtn.onclick=myDriveAddFile;}
+  // Add edit button next to back button
+  const editBtn = document.getElementById('myd-edit-btn');
+  if(editBtn) editBtn.onclick = ()=>myDriveEditFolder(driveActiveFolder);
     myDriveRenderFiles();
   }
 }
@@ -4648,23 +4652,49 @@ function myDriveRenderFiles(){
 window.myDriveOpenFolder = function(id){ driveActiveFolder=id; myDriveRender(); };
 window.myDriveBack = function(){ driveActiveFolder=null; myDriveRender(); };
 
-window.myDriveAddFolder = function(){
-  const name = prompt('Folder name:');
-  if(!name) return;
+function myDriveColorPicker(title, onPick){
   const colors = ['#0D9488','#0F1E2E','#C4973B','#A855F7','#F43F5E','#3B82F6','#10B981','#F59E0B','#6366F1','#EC4899','#14B8A6','#F97316'];
-  const swatches = colors.map(c=>'<div onclick="window._mydPick(\''+c+'\')" style="width:40px;height:40px;border-radius:10px;background:'+c+';cursor:pointer;transition:transform 0.1s" onmouseover="this.style.transform=\'scale(1.15)\'" onmouseout="this.style.transform=\'scale(1)\'"></div>').join('');
+  const existing = document.getElementById('myd-modal');
+  if(existing) document.body.removeChild(existing);
   const modal = document.createElement('div');
   modal.id='myd-modal';
   modal.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,0.45);display:flex;align-items:center;justify-content:center;z-index:9999';
-  modal.innerHTML='<div style="background:white;border-radius:16px;padding:28px;width:320px;box-shadow:0 20px 60px rgba(0,0,0,0.2)"><div style="font-size:16px;font-weight:800;color:#0F1E2E;margin-bottom:4px">Pick a colour</div><div style="font-size:13px;color:#94A3B8;margin-bottom:20px">for &quot;'+name+'&quot;</div><div style="display:grid;grid-template-columns:repeat(6,1fr);gap:10px;margin-bottom:24px">'+swatches+'</div><button onclick="document.body.removeChild(document.getElementById(\'myd-modal\'))" style="width:100%;padding:10px;background:#F1F5F9;border:none;border-radius:8px;font-family:\'Poppins\',sans-serif;font-size:13px;font-weight:600;color:#64748B;cursor:pointer">Cancel</button></div>';
+  const swatches = colors.map(c=>`<div onclick="window._mydPick('${c}')" style="width:52px;height:52px;border-radius:12px;background:${c};cursor:pointer;transition:all 0.15s;box-shadow:0 2px 6px rgba(0,0,0,0.15)" onmouseover="this.style.transform='scale(1.12)';this.style.boxShadow='0 6px 16px rgba(0,0,0,0.25)'" onmouseout="this.style.transform='scale(1)';this.style.boxShadow='0 2px 6px rgba(0,0,0,0.15)'"></div>`).join('');
+  modal.innerHTML=`<div style="background:white;border-radius:20px;padding:36px;width:400px;box-shadow:0 24px 64px rgba(0,0,0,0.2)">
+    <div style="font-size:18px;font-weight:800;color:#0F1E2E;margin-bottom:6px">Pick a colour</div>
+    <div style="font-size:14px;color:#94A3B8;margin-bottom:28px">${title}</div>
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:32px">${swatches}</div>
+    <button onclick="document.body.removeChild(document.getElementById('myd-modal'))" style="width:100%;padding:13px;background:#F1F5F9;border:none;border-radius:10px;font-family:'Poppins',sans-serif;font-size:14px;font-weight:600;color:#64748B;cursor:pointer">Cancel</button>
+  </div>`;
   document.body.appendChild(modal);
   window._mydPick = function(color){
     const m = document.getElementById('myd-modal');
     if(m) document.body.removeChild(m);
+    onPick(color);
+  };
+}
+
+window.myDriveAddFolder = function(){
+  const name = prompt('Folder name:');
+  if(!name) return;
+  myDriveColorPicker(`for "${name}"`, function(color){
     driveFolders.push({id:driveFolderNextId++, name, ico:'', color, files:[]});
     myDriveRender();
     toast('Folder created ✓');
-  };
+  });
+};
+
+window.myDriveEditFolder = function(id){
+  const folder = driveFolders.find(f=>f.id===id);
+  if(!folder) return;
+  const newName = prompt('Folder name:', folder.name);
+  if(newName===null) return;
+  if(newName) folder.name = newName;
+  myDriveColorPicker(`Colour for "${folder.name}"`, function(color){
+    folder.color = color;
+    myDriveRender();
+    toast('Folder updated ✓');
+  });
 };
 
 window.myDriveDeleteFolder = function(id){

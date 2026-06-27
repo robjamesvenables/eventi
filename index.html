@@ -4587,6 +4587,7 @@ const announcements = [
   {id:1, text:'Tonight — 27 pax, Restaurant, 7PM. Please check the rundown before 5PM.', tag:'Events', color:'#0D9488', tagBg:'#CCFBF1', tagColor:'#065F46', by:'John', time:'Today, 8:00 AM'},
   {id:2, text:'Kitchen & Bar SOPs deadline — please submit by end of this week.', tag:'SOPs', color:'#C4973B', tagBg:'#FEF3C7', tagColor:'#78350F', by:'John', time:'Today, 8:05 AM'},
   {id:3, text:'Reminder — Horizon Tech Summit deposit 2 due Friday. Follow up with client.', tag:'Urgent', color:'#F43F5E', tagBg:'#FEE2E2', tagColor:'#7F1D1D', by:'John', time:'Yesterday'},
+  {id:4, text:'Bar stock order placed for the weekend. Delivery confirmed Thursday AM.', tag:'Info', color:'#0D9488', tagBg:'#CCFBF1', tagColor:'#065F46', by:'Sarah', time:'Yesterday'},
 ];
 let announceNextId = 10;
 let announceEditId = null;
@@ -4602,6 +4603,8 @@ const announceTags = {
   Other:   {color:'#64748B', tagBg:'#F1F5F9', tagColor:'#334155'},
 };
 
+const announceCurrentUser = 'John';
+
 function announceRender(){
   const list = document.getElementById('announce-list');
   if(!list) return;
@@ -4609,19 +4612,24 @@ function announceRender(){
     list.innerHTML='<div class="announce-empty">No announcements yet — click + Post to add one.</div>';
     return;
   }
-  list.innerHTML = announcements.map(a=>`
-    <div class="announce-item">
-      <div class="announce-bar" style="background:${a.color}"></div>
-      <div class="announce-body">
-        <span class="announce-tag" style="background:${a.tagBg};color:${a.tagColor}">${a.tag}</span>
-        <div class="announce-text">${a.text}</div>
-        <div class="announce-meta">Posted by ${a.by} · ${a.time}</div>
-      </div>
+  list.innerHTML = announcements.map(a=>{
+    const isOwner = a.by === announceCurrentUser;
+    const actions = isOwner ? `
       <div style="display:flex;gap:6px;flex-shrink:0">
         <button class="announce-del" onclick="announceEdit(${a.id})" title="Edit" style="color:#94A3B8;font-size:14px">✏️</button>
         <button class="announce-del" onclick="announceDel(${a.id})" title="Delete">×</button>
-      </div>
-    </div>`).join('');
+      </div>` : '';
+    return `
+      <div class="announce-item">
+        <div class="announce-bar" style="background:${a.color}"></div>
+        <div class="announce-body">
+          <span class="announce-tag" style="background:${a.tagBg};color:${a.tagColor}">${a.tag}</span>
+          <div class="announce-text">${a.text}</div>
+          <div class="announce-meta">Posted by ${a.by} · ${a.time}</div>
+        </div>
+        ${actions}
+      </div>`;
+  }).join('');
 }
 
 function announceOpenModal(title, text, tag){

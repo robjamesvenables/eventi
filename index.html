@@ -3844,9 +3844,9 @@ const kanbanState = {
   ]
 };
 const colColors = {todo:'#94A3B8', progress:'#F59E0B', done:'#10B981'};
-const colTitles = {todo:'To Do', progress:'In Progress', done:'Done'};
 let kbNextId = 30;
 let kbActiveFilter = 'mytodo';
+let kbSelectedCard = null; // {id, fromCol}
 
 function kbRender(){
   const isMytodo = kbActiveFilter === 'mytodo';
@@ -3863,39 +3863,29 @@ function kbRender(){
     );
     countEl.textContent = cards.length;
     col.querySelectorAll('.kanban-card').forEach(c => c.remove());
+
     cards.forEach(card => {
       const div = document.createElement('div');
-      div.className = 'kanban-card';
-      div.draggable = true;
+      const isSelected = kbSelectedCard && kbSelectedCard.id === card.id;
+      div.className = 'kanban-card' + (isSelected ? ' kb-selected' : '');
       div.dataset.id = card.id;
-      div.dataset.col = colId;
-      div.style.cssText += `;border-left-color:${borderColors[colId]};cursor:grab`;
+      div.style.borderLeftColor = borderColors[colId];
+      if(isSelected) div.style.outline = '2px solid #0D9488';
       const eventLabels = {horizon:'Horizon',solaris:'Solaris',wedding:'Wedding',playlist:'Playlist',sops:'SOPs',training:'Training',general:'General',mytodo:''};
       const eventTag = (card.event && card.event !== 'mytodo') ? `<span class="kanban-card-event-tag">${eventLabels[card.event]||card.event}</span>` : '';
       const cols = ['todo','progress','done'];
       const cIdx = cols.indexOf(colId);
-      const canLeft = cIdx > 0;
-      const canRight = cIdx < 2;
-      const leftCol = cols[cIdx-1];
-      const rightCol = cols[cIdx+1];
       div.innerHTML = `
         <div class="kanban-card-title">${card.title}</div>
         <div class="kanban-card-meta" style="margin-top:10px;display:flex;align-items:center;gap:6px;flex-wrap:wrap">
           <span class="kanban-card-assignee">${card.assignee}</span>
           ${eventTag}
           <div style="margin-left:auto;display:flex;gap:4px">
-            ${canLeft ? `<button onclick="event.stopPropagation();kbMove(${card.id},'${colId}','${leftCol}')" style="padding:4px 10px;border:1.5px solid #E2E8F0;border-radius:6px;background:white;font-size:11px;font-weight:700;color:#64748B;cursor:pointer;font-family:'Poppins',sans-serif">← Back</button>` : ''}
-            ${canRight ? `<button onclick="event.stopPropagation();kbMove(${card.id},'${colId}','${rightCol}')" style="padding:4px 10px;border:none;border-radius:6px;background:#0D9488;font-size:11px;font-weight:700;color:white;cursor:pointer;font-family:'Poppins',sans-serif">Move →</button>` : ''}
-            <button onclick="event.stopPropagation();kbDelete(${card.id},'${colId}')" style="padding:4px 8px;border:1.5px solid #FECACA;border-radius:6px;background:white;font-size:11px;font-weight:700;color:#EF4444;cursor:pointer;font-family:'Poppins',sans-serif">×</button>
+            ${cIdx > 0 ? `<button onclick="event.stopPropagation();kbMove(${card.id},'${colId}','${cols[cIdx-1]}')" style="padding:5px 10px;border:1.5px solid #E2E8F0;border-radius:6px;background:white;font-size:12px;font-weight:700;color:#64748B;cursor:pointer;font-family:'Poppins',sans-serif">←</button>` : ''}
+            ${cIdx < 2 ? `<button onclick="event.stopPropagation();kbMove(${card.id},'${colId}','${cols[cIdx+1]}')" style="padding:5px 10px;border:none;border-radius:6px;background:#0D9488;font-size:12px;font-weight:700;color:white;cursor:pointer;font-family:'Poppins',sans-serif">→</button>` : ''}
+            <button onclick="event.stopPropagation();kbDelete(${card.id},'${colId}')" style="padding:5px 8px;border:1.5px solid #FECACA;border-radius:6px;background:white;font-size:12px;font-weight:700;color:#EF4444;cursor:pointer;font-family:'Poppins',sans-serif">×</button>
           </div>
         </div>`;
-      div.addEventListener('dragstart', e => {
-        e.dataTransfer.setData('cardId', String(card.id));
-        e.dataTransfer.setData('fromCol', colId);
-        e.dataTransfer.effectAllowed = 'move';
-        setTimeout(() => div.classList.add('dragging'), 0);
-      });
-      div.addEventListener('dragend', () => div.classList.remove('dragging'));
       col.appendChild(div);
     });
   });
@@ -3907,34 +3897,16 @@ function kbRender(){
   });
 }
 
-function kbSetupDrops(){
-  document.querySelectorAll('.kanban-cards').forEach(col => {
-    col.addEventListener('dragover', e => {
-      e.preventDefault();
-      e.dataTransfer.dropEffect = 'move';
-      col.classList.add('drag-over');
-    });
-    col.addEventListener('dragleave', e => {
-      if(!col.contains(e.relatedTarget)) col.classList.remove('drag-over');
-    });
-    col.addEventListener('drop', e => {
-      e.preventDefault();
-      col.classList.remove('drag-over');
-      const cardId = parseInt(e.dataTransfer.getData('cardId'));
-      const fromCol = e.dataTransfer.getData('fromCol');
-      const toCol = col.id.replace('col-','');
-      if(!fromCol || fromCol === toCol || isNaN(cardId)) return;
-      const fromArr = kanbanState[fromCol];
-      const idx = fromArr.findIndex(c => c.id === cardId);
-      if(idx === -1) return;
-      const [card] = fromArr.splice(idx, 1);
-      kanbanState[toCol].push(card);
-      kbRender();
-      kbSetupDrops();
-      toast('Task moved ✓');
-    });
-  });
-}
+function kbSetupDrops(){}
+
+window.kbMove = function(cardId, fromCol, toCol){
+  const idx = kanbanState[fromCol].findIndex(c => c.id === cardId);
+  if(idx === -1) return;
+  const [card] = kanbanState[fromCol].splice(idx, 1);
+  kanbanState[toCol].unshift(card);
+  kbRender();
+  toast('Moved ✓');
+};
 
 window.kbFilterEvent = function(eventId, el){
   document.querySelectorAll('#kb-event-filter .month-tab').forEach(t => t.classList.remove('on'));
@@ -3948,32 +3920,23 @@ window.addKanbanCard = function(colSelector){
   const title = prompt('Task title:');
   if(!title) return;
   const event = kbActiveFilter === 'all' ? 'general' : kbActiveFilter;
-  kanbanState[colId].push({id:kbNextId++, title, assignee:'—', event});
+  kanbanState[colId].push({id:kbNextId++, title, assignee:'John', event});
   kbRender();
   toast('Task added');
 };
 
-window.kbMove = function(cardId, fromCol, toCol){
-  const idx = kanbanState[fromCol].findIndex(c => c.id === cardId);
-  if(idx === -1) return;
-  const [card] = kanbanState[fromCol].splice(idx, 1);
-  kanbanState[toCol].unshift(card);
-  kbRender();
-  toast('Moved ✓');
-};
-
 window.kbDelete = function(cardId, colId){
+  if(!confirm('Delete this task?')) return;
   kanbanState[colId] = kanbanState[colId].filter(c => c.id !== cardId);
   kbRender();
 };
 
 window.updateKanbanCounts = function(){ kbRender(); };
 
-// Init kanban when page loads
 const _origNavKB = window.nav;
 window.nav = function(id, pushState){
   if(typeof _origNavKB === 'function') _origNavKB(id, pushState);
-  if(id === 'kb') setTimeout(()=>{ kbSetupDrops(); kbRender(); }, 50);
+  if(id === 'kb') setTimeout(()=>{ kbRender(); }, 50);
 };
 
 // ── SOPs ──

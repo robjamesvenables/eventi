@@ -3817,6 +3817,139 @@ function mnCopyComms(){
 }
 
 
+// ── KANBAN ──
+const kanbanState = {
+  todo: [
+    {id:1, title:'Chase client for F&B numbers', assignee:'Sarah', event:'horizon'},
+    {id:2, title:'Send guest list to security', assignee:'Tina', event:'solaris'},
+    {id:3, title:'Confirm stage plot with AV team', assignee:'David', event:'horizon'},
+    {id:4, title:'Book staff for training day', assignee:'James', event:'training'},
+    {id:5, title:'Curate sunset playlist', assignee:'Robbie', event:'playlist'},
+    {id:20, title:'Call accountant re: invoice', assignee:'John', event:'mytodo'},
+    {id:21, title:'Review Horizon BEO draft', assignee:'John', event:'mytodo'},
+  ],
+  progress: [
+    {id:6, title:'Finalise Event Rundown', assignee:'Robbie', event:'horizon'},
+    {id:7, title:'Collect 2nd deposit from client', assignee:'James', event:'solaris'},
+    {id:8, title:'Write Bar SOP procedures', assignee:'Maria', event:'sops'},
+    {id:9, title:'Confirm wedding florals', assignee:'Tina', event:'wedding'},
+    {id:22, title:'Lunch with venue vendor', assignee:'John', event:'mytodo'},
+  ],
+  done: [
+    {id:10, title:'Send BEO to kitchen team', assignee:'Maria', event:'horizon'},
+    {id:11, title:'Venue walkthrough completed', assignee:'Tina', event:'wedding'},
+    {id:12, title:'Add morning playlist to Spotify', assignee:'Robbie', event:'playlist'},
+    {id:13, title:'Brief security team', assignee:'David', event:'training'},
+    {id:23, title:'Morning check-in with team', assignee:'John', event:'mytodo'},
+  ]
+};
+const colColors = {todo:'#94A3B8', progress:'#F59E0B', done:'#10B981'};
+const colTitles = {todo:'To Do', progress:'In Progress', done:'Done'};
+let kbNextId = 30;
+let kbActiveFilter = 'mytodo';
+
+function kbRender(){
+  const isMytodo = kbActiveFilter === 'mytodo';
+  const borderColors = isMytodo
+    ? {todo:'#A855F7', progress:'#A855F7', done:'#A855F7'}
+    : colColors;
+
+  ['todo','progress','done'].forEach(colId => {
+    const col = document.getElementById('col-'+colId);
+    const countEl = document.getElementById('count-'+colId);
+    if(!col) return;
+    const cards = kanbanState[colId].filter(c =>
+      kbActiveFilter === 'all' || c.event === kbActiveFilter
+    );
+    countEl.textContent = cards.length;
+    col.querySelectorAll('.kanban-card').forEach(c => c.remove());
+    cards.forEach(card => {
+      const div = document.createElement('div');
+      div.className = 'kanban-card';
+      div.draggable = true;
+      div.dataset.id = card.id;
+      div.dataset.col = colId;
+      div.style.borderLeftColor = borderColors[colId];
+      const eventLabels = {horizon:'Horizon',solaris:'Solaris',wedding:'Wedding',playlist:'Playlist',sops:'SOPs',training:'Training',general:'General',mytodo:''};
+      const eventTag = (card.event && card.event !== 'mytodo') ? `<span class="kanban-card-event-tag">${eventLabels[card.event]||card.event}</span>` : '';
+      div.innerHTML = `
+        <div class="kanban-card-title" contenteditable="true" spellcheck="false">${card.title}</div>
+        <div class="kanban-card-meta">
+          <span class="kanban-card-assignee">${card.assignee}</span>
+          ${eventTag}
+          <button class="kanban-del" onclick="event.stopPropagation();kbDelete(${card.id},'${colId}')">×</button>
+        </div>`;
+      div.querySelector('.kanban-card-title').addEventListener('blur', e => { card.title = e.target.textContent.trim(); });
+      div.addEventListener('dragstart', e => {
+        e.dataTransfer.setData('text/plain', JSON.stringify({id:card.id, fromCol:colId}));
+        div.classList.add('dragging');
+      });
+      div.addEventListener('dragend', () => div.classList.remove('dragging'));
+      col.appendChild(div);
+    });
+  });
+
+  // Update column header colours for mytodo
+  ['todo','progress','done'].forEach(colId => {
+    const titleEl = document.querySelector(`.kanban-col-${colId} .kanban-col-title`);
+    if(titleEl) titleEl.style.color = isMytodo ? '#7C3AED' : '';
+  });
+}
+
+function kbSetupDrops(){
+  document.querySelectorAll('.kanban-cards').forEach(col => {
+    col.addEventListener('dragover', e => { e.preventDefault(); col.classList.add('drag-over'); });
+    col.addEventListener('dragleave', () => col.classList.remove('drag-over'));
+    col.addEventListener('drop', e => {
+      e.preventDefault();
+      col.classList.remove('drag-over');
+      try {
+        const {id, fromCol} = JSON.parse(e.dataTransfer.getData('text/plain'));
+        const toCol = col.id.replace('col-','');
+        if(fromCol === toCol) return;
+        const fromArr = kanbanState[fromCol];
+        const idx = fromArr.findIndex(c => c.id === id);
+        if(idx === -1) return;
+        const [card] = fromArr.splice(idx, 1);
+        kanbanState[toCol].push(card);
+        kbRender();
+        toast('Task moved ✓');
+      } catch(err){}
+    });
+  });
+}
+
+window.kbFilterEvent = function(eventId, el){
+  document.querySelectorAll('#kb-event-filter .month-tab').forEach(t => t.classList.remove('on'));
+  el.classList.add('on');
+  kbActiveFilter = eventId;
+  kbRender();
+};
+
+window.addKanbanCard = function(colSelector){
+  const colId = colSelector.replace('col-','');
+  const title = prompt('Task title:');
+  if(!title) return;
+  const event = kbActiveFilter === 'all' ? 'general' : kbActiveFilter;
+  kanbanState[colId].push({id:kbNextId++, title, assignee:'—', event});
+  kbRender();
+  toast('Task added');
+};
+
+window.kbDelete = function(cardId, colId){
+  kanbanState[colId] = kanbanState[colId].filter(c => c.id !== cardId);
+  kbRender();
+};
+
+window.updateKanbanCounts = function(){ kbRender(); };
+
+// Init kanban when page loads
+const _origNavKB = window.nav;
+window.nav = function(id, pushState){
+  if(typeof _origNavKB === 'function') _origNavKB(id, pushState);
+  if(id === 'kb') setTimeout(()=>{ kbSetupDrops(); kbRender(); }, 50);
+};
+
 // ── SOPs ──
 const sopData = {
   kitchen: [

@@ -3866,25 +3866,28 @@ function kbRender(){
     cards.forEach(card => {
       const div = document.createElement('div');
       div.className = 'kanban-card';
-      div.draggable = true;
       div.dataset.id = card.id;
       div.dataset.col = colId;
       div.style.borderLeftColor = borderColors[colId];
       const eventLabels = {horizon:'Horizon',solaris:'Solaris',wedding:'Wedding',playlist:'Playlist',sops:'SOPs',training:'Training',general:'General',mytodo:''};
       const eventTag = (card.event && card.event !== 'mytodo') ? `<span class="kanban-card-event-tag">${eventLabels[card.event]||card.event}</span>` : '';
+      const cols = ['todo','progress','done'];
+      const idx = cols.indexOf(colId);
+      const canLeft = idx > 0;
+      const canRight = idx < 2;
+      const leftCol = cols[idx-1];
+      const rightCol = cols[idx+1];
       div.innerHTML = `
-        <div class="kanban-card-title" contenteditable="true" spellcheck="false">${card.title}</div>
-        <div class="kanban-card-meta">
+        <div class="kanban-card-title">${card.title}</div>
+        <div class="kanban-card-meta" style="margin-top:10px;display:flex;align-items:center;gap:6px;flex-wrap:wrap">
           <span class="kanban-card-assignee">${card.assignee}</span>
           ${eventTag}
-          <button class="kanban-del" onclick="event.stopPropagation();kbDelete(${card.id},'${colId}')">×</button>
+          <div style="margin-left:auto;display:flex;gap:4px">
+            ${canLeft ? `<button onclick="kbMove(${card.id},'${colId}','${leftCol}')" style="padding:4px 10px;border:1.5px solid #E2E8F0;border-radius:6px;background:white;font-size:11px;font-weight:700;color:#64748B;cursor:pointer;font-family:'Poppins',sans-serif">← Back</button>` : ''}
+            ${canRight ? `<button onclick="kbMove(${card.id},'${colId}','${rightCol}')" style="padding:4px 10px;border:none;border-radius:6px;background:#0D9488;font-size:11px;font-weight:700;color:white;cursor:pointer;font-family:'Poppins',sans-serif">Move →</button>` : ''}
+            <button onclick="kbDelete(${card.id},'${colId}')" style="padding:4px 8px;border:1.5px solid #FECACA;border-radius:6px;background:white;font-size:11px;font-weight:700;color:#EF4444;cursor:pointer;font-family:'Poppins',sans-serif">×</button>
+          </div>
         </div>`;
-      div.querySelector('.kanban-card-title').addEventListener('blur', e => { card.title = e.target.textContent.trim(); });
-      div.addEventListener('dragstart', e => {
-        e.dataTransfer.setData('text/plain', JSON.stringify({id:card.id, fromCol:colId}));
-        div.classList.add('dragging');
-      });
-      div.addEventListener('dragend', () => div.classList.remove('dragging'));
       col.appendChild(div);
     });
   });
@@ -3934,6 +3937,15 @@ window.addKanbanCard = function(colSelector){
   kanbanState[colId].push({id:kbNextId++, title, assignee:'—', event});
   kbRender();
   toast('Task added');
+};
+
+window.kbMove = function(cardId, fromCol, toCol){
+  const idx = kanbanState[fromCol].findIndex(c => c.id === cardId);
+  if(idx === -1) return;
+  const [card] = kanbanState[fromCol].splice(idx, 1);
+  kanbanState[toCol].unshift(card);
+  kbRender();
+  toast('Moved ✓');
 };
 
 window.kbDelete = function(cardId, colId){

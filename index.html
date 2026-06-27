@@ -3866,28 +3866,36 @@ function kbRender(){
     cards.forEach(card => {
       const div = document.createElement('div');
       div.className = 'kanban-card';
+      div.draggable = true;
       div.dataset.id = card.id;
       div.dataset.col = colId;
-      div.style.borderLeftColor = borderColors[colId];
+      div.style.cssText += `;border-left-color:${borderColors[colId]};cursor:grab`;
       const eventLabels = {horizon:'Horizon',solaris:'Solaris',wedding:'Wedding',playlist:'Playlist',sops:'SOPs',training:'Training',general:'General',mytodo:''};
       const eventTag = (card.event && card.event !== 'mytodo') ? `<span class="kanban-card-event-tag">${eventLabels[card.event]||card.event}</span>` : '';
       const cols = ['todo','progress','done'];
-      const idx = cols.indexOf(colId);
-      const canLeft = idx > 0;
-      const canRight = idx < 2;
-      const leftCol = cols[idx-1];
-      const rightCol = cols[idx+1];
+      const cIdx = cols.indexOf(colId);
+      const canLeft = cIdx > 0;
+      const canRight = cIdx < 2;
+      const leftCol = cols[cIdx-1];
+      const rightCol = cols[cIdx+1];
       div.innerHTML = `
         <div class="kanban-card-title">${card.title}</div>
         <div class="kanban-card-meta" style="margin-top:10px;display:flex;align-items:center;gap:6px;flex-wrap:wrap">
           <span class="kanban-card-assignee">${card.assignee}</span>
           ${eventTag}
           <div style="margin-left:auto;display:flex;gap:4px">
-            ${canLeft ? `<button onclick="kbMove(${card.id},'${colId}','${leftCol}')" style="padding:4px 10px;border:1.5px solid #E2E8F0;border-radius:6px;background:white;font-size:11px;font-weight:700;color:#64748B;cursor:pointer;font-family:'Poppins',sans-serif">← Back</button>` : ''}
-            ${canRight ? `<button onclick="kbMove(${card.id},'${colId}','${rightCol}')" style="padding:4px 10px;border:none;border-radius:6px;background:#0D9488;font-size:11px;font-weight:700;color:white;cursor:pointer;font-family:'Poppins',sans-serif">Move →</button>` : ''}
-            <button onclick="kbDelete(${card.id},'${colId}')" style="padding:4px 8px;border:1.5px solid #FECACA;border-radius:6px;background:white;font-size:11px;font-weight:700;color:#EF4444;cursor:pointer;font-family:'Poppins',sans-serif">×</button>
+            ${canLeft ? `<button onclick="event.stopPropagation();kbMove(${card.id},'${colId}','${leftCol}')" style="padding:4px 10px;border:1.5px solid #E2E8F0;border-radius:6px;background:white;font-size:11px;font-weight:700;color:#64748B;cursor:pointer;font-family:'Poppins',sans-serif">← Back</button>` : ''}
+            ${canRight ? `<button onclick="event.stopPropagation();kbMove(${card.id},'${colId}','${rightCol}')" style="padding:4px 10px;border:none;border-radius:6px;background:#0D9488;font-size:11px;font-weight:700;color:white;cursor:pointer;font-family:'Poppins',sans-serif">Move →</button>` : ''}
+            <button onclick="event.stopPropagation();kbDelete(${card.id},'${colId}')" style="padding:4px 8px;border:1.5px solid #FECACA;border-radius:6px;background:white;font-size:11px;font-weight:700;color:#EF4444;cursor:pointer;font-family:'Poppins',sans-serif">×</button>
           </div>
         </div>`;
+      div.addEventListener('dragstart', e => {
+        e.dataTransfer.setData('cardId', String(card.id));
+        e.dataTransfer.setData('fromCol', colId);
+        e.dataTransfer.effectAllowed = 'move';
+        setTimeout(() => div.classList.add('dragging'), 0);
+      });
+      div.addEventListener('dragend', () => div.classList.remove('dragging'));
       col.appendChild(div);
     });
   });
@@ -3901,23 +3909,29 @@ function kbRender(){
 
 function kbSetupDrops(){
   document.querySelectorAll('.kanban-cards').forEach(col => {
-    col.addEventListener('dragover', e => { e.preventDefault(); col.classList.add('drag-over'); });
-    col.addEventListener('dragleave', () => col.classList.remove('drag-over'));
+    col.addEventListener('dragover', e => {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'move';
+      col.classList.add('drag-over');
+    });
+    col.addEventListener('dragleave', e => {
+      if(!col.contains(e.relatedTarget)) col.classList.remove('drag-over');
+    });
     col.addEventListener('drop', e => {
       e.preventDefault();
       col.classList.remove('drag-over');
-      try {
-        const {id, fromCol} = JSON.parse(e.dataTransfer.getData('text/plain'));
-        const toCol = col.id.replace('col-','');
-        if(fromCol === toCol) return;
-        const fromArr = kanbanState[fromCol];
-        const idx = fromArr.findIndex(c => c.id === id);
-        if(idx === -1) return;
-        const [card] = fromArr.splice(idx, 1);
-        kanbanState[toCol].push(card);
-        kbRender();
-        toast('Task moved ✓');
-      } catch(err){}
+      const cardId = parseInt(e.dataTransfer.getData('cardId'));
+      const fromCol = e.dataTransfer.getData('fromCol');
+      const toCol = col.id.replace('col-','');
+      if(!fromCol || fromCol === toCol || isNaN(cardId)) return;
+      const fromArr = kanbanState[fromCol];
+      const idx = fromArr.findIndex(c => c.id === cardId);
+      if(idx === -1) return;
+      const [card] = fromArr.splice(idx, 1);
+      kanbanState[toCol].push(card);
+      kbRender();
+      kbSetupDrops();
+      toast('Task moved ✓');
     });
   });
 }

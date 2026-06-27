@@ -1742,24 +1742,20 @@ textarea.rf-val{resize:vertical;min-height:72px;line-height:1.5}
 
 
       <!-- Announcements -->
-      <!-- Ticker Noticeboard -->
-      <div class="announce-ticker-wrap">
-        <div class="announce-ticker-left">
-          <div class="announce-hd-ico">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#0D9488" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+      <div class="announce-wrap" id="announce-wrap">
+        <div class="announce-hd">
+          <div style="display:flex;align-items:center;gap:10px">
+            <div class="announce-hd-ico">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#0D9488" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+            </div>
+            <span class="announce-hd-title">Team Noticeboard</span>
+            <span id="announce-badge" style="background:#0D9488;color:white;font-size:14px;font-weight:800;padding:3px 11px;border-radius:10px">0</span>
           </div>
-          <span class="announce-ticker-label">Team Noticeboard</span>
-          <span id="announce-badge" style="background:#0D9488;color:white;font-size:11px;font-weight:800;padding:2px 8px;border-radius:10px">0</span>
+          <button class="announce-add-btn" onclick="announceAdd()">+ Post</button>
         </div>
-        <div class="announce-ticker-mid">
-          <div class="announce-ticker-viewport">
-            <div class="announce-ticker-inner" id="announce-ticker-inner"></div>
-          </div>
-        </div>
-        <button class="announce-add-btn" onclick="announceAdd()">+ Post</button>
+        <div id="announce-list" class="announce-list-scroll"></div>
       </div>
-      <!-- Hidden list for JS compat -->
-      <div id="announce-list" style="display:none"></div>
+
 
       <!-- My Drive — top row solo -->
       <div class="home-drive-row">
@@ -4401,40 +4397,33 @@ const announceTags = {
 
 const announceCurrentUser = 'John';
 
-let announceTickerIdx = 0;
-let announceTickerTimer = null;
-
 function announceRender(){
+  const list = document.getElementById('announce-list');
   const badge = document.getElementById('announce-badge');
+  if(!list) return;
   if(badge) badge.textContent = announcements.length;
-  announceTickerRender();
-}
-
-function announceTickerRender(){
-  const inner = document.getElementById('announce-ticker-inner');
-  if(!inner || announcements.length === 0) return;
-
-  // Build items
-  const items = announcements.map(a => {
-    const div = document.createElement('div');
-    div.className = 'announce-ticker-item';
-    div.innerHTML = `<span class="announce-ticker-tag" style="background:${a.tagBg};color:${a.tagColor}">${a.tag}</span><span style="flex:1;overflow:hidden;text-overflow:ellipsis">${a.text}</span><span style="font-size:11px;color:rgba(255,255,255,0.4);flex-shrink:0;margin-left:8px">${a.by}</span>`;
-    return div;
-  });
-
-  inner.innerHTML = '';
-  items.forEach(i => inner.appendChild(i));
-  inner.style.transform = 'translateY(0)';
-  announceTickerIdx = 0;
-
-  // Start cycling
-  if(announceTickerTimer) clearInterval(announceTickerTimer);
-  if(announcements.length > 1){
-    announceTickerTimer = setInterval(() => {
-      announceTickerIdx = (announceTickerIdx + 1) % announcements.length;
-      inner.style.transform = `translateY(-${announceTickerIdx * 28}px)`;
-    }, 4000);
+  if(announcements.length===0){
+    list.innerHTML='<div class="announce-empty">No announcements yet — click + Post to add one.</div>';
+    return;
   }
+  list.innerHTML = announcements.map(a=>{
+    const isOwner = a.by === announceCurrentUser;
+    const actions = isOwner ? `
+      <div style="display:flex;gap:6px;flex-shrink:0">
+        <button class="announce-del" onclick="announceEdit(${a.id})" title="Edit" style="color:#64748B;font-size:12px;font-weight:600;padding:4px 10px;border:1.5px solid #E2E8F0;border-radius:6px">Edit</button>
+        <button class="announce-del" onclick="announceDel(${a.id})" title="Delete">×</button>
+      </div>` : '';
+    return `
+      <div class="announce-item">
+        <div class="announce-bar" style="background:${a.color}"></div>
+        <div class="announce-body">
+          <span class="announce-tag" style="background:${a.tagBg};color:${a.tagColor}">${a.tag}</span>
+          <div class="announce-text">${a.text}</div>
+          <div class="announce-meta">Posted by ${a.by} · ${a.time}</div>
+        </div>
+        ${actions}
+      </div>`;
+  }).join('');
 }
 
 function announceOpenModal(title, text, tag){

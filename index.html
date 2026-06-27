@@ -1571,6 +1571,24 @@ textarea.rf-val{resize:vertical;min-height:72px;line-height:1.5}
 .home-greeting-title{font-size:28px;font-weight:800;color:var(--navy);line-height:1.2}
 .home-greeting-sub{font-size:14px;font-weight:300;color:var(--ink2);margin-top:6px}
 .home-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+/* ANNOUNCEMENTS */
+.announce-wrap{background:#fff;border:1.5px solid var(--line);border-radius:12px;margin-bottom:20px;overflow:hidden}
+.announce-hd{display:flex;align-items:center;justify-content:space-between;padding:14px 18px;background:#F8FAFC;border-bottom:1.5px solid var(--line)}
+.announce-hd-title{font-size:13px;font-weight:700;color:var(--navy);text-transform:uppercase;letter-spacing:0.8px}
+.announce-add-btn{padding:6px 14px;background:var(--navy);border:none;border-radius:6px;font-family:'Poppins',sans-serif;font-size:12px;font-weight:600;color:#fff;cursor:pointer;transition:background 0.15s}
+.announce-add-btn:hover{background:#1A2E42}
+.announce-item{display:flex;align-items:flex-start;gap:14px;padding:14px 18px;border-bottom:1px solid #F1F5F9;transition:background 0.1s}
+.announce-item:last-child{border-bottom:none}
+.announce-item:hover{background:#FAFBFC}
+.announce-bar{width:4px;border-radius:4px;flex-shrink:0;align-self:stretch;min-height:36px}
+.announce-body{flex:1;min-width:0}
+.announce-tag{display:inline-block;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;padding:2px 8px;border-radius:10px;margin-bottom:5px}
+.announce-text{font-size:13px;font-weight:500;color:var(--navy);line-height:1.5}
+.announce-meta{font-size:11px;color:var(--ink3);margin-top:4px}
+.announce-del{background:none;border:none;color:#CBD5E1;cursor:pointer;font-size:16px;padding:2px 6px;border-radius:4px;transition:all 0.15s;flex-shrink:0}
+.announce-del:hover{background:#FEE2E2;color:#EF4444}
+.announce-empty{padding:20px 18px;font-size:13px;color:var(--ink3);font-style:italic}
+
 .home-drive-row{margin-bottom:16px}
 .home-card-gold{
   background:#D9AF45;
@@ -1813,6 +1831,18 @@ textarea.rf-val{resize:vertical;min-height:72px;line-height:1.5}
         <div class="home-greeting-sub" id="home-date-label" style="font-size:13px;color:var(--ink3);margin-top:4px"></div>
       </div>
 
+
+      <!-- Announcements -->
+      <div class="announce-wrap" id="announce-wrap">
+        <div class="announce-hd">
+          <div style="display:flex;align-items:center;gap:8px">
+            <span style="font-size:16px">📣</span>
+            <span class="announce-hd-title">Team Noticeboard</span>
+          </div>
+          <button class="announce-add-btn" onclick="announceAdd()">+ Post</button>
+        </div>
+        <div id="announce-list"></div>
+      </div>
 
       <!-- My Drive — top row solo -->
       <div class="home-drive-row">
@@ -4550,7 +4580,61 @@ function kitchenAddLink(){
 }
 // ── INIT ──
 window.addEventListener('keydown',e=>{if(e.key==='Enter'&&document.getElementById('login').style.display!=='none')doLogin();});
-window.addEventListener('load',()=>{ initCurrency(); });
+window.addEventListener('load',()=>{ initCurrency(); announceRender(); });
+
+// ── ANNOUNCEMENTS ──
+const announcements = [
+  {id:1, text:'Tonight — 27 pax, Restaurant, 7PM. Please check the rundown before 5PM.', tag:'Events', color:'#0D9488', tagBg:'#CCFBF1', tagColor:'#065F46', by:'John', time:'Today, 8:00 AM'},
+  {id:2, text:'Kitchen & Bar SOPs deadline — please submit by end of this week.', tag:'SOPs', color:'#C4973B', tagBg:'#FEF3C7', tagColor:'#78350F', by:'John', time:'Today, 8:05 AM'},
+  {id:3, text:'Reminder — Horizon Tech Summit deposit 2 due Friday. Follow up with client.', tag:'Urgent', color:'#F43F5E', tagBg:'#FEE2E2', tagColor:'#7F1D1D', by:'John', time:'Yesterday'},
+];
+let announceNextId = 10;
+
+function announceRender(){
+  const list = document.getElementById('announce-list');
+  if(!list) return;
+  if(announcements.length===0){
+    list.innerHTML='<div class="announce-empty">No announcements yet — click + Post to add one.</div>';
+    return;
+  }
+  list.innerHTML = announcements.map(a=>`
+    <div class="announce-item">
+      <div class="announce-bar" style="background:${a.color}"></div>
+      <div class="announce-body">
+        <span class="announce-tag" style="background:${a.tagBg};color:${a.tagColor}">${a.tag}</span>
+        <div class="announce-text">${a.text}</div>
+        <div class="announce-meta">Posted by ${a.by} · ${a.time}</div>
+      </div>
+      <button class="announce-del" onclick="announceDel(${a.id})" title="Dismiss">×</button>
+    </div>`).join('');
+}
+
+window.announceAdd = function(){
+  const text = prompt('Announcement:');
+  if(!text) return;
+  const tags = ['Info','Events','SOPs','Kitchen','Urgent','Reminder'];
+  const tagChoice = prompt('Tag (Info / Events / SOPs / Kitchen / Urgent / Reminder):','Info');
+  const tag = tags.find(t=>t.toLowerCase()===(tagChoice||'').toLowerCase())||'Info';
+  const tagStyles = {
+    Info:{color:'#0D9488',tagBg:'#CCFBF1',tagColor:'#065F46'},
+    Events:{color:'#0D9488',tagBg:'#CCFBF1',tagColor:'#065F46'},
+    SOPs:{color:'#C4973B',tagBg:'#FEF3C7',tagColor:'#78350F'},
+    Kitchen:{color:'#10B981',tagBg:'#D1FAE5',tagColor:'#065F46'},
+    Urgent:{color:'#F43F5E',tagBg:'#FEE2E2',tagColor:'#7F1D1D'},
+    Reminder:{color:'#A855F7',tagBg:'#EDE9FE',tagColor:'#4C1D95'},
+  };
+  const s = tagStyles[tag]||tagStyles.Info;
+  const now = new Date();
+  const time = 'Today, '+now.getHours()+':'+String(now.getMinutes()).padStart(2,'0')+(now.getHours()<12?' AM':' PM');
+  announcements.unshift({id:announceNextId++, text, tag, ...s, by:'John', time});
+  announceRender();
+  toast('Announcement posted ✓');
+};
+
+window.announceDel = function(id){
+  const i = announcements.findIndex(a=>a.id===id);
+  if(i>-1){ announcements.splice(i,1); announceRender(); }
+};
 
 // ── MY DRIVE ──
 // MY DRIVE — folder system

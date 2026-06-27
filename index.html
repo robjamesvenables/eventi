@@ -1466,8 +1466,8 @@ textarea.rf-val{resize:vertical;min-height:72px;line-height:1.5}
 .announce-ticker-inner{position:absolute;width:100%;transition:transform 0.5s cubic-bezier(0.4,0,0.2,1)}
 .announce-ticker-item{height:28px;display:flex;align-items:center;gap:10px;font-size:14px;font-weight:500;color:white;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .announce-ticker-tag{font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px;flex-shrink:0}
-.live-dot{width:10px;height:10px;border-radius:50%;background:#10B981;flex-shrink:0;animation:livePulse 2.5s ease-in-out infinite}
-@keyframes livePulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:0.25;transform:scale(0.85)}}
+.live-dot{width:12px;height:12px;border-radius:50%;background:#00FF88;flex-shrink:0;animation:livePulse 2.5s ease-in-out infinite;box-shadow:0 0 8px #00FF88, 0 0 16px rgba(0,255,136,0.5)}
+@keyframes livePulse{0%,100%{opacity:1;box-shadow:0 0 8px #00FF88, 0 0 20px rgba(0,255,136,0.6)}50%{opacity:0.4;box-shadow:0 0 3px #00FF88}}
 
 .announce-wrap{background:#fff;border:1.5px solid #E2E8F0;border-radius:14px;margin-bottom:20px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.06)}
 .announce-list-scroll{max-height:222px;overflow-y:scroll;scroll-behavior:smooth}
@@ -4442,28 +4442,30 @@ function announceRender(){
   announceStartScroll(list);
 }
 
-let announceScrollTimer = null;
+let announceScrollAnim = null;
+let announceScrollPos = 0;
+let announceScrollPaused = false;
+
 function announceStartScroll(list){
-  if(announceScrollTimer) clearInterval(announceScrollTimer);
+  if(announceScrollAnim) cancelAnimationFrame(announceScrollAnim);
   if(announcements.length <= 2) return;
-  // Pause on hover
-  list.onmouseenter = () => clearInterval(announceScrollTimer);
-  list.onmouseleave = () => announceScrollStep(list);
-  announceScrollStep(list);
-}
-function announceScrollStep(list){
-  if(announceScrollTimer) clearInterval(announceScrollTimer);
-  announceScrollTimer = setInterval(() => {
-    const maxScroll = list.scrollHeight - list.clientHeight;
-    if(list.scrollTop >= maxScroll - 2){
-      // Smoothly jump back to top
-      list.style.scrollBehavior = 'auto';
-      list.scrollTop = 0;
-      list.style.scrollBehavior = 'smooth';
-    } else {
-      list.scrollTop += 1;
+  announceScrollPos = 0;
+  list.scrollTop = 0;
+  list.onmouseenter = () => { announceScrollPaused = true; };
+  list.onmouseleave = () => { announceScrollPaused = false; };
+  
+  function step(){
+    if(!announceScrollPaused){
+      announceScrollPos += 0.4;
+      const maxScroll = list.scrollHeight - list.clientHeight;
+      if(announceScrollPos >= maxScroll){
+        announceScrollPos = 0;
+      }
+      list.scrollTop = announceScrollPos;
     }
-  }, 30);
+    announceScrollAnim = requestAnimationFrame(step);
+  }
+  announceScrollAnim = requestAnimationFrame(step);
 }
 
 function announceOpenModal(title, text, tag){

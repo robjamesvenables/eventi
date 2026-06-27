@@ -4424,6 +4424,33 @@ function announceRender(){
         ${actions}
       </div>`;
   }).join('');
+
+  // Auto-scroll if more than 2 announcements
+  announceStartScroll(list);
+}
+
+let announceScrollTimer = null;
+function announceStartScroll(list){
+  if(announceScrollTimer) clearInterval(announceScrollTimer);
+  if(announcements.length <= 2) return;
+  // Pause on hover
+  list.onmouseenter = () => clearInterval(announceScrollTimer);
+  list.onmouseleave = () => announceScrollStep(list);
+  announceScrollStep(list);
+}
+function announceScrollStep(list){
+  if(announceScrollTimer) clearInterval(announceScrollTimer);
+  announceScrollTimer = setInterval(() => {
+    const maxScroll = list.scrollHeight - list.clientHeight;
+    if(list.scrollTop >= maxScroll - 2){
+      // Smoothly jump back to top
+      list.style.scrollBehavior = 'auto';
+      list.scrollTop = 0;
+      list.style.scrollBehavior = 'smooth';
+    } else {
+      list.scrollTop += 1;
+    }
+  }, 30);
 }
 
 function announceOpenModal(title, text, tag){

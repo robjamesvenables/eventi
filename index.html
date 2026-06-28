@@ -4445,6 +4445,7 @@ function announceRender(){
     list.innerHTML='<div class="announce-empty">No announcements yet — click + Post to add one.</div>';
     return;
   }
+  const now = Date.now();
   list.innerHTML = announcements.map(a=>{
     const isOwner = a.by === announceCurrentUser;
     const actions = isOwner ? `
@@ -4452,8 +4453,16 @@ function announceRender(){
         <button class="announce-del" onclick="announceEdit(${a.id})" title="Edit" style="color:#64748B;font-size:12px;font-weight:600;padding:4px 10px;border:1.5px solid #E2E8F0;border-radius:6px">Edit</button>
         <button class="announce-del" onclick="announceDel(${a.id})" title="Delete">×</button>
       </div>` : '';
+    const isNew = a.ts && (now - a.ts) < 86400000;
+    const isUrgent = a.tag === 'Urgent';
+    const cornerBadges = (isNew || isUrgent) ? `
+      <div style="position:absolute;top:10px;right:10px;display:flex;gap:4px;z-index:2">
+        ${isNew ? '<span style="background:#16A34A;color:white;font-size:10px;font-weight:800;padding:2px 8px;border-radius:5px;letter-spacing:0.5px">NEW</span>' : ''}
+        ${isUrgent ? '<span style="background:#EF4444;color:white;font-size:10px;font-weight:800;padding:2px 8px;border-radius:5px;letter-spacing:0.5px">URGENT</span>' : ''}
+      </div>` : '';
     return `
-      <div class="announce-item">
+      <div class="announce-item" style="position:relative">
+        ${cornerBadges}
         <div class="announce-bar" style="background:${a.color}"></div>
         <div class="announce-body">
           <span class="announce-tag" style="background:${a.tagBg};color:${a.tagColor}">${a.tag}</span>
@@ -4539,7 +4548,7 @@ window.announceSubmit = function(){
     if(a){ a.text=text; a.tag=announceSelectedTag; Object.assign(a,s); }
     toast('Updated ✓');
   } else {
-    announcements.unshift({id:announceNextId++, text, tag:announceSelectedTag, ...s, by:'John', time});
+    announcements.unshift({id:announceNextId++, text, tag:announceSelectedTag, ...s, by:'John', time, ts:Date.now()});
     toast('Posted ✓');
   }
   announceCloseModal();

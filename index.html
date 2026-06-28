@@ -1538,6 +1538,14 @@ textarea.rf-val{resize:vertical;min-height:72px;line-height:1.5}
 .home-card.featured .home-card-accent{background:var(--gold)}
 .home-card-coming{opacity:0.5;cursor:default}
 .home-card-coming:hover{transform:none;box-shadow:none;border-color:var(--line)}
+.card-colour-btn{position:absolute;bottom:10px;right:10px;width:26px;height:26px;background:rgba(255,255,255,0.2);border:none;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;opacity:0;transition:opacity 0.2s;z-index:10;padding:0}
+.home-card:hover .card-colour-btn{opacity:1}
+.card-colour-btn:hover{background:rgba(255,255,255,0.35)}
+.card-colour-popup{position:absolute;bottom:42px;right:10px;background:white;border-radius:10px;padding:8px;gap:6px;box-shadow:0 4px 20px rgba(0,0,0,0.18);z-index:100;display:none}
+.card-colour-popup.open{display:flex}
+.card-swatch{width:22px;height:22px;border-radius:50%;cursor:pointer;border:2px solid transparent;transition:transform 0.15s,border-color 0.15s}
+.card-swatch:hover{transform:scale(1.2)}
+.card-swatch.active{border-color:white;outline:2px solid rgba(0,0,0,0.3)}
 .home-quick-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:24px}
 .home-quick-stat{background:var(--bg);border-radius:10px;padding:14px 16px}
 .home-quick-stat-val{font-size:22px;font-weight:800;color:var(--navy)}
@@ -1783,26 +1791,34 @@ textarea.rf-val{resize:vertical;min-height:72px;line-height:1.5}
       <div class="home-section-label">Events</div>
       <div class="home-grid" style="margin-bottom:24px">
 
-        <div class="home-card" onclick="nav('dash')" style="background:#0D9488;border-color:#0D9488;position:relative;overflow:hidden">
+        <div class="home-card" id="hcard-dash" onclick="nav('dash')" style="background:#0D9488;border-color:#0D9488;position:relative;overflow:hidden">
+          <div class="card-colour-popup" id="cpop-dash"></div>
+          <button class="card-colour-btn" onclick="toggleCardPicker(event,'dash')"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M4.93 4.93a10 10 0 0 0 0 14.14"/></svg></button>
           <div style="position:absolute;top:16px;right:16px;background:rgba(196,151,59,0.25);color:#F5C842;font-size:13px;font-weight:800;padding:5px 14px;border-radius:20px;border:1px solid rgba(196,151,59,0.4)">3 pending</div>
           <div class="home-card-ico">⚡</div>
           <div class="home-card-title" style="color:white">Current Events</div>
           <div class="home-card-sub" style="color:rgba(255,255,255,0.5)">6 active events · Open plans, deposits and rundowns</div>
         </div>
 
-        <div class="home-card" onclick="nav('cal')" style="background:#0D9488;border-color:#0D9488;position:relative;overflow:hidden">
+        <div class="home-card" id="hcard-cal" onclick="nav('cal')" style="background:#0D9488;border-color:#0D9488;position:relative;overflow:hidden">
+          <div class="card-colour-popup" id="cpop-cal"></div>
+          <button class="card-colour-btn" onclick="toggleCardPicker(event,'cal')"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M4.93 4.93a10 10 0 0 0 0 14.14"/></svg></button>
           <div class="home-card-ico"><svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#F43F5E" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></div>
           <div class="home-card-title" style="color:white">Event Calendar</div>
           <div class="home-card-sub" style="color:rgba(255,255,255,0.45)">Monthly view of all upcoming events</div>
         </div>
 
-        <div class="home-card" onclick="nav('new')" style="background:#0D9488;border-color:#0D9488;position:relative;overflow:hidden">
+        <div class="home-card" id="hcard-new" onclick="nav('new')" style="background:#0D9488;border-color:#0D9488;position:relative;overflow:hidden">
+          <div class="card-colour-popup" id="cpop-new"></div>
+          <button class="card-colour-btn" onclick="toggleCardPicker(event,'new')"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M4.93 4.93a10 10 0 0 0 0 14.14"/></svg></button>
           <div class="home-card-ico"><svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#F8FAFC" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></div>
           <div class="home-card-title" style="color:white">+ New Event Plan</div>
           <div class="home-card-sub" style="color:rgba(255,255,255,0.65)">Start a new BEO from scratch</div>
         </div>
 
-        <div class="home-card" onclick="nav('past')" style="background:#0D9488;border-color:#0D9488;position:relative;overflow:hidden">
+        <div class="home-card" id="hcard-past" onclick="nav('past')" style="background:#0D9488;border-color:#0D9488;position:relative;overflow:hidden">
+          <div class="card-colour-popup" id="cpop-past"></div>
+          <button class="card-colour-btn" onclick="toggleCardPicker(event,'past')"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M4.93 4.93a10 10 0 0 0 0 14.14"/></svg></button>
           <div class="home-card-ico"><svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#818CF8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg></div>
           <div class="home-card-title" style="color:white">Past Events</div>
           <div class="home-card-sub" style="color:rgba(255,255,255,0.45)">Searchable archive of completed events</div>
@@ -1814,20 +1830,26 @@ textarea.rf-val{resize:vertical;min-height:72px;line-height:1.5}
       <div class="home-section-label">Operations</div>
       <div class="home-grid" style="margin-bottom:24px">
 
-        <div class="home-card" onclick="nav('kb')" style="background:#0D9488;border-color:#0D9488;position:relative;overflow:hidden">
+        <div class="home-card" id="hcard-kb" onclick="nav('kb')" style="background:#0D9488;border-color:#0D9488;position:relative;overflow:hidden">
+          <div class="card-colour-popup" id="cpop-kb"></div>
+          <button class="card-colour-btn" onclick="toggleCardPicker(event,'kb')"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M4.93 4.93a10 10 0 0 0 0 14.14"/></svg></button>
           <div style="position:absolute;top:16px;right:16px;background:rgba(255,255,255,0.25);color:white;font-size:13px;font-weight:800;padding:5px 14px;border-radius:20px">5 open</div>
           <div class="home-card-ico"><svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#A855F7" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="20" x2="12" y2="10"/><circle cx="12" cy="7" r="3"/><path d="M12 10c-4 0-7 1.5-7 4v0h14v0c0-2.5-3-4-7-4z"/></svg></div>
           <div class="home-card-title" style="color:white">Task Board</div>
           <div class="home-card-sub" style="color:rgba(255,255,255,0.6)">Drag and drop tasks across your team</div>
         </div>
 
-        <div class="home-card" onclick="nav('notes')" style="background:#0D9488;border-color:#0D9488;position:relative;overflow:hidden">
+        <div class="home-card" id="hcard-notes" onclick="nav('notes')" style="background:#0D9488;border-color:#0D9488;position:relative;overflow:hidden">
+          <div class="card-colour-popup" id="cpop-notes"></div>
+          <button class="card-colour-btn" onclick="toggleCardPicker(event,'notes')"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M4.93 4.93a10 10 0 0 0 0 14.14"/></svg></button>
           <div class="home-card-ico"><svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#F59E0B" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></div>
           <div class="home-card-title" style="color:white">Meeting Notes</div>
           <div class="home-card-sub" style="color:rgba(255,255,255,0.65)">One entry per day · Autosaves · WhatsApp share</div>
         </div>
 
-        <div class="home-card" onclick="nav('sop')" style="background:#0D9488;border-color:#0D9488;position:relative;overflow:hidden">
+        <div class="home-card" id="hcard-sop" onclick="nav('sop')" style="background:#0D9488;border-color:#0D9488;position:relative;overflow:hidden">
+          <div class="card-colour-popup" id="cpop-sop"></div>
+          <button class="card-colour-btn" onclick="toggleCardPicker(event,'sop')"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M4.93 4.93a10 10 0 0 0 0 14.14"/></svg></button>
           <div class="home-card-ico"><svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#F97316" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg></div>
           <div class="home-card-title" style="color:white">SOPs</div>
           <div class="home-card-sub" style="color:rgba(255,255,255,0.6)">Standard Operating Procedures for your team</div>
@@ -1839,13 +1861,17 @@ textarea.rf-val{resize:vertical;min-height:72px;line-height:1.5}
       <div class="home-section-label">Venue</div>
       <div class="home-grid" style="margin-bottom:24px">
 
-        <div class="home-card" onclick="nav('kitchen')" style="background:#0D9488;border-color:#0D9488;position:relative;overflow:hidden">
+        <div class="home-card" id="hcard-kitchen" onclick="nav('kitchen')" style="background:#0D9488;border-color:#0D9488;position:relative;overflow:hidden">
+          <div class="card-colour-popup" id="cpop-kitchen"></div>
+          <button class="card-colour-btn" onclick="toggleCardPicker(event,'kitchen')"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M4.93 4.93a10 10 0 0 0 0 14.14"/></svg></button>
           <div class="home-card-ico"><svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#0052CC" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 0 0 2-2V2"/><path d="M7 2v20"/><path d="M21 15V2a5 5 0 0 0-5 5v6c0 1.1.9 2 2 2h3zm0 0v7"/></svg></div>
           <div class="home-card-title" style="color:white">Kitchen</div>
           <div class="home-card-sub" style="color:rgba(255,255,255,0.6)">Menus, recipes, allergens & links</div>
         </div>
 
-        <div class="home-card" onclick="nav('music')" style="background:#0D9488;border-color:#0D9488;position:relative;overflow:hidden">
+        <div class="home-card" id="hcard-music" onclick="nav('music')" style="background:#0D9488;border-color:#0D9488;position:relative;overflow:hidden">
+          <div class="card-colour-popup" id="cpop-music"></div>
+          <button class="card-colour-btn" onclick="toggleCardPicker(event,'music')"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M4.93 4.93a10 10 0 0 0 0 14.14"/></svg></button>
           <div class="home-card-ico"><svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#22D3EE" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg></div>
           <div class="home-card-title" style="color:white">Music</div>
           <div class="home-card-sub" style="color:rgba(255,255,255,0.65)">Venue playlists — all in one place</div>
@@ -4739,5 +4765,65 @@ window.nav = function(id, pushState){
   </div>
 </div>
 
+<!-- Card Colour Picker -->
+<script>
+const CARD_COLOURS = [
+  {hex:'#0D9488',label:'Teal'},
+  {hex:'#0F1E2E',label:'Navy'},
+  {hex:'#334155',label:'Slate'},
+  {hex:'#7C3AED',label:'Purple'},
+  {hex:'#C4973B',label:'Gold'}
+];
+const CARD_IDS = ['dash','cal','new','past','kb','notes','sop','kitchen','music'];
+
+function initCardColours(){
+  CARD_IDS.forEach(id=>{
+    const saved = localStorage.getItem('cardColour_'+id)||'#0D9488';
+    applyCardColour(id, saved, false);
+    const pop = document.getElementById('cpop-'+id);
+    if(!pop) return;
+    CARD_COLOURS.forEach(c=>{
+      const sw = document.createElement('div');
+      sw.className='card-swatch'+(saved===c.hex?' active':'');
+      sw.style.background=c.hex;
+      sw.title=c.label;
+      sw.onclick=e=>{e.stopPropagation();applyCardColour(id,c.hex,true);closeAllPickers();};
+      pop.appendChild(sw);
+    });
+  });
+  document.addEventListener('click', closeAllPickers);
+}
+
+function applyCardColour(id, hex, save){
+  const card = document.getElementById('hcard-'+id);
+  if(!card) return;
+  card.style.background = hex;
+  card.style.borderColor = hex;
+  if(save) localStorage.setItem('cardColour_'+id, hex);
+  const pop = document.getElementById('cpop-'+id);
+  if(pop) pop.querySelectorAll('.card-swatch').forEach(sw=>{
+    sw.classList.toggle('active', sw.style.background===hexToRgb(hex)||sw.title===CARD_COLOURS.find(c=>c.hex===hex)?.label);
+  });
+}
+
+function hexToRgb(hex){
+  const r=parseInt(hex.slice(1,3),16),g=parseInt(hex.slice(3,5),16),b=parseInt(hex.slice(5,7),16);
+  return `rgb(${r}, ${g}, ${b})`;
+}
+
+function toggleCardPicker(e, id){
+  e.stopPropagation();
+  const pop = document.getElementById('cpop-'+id);
+  const isOpen = pop.classList.contains('open');
+  closeAllPickers();
+  if(!isOpen) pop.classList.add('open');
+}
+
+function closeAllPickers(){
+  document.querySelectorAll('.card-colour-popup').forEach(p=>p.classList.remove('open'));
+}
+
+document.addEventListener('DOMContentLoaded', initCardColours);
+</script>
 </body>
 </html>

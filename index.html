@@ -4266,9 +4266,13 @@ function sopDeleteFile(idx){
 function sopNewDoc(){
   appModalShow({
     title:'New SOP',
-    fields:[{label:'Title', placeholder:'e.g. Opening Checklist'}],
-    onOk([name]){
-      sopData[currentSopDept].push({title:name, meta:'Just created', files:[]});
+    fields:[
+      {label:'Title', placeholder:'e.g. Opening Checklist'},
+      {label:'Link URL (optional)', placeholder:'https://docs.google.com/...'}
+    ],
+    onOk([name, url]){
+      const files = url ? [{name: name, url: url}] : [];
+      sopData[currentSopDept].push({title:name, meta:'Just created', files});
       sopOpenDept(currentSopDept, '', document.getElementById('sop-dept-title').textContent, '');
     }
   });
@@ -4901,7 +4905,7 @@ function appModalShow({title, sub='', fields, onOk}){
   setTimeout(()=>{ const f=document.getElementById('appModalField_0'); if(f) f.focus(); },80);
   document.getElementById('appModalOk').onclick = ()=>{
     const vals = fields.map((_,i)=>document.getElementById('appModalField_'+i).value.trim());
-    if(vals[0]==='') return;
+    if(vals[0]==='') { document.getElementById('appModalField_0').focus(); return; }
     appModalClose();
     onOk(vals);
   };

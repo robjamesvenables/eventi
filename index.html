@@ -4268,7 +4268,7 @@ function sopNewDoc(){
     title:'New SOP',
     fields:[
       {label:'Title', placeholder:'e.g. Opening Checklist'},
-      {label:'Link URL (optional)', placeholder:'https://docs.google.com/...'}
+      {label:'Link URL', placeholder:'https://docs.google.com/...'}
     ],
     onOk([name, url]){
       const files = url ? [{name: name, url: url}] : [];
@@ -4905,7 +4905,8 @@ function appModalShow({title, sub='', fields, onOk}){
   setTimeout(()=>{ const f=document.getElementById('appModalField_0'); if(f) f.focus(); },80);
   document.getElementById('appModalOk').onclick = ()=>{
     const vals = fields.map((_,i)=>document.getElementById('appModalField_'+i).value.trim());
-    if(vals[0]==='') { document.getElementById('appModalField_0').focus(); return; }
+    const firstEmpty = vals.findIndex(v=>v==='');
+    if(firstEmpty>-1){ document.getElementById('appModalField_'+firstEmpty).focus(); return; }
     appModalClose();
     onOk(vals);
   };

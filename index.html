@@ -3362,9 +3362,13 @@ textarea.rf-val{resize:vertical;min-height:72px;line-height:1.5}
           <div class="ph-title" id="sop-doc-title">Opening Checklist</div>
           <div class="ph-sub" id="sop-doc-dept">Kitchen</div>
         </div>
+        <button class="btn btn-navy" onclick="sopAddLink()">+ Add Link</button>
       </div>
-
-
+      <div class="sop-doc-wrap">
+        <div style="font-size:13px;font-weight:700;color:var(--navy);margin-bottom:14px">🔗 Links & Documents</div>
+        <div class="sop-upload-list" id="sop-upload-list"></div>
+        <div id="sop-empty-msg" style="font-size:12px;color:var(--ink3);display:none">No links added yet — click + Add Link to attach a Google Doc, PDF link, or any URL.</div>
+      </div>
     </div>
 
     <!-- ADMIN -->
@@ -4221,25 +4225,37 @@ function sopOpenDoc(idx){
 function sopRenderUploads(){
   const doc = sopData[currentSopDept][currentSopDoc];
   const list = document.getElementById('sop-upload-list');
+  const empty = document.getElementById('sop-empty-msg');
+  if(!list) return;
   if(!doc.files.length){
-    list.innerHTML = '<div style="font-size:12px;color:var(--ink3);margin-bottom:12px">No documents uploaded yet.</div>';
+    list.innerHTML = '';
+    if(empty) empty.style.display='block';
     return;
   }
+  if(empty) empty.style.display='none';
   list.innerHTML = doc.files.map((f,i) => `
     <div class="sop-upload-item">
-      <span style="font-size:18px">📄</span>
-      <span class="sop-upload-item-name">${f}</span>
+      <span style="font-size:18px">🔗</span>
+      <a href="${typeof f==='object'?f.url:'#'}" target="_blank" class="sop-upload-item-name" style="text-decoration:none;color:var(--navy)">${typeof f==='object'?f.name:f}</a>
       <button class="sop-upload-del" onclick="sopDeleteFile(${i})">×</button>
     </div>
   `).join('');
 }
 
-function sopHandleUpload(input){
-  const doc = sopData[currentSopDept][currentSopDoc];
-  Array.from(input.files).forEach(f => doc.files.push(f.name));
-  sopRenderUploads();
-  input.value='';
-  toast('Document uploaded');
+function sopAddLink(){
+  appModalShow({
+    title:'Add Link to SOP',
+    fields:[
+      {label:'Name', placeholder:'e.g. F&B Opening Checklist'},
+      {label:'URL', placeholder:'https://docs.google.com/...'}
+    ],
+    onOk([name, url]){
+      if(!url) return;
+      sopData[currentSopDept][currentSopDoc].files.unshift({name, url});
+      sopRenderUploads();
+      toast('Link added ✓');
+    }
+  });
 }
 
 function sopDeleteFile(idx){

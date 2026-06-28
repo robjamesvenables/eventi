@@ -4134,18 +4134,23 @@ window.kbFilterEvent = function(eventId, el){
 
 window.addKanbanCard = function(colSelector){
   const colId = colSelector.replace('col-','');
-  const title = prompt('Task title:');
-  if(!title) return;
-  const event = kbActiveFilter === 'all' ? 'general' : kbActiveFilter;
-  kanbanState[colId].push({id:kbNextId++, title, assignee:'John', event});
-  kbRender();
-  toast('Task added');
+  appModalShow({
+    title:'New Task',
+    fields:[{label:'Task title', placeholder:'e.g. Confirm guest list'}],
+    onOk([title]){
+      const event = kbActiveFilter === 'all' ? 'general' : kbActiveFilter;
+      kanbanState[colId].push({id:kbNextId++, title, assignee:'John', event});
+      kbRender();
+      toast('Task added');
+    }
+  });
 };
 
 window.kbDelete = function(cardId, colId){
-  if(!confirm('Delete this task?')) return;
-  kanbanState[colId] = kanbanState[colId].filter(c => c.id !== cardId);
-  kbRender();
+  appConfirmShow({title:'Delete Task', msg:'Are you sure you want to delete this task?', onOk:()=>{
+    kanbanState[colId] = kanbanState[colId].filter(c => c.id !== cardId);
+    kbRender();
+  }});
 };
 
 window.updateKanbanCounts = function(){ kbRender(); };
@@ -4243,10 +4248,14 @@ function sopDeleteFile(idx){
 }
 
 function sopNewDoc(){
-  const name = prompt('SOP title:');
-  if(!name)return;
-  sopData[currentSopDept].push({title:name, meta:'Just created', files:[]});
-  sopOpenDept(currentSopDept, '', document.getElementById('sop-dept-title').textContent, '');
+  appModalShow({
+    title:'New SOP',
+    fields:[{label:'Title', placeholder:'e.g. Opening Checklist'}],
+    onOk([name]){
+      sopData[currentSopDept].push({title:name, meta:'Just created', files:[]});
+      sopOpenDept(currentSopDept, '', document.getElementById('sop-dept-title').textContent, '');
+    }
+  });
 }
 
 // ── MUSIC ──
@@ -4549,9 +4558,10 @@ window.announceEdit = function(id){
 };
 
 window.announceDel = function(id){
-  if(!confirm('Delete this announcement?')) return;
-  const i = announcements.findIndex(a=>a.id===id);
-  if(i>-1){ announcements.splice(i,1); announceRender(); }
+  appConfirmShow({title:'Delete Announcement', msg:'Are you sure you want to delete this announcement?', onOk:()=>{
+    const i = announcements.findIndex(a=>a.id===id);
+    if(i>-1){ announcements.splice(i,1); announceRender(); }
+  }});
 };
 
 // ── MY DRIVE ──
@@ -4679,49 +4689,64 @@ function myDriveColorPicker(title, onPick){
 }
 
 window.myDriveAddFolder = function(){
-  const name = prompt('Folder name:');
-  if(!name) return;
-  myDriveColorPicker(`for "${name}"`, function(color){
-    driveFolders.push({id:driveFolderNextId++, name, ico:'', color, files:[]});
-    myDriveRender();
-    toast('Folder created ✓');
+  appModalShow({
+    title:'New Folder',
+    fields:[{label:'Folder name', placeholder:'e.g. Marketing Assets'}],
+    onOk([name]){
+      myDriveColorPicker(`for "${name}"`, function(color){
+        driveFolders.push({id:driveFolderNextId++, name, ico:'', color, files:[]});
+        myDriveRender();
+        toast('Folder created ✓');
+      });
+    }
   });
 };
 
 window.myDriveEditFolder = function(id){
   const folder = driveFolders.find(f=>f.id===id);
   if(!folder) return;
-  const newName = prompt('Folder name:', folder.name);
-  if(newName===null) return;
-  if(newName) folder.name = newName;
-  myDriveColorPicker(`Colour for "${folder.name}"`, function(color){
-    folder.color = color;
-    myDriveRender();
-    toast('Folder updated ✓');
+  appModalShow({
+    title:'Edit Folder',
+    fields:[{label:'Folder name', value:folder.name, placeholder:'Folder name'}],
+    onOk([newName]){
+      if(newName) folder.name = newName;
+      myDriveColorPicker(`Colour for "${folder.name}"`, function(color){
+        folder.color = color;
+        myDriveRender();
+        toast('Folder updated ✓');
+      });
+    }
   });
 };
 
 window.myDriveDeleteFolder = function(id){
-  if(!confirm('Delete this folder and all its links?')) return;
-  const i = driveFolders.findIndex(f=>f.id===id);
-  if(i>-1){ driveFolders.splice(i,1); myDriveRender(); toast('Folder removed'); }
+  appConfirmShow({title:'Delete Folder', msg:'Delete this folder and all its links? This cannot be undone.', onOk:()=>{
+    const i = driveFolders.findIndex(f=>f.id===id);
+    if(i>-1){ driveFolders.splice(i,1); myDriveRender(); toast('Folder removed'); }
+  }});
 };
 
 window.myDriveAddFile = function(){
   const folder = driveFolders.find(f=>f.id===driveActiveFolder);
   if(!folder) return;
-  const name = prompt('Link name:');
-  if(!name) return;
-  const url = prompt('Paste the URL:');
-  if(!url) return;
-  let type = 'link';
-  if(url.includes('docs.google.com/spreadsheets')) type='sheets';
-  else if(url.includes('docs.google.com/document')) type='docs';
-  else if(url.includes('docs.google.com/presentation')) type='slides';
-  else if(url.includes('drive.google.com')) type='drive';
-  folder.files.unshift({id:driveFileNextId++, name, url, type});
-  myDriveRender();
-  toast('Link added ✓');
+  appModalShow({
+    title:'Add Link',
+    fields:[
+      {label:'Link name', placeholder:'e.g. Q3 Budget Sheet'},
+      {label:'URL', placeholder:'https://...'}
+    ],
+    onOk([name, url]){
+      if(!url) return;
+      let type = 'link';
+      if(url.includes('docs.google.com/spreadsheets')) type='sheets';
+      else if(url.includes('docs.google.com/document')) type='docs';
+      else if(url.includes('docs.google.com/presentation')) type='slides';
+      else if(url.includes('drive.google.com')) type='drive';
+      folder.files.unshift({id:driveFileNextId++, name, url, type});
+      myDriveRender();
+      toast('Link added ✓');
+    }
+  });
 };
 
 window.myDriveDeleteFile = function(id){
@@ -4815,6 +4840,72 @@ function closeAllPickers(){
 }
 
 document.addEventListener('DOMContentLoaded', initCardColours);
+</script>
+
+<!-- ── REUSABLE INPUT MODAL ── -->
+<div id="appModal" style="display:none;position:fixed;inset:0;background:rgba(15,30,46,0.55);z-index:9000;align-items:center;justify-content:center">
+  <div style="background:white;border-radius:16px;padding:28px;width:100%;max-width:400px;margin:0 20px;box-shadow:0 20px 60px rgba(0,0,0,0.2)">
+    <div id="appModalTitle" style="font-size:16px;font-weight:800;color:#0F1E2E;margin-bottom:6px"></div>
+    <div id="appModalSub" style="font-size:12px;color:#94A3B8;margin-bottom:18px"></div>
+    <div id="appModalFields"></div>
+    <div style="display:flex;gap:10px;margin-top:20px">
+      <button id="appModalOk" style="flex:1;padding:12px;background:#0F1E2E;border:none;border-radius:9px;font-family:'Poppins',sans-serif;font-size:14px;font-weight:700;color:white;cursor:pointer">OK</button>
+      <button onclick="appModalClose()" style="padding:12px 20px;background:#F1F5F9;border:none;border-radius:9px;font-family:'Poppins',sans-serif;font-size:14px;font-weight:600;color:#64748B;cursor:pointer">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── REUSABLE CONFIRM MODAL ── -->
+<div id="appConfirm" style="display:none;position:fixed;inset:0;background:rgba(15,30,46,0.55);z-index:9000;align-items:center;justify-content:center">
+  <div style="background:white;border-radius:16px;padding:28px;width:100%;max-width:380px;margin:0 20px;box-shadow:0 20px 60px rgba(0,0,0,0.2)">
+    <div id="appConfirmTitle" style="font-size:16px;font-weight:800;color:#0F1E2E;margin-bottom:8px"></div>
+    <div id="appConfirmMsg" style="font-size:13px;color:#64748B;margin-bottom:24px;line-height:1.6"></div>
+    <div style="display:flex;gap:10px">
+      <button id="appConfirmOk" style="flex:1;padding:12px;background:#EF4444;border:none;border-radius:9px;font-family:'Poppins',sans-serif;font-size:14px;font-weight:700;color:white;cursor:pointer">Delete</button>
+      <button onclick="appConfirmClose()" style="padding:12px 20px;background:#F1F5F9;border:none;border-radius:9px;font-family:'Poppins',sans-serif;font-size:14px;font-weight:600;color:#64748B;cursor:pointer">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── APP MODAL (replaces prompt) ──
+function appModalShow({title, sub='', fields, onOk}){
+  document.getElementById('appModalTitle').textContent = title;
+  document.getElementById('appModalSub').textContent = sub;
+  const fc = document.getElementById('appModalFields');
+  fc.innerHTML = fields.map((f,i)=>`
+    <div style="margin-bottom:${i<fields.length-1?'14px':'0'}">
+      ${f.label?`<div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.7px;color:#94A3B8;margin-bottom:6px">${f.label}</div>`:''}
+      <input id="appModalField_${i}" type="text" value="${f.value||''}" placeholder="${f.placeholder||''}"
+        style="width:100%;padding:11px 14px;border:1.5px solid #E2E8F0;border-radius:9px;font-family:'Poppins',sans-serif;font-size:14px;color:#0F1E2E;outline:none;box-sizing:border-box"
+        onfocus="this.style.borderColor='#0D9488'" onblur="this.style.borderColor='#E2E8F0'">
+    </div>`).join('');
+  const modal = document.getElementById('appModal');
+  modal.style.display='flex';
+  setTimeout(()=>{ const f=document.getElementById('appModalField_0'); if(f) f.focus(); },80);
+  document.getElementById('appModalOk').onclick = ()=>{
+    const vals = fields.map((_,i)=>document.getElementById('appModalField_'+i).value.trim());
+    if(vals[0]==='') return;
+    appModalClose();
+    onOk(vals);
+  };
+  // Enter key submit
+  fc.querySelectorAll('input').forEach(inp=>{
+    inp.onkeydown = e=>{ if(e.key==='Enter') document.getElementById('appModalOk').click(); };
+  });
+}
+function appModalClose(){ document.getElementById('appModal').style.display='none'; }
+
+// ── APP CONFIRM (replaces confirm) ──
+function appConfirmShow({title, msg, label='Delete', onOk}){
+  document.getElementById('appConfirmTitle').textContent = title;
+  document.getElementById('appConfirmMsg').textContent = msg;
+  document.getElementById('appConfirmOk').textContent = label;
+  const modal = document.getElementById('appConfirm');
+  modal.style.display='flex';
+  document.getElementById('appConfirmOk').onclick = ()=>{ appConfirmClose(); onOk(); };
+}
+function appConfirmClose(){ document.getElementById('appConfirm').style.display='none'; }
 </script>
 </body>
 </html>

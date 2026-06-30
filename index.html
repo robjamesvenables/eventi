@@ -4732,24 +4732,20 @@ window.announceInsertEmoji = function(id){
   const e = ANNOUNCE_EMOJIS.find(x=>x.id===id);
   if(!e) return;
   const input = document.getElementById('announce-input');
-  const badge = `<span contenteditable="false" data-emoji="${e.id}" style="display:inline-block;width:18px;height:18px;border-radius:50%;background:${e.bg};vertical-align:text-bottom;margin:0 1px;text-align:center">${e.svg.replace('width="14" height="14"','width="10" height="10"').replace('<svg','<svg style="display:inline-block;vertical-align:middle"')}</span>`;
+  const badge = document.createElement('span');
+  badge.contentEditable = 'false';
+  badge.dataset.emoji = e.id;
+  badge.style.cssText = 'display:inline-block;width:18px;height:18px;border-radius:50%;background:'+e.bg+';vertical-align:-3px;margin:0 2px;text-align:center;line-height:18px';
+  badge.innerHTML = e.svg.replace('width="14" height="14"','width="10" height="10"');
   input.focus();
+  input.appendChild(badge);
+  // place cursor after the badge
+  const range = document.createRange();
+  range.setStartAfter(badge);
+  range.collapse(true);
   const sel = window.getSelection();
-  if(sel.rangeCount > 0 && input.contains(sel.anchorNode)){
-    const range = sel.getRangeAt(0);
-    range.deleteContents();
-    const frag = document.createRange().createContextualFragment(badge);
-    const lastNode = frag.lastChild;
-    range.insertNode(frag);
-    if(lastNode){
-      range.setStartAfter(lastNode);
-      range.collapse(true);
-      sel.removeAllRanges();
-      sel.addRange(range);
-    }
-  } else {
-    input.insertAdjacentHTML('beforeend', badge);
-  }
+  sel.removeAllRanges();
+  sel.addRange(range);
 };
 
 function announceRenderTags(){

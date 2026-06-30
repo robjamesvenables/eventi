@@ -4692,6 +4692,8 @@ function announceOpenModal(title, text, tag, link, emoji){
   document.getElementById('announce-modal').style.display = 'flex';
   announceRenderTags();
   announceRenderEmojis();
+  announceUpdatePreview();
+  document.getElementById('announce-input').oninput = announceUpdatePreview;
   setTimeout(()=>document.getElementById('announce-input').focus(),100);
 }
 
@@ -4704,9 +4706,25 @@ function announceRenderEmojis(){
   }).join('') + `<button onclick="announceSelectEmoji('')" style="width:38px;height:38px;border-radius:50%;border:2px solid ${!announceSelectedEmoji?'#94A3B8':'#E2E8F0'};background:#F1F5F9;font-size:10px;font-weight:700;color:#94A3B8;cursor:pointer;transition:all 0.15s">None</button>`;
 }
 
+function announceUpdatePreview(){
+  const prev = document.getElementById('announce-preview');
+  if(!prev) return;
+  const text = document.getElementById('announce-input').value.trim();
+  const s = announceTags[announceSelectedTag]||announceTags.Info;
+  const isUrgent = announceSelectedTag === 'Urgent';
+  const tagStyle = isUrgent ? `background:#DC2626;color:white;` : `background:${s.tagBg};color:${s.tagColor}`;
+  const emojiObj = announceSelectedEmoji ? ANNOUNCE_EMOJIS.find(e=>e.id===announceSelectedEmoji) : null;
+  const emojiBadge = emojiObj ? `<span style="display:inline-flex;width:18px;height:18px;border-radius:50%;background:${emojiObj.bg};align-items:center;justify-content:center;margin-right:6px;flex-shrink:0;vertical-align:middle">${emojiObj.svg.replace('width="16" height="16"','width="11" height="11"')}</span>` : '';
+  prev.innerHTML = `
+    <span class="announce-tag" style="${tagStyle};display:inline-block;margin-bottom:6px">${announceSelectedTag}</span>
+    <div style="font-size:13px;font-weight:500;color:#0F1E2E;line-height:1.5">${emojiBadge}${text || '<span style="color:#CBD5E1">Your announcement will appear here…</span>'}</div>
+  `;
+}
+
 window.announceSelectEmoji = function(e){
   announceSelectedEmoji = e;
   announceRenderEmojis();
+  announceUpdatePreview();
 };
 
 function announceRenderTags(){
@@ -4722,6 +4740,7 @@ function announceRenderTags(){
 window.announceSelectTag = function(tag){
   announceSelectedTag = tag;
   announceRenderTags();
+  announceUpdatePreview();
 };
 
 window.announceCloseModal = function(){
@@ -4995,7 +5014,9 @@ window.nav = function(id, pushState){
     <input id="announce-link" type="text" placeholder="https://..." style="width:100%;padding:11px 14px;border:1.5px solid #E2E8F0;border-radius:9px;font-family:'Poppins',sans-serif;font-size:13px;color:#0F1E2E;outline:none;box-sizing:border-box">
     <div id="announce-emojis" style="display:flex;gap:8px;margin:14px 0 16px"></div>
     <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;color:#94A3B8;margin:0 0 10px">Tag</div>
-    <div id="announce-tags" style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:24px"></div>
+    <div id="announce-tags" style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:20px"></div>
+    <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;color:#94A3B8;margin:0 0 8px">Preview</div>
+    <div id="announce-preview" style="border:1.5px solid #E2E8F0;border-radius:10px;padding:12px 14px;margin-bottom:24px;background:#F8FAFC;min-height:20px"></div>
     <div style="display:flex;gap:10px">
       <button onclick="announceSubmit()" style="flex:1;padding:13px;background:#0F1E2E;border:none;border-radius:9px;font-family:'Poppins',sans-serif;font-size:14px;font-weight:700;color:white;cursor:pointer">Post</button>
       <button onclick="announceCloseModal()" style="padding:13px 20px;background:#F1F5F9;border:none;border-radius:9px;font-family:'Poppins',sans-serif;font-size:14px;font-weight:600;color:#64748B;cursor:pointer">Cancel</button>

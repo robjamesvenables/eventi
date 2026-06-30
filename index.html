@@ -1638,6 +1638,14 @@ textarea.rf-val{resize:vertical;min-height:72px;line-height:1.5}
 
 /* ── KITCHEN ── */
 /* MY DRIVE — folder tiles */
+.myd-view-btn{padding:7px 10px;background:white;border:none;color:#94A3B8;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all 0.15s}
+.myd-view-btn:hover{color:#0F1E2E;background:#F8FAFC}
+.myd-view-btn.on{background:#0F1E2E;color:white}
+.myd-folder-row{display:flex;align-items:center;gap:14px;padding:13px 16px;background:white;border:1px solid #E2E8F0;border-radius:10px;margin-bottom:8px;cursor:pointer;transition:all 0.15s;position:relative}
+.myd-folder-row:hover{border-color:#CBD5E1;box-shadow:0 2px 8px rgba(0,0,0,0.06)}
+.myd-folder-row-ico{width:36px;height:36px;border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.myd-folder-row-name{font-size:14px;font-weight:700;color:var(--navy);flex:1}
+.myd-folder-row-count{font-size:12px;color:#94A3B8;margin-right:8px}
 .myd-folder-tile{
   background:var(--navy);border-radius:14px;padding:22px 20px;
   cursor:pointer;transition:all 0.2s;position:relative;overflow:hidden;
@@ -1956,7 +1964,18 @@ textarea.rf-val{resize:vertical;min-height:72px;line-height:1.5}
 
       <!-- Folder view -->
       <div id="myd-folders-view">
+        <div style="display:flex;justify-content:flex-end;margin-bottom:14px">
+          <div style="display:flex;border:1.5px solid #E2E8F0;border-radius:8px;overflow:hidden">
+            <button id="myd-view-tiles" class="myd-view-btn on" onclick="myDriveSetView('tiles')" title="Tile view">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+            </button>
+            <button id="myd-view-list" class="myd-view-btn" onclick="myDriveSetView('list')" title="List view">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+            </button>
+          </div>
+        </div>
         <div id="myd-folder-grid" style="display:grid;grid-template-columns:repeat(4,1fr);gap:16px"></div>
+        <div id="myd-folder-list" style="display:none"></div>
       </div>
 
       <!-- File view (inside a folder) -->
@@ -1969,7 +1988,7 @@ textarea.rf-val{resize:vertical;min-height:72px;line-height:1.5}
         </div>
         <div id="myd-file-list"></div>
         <div id="myd-file-empty" style="display:none;text-align:center;padding:48px;color:#94A3B8">
-          <div style="font-size:36px;margin-bottom:12px">📎</div>
+          <div style="margin-bottom:12px"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#CBD5E1" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="margin:0 auto;display:block"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg></div>
           <div style="font-size:14px;font-weight:600;color:#0F1E2E;margin-bottom:6px">No links yet</div>
           <div style="font-size:13px">Click "+ Add Link" to save your first link here</div>
         </div>
@@ -4841,6 +4860,11 @@ function myDriveRender(){
     filesView.style.display='none';
     if(addBtn){addBtn.textContent='+ New Folder';addBtn.onclick=myDriveAddFolder;}
     myDriveRenderFolders();
+    if(myDriveView==='list') myDriveRenderFolderList();
+    document.getElementById('myd-view-tiles').classList.toggle('on', myDriveView==='tiles');
+    document.getElementById('myd-view-list').classList.toggle('on', myDriveView==='list');
+    document.getElementById('myd-folder-grid').style.display = myDriveView==='tiles' ? 'grid' : 'none';
+    document.getElementById('myd-folder-list').style.display = myDriveView==='list' ? 'block' : 'none';
   } else {
     foldersView.style.display='none';
     filesView.style.display='';
@@ -4850,6 +4874,36 @@ function myDriveRender(){
   if(editBtn) editBtn.onclick = ()=>myDriveEditFolder(driveActiveFolder);
     myDriveRenderFiles();
   }
+}
+
+let myDriveView = localStorage.getItem('myDriveView') || 'tiles';
+
+window.myDriveSetView = function(view){
+  myDriveView = view;
+  localStorage.setItem('myDriveView', view);
+  document.getElementById('myd-view-tiles').classList.toggle('on', view==='tiles');
+  document.getElementById('myd-view-list').classList.toggle('on', view==='list');
+  document.getElementById('myd-folder-grid').style.display = view==='tiles' ? 'grid' : 'none';
+  document.getElementById('myd-folder-list').style.display = view==='list' ? 'block' : 'none';
+  if(view==='list') myDriveRenderFolderList();
+};
+
+function myDriveRenderFolderList(){
+  const list = document.getElementById('myd-folder-list');
+  if(!list) return;
+  list.innerHTML = driveFolders.map(f=>`
+    <div class="myd-folder-row" onclick="myDriveOpenFolder(${f.id})">
+      <div class="myd-folder-row-ico" style="background:${f.color}">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+      </div>
+      <div class="myd-folder-row-name">${f.name}</div>
+      <div class="myd-folder-row-count">${f.files.length} link${f.files.length!==1?'s':''}</div>
+      <button onclick="event.stopPropagation();myDriveDeleteFolder(${f.id})" style="background:none;border:none;color:#CBD5E1;font-size:18px;cursor:pointer;padding:2px 6px;border-radius:4px;transition:all 0.15s" onmouseover="this.style.color='#EF4444';this.style.background='#FEE2E2'" onmouseout="this.style.color='#CBD5E1';this.style.background='none'">×</button>
+    </div>`).join('') + `
+    <div class="myd-folder-row" style="border-style:dashed;color:#94A3B8;justify-content:center" onclick="myDriveAddFolder()">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#94A3B8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      <span style="font-size:13px;font-weight:600">New Folder</span>
+    </div>`;
 }
 
 function myDriveRenderFolders(){

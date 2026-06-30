@@ -4898,12 +4898,21 @@ function myDriveRenderFolderList(){
       </div>
       <div class="myd-folder-row-name">${f.name}</div>
       <div class="myd-folder-row-count">${f.files.length} link${f.files.length!==1?'s':''}</div>
+      <div style="display:flex;gap:4px;margin-right:6px" onclick="event.stopPropagation()">
+        ${['#0D9488','#0F1E2E','#C4973B','#A855F7','#EF4444','#334155'].map(c=>`
+          <div onclick="driveFolderColour(${f.id},'${c}')" style="width:14px;height:14px;border-radius:50%;background:${c};cursor:pointer;border:2px solid ${f.color===c?'#0F1E2E':'transparent'};opacity:0;transition:opacity 0.15s" class="folder-row-swatch"></div>
+        `).join('')}
+      </div>
       <button onclick="event.stopPropagation();myDriveDeleteFolder(${f.id})" style="background:none;border:none;color:#CBD5E1;font-size:18px;cursor:pointer;padding:2px 6px;border-radius:4px;transition:all 0.15s" onmouseover="this.style.color='#EF4444';this.style.background='#FEE2E2'" onmouseout="this.style.color='#CBD5E1';this.style.background='none'">×</button>
     </div>`).join('') + `
     <div class="myd-folder-row" style="border-style:dashed;color:#94A3B8;justify-content:center" onclick="myDriveAddFolder()">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#94A3B8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
       <span style="font-size:13px;font-weight:600">New Folder</span>
     </div>`;
+  list.querySelectorAll('.myd-folder-row').forEach(row=>{
+    row.addEventListener('mouseenter',()=>row.querySelectorAll('.folder-row-swatch').forEach(s=>s.style.opacity='1'));
+    row.addEventListener('mouseleave',()=>row.querySelectorAll('.folder-row-swatch').forEach(s=>s.style.opacity='0'));
+  });
 }
 
 function myDriveRenderFolders(){
@@ -5160,7 +5169,8 @@ function driveFolderColour(id, colour){
   const folder = driveFolders.find(f=>f.id===id);
   if(!folder) return;
   folder.color = colour;
-  myDriveRenderFolders();
+  if(myDriveView==='list') myDriveRenderFolderList();
+  else myDriveRenderFolders();
 }
 
 function kitchenAddLink(btn){

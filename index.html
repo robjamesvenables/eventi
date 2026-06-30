@@ -4685,7 +4685,7 @@ function announceStyleEmojis(text){
   if(!text) return text;
   let out = text;
   ANNOUNCE_EMOJIS.forEach(e=>{
-    const badge = `<span style="display:inline-flex;width:18px;height:18px;border-radius:50%;background:${e.bg};align-items:center;justify-content:center;margin:0 2px;vertical-align:middle">${e.svg.replace('width="14" height="14"','width="10" height="10"')}</span>`;
+    const badge = `<span data-emoji="${e.id}" style="display:inline-block;width:18px;height:18px;border-radius:50%;background:${e.bg};vertical-align:-3px;margin:0 2px;text-align:center;line-height:18px;user-select:none">${e.svg.replace('width="14" height="14"','width="10" height="10"')}</span>`;
     out = out.split(e.char).join(badge);
   });
   return out;
@@ -4733,17 +4733,22 @@ window.announceInsertEmoji = function(id){
   if(!e) return;
   const input = document.getElementById('announce-input');
   const badge = document.createElement('span');
-  badge.contentEditable = 'false';
   badge.dataset.emoji = e.id;
-  badge.style.cssText = 'display:inline-block;width:18px;height:18px;border-radius:50%;background:'+e.bg+';vertical-align:-3px;margin:0 2px;text-align:center;line-height:18px';
+  badge.style.cssText = 'display:inline-block;width:18px;height:18px;border-radius:50%;background:'+e.bg+';vertical-align:-3px;margin:0 2px;text-align:center;line-height:18px;user-select:none';
   badge.innerHTML = e.svg.replace('width="14" height="14"','width="10" height="10"');
   input.focus();
-  input.appendChild(badge);
-  // place cursor after the badge
-  const range = document.createRange();
+  const sel = window.getSelection();
+  let range;
+  if(sel.rangeCount > 0 && input.contains(sel.anchorNode)){
+    range = sel.getRangeAt(0);
+    range.deleteContents();
+    range.insertNode(badge);
+  } else {
+    input.appendChild(badge);
+    range = document.createRange();
+  }
   range.setStartAfter(badge);
   range.collapse(true);
-  const sel = window.getSelection();
   sel.removeAllRanges();
   sel.addRange(range);
 };

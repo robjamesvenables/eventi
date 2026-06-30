@@ -4624,12 +4624,13 @@ function announceRender(){
     const isUrgent = a.tag === 'Urgent';
     const urgentStyle = isUrgent ? `background:#EF4444;color:white;` : `background:${a.tagBg};color:${a.tagColor}`;
     const linkHtml = a.link ? `<a href="${a.link}" target="_blank" onclick="event.stopPropagation()" style="margin-left:8px;font-size:11px;font-weight:700;color:#0D9488;text-decoration:underline">Open link →</a>` : '';
+    const styledText = announceStyleEmojis(a.text);
     return `
       <div class="announce-item" style="position:relative">
         <div class="announce-bar" style="background:${a.color}"></div>
         <div class="announce-body">
           <span class="announce-tag" style="${urgentStyle}">${a.tag}</span>
-          <div class="announce-text">${a.text}${linkHtml}</div>
+          <div class="announce-text">${styledText}${linkHtml}</div>
           <div class="announce-meta">Posted by ${a.by} · ${a.time}</div>
         </div>
         ${actions}
@@ -4679,6 +4680,16 @@ const ANNOUNCE_EMOJIS = [
   {id:'idea', char:'💡', svg:'<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18h6M10 22h4M15 14c.83-.83 2-2.5 2-4.5A5 5 0 0 0 7 9.5c0 2 1.17 3.67 2 4.5"/></svg>', bg:'#D97706'},
   {id:'smile', char:'😊', svg:'<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>', bg:'#F59E0B'},
 ];
+
+function announceStyleEmojis(text){
+  if(!text) return text;
+  let out = text;
+  ANNOUNCE_EMOJIS.forEach(e=>{
+    const badge = `<span style="display:inline-flex;width:18px;height:18px;border-radius:50%;background:${e.bg};align-items:center;justify-content:center;margin:0 2px;vertical-align:middle">${e.svg.replace('width="14" height="14"','width="10" height="10"')}</span>`;
+    out = out.split(e.char).join(badge);
+  });
+  return out;
+}
 
 function announceOpenModal(title, text, tag, link){
   announceSelectedTag = tag || 'Info';

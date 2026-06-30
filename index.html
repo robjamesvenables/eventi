@@ -4623,12 +4623,14 @@ function announceRender(){
       </div>` : '';
     const isUrgent = a.tag === 'Urgent';
     const urgentStyle = isUrgent ? `background:#EF4444;color:white;` : `background:${a.tagBg};color:${a.tagColor}`;
+    const emojiPrefix = a.emoji ? `${a.emoji} ` : '';
+    const linkHtml = a.link ? `<a href="${a.link}" target="_blank" onclick="event.stopPropagation()" style="margin-left:8px;font-size:11px;font-weight:700;color:#0D9488;text-decoration:underline">Open link →</a>` : '';
     return `
       <div class="announce-item" style="position:relative">
         <div class="announce-bar" style="background:${a.color}"></div>
         <div class="announce-body">
           <span class="announce-tag" style="${urgentStyle}">${a.tag}</span>
-          <div class="announce-text">${a.text}</div>
+          <div class="announce-text">${emojiPrefix}${a.text}${linkHtml}</div>
           <div class="announce-meta">Posted by ${a.by} · ${a.time}</div>
         </div>
         ${actions}
@@ -4670,14 +4672,34 @@ function announceStartScroll(list){
   announceScrollAnim = requestAnimationFrame(step);
 }
 
-function announceOpenModal(title, text, tag){
+const ANNOUNCE_EMOJIS = ['🎉','⚠️','📅','✅','💡'];
+let announceSelectedEmoji = '';
+
+function announceOpenModal(title, text, tag, link, emoji){
   announceSelectedTag = tag || 'Info';
+  announceSelectedEmoji = emoji || '';
   document.getElementById('announce-modal-title').textContent = title;
   document.getElementById('announce-input').value = text || '';
+  document.getElementById('announce-link').value = link || '';
   document.getElementById('announce-modal').style.display = 'flex';
   announceRenderTags();
+  announceRenderEmojis();
   setTimeout(()=>document.getElementById('announce-input').focus(),100);
 }
+
+function announceRenderEmojis(){
+  const c = document.getElementById('announce-emojis');
+  if(!c) return;
+  c.innerHTML = ANNOUNCE_EMOJIS.map(e=>{
+    const active = announceSelectedEmoji===e;
+    return `<button onclick="announceSelectEmoji('${e}')" style="width:38px;height:38px;border-radius:9px;border:2px solid ${active?'#0D9488':'#E2E8F0'};background:${active?'rgba(13,148,136,0.08)':'#fff'};font-size:18px;cursor:pointer;transition:all 0.15s;display:flex;align-items:center;justify-content:center">${e}</button>`;
+  }).join('') + `<button onclick="announceSelectEmoji('')" style="width:38px;height:38px;border-radius:9px;border:2px solid ${!announceSelectedEmoji?'#0D9488':'#E2E8F0'};background:${!announceSelectedEmoji?'rgba(13,148,136,0.08)':'#fff'};font-size:12px;font-weight:700;color:#94A3B8;cursor:pointer;transition:all 0.15s">None</button>`;
+}
+
+window.announceSelectEmoji = function(e){
+  announceSelectedEmoji = e;
+  announceRenderEmojis();
+};
 
 function announceRenderTags(){
   const container = document.getElementById('announce-tags');
@@ -4702,15 +4724,16 @@ window.announceCloseModal = function(){
 window.announceSubmit = function(){
   const text = document.getElementById('announce-input').value.trim();
   if(!text){ toast('Please write something first'); return; }
+  const link = document.getElementById('announce-link').value.trim();
   const s = announceTags[announceSelectedTag]||announceTags.Info;
   const now = new Date();
   const time = 'Today, '+now.getHours()+':'+String(now.getMinutes()).padStart(2,'0');
   if(announceEditId!==null){
     const a = announcements.find(a=>a.id===announceEditId);
-    if(a){ a.text=text; a.tag=announceSelectedTag; Object.assign(a,s); }
+    if(a){ a.text=text; a.tag=announceSelectedTag; a.link=link; a.emoji=announceSelectedEmoji; Object.assign(a,s); }
     toast('Updated ✓');
   } else {
-    announcements.unshift({id:announceNextId++, text, tag:announceSelectedTag, ...s, by:'John', time, ts:Date.now()});
+    announcements.unshift({id:announceNextId++, text, tag:announceSelectedTag, link, emoji:announceSelectedEmoji, ...s, by:'John', time, ts:Date.now()});
     toast('Posted ✓');
   }
   announceCloseModal();
@@ -4719,14 +4742,14 @@ window.announceSubmit = function(){
 
 window.announceAdd = function(){
   announceEditId = null;
-  announceOpenModal('Post Announcement','','Info');
+  announceOpenModal('Post Announcement','','Info','','');
 };
 
 window.announceEdit = function(id){
   const a = announcements.find(a=>a.id===id);
   if(!a) return;
   announceEditId = id;
-  announceOpenModal('Edit Announcement', a.text, a.tag);
+  announceOpenModal('Edit Announcement', a.text, a.tag, a.link, a.emoji);
 };
 
 window.announceDel = function(id){
@@ -4959,9 +4982,13 @@ window.nav = function(id, pushState){
   <div style="background:white;border-radius:16px;padding:32px;width:480px;max-width:90vw;box-shadow:0 24px 64px rgba(0,0,0,0.2)">
     <div style="font-size:17px;font-weight:800;color:#0F1E2E;margin-bottom:6px" id="announce-modal-title">Post Announcement</div>
     <div style="font-size:13px;color:#94A3B8;margin-bottom:20px">Visible to everyone on the team</div>
-    <textarea id="announce-input" placeholder="Write your announcement here..." style="width:100%;height:110px;padding:14px;border:1.5px solid #E2E8F0;border-radius:10px;font-family:'Poppins',sans-serif;font-size:14px;color:#0F1E2E;resize:none;outline:none;line-height:1.6;box-sizing:border-box"></textarea>
-    <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;color:#94A3B8;margin:16px 0 10px">Tag</div>
-    <div id="announce-tags" style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:28px"></div>
+    <textarea id="announce-input" placeholder="Write your announcement here..." style="width:100%;height:90px;padding:14px;border:1.5px solid #E2E8F0;border-radius:10px;font-family:'Poppins',sans-serif;font-size:14px;color:#0F1E2E;resize:none;outline:none;line-height:1.6;box-sizing:border-box"></textarea>
+    <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;color:#94A3B8;margin:14px 0 8px">Link (optional)</div>
+    <input id="announce-link" type="text" placeholder="https://..." style="width:100%;padding:11px 14px;border:1.5px solid #E2E8F0;border-radius:9px;font-family:'Poppins',sans-serif;font-size:13px;color:#0F1E2E;outline:none;box-sizing:border-box">
+    <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;color:#94A3B8;margin:16px 0 8px">Add an emoji</div>
+    <div id="announce-emojis" style="display:flex;gap:8px;margin-bottom:16px"></div>
+    <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;color:#94A3B8;margin:0 0 10px">Tag</div>
+    <div id="announce-tags" style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:24px"></div>
     <div style="display:flex;gap:10px">
       <button onclick="announceSubmit()" style="flex:1;padding:13px;background:#0F1E2E;border:none;border-radius:9px;font-family:'Poppins',sans-serif;font-size:14px;font-weight:700;color:white;cursor:pointer">Post</button>
       <button onclick="announceCloseModal()" style="padding:13px 20px;background:#F1F5F9;border:none;border-radius:9px;font-family:'Poppins',sans-serif;font-size:14px;font-weight:600;color:#64748B;cursor:pointer">Cancel</button>

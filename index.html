@@ -4736,18 +4736,21 @@ window.announceInsertEmoji = function(id){
   badge.dataset.emoji = e.id;
   badge.style.cssText = 'display:inline-block;width:18px;height:18px;border-radius:50%;background:'+e.bg+';vertical-align:0px;margin:0 2px;text-align:center;line-height:18px;user-select:none';
   badge.innerHTML = e.svg.replace('width="14" height="14"','width="10" height="10"');
+  const spacer = document.createTextNode('\u200B');
   input.focus();
   const sel = window.getSelection();
   let range;
   if(sel.rangeCount > 0 && input.contains(sel.anchorNode)){
     range = sel.getRangeAt(0);
     range.deleteContents();
+    range.insertNode(spacer);
     range.insertNode(badge);
   } else {
     input.appendChild(badge);
+    input.appendChild(spacer);
     range = document.createRange();
   }
-  range.setStartAfter(badge);
+  range.setStart(spacer, 1);
   range.collapse(true);
   sel.removeAllRanges();
   sel.addRange(range);

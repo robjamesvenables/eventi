@@ -5378,12 +5378,13 @@ function openAddMoment(){
   appModalShow({
     title: 'Add a Moment',
     fields: [
+      {label: 'Photo', type: 'file'},
       {label: 'Caption', placeholder: 'e.g. Happy Birthday Greta! \ud83c\udf89'},
       {label: 'Tag', placeholder: 'e.g. Birthday, Team, Celebration'}
     ],
-    onOk([caption, tag]){
+    onOk([img, caption, tag]){
       momentsData.push({
-        img: momentsData[0].img,
+        img: img,
         tag: '\ud83d\udcf8 ' + (tag||'Moment'),
         caption,
         meta: 'Posted by Robbie \u00b7 Today'
@@ -5503,27 +5504,84 @@ function appModalShow({title, sub='', fields, onOk}){
   document.getElementById('appModalTitle').textContent = title;
   document.getElementById('appModalSub').textContent = sub;
   const fc = document.getElementById('appModalFields');
-  fc.innerHTML = fields.map((f,i)=>`
+  fc.innerHTML = fields.map((f,i)=>{
+    if(f.type==='file'){
+      return `
+    <div style="margin-bottom:${i<fields.length-1?'14px':'0'}">
+      ${f.label?`<div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.7px;color:#94A3B8;margin-bottom:6px">${f.label}</div>`:''}
+      <div id="appModalFilePreviewWrap_${i}" style="display:none;margin-bottom:8px">
+        <img id="appModalFilePreview_${i}" style="width:100%;height:140px;object-fit:cover;border-radius:9px;border:1.5px solid #E2E8F0;display:block">
+      </div>
+      <label id="appModalFileLabelWrap_${i}" style="display:flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:11px 14px;border:1.5px dashed #CBD5E1;border-radius:9px;font-family:'Poppins',sans-serif;font-size:13px;color:#64748B;cursor:pointer;box-sizing:border-box"
+        onmouseover="this.style.borderColor='#0D9488'" onmouseout="this.style.borderColor='#CBD5E1'">
+        <span id="appModalFileLabel_${i}">Choose photo</span>
+        <input id="appModalField_${i}" type="file" accept="image/*" style="display:none" onchange="appModalFilePreview(${i})">
+      </label>
+    </div>`;
+    }
+    return `
     <div style="margin-bottom:${i<fields.length-1?'14px':'0'}">
       ${f.label?`<div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.7px;color:#94A3B8;margin-bottom:6px">${f.label}</div>`:''}
       <input id="appModalField_${i}" type="text" value="${f.value||''}" placeholder="${f.placeholder||''}"
         style="width:100%;padding:11px 14px;border:1.5px solid #E2E8F0;border-radius:9px;font-family:'Poppins',sans-serif;font-size:14px;color:#0F1E2E;outline:none;box-sizing:border-box"
         onfocus="this.style.borderColor='#0D9488'" onblur="this.style.borderColor='#E2E8F0'">
-    </div>`).join('');
+    </div>`;
+  }).join('');
   const modal = document.getElementById('appModal');
   modal.style.display='flex';
-  setTimeout(()=>{ const f=document.getElementById('appModalField_0'); if(f) f.focus(); },80);
-  document.getElementById('appModalOk').onclick = ()=>{
-    const vals = fields.map((_,i)=>document.getElementById('appModalField_'+i).value.trim());
+  setTimeout(()=>{ const f=document.getElementById('appModalField_0'); if(f && f.type!=='file') f.focus(); },80);
+  document.getElementById('appModalOk').onclick = async ()=>{
+    const vals = [];
+    for(let i=0;i<fields.length;i++){
+      const el = document.getElementById('appModalField_'+i);
+      if(fields[i].type==='file'){
+        if(el.files && el.files[0]){
+          vals.push(await appFileToDataUrl(el.files[0]));
+        } else {
+          vals.push('');
+        }
+      } else {
+        vals.push(el.value.trim());
+      }
+    }
     const firstEmpty = vals.findIndex(v=>v==='');
-    if(firstEmpty>-1){ document.getElementById('appModalField_'+firstEmpty).focus(); return; }
+    if(firstEmpty>-1){
+      const el = document.getElementById('appModalField_'+firstEmpty);
+      if(fields[firstEmpty].type==='file'){
+        const wrap = document.getElementById('appModalFileLabelWrap_'+firstEmpty);
+        wrap.style.borderColor = '#EF4444';
+        setTimeout(()=>{ wrap.style.borderColor = '#CBD5E1'; }, 1200);
+      } else {
+        el.focus();
+      }
+      return;
+    }
     appModalClose();
     onOk(vals);
   };
   // Enter key submit
-  fc.querySelectorAll('input').forEach(inp=>{
+  fc.querySelectorAll('input[type="text"]').forEach(inp=>{
     inp.onkeydown = e=>{ if(e.key==='Enter') document.getElementById('appModalOk').click(); };
   });
+}
+function appFileToDataUrl(file){
+  return new Promise((resolve, reject)=>{
+    const reader = new FileReader();
+    reader.onload = ()=>resolve(reader.result);
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+function appModalFilePreview(i){
+  const el = document.getElementById('appModalField_'+i);
+  if(!(el.files && el.files[0])) return;
+  const label = document.getElementById('appModalFileLabel_'+i);
+  const wrap = document.getElementById('appModalFilePreviewWrap_'+i);
+  const img = document.getElementById('appModalFilePreview_'+i);
+  label.textContent = el.files[0].name;
+  const reader = new FileReader();
+  reader.onload = ()=>{ img.src = reader.result; wrap.style.display='block'; };
+  reader.readAsDataURL(el.files[0]);
 }
 function appModalClose(){ document.getElementById('appModal').style.display='none'; }
 

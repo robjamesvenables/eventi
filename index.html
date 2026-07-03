@@ -1506,8 +1506,11 @@ textarea.rf-val{resize:vertical;min-height:72px;line-height:1.5}
 .moments-hd{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
 .moments-hd-title{font-size:13px;font-weight:800;color:var(--navy);text-transform:uppercase;letter-spacing:1px;display:flex;align-items:center;gap:8px}
 .moments-hd-dot{width:8px;height:8px;border-radius:50%;background:#0D9488}
-.moments-strip-outer{overflow:hidden;position:relative;cursor:grab}
-.moments-strip-outer:active{cursor:grabbing}
+.moments-strip-outer{position:relative;overflow-x:auto;overflow-y:hidden;-webkit-overflow-scrolling:touch;scrollbar-width:thin;scrollbar-color:#0D9488 #E2E8F0;padding-bottom:8px}
+.moments-strip-outer::-webkit-scrollbar{height:7px}
+.moments-strip-outer::-webkit-scrollbar-track{background:#E2E8F0;border-radius:4px}
+.moments-strip-outer::-webkit-scrollbar-thumb{background:#0D9488;border-radius:4px}
+.moments-strip-outer.moments-fit{overflow-x:hidden;padding-bottom:0}
 .moments-strip{display:flex;gap:14px;width:max-content}
 .moment-card{position:relative;width:200px;flex-shrink:0;background:white;border-radius:12px;overflow:hidden;box-shadow:0 2px 10px rgba(0,0,0,0.08);border:1px solid #E2E8F0;cursor:pointer;transition:transform 0.2s,box-shadow 0.2s}
 .moment-card-del{position:absolute;top:8px;right:8px;width:24px;height:24px;border-radius:50%;background:rgba(15,30,46,0.55);border:none;color:white;font-size:14px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;z-index:2}
@@ -5264,55 +5267,24 @@ function kitchenAddLink(btn){
 
 
 // ── MOMENTS ──
-let momentsScrollPaused = false;
-let momentsScrollX = 0;
-let momentsRAF = null;
-
 function momentsInitScroll(){
   const strip = document.getElementById('moments-strip');
   const outer = document.getElementById('moments-outer');
   if(!strip || !outer) return;
 
-  const origCards = Array.from(strip.children);
+  const cards = Array.from(strip.children);
   const outerW = outer.offsetWidth || 800;
   const cardW = 200 + 14; // card width + gap
-  const naturalW = origCards.length * cardW - 14; // total width of cards as-is (minus trailing gap)
+  const naturalW = cards.length * cardW - 14; // total width of cards as-is (minus trailing gap)
 
+  // If cards fit within the visible area, keep it static (no scrollbar).
+  // Otherwise, allow native left-right scrolling with a visible scrollbar.
   if(naturalW <= outerW){
-    strip.style.transform = 'translateX(0px)';
-    strip.querySelectorAll('.moment-card').forEach(card=>{
-      const idx = parseInt(card.dataset.idx||'0');
-      card.onclick = ()=>openMoment(idx);
-    });
-    return;
+    outer.classList.add('moments-fit');
+    outer.scrollLeft = 0;
+  } else {
+    outer.classList.remove('moments-fit');
   }
-
-  const copies = Math.ceil((outerW * 3) / (origCards.length * cardW)) + 1;
-  for(let i = 0; i < copies; i++){
-    origCards.forEach(card=>{
-      strip.appendChild(card.cloneNode(true));
-    });
-  }
-  strip.querySelectorAll('.moment-card').forEach(card=>{
-    const idx = parseInt(card.dataset.idx||'0');
-    card.onclick = ()=>openMoment(idx);
-  });
-
-  const singleSetW = origCards.length * cardW;
-  momentsScrollX = 0;
-
-  outer.addEventListener('mouseenter',()=>{ momentsScrollPaused=true; });
-  outer.addEventListener('mouseleave',()=>{ momentsScrollPaused=false; });
-
-  function tick(){
-    if(!momentsScrollPaused){
-      momentsScrollX += 0.5;
-      if(momentsScrollX >= singleSetW) momentsScrollX = 0;
-      strip.style.transform = `translateX(-${momentsScrollX}px)`;
-    }
-    momentsRAF = requestAnimationFrame(tick);
-  }
-  tick();
 }
 
 let momentsCurrentIdx = null;
@@ -5377,14 +5349,18 @@ function momentsRebuild(){
         <div class="moment-card-meta">${m.meta}</div>
       </div>
     </div>`).join('');
-  momentsScrollX = 0;
-  if(momentsRAF) cancelAnimationFrame(momentsRAF);
   momentsInitScroll();
 }
 
 document.addEventListener('DOMContentLoaded', function(){
   const strip = document.getElementById('moments-strip');
   if(strip) momentsRebuild();
+});
+
+let momentsResizeTimer;
+window.addEventListener('resize', ()=>{
+  clearTimeout(momentsResizeTimer);
+  momentsResizeTimer = setTimeout(momentsInitScroll, 150);
 });
 
 // ── MOMENTS DATA ──

@@ -1474,7 +1474,6 @@ textarea.rf-val{resize:vertical;min-height:72px;line-height:1.5}
 .home-greeting-time{font-size:12px;font-weight:600;color:var(--teal);text-transform:uppercase;letter-spacing:2px;margin-bottom:6px}
 .home-greeting-title{font-size:28px;font-weight:800;color:var(--navy);line-height:1.2}
 .home-greeting-sub{font-size:14px;font-weight:300;color:var(--ink2);margin-top:6px}
-.stat-new-badge{position:absolute;top:10px;right:12px;background:#EF4444;color:white;font-size:9px;font-weight:800;letter-spacing:0.5px;padding:2px 7px;border-radius:20px}
 .home-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;align-items:start}
 .home-section-label{font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:#64748B;margin-bottom:12px;padding-top:20px;border-top:1px solid #94A3B8;padding-left:2px}
 /* ANNOUNCEMENTS */
@@ -1893,22 +1892,18 @@ textarea.rf-val{resize:vertical;min-height:72px;line-height:1.5}
       <!-- STATS ROW -->
       <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:20px">
         <div style="background:#0F1E2E;border-radius:12px;padding:14px 16px;position:relative">
-          <div class="stat-new-badge" id="stat-new-events" style="display:none">NEW</div>
           <div style="font-size:26px;font-weight:800;color:#2DD4BF" id="stat-events">6</div>
           <div style="font-size:11px;font-weight:600;color:rgba(255,255,255,0.55);text-transform:uppercase;letter-spacing:0.8px;margin-top:2px">Active Events</div>
         </div>
         <div style="background:#0F1E2E;border-radius:12px;padding:14px 16px;position:relative">
-          <div class="stat-new-badge" id="stat-new-tasks" style="display:none">NEW</div>
           <div style="font-size:26px;font-weight:800;color:#2DD4BF" id="stat-tasks">5</div>
           <div style="font-size:11px;font-weight:600;color:rgba(255,255,255,0.55);text-transform:uppercase;letter-spacing:0.8px;margin-top:2px">Open Tasks</div>
         </div>
         <div style="background:#0F1E2E;border-radius:12px;padding:14px 16px;position:relative">
-          <div class="stat-new-badge" id="stat-new-links" style="display:none">NEW</div>
           <div style="font-size:26px;font-weight:800;color:#2DD4BF" id="stat-links">4</div>
           <div style="font-size:11px;font-weight:600;color:rgba(255,255,255,0.55);text-transform:uppercase;letter-spacing:0.8px;margin-top:2px">Quick Links</div>
         </div>
         <div style="background:#0F1E2E;border-radius:12px;padding:14px 16px;position:relative">
-          <div class="stat-new-badge" id="stat-new-moments" style="display:none">NEW</div>
           <div style="font-size:26px;font-weight:800;color:#2DD4BF" id="stat-moments">7</div>
           <div style="font-size:11px;font-weight:600;color:rgba(255,255,255,0.55);text-transform:uppercase;letter-spacing:0.8px;margin-top:2px">Moments</div>
         </div>
@@ -3743,38 +3738,6 @@ function initHome(){
 
   const statMoments = document.getElementById('stat-moments');
   if(statMoments) statMoments.textContent = (typeof momentsData !== 'undefined') ? momentsData.length : '0';
-
-  const DAY_MS = 24*60*60*1000;
-
-  // Active Events - check static event cards for a recent-creation marker
-  const newEventsBadge = document.getElementById('stat-new-events');
-  if(newEventsBadge){
-    const eventCards = document.querySelectorAll('#p-dash .ev-card[data-created-days-ago]');
-    const hasNewEvent = Array.from(eventCards).some(c => parseFloat(c.dataset.createdDaysAgo) < 1);
-    newEventsBadge.style.display = hasNewEvent ? 'block' : 'none';
-  }
-
-  // Open Tasks - check kanban tasks across all columns
-  const newTasksBadge = document.getElementById('stat-new-tasks');
-  if(newTasksBadge && typeof kanbanState !== 'undefined'){
-    const allTasks = [...kanbanState.todo, ...kanbanState.progress, ...kanbanState.done];
-    const hasNewTask = allTasks.some(t => t.createdAt && (Date.now() - t.createdAt) < DAY_MS);
-    newTasksBadge.style.display = hasNewTask ? 'block' : 'none';
-  }
-
-  // Quick Links - reuse the same real timestamps used for the row-level New badge
-  const newLinksBadge = document.getElementById('stat-new-links');
-  if(newLinksBadge && typeof quickLinksData !== 'undefined'){
-    const hasNewLink = quickLinksData.some(f => f.createdAt && (Date.now() - f.createdAt) < DAY_MS);
-    newLinksBadge.style.display = hasNewLink ? 'block' : 'none';
-  }
-
-  // Moments - same real timestamps used for the age badges
-  const newMomentsBadge = document.getElementById('stat-new-moments');
-  if(newMomentsBadge && typeof momentsData !== 'undefined'){
-    const hasNewMoment = momentsData.some(m => m.createdAt && (Date.now() - m.createdAt) < DAY_MS);
-    newMomentsBadge.style.display = hasNewMoment ? 'block' : 'none';
-  }
 }
 
 // Handle browser back/forward

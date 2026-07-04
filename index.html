@@ -1788,6 +1788,11 @@ textarea.rf-val{resize:vertical;min-height:72px;line-height:1.5}
       <svg class="sb-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
       Dashboard
     </button>
+    <button class="sb-link" id="n-quicklinks" onclick="nav('quicklinks')">
+      <svg class="sb-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+      Quick Links
+      <span class="sb-badge" id="sb-badge-quicklinks">0</span>
+    </button>
     <button class="sb-link" id="n-mydrive" onclick="nav('mydrive')">
       <svg class="sb-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
       My Drive
@@ -2017,6 +2022,22 @@ textarea.rf-val{resize:vertical;min-height:72px;line-height:1.5}
     </div><!-- /p-home -->
 
     <!-- MY DRIVE -->
+    <div class="page" id="p-quicklinks" style="padding:32px 28px 0">
+      <div class="ph">
+        <div>
+          <div class="ph-title">Quick Links</div>
+          <div class="ph-sub">Important links for what's happening right now — everyone can see and add</div>
+        </div>
+        <button class="btn btn-navy" onclick="quickLinksAdd()">+ Add Link</button>
+      </div>
+      <div id="ql-list"></div>
+      <div id="ql-empty" style="display:none;text-align:center;padding:48px;color:#94A3B8">
+        <div style="margin-bottom:12px"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#CBD5E1" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="margin:0 auto;display:block"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg></div>
+        <div style="font-size:14px;font-weight:600;color:#0F1E2E;margin-bottom:6px">No quick links yet</div>
+        <div style="font-size:13px">Click "+ Add Link" to share the first one</div>
+      </div>
+    </div>
+
     <div class="page" id="p-mydrive" style="padding:32px 28px 0">
       <div class="ph">
         <div>
@@ -3587,6 +3608,7 @@ function nav(id, pushState=true){
   if(id==='notes'){mnRender();}
   if(id==='cal'){calRender();}
   if(id==='home'){initHome(); announceRender();}
+  if(id==='quicklinks'){quickLinksRender();}
   if(id==='music'){musicRender();}
   const floatBtn=document.getElementById('float-edit');
   if(floatBtn)floatBtn.style.display=id==='beo'?'block':'none';
@@ -3649,16 +3671,19 @@ function doLogin(){
     setCurrentUserFromEmail(e.value.trim());
     document.getElementById('login').style.display='none';
     document.getElementById('app').style.display='flex';
+    quickLinksRender();
     nav('home');
   } else {
     toast('Please enter your email and password');
   }
 }
+let currentUserFirstName = 'John';
 function setCurrentUserFromEmail(email){
   let firstName = 'there';
   const local = (email.split('@')[0]||'').trim();
   const cleaned = local.split(/[._\d]+/).filter(Boolean)[0];
   if(cleaned) firstName = cleaned.charAt(0).toUpperCase() + cleaned.slice(1).toLowerCase();
+  currentUserFirstName = firstName;
   const greeting = document.getElementById('home-greeting-title');
   if(greeting) greeting.textContent = 'Good to see you, ' + firstName;
 }
@@ -5150,6 +5175,91 @@ window.myDriveDeleteFile = function(id){
 };
 
 window.myDriveAdd = function(){ myDriveAddFile(); };
+
+// ── QUICK LINKS ──
+let quickLinksData = [
+  {id:1, name:'Horizon Tech Summit — BEO', url:'https://docs.google.com/document/d/example-beo', type:'docs', by:'Robbie', meta:'Added by Robbie · Today'},
+  {id:2, name:'Solaris Beach Festival — Run of Show', url:'https://docs.google.com/spreadsheets/d/example-ros', type:'sheets', by:'Robbie', meta:'Added by Robbie · Today'},
+];
+let quickLinksNextId = 10;
+
+function quickLinksDetectType(url){
+  if(url.includes('docs.google.com/spreadsheets')) return 'sheets';
+  if(url.includes('docs.google.com/document')) return 'docs';
+  if(url.includes('docs.google.com/presentation')) return 'slides';
+  if(url.includes('drive.google.com')) return 'drive';
+  return 'link';
+}
+
+function quickLinksRender(){
+  const list = document.getElementById('ql-list');
+  const empty = document.getElementById('ql-empty');
+  const badge = document.getElementById('sb-badge-quicklinks');
+  if(badge) badge.textContent = quickLinksData.length;
+  if(!list) return;
+  if(quickLinksData.length===0){
+    list.innerHTML='';
+    if(empty) empty.style.display='block';
+    return;
+  }
+  if(empty) empty.style.display='none';
+  const svgIcons = {
+    sheets: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#16A34A" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M3 15h18M9 3v18"/></svg>`,
+    docs: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#2563EB" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>`,
+    slides: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#D97706" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>`,
+    drive: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#9333EA" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 16 12 14 15 10 15 8 12 2 12"/><path d="M5.45 5.11L2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/></svg>`,
+    link: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#64748B" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>`,
+  };
+  const bgMap = {sheets:'#E8F5E9', docs:'#DBEAFE', slides:'#FEF3C7', drive:'#F3E4FF', link:'#F1F5F9'};
+  list.innerHTML = quickLinksData.map(f=>{
+    const shortUrl = f.url.replace('https://','').split('/')[0];
+    const ico = svgIcons[f.type]||svgIcons.link;
+    const bg = bgMap[f.type]||bgMap.link;
+    return `
+      <div class="myd-file-row">
+        <div class="myd-file-row-ico" style="background:${bg}">${ico}</div>
+        <div style="flex:1;min-width:0">
+          <div class="myd-file-row-name">${f.name}</div>
+          <div class="myd-file-row-url">${shortUrl} · ${f.meta}</div>
+        </div>
+        <div class="myd-file-row-actions">
+          <button class="btn btn-navy" style="font-size:12px;padding:7px 14px" onclick="window.open('${f.url}','_blank')">↗ Open</button>
+          <button class="btn btn-ghost" style="font-size:12px;padding:7px 14px" onclick="navigator.clipboard.writeText('${f.url}');toast('Copied ✓')">Copy</button>
+          <button class="btn btn-ghost" style="font-size:12px;padding:7px 10px;color:#EF4444;border-color:#FECACA" onclick="quickLinksDelete(${f.id})">×</button>
+        </div>
+      </div>`;
+  }).join('');
+}
+
+function quickLinksAdd(){
+  appModalShow({
+    title:'Add Quick Link',
+    fields:[
+      {label:'Link name', placeholder:'e.g. Solaris Beach Festival — BEO'},
+      {label:'URL', placeholder:'https://...'}
+    ],
+    onOk([name, url]){
+      if(!url) return;
+      const type = quickLinksDetectType(url);
+      quickLinksData.unshift({
+        id: quickLinksNextId++,
+        name, url, type,
+        by: currentUserFirstName,
+        meta: 'Added by ' + currentUserFirstName + ' · Today'
+      });
+      quickLinksRender();
+      toast('Quick link added ✓');
+    }
+  });
+}
+
+function quickLinksDelete(id){
+  appConfirmShow({title:'Remove Quick Link', msg:'Remove this link for everyone? This cannot be undone.', onOk:()=>{
+    quickLinksData = quickLinksData.filter(f=>f.id!==id);
+    quickLinksRender();
+    toast('Removed');
+  }});
+}
 
 const _origNavMD = window.nav;
 window.nav = function(id, pushState){

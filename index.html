@@ -1472,8 +1472,15 @@ textarea.rf-val{resize:vertical;min-height:72px;line-height:1.5}
 /* ── HOME DASHBOARD ── */
 .home-greeting{margin-bottom:28px}
 .home-greeting-time{font-size:12px;font-weight:600;color:var(--teal);text-transform:uppercase;letter-spacing:2px;margin-bottom:6px}
-.home-greeting-title{font-size:28px;font-weight:800;color:var(--navy);line-height:1.2}
-.home-greeting-sub{font-size:14px;font-weight:300;color:var(--ink2);margin-top:6px}
+.sky-banner{border-radius:16px;padding:22px 26px 20px;margin-bottom:20px;transition:background 1.5s ease;box-shadow:0 4px 20px rgba(0,0,0,0.12)}
+.sky-banner-top{display:flex;justify-content:space-between;align-items:flex-start}
+.sky-greeting{font-size:26px;font-weight:800;color:white;text-shadow:0 1px 4px rgba(0,0,0,0.15)}
+.sky-date{font-size:13px;color:rgba(255,255,255,0.85);margin-top:4px}
+.sky-icon{font-size:34px;line-height:1}
+.sky-banner-bottom{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-top:20px}
+.sky-stat{background:rgba(255,255,255,0.16);border-radius:10px;padding:10px 12px;backdrop-filter:blur(2px)}
+.sky-stat-value{font-size:19px;font-weight:800;color:white}
+.sky-stat-label{font-size:10.5px;font-weight:600;color:rgba(255,255,255,0.8);text-transform:uppercase;letter-spacing:0.6px;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .home-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;align-items:start}
 .home-section-label{font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:#64748B;margin-bottom:12px;padding-top:20px;border-top:1px solid #94A3B8;padding-left:2px}
 /* ANNOUNCEMENTS */
@@ -1884,28 +1891,33 @@ textarea.rf-val{resize:vertical;min-height:72px;line-height:1.5}
 
     <!-- HOME -->
     <div class="page" id="p-home" style="padding:20px 28px 0">
-      <div class="home-greeting">
-        <div class="home-greeting-title" id="home-greeting-title" style="font-size:32px;font-weight:800;color:var(--navy)">Good to see you, John</div>
-        <div class="home-greeting-sub" id="home-date-label" style="font-size:13px;color:var(--ink2);margin-top:4px"></div>
-      </div>
 
-      <!-- STATS ROW -->
-      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:20px">
-        <div style="background:#0F1E2E;border-radius:12px;padding:14px 16px;position:relative">
-          <div style="font-size:26px;font-weight:800;color:#2DD4BF" id="stat-events">6</div>
-          <div style="font-size:11px;font-weight:600;color:rgba(255,255,255,0.55);text-transform:uppercase;letter-spacing:0.8px;margin-top:2px">Active Events</div>
+      <!-- SKY BANNER -->
+      <div class="sky-banner" id="sky-banner">
+        <div class="sky-banner-top">
+          <div>
+            <div class="sky-greeting" id="sky-greeting">Good morning, John</div>
+            <div class="sky-date" id="home-date-label"></div>
+          </div>
+          <div class="sky-icon" id="sky-icon">☀️</div>
         </div>
-        <div style="background:#0F1E2E;border-radius:12px;padding:14px 16px;position:relative">
-          <div style="font-size:26px;font-weight:800;color:#2DD4BF" id="stat-tasks">5</div>
-          <div style="font-size:11px;font-weight:600;color:rgba(255,255,255,0.55);text-transform:uppercase;letter-spacing:0.8px;margin-top:2px">Open Tasks</div>
-        </div>
-        <div style="background:#0F1E2E;border-radius:12px;padding:14px 16px;position:relative">
-          <div style="font-size:26px;font-weight:800;color:#2DD4BF" id="stat-links">4</div>
-          <div style="font-size:11px;font-weight:600;color:rgba(255,255,255,0.55);text-transform:uppercase;letter-spacing:0.8px;margin-top:2px">Quick Links</div>
-        </div>
-        <div style="background:#0F1E2E;border-radius:12px;padding:14px 16px;position:relative">
-          <div style="font-size:26px;font-weight:800;color:#2DD4BF" id="stat-moments">7</div>
-          <div style="font-size:11px;font-weight:600;color:rgba(255,255,255,0.55);text-transform:uppercase;letter-spacing:0.8px;margin-top:2px">Moments</div>
+        <div class="sky-banner-bottom">
+          <div class="sky-stat">
+            <div class="sky-stat-value" id="sky-clock-bali">--:--</div>
+            <div class="sky-stat-label">Bali · WITA</div>
+          </div>
+          <div class="sky-stat">
+            <div class="sky-stat-value" id="sky-clock-jkt">--:--</div>
+            <div class="sky-stat-label">Jakarta · WIB</div>
+          </div>
+          <div class="sky-stat">
+            <div class="sky-stat-value" id="sky-temp">--°</div>
+            <div class="sky-stat-label" id="sky-condition">Loading weather…</div>
+          </div>
+          <div class="sky-stat">
+            <div class="sky-stat-value" id="sky-sunset">--</div>
+            <div class="sky-stat-label">Until sunset</div>
+          </div>
         </div>
       </div>
 
@@ -3725,19 +3737,85 @@ function initHome(){
   const dateLabel = document.getElementById('home-date-label');
   if(dateLabel) dateLabel.textContent = days[now.getDay()] + ', ' + now.getDate() + ' ' + months[now.getMonth()] + ' ' + now.getFullYear();
 
-  const eventsBadge = document.getElementById('sb-badge-dash');
-  const statEvents = document.getElementById('stat-events');
-  if(statEvents) statEvents.textContent = eventsBadge ? eventsBadge.textContent : '0';
+  updateSkyBanner();
+  fetchBaliWeather();
 
-  const tasksBadge = document.getElementById('sb-badge-kb');
-  const statTasks = document.getElementById('stat-tasks');
-  if(statTasks) statTasks.textContent = tasksBadge ? tasksBadge.textContent : '0';
+  if(!window._skyInterval){
+    window._skyInterval = setInterval(updateSkyBanner, 30000);
+  }
+}
 
-  const statLinks = document.getElementById('stat-links');
-  if(statLinks) statLinks.textContent = (typeof quickLinksData !== 'undefined') ? quickLinksData.length : '0';
+function getZoneHour(tz){
+  return parseInt(new Intl.DateTimeFormat('en-GB', {hour:'2-digit', hour12:false, timeZone:tz}).format(new Date()));
+}
+function getZoneTime(tz){
+  return new Intl.DateTimeFormat('en-GB', {hour:'2-digit', minute:'2-digit', hour12:false, timeZone:tz}).format(new Date());
+}
 
-  const statMoments = document.getElementById('stat-moments');
-  if(statMoments) statMoments.textContent = (typeof momentsData !== 'undefined') ? momentsData.length : '0';
+function updateSkyBanner(){
+  const baliHour = getZoneHour('Asia/Makassar');
+  const banner = document.getElementById('sky-banner');
+  const icon = document.getElementById('sky-icon');
+  let greetingWord, iconChar;
+
+  if(baliHour >= 5 && baliHour < 11){
+    greetingWord = 'morning'; iconChar = '☀️';
+    banner.style.background = 'linear-gradient(135deg, #7DD3FC, #38BDF8)';
+  } else if(baliHour >= 11 && baliHour < 17){
+    greetingWord = 'afternoon'; iconChar = '🌤️';
+    banner.style.background = 'linear-gradient(135deg, #2563EB, #1E3A8A)';
+  } else {
+    greetingWord = 'evening'; iconChar = '🌙';
+    banner.style.background = 'linear-gradient(135deg, #64748B, #334155)';
+  }
+
+  const skyGreeting = document.getElementById('sky-greeting');
+  if(skyGreeting) skyGreeting.textContent = 'Good ' + greetingWord + ', ' + (typeof currentUserFirstName !== 'undefined' ? currentUserFirstName : 'there');
+  if(icon) icon.textContent = iconChar;
+
+  const baliClock = document.getElementById('sky-clock-bali');
+  if(baliClock) baliClock.textContent = getZoneTime('Asia/Makassar');
+  const jktClock = document.getElementById('sky-clock-jkt');
+  if(jktClock) jktClock.textContent = getZoneTime('Asia/Jakarta');
+
+  updateSunsetCountdown();
+}
+
+const WEATHER_CODE_LABELS = {
+  0:'Clear sky', 1:'Mostly clear', 2:'Partly cloudy', 3:'Overcast',
+  45:'Foggy', 48:'Foggy',
+  51:'Light drizzle', 53:'Drizzle', 55:'Heavy drizzle',
+  61:'Light rain', 63:'Rain', 65:'Heavy rain',
+  80:'Rain showers', 81:'Rain showers', 82:'Heavy showers',
+  95:'Thunderstorm', 96:'Thunderstorm', 99:'Thunderstorm'
+};
+
+async function fetchBaliWeather(){
+  try{
+    const res = await fetch('https://api.open-meteo.com/v1/forecast?latitude=-8.65&longitude=115.13&current=temperature_2m,weather_code&daily=sunset&timezone=Asia%2FMakassar');
+    const data = await res.json();
+    const tempEl = document.getElementById('sky-temp');
+    if(tempEl && data.current) tempEl.textContent = Math.round(data.current.temperature_2m) + '°C';
+    const condEl = document.getElementById('sky-condition');
+    if(condEl && data.current) condEl.textContent = WEATHER_CODE_LABELS[data.current.weather_code] || 'Bali weather';
+    if(data.daily && data.daily.sunset && data.daily.sunset[0]){
+      window._baliSunset = new Date(data.daily.sunset[0]);
+      updateSunsetCountdown();
+    }
+  } catch(e){
+    const condEl = document.getElementById('sky-condition');
+    if(condEl) condEl.textContent = 'Weather unavailable';
+  }
+}
+
+function updateSunsetCountdown(){
+  const el = document.getElementById('sky-sunset');
+  if(!el || !window._baliSunset) return;
+  const diff = window._baliSunset.getTime() - Date.now();
+  if(diff <= 0){ el.textContent = 'Set'; return; }
+  const h = Math.floor(diff / (1000*60*60));
+  const m = Math.floor((diff % (1000*60*60)) / (1000*60));
+  el.textContent = h + 'h ' + m + 'm';
 }
 
 // Handle browser back/forward
@@ -3799,8 +3877,6 @@ function setCurrentUserFromEmail(email){
   const cleaned = local.split(/[._\d]+/).filter(Boolean)[0];
   if(cleaned) firstName = cleaned.charAt(0).toUpperCase() + cleaned.slice(1).toLowerCase();
   currentUserFirstName = firstName;
-  const greeting = document.getElementById('home-greeting-title');
-  if(greeting) greeting.textContent = 'Good to see you, ' + firstName;
   const sbName = document.getElementById('sb-uname');
   if(sbName) sbName.textContent = firstName;
   const sbAvatar = document.getElementById('sb-avatar');
@@ -3979,6 +4055,13 @@ function addVendorRow(){
 }
 
 // ── FINANCE ──
+const currencyMap = {
+  IDR: {symbol: 'Rp', locale: 'id-ID'},
+  USD: {symbol: '$', locale: 'en-US'},
+  EUR: {symbol: '\u20ac', locale: 'de-DE'}
+};
+let currentCurrency = 'IDR';
+function initCurrency(){}
 function calcFinTotals(){
   const rows=document.querySelectorAll('#fin-table tbody tr:not(.fsub):not(.ftot)');
   let subtotal=0;
@@ -4752,7 +4835,7 @@ function musicRender(){
       <div class="music-card-name">${p.name}</div>
       <div class="music-card-desc">${p.desc || ''}</div>
       <a class="music-card-open" href="${p.link}" target="_blank">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="white"><path d="M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.66 0 12 0zm5.521 17.34c-.24.359-.66.48-1.021.24-2.82-1.74-6.36-2.101-10.561-1.141-.418.122-.779-.179-.899-.539-.12-.421.18-.78.54-.9 4.56-1.021 8.52-.6 11.64 1.32.42.18.479.659.301 1.02zm1.44-3.3c-.301.42-.841.6-1.262.3-3.239-1.98-8.159-2.58-11.939-1.38-.479.12-1.02-.12-1.14-.6-.12-.48.12-1.021.6-1.141C9.6 9.9 15 10.561 18.72 12.84c.361.181.54.78.241 1.2zm.12-3.36C15.24 8.4 8.82 8.16 5.16 9.301c-.6.179-1.2-.181-1.38-.721-.18-.601.18-1.2.72-1.381 4.26-1.26 11.28-1.02 15.721 1.621.539.3.719 1.02.599-1.559.3z"/></svg>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="white"><path d="M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.66 0 12 0zm5.521 17.34c-.24.359-.66.48-1.021.24-2.82-1.74-6.36-2.101-10.561-1.141-.418.122-.779-.179-.899-.539-.12-.421.18-.78.54-.9 4.56-1.021 8.52-.6 11.64 1.32.42.18.479.659.301 1.02zm1.44-3.3c-.301.42-.841.6-1.262.3-3.239-1.98-8.159-2.58-11.939-1.38-.479.12-1.02-.12-1.14-.6-.12-.48.12-1.021.6-1.141C9.6 9.9 15 10.561 18.72 12.84c.361.181.54.78.241 1.2zm.12-3.36C15.24 8.4 8.82 8.16 5.16 9.301c-.6.179-1.2-.181-1.38-.721-.18-.601.18-1.2.72-1.381 4.26-1.26 11.28-1.02 15.721 1.621.539.3.719 1.02.599 1.6-.3.6-1.02.789-1.559.3z"/></svg>
         Open in Spotify
       </a>
     </div>

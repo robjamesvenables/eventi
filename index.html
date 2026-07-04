@@ -1907,8 +1907,8 @@ textarea.rf-val{resize:vertical;min-height:72px;line-height:1.5}
             <div class="sky-stat-label">Bali · WITA</div>
           </div>
           <div class="sky-stat">
-            <div class="sky-stat-value" id="sky-clock-jkt">--:--</div>
-            <div class="sky-stat-label">Jakarta · WIB</div>
+            <div class="sky-stat-value" id="sky-moon">🌘</div>
+            <div class="sky-stat-label" id="sky-moon-label">Loading…</div>
           </div>
           <div class="sky-stat">
             <div class="sky-stat-value" id="sky-temp">--°</div>
@@ -3775,8 +3775,7 @@ function updateSkyBanner(){
 
   const baliClock = document.getElementById('sky-clock-bali');
   if(baliClock) baliClock.textContent = getZoneTime('Asia/Makassar');
-  const jktClock = document.getElementById('sky-clock-jkt');
-  if(jktClock) jktClock.textContent = getZoneTime('Asia/Jakarta');
+  updateMoonPhase();
 
   updateSunsetDisplay();
 }
@@ -3806,6 +3805,29 @@ async function fetchBaliWeather(){
     const condEl = document.getElementById('sky-condition');
     if(condEl) condEl.textContent = 'Weather unavailable';
   }
+}
+
+const MOON_PHASES = [
+  {icon:'🌑', name:'New Moon'},
+  {icon:'🌒', name:'Waxing Crescent'},
+  {icon:'🌓', name:'First Quarter'},
+  {icon:'🌔', name:'Waxing Gibbous'},
+  {icon:'🌕', name:'Full Moon'},
+  {icon:'🌖', name:'Waning Gibbous'},
+  {icon:'🌗', name:'Last Quarter'},
+  {icon:'🌘', name:'Waning Crescent'}
+];
+function updateMoonPhase(){
+  const synodicMonth = 29.530588853;
+  const knownNewMoon = Date.UTC(2000, 0, 6, 18, 14, 0);
+  const daysSince = (Date.now() - knownNewMoon) / 86400000;
+  const phase = ((daysSince % synodicMonth) + synodicMonth) % synodicMonth;
+  const index = Math.round((phase / synodicMonth) * 8) % 8;
+  const p = MOON_PHASES[index];
+  const iconEl = document.getElementById('sky-moon');
+  if(iconEl) iconEl.textContent = p.icon;
+  const labelEl = document.getElementById('sky-moon-label');
+  if(labelEl) labelEl.textContent = p.name;
 }
 
 function updateSunsetDisplay(){

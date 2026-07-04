@@ -1915,8 +1915,8 @@ textarea.rf-val{resize:vertical;min-height:72px;line-height:1.5}
             <div class="sky-stat-label" id="sky-condition">Loading weather…</div>
           </div>
           <div class="sky-stat">
-            <div class="sky-stat-value" id="sky-sunset">--</div>
-            <div class="sky-stat-label">Until sunset</div>
+            <div class="sky-stat-value" id="sky-sunset">--:--</div>
+            <div class="sky-stat-label">Sunset</div>
           </div>
         </div>
       </div>
@@ -3778,7 +3778,7 @@ function updateSkyBanner(){
   const jktClock = document.getElementById('sky-clock-jkt');
   if(jktClock) jktClock.textContent = getZoneTime('Asia/Jakarta');
 
-  updateSunsetCountdown();
+  updateSunsetDisplay();
 }
 
 const WEATHER_CODE_LABELS = {
@@ -3800,7 +3800,7 @@ async function fetchBaliWeather(){
     if(condEl && data.current) condEl.textContent = WEATHER_CODE_LABELS[data.current.weather_code] || 'Bali weather';
     if(data.daily && data.daily.sunset && data.daily.sunset[0]){
       window._baliSunset = new Date(data.daily.sunset[0]);
-      updateSunsetCountdown();
+      updateSunsetDisplay();
     }
   } catch(e){
     const condEl = document.getElementById('sky-condition');
@@ -3808,14 +3808,10 @@ async function fetchBaliWeather(){
   }
 }
 
-function updateSunsetCountdown(){
+function updateSunsetDisplay(){
   const el = document.getElementById('sky-sunset');
   if(!el || !window._baliSunset) return;
-  const diff = window._baliSunset.getTime() - Date.now();
-  if(diff <= 0){ el.textContent = 'Set'; return; }
-  const h = Math.floor(diff / (1000*60*60));
-  const m = Math.floor((diff % (1000*60*60)) / (1000*60));
-  el.textContent = h + 'h ' + m + 'm';
+  el.textContent = new Intl.DateTimeFormat('en-GB', {hour:'2-digit', minute:'2-digit', hour12:false, timeZone:'Asia/Makassar'}).format(window._baliSunset);
 }
 
 // Handle browser back/forward

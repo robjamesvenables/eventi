@@ -3520,46 +3520,9 @@ textarea.rf-val{resize:vertical;min-height:72px;line-height:1.5}
           <div class="ph-title">SOPs</div>
           <div class="ph-sub">Standard Operating Procedures — select a department</div>
         </div>
+        <button class="btn btn-navy" onclick="sopAddDept()">+ Add Department</button>
       </div>
-      <div class="sop-list">
-
-        <div class="sop-item" onclick="sopOpenDept('kitchen','🍳','Kitchen','#0D9488')">
-          <div class="dept-row-ico" style="background:#0D9488"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 0 0 2-2V2"/><path d="M7 2v20"/><path d="M21 15V2a5 5 0 0 0-5 5v6c0 1.1.9 2 2 2h3zm0 0v7"/></svg></div>
-          <div style="flex:1"><div class="sop-item-title">Kitchen</div><div class="dept-row-count">3 SOPs</div></div>
-          <div class="sop-item-arr">›</div>
-        </div>
-
-        <div class="sop-item" onclick="sopOpenDept('bar','🍹','Bar','#C4973B')">
-          <div class="dept-row-ico" style="background:#C4973B"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 22h8"/><path d="M7 10h10"/><path d="M12 22V10"/><path d="m5 3 7 7 7-7H5z"/></svg></div>
-          <div style="flex:1"><div class="sop-item-title">Bar</div><div class="dept-row-count">2 SOPs</div></div>
-          <div class="sop-item-arr">›</div>
-        </div>
-
-        <div class="sop-item" onclick="sopOpenDept('avit','🎬','AV & IT','#9F1239')">
-          <div class="dept-row-ico" style="background:#9F1239"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8"/><path d="M12 17v4"/></svg></div>
-          <div style="flex:1"><div class="sop-item-title">AV & IT</div><div class="dept-row-count">2 SOPs</div></div>
-          <div class="sop-item-arr">›</div>
-        </div>
-
-        <div class="sop-item" onclick="sopOpenDept('housekeeping','🛏','Housekeeping','#7C3AED')">
-          <div class="dept-row-ico" style="background:#7C3AED"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 4v16"/><path d="M2 8h18a2 2 0 0 1 2 2v10"/><path d="M2 17h20"/><path d="M6 8v9"/></svg></div>
-          <div style="flex:1"><div class="sop-item-title">Housekeeping</div><div class="dept-row-count">2 SOPs</div></div>
-          <div class="sop-item-arr">›</div>
-        </div>
-
-        <div class="sop-item" onclick="sopOpenDept('gro','👥','GRO','#B45309')">
-          <div class="dept-row-ico" style="background:#B45309"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div>
-          <div style="flex:1"><div class="sop-item-title">GRO</div><div class="dept-row-count">1 SOP</div></div>
-          <div class="sop-item-arr">›</div>
-        </div>
-
-        <div class="sop-item" onclick="sopOpenDept('security','🔒','Security','#1E293B')">
-          <div class="dept-row-ico" style="background:#1E293B"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></div>
-          <div style="flex:1"><div class="sop-item-title">Security</div><div class="dept-row-count">2 SOPs</div></div>
-          <div class="sop-item-arr">›</div>
-        </div>
-
-      </div>
+      <div class="sop-list" id="sop-dept-list"></div>
     </div>
 
     <!-- SOP DEPT LIST -->
@@ -3625,6 +3588,7 @@ textarea.rf-val{resize:vertical;min-height:72px;line-height:1.5}
           <div class="ph-title">Vendor Directory</div>
           <div class="ph-sub">Supplier contacts by department</div>
         </div>
+        <button class="btn btn-navy" onclick="vendorAddDept()">+ Add Department</button>
       </div>
       <div id="vendor-dept-view">
         <div class="sop-list" id="vendor-dept-grid"></div>
@@ -4546,6 +4510,50 @@ window.nav = function(id, pushState){
 };
 
 // ── SOPs ──
+const DEPT_COLORS = ['#0D9488','#C4973B','#9F1239','#7C3AED','#B45309','#1E293B','#1E3A8A','#166534','#7F1D1D','#4338CA','#BE123C','#0369A1','#4D7C0F','#C2410C','#374151'];
+
+const sopDepts = [
+  {id:'kitchen', name:'Kitchen', color:'#0D9488', icon:'<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 0 0 2-2V2"/><path d="M7 2v20"/><path d="M21 15V2a5 5 0 0 0-5 5v6c0 1.1.9 2 2 2h3zm0 0v7"/></svg>'},
+  {id:'bar', name:'Bar', color:'#C4973B', icon:'<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 22h8"/><path d="M7 10h10"/><path d="M12 22V10"/><path d="m5 3 7 7 7-7H5z"/></svg>'},
+  {id:'avit', name:'AV & IT', color:'#9F1239', icon:'<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8"/><path d="M12 17v4"/></svg>'},
+  {id:'housekeeping', name:'Housekeeping', color:'#7C3AED', icon:'<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 4v16"/><path d="M2 8h18a2 2 0 0 1 2 2v10"/><path d="M2 17h20"/><path d="M6 8v9"/></svg>'},
+  {id:'gro', name:'GRO', color:'#B45309', icon:'<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>'},
+  {id:'security', name:'Security', color:'#1E293B', icon:'<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>'},
+];
+const DEFAULT_DEPT_ICON = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="9" y1="3" x2="9" y2="21"/></svg>';
+
+function sopRenderDeptList(){
+  const list = document.getElementById('sop-dept-list');
+  if(!list) return;
+  list.innerHTML = sopDepts.map(d=>{
+    const count = (sopData[d.id]||[]).length;
+    return `
+      <div class="sop-item" onclick="sopOpenDept('${d.id}')">
+        <div class="dept-row-ico" style="background:${d.color}">${d.icon}</div>
+        <div style="flex:1"><div class="sop-item-title">${d.name}</div><div class="dept-row-count">${count} SOP${count===1?'':'s'}</div></div>
+        <div class="sop-item-arr">›</div>
+      </div>`;
+  }).join('');
+}
+
+function sopAddDept(){
+  appModalShow({
+    title:'Add Department',
+    fields:[
+      {label:'Department name', placeholder:'e.g. Maintenance'},
+      {label:'Colour', type:'color', options: DEPT_COLORS}
+    ],
+    onOk([name, color]){
+      const id = name.trim().toLowerCase().replace(/[^a-z0-9]+/g,'-');
+      if(!id || sopDepts.find(d=>d.id===id)){ toast('Please use a unique department name'); return; }
+      sopDepts.push({id, name, color, icon: DEFAULT_DEPT_ICON});
+      sopData[id] = [];
+      sopRenderDeptList();
+      toast('Department added ✓');
+    }
+  });
+}
+
 const sopData = {
   kitchen: [
     {title:'Opening Checklist', meta:'Last updated: Jun 2026', files:[]},
@@ -4575,9 +4583,10 @@ const sopData = {
 let currentSopDept = 'kitchen';
 let currentSopDoc = 0;
 
-function sopOpenDept(dept, ico, name, color){
+function sopOpenDept(dept){
   currentSopDept = dept;
-  document.getElementById('sop-dept-title').textContent = name;
+  const d = sopDepts.find(x=>x.id===dept);
+  document.getElementById('sop-dept-title').textContent = d ? d.name : '';
   const list = document.getElementById('sop-list-items');
   const items = sopData[dept] || [];
   list.innerHTML = items.map((s,i) => `
@@ -4653,7 +4662,7 @@ function sopNewDoc(){
     onOk([name, url]){
       const files = url ? [{name: name, url: url}] : [];
       sopData[currentSopDept].push({title:name, meta:'Just created', files});
-      sopOpenDept(currentSopDept, '', document.getElementById('sop-dept-title').textContent, '');
+      sopOpenDept(currentSopDept);
     }
   });
 }
@@ -5541,6 +5550,24 @@ function vendorRenderDepts(){
   }).join('');
 }
 
+const DEFAULT_VENDOR_DEPT_ICON = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="9" y1="3" x2="9" y2="21"/></svg>';
+
+function vendorAddDept(){
+  appModalShow({
+    title:'Add Department',
+    fields:[
+      {label:'Department name', placeholder:'e.g. Housekeeping'}
+    ],
+    onOk([name]){
+      const id = name.trim().toLowerCase().replace(/[^a-z0-9]+/g,'-');
+      if(!id || vendorDepts.find(d=>d.id===id)){ toast('Please use a unique department name'); return; }
+      vendorDepts.push({id, name, icon: DEFAULT_VENDOR_DEPT_ICON});
+      vendorRenderDepts();
+      toast('Department added ✓');
+    }
+  });
+}
+
 function vendorRenderItems(){
   const list = document.getElementById('vendor-detail-list');
   if(!list) return;
@@ -5653,6 +5680,7 @@ window.nav = function(id, pushState){
   if(id==='faq') setTimeout(faqRenderDepts, 0);
   if(id==='vendors') setTimeout(()=>{ vendorActiveDept=null; document.getElementById('vendor-detail-view').style.display='none'; document.getElementById('vendor-dept-view').style.display='block'; vendorRenderDepts(); }, 0);
   if(id==='suggestions') setTimeout(suggestionRender, 0);
+  if(id==='sop') setTimeout(sopRenderDeptList, 0);
 };
 </script>
 <!-- Announcement Modal -->
@@ -5954,6 +5982,16 @@ function appModalShow({title, sub='', fields, onOk}){
       </label>
     </div>`;
     }
+    if(f.type==='color'){
+      const opts = f.options || [];
+      return `
+    <div style="margin-bottom:${i<fields.length-1?'14px':'0'}">
+      ${f.label?`<div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.7px;color:#94A3B8;margin-bottom:6px">${f.label}</div>`:''}
+      <div id="appModalField_${i}" data-selected="${opts[0]||''}" style="display:flex;flex-wrap:wrap;gap:9px">
+        ${opts.map((c,ci)=>`<div class="app-color-swatch" data-color="${c}" onclick="appModalPickColor(${i},'${c}',this)" style="width:28px;height:28px;border-radius:50%;background:${c};cursor:pointer;border:2px solid ${ci===0?'#0F1E2E':'transparent'};box-shadow:0 0 0 1px rgba(0,0,0,0.06)"></div>`).join('')}
+      </div>
+    </div>`;
+    }
     return `
     <div style="margin-bottom:${i<fields.length-1?'14px':'0'}">
       ${f.label?`<div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.7px;color:#94A3B8;margin-bottom:6px">${f.label}</div>`:''}
@@ -5964,7 +6002,7 @@ function appModalShow({title, sub='', fields, onOk}){
   }).join('');
   const modal = document.getElementById('appModal');
   modal.style.display='flex';
-  setTimeout(()=>{ const f=document.getElementById('appModalField_0'); if(f && f.type!=='file') f.focus(); },80);
+  setTimeout(()=>{ const f=document.getElementById('appModalField_0'); if(f && f.type!=='file' && fields[0]?.type!=='color') f.focus(); },80);
   document.getElementById('appModalOk').onclick = async ()=>{
     const vals = [];
     for(let i=0;i<fields.length;i++){
@@ -5975,6 +6013,8 @@ function appModalShow({title, sub='', fields, onOk}){
         } else {
           vals.push('');
         }
+      } else if(fields[i].type==='color'){
+        vals.push(el.dataset.selected || '');
       } else {
         vals.push(el.value.trim());
       }
@@ -5986,7 +6026,7 @@ function appModalShow({title, sub='', fields, onOk}){
         const wrap = document.getElementById('appModalFileLabelWrap_'+firstEmpty);
         wrap.style.borderColor = '#EF4444';
         setTimeout(()=>{ wrap.style.borderColor = '#CBD5E1'; }, 1200);
-      } else {
+      } else if(fields[firstEmpty].type!=='color'){
         el.focus();
       }
       return;
@@ -5998,6 +6038,12 @@ function appModalShow({title, sub='', fields, onOk}){
   fc.querySelectorAll('input[type="text"]').forEach(inp=>{
     inp.onkeydown = e=>{ if(e.key==='Enter') document.getElementById('appModalOk').click(); };
   });
+}
+function appModalPickColor(i, color, el){
+  const wrap = document.getElementById('appModalField_'+i);
+  wrap.dataset.selected = color;
+  wrap.querySelectorAll('.app-color-swatch').forEach(s=>{ s.style.border='2px solid transparent'; });
+  el.style.border = '2px solid #0F1E2E';
 }
 function appFileToDataUrl(file){
   return new Promise((resolve, reject)=>{

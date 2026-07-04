@@ -5185,12 +5185,20 @@ window.myDriveAdd = function(){ myDriveAddFile(); };
 
 // ── QUICK LINKS ──
 let quickLinksData = [
-  {id:3, name:'Register for Fun Run', url:'https://docs.google.com/forms/d/example-funrun', type:'link', by:'Robbie', meta:'Added by Robbie · Today'},
-  {id:4, name:'Sign Up for First Aid Training', url:'https://docs.google.com/forms/d/example-firstaid', type:'link', by:'Robbie', meta:'Added by Robbie · Today'},
-  {id:1, name:'Horizon Tech Summit — BEO', url:'https://docs.google.com/document/d/example-beo', type:'docs', by:'Robbie', meta:'Added by Robbie · Today'},
-  {id:2, name:'Solaris Beach Festival — Run of Show', url:'https://docs.google.com/spreadsheets/d/example-ros', type:'sheets', by:'Robbie', meta:'Added by Robbie · Today'},
+  {id:3, name:'Register for Fun Run', url:'https://docs.google.com/forms/d/example-funrun', type:'link', by:'Robbie', meta:'Added by Robbie · Today', createdAt: Date.now()},
+  {id:4, name:'Sign Up for First Aid Training', url:'https://docs.google.com/forms/d/example-firstaid', type:'link', by:'Robbie', meta:'Added by Robbie · Today', createdAt: Date.now()},
+  {id:1, name:'Horizon Tech Summit — BEO', url:'https://docs.google.com/document/d/example-beo', type:'docs', by:'Robbie', meta:'Added by Robbie · Today', createdAt: Date.now()},
+  {id:2, name:'Solaris Beach Festival — Run of Show', url:'https://docs.google.com/spreadsheets/d/example-ros', type:'sheets', by:'Robbie', meta:'Added by Robbie · Today', createdAt: Date.now() - 8*24*60*60*1000},
 ];
 let quickLinksNextId = 10;
+
+function quickLinksAgeLabel(createdAt){
+  if(!createdAt) return null;
+  const days = Math.floor((Date.now() - createdAt) / (1000*60*60*24));
+  if(days < 7) return null;
+  const weeks = Math.floor(days / 7);
+  return weeks === 1 ? '1 week old' : weeks + ' weeks old';
+}
 
 function quickLinksDetectType(url){
   if(url.includes('docs.google.com/spreadsheets')) return 'sheets';
@@ -5224,6 +5232,8 @@ function quickLinksRender(){
     const shortUrl = f.url.replace('https://','').split('/')[0];
     const ico = svgIcons[f.type]||svgIcons.link;
     const bg = bgMap[f.type]||bgMap.link;
+    const ageLabel = quickLinksAgeLabel(f.createdAt);
+    const ageBadge = ageLabel ? `<div style="background:#FEF3C7;color:#D97706;font-size:11px;font-weight:700;padding:4px 10px;border-radius:20px;white-space:nowrap;margin-right:8px">🕒 ${ageLabel}</div>` : '';
     return `
       <div class="myd-file-row">
         <div class="myd-file-row-ico" style="background:${bg}">${ico}</div>
@@ -5231,6 +5241,7 @@ function quickLinksRender(){
           <div class="myd-file-row-name">${f.name}</div>
           <div class="myd-file-row-url">${shortUrl} · ${f.meta}</div>
         </div>
+        ${ageBadge}
         <div class="myd-file-row-actions">
           <button class="btn btn-navy" style="font-size:12px;padding:7px 14px" onclick="window.open('${f.url}','_blank')">↗ Open</button>
           <button class="btn btn-ghost" style="font-size:12px;padding:7px 14px" onclick="navigator.clipboard.writeText('${f.url}');toast('Copied ✓')">Copy</button>
@@ -5254,7 +5265,8 @@ function quickLinksAdd(){
         id: quickLinksNextId++,
         name, url, type,
         by: currentUserFirstName,
-        meta: 'Added by ' + currentUserFirstName + ' · Today'
+        meta: 'Added by ' + currentUserFirstName + ' · Today',
+        createdAt: Date.now()
       });
       quickLinksRender();
       toast('Quick link added ✓');

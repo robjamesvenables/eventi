@@ -3615,12 +3615,8 @@ textarea.rf-val{resize:vertical;min-height:72px;line-height:1.5}
         <div style="font-size:22px;font-weight:800;color:#0D9488;letter-spacing:0.5px">100% ANONYMOUS</div>
         <div style="font-size:13px;color:rgba(255,255,255,0.6);margin-top:4px">We never collect or show who submitted a suggestion</div>
       </div>
-      <textarea id="suggestion-input" placeholder="What's on your mind? Ideas, frustrations, wild ideas — all welcome..." style="width:100%;min-height:100px;padding:14px 16px;border:1.5px solid #E2E8F0;border-radius:10px;font-family:'Poppins',sans-serif;font-size:14px;outline:none;box-sizing:border-box;resize:vertical"></textarea>
+      <textarea id="suggestion-input" placeholder="What's on your mind? Ideas, frustrations, wild ideas — all welcome..." style="width:100%;min-height:260px;padding:14px 16px;border:1.5px solid #E2E8F0;border-radius:10px;font-family:'Poppins',sans-serif;font-size:14px;outline:none;box-sizing:border-box;resize:vertical"></textarea>
       <button class="btn btn-navy" style="margin-top:12px" onclick="suggestionSubmit()">Submit Anonymously</button>
-      <div style="margin-top:32px">
-        <div class="sublabel">Recent Suggestions</div>
-        <div id="suggestion-list"></div>
-      </div>
     </div>
 
     <!-- ADMIN -->
@@ -5628,50 +5624,16 @@ function vendorDelete(id){
 }
 
 // ── SUGGESTION BOX ──
-let suggestionsData = [
-  {id:1, text:'Could we get a proper coffee machine in the staff room? The instant stuff is rough 😅', createdAt: Date.now() - 2*24*60*60*1000},
-  {id:2, text:'Would love some shade cover for staff breaks near the beach entrance.', createdAt: Date.now() - 6*60*60*1000},
-];
-let suggestionNextId = 10;
+let suggestionsData = [];
+let suggestionNextId = 1;
 
 function suggestionSubmit(){
   const input = document.getElementById('suggestion-input');
   const text = input.value.trim();
   if(!text) return;
-  suggestionsData.unshift({id: suggestionNextId++, text, createdAt: Date.now()});
+  suggestionsData.push({id: suggestionNextId++, text, createdAt: Date.now()});
   input.value = '';
-  suggestionRender();
   toast('Suggestion submitted anonymously ✓');
-}
-
-function suggestionDelete(id){
-  appConfirmShow({title:'Remove Suggestion', msg:'Remove this suggestion?', onOk:()=>{
-    suggestionsData = suggestionsData.filter(s=>s.id!==id);
-    suggestionRender();
-    toast('Removed');
-  }});
-}
-
-function suggestionRender(){
-  const list = document.getElementById('suggestion-list');
-  if(!list) return;
-  if(suggestionsData.length===0){
-    list.innerHTML = '<div style="text-align:center;padding:32px;color:#94A3B8;font-size:13px">No suggestions yet — be the first!</div>';
-    return;
-  }
-  const sorted = [...suggestionsData].sort((a,b)=>(b.createdAt||0)-(a.createdAt||0));
-  list.innerHTML = sorted.map(s=>{
-    const days = Math.floor((Date.now()-s.createdAt)/(1000*60*60*24));
-    const timeLabel = days<1 ? 'Today' : (days===1?'1 day ago':days+' days ago');
-    return `
-      <div style="background:white;border:1px solid var(--line);border-radius:10px;padding:14px 16px;margin-bottom:10px;display:flex;justify-content:space-between;gap:12px;align-items:flex-start">
-        <div style="flex:1">
-          <div style="font-size:13px;color:var(--navy);line-height:1.5">${s.text}</div>
-          <div style="font-size:11px;color:#94A3B8;margin-top:6px">${timeLabel} · Anonymous</div>
-        </div>
-        <button onclick="suggestionDelete(${s.id})" style="border:none;background:none;color:#EF4444;font-size:16px;cursor:pointer;flex-shrink:0">×</button>
-      </div>`;
-  }).join('');
 }
 
 const _origNavMD = window.nav;
@@ -5680,7 +5642,6 @@ window.nav = function(id, pushState){
   if(id==='mydrive') setTimeout(myDriveRender, 50);
   if(id==='faq') setTimeout(faqRenderDepts, 0);
   if(id==='vendors') setTimeout(()=>{ vendorActiveDept=null; document.getElementById('vendor-detail-view').style.display='none'; document.getElementById('vendor-dept-view').style.display='block'; vendorRenderDepts(); }, 0);
-  if(id==='suggestions') setTimeout(suggestionRender, 0);
   if(id==='sop') setTimeout(sopRenderDeptList, 0);
 };
 </script>

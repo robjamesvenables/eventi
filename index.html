@@ -1474,6 +1474,7 @@ textarea.rf-val{resize:vertical;min-height:72px;line-height:1.5}
 .home-greeting-time{font-size:12px;font-weight:600;color:var(--teal);text-transform:uppercase;letter-spacing:2px;margin-bottom:6px}
 .home-greeting-title{font-size:28px;font-weight:800;color:var(--navy);line-height:1.2}
 .home-greeting-sub{font-size:14px;font-weight:300;color:var(--ink2);margin-top:6px}
+.stat-new-badge{position:absolute;top:10px;right:12px;background:#EF4444;color:white;font-size:9px;font-weight:800;letter-spacing:0.5px;padding:2px 7px;border-radius:20px}
 .home-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;align-items:start}
 .home-section-label{font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:#64748B;margin-bottom:12px;padding-top:20px;border-top:1px solid #94A3B8;padding-left:2px}
 /* ANNOUNCEMENTS */
@@ -1891,19 +1892,23 @@ textarea.rf-val{resize:vertical;min-height:72px;line-height:1.5}
 
       <!-- STATS ROW -->
       <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:20px">
-        <div style="background:#0F1E2E;border-radius:12px;padding:14px 16px">
+        <div style="background:#0F1E2E;border-radius:12px;padding:14px 16px;position:relative">
+          <div class="stat-new-badge" id="stat-new-events" style="display:none">NEW</div>
           <div style="font-size:26px;font-weight:800;color:white" id="stat-events">6</div>
           <div style="font-size:11px;font-weight:600;color:rgba(255,255,255,0.55);text-transform:uppercase;letter-spacing:0.8px;margin-top:2px">Active Events</div>
         </div>
-        <div style="background:#0F1E2E;border-radius:12px;padding:14px 16px">
+        <div style="background:#0F1E2E;border-radius:12px;padding:14px 16px;position:relative">
+          <div class="stat-new-badge" id="stat-new-tasks" style="display:none">NEW</div>
           <div style="font-size:26px;font-weight:800;color:white" id="stat-tasks">5</div>
           <div style="font-size:11px;font-weight:600;color:rgba(255,255,255,0.55);text-transform:uppercase;letter-spacing:0.8px;margin-top:2px">Open Tasks</div>
         </div>
-        <div style="background:#0F1E2E;border-radius:12px;padding:14px 16px">
+        <div style="background:#0F1E2E;border-radius:12px;padding:14px 16px;position:relative">
+          <div class="stat-new-badge" id="stat-new-links" style="display:none">NEW</div>
           <div style="font-size:26px;font-weight:800;color:white" id="stat-links">4</div>
           <div style="font-size:11px;font-weight:600;color:rgba(255,255,255,0.55);text-transform:uppercase;letter-spacing:0.8px;margin-top:2px">Quick Links</div>
         </div>
-        <div style="background:#0F1E2E;border-radius:12px;padding:14px 16px">
+        <div style="background:#0F1E2E;border-radius:12px;padding:14px 16px;position:relative">
+          <div class="stat-new-badge" id="stat-new-moments" style="display:none">NEW</div>
           <div style="font-size:26px;font-weight:800;color:white" id="stat-moments">7</div>
           <div style="font-size:11px;font-weight:600;color:rgba(255,255,255,0.55);text-transform:uppercase;letter-spacing:0.8px;margin-top:2px">Moments</div>
         </div>
@@ -2204,7 +2209,7 @@ textarea.rf-val{resize:vertical;min-height:72px;line-height:1.5}
         <div class="month-tab" onclick="filterMonth('Dec',this)">Dec</div>
       </div>
       <div class="ev-grid">
-        <div class="ev-card" onclick="nav('beo')" style="background:var(--navy);border:none;border-radius:12px;overflow:hidden;cursor:pointer;box-shadow:0 4px 16px rgba(0,0,0,0.15);transition:box-shadow 0.2s,transform 0.15s" onmouseover="this.style.transform='translateY(-3px)';this.style.boxShadow='0 12px 32px rgba(0,0,0,0.25)'" onmouseout="this.style.transform='';this.style.boxShadow='0 4px 16px rgba(0,0,0,0.15)'">
+        <div class="ev-card" data-created-days-ago="0" onclick="nav('beo')" style="background:var(--navy);border:none;border-radius:12px;overflow:hidden;cursor:pointer;box-shadow:0 4px 16px rgba(0,0,0,0.15);transition:box-shadow 0.2s,transform 0.15s" onmouseover="this.style.transform='translateY(-3px)';this.style.boxShadow='0 12px 32px rgba(0,0,0,0.25)'" onmouseout="this.style.transform='';this.style.boxShadow='0 4px 16px rgba(0,0,0,0.15)'">
           <div style="padding:20px 22px 16px">
             <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px">
               <div style="font-size:16px;font-weight:700;color:white;line-height:1.2">Horizon Tech Summit 2026</div>
@@ -3738,6 +3743,38 @@ function initHome(){
 
   const statMoments = document.getElementById('stat-moments');
   if(statMoments) statMoments.textContent = (typeof momentsData !== 'undefined') ? momentsData.length : '0';
+
+  const DAY_MS = 24*60*60*1000;
+
+  // Active Events - check static event cards for a recent-creation marker
+  const newEventsBadge = document.getElementById('stat-new-events');
+  if(newEventsBadge){
+    const eventCards = document.querySelectorAll('#p-dash .ev-card[data-created-days-ago]');
+    const hasNewEvent = Array.from(eventCards).some(c => parseFloat(c.dataset.createdDaysAgo) < 1);
+    newEventsBadge.style.display = hasNewEvent ? 'block' : 'none';
+  }
+
+  // Open Tasks - check kanban tasks across all columns
+  const newTasksBadge = document.getElementById('stat-new-tasks');
+  if(newTasksBadge && typeof kanbanState !== 'undefined'){
+    const allTasks = [...kanbanState.todo, ...kanbanState.progress, ...kanbanState.done];
+    const hasNewTask = allTasks.some(t => t.createdAt && (Date.now() - t.createdAt) < DAY_MS);
+    newTasksBadge.style.display = hasNewTask ? 'block' : 'none';
+  }
+
+  // Quick Links - reuse the same real timestamps used for the row-level New badge
+  const newLinksBadge = document.getElementById('stat-new-links');
+  if(newLinksBadge && typeof quickLinksData !== 'undefined'){
+    const hasNewLink = quickLinksData.some(f => f.createdAt && (Date.now() - f.createdAt) < DAY_MS);
+    newLinksBadge.style.display = hasNewLink ? 'block' : 'none';
+  }
+
+  // Moments - same real timestamps used for the age badges
+  const newMomentsBadge = document.getElementById('stat-new-moments');
+  if(newMomentsBadge && typeof momentsData !== 'undefined'){
+    const hasNewMoment = momentsData.some(m => m.createdAt && (Date.now() - m.createdAt) < DAY_MS);
+    newMomentsBadge.style.display = hasNewMoment ? 'block' : 'none';
+  }
 }
 
 // Handle browser back/forward
@@ -4317,21 +4354,21 @@ function mnCopyComms(){
 // ── KANBAN ──
 const kanbanState = {
   todo: [
-    {id:1, title:'Chase client for F&B numbers', assignee:'Sarah', event:'horizon'},
-    {id:2, title:'Send guest list to security', assignee:'Tina', event:'solaris'},
-    {id:3, title:'Confirm stage plot with AV team', assignee:'David', event:'horizon'},
-    {id:20, title:'Call accountant re: invoice', assignee:'John', event:'mytodo'},
-    {id:21, title:'Review Horizon BEO draft', assignee:'John', event:'mytodo'},
+    {id:1, title:'Chase client for F&B numbers', assignee:'Sarah', event:'horizon', createdAt: Date.now() - 4*24*60*60*1000},
+    {id:2, title:'Send guest list to security', assignee:'Tina', event:'solaris', createdAt: Date.now() - 3*24*60*60*1000},
+    {id:3, title:'Confirm stage plot with AV team', assignee:'David', event:'horizon', createdAt: Date.now() - 2*24*60*60*1000},
+    {id:20, title:'Call accountant re: invoice', assignee:'John', event:'mytodo', createdAt: Date.now()},
+    {id:21, title:'Review Horizon BEO draft', assignee:'John', event:'mytodo', createdAt: Date.now() - 1*24*60*60*1000},
   ],
   progress: [
-    {id:6, title:'Finalise Event Rundown', assignee:'Robbie', event:'horizon'},
-    {id:7, title:'Collect 2nd deposit from client', assignee:'James', event:'solaris'},
-    {id:22, title:'Lunch with venue vendor', assignee:'John', event:'mytodo'},
+    {id:6, title:'Finalise Event Rundown', assignee:'Robbie', event:'horizon', createdAt: Date.now() - 5*24*60*60*1000},
+    {id:7, title:'Collect 2nd deposit from client', assignee:'James', event:'solaris', createdAt: Date.now() - 6*24*60*60*1000},
+    {id:22, title:'Lunch with venue vendor', assignee:'John', event:'mytodo', createdAt: Date.now() - 2*24*60*60*1000},
   ],
   done: [
-    {id:10, title:'Send BEO to kitchen team', assignee:'Maria', event:'horizon'},
-    {id:11, title:'Venue walkthrough completed', assignee:'Tina', event:'wedding'},
-    {id:23, title:'Morning check-in with team', assignee:'John', event:'mytodo'},
+    {id:10, title:'Send BEO to kitchen team', assignee:'Maria', event:'horizon', createdAt: Date.now() - 7*24*60*60*1000},
+    {id:11, title:'Venue walkthrough completed', assignee:'Tina', event:'wedding', createdAt: Date.now() - 8*24*60*60*1000},
+    {id:23, title:'Morning check-in with team', assignee:'John', event:'mytodo', createdAt: Date.now() - 1*24*60*60*1000},
   ]
 };
 const colColors = {todo:'#94A3B8', progress:'#F59E0B', done:'#10B981'};

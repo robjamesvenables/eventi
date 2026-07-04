@@ -5200,6 +5200,11 @@ function quickLinksAgeLabel(createdAt){
   return weeks === 1 ? '1 week old' : weeks + ' weeks old';
 }
 
+function quickLinksIsNew(createdAt){
+  if(!createdAt) return false;
+  return (Date.now() - createdAt) < 24*60*60*1000;
+}
+
 function quickLinksDetectType(url){
   if(url.includes('docs.google.com/spreadsheets')) return 'sheets';
   if(url.includes('docs.google.com/document')) return 'docs';
@@ -5233,7 +5238,13 @@ function quickLinksRender(){
     const ico = svgIcons[f.type]||svgIcons.link;
     const bg = bgMap[f.type]||bgMap.link;
     const ageLabel = quickLinksAgeLabel(f.createdAt);
-    const ageBadge = ageLabel ? `<div style="background:#FEF3C7;color:#D97706;font-size:11px;font-weight:700;padding:4px 10px;border-radius:20px;white-space:nowrap;margin-right:8px">🕒 ${ageLabel}</div>` : '';
+    const isNew = quickLinksIsNew(f.createdAt);
+    let ageBadge = '';
+    if(isNew){
+      ageBadge = `<div style="background:#DCFCE7;color:#16A34A;font-size:11px;font-weight:700;padding:4px 10px;border-radius:20px;white-space:nowrap;margin-right:8px">🕒 New</div>`;
+    } else if(ageLabel){
+      ageBadge = `<div style="background:#FEF3C7;color:#D97706;font-size:11px;font-weight:700;padding:4px 10px;border-radius:20px;white-space:nowrap;margin-right:8px">🕒 ${ageLabel}</div>`;
+    }
     return `
       <div class="myd-file-row">
         <div class="myd-file-row-ico" style="background:${bg}">${ico}</div>

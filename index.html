@@ -4298,11 +4298,27 @@ document.addEventListener('mousemove', function(e){
   if(!kbDrag) return;
   kbDrag.ghost.style.left = (e.clientX - kbDrag.offsetX) + 'px';
   kbDrag.ghost.style.top = (e.clientY - kbDrag.offsetY) + 'px';
-  // Highlight target column
   document.querySelectorAll('.kanban-cards').forEach(col => col.classList.remove('drag-over'));
   const el = document.elementFromPoint(e.clientX, e.clientY);
   const targetCol = el ? (el.closest('.kanban-cards') || el.closest('.kanban-col')) : null;
-  if(targetCol) { const cards = targetCol.classList.contains('kanban-cards') ? targetCol : targetCol.querySelector('.kanban-cards'); if(cards) cards.classList.add('drag-over'); }
+  const cards = targetCol ? (targetCol.classList.contains('kanban-cards') ? targetCol : targetCol.querySelector('.kanban-cards')) : null;
+  if(cards){
+    cards.classList.add('drag-over');
+    // Live-reorder: move the dragged card to wherever the cursor currently is,
+    // among the other cards in this column, so the layout reflows as you drag.
+    const siblings = Array.from(cards.querySelectorAll('.kanban-card')).filter(c => c !== kbDrag.el);
+    let insertBeforeEl = null;
+    for(const sib of siblings){
+      const r = sib.getBoundingClientRect();
+      const midY = r.top + r.height/2;
+      if(e.clientY < midY){ insertBeforeEl = sib; break; }
+    }
+    if(insertBeforeEl){
+      if(kbDrag.el.nextSibling !== insertBeforeEl) cards.insertBefore(kbDrag.el, insertBeforeEl);
+    } else if(cards.lastElementChild !== kbDrag.el){
+      cards.appendChild(kbDrag.el);
+    }
+  }
 });
 
 document.addEventListener('mouseup', function(e){
@@ -4312,34 +4328,29 @@ document.addEventListener('mouseup', function(e){
   ghost.remove();
   el.style.opacity = '';
   document.querySelectorAll('.kanban-cards').forEach(col => col.classList.remove('drag-over'));
-  const target = document.elementFromPoint(e.clientX, e.clientY);
-  const targetColEl = target ? (target.closest('.kanban-cards') || (target.closest('.kanban-col') ? target.closest('.kanban-col').querySelector('.kanban-cards') : null)) : null;
-  if(targetColEl){
-    const toCol = targetColEl.id.replace('col-','');
+  const finalCol = el.parentElement;
+  if(finalCol && finalCol.classList.contains('kanban-cards')){
+    const toCol = finalCol.id.replace('col-','');
     const fromCol = kbDrag.fromCol;
     if(['todo','progress','done'].includes(toCol)){
-      // Work out where among the visible cards it was dropped, based on mouse Y
-      const visibleCards = Array.from(targetColEl.querySelectorAll('.kanban-card')).filter(c => Number(c.dataset.id) !== kbDrag.cardId);
-      let insertBeforeId = null;
-      for(const cardEl of visibleCards){
-        const rect = cardEl.getBoundingClientRect();
-        const midY = rect.top + rect.height/2;
-        if(e.clientY < midY){ insertBeforeId = Number(cardEl.dataset.id); break; }
-      }
       const fromIdx = kanbanState[fromCol].findIndex(c => c.id === kbDrag.cardId);
       if(fromIdx > -1){
         const [card] = kanbanState[fromCol].splice(fromIdx, 1);
-        const targetArr = kanbanState[toCol];
-        let insertIdx = targetArr.length;
-        if(insertBeforeId !== null){
-          const idx2 = targetArr.findIndex(c => c.id === insertBeforeId);
-          if(idx2 > -1) insertIdx = idx2;
-        }
-        targetArr.splice(insertIdx, 0, card);
+        // Commit the new visible order exactly as it now sits in the DOM,
+        // keeping any filtered-out (not-currently-visible) cards where they were.
+        const visibleIdsInOrder = Array.from(finalCol.querySelectorAll('.kanban-card')).map(c => Number(c.dataset.id));
+        const hiddenItems = kanbanState[toCol].filter(c => !(kbActiveFilter === 'all' || c.event === kbActiveFilter));
+        const pool = kanbanState[toCol].concat([card]);
+        const newVisibleItems = visibleIdsInOrder.map(id => pool.find(c => c.id === id)).filter(Boolean);
+        kanbanState[toCol] = hiddenItems.concat(newVisibleItems);
         kbRender();
         toast(toCol === fromCol ? 'Reordered ✓' : 'Moved ✓');
       }
+    } else {
+      kbRender();
     }
+  } else {
+    kbRender();
   }
   kbDrag = null;
 });

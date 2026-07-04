@@ -4317,13 +4317,27 @@ document.addEventListener('mouseup', function(e){
   if(targetColEl){
     const toCol = targetColEl.id.replace('col-','');
     const fromCol = kbDrag.fromCol;
-    if(toCol !== fromCol && ['todo','progress','done'].includes(toCol)){
-      const idx = kanbanState[fromCol].findIndex(c => c.id === kbDrag.cardId);
-      if(idx > -1){
-        const [card] = kanbanState[fromCol].splice(idx, 1);
-        kanbanState[toCol].push(card);
+    if(['todo','progress','done'].includes(toCol)){
+      // Work out where among the visible cards it was dropped, based on mouse Y
+      const visibleCards = Array.from(targetColEl.querySelectorAll('.kanban-card')).filter(c => Number(c.dataset.id) !== kbDrag.cardId);
+      let insertBeforeId = null;
+      for(const cardEl of visibleCards){
+        const rect = cardEl.getBoundingClientRect();
+        const midY = rect.top + rect.height/2;
+        if(e.clientY < midY){ insertBeforeId = Number(cardEl.dataset.id); break; }
+      }
+      const fromIdx = kanbanState[fromCol].findIndex(c => c.id === kbDrag.cardId);
+      if(fromIdx > -1){
+        const [card] = kanbanState[fromCol].splice(fromIdx, 1);
+        const targetArr = kanbanState[toCol];
+        let insertIdx = targetArr.length;
+        if(insertBeforeId !== null){
+          const idx2 = targetArr.findIndex(c => c.id === insertBeforeId);
+          if(idx2 > -1) insertIdx = idx2;
+        }
+        targetArr.splice(insertIdx, 0, card);
         kbRender();
-        toast('Moved ✓');
+        toast(toCol === fromCol ? 'Reordered ✓' : 'Moved ✓');
       }
     }
   }

@@ -3117,6 +3117,7 @@ textarea.rf-val{resize:vertical;min-height:72px;line-height:1.5}
 
       <!-- MENUS PANEL -->
       <div class="kitchen-panel on" id="kp-menus">
+        <div class="month-strip" id="kitchen-area-strip" style="margin-bottom:20px"></div>
         <div id="kitchen-menus-container"></div>
         <input type="file" id="menu-upload" style="display:none" onchange="toast('Menu uploaded ✓')">
       </div>
@@ -4859,21 +4860,33 @@ const kitchenMenuSections = [
   {id:'progress', label:'In Progress', sub:'Being worked on — not live yet', dot:'#F59E0B', badge:'draft', badgeLabel:'Draft', bg:'#FDE68A', border:'#FBBF24'},
   {id:'upcoming', label:'Coming Up', sub:'Planned ahead — not started yet', dot:'#EF4444', badge:'planned', badgeLabel:'Planned', bg:'#FECACA', border:'#F87171'}
 ];
+
+// ── KITCHEN AREAS (venue can have multiple outlets/areas serving different menus) ──
+let kitchenAreaNextId = 10;
+let kitchenAreas = [
+  {id:'main', name:'Main Restaurant'},
+  {id:'beachgrill', name:'Beach Grill'},
+  {id:'poolbar', name:'Pool Bar'},
+  {id:'sushibar', name:'Sushi Bar'}
+];
+let kitchenActiveArea = 'all';
+
 let kitchenMenuNextId = 100;
 let kitchenMenusData = [
-  {id:1, section:'live', cat:'Breakfast', name:'Morning Menu', meta:'Updated 3 Jun 2026', links:[]},
-  {id:2, section:'live', cat:'Lunch', name:'Lunch Menu', meta:'Updated 3 Jun 2026', links:[]},
-  {id:3, section:'live', cat:'Dinner', name:'Dinner Menu', meta:'Updated 3 Jun 2026', links:[]},
-  {id:4, section:'live', cat:'Drinks', name:'Drinks Menu', meta:'Updated 1 Jun 2026', links:[]},
-  {id:5, section:'live', cat:'Specials', name:'Weekly Specials', meta:'Updated 10 Jun 2026', links:[]},
-  {id:6, section:'progress', cat:'Event', name:'Sunset Beach Menu', meta:'With Head Chef · Target: 5 Jul 2026', links:[]},
-  {id:7, section:'progress', cat:'Brunch', name:'Weekend Brunch', meta:'In review · Target: 1 Jul 2026', links:[]},
-  {id:8, section:'upcoming', cat:'Festive', name:'NYE Gala Menu', meta:'Target: 20 Dec 2026', links:[]},
-  {id:9, section:'upcoming', cat:'Seasonal', name:'Ramadan Iftar Menu', meta:'Target: Mar 2027', links:[]}
+  {id:1, area:'main', section:'live', cat:'Breakfast', name:'Morning Menu', meta:'Updated 3 Jun 2026', links:[]},
+  {id:2, area:'main', section:'live', cat:'Lunch', name:'Lunch Menu', meta:'Updated 3 Jun 2026', links:[]},
+  {id:3, area:'main', section:'live', cat:'Dinner', name:'Dinner Menu', meta:'Updated 3 Jun 2026', links:[]},
+  {id:4, area:'poolbar', section:'live', cat:'Drinks', name:'Drinks Menu', meta:'Updated 1 Jun 2026', links:[]},
+  {id:5, area:'main', section:'live', cat:'Specials', name:'Weekly Specials', meta:'Updated 10 Jun 2026', links:[]},
+  {id:6, area:'beachgrill', section:'progress', cat:'Event', name:'Sunset Beach Menu', meta:'With Head Chef · Target: 5 Jul 2026', links:[]},
+  {id:7, area:'main', section:'progress', cat:'Brunch', name:'Weekend Brunch', meta:'In review · Target: 1 Jul 2026', links:[]},
+  {id:8, area:'main', section:'upcoming', cat:'Festive', name:'NYE Gala Menu', meta:'Target: 20 Dec 2026', links:[]},
+  {id:9, area:'main', section:'upcoming', cat:'Seasonal', name:'Ramadan Iftar Menu', meta:'Target: Mar 2027', links:[]}
 ];
 
 function kitchenMenuCardHtml(m){
   const sec = kitchenMenuSections.find(s=>s.id===m.section);
+  const area = kitchenAreas.find(a=>a.id===m.area);
   const linksHtml = m.links.length ? `<div style="margin-top:8px;display:flex;flex-direction:column;gap:4px">${m.links.map((l,i)=>`
       <div style="display:flex;align-items:center;gap:6px;font-size:11px">
         <a href="${l.url}" target="_blank" style="color:#0D9488;text-decoration:none;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">🔗 ${l.name}</a>
@@ -4883,7 +4896,7 @@ function kitchenMenuCardHtml(m){
     <div class="menu-card" style="border-left:none;background:${sec.bg};border-color:${sec.border}">
       <div class="menu-card-top">
         <div>
-          <div class="menu-card-cat" style="color:#475569">${m.cat}</div>
+          <div class="menu-card-cat" style="color:#475569">${m.cat}${kitchenActiveArea==='all' && area?` · ${area.name}`:''}</div>
           <div class="menu-card-name">${m.name}</div>
         </div>
         <span class="menu-badge ${sec.badge}">${sec.badgeLabel}</span>
@@ -4901,11 +4914,77 @@ function kitchenMenuCardHtml(m){
     </div>`;
 }
 
+function kitchenRenderAreaTabs(){
+  const strip = document.getElementById('kitchen-area-strip');
+  if(!strip) return;
+  let html = `<div class="month-tab${kitchenActiveArea==='all'?' on':''}" onclick="kitchenFilterArea('all',this)">All Areas</div>`;
+  html += kitchenAreas.map(a => `
+    <div class="month-tab${kitchenActiveArea===a.id?' on':''}" style="display:flex;align-items:center;gap:6px" onclick="kitchenFilterArea('${a.id}',this)">
+      <span>${a.name}</span>
+      <span onclick="event.stopPropagation();kitchenRenameArea('${a.id}')" title="Rename area" style="opacity:0.55;cursor:pointer;font-size:11px">✎</span>
+      <span onclick="event.stopPropagation();kitchenDeleteArea('${a.id}')" title="Delete area" style="opacity:0.55;cursor:pointer;font-size:13px;line-height:1">×</span>
+    </div>`).join('');
+  html += `<button class="kb-new-project-btn" onclick="kitchenAddArea()">+ Add Area</button>`;
+  strip.innerHTML = html;
+}
+
+function kitchenFilterArea(areaId, el){
+  kitchenActiveArea = areaId;
+  kitchenRenderAreaTabs();
+  kitchenRenderMenus();
+}
+
+function kitchenAddArea(){
+  appModalShow({
+    title:'Add Area',
+    fields:[{label:'Area name', placeholder:'e.g. Sunset Terrace'}],
+    onOk([name]){
+      let id = name.trim().toLowerCase().replace(/[^a-z0-9]+/g,'-');
+      if(!id || kitchenAreas.find(a=>a.id===id)) id = id + '-' + Date.now();
+      kitchenAreas.push({id, name});
+      kitchenActiveArea = id;
+      kitchenRenderAreaTabs();
+      kitchenRenderMenus();
+      toast('Area added ✓');
+    }
+  });
+}
+
+function kitchenRenameArea(id){
+  const a = kitchenAreas.find(x=>x.id===id);
+  if(!a) return;
+  appModalShow({
+    title:'Rename Area',
+    fields:[{label:'Area name', value:a.name, placeholder:'e.g. Sunset Terrace'}],
+    onOk([name]){
+      a.name = name;
+      kitchenRenderAreaTabs();
+      kitchenRenderMenus();
+      toast('Area renamed ✓');
+    }
+  });
+}
+
+function kitchenDeleteArea(id){
+  const a = kitchenAreas.find(x=>x.id===id);
+  if(!a) return;
+  appConfirmShow({title:'Delete Area', msg:`Delete "${a.name}"? This will permanently remove all its menus.`, onOk:()=>{
+    kitchenAreas = kitchenAreas.filter(x=>x.id!==id);
+    kitchenMenusData = kitchenMenusData.filter(m=>m.area!==id);
+    if(kitchenActiveArea===id) kitchenActiveArea = 'all';
+    kitchenRenderAreaTabs();
+    kitchenRenderMenus();
+    toast('Area deleted');
+  }});
+}
+
 function kitchenRenderMenus(){
   const container = document.getElementById('kitchen-menus-container');
   if(!container) return;
+  kitchenRenderAreaTabs();
+  const filtered = kitchenActiveArea==='all' ? kitchenMenusData : kitchenMenusData.filter(m=>m.area===kitchenActiveArea);
   container.innerHTML = kitchenMenuSections.map((sec,i) => {
-    const items = kitchenMenusData.filter(m => m.section===sec.id);
+    const items = filtered.filter(m => m.section===sec.id);
     return `
       <div class="menu-section-label" style="${i>0?'margin-top:28px':''}">
         <div class="menu-section-dot" style="background:${sec.dot}"></div>
@@ -4923,16 +5002,18 @@ function kitchenRenderMenus(){
 }
 
 function kitchenAddMenu(sectionId){
+  const defaultArea = kitchenActiveArea!=='all' ? kitchenActiveArea : (kitchenAreas[0] ? kitchenAreas[0].id : '');
   appModalShow({
     title:'Add Menu',
     fields:[
+      {label:'Area', type:'pillpicker', options: kitchenAreas, value: defaultArea},
       {label:'Category', placeholder:'e.g. Breakfast'},
       {label:'Menu name', placeholder:'e.g. Morning Menu'}
     ],
-    onOk([cat, name]){
+    onOk([area, cat, name]){
       const now = new Date();
       const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-      kitchenMenusData.push({id: kitchenMenuNextId++, section: sectionId, cat, name, meta:`Updated ${now.getDate()} ${months[now.getMonth()]} ${now.getFullYear()}`, links:[]});
+      kitchenMenusData.push({id: kitchenMenuNextId++, area, section: sectionId, cat, name, meta:`Updated ${now.getDate()} ${months[now.getMonth()]} ${now.getFullYear()}`, links:[]});
       kitchenRenderMenus();
       toast('Menu added ✓');
     }
@@ -4945,11 +5026,12 @@ function kitchenEditMenu(id){
   appModalShow({
     title:'Edit Menu',
     fields:[
+      {label:'Area', type:'pillpicker', options: kitchenAreas, value: m.area},
       {label:'Category', value:m.cat, placeholder:'e.g. Breakfast'},
       {label:'Menu name', value:m.name, placeholder:'e.g. Morning Menu'}
     ],
-    onOk([cat, name]){
-      m.cat = cat; m.name = name;
+    onOk([area, cat, name]){
+      m.area = area; m.cat = cat; m.name = name;
       kitchenRenderMenus();
       toast('Menu updated ✓');
     }
@@ -6521,7 +6603,7 @@ function appModalShow({title, sub='', fields, onOk}){
   document.getElementById('appModalTitle').textContent = title;
   document.getElementById('appModalSub').textContent = sub;
   const fc = document.getElementById('appModalFields');
-  const hasTextarea = fields.some(f=>f.type==='textarea' || f.type==='deptpicker' || f.type==='iconmulti');
+  const hasTextarea = fields.some(f=>f.type==='textarea' || f.type==='deptpicker' || f.type==='iconmulti' || f.type==='pillpicker');
   document.getElementById('appModalBox').style.maxWidth = hasTextarea ? '640px' : '400px';
   fc.innerHTML = fields.map((f,i)=>{
     if(f.type==='file'){
@@ -6563,6 +6645,17 @@ function appModalShow({title, sub='', fields, onOk}){
           <div style="width:36px;height:36px;border-radius:9px;background:#0F1E2E;display:flex;align-items:center;justify-content:center;color:white;box-shadow:0 0 0 1px rgba(0,0,0,0.06)">${ic.svg}</div>
           <div style="font-size:9px;font-weight:600;color:#64748B;text-align:center;line-height:1.15;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:60px">${ic.label}</div>
         </div>`).join('')}
+      </div>
+    </div>`;
+    }
+    if(f.type==='pillpicker'){
+      const opts = f.options || [];
+      const selected = f.value || opts[0]?.id || '';
+      return `
+    <div style="margin-bottom:${i<fields.length-1?'14px':'0'}">
+      ${f.label?`<div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.7px;color:#94A3B8;margin-bottom:6px">${f.label}</div>`:''}
+      <div id="appModalField_${i}" data-selected="${selected}" style="display:flex;flex-wrap:wrap;gap:8px">
+        ${opts.map((o)=>`<div class="app-pill-swatch" data-pill="${o.id}" onclick="appModalPickPill(${i},'${o.id}',this)" style="padding:8px 14px;border-radius:20px;font-size:12px;font-weight:600;cursor:pointer;border:1.5px solid ${o.id===selected?'#0D9488':'#E2E8F0'};background:${o.id===selected?'rgba(13,148,136,0.08)':'white'};color:${o.id===selected?'#0D9488':'#64748B'}">${o.name}</div>`).join('')}
       </div>
     </div>`;
     }
@@ -6610,7 +6703,7 @@ function appModalShow({title, sub='', fields, onOk}){
   }).join('');
   const modal = document.getElementById('appModal');
   modal.style.display='flex';
-  setTimeout(()=>{ const f=document.getElementById('appModalField_0'); if(f && f.type!=='file' && fields[0]?.type!=='color' && fields[0]?.type!=='icon' && fields[0]?.type!=='deptpicker' && fields[0]?.type!=='iconmulti') f.focus(); },80);
+  setTimeout(()=>{ const f=document.getElementById('appModalField_0'); if(f && f.type!=='file' && fields[0]?.type!=='color' && fields[0]?.type!=='icon' && fields[0]?.type!=='deptpicker' && fields[0]?.type!=='iconmulti' && fields[0]?.type!=='pillpicker') f.focus(); },80);
   document.getElementById('appModalOk').onclick = async ()=>{
     const vals = [];
     for(let i=0;i<fields.length;i++){
@@ -6623,7 +6716,7 @@ function appModalShow({title, sub='', fields, onOk}){
         }
       } else if(fields[i].type==='color'){
         vals.push(el.dataset.selected || '');
-      } else if(fields[i].type==='icon' || fields[i].type==='deptpicker'){
+      } else if(fields[i].type==='icon' || fields[i].type==='deptpicker' || fields[i].type==='pillpicker'){
         vals.push(el.dataset.selected || '');
       } else if(fields[i].type==='iconmulti'){
         vals.push(el.dataset.selected ? el.dataset.selected.split(',').filter(Boolean) : []);
@@ -6638,7 +6731,7 @@ function appModalShow({title, sub='', fields, onOk}){
         const wrap = document.getElementById('appModalFileLabelWrap_'+firstEmpty);
         wrap.style.borderColor = '#EF4444';
         setTimeout(()=>{ wrap.style.borderColor = '#CBD5E1'; }, 1200);
-      } else if(fields[firstEmpty].type!=='color' && fields[firstEmpty].type!=='icon' && fields[firstEmpty].type!=='deptpicker' && fields[firstEmpty].type!=='iconmulti'){
+      } else if(fields[firstEmpty].type!=='color' && fields[firstEmpty].type!=='icon' && fields[firstEmpty].type!=='deptpicker' && fields[firstEmpty].type!=='iconmulti' && fields[firstEmpty].type!=='pillpicker'){
         el.focus();
       }
       return;
@@ -6668,6 +6761,14 @@ function appModalPickDept(i, deptId, el){
   wrap.dataset.selected = deptId;
   wrap.querySelectorAll('.app-dept-swatch').forEach(s=>{ s.style.border='2px solid transparent'; });
   el.style.border = '2px solid #0D9488';
+}
+function appModalPickPill(i, pillId, el){
+  const wrap = document.getElementById('appModalField_'+i);
+  wrap.dataset.selected = pillId;
+  wrap.querySelectorAll('.app-pill-swatch').forEach(s=>{ s.style.border='1.5px solid #E2E8F0'; s.style.background='white'; s.style.color='#64748B'; });
+  el.style.border = '1.5px solid #0D9488';
+  el.style.background = 'rgba(13,148,136,0.08)';
+  el.style.color = '#0D9488';
 }
 function appModalToggleIcon(i, iconId, el){
   const wrap = document.getElementById('appModalField_'+i);

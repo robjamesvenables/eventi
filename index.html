@@ -1898,7 +1898,7 @@ textarea.rf-val{resize:vertical;min-height:72px;line-height:1.5}
             <div class="sky-greeting" id="sky-greeting">Good morning, John</div>
             <div class="sky-date" id="home-date-label"></div>
           </div>
-          <div class="sky-icon" id="sky-icon">☀️</div>
+          <div class="sky-icon" id="sky-icon"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#0F1E2E" stroke-width="1.6" stroke-linecap="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1.5" x2="12" y2="4"/><line x1="12" y1="20" x2="12" y2="22.5"/><line x1="1.5" y1="12" x2="4" y2="12"/><line x1="20" y1="12" x2="22.5" y2="12"/><line x1="4.4" y1="4.4" x2="6.1" y2="6.1"/><line x1="17.9" y1="17.9" x2="19.6" y2="19.6"/><line x1="4.4" y1="19.6" x2="6.1" y2="17.9"/><line x1="17.9" y1="6.1" x2="19.6" y2="4.4"/></svg></div>
         </div>
       </div>
 
@@ -3732,15 +3732,17 @@ function updateSkyBanner(){
   const icon = document.getElementById('sky-icon');
   const isDay = hour >= 6 && hour < 18;
   let greetingWord;
+  const sunSVG = '<svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#0F1E2E" stroke-width="1.6" stroke-linecap="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1.5" x2="12" y2="4"/><line x1="12" y1="20" x2="12" y2="22.5"/><line x1="1.5" y1="12" x2="4" y2="12"/><line x1="20" y1="12" x2="22.5" y2="12"/><line x1="4.4" y1="4.4" x2="6.1" y2="6.1"/><line x1="17.9" y1="17.9" x2="19.6" y2="19.6"/><line x1="4.4" y1="19.6" x2="6.1" y2="17.9"/><line x1="17.9" y1="6.1" x2="19.6" y2="4.4"/></svg>';
+  const moonSVG = '<svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#0F1E2E" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M20 14.5A8.5 8.5 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"/></svg>';
 
   if(isDay){
     greetingWord = hour < 12 ? 'morning' : 'afternoon';
     if(banner) banner.style.background = '#DCEEFB';
-    if(icon) icon.textContent = '☀️';
+    if(icon) icon.innerHTML = sunSVG;
   } else {
     greetingWord = 'evening';
     if(banner) banner.style.background = '#E4E7EB';
-    if(icon) icon.textContent = '🌙';
+    if(icon) icon.innerHTML = moonSVG;
   }
 
   const skyGreeting = document.getElementById('sky-greeting');
@@ -4951,12 +4953,34 @@ function announceRender(){
 }
 
 let announceScrollAnim = null;
+let announceScrollPos = 0;
+let announceScrollPaused = false;
 
 function announceStartScroll(list){
   if(announceScrollAnim) cancelAnimationFrame(announceScrollAnim);
+  if(announcements.length <= 2) { list.scrollTop = 0; return; }
+  announceScrollPaused = false;
+
+  // Double the content for a seamless loop
+  const original = list.innerHTML;
+  list.innerHTML = original + original;
+
+  announceScrollPos = 0;
   list.scrollTop = 0;
-  list.onmouseenter = null;
-  list.onmouseleave = null;
+  const halfHeight = list.scrollHeight / 2;
+
+  list.onmouseenter = () => { announceScrollPaused = true; };
+  list.onmouseleave = () => { announceScrollPaused = false; };
+
+  function step(){
+    if(!announceScrollPaused){
+      announceScrollPos += 0.4;
+      if(announceScrollPos >= halfHeight) announceScrollPos = 0;
+      list.scrollTop = announceScrollPos;
+    }
+    announceScrollAnim = requestAnimationFrame(step);
+  }
+  announceScrollAnim = requestAnimationFrame(step);
 }
 
 const ANNOUNCE_EMOJIS = [

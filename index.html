@@ -2013,7 +2013,7 @@ textarea.rf-val{resize:vertical;min-height:72px;line-height:1.5}
         <div class="home-card" id="hcard-dash" onclick="nav('dash')" style="background:#0D9488;border-color:#0D9488;position:relative;overflow:hidden;align-self:start;height:120px">
           <div class="card-colour-popup" id="cpop-dash"></div>
           <button class="card-colour-btn" onclick="toggleCardPicker(event,'dash')"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M4.93 4.93a10 10 0 0 0 0 14.14"/></svg></button>
-          <div style="position:absolute;top:16px;right:16px;background:rgba(196,151,59,0.25);color:#F5C842;font-size:13px;font-weight:800;padding:5px 14px;border-radius:20px;border:1px solid rgba(196,151,59,0.4)">3 pending</div>
+          <div id="hcard-dash-badge" style="position:absolute;top:16px;right:16px;background:rgba(196,151,59,0.25);color:#F5C842;font-size:13px;font-weight:800;padding:5px 14px;border-radius:20px;border:1px solid rgba(196,151,59,0.4)">3 pending</div>
           <div class="home-card-ico"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg></div>
           <div class="home-card-title" style="color:white">Current Events</div>
           <div class="home-card-sub" style="color:rgba(255,255,255,0.5)">6 active events · Open plans, deposits and rundowns</div>
@@ -2050,7 +2050,6 @@ textarea.rf-val{resize:vertical;min-height:72px;line-height:1.5}
         <div class="home-card" id="hcard-kb" onclick="nav('kb')" style="background:#0D9488;border-color:#0D9488;position:relative;overflow:hidden;align-self:start;height:120px">
           <div class="card-colour-popup" id="cpop-kb"></div>
           <button class="card-colour-btn" onclick="toggleCardPicker(event,'kb')"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M4.93 4.93a10 10 0 0 0 0 14.14"/></svg></button>
-          <div style="position:absolute;top:16px;right:16px;background:rgba(255,255,255,0.25);color:white;font-size:13px;font-weight:800;padding:5px 14px;border-radius:20px">5 open</div>
           <div class="home-card-ico"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg></div>
           <div class="home-card-title" style="color:white">Task Board</div>
           <div class="home-card-sub" style="color:rgba(255,255,255,0.6)">Drag and drop tasks across your team</div>
@@ -3483,6 +3482,10 @@ function editDashStat(key){
       if(key==='activeEvents'){
         const badge = document.getElementById('sb-badge-dash');
         if(badge) badge.textContent = newVal;
+      }
+      if(key==='pendingPayment'){
+        const badge = document.getElementById('hcard-dash-badge');
+        if(badge) badge.textContent = newVal + ' pending';
       }
       toast(cfg.label + ' updated ✓');
     }
@@ -6416,8 +6419,11 @@ document.addEventListener('DOMContentLoaded', function(){
   const strip = document.getElementById('moments-strip');
   if(strip) momentsRebuild();
   const activeEl = document.getElementById('stat-active-events');
-  const badge = document.getElementById('sb-badge-dash');
-  if(activeEl && badge) badge.textContent = activeEl.textContent;
+  const sbBadge = document.getElementById('sb-badge-dash');
+  if(activeEl && sbBadge) sbBadge.textContent = activeEl.textContent;
+  const pendingEl = document.getElementById('stat-pending-payment');
+  const hcardBadge = document.getElementById('hcard-dash-badge');
+  if(pendingEl && hcardBadge) hcardBadge.textContent = pendingEl.textContent + ' pending';
 });
 
 let momentsResizeTimer;

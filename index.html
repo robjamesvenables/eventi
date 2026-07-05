@@ -3143,7 +3143,10 @@ textarea.rf-val{resize:vertical;min-height:72px;line-height:1.5}
           <div class="ph-title">Weekly Reports</div>
           <div class="ph-sub">Bookings & revenue, tracked week on week</div>
         </div>
-        <button class="btn btn-navy" onclick="reportsAddWeek()">+ Add This Week's Numbers</button>
+        <div style="display:flex;gap:10px">
+          <button class="btn btn-ghost" onclick="reportsCompileImage()">📸 Compile Weekly Report</button>
+          <button class="btn btn-navy" onclick="reportsAddWeek()">+ Add This Week's Numbers</button>
+        </div>
       </div>
 
       <div id="reports-stats" style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:28px"></div>
@@ -4624,6 +4627,138 @@ function reportsRenderCharts(){
 function reportsRender(){
   reportsRenderStats();
   reportsRenderCharts();
+}
+
+function roundRectPath(ctx, x, y, w, h, r){
+  ctx.beginPath();
+  ctx.moveTo(x+r, y);
+  ctx.arcTo(x+w, y, x+w, y+h, r);
+  ctx.arcTo(x+w, y+h, x, y+h, r);
+  ctx.arcTo(x, y+h, x, y, r);
+  ctx.arcTo(x, y, x+w, y, r);
+  ctx.closePath();
+}
+
+function reportsCompileImage(){
+  const sorted = reportsData.slice().sort((a,b)=> a.year-b.year || a.week-b.week);
+  const latest = sorted[sorted.length-1];
+  if(!latest){ toast('No data yet — add this week\'s numbers first'); return; }
+  toast('Compiling report…');
+  const ready = (document.fonts && document.fonts.ready) ? document.fonts.ready : Promise.resolve();
+  ready.then(() => reportsDrawAndDownload(latest));
+}
+
+function reportsDrawAndDownload(latest){
+  const lastYear = reportsFind(latest.year-1, latest.week);
+  const bPct = lastYear ? reportsPctChange(latest.bookings, lastYear.bookings) : null;
+  const rPct = lastYear ? reportsPctChange(latest.revenue, lastYear.revenue) : null;
+
+  const W = 1080, H = 1080;
+  const canvas = document.createElement('canvas');
+  canvas.width = W; canvas.height = H;
+  const ctx = canvas.getContext('2d');
+
+  // Background
+  ctx.fillStyle = '#0F1E2E';
+  ctx.fillRect(0, 0, W, H);
+
+  // Header wordmark
+  ctx.textAlign = 'left';
+  ctx.font = "800 34px 'Inter', sans-serif";
+  ctx.fillStyle = '#0D9488';
+  ctx.fillText('M', 70, 100);
+  ctx.fillStyle = 'white';
+  ctx.fillText('avis', 100, 100);
+  ctx.fillStyle = '#C4973B';
+  ctx.fillText('.', 195, 100);
+
+  // Title
+  ctx.font = "800 48px 'Inter', sans-serif";
+  ctx.fillStyle = 'white';
+  ctx.fillText('Weekly Performance', 70, 190);
+  ctx.font = "600 26px 'Inter', sans-serif";
+  ctx.fillStyle = 'rgba(255,255,255,0.55)';
+  ctx.fillText(`Week ${latest.week} · ${latest.year}`, 70, 228);
+
+  // Divider
+  ctx.strokeStyle = 'rgba(255,255,255,0.12)';
+  ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.moveTo(70, 264); ctx.lineTo(W-70, 264); ctx.stroke();
+
+  // Stat cards (Bookings, Revenue) — vs last year
+  const cardY = 300, cardH = 300, cardW = (W - 70*2 - 30)/2;
+  [
+    {label:'BOOKINGS', value: latest.bookings.toLocaleString(), pct: bPct, x: 70},
+    {label:'REVENUE', value: '$'+latest.revenue.toLocaleString(), pct: rPct, x: 70+cardW+30}
+  ].forEach(card => {
+    roundRectPath(ctx, card.x, cardY, cardW, cardH, 20);
+    ctx.fillStyle = 'rgba(255,255,255,0.06)';
+    ctx.fill();
+
+    ctx.font = "700 20px 'Inter', sans-serif";
+    ctx.fillStyle = 'rgba(255,255,255,0.5)';
+    ctx.fillText(card.label, card.x+28, cardY+50);
+
+    ctx.font = "800 56px 'Inter', sans-serif";
+    ctx.fillStyle = 'white';
+    ctx.fillText(card.value, card.x+28, cardY+130);
+
+    const up = card.pct !== null && card.pct >= 0;
+    const pctColor = card.pct === null ? '#94A3B8' : (up ? '#4ADE80' : '#F87171');
+    ctx.font = "800 40px 'Inter', sans-serif";
+    ctx.fillStyle = pctColor;
+    const pctText = card.pct === null ? '—' : (up ? '▲ ' : '▼ ') + Math.abs(card.pct).toFixed(1) + '%';
+    ctx.fillText(pctText, card.x+28, cardY+195);
+
+    ctx.font = "500 20px 'Inter', sans-serif";
+    ctx.fillStyle = 'rgba(255,255,255,0.45)';
+    ctx.fillText('vs same week last year', card.x+28, cardY+230);
+  });
+
+  // Mini bar comparison: this year vs last year, for bookings
+  const barsY = cardY + cardH + 60;
+  ctx.font = "700 22px 'Inter', sans-serif";
+  ctx.fillStyle = 'rgba(255,255,255,0.55)';
+  ctx.fillText('BOOKINGS — THIS WEEK vs LAST YEAR', 70, barsY);
+
+  const maxVal = Math.max(latest.bookings, lastYear ? lastYear.bookings : 0) * 1.15 || 1;
+  const barAreaW = W - 140;
+  const barH = 46;
+  const thisBarW = (latest.bookings/maxVal) * barAreaW;
+  const lastBarW = lastYear ? (lastYear.bookings/maxVal) * barAreaW : 0;
+
+  roundRectPath(ctx, 70, barsY+30, thisBarW, barH, 8);
+  ctx.fillStyle = '#0D9488';
+  ctx.fill();
+  ctx.font = "700 22px 'Inter', sans-serif";
+  ctx.fillStyle = 'white';
+  ctx.fillText(`${latest.year}: ${latest.bookings}`, 82, barsY+60);
+
+  if(lastYear){
+    roundRectPath(ctx, 70, barsY+30+barH+16, lastBarW, barH, 8);
+    ctx.fillStyle = 'rgba(255,255,255,0.25)';
+    ctx.fill();
+    ctx.fillStyle = 'white';
+    ctx.fillText(`${latest.year-1}: ${lastYear.bookings}`, 82, barsY+30+barH+16+30);
+  }
+
+  // Footer
+  ctx.font = "500 20px 'Inter', sans-serif";
+  ctx.fillStyle = 'rgba(255,255,255,0.4)';
+  ctx.textAlign = 'center';
+  ctx.fillText('Generated by Mavis · ' + new Date().toLocaleDateString('en-GB', {day:'numeric', month:'long', year:'numeric'}), W/2, H-50);
+
+  canvas.toBlob((blob) => {
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `mavis-weekly-report-wk${latest.week}-${latest.year}.jpg`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    toast('Weekly report image ready ✓');
+  }, 'image/jpeg', 0.95);
 }
 
 function reportsAddWeek(){

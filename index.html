@@ -1483,6 +1483,25 @@ textarea.rf-val{resize:vertical;min-height:72px;line-height:1.5}
 .sky-greeting{font-size:26px;font-weight:800;color:white}
 .sky-date{font-size:13px;color:rgba(255,255,255,0.75);margin-top:4px}
 .sky-icon{font-size:34px;line-height:1}
+.venue-switcher{position:relative}
+.venue-switcher-btn{display:flex;align-items:center;gap:9px;background:rgba(255,255,255,0.08);border:1.5px solid rgba(255,255,255,0.15);border-radius:10px;padding:9px 14px;cursor:pointer;transition:background 0.15s}
+.venue-switcher-btn:hover{background:rgba(255,255,255,0.14)}
+.venue-switcher-ico{width:26px;height:26px;border-radius:7px;background:#0D9488;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;color:white;flex-shrink:0}
+.venue-switcher-name{font-size:13px;font-weight:700;color:white}
+.venue-switcher-sub{font-size:10px;color:rgba(255,255,255,0.5);margin-top:1px}
+.venue-switcher-chev{color:rgba(255,255,255,0.6);transition:transform 0.15s}
+.venue-switcher-btn.open .venue-switcher-chev{transform:rotate(180deg)}
+.venue-dropdown{position:absolute;top:calc(100% + 8px);right:0;background:white;border-radius:12px;box-shadow:0 12px 32px rgba(0,0,0,0.2);width:240px;padding:8px;z-index:500;display:none}
+.venue-dropdown.open{display:block}
+.venue-dropdown-item{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:8px;cursor:pointer;transition:background 0.15s}
+.venue-dropdown-item:hover{background:#F1F5F9}
+.venue-dropdown-item.active{background:rgba(13,148,136,0.08)}
+.venue-dropdown-ico{width:30px;height:30px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;color:white;flex-shrink:0}
+.venue-dropdown-label{flex:1}
+.venue-dropdown-title{font-size:13px;font-weight:700;color:var(--navy)}
+.venue-dropdown-tag{font-size:10px;color:#94A3B8;text-transform:uppercase;letter-spacing:0.5px;font-weight:700;margin-top:1px}
+.venue-dropdown-check{color:#0D9488}
+.venue-dropdown-divider{height:1px;background:var(--line);margin:6px 4px}
 .home-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;align-items:start}
 .home-section-label{font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:#64748B;margin-bottom:12px;padding-top:20px;border-top:1px solid #94A3B8;padding-left:2px}
 /* ANNOUNCEMENTS */
@@ -1904,6 +1923,17 @@ textarea.rf-val{resize:vertical;min-height:72px;line-height:1.5}
             <div>
               <div class="sky-greeting" id="sky-greeting">Good morning, John</div>
               <div class="sky-date" id="home-date-label"></div>
+            </div>
+            <div class="venue-switcher" id="venue-switcher">
+              <div class="venue-switcher-btn" id="venue-switcher-btn" onclick="event.stopPropagation();toggleVenueDropdown()">
+                <div class="venue-switcher-ico" id="venue-switcher-ico">A</div>
+                <div>
+                  <div class="venue-switcher-name" id="venue-switcher-name">Venue A</div>
+                  <div class="venue-switcher-sub" id="venue-switcher-sub">Main venue</div>
+                </div>
+                <svg class="venue-switcher-chev" id="venue-switcher-chev" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+              </div>
+              <div class="venue-dropdown" id="venue-dropdown"></div>
             </div>
           </div>
         </div>
@@ -6055,12 +6085,97 @@ const CARD_COLOURS = [
 ];
 const CARD_IDS = ['dash','cal','new','kb','notes','sop','kitchen','music','quicklinks','faq','vendors'];
 
-function initCardColours(){
+// ── VENUE SWITCHER ──
+const VENUES = [
+  {id:'a', name:'Venue A', tag:'Main venue', main:true},
+  {id:'b', name:'Venue B', tag:'Outlet'},
+  {id:'c', name:'Venue C', tag:'Outlet'}
+];
+let currentVenue = localStorage.getItem('currentVenue') || 'a';
+
+function cardColourKey(venue, id){ return 'cardColour_'+venue+'_'+id; }
+
+function getSavedCardColour(venue, id){
+  const scoped = localStorage.getItem(cardColourKey(venue, id));
+  if(scoped) return scoped;
+  if(venue === 'a'){
+    const legacy = localStorage.getItem('cardColour_'+id);
+    if(legacy) return legacy;
+    return '#0D9488';
+  }
+  return '#0F1E2E';
+}
+
+function renderVenueSwitcherButton(){
+  const v = VENUES.find(x=>x.id===currentVenue) || VENUES[0];
+  document.getElementById('venue-switcher-ico').textContent = v.name.slice(-1);
+  document.getElementById('venue-switcher-name').textContent = v.name;
+  document.getElementById('venue-switcher-sub').textContent = v.tag;
+}
+
+function renderVenueDropdown(){
+  const dd = document.getElementById('venue-dropdown');
+  if(!dd) return;
+  dd.innerHTML = VENUES.map((v,i) => `
+    ${v.main && i>0 ? '<div class="venue-dropdown-divider"></div>' : ''}
+    <div class="venue-dropdown-item${v.id===currentVenue?' active':''}" onclick="selectVenue('${v.id}')">
+      <div class="venue-dropdown-ico" style="background:${v.id==='a'?'#0D9488':'#0F1E2E'}">${v.name.slice(-1)}</div>
+      <div class="venue-dropdown-label">
+        <div class="venue-dropdown-title">${v.name}</div>
+        <div class="venue-dropdown-tag">${v.tag}</div>
+      </div>
+      ${v.id===currentVenue?'<svg class="venue-dropdown-check" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>':''}
+    </div>
+  `).join('');
+}
+
+function toggleVenueDropdown(){
+  const dd = document.getElementById('venue-dropdown');
+  const btn = document.getElementById('venue-switcher-btn');
+  const isOpen = dd.classList.contains('open');
+  closeVenueDropdown();
+  if(!isOpen){
+    renderVenueDropdown();
+    dd.classList.add('open');
+    btn.classList.add('open');
+  }
+}
+
+function closeVenueDropdown(){
+  const dd = document.getElementById('venue-dropdown');
+  const btn = document.getElementById('venue-switcher-btn');
+  if(dd) dd.classList.remove('open');
+  if(btn) btn.classList.remove('open');
+}
+document.addEventListener('click', closeVenueDropdown);
+
+function selectVenue(id){
+  if(id === currentVenue){ closeVenueDropdown(); return; }
+  currentVenue = id;
+  localStorage.setItem('currentVenue', id);
+  renderVenueSwitcherButton();
+  closeVenueDropdown();
+  applyAllCardColours();
+  const v = VENUES.find(x=>x.id===id);
+  toast(`Switched to ${v.name}`);
+}
+
+function applyAllCardColours(){
   CARD_IDS.forEach(id=>{
-    const saved = localStorage.getItem('cardColour_'+id)||'#0D9488';
+    const saved = getSavedCardColour(currentVenue, id);
+    applyCardColour(id, saved, false);
+  });
+}
+
+function initCardColours(){
+  renderVenueSwitcherButton();
+  CARD_IDS.forEach(id=>{
+    const saved = getSavedCardColour(currentVenue, id);
     applyCardColour(id, saved, false);
     const pop = document.getElementById('cpop-'+id);
     if(!pop) return;
+    pop.innerHTML = '';
+    pop.dataset.built = '';
     CARD_COLOURS.forEach(c=>{
       const sw = document.createElement('div');
       sw.className='card-swatch'+(saved===c.hex?' active':'');
@@ -6082,7 +6197,7 @@ function applyCardColour(id, hex, save){
   card.style.minHeight = '120px';
   card.style.maxHeight = '120px';
   card.style.alignSelf = 'start';
-  if(save) localStorage.setItem('cardColour_'+id, hex);
+  if(save) localStorage.setItem(cardColourKey(currentVenue, id), hex);
   const pop = document.getElementById('cpop-'+id);
   if(pop) pop.querySelectorAll('.card-swatch').forEach(sw=>{
     sw.classList.toggle('active', sw.style.background===hexToRgb(hex)||sw.title===CARD_COLOURS.find(c=>c.hex===hex)?.label);

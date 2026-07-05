@@ -2975,9 +2975,8 @@ textarea.rf-val{resize:vertical;min-height:72px;line-height:1.5}
       <div class="ph" style="margin-bottom:16px">
         <div>
           <div class="ph-title">Event Calendar</div>
-          <div class="ph-sub">All events auto-populated from Event Plans</div>
+          <div class="ph-sub">Click any day to add or edit an entry</div>
         </div>
-        <button class="btn btn-navy" onclick="nav('new')">+ New Event Plan</button>
       </div>
       <div class="cal-toolbar">
         <div class="cal-nav">
@@ -4189,6 +4188,10 @@ function calRenderMonth(){
     const dayEvents=calEvents.filter(e=>e.date===dateStr);
     let cls=`cal-cell${c.other?' other-month':''}${isToday?' is-today':''}`;
     let bars=dayEvents.map(e=>`<div class="cal-event-bar cal-ev-${e.status}" onclick="event.stopPropagation();nav('beo')"><div class="cal-ev-dot"></div>${e.name.length>16?e.name.substring(0,16)+'…':e.name}</div>`).join('');
+    const manualEntry = calManualEntries[dateStr];
+    if(manualEntry){
+      bars += `<div class="cal-event-bar" style="background:${manualEntry.color}1A;border-left:3px solid ${manualEntry.color};color:${manualEntry.color}" onclick="event.stopPropagation();calClickDay('${dateStr}')"><div class="cal-ev-dot" style="background:${manualEntry.color}"></div>${manualEntry.text}</div>`;
+    }
     html+=`<div class="${cls}" onclick="calClickDay('${dateStr}')"><div class="cal-day-num">${c.day}</div>${bars}</div>`;
   });
   html+=`</div></div>`;
@@ -4219,7 +4222,24 @@ function calRenderDay(){
   body.innerHTML=`<div class="cal-day-view"><div class="cal-day-hd"><div class="cal-day-title">${calDowsFull[d.getDay()]}, ${d.getDate()} ${calMonths[d.getMonth()]} ${d.getFullYear()}</div><button class="btn btn-ghost" onclick="calSetView('month')" style="font-size:12px;padding:7px 14px">← Month</button></div><div class="cal-day-body">${evHtml}</div></div>`;
 }
 
-function calClickDay(dateStr){calSelectedDay=dateStr;calSetView('day');}
+const CAL_ENTRY_COLORS = ['#2563EB','#16A34A','#EF4444','#C4973B'];
+let calManualEntries = {};
+
+function calClickDay(dateStr){
+  const existing = calManualEntries[dateStr];
+  appModalShow({
+    title: 'Calendar Entry — ' + dateStr,
+    fields: [
+      {label:'Event (short)', placeholder:'e.g. Team Meeting', maxlength:30, value: existing ? existing.text : ''},
+      {label:'Colour', type:'color', options: CAL_ENTRY_COLORS}
+    ],
+    onOk([text, color]){
+      calManualEntries[dateStr] = {text, color};
+      calRenderMonth();
+      toast('Calendar updated ✓');
+    }
+  });
+}
 function calSetView(v){
   calView=v;
   ['month','list','day'].forEach(x=>{const b=document.getElementById('cvb-'+x);if(b)b.classList.remove('on');});
@@ -6058,7 +6078,7 @@ function appModalShow({title, sub='', fields, onOk}){
     return `
     <div style="margin-bottom:${i<fields.length-1?'14px':'0'}">
       ${f.label?`<div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.7px;color:#94A3B8;margin-bottom:6px">${f.label}</div>`:''}
-      <input id="appModalField_${i}" type="text" value="${f.value||''}" placeholder="${f.placeholder||''}"
+      <input id="appModalField_${i}" type="text" value="${f.value||''}" placeholder="${f.placeholder||''}" ${f.maxlength?`maxlength="${f.maxlength}"`:''}
         style="width:100%;padding:11px 14px;border:1.5px solid #E2E8F0;border-radius:9px;font-family:'Poppins',sans-serif;font-size:14px;color:#0F1E2E;outline:none;box-sizing:border-box"
         onfocus="this.style.borderColor='#0D9488'" onblur="this.style.borderColor='#E2E8F0'">
     </div>`;

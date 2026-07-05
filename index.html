@@ -3148,35 +3148,14 @@ textarea.rf-val{resize:vertical;min-height:72px;line-height:1.5}
                 <th style="padding:10px 8px;text-align:center">Shellfish</th>
                 <th style="padding:10px 8px;text-align:center">Nuts</th>
                 <th style="padding:10px 8px;text-align:center">Soy</th>
-                <th style="padding:10px 8px;text-align:center;border-radius:0 8px 0 0">Vegan</th>
+                <th style="padding:10px 8px;text-align:center">Vegan</th>
+                <th style="padding:10px 8px;text-align:center;border-radius:0 8px 0 0;width:70px"></th>
               </tr>
             </thead>
-            <tbody>
-              <tr style="border-bottom:1px solid var(--line)">
-                <td style="padding:10px 14px;font-weight:600;color:var(--navy)">Grilled Barramundi</td>
-                <td style="text-align:center">—</td><td style="text-align:center;color:#DC2626">✓</td>
-                <td style="text-align:center">—</td><td style="text-align:center;color:#DC2626">✓</td>
-                <td style="text-align:center">—</td><td style="text-align:center">—</td>
-                <td style="text-align:center">—</td><td style="text-align:center">—</td>
-              </tr>
-              <tr style="border-bottom:1px solid var(--line);background:var(--bg)">
-                <td style="padding:10px 14px;font-weight:600;color:var(--navy)">Truffle Mushroom Pasta</td>
-                <td style="text-align:center;color:#DC2626">✓</td><td style="text-align:center;color:#DC2626">✓</td>
-                <td style="text-align:center;color:#DC2626">✓</td><td style="text-align:center">—</td>
-                <td style="text-align:center">—</td><td style="text-align:center">—</td>
-                <td style="text-align:center">—</td><td style="text-align:center">—</td>
-              </tr>
-              <tr style="border-bottom:1px solid var(--line)">
-                <td style="padding:10px 14px;font-weight:600;color:var(--navy)">Acai Bowl</td>
-                <td style="text-align:center">—</td><td style="text-align:center">—</td>
-                <td style="text-align:center">—</td><td style="text-align:center">—</td>
-                <td style="text-align:center">—</td><td style="text-align:center">—</td>
-                <td style="text-align:center">—</td><td style="text-align:center;color:#059669">✓</td>
-              </tr>
-            </tbody>
+            <tbody id="kitchen-allergens-tbody"></tbody>
           </table>
         </div>
-        <button class="btn btn-navy" style="margin-top:16px" onclick="toast('Add dish — coming soon')">+ Add Dish</button>
+        <button class="btn btn-navy" style="margin-top:16px" onclick="kitchenAddAllergenDish()">+ Add Dish</button>
       </div>
 
       <!-- LINKS PANEL -->
@@ -3443,7 +3422,7 @@ function nav(id, pushState=true){
   if(id==='home'){initHome(); announceRender();}
   if(id==='quicklinks'){quickLinksRender();}
   if(id==='music'){musicRender();}
-  if(id==='kitchen'){kitchenRenderMenus(); kitchenRenderRecipes();}
+  if(id==='kitchen'){kitchenRenderMenus(); kitchenRenderRecipes(); kitchenRenderAllergens();}
   const floatBtn=document.getElementById('float-edit');
   if(floatBtn)floatBtn.style.display=id==='beo'?'block':'none';
   if(pushState){
@@ -4845,6 +4824,7 @@ function kitchenTab(id, el){
   document.getElementById('kp-'+id).classList.add('on');
   if(id==='menus') kitchenRenderMenus();
   if(id==='recipes') kitchenRenderRecipes();
+  if(id==='allergens') kitchenRenderAllergens();
 }
 
 function kitchenLinksAdd(){
@@ -5097,6 +5077,88 @@ function kitchenDeleteRecipe(id){
     kitchenRecipesData = kitchenRecipesData.filter(x=>x.id!==id);
     kitchenRenderRecipes();
     toast('Recipe deleted');
+  }});
+}
+
+// ── KITCHEN ALLERGENS TABLE ──
+const ALLERGEN_CATS = ['gluten','dairy','egg','fish','shellfish','nuts','soy','vegan'];
+let kitchenAllergenNextId = 100;
+let kitchenAllergensData = [
+  {id:1, dish:'Grilled Barramundi', gluten:false, dairy:true, egg:false, fish:true, shellfish:false, nuts:false, soy:false, vegan:false},
+  {id:2, dish:'Truffle Mushroom Pasta', gluten:true, dairy:true, egg:true, fish:false, shellfish:false, nuts:false, soy:false, vegan:false},
+  {id:3, dish:'Acai Bowl', gluten:false, dairy:false, egg:false, fish:false, shellfish:false, nuts:false, soy:false, vegan:true}
+];
+
+function kitchenAllergensToText(row){
+  return ALLERGEN_CATS.filter(c=>row[c]).map(c=>c.charAt(0).toUpperCase()+c.slice(1)).join(', ');
+}
+
+function kitchenParseAllergenText(text){
+  const found = text.toLowerCase();
+  const row = {};
+  ALLERGEN_CATS.forEach(c=>{ row[c] = found.includes(c); });
+  return row;
+}
+
+function kitchenRenderAllergens(){
+  const tbody = document.getElementById('kitchen-allergens-tbody');
+  if(!tbody) return;
+  tbody.innerHTML = kitchenAllergensData.map((row,i)=>`
+    <tr style="border-bottom:1px solid var(--line);${i%2?'background:var(--bg)':''}">
+      <td style="padding:10px 14px;font-weight:600;color:var(--navy)">${row.dish}</td>
+      ${ALLERGEN_CATS.map(c=>`<td style="text-align:center;${row[c]?'color:#DC2626':''}">${row[c]?'✓':'—'}</td>`).join('')}
+      <td style="text-align:center;white-space:nowrap">
+        <span onclick="kitchenEditAllergenDish(${row.id})" style="opacity:0.5;cursor:pointer;font-size:12px;margin-right:8px">✎</span>
+        <span onclick="kitchenDeleteAllergenDish(${row.id})" style="opacity:0.5;cursor:pointer;font-size:14px;color:#EF4444">×</span>
+      </td>
+    </tr>
+  `).join('');
+}
+
+function kitchenAddAllergenDish(){
+  appModalShow({
+    title:'Add Dish',
+    fields:[
+      {label:'Dish name', placeholder:'e.g. Grilled Barramundi'},
+      {label:'Allergens (Gluten, Dairy, Egg, Fish, Shellfish, Nuts, Soy, Vegan)', placeholder:'e.g. Dairy, Fish'}
+    ],
+    onOk([dish, allergenText]){
+      const row = kitchenParseAllergenText(allergenText);
+      row.id = kitchenAllergenNextId++;
+      row.dish = dish;
+      kitchenAllergensData.push(row);
+      kitchenRenderAllergens();
+      toast('Dish added ✓');
+    }
+  });
+}
+
+function kitchenEditAllergenDish(id){
+  const row = kitchenAllergensData.find(x=>x.id===id);
+  if(!row) return;
+  appModalShow({
+    title:'Edit Dish',
+    fields:[
+      {label:'Dish name', value:row.dish, placeholder:'e.g. Grilled Barramundi'},
+      {label:'Allergens (Gluten, Dairy, Egg, Fish, Shellfish, Nuts, Soy, Vegan)', value:kitchenAllergensToText(row), placeholder:'e.g. Dairy, Fish'}
+    ],
+    onOk([dish, allergenText]){
+      const parsed = kitchenParseAllergenText(allergenText);
+      Object.assign(row, parsed);
+      row.dish = dish;
+      kitchenRenderAllergens();
+      toast('Dish updated ✓');
+    }
+  });
+}
+
+function kitchenDeleteAllergenDish(id){
+  const row = kitchenAllergensData.find(x=>x.id===id);
+  if(!row) return;
+  appConfirmShow({title:'Delete Dish', msg:`Delete "${row.dish}" from the allergen guide?`, onOk:()=>{
+    kitchenAllergensData = kitchenAllergensData.filter(x=>x.id!==id);
+    kitchenRenderAllergens();
+    toast('Dish deleted');
   }});
 }
 // ── INIT ──

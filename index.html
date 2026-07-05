@@ -5957,14 +5957,12 @@ function faqAdd(){
   appModalShow({
     title:'Add FAQ',
     fields:[
-      {label:`Department (${faqDepts.map(d=>d.name).join(', ')})`, placeholder:'e.g. ' + (faqDepts[0]?.name || 'HR')},
+      {label:'Department', type:'deptpicker', options: faqDepts},
       {label:'Question', placeholder:'e.g. How do I...?'},
       {label:'Answer', type:'textarea', rows:8, placeholder:'The answer...'}
     ],
-    onOk([dept, question, answer]){
-      const typed = dept.trim().toLowerCase();
-      const match = faqDepts.find(d=>d.id===typed || d.name.toLowerCase()===typed);
-      const cleanDept = match ? match.id : (faqDepts[0] ? faqDepts[0].id : '');
+    onOk([deptId, question, answer]){
+      const cleanDept = faqDepts.find(d=>d.id===deptId) ? deptId : (faqDepts[0] ? faqDepts[0].id : '');
       faqData.push({id: faqNextId++, dept: cleanDept, question, answer});
       faqRenderDepts();
       toast('FAQ added ✓');
@@ -6510,7 +6508,7 @@ function appModalShow({title, sub='', fields, onOk}){
   document.getElementById('appModalTitle').textContent = title;
   document.getElementById('appModalSub').textContent = sub;
   const fc = document.getElementById('appModalFields');
-  const hasTextarea = fields.some(f=>f.type==='textarea');
+  const hasTextarea = fields.some(f=>f.type==='textarea' || f.type==='deptpicker');
   document.getElementById('appModalBox').style.maxWidth = hasTextarea ? '640px' : '400px';
   fc.innerHTML = fields.map((f,i)=>{
     if(f.type==='file'){
@@ -6537,6 +6535,20 @@ function appModalShow({title, sub='', fields, onOk}){
         ${opts.map((ic)=>`<div class="app-icon-swatch" data-icon="${ic.id}" onclick="appModalPickIcon(${i},'${ic.id}',this)" title="${ic.label}" style="width:62px;display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer;padding:4px;border-radius:9px;border:2px solid ${ic.id===selected?'#0D9488':'transparent'}">
           <div style="width:36px;height:36px;border-radius:9px;background:#0F1E2E;display:flex;align-items:center;justify-content:center;box-shadow:0 0 0 1px rgba(0,0,0,0.06)">${ic.svg}</div>
           <div style="font-size:9px;font-weight:600;color:#64748B;text-align:center;line-height:1.15;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:60px">${ic.label}</div>
+        </div>`).join('')}
+      </div>
+    </div>`;
+    }
+    if(f.type==='deptpicker'){
+      const opts = f.options || [];
+      const selected = f.value || opts[0]?.id || '';
+      return `
+    <div style="margin-bottom:${i<fields.length-1?'14px':'0'}">
+      ${f.label?`<div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.7px;color:#94A3B8;margin-bottom:6px">${f.label}</div>`:''}
+      <div id="appModalField_${i}" data-selected="${selected}" style="display:flex;flex-wrap:wrap;gap:8px">
+        ${opts.map((d)=>`<div class="app-dept-swatch" data-dept="${d.id}" onclick="appModalPickDept(${i},'${d.id}',this)" title="${d.name}" style="width:68px;display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer;padding:4px;border-radius:9px;border:2px solid ${d.id===selected?'#0D9488':'transparent'}">
+          <div style="width:36px;height:36px;border-radius:9px;background:${d.color};display:flex;align-items:center;justify-content:center;box-shadow:0 0 0 1px rgba(0,0,0,0.06)">${d.icon}</div>
+          <div style="font-size:9px;font-weight:600;color:#64748B;text-align:center;line-height:1.15;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:66px">${d.name}</div>
         </div>`).join('')}
       </div>
     </div>`;
@@ -6571,7 +6583,7 @@ function appModalShow({title, sub='', fields, onOk}){
   }).join('');
   const modal = document.getElementById('appModal');
   modal.style.display='flex';
-  setTimeout(()=>{ const f=document.getElementById('appModalField_0'); if(f && f.type!=='file' && fields[0]?.type!=='color' && fields[0]?.type!=='icon') f.focus(); },80);
+  setTimeout(()=>{ const f=document.getElementById('appModalField_0'); if(f && f.type!=='file' && fields[0]?.type!=='color' && fields[0]?.type!=='icon' && fields[0]?.type!=='deptpicker') f.focus(); },80);
   document.getElementById('appModalOk').onclick = async ()=>{
     const vals = [];
     for(let i=0;i<fields.length;i++){
@@ -6584,7 +6596,7 @@ function appModalShow({title, sub='', fields, onOk}){
         }
       } else if(fields[i].type==='color'){
         vals.push(el.dataset.selected || '');
-      } else if(fields[i].type==='icon'){
+      } else if(fields[i].type==='icon' || fields[i].type==='deptpicker'){
         vals.push(el.dataset.selected || '');
       } else {
         vals.push(el.value.trim());
@@ -6597,7 +6609,7 @@ function appModalShow({title, sub='', fields, onOk}){
         const wrap = document.getElementById('appModalFileLabelWrap_'+firstEmpty);
         wrap.style.borderColor = '#EF4444';
         setTimeout(()=>{ wrap.style.borderColor = '#CBD5E1'; }, 1200);
-      } else if(fields[firstEmpty].type!=='color' && fields[firstEmpty].type!=='icon'){
+      } else if(fields[firstEmpty].type!=='color' && fields[firstEmpty].type!=='icon' && fields[firstEmpty].type!=='deptpicker'){
         el.focus();
       }
       return;
@@ -6620,6 +6632,12 @@ function appModalPickIcon(i, iconId, el){
   const wrap = document.getElementById('appModalField_'+i);
   wrap.dataset.selected = iconId;
   wrap.querySelectorAll('.app-icon-swatch').forEach(s=>{ s.style.border='2px solid transparent'; });
+  el.style.border = '2px solid #0D9488';
+}
+function appModalPickDept(i, deptId, el){
+  const wrap = document.getElementById('appModalField_'+i);
+  wrap.dataset.selected = deptId;
+  wrap.querySelectorAll('.app-dept-swatch').forEach(s=>{ s.style.border='2px solid transparent'; });
   el.style.border = '2px solid #0D9488';
 }
 function appFileToDataUrl(file){

@@ -1907,17 +1907,6 @@ textarea.rf-val{resize:vertical;min-height:72px;line-height:1.5}
       Suggestion Box
     </button>
 
-    <div class="sb-usage" id="sb-usage" style="padding:12px 16px;margin:8px 12px 0">
-      <div style="display:flex;justify-content:space-between;font-size:11px;color:rgba(255,255,255,0.55);margin-bottom:6px">
-        <span>Plan Usage</span>
-        <span id="sb-usage-count">0 / 1,000</span>
-      </div>
-      <div style="height:6px;background:rgba(255,255,255,0.12);border-radius:4px;overflow:hidden">
-        <div id="sb-usage-bar" style="height:100%;width:0%;background:#0D9488;border-radius:4px;transition:width 0.3s,background 0.3s"></div>
-      </div>
-      <div id="sb-usage-warning" style="display:none;font-size:10px;color:#F5C842;margin-top:7px;line-height:1.4">⚠ Approaching your plan limit — upgrade for more</div>
-    </div>
-
     <div class="sb-bottom">
       <div class="sb-avatar" id="sb-avatar">R</div>
       <span class="sb-uname" id="sb-uname">Robbie</span>
@@ -6657,23 +6646,6 @@ let customerData = [
   {id:3, name:'Made Wirawan', company:'Ku De Ta Seminyak', phone:'+62 811-5555-6666', email:'made@kudeta.com'}
 ];
 
-// ── PLAN USAGE (real number: current plan's included contact limit) ──
-const CUSTOMER_PLAN_LIMIT = 1000;
-function updatePlanUsage(){
-  const bar = document.getElementById('sb-usage-bar');
-  const count = document.getElementById('sb-usage-count');
-  const warning = document.getElementById('sb-usage-warning');
-  if(!bar || !count) return;
-  const used = customerData.length;
-  const pct = Math.min(100, (used / CUSTOMER_PLAN_LIMIT) * 100);
-  bar.style.width = pct + '%';
-  count.textContent = used.toLocaleString() + ' / ' + CUSTOMER_PLAN_LIMIT.toLocaleString();
-  if(pct >= 100){ bar.style.background = '#EF4444'; }
-  else if(pct >= 80){ bar.style.background = '#C4973B'; }
-  else { bar.style.background = '#0D9488'; }
-  if(warning) warning.style.display = pct >= 80 ? 'block' : 'none';
-}
-
 function customerRenderList(){
   const list = document.getElementById('customer-list');
   if(!list) return;
@@ -6714,7 +6686,6 @@ function customerAdd(){
     onOk([name, company, phone, email]){
       customerData.push({id: customerNextId++, name, company, phone, email});
       customerRenderList();
-      updatePlanUsage();
       toast('Contact added ✓');
     }
   });
@@ -6745,7 +6716,6 @@ function customerDelete(id){
   appConfirmShow({title:'Delete Contact', msg:`Delete "${c.name}"?`, onOk:()=>{
     customerData = customerData.filter(x=>x.id!==id);
     customerRenderList();
-    updatePlanUsage();
     toast('Contact deleted');
   }});
 }
@@ -6848,7 +6818,6 @@ function customerCsvImport(){
   const modal = document.getElementById('csv-upload-modal');
   if(modal) modal.remove();
   customerRenderList();
-  updatePlanUsage();
   toast(`${count} contact${count===1?'':'s'} added ✓ — ${customerData.length} total`);
 }
 
@@ -7223,7 +7192,6 @@ const momentsData = [
 ];
 
 document.addEventListener('DOMContentLoaded', initCardColours);
-document.addEventListener('DOMContentLoaded', updatePlanUsage);
 
 </script>
 

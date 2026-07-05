@@ -3197,6 +3197,7 @@ textarea.rf-val{resize:vertical;min-height:72px;line-height:1.5}
 
       <!-- MENUS PANEL -->
       <div class="kitchen-panel bar-panel on" id="bp-menus">
+        <div class="month-strip" id="bar-area-strip" style="margin-bottom:20px"></div>
         <div id="bar-menus-container"></div>
       </div>
 
@@ -4849,14 +4850,26 @@ function barTab(id, el){
 }
 
 // ── BAR MENUS (same Live/In Progress/Coming Up pattern as Kitchen) ──
+// ── BAR AREAS (a venue can have multiple bars, each with their own lists) ──
+let barAreaNextId = 10;
+let barAreas = [
+  {id:'mainbar', name:'Main Bar'},
+  {id:'poolbar', name:'Pool Bar'},
+  {id:'sunsetbar', name:'Sunset Bar'}
+];
+let barActiveArea = 'all';
+
 let barMenuNextId = 100;
 let barMenusData = [
-  {id:1, section:'live', cat:'Cocktails', name:'Cocktail Menu', meta:'Updated 3 Jun 2026', links:[]},
-  {id:2, section:'live', cat:'Specials', name:'Weekly Specials', meta:'Updated 10 Jun 2026', links:[]}
+  {id:1, area:'mainbar', section:'live', cat:'Cocktails', name:'Cocktail Menu', meta:'Updated 3 Jun 2026', links:[]},
+  {id:2, area:'mainbar', section:'live', cat:'Specials', name:'Weekly Specials', meta:'Updated 10 Jun 2026', links:[]},
+  {id:3, area:'poolbar', section:'live', cat:'Cocktails', name:'Pool Bar Cocktails', meta:'Updated 3 Jun 2026', links:[]},
+  {id:4, area:'sunsetbar', section:'progress', cat:'Cocktails', name:'Sunset Bar Menu', meta:'With Head Bartender · Target: 5 Jul 2026', links:[]}
 ];
 
 function barMenuCardHtml(m){
   const sec = kitchenMenuSections.find(s=>s.id===m.section);
+  const area = barAreas.find(a=>a.id===m.area);
   const linksHtml = m.links.length ? `<div style="margin-top:8px;display:flex;flex-direction:column;gap:4px">${m.links.map((l,i)=>`
       <div style="display:flex;align-items:center;gap:6px;font-size:11px">
         <a href="${l.url}" target="_blank" style="color:#0D9488;text-decoration:none;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">🔗 ${l.name}</a>
@@ -4866,7 +4879,7 @@ function barMenuCardHtml(m){
     <div class="menu-card" style="border-left:none;background:${sec.bg};border-color:${sec.border}">
       <div class="menu-card-top">
         <div>
-          <div class="menu-card-cat" style="color:#475569">${m.cat}</div>
+          <div class="menu-card-cat" style="color:#475569">${m.cat}${barActiveArea==='all' && area?` · ${area.name}`:''}</div>
           <div class="menu-card-name">${m.name}</div>
         </div>
         <span class="menu-badge ${sec.badge}">${sec.badgeLabel}</span>
@@ -4884,11 +4897,77 @@ function barMenuCardHtml(m){
     </div>`;
 }
 
+function barRenderAreaTabs(){
+  const strip = document.getElementById('bar-area-strip');
+  if(!strip) return;
+  let html = `<div class="month-tab${barActiveArea==='all'?' on':''}" onclick="barFilterArea('all',this)">All Areas</div>`;
+  html += barAreas.map(a => `
+    <div class="month-tab${barActiveArea===a.id?' on':''}" style="display:flex;align-items:center;gap:6px" onclick="barFilterArea('${a.id}',this)">
+      <span>${a.name}</span>
+      <span onclick="event.stopPropagation();barRenameArea('${a.id}')" title="Rename area" style="opacity:0.55;cursor:pointer;font-size:11px">✎</span>
+      <span onclick="event.stopPropagation();barDeleteArea('${a.id}')" title="Delete area" style="opacity:0.55;cursor:pointer;font-size:13px;line-height:1">×</span>
+    </div>`).join('');
+  html += `<button class="kb-new-project-btn" onclick="barAddArea()">+ Add Area</button>`;
+  strip.innerHTML = html;
+}
+
+function barFilterArea(areaId, el){
+  barActiveArea = areaId;
+  barRenderAreaTabs();
+  barRenderMenus();
+}
+
+function barAddArea(){
+  appModalShow({
+    title:'Add Area',
+    fields:[{label:'Area name', placeholder:'e.g. Rooftop Bar'}],
+    onOk([name]){
+      let id = name.trim().toLowerCase().replace(/[^a-z0-9]+/g,'-');
+      if(!id || barAreas.find(a=>a.id===id)) id = id + '-' + Date.now();
+      barAreas.push({id, name});
+      barActiveArea = id;
+      barRenderAreaTabs();
+      barRenderMenus();
+      toast('Area added ✓');
+    }
+  });
+}
+
+function barRenameArea(id){
+  const a = barAreas.find(x=>x.id===id);
+  if(!a) return;
+  appModalShow({
+    title:'Rename Area',
+    fields:[{label:'Area name', value:a.name, placeholder:'e.g. Rooftop Bar'}],
+    onOk([name]){
+      a.name = name;
+      barRenderAreaTabs();
+      barRenderMenus();
+      toast('Area renamed ✓');
+    }
+  });
+}
+
+function barDeleteArea(id){
+  const a = barAreas.find(x=>x.id===id);
+  if(!a) return;
+  appConfirmShow({title:'Delete Area', msg:`Delete "${a.name}"? This will permanently remove all its menus.`, onOk:()=>{
+    barAreas = barAreas.filter(x=>x.id!==id);
+    barMenusData = barMenusData.filter(m=>m.area!==id);
+    if(barActiveArea===id) barActiveArea = 'all';
+    barRenderAreaTabs();
+    barRenderMenus();
+    toast('Area deleted');
+  }});
+}
+
 function barRenderMenus(){
   const container = document.getElementById('bar-menus-container');
   if(!container) return;
+  barRenderAreaTabs();
+  const filtered = barActiveArea==='all' ? barMenusData : barMenusData.filter(m=>m.area===barActiveArea);
   container.innerHTML = kitchenMenuSections.map((sec,i) => {
-    const items = barMenusData.filter(m => m.section===sec.id);
+    const items = filtered.filter(m => m.section===sec.id);
     return `
       <div class="menu-section-label" style="${i>0?'margin-top:28px':''}">
         <div class="menu-section-dot" style="background:${sec.dot}"></div>
@@ -4906,16 +4985,18 @@ function barRenderMenus(){
 }
 
 function barAddMenu(sectionId){
+  const defaultArea = barActiveArea!=='all' ? barActiveArea : (barAreas[0] ? barAreas[0].id : '');
   appModalShow({
     title:'Add Menu',
     fields:[
+      {label:'Area', type:'pillpicker', options: barAreas, value: defaultArea},
       {label:'Category', placeholder:'e.g. Cocktails'},
       {label:'Menu name', placeholder:'e.g. Cocktail Menu'}
     ],
-    onOk([cat, name]){
+    onOk([area, cat, name]){
       const now = new Date();
       const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-      barMenusData.push({id: barMenuNextId++, section: sectionId, cat, name, meta:`Updated ${now.getDate()} ${months[now.getMonth()]} ${now.getFullYear()}`, links:[]});
+      barMenusData.push({id: barMenuNextId++, area, section: sectionId, cat, name, meta:`Updated ${now.getDate()} ${months[now.getMonth()]} ${now.getFullYear()}`, links:[]});
       barRenderMenus();
       toast('Menu added ✓');
     }
@@ -4928,11 +5009,12 @@ function barEditMenu(id){
   appModalShow({
     title:'Edit Menu',
     fields:[
+      {label:'Area', type:'pillpicker', options: barAreas, value: m.area},
       {label:'Category', value:m.cat, placeholder:'e.g. Cocktails'},
       {label:'Menu name', value:m.name, placeholder:'e.g. Cocktail Menu'}
     ],
-    onOk([cat, name]){
-      m.cat = cat; m.name = name;
+    onOk([area, cat, name]){
+      m.area = area; m.cat = cat; m.name = name;
       barRenderMenus();
       toast('Menu updated ✓');
     }

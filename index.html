@@ -3140,26 +3140,32 @@ textarea.rf-val{resize:vertical;min-height:72px;line-height:1.5}
     <div class="page" id="p-reports" style="padding:32px 28px 60px">
       <div class="ph">
         <div>
-          <div class="ph-title">Weekly Reports</div>
-          <div class="ph-sub">Bookings & revenue, tracked week on week</div>
+          <div class="ph-title">Reports</div>
+          <div class="ph-sub" id="reports-page-sub">Bookings & revenue, tracked week on week</div>
         </div>
         <div style="display:flex;gap:10px">
-          <button class="btn btn-ghost" onclick="reportsAddWeek()">+ Add This Week's Numbers</button>
-          <button class="btn btn-navy" onclick="reportsCompileImage()"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:6px"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>Compile Weekly Report</button>
+          <button class="btn btn-ghost" id="reports-add-btn" onclick="reportsAddEntry()">+ Add This Week's Numbers</button>
+          <button class="btn btn-navy" onclick="reportsCompileImage()"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:6px"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg><span id="reports-compile-label">Compile Weekly Report</span></button>
         </div>
+      </div>
+
+      <div class="kitchen-tabs" style="margin-bottom:24px">
+        <button class="kitchen-tab" id="reports-tab-day" onclick="reportsSetMode('day',this)">Daily</button>
+        <button class="kitchen-tab on" id="reports-tab-week" onclick="reportsSetMode('week',this)">Weekly</button>
+        <button class="kitchen-tab" id="reports-tab-month" onclick="reportsSetMode('month',this)">Monthly</button>
       </div>
 
       <div id="reports-stats" style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:28px"></div>
 
       <div style="background:white;border:1.5px solid #E2E8F0;border-radius:14px;padding:24px;margin-bottom:20px">
-        <div style="font-size:15px;font-weight:800;color:var(--navy);margin-bottom:4px">Bookings — this year vs last 2 years</div>
-        <div style="font-size:12px;color:#94A3B8;margin-bottom:16px">Same weeks compared across 2024, 2025, 2026</div>
+        <div style="font-size:15px;font-weight:800;color:var(--navy);margin-bottom:4px" id="reports-bookings-title">Bookings — this year vs last 2 years</div>
+        <div style="font-size:12px;color:#94A3B8;margin-bottom:16px" id="reports-bookings-sub">Same weeks compared across 2024, 2025, 2026</div>
         <canvas id="reports-bookings-chart" height="90"></canvas>
       </div>
 
       <div style="background:white;border:1.5px solid #E2E8F0;border-radius:14px;padding:24px">
-        <div style="font-size:15px;font-weight:800;color:var(--navy);margin-bottom:4px">Revenue — this year vs last 2 years</div>
-        <div style="font-size:12px;color:#94A3B8;margin-bottom:16px">IDR converted to USD for comparison</div>
+        <div style="font-size:15px;font-weight:800;color:var(--navy);margin-bottom:4px" id="reports-revenue-title">Revenue — this year vs last 2 years</div>
+        <div style="font-size:12px;color:#94A3B8;margin-bottom:16px" id="reports-revenue-sub">IDR converted to USD for comparison</div>
         <canvas id="reports-revenue-chart" height="90"></canvas>
       </div>
     </div>
@@ -4473,8 +4479,10 @@ window.kbDelete = function(cardId, colId){
 
 window.updateKanbanCounts = function(){ kbRender(); };
 
-// ── WEEKLY REPORTS (demo data — shows the pattern, not live data) ──
-let reportsData = [
+// ── REPORTS (Weekly + Monthly, demo data — shows the pattern, not live data) ──
+let reportsMode = 'week';
+
+let reportsWeeklyData = [
   {year:2024, week:20, bookings:78,  revenue:14800},
   {year:2024, week:21, bookings:82,  revenue:15600},
   {year:2024, week:22, bookings:85,  revenue:16200},
@@ -4508,11 +4516,75 @@ let reportsData = [
   {year:2026, week:28, bookings:137, revenue:27500},
   {year:2026, week:29, bookings:147, revenue:29600}
 ];
+
+// Deliberately does NOT include the current month yet, so the "haven't entered this month" prompt shows for real
+let reportsMonthlyData = [
+  {year:2024, month:1, bookings:320, revenue:58000},
+  {year:2024, month:2, bookings:300, revenue:54000},
+  {year:2024, month:3, bookings:340, revenue:61000},
+  {year:2024, month:4, bookings:360, revenue:65000},
+  {year:2024, month:5, bookings:355, revenue:64000},
+  {year:2024, month:6, bookings:380, revenue:69000},
+
+  {year:2025, month:1, bookings:385, revenue:71000},
+  {year:2025, month:2, bookings:365, revenue:67000},
+  {year:2025, month:3, bookings:410, revenue:75000},
+  {year:2025, month:4, bookings:435, revenue:80000},
+  {year:2025, month:5, bookings:428, revenue:79000},
+  {year:2025, month:6, bookings:460, revenue:85000},
+
+  {year:2026, month:1, bookings:465, revenue:87000},
+  {year:2026, month:2, bookings:445, revenue:83000},
+  {year:2026, month:3, bookings:495, revenue:92000},
+  {year:2026, month:4, bookings:525, revenue:98000},
+  {year:2026, month:5, bookings:515, revenue:96000},
+  {year:2026, month:6, bookings:555, revenue:104000}
+];
+
 let reportsBookingsChart = null;
 let reportsRevenueChart = null;
+const MONTH_NAMES = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 
-function reportsFind(year, week){
-  return reportsData.find(r => r.year===year && r.week===week);
+function getISOWeek(date){
+  const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+  const dayNum = (d.getUTCDay() + 6) % 7;
+  d.setUTCDate(d.getUTCDate() - dayNum + 3);
+  const firstThursday = new Date(Date.UTC(d.getUTCFullYear(), 0, 4));
+  const weekNum = 1 + Math.round(((d - firstThursday) / 86400000 - 3 + ((firstThursday.getUTCDay()+6)%7)) / 7);
+  return {year: d.getUTCFullYear(), week: weekNum};
+}
+
+function reportsCurrentPeriod(){
+  const now = new Date();
+  if(reportsMode === 'week'){
+    return getISOWeek(now);
+  }
+  return {year: now.getFullYear(), month: now.getMonth()+1};
+}
+
+function reportsDataset(){
+  return reportsMode === 'week' ? reportsWeeklyData : reportsMonthlyData;
+}
+
+function reportsFindEntry(year, period){
+  const data = reportsDataset();
+  if(reportsMode === 'week') return data.find(r => r.year===year && r.week===period);
+  return data.find(r => r.year===year && r.month===period);
+}
+
+function reportsPeriodNum(period){
+  return reportsMode === 'week' ? period.week : period.month;
+}
+
+function reportsPrevPeriod(period){
+  if(reportsMode === 'week'){
+    return period.week <= 1 ? {year: period.year-1, week: 52} : {year: period.year, week: period.week-1};
+  }
+  return period.month <= 1 ? {year: period.year-1, month: 12} : {year: period.year, month: period.month-1};
+}
+
+function reportsPeriodLabel(year, periodNum){
+  return reportsMode === 'week' ? `Week ${periodNum} · ${year}` : `${MONTH_NAMES[periodNum-1]} ${year}`;
 }
 
 function reportsPctChange(curr, prev){
@@ -4526,31 +4598,80 @@ function reportsFmtPct(pct){
   return sign + pct.toFixed(1) + '%';
 }
 
+function reportsSetMode(mode, el){
+  reportsMode = mode;
+  document.querySelectorAll('#p-reports .kitchen-tab').forEach(t=>t.classList.remove('on'));
+  if(el) el.classList.add('on');
+  const sub = document.getElementById('reports-page-sub');
+  const addBtn = document.getElementById('reports-add-btn');
+  const compileLabel = document.getElementById('reports-compile-label');
+  if(mode === 'week'){
+    sub.textContent = "Bookings & revenue, tracked week on week";
+    addBtn.textContent = "+ Add This Week's Numbers";
+    compileLabel.textContent = "Compile Weekly Report";
+  } else {
+    sub.textContent = "Bookings & revenue, tracked month on month";
+    addBtn.textContent = "+ Add This Month's Numbers";
+    compileLabel.textContent = "Compile Monthly Report";
+  }
+  reportsRender();
+}
+
+function reportsPromptCardHtml(title, sub, prefillYear, prefillPeriod){
+  return `
+    <div style="grid-column:1/-1;background:rgba(196,151,59,0.08);border:1.5px dashed #C4973B;border-radius:14px;padding:24px;text-align:center">
+      <div style="font-size:16px;font-weight:800;color:#78350F;margin-bottom:6px">${title}</div>
+      <div style="font-size:13px;color:#92702A;margin-bottom:16px">${sub}</div>
+      <button class="btn btn-navy" onclick="reportsAddEntry(${prefillYear},${prefillPeriod})">+ Enter Now</button>
+    </div>`;
+}
+
+function reportsMissingCardHtml(label, year, period){
+  return `
+    <div style="background:white;border:1.5px dashed #E2E8F0;border-radius:14px;padding:20px;text-align:center">
+      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.7px;color:#94A3B8;margin-bottom:10px">${label}</div>
+      <div style="font-size:12px;color:#94A3B8;margin-bottom:12px">No data for ${reportsPeriodLabel(year, period)}</div>
+      <span onclick="reportsAddEntry(${year},${period})" style="font-size:12px;font-weight:700;color:#0D9488;cursor:pointer">+ Add this data</span>
+    </div>`;
+}
+
 function reportsRenderStats(){
   const container = document.getElementById('reports-stats');
   if(!container) return;
-  const sorted = reportsData.slice().sort((a,b)=> a.year-b.year || a.week-b.week);
-  const latest = sorted[sorted.length-1];
-  if(!latest){ container.innerHTML=''; return; }
+  const current = reportsCurrentPeriod();
+  const currentNum = reportsPeriodNum(current);
+  const currentEntry = reportsFindEntry(current.year, currentNum);
 
-  const lastWeek = reportsFind(latest.year, latest.week-1);
-  const lastMonth = reportsFind(latest.year, latest.week-4);
-  const lastYear = reportsFind(latest.year-1, latest.week);
+  if(!currentEntry){
+    container.style.gridTemplateColumns = '1fr';
+    const periodWord = reportsMode === 'week' ? "this week's" : "this month's";
+    container.innerHTML = reportsPromptCardHtml(
+      `You haven't entered ${periodWord} numbers yet`,
+      `Enter them to generate the ${reportsMode==='week'?'weekly':'monthly'} report and comparisons for ${reportsPeriodLabel(current.year, currentNum)}.`,
+      current.year, currentNum
+    );
+    return;
+  }
 
-  const cards = [
-    {label:'vs Last Week', ref:lastWeek},
-    {label:'vs Last Month', ref:lastMonth},
-    {label:'vs Last Year', ref:lastYear}
+  container.style.gridTemplateColumns = 'repeat(3,1fr)';
+  const prev = reportsPrevPeriod(current);
+  const prevEntry = reportsFindEntry(prev.year, reportsPeriodNum(prev));
+  const lastYearEntry = reportsFindEntry(current.year-1, currentNum);
+
+  const slots = [
+    {label: reportsMode==='week' ? 'vs Last Week' : 'vs Last Month', ref: prevEntry, refYear: prev.year, refNum: reportsPeriodNum(prev)},
+    {label: 'vs Last Year', ref: lastYearEntry, refYear: current.year-1, refNum: currentNum}
   ];
 
-  container.innerHTML = cards.map(c => {
-    const bookingsPct = c.ref ? reportsPctChange(latest.bookings, c.ref.bookings) : null;
-    const revenuePct = c.ref ? reportsPctChange(latest.revenue, c.ref.revenue) : null;
-    const bColor = bookingsPct === null ? '#94A3B8' : (bookingsPct >= 0 ? '#166534' : '#991B1B');
-    const rColor = revenuePct === null ? '#94A3B8' : (revenuePct >= 0 ? '#166534' : '#991B1B');
+  container.innerHTML = slots.map(s => {
+    if(!s.ref) return reportsMissingCardHtml(s.label, s.refYear, s.refNum);
+    const bookingsPct = reportsPctChange(currentEntry.bookings, s.ref.bookings);
+    const revenuePct = reportsPctChange(currentEntry.revenue, s.ref.revenue);
+    const bColor = bookingsPct >= 0 ? '#166534' : '#991B1B';
+    const rColor = revenuePct >= 0 ? '#166534' : '#991B1B';
     return `
       <div style="background:white;border:1.5px solid #E2E8F0;border-radius:14px;padding:20px">
-        <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.7px;color:#94A3B8;margin-bottom:12px">${c.label}</div>
+        <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.7px;color:#94A3B8;margin-bottom:12px">${s.label}</div>
         <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px">
           <span style="font-size:12px;color:#64748B">Bookings</span>
           <span style="font-size:20px;font-weight:800;color:${bColor}">${reportsFmtPct(bookingsPct)}</span>
@@ -4560,33 +4681,60 @@ function reportsRenderStats(){
           <span style="font-size:20px;font-weight:800;color:${rColor}">${reportsFmtPct(revenuePct)}</span>
         </div>
       </div>`;
-  }).join('');
+  }).join('') + `
+      <div style="background:white;border:1.5px solid #E2E8F0;border-radius:14px;padding:20px">
+        <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.7px;color:#94A3B8;margin-bottom:12px">${reportsPeriodLabel(current.year, currentNum)}</div>
+        <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px">
+          <span style="font-size:12px;color:#64748B">Bookings</span>
+          <span style="font-size:20px;font-weight:800;color:var(--navy)">${currentEntry.bookings.toLocaleString()}</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:baseline">
+          <span style="font-size:12px;color:#64748B">Revenue</span>
+          <span style="font-size:20px;font-weight:800;color:var(--navy)">$${currentEntry.revenue.toLocaleString()}</span>
+        </div>
+      </div>`;
 }
 
 function reportsRenderCharts(){
   const bCanvas = document.getElementById('reports-bookings-chart');
   const rCanvas = document.getElementById('reports-revenue-chart');
+  const bTitle = document.getElementById('reports-bookings-title');
+  const bSub = document.getElementById('reports-bookings-sub');
+  const rTitle = document.getElementById('reports-revenue-title');
+  const rSub = document.getElementById('reports-revenue-sub');
   if(!bCanvas || !rCanvas) return;
+
+  const periodWord = reportsMode === 'week' ? 'weeks' : 'months';
+  bTitle.textContent = 'Bookings — this year vs last 2 years';
+  bSub.textContent = `Same ${periodWord} compared across 2024, 2025, 2026`;
+  rTitle.textContent = 'Revenue — this year vs last 2 years';
+  rSub.textContent = `Same ${periodWord} compared across 2024, 2025, 2026`;
+
   if(typeof Chart === 'undefined'){
     const msg = '<div style="text-align:center;padding:24px;color:#94A3B8;font-size:13px">Charts couldn\'t load — check your internet connection and refresh</div>';
     bCanvas.outerHTML = msg;
     rCanvas.outerHTML = msg;
     return;
   }
-  const weeks = [...new Set(reportsData.map(r=>r.week))].sort((a,b)=>a-b);
-  const labels = weeks.map(w => 'Wk ' + w);
+
+  const data = reportsDataset();
+  const periodKey = reportsMode === 'week' ? 'week' : 'month';
+  const periods = [...new Set(data.map(r=>r[periodKey]))].sort((a,b)=>a-b);
+  const labels = periods.map(p => reportsMode==='week' ? 'Wk '+p : MONTH_NAMES[p-1]);
   const years = [2024, 2025, 2026];
   const yearColors = {2024:'#94A3B8', 2025:'#C4973B', 2026:'#0D9488'};
 
+  function findFor(y,p){ return data.find(r => r.year===y && r[periodKey]===p); }
+
   const bookingsDatasets = years.map(y => ({
     label: String(y),
-    data: weeks.map(w => { const r = reportsFind(y,w); return r ? r.bookings : null; }),
+    data: periods.map(p => { const r = findFor(y,p); return r ? r.bookings : null; }),
     backgroundColor: yearColors[y],
     borderRadius: 4
   }));
   const revenueDatasets = years.map(y => ({
     label: String(y),
-    data: weeks.map(w => { const r = reportsFind(y,w); return r ? r.revenue : null; }),
+    data: periods.map(p => { const r = findFor(y,p); return r ? r.revenue : null; }),
     backgroundColor: yearColors[y],
     borderRadius: 4
   }));
@@ -4629,6 +4777,40 @@ function reportsRender(){
   reportsRenderCharts();
 }
 
+function reportsAddEntry(prefillYear, prefillPeriod){
+  const current = reportsCurrentPeriod();
+  const year = prefillYear || current.year;
+  const period = prefillPeriod || reportsPeriodNum(current);
+  const existing = reportsFindEntry(year, period);
+  const periodFieldLabel = reportsMode === 'week' ? 'Week number (1-52)' : 'Month number (1-12)';
+  appModalShow({
+    title: existing ? `Edit ${reportsPeriodLabel(year, period)}` : `Add ${reportsPeriodLabel(year, period)}`,
+    fields:[
+      {label: periodFieldLabel, value: String(period)},
+      {label:'Year', value: String(year)},
+      {label:'Bookings', value: existing ? String(existing.bookings) : '', placeholder:'e.g. 150'},
+      {label:'Revenue ($)', value: existing ? String(existing.revenue) : '', placeholder:'e.g. 30500'}
+    ],
+    onOk([periodStr, yearStr, bookingsStr, revenueStr]){
+      const p = parseInt(periodStr, 10);
+      const y = parseInt(yearStr, 10);
+      const bookings = parseInt(bookingsStr, 10) || 0;
+      const revenue = parseFloat(revenueStr) || 0;
+      const found = reportsFindEntry(y, p);
+      if(found){
+        found.bookings = bookings;
+        found.revenue = revenue;
+      } else if(reportsMode === 'week'){
+        reportsWeeklyData.push({year:y, week:p, bookings, revenue});
+      } else {
+        reportsMonthlyData.push({year:y, month:p, bookings, revenue});
+      }
+      reportsRender();
+      toast('Numbers saved ✓');
+    }
+  });
+}
+
 function roundRectPath(ctx, x, y, w, h, r){
   ctx.beginPath();
   ctx.moveTo(x+r, y);
@@ -4640,18 +4822,25 @@ function roundRectPath(ctx, x, y, w, h, r){
 }
 
 function reportsCompileImage(){
-  const sorted = reportsData.slice().sort((a,b)=> a.year-b.year || a.week-b.week);
-  const latest = sorted[sorted.length-1];
-  if(!latest){ toast('No data yet — add this week\'s numbers first'); return; }
+  const current = reportsCurrentPeriod();
+  const currentNum = reportsPeriodNum(current);
+  const currentEntry = reportsFindEntry(current.year, currentNum);
+  if(!currentEntry){
+    const periodWord = reportsMode === 'week' ? "this week's" : "this month's";
+    toast(`Enter ${periodWord} numbers first`);
+    reportsAddEntry(current.year, currentNum);
+    return;
+  }
   toast('Compiling report…');
   const ready = (document.fonts && document.fonts.ready) ? document.fonts.ready : Promise.resolve();
-  ready.then(() => reportsDrawAndDownload(latest));
+  ready.then(() => reportsDrawAndDownload(current, currentNum, currentEntry));
 }
 
-function reportsDrawAndDownload(latest){
-  const lastYear = reportsFind(latest.year-1, latest.week);
+function reportsDrawAndDownload(current, currentNum, latest){
+  const lastYear = reportsFindEntry(current.year-1, currentNum);
   const bPct = lastYear ? reportsPctChange(latest.bookings, lastYear.bookings) : null;
   const rPct = lastYear ? reportsPctChange(latest.revenue, lastYear.revenue) : null;
+  const periodLabel = reportsPeriodLabel(current.year, currentNum);
 
   const W = 1080, H = 1080;
   const canvas = document.createElement('canvas');
@@ -4678,10 +4867,10 @@ function reportsDrawAndDownload(latest){
   // Title
   ctx.font = "800 48px 'Inter', sans-serif";
   ctx.fillStyle = 'white';
-  ctx.fillText('Weekly Performance', 70, 190);
+  ctx.fillText('Performance Report', 70, 190);
   ctx.font = "600 26px 'Inter', sans-serif";
   ctx.fillStyle = 'rgba(255,255,255,0.55)';
-  ctx.fillText(`Week ${latest.week} · ${latest.year}`, 70, 228);
+  ctx.fillText(periodLabel, 70, 228);
 
   // Divider
   ctx.strokeStyle = 'rgba(255,255,255,0.12)';
@@ -4710,19 +4899,19 @@ function reportsDrawAndDownload(latest){
     const pctColor = card.pct === null ? '#94A3B8' : (up ? '#4ADE80' : '#F87171');
     ctx.font = "800 40px 'Inter', sans-serif";
     ctx.fillStyle = pctColor;
-    const pctText = card.pct === null ? '—' : (up ? '▲ ' : '▼ ') + Math.abs(card.pct).toFixed(1) + '%';
+    const pctText = card.pct === null ? 'No data last year' : (up ? '▲ ' : '▼ ') + Math.abs(card.pct).toFixed(1) + '%';
     ctx.fillText(pctText, card.x+28, cardY+195);
 
     ctx.font = "500 20px 'Inter', sans-serif";
     ctx.fillStyle = 'rgba(255,255,255,0.45)';
-    ctx.fillText('vs same week last year', card.x+28, cardY+230);
+    ctx.fillText(reportsMode==='week' ? 'vs same week last year' : 'vs same month last year', card.x+28, cardY+230);
   });
 
   // Mini bar comparison: this year vs last year, for bookings
   const barsY = cardY + cardH + 60;
   ctx.font = "700 22px 'Inter', sans-serif";
   ctx.fillStyle = 'rgba(255,255,255,0.55)';
-  ctx.fillText('BOOKINGS — THIS WEEK vs LAST YEAR', 70, barsY);
+  ctx.fillText('BOOKINGS — NOW vs LAST YEAR', 70, barsY);
 
   const maxVal = Math.max(latest.bookings, lastYear ? lastYear.bookings : 0) * 1.15 || 1;
   const barAreaW = W - 140;
@@ -4735,14 +4924,18 @@ function reportsDrawAndDownload(latest){
   ctx.fill();
   ctx.font = "700 22px 'Inter', sans-serif";
   ctx.fillStyle = 'white';
-  ctx.fillText(`${latest.year}: ${latest.bookings}`, 82, barsY+60);
+  ctx.fillText(`${current.year}: ${latest.bookings}`, 82, barsY+60);
 
   if(lastYear){
     roundRectPath(ctx, 70, barsY+30+barH+16, lastBarW, barH, 8);
     ctx.fillStyle = 'rgba(255,255,255,0.25)';
     ctx.fill();
     ctx.fillStyle = 'white';
-    ctx.fillText(`${latest.year-1}: ${lastYear.bookings}`, 82, barsY+30+barH+16+30);
+    ctx.fillText(`${current.year-1}: ${lastYear.bookings}`, 82, barsY+30+barH+16+30);
+  } else {
+    ctx.font = "500 20px 'Inter', sans-serif";
+    ctx.fillStyle = 'rgba(255,255,255,0.4)';
+    ctx.fillText('No data for last year yet', 82, barsY+30+barH+16+28);
   }
 
   // Footer
@@ -4755,44 +4948,13 @@ function reportsDrawAndDownload(latest){
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `mavis-weekly-report-wk${latest.week}-${latest.year}.jpg`;
+    a.download = `mavis-report-${reportsMode}-${current.year}-${currentNum}.jpg`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
-    toast('Weekly report image ready ✓');
+    toast('Report image ready ✓');
   }, 'image/jpeg', 0.95);
-}
-
-function reportsAddWeek(){
-  const sorted = reportsData.slice().sort((a,b)=> a.year-b.year || a.week-b.week);
-  const latest = sorted[sorted.length-1];
-  const nextWeek = latest ? (latest.week >= 52 ? 1 : latest.week+1) : 1;
-  const nextYear = latest ? (latest.week >= 52 ? latest.year+1 : latest.year) : new Date().getFullYear();
-  appModalShow({
-    title:"Add This Week's Numbers",
-    fields:[
-      {label:'Week number (1-52)', value:String(nextWeek), placeholder:'e.g. 30'},
-      {label:'Year', value:String(nextYear), placeholder:'e.g. 2026'},
-      {label:'Bookings', placeholder:'e.g. 150'},
-      {label:'Revenue ($)', placeholder:'e.g. 30500'}
-    ],
-    onOk([weekStr, yearStr, bookingsStr, revenueStr]){
-      const week = parseInt(weekStr, 10);
-      const year = parseInt(yearStr, 10);
-      const bookings = parseInt(bookingsStr, 10) || 0;
-      const revenue = parseFloat(revenueStr) || 0;
-      const existing = reportsFind(year, week);
-      if(existing){
-        existing.bookings = bookings;
-        existing.revenue = revenue;
-      } else {
-        reportsData.push({year, week, bookings, revenue});
-      }
-      reportsRender();
-      toast("This week's numbers added ✓");
-    }
-  });
 }
 
 const _origNavKB = window.nav;

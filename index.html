@@ -5058,8 +5058,8 @@ function kitchenAddRecipe(){
       {label:'Category', placeholder:'e.g. Main, Breakfast'},
       {label:'Serves', placeholder:'e.g. 1'},
       {label:'Allergens', placeholder:'e.g. Fish, Dairy'},
-      {label:'Ingredients', type:'textarea', rows:4, placeholder:'e.g. 200g barramundi fillet\n30g butter\n1 lemon\nFresh herbs, salt, pepper'},
-      {label:'Method', type:'textarea', rows:5, placeholder:'e.g. Season fish, grill 4 mins each side.\nRest 2 mins.\nFinish with lemon butter sauce.'}
+      {label:'Ingredients', type:'textarea', rows:7, placeholder:'e.g. 200g barramundi fillet\n30g butter\n1 lemon\nFresh herbs, salt, pepper'},
+      {label:'Method', type:'textarea', rows:9, placeholder:'e.g. Season fish, grill 4 mins each side.\nRest 2 mins.\nFinish with lemon butter sauce.'}
     ],
     onOk([name, cat, serves, allergens, ingredients, method]){
       kitchenRecipesData.push({id: kitchenRecipeNextId++, name, cat, catColor:'green', serves, allergens, allergensColor:'amber', ingredients, method});
@@ -5079,8 +5079,8 @@ function kitchenEditRecipe(id){
       {label:'Category', value:r.cat},
       {label:'Serves', value:String(r.serves)},
       {label:'Allergens', value:r.allergens},
-      {label:'Ingredients', type:'textarea', rows:4, value:r.ingredients},
-      {label:'Method', type:'textarea', rows:5, value:r.method}
+      {label:'Ingredients', type:'textarea', rows:7, value:r.ingredients},
+      {label:'Method', type:'textarea', rows:9, value:r.method}
     ],
     onOk([name, cat, serves, allergens, ingredients, method]){
       r.name=name; r.cat=cat; r.serves=serves; r.allergens=allergens; r.ingredients=ingredients; r.method=method;
@@ -5836,7 +5836,7 @@ function faqEdit(id){
     title:'Edit FAQ',
     fields:[
       {label:'Question', value:f.question, placeholder:'e.g. How do I...?'},
-      {label:'Answer', type:'textarea', rows:4, value:f.answer, placeholder:'The answer...'}
+      {label:'Answer', type:'textarea', rows:8, value:f.answer, placeholder:'The answer...'}
     ],
     onOk([question, answer]){
       f.question = question; f.answer = answer;
@@ -5893,7 +5893,7 @@ function faqAdd(){
     fields:[
       {label:`Department (${faqDepts.map(d=>d.name).join(', ')})`, placeholder:'e.g. ' + (faqDepts[0]?.name || 'HR')},
       {label:'Question', placeholder:'e.g. How do I...?'},
-      {label:'Answer', type:'textarea', rows:4, placeholder:'The answer...'}
+      {label:'Answer', type:'textarea', rows:8, placeholder:'The answer...'}
     ],
     onOk([dept, question, answer]){
       const typed = dept.trim().toLowerCase();
@@ -6410,7 +6410,7 @@ document.addEventListener('DOMContentLoaded', initCardColours);
 
 <!-- ── REUSABLE INPUT MODAL ── -->
 <div id="appModal" style="display:none;position:fixed;inset:0;background:rgba(15,30,46,0.55);z-index:10000;align-items:center;justify-content:center">
-  <div style="background:white;border-radius:16px;padding:28px;width:100%;max-width:400px;margin:0 20px;box-shadow:0 20px 60px rgba(0,0,0,0.2)">
+  <div id="appModalBox" style="background:white;border-radius:16px;padding:28px;width:100%;max-width:400px;margin:0 20px;box-shadow:0 20px 60px rgba(0,0,0,0.2);max-height:90vh;overflow-y:auto">
     <div id="appModalTitle" style="font-size:16px;font-weight:800;color:#0F1E2E;margin-bottom:6px"></div>
     <div id="appModalSub" style="font-size:12px;color:#94A3B8;margin-bottom:18px"></div>
     <div id="appModalFields"></div>
@@ -6439,6 +6439,8 @@ function appModalShow({title, sub='', fields, onOk}){
   document.getElementById('appModalTitle').textContent = title;
   document.getElementById('appModalSub').textContent = sub;
   const fc = document.getElementById('appModalFields');
+  const hasTextarea = fields.some(f=>f.type==='textarea');
+  document.getElementById('appModalBox').style.maxWidth = hasTextarea ? '640px' : '400px';
   fc.innerHTML = fields.map((f,i)=>{
     if(f.type==='file'){
       return `
@@ -6481,10 +6483,10 @@ function appModalShow({title, sub='', fields, onOk}){
     }
     if(f.type==='textarea'){
       return `
-    <div style="margin-bottom:${i<fields.length-1?'14px':'0'}">
+    <div style="margin-bottom:${i<fields.length-1?'16px':'0'}">
       ${f.label?`<div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.7px;color:#94A3B8;margin-bottom:6px">${f.label}</div>`:''}
-      <textarea id="appModalField_${i}" placeholder="${f.placeholder||''}" rows="${f.rows||4}"
-        style="width:100%;padding:11px 14px;border:1.5px solid #E2E8F0;border-radius:9px;font-family:'Inter',sans-serif;font-size:14px;color:#0F1E2E;outline:none;box-sizing:border-box;resize:vertical;line-height:1.5"
+      <textarea id="appModalField_${i}" placeholder="${f.placeholder||''}" rows="${f.rows||8}"
+        style="width:100%;padding:14px 16px;border:1.5px solid #E2E8F0;border-radius:9px;font-family:'Inter',sans-serif;font-size:15px;color:#0F1E2E;outline:none;box-sizing:border-box;resize:vertical;line-height:1.6;min-height:160px"
         onfocus="this.style.borderColor='#0D9488'" onblur="this.style.borderColor='#E2E8F0'">${f.value||''}</textarea>
     </div>`;
     }

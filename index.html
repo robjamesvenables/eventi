@@ -3302,7 +3302,10 @@ textarea.rf-val{resize:vertical;min-height:72px;line-height:1.5}
           <div class="ph-title">Knowledge Base</div>
           <div class="ph-sub">Quick answers by department — or just search</div>
         </div>
-        <button class="btn btn-navy" onclick="faqAdd()">+ Add FAQ</button>
+        <div style="display:flex;gap:10px">
+          <button class="btn btn-ghost" onclick="faqAddDept()">+ Add Department</button>
+          <button class="btn btn-navy" onclick="faqAdd()">+ Add FAQ</button>
+        </div>
       </div>
       <div style="position:relative;margin-bottom:24px">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#94A3B8" stroke-width="2" style="position:absolute;left:14px;top:50%;transform:translateY(-50%)"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
@@ -5682,9 +5685,51 @@ function faqRenderDepts(){
       <div class="sop-item" onclick="faqOpenDept('${d.id}')">
         <div class="dept-row-ico" style="background:${FAQ_COLOR}">${d.icon}</div>
         <div style="flex:1"><div class="sop-item-title">${d.name}</div><div class="dept-row-count">${count} FAQ${count===1?'':'s'}</div></div>
+        <span onclick="event.stopPropagation();faqEditDeptName('${d.id}')" title="Rename department" style="opacity:0.5;cursor:pointer;font-size:13px;margin-right:6px">✎</span>
+        <span onclick="event.stopPropagation();faqDeleteDept('${d.id}')" title="Delete department" style="opacity:0.5;cursor:pointer;font-size:16px;line-height:1;margin-right:8px">×</span>
         <div class="sop-item-arr">›</div>
       </div>`;
   }).join('');
+}
+
+function faqAddDept(){
+  appModalShow({
+    title:'Add Department',
+    fields:[{label:'Department name', placeholder:'e.g. Security'}],
+    onOk([name]){
+      const id = name.trim().toLowerCase().replace(/[^a-z0-9]+/g,'-');
+      if(!id || faqDepts.find(d=>d.id===id)){ toast('Please use a unique department name'); return; }
+      faqDepts.push({id, name, icon: DEFAULT_DEPT_ICON});
+      faqRenderDepts();
+      toast('Department added ✓');
+    }
+  });
+}
+
+function faqEditDeptName(id){
+  const d = faqDepts.find(x=>x.id===id);
+  if(!d) return;
+  appModalShow({
+    title:'Rename Department',
+    fields:[{label:'Department name', value:d.name, placeholder:'e.g. Security'}],
+    onOk([name]){
+      d.name = name;
+      faqRenderDepts();
+      toast('Department renamed ✓');
+    }
+  });
+}
+
+function faqDeleteDept(id){
+  const d = faqDepts.find(x=>x.id===id);
+  if(!d) return;
+  appConfirmShow({title:'Delete Department', msg:`Delete "${d.name}"? This will permanently remove all its FAQs.`, onOk:()=>{
+    const idx = faqDepts.findIndex(x=>x.id===id);
+    if(idx>-1) faqDepts.splice(idx,1);
+    faqData = faqData.filter(f=>f.dept!==id);
+    faqRenderDepts();
+    toast('Department deleted');
+  }});
 }
 
 function faqRenderItems(containerId, items, showDept){
@@ -5700,11 +5745,57 @@ function faqRenderItems(containerId, items, showDept){
       <div class="faq-item" onclick="this.classList.toggle('open')">
         <div class="faq-q">
           <span>${f.question}${deptName}</span>
-          <svg class="faq-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+          <span style="display:flex;align-items:center;gap:10px;flex-shrink:0">
+            <span onclick="event.stopPropagation();faqEdit(${f.id})" title="Edit FAQ" style="opacity:0.5;cursor:pointer;font-size:12px">✎</span>
+            <span onclick="event.stopPropagation();faqDelete(${f.id})" title="Delete FAQ" style="opacity:0.5;cursor:pointer;font-size:15px;line-height:1">×</span>
+            <svg class="faq-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+          </span>
         </div>
         <div class="faq-a">${f.answer}</div>
       </div>`;
   }).join('');
+}
+
+function faqCurrentView(){
+  if(document.getElementById('faq-search-view').style.display==='block') return 'search';
+  if(document.getElementById('faq-detail-view').style.display==='block') return 'detail';
+  return 'depts';
+}
+
+function faqRefreshCurrentView(){
+  const view = faqCurrentView();
+  if(view==='search') faqSearchInput(document.getElementById('faq-search').value);
+  else if(view==='detail'){
+    const dept = faqDepts.find(d=>d.name===document.getElementById('faq-detail-title').textContent);
+    if(dept) faqRenderItems('faq-detail-list', faqData.filter(f=>f.dept===dept.id), false);
+  } else faqRenderDepts();
+}
+
+function faqEdit(id){
+  const f = faqData.find(x=>x.id===id);
+  if(!f) return;
+  appModalShow({
+    title:'Edit FAQ',
+    fields:[
+      {label:'Question', value:f.question, placeholder:'e.g. How do I...?'},
+      {label:'Answer', value:f.answer, placeholder:'The answer...'}
+    ],
+    onOk([question, answer]){
+      f.question = question; f.answer = answer;
+      faqRefreshCurrentView();
+      toast('FAQ updated ✓');
+    }
+  });
+}
+
+function faqDelete(id){
+  const f = faqData.find(x=>x.id===id);
+  if(!f) return;
+  appConfirmShow({title:'Delete FAQ', msg:'Delete this FAQ?', onOk:()=>{
+    faqData = faqData.filter(x=>x.id!==id);
+    faqRefreshCurrentView();
+    toast('FAQ deleted');
+  }});
 }
 
 function faqOpenDept(deptId){
@@ -5742,12 +5833,14 @@ function faqAdd(){
   appModalShow({
     title:'Add FAQ',
     fields:[
-      {label:'Department (hr, finance, operations, housekeeping, avit)', placeholder:'e.g. hr'},
+      {label:`Department (${faqDepts.map(d=>d.name).join(', ')})`, placeholder:'e.g. ' + (faqDepts[0]?.name || 'HR')},
       {label:'Question', placeholder:'e.g. How do I...?'},
       {label:'Answer', placeholder:'The answer...'}
     ],
     onOk([dept, question, answer]){
-      const cleanDept = faqDepts.find(d=>d.id===dept.trim().toLowerCase())?.id || 'operations';
+      const typed = dept.trim().toLowerCase();
+      const match = faqDepts.find(d=>d.id===typed || d.name.toLowerCase()===typed);
+      const cleanDept = match ? match.id : (faqDepts[0] ? faqDepts[0].id : '');
       faqData.push({id: faqNextId++, dept: cleanDept, question, answer});
       faqRenderDepts();
       toast('FAQ added ✓');

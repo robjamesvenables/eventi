@@ -4465,39 +4465,29 @@ function sopRenderDeptList(){
     const count = (sopData[d.id]||[]).length;
     return `
       <div class="sop-item" onclick="sopOpenDept('${d.id}')">
-        <div class="dept-row-ico" style="background:${d.color};cursor:pointer" onclick="event.stopPropagation();sopEditDeptColor('${d.id}')" title="Change colour">${d.icon}</div>
+        <div class="dept-row-ico" style="background:${d.color};cursor:pointer" onclick="event.stopPropagation();sopEditDept('${d.id}')" title="Edit department">${d.icon}</div>
         <div style="flex:1"><div class="sop-item-title">${d.name}</div><div class="dept-row-count">${count} SOP${count===1?'':'s'}</div></div>
-        <span onclick="event.stopPropagation();sopEditDeptName('${d.id}')" title="Rename department" style="opacity:0.5;cursor:pointer;font-size:13px;margin-right:6px">✎</span>
+        <span onclick="event.stopPropagation();sopEditDept('${d.id}')" title="Edit department" style="opacity:0.5;cursor:pointer;font-size:13px;margin-right:6px">✎</span>
         <span onclick="event.stopPropagation();sopDeleteDept('${d.id}')" title="Delete department" style="opacity:0.5;cursor:pointer;font-size:16px;line-height:1;margin-right:8px">×</span>
         <div class="sop-item-arr">›</div>
       </div>`;
   }).join('');
 }
 
-function sopEditDeptName(id){
+function sopEditDept(id){
   const d = sopDepts.find(x=>x.id===id);
   if(!d) return;
   appModalShow({
-    title:'Rename Department',
-    fields:[{label:'Department name', value:d.name, placeholder:'e.g. Maintenance'}],
-    onOk([name]){
+    title:'Edit Department',
+    fields:[
+      {label:'Department name', value:d.name, placeholder:'e.g. Maintenance'},
+      {label:'Colour', type:'color', options: DEPT_COLORS, value:d.color}
+    ],
+    onOk([name, color]){
       d.name = name;
-      sopRenderDeptList();
-      toast('Department renamed ✓');
-    }
-  });
-}
-
-function sopEditDeptColor(id){
-  const d = sopDepts.find(x=>x.id===id);
-  if(!d) return;
-  appModalShow({
-    title:'Department Colour',
-    fields:[{label:'Colour', type:'color', options: DEPT_COLORS}],
-    onOk([color]){
       d.color = color;
       sopRenderDeptList();
-      toast('Colour updated ✓');
+      toast('Department updated ✓');
     }
   });
 }
@@ -5682,25 +5672,29 @@ function faqRenderDepts(){
     const count = faqData.filter(f=>f.dept===d.id).length;
     return `
       <div class="sop-item" onclick="faqOpenDept('${d.id}')">
-        <div class="dept-row-ico" style="background:${d.color};cursor:pointer" onclick="event.stopPropagation();faqEditDeptColor('${d.id}')" title="Change colour">${d.icon}</div>
+        <div class="dept-row-ico" style="background:${d.color};cursor:pointer" onclick="event.stopPropagation();faqEditDept('${d.id}')" title="Edit department">${d.icon}</div>
         <div style="flex:1"><div class="sop-item-title">${d.name}</div><div class="dept-row-count">${count} FAQ${count===1?'':'s'}</div></div>
-        <span onclick="event.stopPropagation();faqEditDeptName('${d.id}')" title="Rename department" style="opacity:0.5;cursor:pointer;font-size:13px;margin-right:6px">✎</span>
+        <span onclick="event.stopPropagation();faqEditDept('${d.id}')" title="Edit department" style="opacity:0.5;cursor:pointer;font-size:13px;margin-right:6px">✎</span>
         <span onclick="event.stopPropagation();faqDeleteDept('${d.id}')" title="Delete department" style="opacity:0.5;cursor:pointer;font-size:16px;line-height:1;margin-right:8px">×</span>
         <div class="sop-item-arr">›</div>
       </div>`;
   }).join('');
 }
 
-function faqEditDeptColor(id){
+function faqEditDept(id){
   const d = faqDepts.find(x=>x.id===id);
   if(!d) return;
   appModalShow({
-    title:'Department Colour',
-    fields:[{label:'Colour', type:'color', options: DEPT_COLORS}],
-    onOk([color]){
+    title:'Edit Department',
+    fields:[
+      {label:'Department name', value:d.name, placeholder:'e.g. Security'},
+      {label:'Colour', type:'color', options: DEPT_COLORS, value:d.color}
+    ],
+    onOk([name, color]){
+      d.name = name;
       d.color = color;
       faqRenderDepts();
-      toast('Colour updated ✓');
+      toast('Department updated ✓');
     }
   });
 }
@@ -5718,20 +5712,6 @@ function faqAddDept(){
       faqDepts.push({id, name, color, icon: DEFAULT_DEPT_ICON});
       faqRenderDepts();
       toast('Department added ✓');
-    }
-  });
-}
-
-function faqEditDeptName(id){
-  const d = faqDepts.find(x=>x.id===id);
-  if(!d) return;
-  appModalShow({
-    title:'Rename Department',
-    fields:[{label:'Department name', value:d.name, placeholder:'e.g. Security'}],
-    onOk([name]){
-      d.name = name;
-      faqRenderDepts();
-      toast('Department renamed ✓');
     }
   });
 }
@@ -5886,39 +5866,29 @@ function vendorRenderDepts(){
     const count = vendorData.filter(v=>v.dept===d.id).length;
     return `
       <div class="sop-item" onclick="vendorOpenDept('${d.id}')">
-        <div class="dept-row-ico" style="background:${d.color};cursor:pointer" onclick="event.stopPropagation();vendorEditDeptColor('${d.id}')" title="Change colour">${d.icon}</div>
+        <div class="dept-row-ico" style="background:${d.color};cursor:pointer" onclick="event.stopPropagation();vendorEditDept('${d.id}')" title="Edit department">${d.icon}</div>
         <div style="flex:1"><div class="sop-item-title">${d.name}</div><div class="dept-row-count">${count} vendor${count===1?'':'s'}</div></div>
-        <span onclick="event.stopPropagation();vendorEditDeptName('${d.id}')" title="Rename department" style="opacity:0.5;cursor:pointer;font-size:13px;margin-right:6px">✎</span>
+        <span onclick="event.stopPropagation();vendorEditDept('${d.id}')" title="Edit department" style="opacity:0.5;cursor:pointer;font-size:13px;margin-right:6px">✎</span>
         <span onclick="event.stopPropagation();vendorDeleteDept('${d.id}')" title="Delete department" style="opacity:0.5;cursor:pointer;font-size:16px;line-height:1;margin-right:8px">×</span>
         <div class="sop-item-arr">›</div>
       </div>`;
   }).join('');
 }
 
-function vendorEditDeptName(id){
+function vendorEditDept(id){
   const d = vendorDepts.find(x=>x.id===id);
   if(!d) return;
   appModalShow({
-    title:'Rename Department',
-    fields:[{label:'Department name', value:d.name, placeholder:'e.g. Housekeeping'}],
-    onOk([name]){
+    title:'Edit Department',
+    fields:[
+      {label:'Department name', value:d.name, placeholder:'e.g. Housekeeping'},
+      {label:'Colour', type:'color', options: DEPT_COLORS, value:d.color}
+    ],
+    onOk([name, color]){
       d.name = name;
-      vendorRenderDepts();
-      toast('Department renamed ✓');
-    }
-  });
-}
-
-function vendorEditDeptColor(id){
-  const d = vendorDepts.find(x=>x.id===id);
-  if(!d) return;
-  appModalShow({
-    title:'Department Colour',
-    fields:[{label:'Colour', type:'color', options: DEPT_COLORS}],
-    onOk([color]){
       d.color = color;
       vendorRenderDepts();
-      toast('Colour updated ✓');
+      toast('Department updated ✓');
     }
   });
 }
@@ -6338,11 +6308,12 @@ function appModalShow({title, sub='', fields, onOk}){
     }
     if(f.type==='color'){
       const opts = f.options || [];
+      const selected = f.value || opts[0] || '';
       return `
     <div style="margin-bottom:${i<fields.length-1?'14px':'0'}">
       ${f.label?`<div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.7px;color:#94A3B8;margin-bottom:6px">${f.label}</div>`:''}
-      <div id="appModalField_${i}" data-selected="${opts[0]||''}" style="display:flex;flex-wrap:wrap;gap:9px">
-        ${opts.map((c,ci)=>`<div class="app-color-swatch" data-color="${c}" onclick="appModalPickColor(${i},'${c}',this)" style="width:28px;height:28px;border-radius:50%;background:${c};cursor:pointer;border:2px solid ${ci===0?'#0F1E2E':'transparent'};box-shadow:0 0 0 1px rgba(0,0,0,0.06)"></div>`).join('')}
+      <div id="appModalField_${i}" data-selected="${selected}" style="display:flex;flex-wrap:wrap;gap:9px">
+        ${opts.map((c)=>`<div class="app-color-swatch" data-color="${c}" onclick="appModalPickColor(${i},'${c}',this)" style="width:28px;height:28px;border-radius:50%;background:${c};cursor:pointer;border:2px solid ${c===selected?'#0F1E2E':'transparent'};box-shadow:0 0 0 1px rgba(0,0,0,0.06)"></div>`).join('')}
       </div>
     </div>`;
     }

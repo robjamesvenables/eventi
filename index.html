@@ -1882,6 +1882,10 @@ textarea.rf-val{resize:vertical;min-height:72px;line-height:1.5}
       <svg class="sb-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="3" width="15" height="13"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
       Vendor Directory
     </button>
+    <button class="sb-link" id="n-customers" onclick="nav('customers')">
+      <svg class="sb-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+      Customer Database
+    </button>
 
     <div class="sb-section">Venue</div>
     <button class="sb-link" id="n-kitchen" onclick="nav('kitchen')">
@@ -2097,6 +2101,14 @@ textarea.rf-val{resize:vertical;min-height:72px;line-height:1.5}
           <div class="home-card-sub" style="color:rgba(255,255,255,0.6)">Supplier contacts by department</div>
         </div>
 
+        <div class="home-card" id="hcard-customers" onclick="nav('customers')" style="background:#0F1E2E;border-color:#0F1E2E;position:relative;overflow:hidden;align-self:start;height:120px">
+          <div class="card-colour-popup" id="cpop-customers"></div>
+          <button class="card-colour-btn" onclick="toggleCardPicker(event,'customers')"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M4.93 4.93a10 10 0 0 0 0 14.14"/></svg></button>
+          <div class="home-card-ico"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div>
+          <div class="home-card-title" style="color:white">Customer Database</div>
+          <div class="home-card-sub" style="color:rgba(255,255,255,0.6)">Search contacts by name or company</div>
+        </div>
+
       </div>
 
       <!-- VENUE -->
@@ -2111,7 +2123,7 @@ textarea.rf-val{resize:vertical;min-height:72px;line-height:1.5}
           <div class="home-card-sub" style="color:rgba(255,255,255,0.6)">Menus, recipes, allergens & links</div>
         </div>
 
-        <div class="home-card" id="hcard-bar" onclick="nav('bar')" style="background:#0D9488;border-color:#0D9488;position:relative;overflow:hidden;align-self:start;height:120px">
+        <div class="home-card" id="hcard-bar" onclick="nav('bar')" style="background:#0F1E2E;border-color:#0F1E2E;position:relative;overflow:hidden;align-self:start;height:120px">
           <div class="card-colour-popup" id="cpop-bar"></div>
           <button class="card-colour-btn" onclick="toggleCardPicker(event,'bar')"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M4.93 4.93a10 10 0 0 0 0 14.14"/></svg></button>
           <div class="home-card-ico"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 22h8"/><path d="M7 10h10"/><path d="M12 22V10"/><path d="m5 3 7 7 7-7H5z"/></svg></div>
@@ -3344,10 +3356,11 @@ textarea.rf-val{resize:vertical;min-height:72px;line-height:1.5}
       <div class="ph">
         <div>
           <div class="ph-title">Vendor Directory</div>
-          <div class="ph-sub">Supplier contacts by department</div>
+          <div class="ph-sub">Supplier contacts by department — or just search</div>
         </div>
         <button class="btn btn-navy" onclick="vendorAddDept()">+ Add Department</button>
       </div>
+      <input class="search-inp" type="text" id="vendor-search" placeholder="Search vendors by name or company…" style="width:100%;margin-bottom:16px" oninput="vendorSearchInput(this.value)">
       <div id="vendor-dept-view">
         <div class="sop-list" id="vendor-dept-grid"></div>
       </div>
@@ -3359,6 +3372,25 @@ textarea.rf-val{resize:vertical;min-height:72px;line-height:1.5}
         </div>
         <div id="vendor-detail-list"></div>
       </div>
+      <div id="vendor-search-view" style="display:none">
+        <div id="vendor-search-results"></div>
+      </div>
+    </div>
+
+    <!-- CUSTOMER DATABASE -->
+    <div class="page" id="p-customers" style="padding:32px 28px 40px">
+      <div class="ph">
+        <div>
+          <div class="ph-title">Customer Database</div>
+          <div class="ph-sub">Your customer address book — search or browse</div>
+        </div>
+        <div style="display:flex;gap:10px">
+          <button class="btn btn-ghost" onclick="customerUploadCsv()">+ Upload CSV</button>
+          <button class="btn btn-navy" onclick="customerAdd()">+ Add Contact</button>
+        </div>
+      </div>
+      <input class="search-inp" type="text" id="customer-search" placeholder="Search by name or company…" style="width:100%;margin-bottom:16px" oninput="customerRenderList()">
+      <div id="customer-list"></div>
     </div>
 
     <!-- SUGGESTION BOX -->
@@ -3429,6 +3461,7 @@ function nav(id, pushState=true){
   if(id==='music'){musicRender();}
   if(id==='kitchen'){kitchenRenderMenus(); kitchenRenderRecipes(); kitchenRenderAllergens(); kitchenRenderLinks();}
   if(id==='bar'){barRenderMenus(); barRenderRecipes();}
+  if(id==='customers'){customerRenderList();}
   const floatBtn=document.getElementById('float-edit');
   if(floatBtn)floatBtn.style.display=id==='beo'?'block':'none';
   if(pushState){
@@ -6552,6 +6585,8 @@ function vendorEdit(id){
 
 function vendorOpenDept(deptId){
   vendorActiveDept = deptId;
+  document.getElementById('vendor-search').value = '';
+  document.getElementById('vendor-search-view').style.display='none';
   document.getElementById('vendor-dept-view').style.display='none';
   document.getElementById('vendor-detail-view').style.display='block';
   const dept = vendorDepts.find(d=>d.id===deptId);
@@ -6560,9 +6595,230 @@ function vendorOpenDept(deptId){
 }
 
 function vendorBackToDepts(){
+  document.getElementById('vendor-search').value = '';
+  document.getElementById('vendor-search-view').style.display='none';
   document.getElementById('vendor-detail-view').style.display='none';
   document.getElementById('vendor-dept-view').style.display='block';
   vendorRenderDepts();
+}
+
+function vendorSearchInput(query){
+  const q = query.trim().toLowerCase();
+  if(!q){
+    document.getElementById('vendor-search-view').style.display='none';
+    document.getElementById('vendor-detail-view').style.display='none';
+    document.getElementById('vendor-dept-view').style.display='block';
+    return;
+  }
+  document.getElementById('vendor-dept-view').style.display='none';
+  document.getElementById('vendor-detail-view').style.display='none';
+  document.getElementById('vendor-search-view').style.display='block';
+  const results = vendorData.filter(v =>
+    v.name.toLowerCase().includes(q) ||
+    v.supplies.toLowerCase().includes(q) ||
+    v.contact.toLowerCase().includes(q)
+  );
+  const container = document.getElementById('vendor-search-results');
+  if(!results.length){
+    container.innerHTML = '<div style="text-align:center;padding:32px;color:#94A3B8;font-size:13px">No vendors found</div>';
+    return;
+  }
+  container.innerHTML = results.map(v => {
+    const dept = vendorDepts.find(d=>d.id===v.dept);
+    return `
+    <div class="vendor-item">
+      <div style="flex:1">
+        <div class="vendor-name">${v.name}<span style="color:#94A3B8;font-weight:500;font-size:11px"> — ${dept ? dept.name : ''}</span></div>
+        <div class="vendor-supplies">${v.supplies}</div>
+        <div class="vendor-contact">${v.contact}</div>
+      </div>
+      <button onclick="vendorEdit(${v.id})" style="border:none;background:none;color:#64748B;font-size:13px;cursor:pointer;flex-shrink:0;margin-right:8px">✎</button>
+      <button onclick="vendorDelete(${v.id});vendorSearchInput(document.getElementById('vendor-search').value)" style="border:none;background:none;color:#EF4444;font-size:16px;cursor:pointer;flex-shrink:0">×</button>
+    </div>`;
+  }).join('');
+}
+
+// ── CUSTOMER DATABASE ──
+let customerNextId = 100;
+let customerData = [
+  {id:1, name:'James Whitfield', company:'Nexus Global Indonesia', phone:'+62 812-1111-2222', email:'james@nexusglobal.id'},
+  {id:2, name:'Priya Sharma', company:'Solaris Events Asia', phone:'+62 813-3333-4444', email:'priya@solarisevents.com'},
+  {id:3, name:'Made Wirawan', company:'Ku De Ta Seminyak', phone:'+62 811-5555-6666', email:'made@kudeta.com'}
+];
+
+function customerRenderList(){
+  const list = document.getElementById('customer-list');
+  if(!list) return;
+  const q = (document.getElementById('customer-search').value || '').trim().toLowerCase();
+  let items = customerData.slice().sort((a,b)=>a.name.localeCompare(b.name));
+  if(q){
+    items = items.filter(c =>
+      c.name.toLowerCase().includes(q) ||
+      c.company.toLowerCase().includes(q)
+    );
+  }
+  if(!items.length){
+    list.innerHTML = `<div style="text-align:center;padding:32px;color:#94A3B8;font-size:13px">${q ? 'No contacts found' : 'No contacts yet — click + Add Contact or + Upload CSV'}</div>`;
+    return;
+  }
+  list.innerHTML = items.map(c => `
+    <div class="vendor-item">
+      <div style="flex:1">
+        <div class="vendor-name">${c.name}</div>
+        <div class="vendor-supplies">${c.company}</div>
+        <div class="vendor-contact">${c.phone}${c.phone && c.email ? ' · ' : ''}${c.email}</div>
+      </div>
+      <button onclick="customerEdit(${c.id})" style="border:none;background:none;color:#64748B;font-size:13px;cursor:pointer;flex-shrink:0;margin-right:8px">✎</button>
+      <button onclick="customerDelete(${c.id})" style="border:none;background:none;color:#EF4444;font-size:16px;cursor:pointer;flex-shrink:0">×</button>
+    </div>
+  `).join('');
+}
+
+function customerAdd(){
+  appModalShow({
+    title:'Add Contact',
+    fields:[
+      {label:'Name', placeholder:'e.g. James Whitfield'},
+      {label:'Company', placeholder:'e.g. Nexus Global Indonesia'},
+      {label:'Phone', placeholder:'e.g. +62 812-1111-2222'},
+      {label:'Email', placeholder:'e.g. james@nexusglobal.id'}
+    ],
+    onOk([name, company, phone, email]){
+      customerData.push({id: customerNextId++, name, company, phone, email});
+      customerRenderList();
+      toast('Contact added ✓');
+    }
+  });
+}
+
+function customerEdit(id){
+  const c = customerData.find(x=>x.id===id);
+  if(!c) return;
+  appModalShow({
+    title:'Edit Contact',
+    fields:[
+      {label:'Name', value:c.name},
+      {label:'Company', value:c.company},
+      {label:'Phone', value:c.phone},
+      {label:'Email', value:c.email}
+    ],
+    onOk([name, company, phone, email]){
+      c.name=name; c.company=company; c.phone=phone; c.email=email;
+      customerRenderList();
+      toast('Contact updated ✓');
+    }
+  });
+}
+
+function customerDelete(id){
+  const c = customerData.find(x=>x.id===id);
+  if(!c) return;
+  appConfirmShow({title:'Delete Contact', msg:`Delete "${c.name}"?`, onOk:()=>{
+    customerData = customerData.filter(x=>x.id!==id);
+    customerRenderList();
+    toast('Contact deleted');
+  }});
+}
+
+function parseCsvLine(line){
+  const result = [];
+  let cur = '', inQuotes = false;
+  for(let i=0;i<line.length;i++){
+    const ch = line[i];
+    if(ch === '"'){
+      if(inQuotes && line[i+1] === '"'){ cur += '"'; i++; }
+      else inQuotes = !inQuotes;
+    } else if(ch === ',' && !inQuotes){
+      result.push(cur); cur = '';
+    } else cur += ch;
+  }
+  result.push(cur);
+  return result.map(s=>s.trim());
+}
+
+function customerUploadCsv(){
+  const existing = document.getElementById('csv-upload-modal');
+  if(existing) existing.remove();
+  const modal = document.createElement('div');
+  modal.id = 'csv-upload-modal';
+  modal.style.cssText = 'position:fixed;inset:0;background:rgba(15,30,46,0.55);display:flex;align-items:center;justify-content:center;z-index:10000';
+  modal.onclick = (e) => { if(e.target === modal) modal.remove(); };
+  modal.innerHTML = `
+    <div style="background:white;border-radius:16px;padding:28px;width:100%;max-width:520px;margin:0 20px;box-shadow:0 20px 60px rgba(0,0,0,0.2)">
+      <div style="font-size:16px;font-weight:800;color:#0F1E2E;margin-bottom:6px">Upload CSV</div>
+      <div style="font-size:12px;color:#94A3B8;margin-bottom:16px">Bulk-add contacts to your Customer Database</div>
+
+      <div style="background:#F1F5F9;border-radius:10px;padding:14px 16px;margin-bottom:16px">
+        <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.7px;color:#64748B;margin-bottom:8px">Required column order</div>
+        <div style="font-family:monospace;font-size:12px;color:#0F1E2E;background:white;border:1px solid #E2E8F0;border-radius:6px;padding:8px 10px;margin-bottom:8px">Name, Company, Phone, Email</div>
+        <div style="font-size:12px;color:#475569;line-height:1.6">
+          • One contact per line, in exactly this order<br>
+          • First row can be a header (e.g. "Name,Company,Phone,Email") — it'll be detected and skipped automatically<br>
+          • Wrap any value that contains a comma in quotes, e.g. "Smith, Jane"<br>
+          • Leave a field blank if you don't have it — just keep the comma, e.g. <span style="font-family:monospace">Jane Smith,,+62 812...,jane@co.com</span>
+        </div>
+      </div>
+
+      <div style="background:rgba(196,151,59,0.08);border:1px solid rgba(196,151,59,0.25);border-radius:10px;padding:12px 14px;margin-bottom:16px;font-size:12px;color:#78350F">
+        ⚠️ Uploading <strong>adds</strong> these contacts to your existing list — it never overwrites or deletes anything already there. If you upload the same file twice you'll get duplicates, so only include new contacts each time you upload.
+      </div>
+
+      <label style="display:flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:14px;border:1.5px dashed #CBD5E1;border-radius:9px;font-family:'Inter',sans-serif;font-size:13px;color:#64748B;cursor:pointer;box-sizing:border-box;margin-bottom:16px" id="csv-file-label">
+        <span id="csv-file-label-text">Choose CSV file</span>
+        <input type="file" accept=".csv,text/csv" style="display:none" id="csv-file-input" onchange="customerCsvFileChosen(this)">
+      </label>
+
+      <div style="display:flex;gap:10px">
+        <button id="csv-import-btn" onclick="customerCsvImport()" disabled style="flex:1;padding:12px;background:#CBD5E1;border:none;border-radius:9px;font-family:'Inter',sans-serif;font-size:14px;font-weight:700;color:white;cursor:not-allowed">Import</button>
+        <button onclick="document.getElementById('csv-upload-modal').remove()" style="padding:12px 20px;background:#F1F5F9;border:none;border-radius:9px;font-family:'Inter',sans-serif;font-size:14px;font-weight:600;color:#64748B;cursor:pointer">Cancel</button>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(modal);
+}
+
+let customerCsvParsedRows = null;
+
+function customerCsvFileChosen(input){
+  const file = input.files && input.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = () => {
+    const text = String(reader.result || '');
+    const lines = text.split(/\r?\n/).map(l=>l.trim()).filter(l=>l.length);
+    let rows = lines.map(parseCsvLine);
+    if(rows.length && /name/i.test(rows[0][0]||'') && /company|phone|email/i.test(rows[0].join(','))){
+      rows = rows.slice(1);
+    }
+    customerCsvParsedRows = rows.filter(r => r[0] && r[0].trim());
+    document.getElementById('csv-file-label-text').textContent = `${file.name} — ${customerCsvParsedRows.length} contact${customerCsvParsedRows.length===1?'':'s'} found`;
+    const btn = document.getElementById('csv-import-btn');
+    if(customerCsvParsedRows.length){
+      btn.disabled = false;
+      btn.style.background = '#0F1E2E';
+      btn.style.cursor = 'pointer';
+    }
+  };
+  reader.readAsText(file);
+}
+
+function customerCsvImport(){
+  if(!customerCsvParsedRows || !customerCsvParsedRows.length) return;
+  customerCsvParsedRows.forEach(r => {
+    customerData.push({
+      id: customerNextId++,
+      name: r[0] || '',
+      company: r[1] || '',
+      phone: r[2] || '',
+      email: r[3] || ''
+    });
+  });
+  const count = customerCsvParsedRows.length;
+  customerCsvParsedRows = null;
+  const modal = document.getElementById('csv-upload-modal');
+  if(modal) modal.remove();
+  customerRenderList();
+  toast(`${count} contact${count===1?'':'s'} added ✓ — ${customerData.length} total`);
 }
 
 function vendorAdd(){
@@ -6640,7 +6896,7 @@ const CARD_COLOURS = [
   {hex:'#C4973B',label:'Gold'},
   {hex:'#EF4444',label:'Red'}
 ];
-const CARD_IDS = ['dash','cal','new','kb','notes','sop','kitchen','bar','music','quicklinks','faq','vendors'];
+const CARD_IDS = ['dash','cal','new','kb','notes','sop','kitchen','bar','music','quicklinks','faq','vendors','customers'];
 
 // ── VENUE SWITCHER ──
 const VENUES = [
@@ -6655,6 +6911,7 @@ function cardColourKey(venue, id){ return 'cardColour_'+venue+'_'+id; }
 function getSavedCardColour(venue, id){
   const scoped = localStorage.getItem(cardColourKey(venue, id));
   if(scoped) return scoped;
+  if(id === 'bar' || id === 'customers') return '#0F1E2E';
   if(venue === 'a'){
     const legacy = localStorage.getItem('cardColour_'+id);
     if(legacy) return legacy;

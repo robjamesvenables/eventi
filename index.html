@@ -1474,6 +1474,11 @@ textarea.rf-val{resize:vertical;min-height:72px;line-height:1.5}
 .home-greeting-time{font-size:12px;font-weight:600;color:var(--teal);text-transform:uppercase;letter-spacing:2px;margin-bottom:6px}
 .home-greeting-title{font-size:28px;font-weight:800;color:var(--navy);line-height:1.2}
 .home-greeting-sub{font-size:14px;font-weight:300;color:var(--ink2);margin-top:6px}
+.sky-banner{border-radius:16px;padding:22px 26px;margin-bottom:20px;transition:background 1.5s ease;box-shadow:0 4px 20px rgba(0,0,0,0.08)}
+.sky-banner-top{display:flex;justify-content:space-between;align-items:flex-start}
+.sky-greeting{font-size:26px;font-weight:800;color:var(--navy)}
+.sky-date{font-size:13px;color:var(--ink2);margin-top:4px}
+.sky-icon{font-size:34px;line-height:1}
 .home-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;align-items:start}
 .home-section-label{font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:#64748B;margin-bottom:12px;padding-top:20px;border-top:1px solid #94A3B8;padding-left:2px}
 /* ANNOUNCEMENTS */
@@ -1885,30 +1890,18 @@ textarea.rf-val{resize:vertical;min-height:72px;line-height:1.5}
 
     <!-- HOME -->
     <div class="page" id="p-home" style="padding:20px 28px 0">
-      <div class="home-greeting">
-        <div class="home-greeting-title" id="home-greeting-title" style="font-size:32px;font-weight:800;color:var(--navy)">Good to see you, John</div>
-        <div class="home-greeting-sub" id="home-date-label" style="font-size:13px;color:var(--ink2);margin-top:4px"></div>
+
+      <!-- SKY BANNER -->
+      <div class="sky-banner" id="sky-banner">
+        <div class="sky-banner-top" style="margin-bottom:0">
+          <div>
+            <div class="sky-greeting" id="sky-greeting">Good morning, John</div>
+            <div class="sky-date" id="home-date-label"></div>
+          </div>
+          <div class="sky-icon" id="sky-icon">☀️</div>
+        </div>
       </div>
 
-      <!-- STATS ROW -->
-      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:20px">
-        <div style="background:#0F1E2E;border-radius:12px;padding:14px 16px;position:relative">
-          <div style="font-size:26px;font-weight:800;color:#2DD4BF" id="stat-events">6</div>
-          <div style="font-size:11px;font-weight:600;color:rgba(255,255,255,0.55);text-transform:uppercase;letter-spacing:0.8px;margin-top:2px">Active Events</div>
-        </div>
-        <div style="background:#0F1E2E;border-radius:12px;padding:14px 16px;position:relative">
-          <div style="font-size:26px;font-weight:800;color:#2DD4BF" id="stat-tasks">5</div>
-          <div style="font-size:11px;font-weight:600;color:rgba(255,255,255,0.55);text-transform:uppercase;letter-spacing:0.8px;margin-top:2px">Open Tasks</div>
-        </div>
-        <div style="background:#0F1E2E;border-radius:12px;padding:14px 16px;position:relative">
-          <div style="font-size:26px;font-weight:800;color:#2DD4BF" id="stat-links">4</div>
-          <div style="font-size:11px;font-weight:600;color:rgba(255,255,255,0.55);text-transform:uppercase;letter-spacing:0.8px;margin-top:2px">Quick Links</div>
-        </div>
-        <div style="background:#0F1E2E;border-radius:12px;padding:14px 16px;position:relative">
-          <div style="font-size:26px;font-weight:800;color:#2DD4BF" id="stat-moments">7</div>
-          <div style="font-size:11px;font-weight:600;color:rgba(255,255,255,0.55);text-transform:uppercase;letter-spacing:0.8px;margin-top:2px">Moments</div>
-        </div>
-      </div>
 
 
       <!-- Announcements -->
@@ -3727,19 +3720,31 @@ function initHome(){
   const dateLabel = document.getElementById('home-date-label');
   if(dateLabel) dateLabel.textContent = days[now.getDay()] + ', ' + now.getDate() + ' ' + months[now.getMonth()] + ' ' + now.getFullYear();
 
-  const eventsBadge = document.getElementById('sb-badge-dash');
-  const statEvents = document.getElementById('stat-events');
-  if(statEvents) statEvents.textContent = eventsBadge ? eventsBadge.textContent : '0';
+  updateSkyBanner();
+  if(!window._skyInterval){
+    window._skyInterval = setInterval(updateSkyBanner, 60000);
+  }
+}
 
-  const tasksBadge = document.getElementById('sb-badge-kb');
-  const statTasks = document.getElementById('stat-tasks');
-  if(statTasks) statTasks.textContent = tasksBadge ? tasksBadge.textContent : '0';
+function updateSkyBanner(){
+  const hour = parseInt(new Intl.DateTimeFormat('en-GB', {hour:'2-digit', hour12:false, timeZone:'Asia/Makassar'}).format(new Date()));
+  const banner = document.getElementById('sky-banner');
+  const icon = document.getElementById('sky-icon');
+  const isDay = hour >= 6 && hour < 18;
+  let greetingWord;
 
-  const statLinks = document.getElementById('stat-links');
-  if(statLinks) statLinks.textContent = (typeof quickLinksData !== 'undefined') ? quickLinksData.length : '0';
+  if(isDay){
+    greetingWord = hour < 12 ? 'morning' : 'afternoon';
+    if(banner) banner.style.background = '#DCEEFB';
+    if(icon) icon.textContent = '☀️';
+  } else {
+    greetingWord = 'evening';
+    if(banner) banner.style.background = '#E4E7EB';
+    if(icon) icon.textContent = '🌙';
+  }
 
-  const statMoments = document.getElementById('stat-moments');
-  if(statMoments) statMoments.textContent = (typeof momentsData !== 'undefined') ? momentsData.length : '0';
+  const skyGreeting = document.getElementById('sky-greeting');
+  if(skyGreeting) skyGreeting.textContent = 'Good ' + greetingWord + ', ' + (typeof currentUserFirstName !== 'undefined' ? currentUserFirstName : 'there');
 }
 
 // Handle browser back/forward

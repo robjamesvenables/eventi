@@ -328,6 +328,8 @@ body{margin:0;padding:0;font-family:'Poppins',sans-serif;background:var(--bg);co
 .stat-val{font-size:28px;font-weight:700;color:var(--navy);line-height:1;margin-bottom:5px}
 .stat-lbl{font-size:11px;font-weight:500;color:var(--ink3);text-transform:uppercase;letter-spacing:0.8px}
 .stat-hint{font-size:11.5px;font-weight:400;color:var(--ink2);margin-top:3px}
+.stat-edit-btn{position:absolute;top:10px;right:10px;border:none;background:none;color:#CBD5E1;font-size:13px;cursor:pointer;padding:4px;line-height:1;border-radius:4px}
+.stat-edit-btn:hover{color:#0D9488;background:#F0FDFA}
 .stat.g{border-left:3px solid var(--gold)}
 .stat.r{border-left:3px solid var(--red)}
 
@@ -2166,23 +2168,27 @@ textarea.rf-val{resize:vertical;min-height:72px;line-height:1.5}
       </div>
 
       <div class="stats">
-        <div class="stat g">
-          <div class="stat-val">6</div>
+        <div class="stat g" style="position:relative">
+          <button class="stat-edit-btn" onclick="editDashStat('activeEvents')" title="Edit">✎</button>
+          <div class="stat-val" id="stat-active-events">6</div>
           <div class="stat-lbl">Active Events</div>
           <div class="stat-hint">June 2026</div>
         </div>
-        <div class="stat">
-          <div class="stat-val">801</div>
+        <div class="stat" style="position:relative">
+          <button class="stat-edit-btn" onclick="editDashStat('totalGuests')" title="Edit">✎</button>
+          <div class="stat-val" id="stat-total-guests">801</div>
           <div class="stat-lbl">Total Guests</div>
           <div class="stat-hint">Across all events</div>
         </div>
-        <div class="stat">
-          <div class="stat-val" style="font-size:22px">Rp 98.000.000</div>
+        <div class="stat" style="position:relative">
+          <button class="stat-edit-btn" onclick="editDashStat('revenue')" title="Edit">✎</button>
+          <div class="stat-val" id="stat-revenue" style="font-size:22px">Rp 98.000.000</div>
           <div class="stat-lbl">Revenue</div>
           <div class="stat-hint">Pipeline this month</div>
         </div>
-        <div class="stat r">
-          <div class="stat-val">3</div>
+        <div class="stat r" style="position:relative">
+          <button class="stat-edit-btn" onclick="editDashStat('pendingPayment')" title="Edit">✎</button>
+          <div class="stat-val" id="stat-pending-payment">3</div>
           <div class="stat-lbl">Pending Payment</div>
           <div class="stat-hint">Requires follow-up</div>
         </div>
@@ -3747,6 +3753,29 @@ window.addEventListener('popstate', function(e){
   const id = e.state ? e.state.page : 'dash';
   nav(id, false);
 });
+
+const DASH_STAT_CONFIG = {
+  activeEvents: {label:'Active Events', elId:'stat-active-events', placeholder:'e.g. 6'},
+  totalGuests: {label:'Total Guests', elId:'stat-total-guests', placeholder:'e.g. 801'},
+  revenue: {label:'Revenue', elId:'stat-revenue', placeholder:'e.g. Rp 98.000.000'},
+  pendingPayment: {label:'Pending Payment', elId:'stat-pending-payment', placeholder:'e.g. 3'}
+};
+
+function editDashStat(key){
+  const cfg = DASH_STAT_CONFIG[key];
+  if(!cfg) return;
+  const el = document.getElementById(cfg.elId);
+  appModalShow({
+    title: 'Edit ' + cfg.label,
+    fields: [
+      {label: cfg.label, placeholder: cfg.placeholder, value: el ? el.textContent : ''}
+    ],
+    onOk([newVal]){
+      if(el) el.textContent = newVal;
+      toast(cfg.label + ' updated ✓');
+    }
+  });
+}
 
 function toast(msg){
   const t=document.getElementById('toastEl');

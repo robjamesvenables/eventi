@@ -4189,7 +4189,7 @@ function calRenderMonth(){
     let bars=dayEvents.map(e=>`<div class="cal-event-bar cal-ev-${e.status}" onclick="event.stopPropagation();nav('beo')"><div class="cal-ev-dot"></div>${e.name.length>16?e.name.substring(0,16)+'…':e.name}</div>`).join('');
     const manualEntry = calManualEntries[dateStr];
     if(manualEntry){
-      bars += `<div class="cal-event-bar" style="background:${manualEntry.color}1A;border-left:3px solid ${manualEntry.color};color:${manualEntry.color}" onclick="event.stopPropagation();calClickDay('${dateStr}')"><div class="cal-ev-dot" style="background:${manualEntry.color}"></div>${manualEntry.text}</div>`;
+      bars += `<div class="cal-event-bar" style="background:${manualEntry.color}1A;border-left:3px solid ${manualEntry.color};color:${manualEntry.color};position:relative;padding-right:20px" onclick="event.stopPropagation();calClickDay('${dateStr}')"><div class="cal-ev-dot" style="background:${manualEntry.color}"></div>${manualEntry.text}<span onclick="event.stopPropagation();calDeleteEntry('${dateStr}')" style="position:absolute;right:4px;top:50%;transform:translateY(-50%);font-size:13px;font-weight:700;color:${manualEntry.color};opacity:0.6;cursor:pointer;padding:0 3px">×</span></div>`;
     }
     html+=`<div class="${cls}" onclick="calClickDay('${dateStr}')"><div class="cal-day-num">${c.day}</div>${bars}</div>`;
   });
@@ -4238,6 +4238,13 @@ function calClickDay(dateStr){
       toast('Calendar updated ✓');
     }
   });
+}
+function calDeleteEntry(dateStr){
+  appConfirmShow({title:'Remove Entry', msg:'Remove this calendar entry?', onOk:()=>{
+    delete calManualEntries[dateStr];
+    calRenderMonth();
+    toast('Removed');
+  }});
 }
 function calSetView(v){
   calView=v;

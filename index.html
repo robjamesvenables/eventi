@@ -1920,7 +1920,7 @@ img.emoji-tw{width:1.15em;height:1.15em;vertical-align:-0.2em;margin:0 1px}
       Suggestion Box
     </button>
 
-    <button class="sb-link" id="n-install" onclick="installAppClick()" style="display:none">
+    <button class="sb-link" id="n-install" onclick="installAppClick()">
       <svg class="sb-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
       Install App
     </button>
@@ -7895,7 +7895,7 @@ if('serviceWorker' in navigator){
   });
 }
 
-// ── PWA: Install App button (fallback for browsers with no automatic prompt, e.g. iOS Safari) ──
+// ── PWA: Install App button - always visible, so it's never silently missed. Click handler figures out the right response. ──
 let deferredInstallPrompt = null;
 
 function isRunningStandalone(){
@@ -7909,40 +7909,39 @@ function isIOS(){
 function updateInstallButtonVisibility(){
   const btn = document.getElementById('n-install');
   if(!btn) return;
-  if(isRunningStandalone()){
-    btn.style.display = 'none';
-    return;
-  }
-  // Show the button if we have a native prompt ready, OR if this is iOS (which never fires one, so we show manual instructions instead)
-  if(deferredInstallPrompt || isIOS()){
-    btn.style.display = 'flex';
-  }
+  btn.style.display = 'flex';
 }
 
 window.addEventListener('beforeinstallprompt', (e) => {
   e.preventDefault();
   deferredInstallPrompt = e;
-  updateInstallButtonVisibility();
 });
 
 window.addEventListener('appinstalled', () => {
   deferredInstallPrompt = null;
-  const btn = document.getElementById('n-install');
-  if(btn) btn.style.display = 'none';
   toast('Mavis installed ✓');
 });
 
 function installAppClick(){
+  if(isRunningStandalone()){
+    toast("You're already using the installed app ✓");
+    return;
+  }
   if(deferredInstallPrompt){
     deferredInstallPrompt.prompt();
-    deferredInstallPrompt.userChoice.then(()=>{ deferredInstallPrompt = null; });
+    deferredInstallPrompt.userChoice.then((choice)=>{
+      if(choice.outcome === 'accepted'){
+        toast('Mavis installed ✓');
+      }
+      deferredInstallPrompt = null;
+    });
     return;
   }
   if(isIOS()){
     appModalShowInstallInstructions();
     return;
   }
-  toast('Use your browser menu to add Mavis to your home screen');
+  toast('Open your browser menu and choose "Add to Home Screen" or "Install App"');
 }
 
 function appModalShowInstallInstructions(){

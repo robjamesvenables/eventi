@@ -1920,6 +1920,11 @@ img.emoji-tw{width:1.15em;height:1.15em;vertical-align:-0.2em;margin:0 1px}
       Suggestion Box
     </button>
 
+    <button class="sb-link" id="n-install" onclick="installAppClick()" style="display:none">
+      <svg class="sb-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+      Install App
+    </button>
+
     <div class="sb-bottom">
       <div class="sb-avatar" id="sb-avatar">R</div>
       <span class="sb-uname" id="sb-uname">Robbie</span>
@@ -7889,6 +7894,80 @@ if('serviceWorker' in navigator){
     navigator.serviceWorker.register('/sw.js').catch(()=>{});
   });
 }
+
+// ── PWA: Install App button (fallback for browsers with no automatic prompt, e.g. iOS Safari) ──
+let deferredInstallPrompt = null;
+
+function isRunningStandalone(){
+  return window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+}
+
+function isIOS(){
+  return /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+}
+
+function updateInstallButtonVisibility(){
+  const btn = document.getElementById('n-install');
+  if(!btn) return;
+  if(isRunningStandalone()){
+    btn.style.display = 'none';
+    return;
+  }
+  // Show the button if we have a native prompt ready, OR if this is iOS (which never fires one, so we show manual instructions instead)
+  if(deferredInstallPrompt || isIOS()){
+    btn.style.display = 'flex';
+  }
+}
+
+window.addEventListener('beforeinstallprompt', (e) => {
+  e.preventDefault();
+  deferredInstallPrompt = e;
+  updateInstallButtonVisibility();
+});
+
+window.addEventListener('appinstalled', () => {
+  deferredInstallPrompt = null;
+  const btn = document.getElementById('n-install');
+  if(btn) btn.style.display = 'none';
+  toast('Mavis installed ✓');
+});
+
+function installAppClick(){
+  if(deferredInstallPrompt){
+    deferredInstallPrompt.prompt();
+    deferredInstallPrompt.userChoice.then(()=>{ deferredInstallPrompt = null; });
+    return;
+  }
+  if(isIOS()){
+    appModalShowInstallInstructions();
+    return;
+  }
+  toast('Use your browser menu to add Mavis to your home screen');
+}
+
+function appModalShowInstallInstructions(){
+  const existing = document.getElementById('install-instructions-modal');
+  if(existing) existing.remove();
+  const modal = document.createElement('div');
+  modal.id = 'install-instructions-modal';
+  modal.style.cssText = 'position:fixed;inset:0;background:rgba(15,30,46,0.55);display:flex;align-items:center;justify-content:center;z-index:10000';
+  modal.onclick = (e) => { if(e.target === modal) modal.remove(); };
+  modal.innerHTML = `
+    <div style="background:white;border-radius:16px;padding:28px;width:100%;max-width:360px;margin:0 20px;box-shadow:0 20px 60px rgba(0,0,0,0.2);text-align:center">
+      <div style="font-size:16px;font-weight:800;color:#0F1E2E;margin-bottom:16px">Install Mavis on iPhone</div>
+      <div style="text-align:left;font-size:14px;color:#334155;line-height:1.8;margin-bottom:20px">
+        <div style="margin-bottom:10px"><strong>1.</strong> Tap the Share icon <span style="display:inline-flex;vertical-align:-4px"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#0D9488" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg></span> at the bottom of Safari</div>
+        <div style="margin-bottom:10px"><strong>2.</strong> Scroll down and tap <strong>"Add to Home Screen"</strong></div>
+        <div><strong>3.</strong> Tap <strong>"Add"</strong> in the top right</div>
+      </div>
+      <button onclick="document.getElementById('install-instructions-modal').remove()" style="width:100%;padding:12px;background:#0F1E2E;border:none;border-radius:9px;font-family:'Inter',sans-serif;font-size:14px;font-weight:700;color:white;cursor:pointer">Got it</button>
+    </div>
+  `;
+  document.body.appendChild(modal);
+}
+
+document.addEventListener('DOMContentLoaded', updateInstallButtonVisibility);
+
 </script>
 </body>
 </html>

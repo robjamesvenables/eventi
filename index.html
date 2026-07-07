@@ -1799,6 +1799,55 @@ img.emoji-tw{width:1.15em;height:1.15em;vertical-align:-0.2em;margin:0 1px}
 .allergen-chip.has{background:rgba(239,68,68,0.08);border-color:rgba(239,68,68,0.2);color:#DC2626}
 .kitchen-link-card{background:white;border:1px solid var(--line);border-radius:10px;padding:14px 18px;display:flex;align-items:center;gap:14px;margin-bottom:10px;transition:all 0.15s}
 .kitchen-link-card:hover{border-color:var(--teal);box-shadow:0 4px 12px rgba(0,0,0,0.06)}
+
+/* ── MOBILE TOPBAR (hidden on desktop) ── */
+#mobile-topbar{
+  display:none;
+  align-items:center;gap:14px;
+  height:52px;padding:0 16px;
+  background:white;border-bottom:1.5px solid #E2E8F0;
+  position:sticky;top:0;z-index:150;
+  flex-shrink:0;
+}
+#mobile-topbar button{background:none;border:none;padding:4px;cursor:pointer;display:flex;flex-shrink:0}
+
+/* ── SIDEBAR OVERLAY (mobile only, tap to close) ── */
+#sidebar-overlay{
+  display:none;
+  position:fixed;inset:0;
+  background:rgba(15,30,46,0.5);
+  z-index:190;
+}
+#sidebar-overlay.open{display:block}
+
+/* ── MOBILE LAYOUT (phones and small tablets) ── */
+@media (max-width: 860px){
+  #mobile-topbar{display:flex}
+
+  .sidebar{
+    transform:translateX(-100%);
+    transition:transform 0.25s ease;
+    width:260px;min-width:260px;
+    box-shadow:0 0 40px rgba(0,0,0,0.3);
+  }
+  .sidebar.open{transform:translateX(0)}
+
+  #app-content{margin-left:0 !important}
+  .topbar{margin-left:0 !important}
+
+  /* Login screen: stack instead of side-by-side */
+  #login{flex-direction:column !important;height:auto !important;min-height:100vh}
+  #login > div:first-child{flex:none !important;padding:36px 24px !important;min-height:200px}
+  #login > div:last-child{width:100% !important;padding:32px 24px !important;box-sizing:border-box}
+
+  /* Common multi-column grids collapse to single column on phones */
+  .features-grid,.for-grid,.steps{grid-template-columns:1fr !important}
+}
+
+@media (max-width: 600px){
+  /* Extra-narrow phones: tighten page padding so content isn't cramped against the edges */
+  .page{padding-left:16px !important;padding-right:16px !important}
+}
 </style>
 </head>
 <body>
@@ -1932,8 +1981,19 @@ img.emoji-tw{width:1.15em;height:1.15em;vertical-align:-0.2em;margin:0 1px}
     </div>
   </div>
 
+  <!-- Mobile-only overlay, closes sidebar on tap -->
+  <div id="sidebar-overlay" onclick="toggleSidebar(false)"></div>
+
   <!-- SLIM TOPBAR -->
-  <div style="flex:1;margin-left:220px;display:flex;flex-direction:column;min-height:100vh;overflow-x:hidden">
+  <div id="app-content" style="flex:1;margin-left:220px;display:flex;flex-direction:column;min-height:100vh;overflow-x:hidden">
+
+  <!-- Mobile-only topbar: hamburger + wordmark, always present regardless of page -->
+  <div id="mobile-topbar">
+    <button onclick="toggleSidebar(true)" aria-label="Open menu">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#0F1E2E" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+    </button>
+    <span style="font-size:18px;font-weight:700"><span style="color:#0D9488">M</span>avis<span style="color:#C4973B">.</span></span>
+  </div>
 
   <div class="body-wrap">
 
@@ -3499,7 +3559,21 @@ let editMode=false;
 let beoAutoSaveTimer=null;
 let currentLang='en';
 
+function toggleSidebar(open){
+  const sidebar = document.querySelector('.sidebar');
+  const overlay = document.getElementById('sidebar-overlay');
+  if(!sidebar) return;
+  if(open){
+    sidebar.classList.add('open');
+    if(overlay) overlay.classList.add('open');
+  } else {
+    sidebar.classList.remove('open');
+    if(overlay) overlay.classList.remove('open');
+  }
+}
+
 function nav(id, pushState=true){
+  toggleSidebar(false);
   document.querySelectorAll('.page').forEach(p=>{p.classList.remove('on');});
   document.querySelectorAll('.sb-link').forEach(b=>b.classList.remove('active'));
   const page=document.getElementById('p-'+id);

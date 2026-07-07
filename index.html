@@ -5933,17 +5933,33 @@ const announceTags = {
 };
 
 const announceCurrentUser = 'John';
+const ANNOUNCE_TARGET_COUNT = 5;
+const announcePlaceholders = [
+  'e.g. "Reminder — staff meeting Friday 3PM in the office."',
+  'e.g. "Welcome our new hire starting Monday!"',
+  'e.g. "Kitchen closed for deep clean this Sunday morning."',
+  'e.g. "Great job team on last night\'s event — well done all!"',
+  'e.g. "Reminder to submit your SOPs by end of week."'
+];
+
+function announcePlaceholderHtml(i){
+  return `
+    <div class="announce-item" style="position:relative;background:${i % 2 === 1 ? '#F1F5F9' : 'white'};border:1.5px dashed #CBD5E1;opacity:0.65">
+      <div class="announce-bar" style="background:#CBD5E1"></div>
+      <div class="announce-body">
+        <span class="announce-tag" style="background:#F1F5F9;color:#94A3B8;font-style:italic">Example</span>
+        <div class="announce-text" style="font-style:italic;color:#94A3B8">${announcePlaceholders[i % announcePlaceholders.length]}</div>
+        <div class="announce-meta" style="font-style:italic">Post your own with + Post above ↑</div>
+      </div>
+    </div>`;
+}
 
 function announceRender(){
   const list = document.getElementById('announce-list');
   const badge = document.getElementById('announce-badge');
   if(!list) return;
   if(badge) badge.textContent = announcements.length;
-  if(announcements.length===0){
-    list.innerHTML='<div class="announce-empty">No announcements yet — click + Post to add one.</div>';
-    return;
-  }
-  list.innerHTML = '<div id="announce-track">' + announcements.map((a,i)=>{
+  const realHtml = announcements.map((a,i)=>{
     const isOwner = a.by === announceCurrentUser;
     const actions = isOwner ? `
       <div style="display:flex;gap:6px;flex-shrink:0">
@@ -5965,7 +5981,13 @@ function announceRender(){
         </div>
         ${actions}
       </div>`;
-  }).join('') + '</div>';
+  }).join('');
+
+  const missing = Math.max(0, ANNOUNCE_TARGET_COUNT - announcements.length);
+  let placeholderHtml = '';
+  for(let i=0; i<missing; i++) placeholderHtml += announcePlaceholderHtml(i);
+
+  list.innerHTML = '<div id="announce-track">' + realHtml + placeholderHtml + '</div>';
 
   // Auto-scroll if more than 2 announcements
   announceStartScroll(list);
@@ -7391,10 +7413,33 @@ function openAddMoment(){
   });
 }
 
+const HIGHLIGHTS_TARGET_COUNT = 5;
+const highlightPlaceholders = [
+  'A team night out, a birthday, a new hire — post it here',
+  'Finished a big event? Share a photo of the team',
+  'Celebrating a milestone? This is the place for it',
+  'Charity day, staff party, a proud moment — add it',
+  'New face on the team? Give them a welcome post'
+];
+
+function highlightPlaceholderHtml(i){
+  return `
+    <div class="moment-card" style="border:1.5px dashed #CBD5E1;opacity:0.65;cursor:pointer" onclick="openAddMoment()">
+      <div style="width:100%;height:130px;background:#F1F5F9;display:flex;align-items:center;justify-content:center">
+        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#94A3B8" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>
+      </div>
+      <div class="moment-card-body">
+        <div class="moment-card-tag" style="color:#94A3B8;font-style:italic">Example</div>
+        <div class="moment-card-caption" style="font-style:italic;color:#94A3B8">${highlightPlaceholders[i % highlightPlaceholders.length]}</div>
+        <div class="moment-card-meta" style="font-style:italic">Tap + Add Highlight above ↑</div>
+      </div>
+    </div>`;
+}
+
 function momentsRebuild(){
   const strip = document.getElementById('moments-strip');
   if(!strip) return;
-  strip.innerHTML = momentsData.map((m,i)=>`
+  const realHtml = momentsData.map((m,i)=>`
     <div class="moment-card" data-idx="${i}" onclick="openMoment(${i})">
       <img class="moment-card-img" src="${m.img}" alt="">
       <div class="moment-card-body">
@@ -7403,6 +7448,12 @@ function momentsRebuild(){
         <div class="moment-card-meta">${m.meta}</div>
       </div>
     </div>`).join('');
+
+  const missing = Math.max(0, HIGHLIGHTS_TARGET_COUNT - momentsData.length);
+  let placeholderHtml = '';
+  for(let i=0; i<missing; i++) placeholderHtml += highlightPlaceholderHtml(i);
+
+  strip.innerHTML = realHtml + placeholderHtml;
   momentsInitScroll();
 }
 

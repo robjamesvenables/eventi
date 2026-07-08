@@ -1955,6 +1955,10 @@ img.emoji-tw{width:1.15em;height:1.15em;vertical-align:-0.2em;margin:0 1px}
      eats a big chunk of a narrow phone's width, leaving little room for the actual input text */
   #mn-panel-inner > div{grid-template-columns:85px 1fr !important}
   .mn-field-lbl{padding-left:12px !important;font-size:9.5px !important}
+
+  /* Noticeboard: was overflow:hidden (built for the auto-scroll ticker, which is now disabled
+     on mobile). Give it a taller window and let it scroll normally via touch instead. */
+  .announce-list-scroll{max-height:420px !important;overflow-y:auto !important;-webkit-overflow-scrolling:touch}
 }
 
 @media (max-width: 420px){
@@ -6225,6 +6229,16 @@ function announceStartScroll(list){
   if(announceScrollAnim) cancelAnimationFrame(announceScrollAnim);
   const track = document.getElementById('announce-track');
   if(!track) return;
+
+  // On touch devices there's no way to pause a hover-based auto-scroll, which makes a
+  // perpetually-moving ticker feel chaotic. Let mobile users scroll through normally instead.
+  const isTouchDevice = window.matchMedia('(pointer: coarse)').matches;
+  if(isTouchDevice){
+    track.style.transform = 'translateY(0)';
+    list.style.overflowY = 'auto';
+    return;
+  }
+
   if(announcements.length <= 2) { track.style.transform = 'translateY(0)'; return; }
   announceScrollPaused = false;
 

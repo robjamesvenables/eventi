@@ -3791,14 +3791,23 @@ function toggleSidebar(open){
   }
 }
 
+let scrollPositions = {};
+let isBackNavigation = false;
+
 function nav(id, pushState=true){
   toggleSidebar(false);
+
+  // Remember where we were on the page we're leaving, so a later "back" can return to it
+  const currentPage = document.querySelector('.page.on');
+  if(currentPage){
+    scrollPositions[currentPage.id.replace('p-','')] = window.scrollY;
+  }
+
   document.querySelectorAll('.page').forEach(p=>{p.classList.remove('on');});
   document.querySelectorAll('.sb-link').forEach(b=>b.classList.remove('active'));
   const page=document.getElementById('p-'+id);
   if(!page)return;
   page.classList.add('on');
-  window.scrollTo(0, 0);
   const nb=document.getElementById('n-'+id);
   if(nb)nb.classList.add('active');
   if(id!=='beo'&&editMode)toggleEditMode();
@@ -3813,6 +3822,17 @@ function nav(id, pushState=true){
   if(id==='reports'){setTimeout(()=>{ const t=document.getElementById('reports-tab-day'); if(t) reportsSetMode('day', t); }, 0);}
   const floatBtn=document.getElementById('float-edit');
   if(floatBtn)floatBtn.style.display=id==='beo'?'block':'none';
+
+  // Wait a frame so the page's content/height is fully laid out before positioning scroll
+  requestAnimationFrame(() => {
+    if(isBackNavigation && scrollPositions[id] !== undefined){
+      window.scrollTo(0, scrollPositions[id]);
+    } else {
+      window.scrollTo(0, 0);
+    }
+    isBackNavigation = false;
+  });
+
   if(pushState){
     history.pushState({page:id}, '', '#'+id);
   }
@@ -3849,6 +3869,7 @@ function updateSkyBanner(){
 // Handle browser back/forward
 window.addEventListener('popstate', function(e){
   const id = e.state ? e.state.page : 'dash';
+  isBackNavigation = true;
   nav(id, false);
 });
 

@@ -6803,29 +6803,15 @@ function myDriveRenderFolderList(){
       </div>
       <div class="myd-folder-row-name">${f.name}</div>
       <div class="myd-folder-row-count">${f.files.length} link${f.files.length!==1?'s':''}</div>
-      <button onclick="event.stopPropagation();toggleCardPicker(event,'folderlist-${f.id}')" style="background:none;border:none;color:#94A3B8;cursor:pointer;padding:4px 6px;border-radius:4px;display:flex;align-items:center;margin-right:6px" title="Change colour">
+      <button onclick="event.stopPropagation();myDriveEditFolder(${f.id})" style="background:none;border:none;color:#94A3B8;cursor:pointer;padding:4px 6px;border-radius:4px;display:flex;align-items:center;margin-right:6px" title="Edit folder">
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="M15 5l4 4"/></svg>
       </button>
-      <div class="card-colour-popup" id="cpop-folderlist-${f.id}" onclick="event.stopPropagation()" style="bottom:auto;top:38px;right:30px"></div>
       <button onclick="event.stopPropagation();myDriveDeleteFolder(${f.id})" style="background:none;border:none;color:#CBD5E1;font-size:18px;cursor:pointer;padding:2px 6px;border-radius:4px;transition:all 0.15s" onmouseover="this.style.color='#EF4444';this.style.background='#FEE2E2'" onmouseout="this.style.color='#CBD5E1';this.style.background='none'">×</button>
     </div>`).join('') + `
     <div class="myd-folder-row" style="border-style:dashed;color:#94A3B8;justify-content:center" onclick="myDriveAddFolder()">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#94A3B8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
       <span style="font-size:13px;font-weight:600">New Folder</span>
     </div>`;
-  driveFolders.forEach(f=>{
-    const pop = document.getElementById('cpop-folderlist-'+f.id);
-    if(!pop) return;
-    pop.innerHTML = '';
-    CARD_COLOURS.forEach(c=>{
-      const sw = document.createElement('div');
-      sw.className = 'card-swatch' + (f.color===c.hex ? ' active' : '');
-      sw.style.background = c.hex;
-      sw.title = c.label;
-      sw.onclick = e=>{ e.stopPropagation(); driveFolderColour(f.id, c.hex); closeAllPickers(); };
-      pop.appendChild(sw);
-    });
-  });
 }
 
 function myDriveRenderFolders(){
@@ -6839,27 +6825,12 @@ function myDriveRenderFolders(){
         <div class="myd-folder-tile-name">${f.name}</div>
         <div class="myd-folder-tile-count">${f.files.length} link${f.files.length!==1?'s':''}</div>
       </div>
-      <button class="card-colour-btn" onclick="toggleCardPicker(event,'folder-${f.id}')"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="M15 5l4 4"/></svg></button>
-      <div class="card-colour-popup" id="cpop-folder-${f.id}" onclick="event.stopPropagation()"></div>
+      <button class="card-colour-btn" onclick="event.stopPropagation();myDriveEditFolder(${f.id})" title="Edit folder"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="M15 5l4 4"/></svg></button>
     </div>`).join('') + `
     <div class="myd-new-tile" onclick="myDriveAddFolder()">
       <div class="myd-new-tile-ico"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#94A3B8" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/><line x1="12" y1="11" x2="12" y2="17"/><line x1="9" y1="14" x2="15" y2="14"/></svg></div>
       <div class="myd-new-tile-txt">New Folder</div>
     </div>`;
-  // Populate each folder's colour picker popup, same palette and mechanism as the home tiles
-  driveFolders.forEach(f=>{
-    const pop = document.getElementById('cpop-folder-'+f.id);
-    if(!pop) return;
-    pop.innerHTML = '';
-    CARD_COLOURS.forEach(c=>{
-      const sw = document.createElement('div');
-      sw.className = 'card-swatch' + (f.color===c.hex ? ' active' : '');
-      sw.style.background = c.hex;
-      sw.title = c.label;
-      sw.onclick = e=>{ e.stopPropagation(); driveFolderColour(f.id, c.hex); closeAllPickers(); };
-      pop.appendChild(sw);
-    });
-  });
 }
 
 function myDriveRenderFiles(){
@@ -6945,14 +6916,15 @@ window.myDriveEditFolder = function(id){
   if(!folder) return;
   appModalShow({
     title:'Edit Folder',
-    fields:[{label:'Folder name', value:folder.name, placeholder:'Folder name'}],
-    onOk([newName]){
+    fields:[
+      {label:'Folder name', value:folder.name, placeholder:'Folder name'},
+      {label:'Colour', type:'color', options: DEPT_COLORS, value: folder.color}
+    ],
+    onOk([newName, color]){
       if(newName) folder.name = newName;
-      myDriveColorPicker(`Colour for "${folder.name}"`, function(color){
-        folder.color = color;
-        myDriveRender();
-        toast('Folder updated ✓');
-      });
+      folder.color = color;
+      myDriveRender();
+      toast('Folder updated ✓');
     }
   });
 };

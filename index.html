@@ -1990,6 +1990,19 @@ img.emoji-tw{width:1.15em;height:1.15em;vertical-align:-0.2em;margin:0 1px}
   .moment-lightbox-actions > div:last-child{width:100%}
   .moment-lightbox-actions > div:last-child > button,
   .moment-lightbox-actions > div:last-child > a{flex:1;text-align:center;justify-content:center}
+
+  /* Home dashboard category sections (Events/Operations/Resources/Venue) collapse to a
+     tappable header by default on mobile - the page was an endless scroll of tiles otherwise.
+     My Drive/Quick Links deliberately excluded, those stay always-visible as-is. */
+  .home-section-toggle{
+    cursor:pointer;
+    display:flex;align-items:center;gap:6px;
+    user-select:none;
+  }
+  .home-section-chevron{transition:transform 0.2s;flex-shrink:0}
+  .home-section-toggle.open .home-section-chevron{transform:rotate(180deg)}
+  .home-section-collapsible{display:none !important}
+  .home-section-collapsible.open{display:grid !important}
 }
 
 @media (max-width: 420px){
@@ -2249,8 +2262,8 @@ img.emoji-tw{width:1.15em;height:1.15em;vertical-align:-0.2em;margin:0 1px}
       </div>
 
       <!-- EVENTS -->
-      <div class="home-section-label">Events</div>
-      <div class="home-grid" style="margin-bottom:24px">
+      <div class="home-section-label home-section-toggle" onclick="toggleHomeSection(this)">Events<svg class="home-section-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg></div>
+      <div class="home-grid home-section-collapsible" style="margin-bottom:24px">
 
         <div class="home-card" id="hcard-dash" onclick="nav('dash')" style="background:#0D9488;border-color:#0D9488;position:relative;overflow:hidden;align-self:start;height:120px">
           <div class="card-colour-popup" id="cpop-dash"></div>
@@ -2286,8 +2299,8 @@ img.emoji-tw{width:1.15em;height:1.15em;vertical-align:-0.2em;margin:0 1px}
       </div>
 
       <!-- OPERATIONS -->
-      <div class="home-section-label">Operations</div>
-      <div class="home-grid" style="margin-bottom:24px">
+      <div class="home-section-label home-section-toggle" onclick="toggleHomeSection(this)">Operations<svg class="home-section-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg></div>
+      <div class="home-grid home-section-collapsible" style="margin-bottom:24px">
 
         <div class="home-card" id="hcard-kb" onclick="nav('kb')" style="background:#0D9488;border-color:#0D9488;position:relative;overflow:hidden;align-self:start;height:120px">
           <div class="card-colour-popup" id="cpop-kb"></div>
@@ -2324,8 +2337,8 @@ img.emoji-tw{width:1.15em;height:1.15em;vertical-align:-0.2em;margin:0 1px}
       </div>
 
       <!-- RESOURCES -->
-      <div class="home-section-label">Resources</div>
-      <div class="home-grid" style="margin-bottom:24px">
+      <div class="home-section-label home-section-toggle" onclick="toggleHomeSection(this)">Resources<svg class="home-section-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg></div>
+      <div class="home-grid home-section-collapsible" style="margin-bottom:24px">
 
         <div class="home-card" id="hcard-faq" onclick="nav('faq')" style="background:#0D9488;border-color:#0D9488;position:relative;overflow:hidden;align-self:start;height:120px">
           <div class="card-colour-popup" id="cpop-faq"></div>
@@ -2354,8 +2367,8 @@ img.emoji-tw{width:1.15em;height:1.15em;vertical-align:-0.2em;margin:0 1px}
       </div>
 
       <!-- VENUE -->
-      <div class="home-section-label">Venue</div>
-      <div class="home-grid" style="margin-bottom:24px">
+      <div class="home-section-label home-section-toggle" onclick="toggleHomeSection(this)">Venue<svg class="home-section-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg></div>
+      <div class="home-grid home-section-collapsible" style="margin-bottom:24px">
 
         <div class="home-card" id="hcard-kitchen" onclick="nav('kitchen')" style="background:#0D9488;border-color:#0D9488;position:relative;overflow:hidden;align-self:start;height:120px">
           <div class="card-colour-popup" id="cpop-kitchen"></div>
@@ -3714,6 +3727,13 @@ img.emoji-tw{width:1.15em;height:1.15em;vertical-align:-0.2em;margin:0 1px}
 let editMode=false;
 let beoAutoSaveTimer=null;
 let currentLang='en';
+
+function toggleHomeSection(labelEl){
+  const grid = labelEl.nextElementSibling;
+  if(!grid) return;
+  labelEl.classList.toggle('open');
+  grid.classList.toggle('open');
+}
 
 function toggleSidebar(open){
   const sidebar = document.querySelector('.sidebar');

@@ -682,6 +682,28 @@ select.search-inp{max-width:150px;cursor:pointer}
   z-index:300;
   display:none;
 }
+#scroll-top-btn{
+  position:fixed;
+  bottom:24px;
+  left:24px;
+  width:44px;height:44px;
+  border-radius:50%;
+  background:var(--navy);
+  border:none;
+  display:flex;align-items:center;justify-content:center;
+  box-shadow:0 4px 16px rgba(0,0,0,0.25);
+  cursor:pointer;
+  z-index:150;
+  opacity:0;
+  pointer-events:none;
+  transform:translateY(10px);
+  transition:opacity 0.2s, transform 0.2s;
+}
+#scroll-top-btn.visible{
+  opacity:1;
+  pointer-events:auto;
+  transform:translateY(0);
+}
 .float-edit-btn{
   display:flex;align-items:center;gap:8px;
   padding:12px 20px;
@@ -2216,6 +2238,10 @@ img.emoji-tw{width:1.15em;height:1.15em;vertical-align:-0.2em;margin:0 1px}
 
   <!-- Mobile-only overlay, closes sidebar on tap -->
   <div id="sidebar-overlay" onclick="toggleSidebar(false)"></div>
+
+  <button id="scroll-top-btn" onclick="window.scrollTo({top:0, behavior:'smooth'})" aria-label="Back to top">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/></svg>
+  </button>
 
   <!-- SLIM TOPBAR -->
   <div id="app-content" style="flex:1;margin-left:220px;display:flex;flex-direction:column;min-height:100vh;overflow-x:hidden">
@@ -3906,6 +3932,17 @@ function updateSkyBanner(){
 }
 
 // Handle browser back/forward
+// Show the "back to top" button once scrolled down a bit, on any page
+window.addEventListener('scroll', () => {
+  const btn = document.getElementById('scroll-top-btn');
+  if(!btn) return;
+  if(window.scrollY > 400){
+    btn.classList.add('visible');
+  } else {
+    btn.classList.remove('visible');
+  }
+});
+
 window.addEventListener('popstate', function(e){
   const id = e.state ? e.state.page : 'dash';
   isBackNavigation = true;

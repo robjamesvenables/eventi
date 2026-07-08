@@ -2320,6 +2320,24 @@ img.emoji-tw{width:1.15em;height:1.15em;vertical-align:-0.2em;margin:0 1px}
         </div>
       </div>
 
+      <!-- SHOUTOUTS STRIP -->
+      <div class="moments-wrap" id="shoutouts-wrap" style="background:white;border:1.5px solid #E2E8F0;border-radius:14px;box-shadow:0 2px 8px rgba(0,0,0,0.06);overflow:hidden;padding-bottom:16px;margin-top:20px">
+        <div class="moments-hd" style="background:#7C3AED;padding:8px 14px;margin-bottom:16px">
+          <div class="moments-hd-title" style="color:white">
+            <div class="moments-hd-dot" style="background:#FCD34D"></div>
+            Shoutouts
+          </div>
+          <button onclick="openAddShoutout()" style="padding:6px 14px;background:rgba(255,255,255,0.15);border:none;border-radius:8px;font-family:'Inter',sans-serif;font-size:12px;font-weight:700;color:white;cursor:pointer">🙌 Give a Shoutout</button>
+        </div>
+        <div style="padding:0 20px">
+        <div class="moments-strip-outer" id="shoutouts-outer">
+          <div class="moments-strip" id="shoutouts-strip">
+            <!-- populated by shoutoutsRebuild() on load -->
+          </div>
+        </div>
+        </div>
+      </div>
+
       <!-- LIGHTBOX -->
       <div class="moment-lightbox" id="moment-lightbox" onclick="closeMoment()">
         <button class="moment-lightbox-close" onclick="closeMoment()">×</button>
@@ -2332,6 +2350,23 @@ img.emoji-tw{width:1.15em;height:1.15em;vertical-align:-0.2em;margin:0 1px}
               <button onclick="editMoment(momentsCurrentIdx)" style="font-size:12px;padding:8px 16px;background:#F1F5F9;color:#64748B;border:none;border-radius:8px;cursor:pointer;font-family:'Inter',sans-serif;font-weight:600">Edit</button>
               <button onclick="deleteMoment(momentsCurrentIdx)" style="font-size:12px;padding:8px 16px;background:#FEE2E2;color:#EF4444;border:none;border-radius:8px;cursor:pointer;font-family:'Inter',sans-serif;font-weight:600">Delete</button>
               <a id="moment-lb-download" download="moment.jpg" class="btn btn-navy" style="font-size:12px;padding:8px 16px;text-decoration:none">⬇ Download</a>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- SHOUTOUT LIGHTBOX (separate from Highlights, own state) -->
+      <div class="moment-lightbox" id="shoutout-lightbox" onclick="closeShoutout()">
+        <button class="moment-lightbox-close" onclick="closeShoutout()">×</button>
+        <img class="moment-lightbox-img" id="shoutout-lb-img" src="" alt="">
+        <div class="moment-lightbox-body" onclick="event.stopPropagation()">
+          <div class="moment-lightbox-caption" id="shoutout-lb-caption"></div>
+          <div class="moment-lightbox-actions">
+            <div class="moment-lightbox-meta" id="shoutout-lb-meta"></div>
+            <div style="display:flex;gap:8px">
+              <button onclick="editShoutout(shoutoutsCurrentIdx)" style="font-size:12px;padding:8px 16px;background:#F1F5F9;color:#64748B;border:none;border-radius:8px;cursor:pointer;font-family:'Inter',sans-serif;font-weight:600">Edit</button>
+              <button onclick="deleteShoutout(shoutoutsCurrentIdx)" style="font-size:12px;padding:8px 16px;background:#FEE2E2;color:#EF4444;border:none;border-radius:8px;cursor:pointer;font-family:'Inter',sans-serif;font-weight:600">Delete</button>
+              <a id="shoutout-lb-download" download="shoutout.jpg" class="btn btn-navy" style="font-size:12px;padding:8px 16px;text-decoration:none">⬇ Download</a>
             </div>
           </div>
         </div>
@@ -7887,9 +7922,9 @@ function driveFolderColour(id, colour){
 
 
 // ── MOMENTS ──
-function momentsInitScroll(){
-  const strip = document.getElementById('moments-strip');
-  const outer = document.getElementById('moments-outer');
+function momentsInitScroll(stripId, outerId){
+  const strip = document.getElementById(stripId || 'moments-strip');
+  const outer = document.getElementById(outerId || 'moments-outer');
   if(!strip || !outer) return;
 
   const cards = Array.from(strip.children);
@@ -8015,9 +8050,121 @@ function momentsRebuild(){
   momentsInitScroll();
 }
 
+// ── SHOUTOUTS ──
+const shoutoutsData = [];
+let shoutoutsCurrentIdx = null;
+const SHOUTOUTS_TARGET_COUNT = 5;
+
+const shoutoutPlaceholders = [
+  'Someone go above and beyond today? Give them a shoutout',
+  'A great save, a kind gesture, a job well done — say it here',
+  'New starter settling in well? Let them know it\u2019s noticed',
+  'Made the team laugh, made a guest\u2019s day — shout it out',
+  'Quietly crushing it? This is their moment'
+];
+
+function shoutoutPlaceholderHtml(i){
+  return `
+    <div class="moment-card" style="border:1.5px dashed #CBD5E1;opacity:0.65;cursor:pointer" onclick="openAddShoutout()">
+      <div style="width:100%;height:130px;background:#F5F3FF;display:flex;align-items:center;justify-content:center">
+        <span style="font-size:32px;opacity:0.4">🙌</span>
+      </div>
+      <div class="moment-card-body">
+        <div class="moment-card-caption" style="font-style:italic;color:#94A3B8">${shoutoutPlaceholders[i % shoutoutPlaceholders.length]}</div>
+        <div class="moment-card-meta" style="font-style:italic">Tap Give a Shoutout above ↑</div>
+      </div>
+    </div>`;
+}
+
+function shoutoutsRebuild(){
+  const strip = document.getElementById('shoutouts-strip');
+  if(!strip) return;
+  const realHtml = shoutoutsData.map((m,i)=>`
+    <div class="moment-card" data-idx="${i}" onclick="openShoutout(${i})">
+      <img class="moment-card-img" src="${m.img}" alt="">
+      <div class="moment-card-body">
+        <div class="moment-card-caption" style="margin-top:0">${momentsTwemojiParse(m.caption)}</div>
+        <div class="moment-card-meta">${m.meta}</div>
+      </div>
+    </div>`).join('');
+
+  const missing = Math.max(0, SHOUTOUTS_TARGET_COUNT - shoutoutsData.length);
+  let placeholderHtml = '';
+  for(let i=0; i<missing; i++) placeholderHtml += shoutoutPlaceholderHtml(i);
+
+  strip.innerHTML = realHtml + placeholderHtml;
+  momentsInitScroll('shoutouts-strip', 'shoutouts-outer');
+}
+
+function openAddShoutout(){
+  appModalShow({
+    title: 'Give a Shoutout',
+    fields: [
+      {label: 'Photo', type: 'file'},
+      {label: 'Caption — tap an emoji to insert it anywhere', type: 'captionEmoji', options: HIGHLIGHT_TAGS, placeholder: 'e.g. Huge shoutout to Sarah for covering the VIP table solo!'}
+    ],
+    onOk([img, caption]){
+      shoutoutsData.unshift({
+        img: img,
+        caption,
+        meta: 'Posted by Robbie \u00b7 Today'
+      });
+      toast('Shoutout posted \u2713');
+      shoutoutsRebuild();
+    }
+  });
+}
+
+function editShoutout(idx){
+  const m = shoutoutsData[idx];
+  if(!m) return;
+  const lightbox = document.getElementById('shoutout-lightbox');
+  if(lightbox) lightbox.classList.remove('open');
+  appModalShow({
+    title: 'Edit Shoutout',
+    fields: [
+      {label: 'Photo (leave blank to keep current)', type: 'file', optional: true},
+      {label: 'Caption — tap an emoji to insert it anywhere', type: 'captionEmoji', options: HIGHLIGHT_TAGS, value: m.caption}
+    ],
+    onOk([img, caption]){
+      if(img) m.img = img;
+      m.caption = caption;
+      toast('Shoutout updated \u2713');
+      shoutoutsRebuild();
+    }
+  });
+}
+
+function openShoutout(idx){
+  const m = shoutoutsData[idx];
+  if(!m) return;
+  shoutoutsCurrentIdx = idx;
+  document.getElementById('shoutout-lb-img').src = m.img;
+  document.getElementById('shoutout-lb-caption').innerHTML = momentsTwemojiParse(m.caption);
+  document.getElementById('shoutout-lb-meta').textContent = m.meta;
+  document.getElementById('shoutout-lb-download').href = m.img;
+  document.getElementById('shoutout-lightbox').classList.add('open');
+}
+
+function closeShoutout(){
+  document.getElementById('shoutout-lightbox').classList.remove('open');
+}
+
+function deleteShoutout(idx){
+  if(idx===null || idx===undefined || !shoutoutsData[idx]) return;
+  appConfirmShow({title:'Delete Shoutout', msg:'Delete this shoutout? This cannot be undone.', onOk:()=>{
+    shoutoutsData.splice(idx,1);
+    closeShoutout();
+    toast('Shoutout deleted \u2713');
+    shoutoutsRebuild();
+  }});
+}
+
 document.addEventListener('DOMContentLoaded', function(){
   const strip = document.getElementById('moments-strip');
   if(strip) momentsRebuild();
+  const shoutoutsStrip = document.getElementById('shoutouts-strip');
+  if(shoutoutsStrip) shoutoutsRebuild();
   const activeEl = document.getElementById('stat-active-events');
   const sbBadge = document.getElementById('sb-badge-dash');
   if(activeEl && sbBadge) sbBadge.textContent = activeEl.textContent;

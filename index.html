@@ -4768,6 +4768,7 @@ let kbActiveFilter = 'mytodo';
 let kbDrag = null; // {cardId, fromCol, ghost, offsetX, offsetY}
 
 function kbRender(){
+  __photoStripRegistry = [];
   const isMytodo = kbActiveFilter === 'mytodo';
   const borderColors = isMytodo
     ? {todo:'#0D9488', progress:'#0D9488', done:'#0D9488'}
@@ -4784,6 +4785,7 @@ function kbRender(){
     col.querySelectorAll('.kanban-card').forEach(c => c.remove());
 
     cards.forEach(card => {
+      if(!card.photos) card.photos = [];
       const div = document.createElement('div');
       div.className = 'kanban-card';
       div.dataset.id = card.id;
@@ -4796,10 +4798,12 @@ function kbRender(){
       const cIdx = cols.indexOf(colId);
       div.innerHTML = `
         <div class="kanban-card-title" style="pointer-events:none">${card.title}</div>
+        ${photoThumbStrip(card.photos, ()=>card.photos, kbRender)}
         <div class="kanban-card-meta" style="margin-top:10px;display:flex;align-items:center;gap:6px;flex-wrap:wrap">
           <span class="kanban-card-assignee" style="pointer-events:none">${card.assignee}</span>
           ${eventTag}
-          <div style="margin-left:auto;display:flex;gap:4px">
+          <div style="margin-left:auto;display:flex;gap:4px" onmousedown="event.stopPropagation()">
+            <button onclick="event.stopPropagation();kbAddPhotoClick(${card.id},'${colId}')" title="Add photo" style="padding:5px 8px;border:1.5px solid #E2E8F0;border-radius:6px;background:white;font-size:12px;cursor:pointer;display:flex;align-items:center;justify-content:center;color:#64748B"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2Z"/><circle cx="12" cy="13" r="4"/></svg></button>
             ${cIdx > 0 ? `<button onclick="event.stopPropagation();kbMove(${card.id},'${colId}','${cols[cIdx-1]}')" style="padding:5px 10px;border:1.5px solid #E2E8F0;border-radius:6px;background:white;font-size:12px;font-weight:700;color:#64748B;cursor:pointer;font-family:'Inter',sans-serif">←</button>` : ''}
             ${cIdx < 2 ? `<button onclick="event.stopPropagation();kbMove(${card.id},'${colId}','${cols[cIdx+1]}')" style="padding:5px 10px;border:none;border-radius:6px;background:#0D9488;font-size:12px;font-weight:700;color:white;cursor:pointer;font-family:'Inter',sans-serif">→</button>` : ''}
             <button onclick="event.stopPropagation();kbDelete(${card.id},'${colId}')" style="padding:5px 8px;border:1.5px solid #FECACA;border-radius:6px;background:white;font-size:12px;font-weight:700;color:#EF4444;cursor:pointer;font-family:'Inter',sans-serif">×</button>
@@ -4808,7 +4812,7 @@ function kbRender(){
 
       // Mouse drag
       div.addEventListener('mousedown', function(e){
-        if(e.target.tagName === 'BUTTON') return;
+        if(e.target.tagName === 'BUTTON' || e.target.closest('button') || e.target.tagName === 'IMG') return;
         e.preventDefault();
         const rect = div.getBoundingClientRect();
         const ghost = div.cloneNode(true);
@@ -5019,7 +5023,7 @@ window.addKanbanCard = function(colSelector){
     fields:[{label:'Task title', placeholder:'e.g. Confirm guest list'}],
     onOk([title]){
       const event = kbActiveFilter === 'all' ? 'general' : kbActiveFilter;
-      kanbanState[colId].push({id:kbNextId++, title, assignee:'John', event});
+      kanbanState[colId].push({id:kbNextId++, title, assignee:'John', event, photos:[]});
       kbRender();
       toast('Task added');
     }
@@ -5376,9 +5380,9 @@ const MAINT_COLS = [
 ];
 let maintNextId = 4;
 const maintTickets = [
-  {id:1, location:'Room 4', issue:'AC not cooling properly', priority:'urgent', assigned:'David', col:'reported'},
-  {id:2, location:'Pool Area', issue:'Sun lounger cushion torn, needs replacing', priority:'low', assigned:'Sarah', col:'progress'},
-  {id:3, location:'Lobby', issue:'Flickering light above reception', priority:'medium', assigned:'Robbie', col:'fixed'}
+  {id:1, location:'Room 4', issue:'AC not cooling properly', priority:'urgent', assigned:'David', col:'reported', photos:[]},
+  {id:2, location:'Pool Area', issue:'Sun lounger cushion torn, needs replacing', priority:'low', assigned:'Sarah', col:'progress', photos:[]},
+  {id:3, location:'Lobby', issue:'Flickering light above reception', priority:'medium', assigned:'Robbie', col:'fixed', photos:[]}
 ];
 
 // ── Maintenance drag state (mirrors Task Board drag pattern) ──
@@ -5387,6 +5391,7 @@ let mtDrag = null; // {ticketId, fromCol, ghost, el, offsetX, offsetY}
 function maintRender(){
   const wrap = document.getElementById('maint-kanban');
   if(!wrap) return;
+  __photoStripRegistry = [];
 
   wrap.innerHTML = MAINT_COLS.map(col => `
     <div class="kanban-col" id="maintcol-${col.id}">
@@ -5410,6 +5415,7 @@ function maintRender(){
     }
 
     tickets.forEach(t => {
+      if(!t.photos) t.photos = [];
       const div = document.createElement('div');
       div.className = 'kanban-card';
       div.dataset.id = t.id;
@@ -5422,9 +5428,11 @@ function maintRender(){
         </div>
         <div class="kanban-card-title" style="pointer-events:none">${t.location}</div>
         <div style="font-size:12.5px;color:#64748B;margin-bottom:10px;line-height:1.4;pointer-events:none">${t.issue}</div>
-        <div style="display:flex;align-items:center;justify-content:space-between">
+        ${photoThumbStrip(t.photos, ()=>t.photos, maintRender)}
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-top:2px">
           <span style="font-size:11px;color:#94A3B8;font-weight:600;pointer-events:none">${t.assigned}</span>
-          <div style="display:flex;gap:4px">
+          <div style="display:flex;gap:4px" onmousedown="event.stopPropagation()">
+            <button onclick="event.stopPropagation();maintAddPhotoClick(${t.id})" title="Add photo" style="padding:5px 8px;border:1.5px solid #E2E8F0;border-radius:6px;background:white;font-size:12px;cursor:pointer;display:flex;align-items:center;justify-content:center;color:#64748B"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2Z"/><circle cx="12" cy="13" r="4"/></svg></button>
             ${cIdx > 0 ? `<button onclick="event.stopPropagation();maintMove(${t.id},'${cols[cIdx-1]}')" style="padding:5px 10px;border:1.5px solid #E2E8F0;border-radius:6px;background:white;font-size:12px;font-weight:700;color:#64748B;cursor:pointer;font-family:'Inter',sans-serif">←</button>` : ''}
             ${cIdx < cols.length-1 ? `<button onclick="event.stopPropagation();maintMove(${t.id},'${cols[cIdx+1]}')" style="padding:5px 10px;border:none;border-radius:6px;background:#0D9488;font-size:12px;font-weight:700;color:white;cursor:pointer;font-family:'Inter',sans-serif">→</button>` : ''}
             <button onclick="event.stopPropagation();maintDeleteTicket(${t.id})" style="padding:5px 8px;border:1.5px solid #FECACA;border-radius:6px;background:white;font-size:12px;font-weight:700;color:#EF4444;cursor:pointer;font-family:'Inter',sans-serif">×</button>
@@ -5432,7 +5440,7 @@ function maintRender(){
         </div>`;
 
       div.addEventListener('mousedown', function(e){
-        if(e.target.tagName === 'BUTTON') return;
+        if(e.target.tagName === 'BUTTON' || e.target.closest('button') || e.target.tagName === 'IMG') return;
         e.preventDefault();
         const rect = div.getBoundingClientRect();
         const ghost = div.cloneNode(true);
@@ -5515,7 +5523,7 @@ function maintAddTicket(){
       {label: 'Assigned to', placeholder: 'e.g. David'}
     ],
     onOk([location, issue, priority, assigned]){
-      maintTickets.push({id: maintNextId++, location, issue, priority, assigned: assigned || 'Unassigned', col:'reported'});
+      maintTickets.push({id: maintNextId++, location, issue, priority, assigned: assigned || 'Unassigned', col:'reported', photos:[]});
       toast('Issue reported ✓');
       maintRender();
     }
@@ -8394,6 +8402,104 @@ document.addEventListener('DOMContentLoaded', initCardColours);
     </div>
   </div>
 </div>
+
+<!-- ── REUSABLE PHOTO LIGHTBOX (for card attachments) ── -->
+<div id="photoLightbox" style="display:none;position:fixed;inset:0;background:rgba(15,30,46,0.85);z-index:10001;align-items:center;justify-content:center" onclick="if(event.target===this)photoLightboxClose()">
+  <div style="max-width:90vw;max-height:90vh;position:relative">
+    <img id="photoLightboxImg" style="max-width:90vw;max-height:80vh;border-radius:10px;display:block;box-shadow:0 20px 60px rgba(0,0,0,0.4)">
+    <div style="display:flex;gap:10px;justify-content:center;margin-top:14px">
+      <button onclick="photoLightboxDelete()" style="padding:10px 18px;background:#EF4444;border:none;border-radius:9px;font-family:'Inter',sans-serif;font-size:13px;font-weight:700;color:white;cursor:pointer">Delete Photo</button>
+      <button onclick="photoLightboxClose()" style="padding:10px 18px;background:white;border:none;border-radius:9px;font-family:'Inter',sans-serif;font-size:13px;font-weight:700;color:#0F1E2E;cursor:pointer">Close</button>
+    </div>
+  </div>
+</div>
+<input id="globalPhotoInput" type="file" accept="image/*" multiple style="display:none" onchange="handleGlobalPhotoInput(event)">
+
+<script>
+// ── SHARED CARD PHOTO ATTACHMENTS (Task Board + Maintenance) ──
+let photoInputTarget = null; // {getArr: fn returning photos array, onDone: fn}
+let photoLightboxTarget = null; // {arr, index, onDone}
+
+function openPhotoPicker(getArr, onDone){
+  photoInputTarget = {getArr, onDone};
+  document.getElementById('globalPhotoInput').value = '';
+  document.getElementById('globalPhotoInput').click();
+}
+
+window.maintAddPhotoClick = function(ticketId){
+  const t = maintTickets.find(x=>x.id===ticketId);
+  if(!t) return;
+  openPhotoPicker(()=>{ if(!t.photos) t.photos=[]; return t.photos; }, maintRender);
+};
+
+window.kbAddPhotoClick = function(cardId, colId){
+  const card = (kanbanState[colId]||[]).find(c=>c.id===cardId);
+  if(!card) return;
+  openPhotoPicker(()=>{ if(!card.photos) card.photos=[]; return card.photos; }, kbRender);
+};
+
+async function handleGlobalPhotoInput(e){
+  const files = Array.from(e.target.files || []);
+  if(!files.length || !photoInputTarget) return;
+  const arr = photoInputTarget.getArr();
+  for(const file of files){
+    try{
+      const dataUrl = await appFileToDataUrl(file);
+      arr.push(dataUrl);
+    }catch(err){}
+  }
+  const onDone = photoInputTarget.onDone;
+  photoInputTarget = null;
+  if(onDone) onDone();
+  toast(files.length > 1 ? 'Photos added ✓' : 'Photo added ✓');
+}
+
+function photoThumbStrip(photos, getArr, onDone){
+  if(!photos || !photos.length) return '';
+  const key = registerPhotoStrip(photos, getArr, onDone);
+  const max = 4;
+  const shown = photos.slice(0, max);
+  const overflow = photos.length - max;
+  return `<div data-photo-key="${key}" style="display:flex;gap:5px;flex-wrap:wrap;margin:8px 0" onmousedown="event.stopPropagation()">
+    ${shown.map((src,idx)=>`<img src="${src}" onclick="event.stopPropagation();photoLightboxOpen(${idx},this)" style="width:36px;height:36px;object-fit:cover;border-radius:7px;cursor:pointer;border:1.5px solid #E2E8F0">`).join('')}
+    ${overflow>0 ? `<div style="width:36px;height:36px;border-radius:7px;background:#F1F5F9;color:#64748B;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center">+${overflow}</div>` : ''}
+  </div>`;
+}
+
+// Called from inline onclick on a thumbnail. Card render functions attach
+// data via a small closure registry so the lightbox knows which array/index.
+let __photoStripRegistry = [];
+function registerPhotoStrip(photos, getArr, onDone){
+  const key = __photoStripRegistry.length;
+  __photoStripRegistry.push({photos, getArr, onDone});
+  return key;
+}
+
+function photoLightboxOpen(index, imgEl){
+  // Walk up to find the enclosing card's registry key set on the strip wrapper
+  const wrap = imgEl.closest('[data-photo-key]');
+  const key = wrap ? Number(wrap.dataset.photoKey) : null;
+  const entry = key !== null ? __photoStripRegistry[key] : null;
+  if(!entry) return;
+  photoLightboxTarget = {arr: entry.getArr(), index, onDone: entry.onDone};
+  document.getElementById('photoLightboxImg').src = photoLightboxTarget.arr[index];
+  document.getElementById('photoLightbox').style.display = 'flex';
+}
+
+function photoLightboxClose(){
+  document.getElementById('photoLightbox').style.display = 'none';
+  photoLightboxTarget = null;
+}
+
+function photoLightboxDelete(){
+  if(!photoLightboxTarget) return;
+  const {arr, index, onDone} = photoLightboxTarget;
+  arr.splice(index, 1);
+  photoLightboxClose();
+  if(onDone) onDone();
+  toast('Photo removed');
+}
+</script>
 
 <script>
 // ── APP MODAL (replaces prompt) ──

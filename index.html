@@ -4750,6 +4750,46 @@ let kbNextId = 30;
 let kbActiveFilter = 'mytodo';
 
 // ── Drag state ──
+// Shared touch+mouse drag-start helper for Trello-style kanban cards (Task Board + Maintenance).
+// Mouse: drag starts immediately on mousedown - no ambiguity with anything else on desktop.
+// Touch: uses a short press-and-hold before committing to a drag, so a normal vertical swipe to
+// scroll the page isn't hijacked into a drag the instant a finger lands on a card. If the finger
+// moves more than a few pixels before the hold timer fires, it's treated as a scroll, not a drag.
+function wireCardDrag(div, startDrag){
+  div.addEventListener('mousedown', function(e){
+    if(e.target.tagName === 'BUTTON' || e.target.closest('button') || e.target.tagName === 'IMG') return;
+    e.preventDefault();
+    startDrag(e.clientX, e.clientY);
+  });
+
+  div.addEventListener('touchstart', function(e){
+    if(e.target.tagName === 'BUTTON' || e.target.closest('button') || e.target.tagName === 'IMG') return;
+    const touch = e.touches[0];
+    const startX = touch.clientX, startY = touch.clientY;
+    let cancelled = false;
+    const onEarlyMove = (moveE) => {
+      const t = moveE.touches[0];
+      if(Math.abs(t.clientX-startX) > 10 || Math.abs(t.clientY-startY) > 10) cancelled = true;
+    };
+    div.addEventListener('touchmove', onEarlyMove, {passive:true});
+    const timer = setTimeout(() => {
+      div.removeEventListener('touchmove', onEarlyMove);
+      if(!cancelled){
+        startDrag(startX, startY);
+        if(navigator.vibrate) navigator.vibrate(10);
+      }
+    }, 150);
+    const cleanup = () => {
+      clearTimeout(timer);
+      div.removeEventListener('touchmove', onEarlyMove);
+      div.removeEventListener('touchend', cleanup);
+      div.removeEventListener('touchcancel', cleanup);
+    };
+    div.addEventListener('touchend', cleanup, {once:true});
+    div.addEventListener('touchcancel', cleanup, {once:true});
+  }, {passive:true});
+}
+
 let kbDrag = null; // {cardId, fromCol, ghost, offsetX, offsetY}
 
 function kbRender(){
@@ -4797,10 +4837,8 @@ function kbRender(){
           </div>
         </div>`;
 
-      // Mouse drag
-      div.addEventListener('mousedown', function(e){
-        if(e.target.tagName === 'BUTTON' || e.target.closest('button') || e.target.tagName === 'IMG') return;
-        e.preventDefault();
+      // Mouse + touch drag
+      wireCardDrag(div, (clientX, clientY) => {
         const rect = div.getBoundingClientRect();
         const ghost = div.cloneNode(true);
         ghost.style.cssText = `position:fixed;z-index:9999;width:${rect.width}px;opacity:0.85;pointer-events:none;box-shadow:0 8px 24px rgba(0,0,0,0.2);transform:rotate(2deg);transition:none`;
@@ -4808,7 +4846,9 @@ function kbRender(){
         ghost.style.top = rect.top + 'px';
         document.body.appendChild(ghost);
         div.style.opacity = '0.3';
-        kbDrag = {cardId: card.id, fromCol: colId, ghost, el: div, offsetX: e.clientX - rect.left, offsetY: e.clientY - rect.top};
+        const wrap = document.getElementById('kanban-wrap');
+        if(wrap) wrap.style.scrollSnapType = 'none'; // let auto-scroll-near-edge move freely during drag
+        kbDrag = {cardId: card.id, fromCol: colId, ghost, el: div, offsetX: clientX - rect.left, offsetY: clientY - rect.top};
       });
 
       col.appendChild(div);
@@ -4822,13 +4862,24 @@ function kbRender(){
   setTimeout(kbInitColColours, 0);
 }
 
-// Global mouse move and up
-document.addEventListener('mousemove', function(e){
+// Global mouse + touch move and end
+function kbDragMove(clientX, clientY){
   if(!kbDrag) return;
-  kbDrag.ghost.style.left = (e.clientX - kbDrag.offsetX) + 'px';
-  kbDrag.ghost.style.top = (e.clientY - kbDrag.offsetY) + 'px';
+  kbDrag.ghost.style.left = (clientX - kbDrag.offsetX) + 'px';
+  kbDrag.ghost.style.top = (clientY - kbDrag.offsetY) + 'px';
+
+  // Auto-scroll the column carousel when dragging near the left/right edge - on mobile,
+  // columns are a horizontal one-at-a-time carousel, so without this a card could only ever
+  // be dropped into whichever column is already on screen.
+  const wrap = document.getElementById('kanban-wrap');
+  if(wrap){
+    const edgeZone = 60;
+    if(clientX < edgeZone) wrap.scrollLeft -= 14;
+    else if(clientX > window.innerWidth - edgeZone) wrap.scrollLeft += 14;
+  }
+
   document.querySelectorAll('.kanban-cards').forEach(col => col.classList.remove('drag-over'));
-  const el = document.elementFromPoint(e.clientX, e.clientY);
+  const el = document.elementFromPoint(clientX, clientY);
   const targetCol = el ? (el.closest('.kanban-cards') || el.closest('.kanban-col')) : null;
   const cards = targetCol ? (targetCol.classList.contains('kanban-cards') ? targetCol : targetCol.querySelector('.kanban-cards')) : null;
   if(cards){
@@ -4840,7 +4891,7 @@ document.addEventListener('mousemove', function(e){
     for(const sib of siblings){
       const r = sib.getBoundingClientRect();
       const midY = r.top + r.height/2;
-      if(e.clientY < midY){ insertBeforeEl = sib; break; }
+      if(clientY < midY){ insertBeforeEl = sib; break; }
     }
     if(insertBeforeEl){
       if(kbDrag.el.nextSibling !== insertBeforeEl) cards.insertBefore(kbDrag.el, insertBeforeEl);
@@ -4848,10 +4899,19 @@ document.addEventListener('mousemove', function(e){
       cards.appendChild(kbDrag.el);
     }
   }
-});
-
-document.addEventListener('mouseup', function(e){
+}
+document.addEventListener('mousemove', e => kbDragMove(e.clientX, e.clientY));
+document.addEventListener('touchmove', e => {
   if(!kbDrag) return;
+  e.preventDefault();
+  const t = e.touches[0];
+  kbDragMove(t.clientX, t.clientY);
+}, {passive:false});
+
+function kbDragEnd(){
+  if(!kbDrag) return;
+  const wrap = document.getElementById('kanban-wrap');
+  if(wrap) wrap.style.scrollSnapType = '';
   const ghost = kbDrag.ghost;
   const el = kbDrag.el;
   ghost.remove();
@@ -4882,7 +4942,10 @@ document.addEventListener('mouseup', function(e){
     kbRender();
   }
   kbDrag = null;
-});
+}
+document.addEventListener('mouseup', kbDragEnd);
+document.addEventListener('touchend', kbDragEnd);
+document.addEventListener('touchcancel', kbDragEnd);
 
 function kbSetupDrops(){}
 
@@ -5464,9 +5527,7 @@ function maintRender(){
           </div>
         </div>`;
 
-      div.addEventListener('mousedown', function(e){
-        if(e.target.tagName === 'BUTTON' || e.target.closest('button') || e.target.tagName === 'IMG') return;
-        e.preventDefault();
+      wireCardDrag(div, (clientX, clientY) => {
         const rect = div.getBoundingClientRect();
         const ghost = div.cloneNode(true);
         ghost.style.cssText = `position:fixed;z-index:9999;width:${rect.width}px;opacity:0.85;pointer-events:none;box-shadow:0 8px 24px rgba(0,0,0,0.2);transform:rotate(2deg);transition:none`;
@@ -5474,7 +5535,9 @@ function maintRender(){
         ghost.style.top = rect.top + 'px';
         document.body.appendChild(ghost);
         div.style.opacity = '0.3';
-        mtDrag = {ticketId: t.id, fromCol: col.id, ghost, el: div, offsetX: e.clientX - rect.left, offsetY: e.clientY - rect.top};
+        const wrap = document.getElementById('maint-kanban');
+        if(wrap) wrap.style.scrollSnapType = 'none';
+        mtDrag = {ticketId: t.id, fromCol: col.id, ghost, el: div, offsetX: clientX - rect.left, offsetY: clientY - rect.top};
       });
 
       cardsEl.appendChild(div);
@@ -5482,12 +5545,22 @@ function maintRender(){
   });
 }
 
-document.addEventListener('mousemove', function(e){
+function mtDragMove(clientX, clientY){
   if(!mtDrag) return;
-  mtDrag.ghost.style.left = (e.clientX - mtDrag.offsetX) + 'px';
-  mtDrag.ghost.style.top = (e.clientY - mtDrag.offsetY) + 'px';
+  mtDrag.ghost.style.left = (clientX - mtDrag.offsetX) + 'px';
+  mtDrag.ghost.style.top = (clientY - mtDrag.offsetY) + 'px';
+
+  // Auto-scroll the column carousel when dragging near the left/right edge - same reasoning
+  // as Task Board's version, since Maintenance uses the same mobile one-column carousel.
+  const wrap = document.getElementById('maint-kanban');
+  if(wrap){
+    const edgeZone = 60;
+    if(clientX < edgeZone) wrap.scrollLeft -= 14;
+    else if(clientX > window.innerWidth - edgeZone) wrap.scrollLeft += 14;
+  }
+
   document.querySelectorAll('#maint-kanban .kanban-cards').forEach(col => col.classList.remove('drag-over'));
-  const el = document.elementFromPoint(e.clientX, e.clientY);
+  const el = document.elementFromPoint(clientX, clientY);
   const targetCol = el ? (el.closest('#maint-kanban .kanban-cards') || el.closest('#maint-kanban .kanban-col')) : null;
   const cards = targetCol ? (targetCol.classList.contains('kanban-cards') ? targetCol : targetCol.querySelector('.kanban-cards')) : null;
   if(cards){
@@ -5497,7 +5570,7 @@ document.addEventListener('mousemove', function(e){
     for(const sib of siblings){
       const r = sib.getBoundingClientRect();
       const midY = r.top + r.height/2;
-      if(e.clientY < midY){ insertBeforeEl = sib; break; }
+      if(clientY < midY){ insertBeforeEl = sib; break; }
     }
     if(insertBeforeEl){
       if(mtDrag.el.nextSibling !== insertBeforeEl) cards.insertBefore(mtDrag.el, insertBeforeEl);
@@ -5505,10 +5578,19 @@ document.addEventListener('mousemove', function(e){
       cards.appendChild(mtDrag.el);
     }
   }
-});
-
-document.addEventListener('mouseup', function(e){
+}
+document.addEventListener('mousemove', e => mtDragMove(e.clientX, e.clientY));
+document.addEventListener('touchmove', e => {
   if(!mtDrag) return;
+  e.preventDefault();
+  const t = e.touches[0];
+  mtDragMove(t.clientX, t.clientY);
+}, {passive:false});
+
+function mtDragEnd(){
+  if(!mtDrag) return;
+  const wrap = document.getElementById('maint-kanban');
+  if(wrap) wrap.style.scrollSnapType = '';
   const ghost = mtDrag.ghost;
   const el = mtDrag.el;
   ghost.remove();
@@ -5521,6 +5603,14 @@ document.addEventListener('mouseup', function(e){
     const t = maintTickets.find(x=>x.id===mtDrag.ticketId);
     if(t){
       t.col = toCol;
+      // Commit the new visible order exactly as it now sits in the DOM (mirrors Task Board's
+      // approach) - without this, a same-column reorder looked like it worked during the drag
+      // but silently reverted the moment maintRender() rebuilt from the array's original order.
+      const orderedIds = Array.from(finalCol.querySelectorAll('.kanban-card')).map(c=>Number(c.dataset.id));
+      const reordered = orderedIds.map(id => maintTickets.find(x=>x.id===id)).filter(Boolean);
+      const others = maintTickets.filter(x => !orderedIds.includes(x.id));
+      maintTickets.length = 0;
+      maintTickets.push(...others, ...reordered);
       maintRender();
       toast(toCol === fromCol ? 'Reordered ✓' : (toCol==='fixed' ? 'Marked as fixed ✓' : 'Moved ✓'));
     }
@@ -5528,7 +5618,10 @@ document.addEventListener('mouseup', function(e){
     maintRender();
   }
   mtDrag = null;
-});
+}
+document.addEventListener('mouseup', mtDragEnd);
+document.addEventListener('touchend', mtDragEnd);
+document.addEventListener('touchcancel', mtDragEnd);
 
 window.maintMove = function(id, toCol){
   const t = maintTickets.find(x=>x.id===id);

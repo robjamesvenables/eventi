@@ -7295,6 +7295,7 @@ function myDriveRenderFiles(){
           <div class="myd-file-row-url">${shortUrl}</div>
         </div>
         <div class="myd-file-row-actions">
+          <button class="btn btn-ghost" style="font-size:12px;padding:7px 10px" onclick="myDriveEditFile(${f.id})" title="Edit"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="M15 5l4 4"/></svg></button>
           <button class="btn btn-navy" style="font-size:12px;padding:7px 14px" onclick="window.open('${f.url}','_blank')">↗ Open</button>
           <button class="btn btn-ghost" style="font-size:12px;padding:7px 14px" onclick="navigator.clipboard.writeText('${f.url}');toast('Copied ✓')">Copy</button>
           <button class="btn btn-ghost" style="font-size:12px;padding:7px 10px;color:#EF4444;border-color:#FECACA" onclick="myDriveDeleteFile(${f.id})">×</button>
@@ -7389,12 +7390,41 @@ window.myDriveAddFile = function(){
   });
 };
 
+window.myDriveEditFile = function(id){
+  const folder = driveFolders.find(f=>f.id===driveActiveFolder);
+  if(!folder) return;
+  const file = folder.files.find(f=>f.id===id);
+  if(!file) return;
+  appModalShow({
+    title:'Edit Link',
+    fields:[
+      {label:'Link name', placeholder:'e.g. Q3 Budget Sheet', value: file.name},
+      {label:'URL', placeholder:'https://...', value: file.url}
+    ],
+    onOk([name, url]){
+      if(!url) return;
+      let type = 'link';
+      if(url.includes('docs.google.com/spreadsheets')) type='sheets';
+      else if(url.includes('docs.google.com/document')) type='docs';
+      else if(url.includes('docs.google.com/presentation')) type='slides';
+      else if(url.includes('drive.google.com')) type='drive';
+      file.name = name;
+      file.url = url;
+      file.type = type;
+      myDriveRender();
+      toast('Link updated ✓');
+    }
+  });
+};
+
 window.myDriveDeleteFile = function(id){
   const folder = driveFolders.find(f=>f.id===driveActiveFolder);
   if(!folder) return;
-  folder.files = folder.files.filter(f=>f.id!==id);
-  myDriveRender();
-  toast('Removed');
+  appConfirmShow({title:'Remove Link', msg:'Remove this link from the folder?', onOk:()=>{
+    folder.files = folder.files.filter(f=>f.id!==id);
+    myDriveRender();
+    toast('Removed');
+  }});
 };
 
 window.myDriveAdd = function(){ myDriveAddFile(); };

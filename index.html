@@ -5381,35 +5381,129 @@ const maintTickets = [
   {id:3, location:'Lobby', issue:'Flickering light above reception', priority:'medium', assigned:'Robbie', col:'fixed'}
 ];
 
+// ── Maintenance drag state (mirrors Task Board drag pattern) ──
+let mtDrag = null; // {ticketId, fromCol, ghost, el, offsetX, offsetY}
+
 function maintRender(){
   const wrap = document.getElementById('maint-kanban');
   if(!wrap) return;
-  wrap.innerHTML = MAINT_COLS.map(col=>{
-    const tickets = maintTickets.filter(t=>t.col===col.id);
-    return `
-    <div class="kanban-col">
+
+  wrap.innerHTML = MAINT_COLS.map(col => `
+    <div class="kanban-col" id="maintcol-${col.id}">
       <div class="kanban-col-hd" style="background:#0F1E2E;color:white">
         <span style="font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:0.6px">${col.name}</span>
-        <span style="background:rgba(255,255,255,0.15);border-radius:20px;padding:2px 10px;font-size:11px;font-weight:700">${tickets.length}</span>
+        <span style="background:rgba(255,255,255,0.15);border-radius:20px;padding:2px 10px;font-size:11px;font-weight:700" id="maint-count-${col.id}">0</span>
       </div>
-      <div style="padding:12px;display:flex;flex-direction:column;gap:10px">
-        ${tickets.map(t=>`
-          <div class="kanban-card">
-            <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px">
-              <span style="font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:0.5px;padding:3px 9px;border-radius:20px;background:${MAINT_PRIORITY_COLOR[t.priority]}22;color:${MAINT_PRIORITY_COLOR[t.priority]}">${t.priority}</span>
-              <button onclick="maintDeleteTicket(${t.id})" style="background:none;border:none;color:#CBD5E1;font-size:16px;cursor:pointer;line-height:1;padding:0 2px">×</button>
-            </div>
-            <div class="kanban-card-title">${t.location}</div>
-            <div style="font-size:12.5px;color:#64748B;margin-bottom:10px;line-height:1.4">${t.issue}</div>
-            <div style="display:flex;align-items:center;justify-content:space-between">
-              <span style="font-size:11px;color:#94A3B8;font-weight:600">${t.assigned}</span>
-              ${col.id!=='fixed' ? `<button onclick="maintAdvance(${t.id})" style="background:#0D9488;border:none;color:white;width:28px;height:28px;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center">→</button>` : `<span style="color:#16A34A;font-size:16px">✓</span>`}
-            </div>
-          </div>`).join('') || `<div style="text-align:center;padding:24px 12px;color:#CBD5E1;font-size:12px">No tickets here</div>`}
-      </div>
-    </div>`;
-  }).join('');
+      <div class="kanban-cards" id="maint-col-${col.id}"></div>
+    </div>`).join('');
+
+  const cols = MAINT_COLS.map(c=>c.id);
+
+  MAINT_COLS.forEach(col => {
+    const cardsEl = document.getElementById('maint-col-'+col.id);
+    const tickets = maintTickets.filter(t=>t.col===col.id);
+    document.getElementById('maint-count-'+col.id).textContent = tickets.length;
+
+    if(!tickets.length){
+      cardsEl.innerHTML = `<div style="text-align:center;padding:24px 12px;color:#CBD5E1;font-size:12px">No tickets here</div>`;
+      return;
+    }
+
+    tickets.forEach(t => {
+      const div = document.createElement('div');
+      div.className = 'kanban-card';
+      div.dataset.id = t.id;
+      div.dataset.col = col.id;
+      div.style.cursor = 'grab';
+      const cIdx = cols.indexOf(col.id);
+      div.innerHTML = `
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px;pointer-events:none">
+          <span style="font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:0.5px;padding:3px 9px;border-radius:20px;background:${MAINT_PRIORITY_COLOR[t.priority]}22;color:${MAINT_PRIORITY_COLOR[t.priority]}">${t.priority}</span>
+        </div>
+        <div class="kanban-card-title" style="pointer-events:none">${t.location}</div>
+        <div style="font-size:12.5px;color:#64748B;margin-bottom:10px;line-height:1.4;pointer-events:none">${t.issue}</div>
+        <div style="display:flex;align-items:center;justify-content:space-between">
+          <span style="font-size:11px;color:#94A3B8;font-weight:600;pointer-events:none">${t.assigned}</span>
+          <div style="display:flex;gap:4px">
+            ${cIdx > 0 ? `<button onclick="event.stopPropagation();maintMove(${t.id},'${cols[cIdx-1]}')" style="padding:5px 10px;border:1.5px solid #E2E8F0;border-radius:6px;background:white;font-size:12px;font-weight:700;color:#64748B;cursor:pointer;font-family:'Inter',sans-serif">←</button>` : ''}
+            ${cIdx < cols.length-1 ? `<button onclick="event.stopPropagation();maintMove(${t.id},'${cols[cIdx+1]}')" style="padding:5px 10px;border:none;border-radius:6px;background:#0D9488;font-size:12px;font-weight:700;color:white;cursor:pointer;font-family:'Inter',sans-serif">→</button>` : ''}
+            <button onclick="event.stopPropagation();maintDeleteTicket(${t.id})" style="padding:5px 8px;border:1.5px solid #FECACA;border-radius:6px;background:white;font-size:12px;font-weight:700;color:#EF4444;cursor:pointer;font-family:'Inter',sans-serif">×</button>
+          </div>
+        </div>`;
+
+      div.addEventListener('mousedown', function(e){
+        if(e.target.tagName === 'BUTTON') return;
+        e.preventDefault();
+        const rect = div.getBoundingClientRect();
+        const ghost = div.cloneNode(true);
+        ghost.style.cssText = `position:fixed;z-index:9999;width:${rect.width}px;opacity:0.85;pointer-events:none;box-shadow:0 8px 24px rgba(0,0,0,0.2);transform:rotate(2deg);transition:none`;
+        ghost.style.left = rect.left + 'px';
+        ghost.style.top = rect.top + 'px';
+        document.body.appendChild(ghost);
+        div.style.opacity = '0.3';
+        mtDrag = {ticketId: t.id, fromCol: col.id, ghost, el: div, offsetX: e.clientX - rect.left, offsetY: e.clientY - rect.top};
+      });
+
+      cardsEl.appendChild(div);
+    });
+  });
 }
+
+document.addEventListener('mousemove', function(e){
+  if(!mtDrag) return;
+  mtDrag.ghost.style.left = (e.clientX - mtDrag.offsetX) + 'px';
+  mtDrag.ghost.style.top = (e.clientY - mtDrag.offsetY) + 'px';
+  document.querySelectorAll('#maint-kanban .kanban-cards').forEach(col => col.classList.remove('drag-over'));
+  const el = document.elementFromPoint(e.clientX, e.clientY);
+  const targetCol = el ? (el.closest('#maint-kanban .kanban-cards') || el.closest('#maint-kanban .kanban-col')) : null;
+  const cards = targetCol ? (targetCol.classList.contains('kanban-cards') ? targetCol : targetCol.querySelector('.kanban-cards')) : null;
+  if(cards){
+    cards.classList.add('drag-over');
+    const siblings = Array.from(cards.querySelectorAll('.kanban-card')).filter(c => c !== mtDrag.el);
+    let insertBeforeEl = null;
+    for(const sib of siblings){
+      const r = sib.getBoundingClientRect();
+      const midY = r.top + r.height/2;
+      if(e.clientY < midY){ insertBeforeEl = sib; break; }
+    }
+    if(insertBeforeEl){
+      if(mtDrag.el.nextSibling !== insertBeforeEl) cards.insertBefore(mtDrag.el, insertBeforeEl);
+    } else if(cards.lastElementChild !== mtDrag.el){
+      cards.appendChild(mtDrag.el);
+    }
+  }
+});
+
+document.addEventListener('mouseup', function(e){
+  if(!mtDrag) return;
+  const ghost = mtDrag.ghost;
+  const el = mtDrag.el;
+  ghost.remove();
+  el.style.opacity = '';
+  document.querySelectorAll('#maint-kanban .kanban-cards').forEach(col => col.classList.remove('drag-over'));
+  const finalCol = el.parentElement;
+  if(finalCol && finalCol.classList.contains('kanban-cards') && finalCol.id.startsWith('maint-col-')){
+    const toCol = finalCol.id.replace('maint-col-','');
+    const fromCol = mtDrag.fromCol;
+    const t = maintTickets.find(x=>x.id===mtDrag.ticketId);
+    if(t){
+      t.col = toCol;
+      maintRender();
+      toast(toCol === fromCol ? 'Reordered ✓' : (toCol==='fixed' ? 'Marked as fixed ✓' : 'Moved ✓'));
+    }
+  } else {
+    maintRender();
+  }
+  mtDrag = null;
+});
+
+window.maintMove = function(id, toCol){
+  const t = maintTickets.find(x=>x.id===id);
+  if(!t) return;
+  t.col = toCol;
+  maintRender();
+  toast(toCol==='fixed' ? 'Marked as fixed ✓' : 'Moved ✓');
+};
 
 function maintAddTicket(){
   appModalShow({
@@ -5426,16 +5520,6 @@ function maintAddTicket(){
       maintRender();
     }
   });
-}
-
-function maintAdvance(id){
-  const t = maintTickets.find(x=>x.id===id);
-  if(!t) return;
-  const order = ['reported','progress','fixed'];
-  const next = order[order.indexOf(t.col)+1];
-  if(next) t.col = next;
-  maintRender();
-  if(t.col==='fixed') toast('Marked as fixed ✓');
 }
 
 function maintDeleteTicket(id){

@@ -4803,6 +4803,7 @@ function kbRender(){
           <span class="kanban-card-assignee" style="pointer-events:none">${card.assignee}</span>
           ${eventTag}
           <div style="margin-left:auto;display:flex;gap:4px" onmousedown="event.stopPropagation()">
+            <button onclick="event.stopPropagation();kbEditCard(${card.id},'${colId}')" title="Edit" style="padding:5px 8px;border:1.5px solid #E2E8F0;border-radius:6px;background:white;font-size:12px;cursor:pointer;display:flex;align-items:center;justify-content:center;color:#64748B"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="M15 5l4 4"/></svg></button>
             <button onclick="event.stopPropagation();kbAddPhotoClick(${card.id},'${colId}')" title="Add photo" style="padding:5px 8px;border:1.5px solid #E2E8F0;border-radius:6px;background:white;font-size:12px;cursor:pointer;display:flex;align-items:center;justify-content:center;color:#64748B"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2Z"/><circle cx="12" cy="13" r="4"/></svg></button>
             ${cIdx > 0 ? `<button onclick="event.stopPropagation();kbMove(${card.id},'${colId}','${cols[cIdx-1]}')" style="padding:5px 10px;border:1.5px solid #E2E8F0;border-radius:6px;background:white;font-size:12px;font-weight:700;color:#64748B;cursor:pointer;font-family:'Inter',sans-serif">←</button>` : ''}
             ${cIdx < 2 ? `<button onclick="event.stopPropagation();kbMove(${card.id},'${colId}','${cols[cIdx+1]}')" style="padding:5px 10px;border:none;border-radius:6px;background:#0D9488;font-size:12px;font-weight:700;color:white;cursor:pointer;font-family:'Inter',sans-serif">→</button>` : ''}
@@ -5432,6 +5433,7 @@ function maintRender(){
         <div style="display:flex;align-items:center;justify-content:space-between;margin-top:2px">
           <span style="font-size:11px;color:#94A3B8;font-weight:600;pointer-events:none">${t.assigned}</span>
           <div style="display:flex;gap:4px" onmousedown="event.stopPropagation()">
+            <button onclick="event.stopPropagation();maintEditTicket(${t.id})" title="Edit" style="padding:5px 8px;border:1.5px solid #E2E8F0;border-radius:6px;background:white;font-size:12px;cursor:pointer;display:flex;align-items:center;justify-content:center;color:#64748B"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="M15 5l4 4"/></svg></button>
             <button onclick="event.stopPropagation();maintAddPhotoClick(${t.id})" title="Add photo" style="padding:5px 8px;border:1.5px solid #E2E8F0;border-radius:6px;background:white;font-size:12px;cursor:pointer;display:flex;align-items:center;justify-content:center;color:#64748B"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2Z"/><circle cx="12" cy="13" r="4"/></svg></button>
             ${cIdx > 0 ? `<button onclick="event.stopPropagation();maintMove(${t.id},'${cols[cIdx-1]}')" style="padding:5px 10px;border:1.5px solid #E2E8F0;border-radius:6px;background:white;font-size:12px;font-weight:700;color:#64748B;cursor:pointer;font-family:'Inter',sans-serif">←</button>` : ''}
             ${cIdx < cols.length-1 ? `<button onclick="event.stopPropagation();maintMove(${t.id},'${cols[cIdx+1]}')" style="padding:5px 10px;border:none;border-radius:6px;background:#0D9488;font-size:12px;font-weight:700;color:white;cursor:pointer;font-family:'Inter',sans-serif">→</button>` : ''}
@@ -8436,6 +8438,46 @@ window.kbAddPhotoClick = function(cardId, colId){
   const card = (kanbanState[colId]||[]).find(c=>c.id===cardId);
   if(!card) return;
   openPhotoPicker(()=>{ if(!card.photos) card.photos=[]; return card.photos; }, kbRender);
+};
+
+window.maintEditTicket = function(ticketId){
+  const t = maintTickets.find(x=>x.id===ticketId);
+  if(!t) return;
+  appModalShow({
+    title: 'Edit Issue',
+    fields: [
+      {label: 'Location', placeholder: 'e.g. Room 4, Pool Area, Lobby', value: t.location},
+      {label: 'Issue', placeholder: 'e.g. AC not cooling properly', value: t.issue},
+      {label: 'Priority', type: 'pillpicker', options: MAINT_PRIORITIES, value: t.priority},
+      {label: 'Assigned to', placeholder: 'e.g. David', value: t.assigned}
+    ],
+    onOk([location, issue, priority, assigned]){
+      t.location = location;
+      t.issue = issue;
+      t.priority = priority;
+      t.assigned = assigned || 'Unassigned';
+      maintRender();
+      toast('Issue updated ✓');
+    }
+  });
+};
+
+window.kbEditCard = function(cardId, colId){
+  const card = (kanbanState[colId]||[]).find(c=>c.id===cardId);
+  if(!card) return;
+  appModalShow({
+    title: 'Edit Task',
+    fields: [
+      {label: 'Task title', placeholder: 'e.g. Confirm guest list', value: card.title},
+      {label: 'Assignee', placeholder: 'e.g. John', value: card.assignee}
+    ],
+    onOk([title, assignee]){
+      card.title = title;
+      card.assignee = assignee || 'Unassigned';
+      kbRender();
+      toast('Task updated ✓');
+    }
+  });
 };
 
 async function handleGlobalPhotoInput(e){

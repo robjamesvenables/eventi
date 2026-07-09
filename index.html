@@ -2334,6 +2334,7 @@ img.emoji-tw{width:1.15em;height:1.15em;vertical-align:-0.2em;margin:0 1px}
         <img class="moment-lightbox-img" id="moment-lb-img" src="" alt="">
         <div class="moment-lightbox-body" onclick="event.stopPropagation()">
           <div class="moment-lightbox-caption" id="moment-lb-caption"></div>
+          <div id="moment-lb-reactions" style="margin:10px 0"></div>
           <div class="moment-lightbox-actions">
             <div class="moment-lightbox-meta" id="moment-lb-meta"></div>
             <div style="display:flex;gap:8px">
@@ -6981,6 +6982,15 @@ const HIGHLIGHT_TAGS = [
   {id:'party', label:'Party', bg:'#7C3AED', char:'🎉', svg:'<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><g transform="translate(0.05,0.05)"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></g></svg>'}
 ];
 
+const REACTION_EMOJIS = [
+  {id:'thumbsup', char:'👍'},
+  {id:'heart', char:'❤️'},
+  {id:'smile', char:'😄'},
+  {id:'party', char:'🎉'},
+  {id:'laugh', char:'😂'}
+];
+
+
 const ANNOUNCE_EMOJIS = [
   {id:'celebrate', char:'🎉', svg:'<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>', bg:'#16A34A'},
   {id:'alert', char:'⚠️', svg:'<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><g transform="translate(0,-2.1)"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></g></svg>', bg:'#DC2626'},
@@ -8307,6 +8317,47 @@ function momentsInitScroll(){
 
 let momentsCurrentIdx = null;
 
+function momentsReactionBarHtml(idx, small){
+  const m = momentsData[idx];
+  if(!m) return '';
+  if(!m.reactions) m.reactions = {};
+  const me = currentUserFirstName || 'You';
+  const pad = small ? '4px 7px' : '6px 11px';
+  const fsz = small ? '12px' : '15px';
+  const gap = small ? '4px' : '7px';
+  return `<div style="display:flex;gap:${gap};flex-wrap:wrap" onmousedown="event.stopPropagation()" onclick="event.stopPropagation()">
+    ${REACTION_EMOJIS.map(r=>{
+      const list = m.reactions[r.id] || [];
+      const mine = list.includes(me);
+      const count = list.length;
+      return `<button onclick="momentToggleReaction(${idx},'${r.id}')" title="${r.char}" style="display:flex;align-items:center;gap:4px;padding:${pad};border-radius:20px;border:1.5px solid ${mine?'#0D9488':'#E2E8F0'};background:${mine?'rgba(13,148,136,0.1)':'white'};cursor:pointer;font-size:${fsz};line-height:1;font-family:'Inter',sans-serif">
+        <span>${momentsTwemojiParse(r.char)}</span>${count>0?`<span style="font-size:11px;font-weight:700;color:${mine?'#0D9488':'#64748B'}">${count}</span>`:''}
+      </button>`;
+    }).join('')}
+  </div>`;
+}
+
+window.momentToggleReaction = function(idx, emojiId){
+  const m = momentsData[idx];
+  if(!m) return;
+  if(!m.reactions) m.reactions = {};
+  if(!m.reactions[emojiId]) m.reactions[emojiId] = [];
+  const me = currentUserFirstName || 'You';
+  const list = m.reactions[emojiId];
+  const at = list.indexOf(me);
+  if(at > -1) list.splice(at, 1);
+  else list.push(me);
+
+  // Update card reaction bar in place if visible
+  const cardBar = document.getElementById('moment-reactions-'+idx);
+  if(cardBar) cardBar.innerHTML = momentsReactionBarHtml(idx, true);
+  // Update lightbox reaction bar if this photo is currently open
+  if(momentsCurrentIdx === idx){
+    const lbBar = document.getElementById('moment-lb-reactions');
+    if(lbBar) lbBar.innerHTML = momentsReactionBarHtml(idx, false);
+  }
+};
+
 function openMoment(idx){
   const m = momentsData[idx];
   if(!m) return;
@@ -8315,6 +8366,8 @@ function openMoment(idx){
   document.getElementById('moment-lb-caption').innerHTML = momentsTwemojiParse(m.caption);
   document.getElementById('moment-lb-meta').textContent = m.meta;
   document.getElementById('moment-lb-download').href = m.img;
+  const lbBar = document.getElementById('moment-lb-reactions');
+  if(lbBar) lbBar.innerHTML = momentsReactionBarHtml(idx, false);
   document.getElementById('moment-lightbox').classList.add('open');
 }
 
@@ -8402,6 +8455,7 @@ function momentsRebuild(){
       <div class="moment-card-body">
         <div class="moment-card-caption" style="margin-top:0">${momentsTwemojiParse(m.caption)}</div>
         <div class="moment-card-meta">${m.meta}</div>
+        <div id="moment-reactions-${i}" style="margin-top:8px">${momentsReactionBarHtml(i, true)}</div>
       </div>
     </div>`).join('');
 

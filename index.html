@@ -1988,9 +1988,8 @@ img.emoji-tw{width:1.15em;height:1.15em;vertical-align:-0.2em;margin:0 1px}
   #mn-panel-inner > div{grid-template-columns:85px 1fr !important}
   .mn-field-lbl{padding-left:12px !important;font-size:9.5px !important}
 
-  /* Noticeboard: was overflow:hidden (built for the auto-scroll ticker, which is now disabled
-     on mobile). Give it a taller window and let it scroll normally via touch instead. */
-  .announce-list-scroll{max-height:420px !important;overflow-y:auto !important;-webkit-overflow-scrolling:touch}
+  /* Noticeboard scroll behaviour is handled in its own phone-only media query below,
+     since tablets should keep the auto-scrolling ticker like desktop. */
 
   /* Greeting banner + Noticeboard header read as one cramped block on mobile with almost no
      separation between them. Add breathing room and a subtle divider so they read as two sections. */
@@ -2022,6 +2021,13 @@ img.emoji-tw{width:1.15em;height:1.15em;vertical-align:-0.2em;margin:0 1px}
   .moment-lightbox-actions > div:last-child{width:100%}
   .moment-lightbox-actions > div:last-child > button,
   .moment-lightbox-actions > div:last-child > a{flex:1;text-align:center;justify-content:center}
+}
+
+/* Noticeboard: phone-only (width, not touch) - tablets keep the auto-scrolling ticker like
+   desktop, matching the same 700px threshold used in announceStartScroll(). Gives phones a
+   taller window and lets them scroll normally via touch instead of the ticker. */
+@media (max-width: 700px){
+  .announce-list-scroll{max-height:420px !important;overflow-y:auto !important;-webkit-overflow-scrolling:touch}
 }
 
 /* Home dashboard category sections (Events/Operations/Resources/Venue) collapse to a tappable
@@ -6928,14 +6934,17 @@ function announceStartScroll(list){
   const track = document.getElementById('announce-track');
   if(!track) return;
 
-  // On touch devices there's no way to pause a hover-based auto-scroll, which makes a
-  // perpetually-moving ticker feel chaotic. Let mobile users scroll through normally instead.
-  const isTouchDevice = window.matchMedia('(pointer: coarse)').matches;
-  if(isTouchDevice){
+  // Phone-sized screens: no way to pause a hover-based ticker on touch, so let phone users
+  // scroll through normally instead. Tablets and desktop (including touch tablets like iPad)
+  // get the auto-scrolling ticker - width decides this, not touch capability, since tablets
+  // report as touch devices too but have room to show the ticker like desktop does.
+  const isPhoneWidth = window.innerWidth <= 700;
+  if(isPhoneWidth){
     track.style.transform = 'translateY(0)';
     list.style.overflowY = 'auto';
     return;
   }
+  list.style.overflowY = '';
 
   if(announcements.length <= 2) { track.style.transform = 'translateY(0)'; return; }
   announceScrollPaused = false;
@@ -6948,8 +6957,12 @@ function announceStartScroll(list){
   track.style.transform = 'translateY(0)';
   const halfHeight = track.scrollHeight / 2;
 
-  list.onmouseenter = () => { announceScrollPaused = true; };
-  list.onmouseleave = () => { announceScrollPaused = false; };
+  // Only pause-on-hover for devices with real mouse hover (desktop). Touch devices like
+  // tablets can synthesize a "mouseenter" on tap with no matching "mouseleave", which would
+  // permanently freeze the ticker the first time someone taps near it.
+  const hasRealHover = window.matchMedia('(hover: hover)').matches;
+  list.onmouseenter = hasRealHover ? () => { announceScrollPaused = true; } : null;
+  list.onmouseleave = hasRealHover ? () => { announceScrollPaused = false; } : null;
 
   function step(){
     if(!announceScrollPaused){
@@ -6961,6 +6974,15 @@ function announceStartScroll(list){
   }
   announceScrollAnim = requestAnimationFrame(step);
 }
+
+let announceResizeTimer;
+window.addEventListener('resize', ()=>{
+  clearTimeout(announceResizeTimer);
+  announceResizeTimer = setTimeout(()=>{
+    const list = document.getElementById('announce-list');
+    if(list) announceStartScroll(list);
+  }, 150);
+});
 
 // Twemoji parsing - used only for Highlights, gives consistent colourful emoji on every device
 function momentsTwemojiParse(text){

@@ -1916,11 +1916,13 @@ img.emoji-tw{width:1.15em;height:1.15em;vertical-align:-0.2em;margin:0 1px}
   .beo-btns{width:100%}
   .beo-btns .btn{flex:1}
 
-  /* The floating "Edit Event Plan" button is fixed to the bottom-right of the screen and was
-     overlapping the Net Profit stat on mobile (the stats bar sits lower and taller on a narrow
-     screen). The top bar's own Edit Event Plan button is already reachable there, so the
-     floating duplicate isn't needed on mobile - just the overlap without the benefit. */
-  .float-edit{display:none !important}
+  /* The floating "Edit Event Plan" button sits fixed bottom-right. Showing it immediately (like
+     on desktop) overlapped the Net Profit stat on mobile, since the header/stats bar is taller
+     there. Fix: keep it hidden until the user has scrolled past the header, same "fade in on
+     scroll" pattern as the back-to-top button - by the time it appears, the header is out of
+     the way, and it saves having to scroll back to the top bar to edit. */
+  .float-edit{opacity:0;pointer-events:none;transform:translateY(10px);transition:opacity 0.2s, transform 0.2s}
+  .float-edit.mobile-visible{opacity:1;pointer-events:auto;transform:translateY(0)}
 
   /* Task Board: kanban columns don't stack well as a single tall column - use horizontal
      swipe-between-columns instead, same pattern as Trello and similar apps on mobile */
@@ -3806,13 +3808,17 @@ function updateSkyBanner(){
 
 // Handle browser back/forward
 // Show the "back to top" button once scrolled down a bit, on any page
+const isMobileLayout = () => window.matchMedia('(max-width: 860px), (pointer: coarse)').matches;
 window.addEventListener('scroll', () => {
   const btn = document.getElementById('scroll-top-btn');
-  if(!btn) return;
-  if(window.scrollY > 400){
-    btn.classList.add('visible');
-  } else {
-    btn.classList.remove('visible');
+  if(btn){
+    if(window.scrollY > 400) btn.classList.add('visible');
+    else btn.classList.remove('visible');
+  }
+  const floatEdit = document.getElementById('float-edit');
+  if(floatEdit && isMobileLayout()){
+    if(window.scrollY > 320) floatEdit.classList.add('mobile-visible');
+    else floatEdit.classList.remove('mobile-visible');
   }
 });
 

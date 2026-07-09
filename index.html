@@ -4798,6 +4798,7 @@ function kbRender(){
       const cIdx = cols.indexOf(colId);
       div.innerHTML = `
         <div class="kanban-card-title" style="pointer-events:none">${card.title}</div>
+        ${card.description ? `<div style="font-size:12px;color:#64748B;line-height:1.4;margin-top:4px;pointer-events:none;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden">${card.description.replace(/</g,'&lt;')}</div>` : ''}
         ${photoThumbStrip(card.photos, ()=>card.photos, kbRender)}
         <div class="kanban-card-meta" style="margin-top:10px;display:flex;align-items:center;gap:6px;flex-wrap:wrap">
           <span class="kanban-card-assignee" style="pointer-events:none">${card.assignee}</span>
@@ -5021,10 +5022,13 @@ window.addKanbanCard = function(colSelector){
   const colId = colSelector.replace('col-','');
   appModalShow({
     title:'New Task',
-    fields:[{label:'Task title', placeholder:'e.g. Confirm guest list'}],
-    onOk([title]){
+    fields:[
+      {label:'Task title', placeholder:'e.g. Confirm guest list'},
+      {label:'Description', type:'textarea', placeholder:'Add more detail about this task…', rows:5, optional:true}
+    ],
+    onOk([title, description]){
       const event = kbActiveFilter === 'all' ? 'general' : kbActiveFilter;
-      kanbanState[colId].push({id:kbNextId++, title, assignee:'John', event, photos:[]});
+      kanbanState[colId].push({id:kbNextId++, title, description: description||'', assignee:'John', event, photos:[]});
       kbRender();
       toast('Task added');
     }
@@ -5429,6 +5433,7 @@ function maintRender(){
         </div>
         <div class="kanban-card-title" style="pointer-events:none">${t.location}</div>
         <div style="font-size:12.5px;color:#64748B;margin-bottom:10px;line-height:1.4;pointer-events:none">${t.issue}</div>
+        ${t.description ? `<div style="font-size:12px;color:#94A3B8;line-height:1.4;margin:-4px 0 10px;pointer-events:none;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden">${t.description.replace(/</g,'&lt;')}</div>` : ''}
         ${photoThumbStrip(t.photos, ()=>t.photos, maintRender)}
         <div style="display:flex;align-items:center;justify-content:space-between;margin-top:2px">
           <span style="font-size:11px;color:#94A3B8;font-weight:600;pointer-events:none">${t.assigned}</span>
@@ -5521,11 +5526,12 @@ function maintAddTicket(){
     fields: [
       {label: 'Location', placeholder: 'e.g. Room 4, Pool Area, Lobby'},
       {label: 'Issue', placeholder: 'e.g. AC not cooling properly'},
+      {label: 'Description', type:'textarea', placeholder:'Add more detail about the problem…', rows:5, optional:true},
       {label: 'Priority', type: 'pillpicker', options: MAINT_PRIORITIES, value: 'medium'},
       {label: 'Assigned to', placeholder: 'e.g. David'}
     ],
-    onOk([location, issue, priority, assigned]){
-      maintTickets.push({id: maintNextId++, location, issue, priority, assigned: assigned || 'Unassigned', col:'reported', photos:[]});
+    onOk([location, issue, description, priority, assigned]){
+      maintTickets.push({id: maintNextId++, location, issue, description: description||'', priority, assigned: assigned || 'Unassigned', col:'reported', photos:[]});
       toast('Issue reported ✓');
       maintRender();
     }
@@ -8448,12 +8454,14 @@ window.maintEditTicket = function(ticketId){
     fields: [
       {label: 'Location', placeholder: 'e.g. Room 4, Pool Area, Lobby', value: t.location},
       {label: 'Issue', placeholder: 'e.g. AC not cooling properly', value: t.issue},
+      {label: 'Description', type:'textarea', placeholder:'Add more detail about the problem…', rows:5, optional:true, value: t.description||''},
       {label: 'Priority', type: 'pillpicker', options: MAINT_PRIORITIES, value: t.priority},
       {label: 'Assigned to', placeholder: 'e.g. David', value: t.assigned}
     ],
-    onOk([location, issue, priority, assigned]){
+    onOk([location, issue, description, priority, assigned]){
       t.location = location;
       t.issue = issue;
+      t.description = description || '';
       t.priority = priority;
       t.assigned = assigned || 'Unassigned';
       maintRender();
@@ -8469,10 +8477,12 @@ window.kbEditCard = function(cardId, colId){
     title: 'Edit Task',
     fields: [
       {label: 'Task title', placeholder: 'e.g. Confirm guest list', value: card.title},
+      {label: 'Description', type:'textarea', placeholder: 'Add more detail about this task…', rows:5, optional:true, value: card.description||''},
       {label: 'Assignee', placeholder: 'e.g. John', value: card.assignee}
     ],
-    onOk([title, assignee]){
+    onOk([title, description, assignee]){
       card.title = title;
+      card.description = description || '';
       card.assignee = assignee || 'Unassigned';
       kbRender();
       toast('Task updated ✓');

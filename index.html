@@ -460,21 +460,21 @@ body{margin:0;padding:0;font-family:'Inter',sans-serif;background:var(--bg);colo
 .beo-sec:last-child{border-bottom:none}
 .beo-sec-hd{
   display:flex;align-items:center;justify-content:space-between;
-  padding:14px 28px;
+  padding:18px 28px;
   cursor:pointer;
-  background:var(--w);
-  transition:background 0.1s;
+  background:var(--navy);
+  transition:background 0.15s;
   user-select:none;
 }
-.beo-sec-hd:hover{background:#FAFAFA}
+.beo-sec-hd:hover{background:#16283b}
 .beo-sec-label{
-  font-size:11px;font-weight:700;
-  color:var(--navy);
-  text-transform:uppercase;letter-spacing:1px;
-  display:flex;align-items:center;gap:8px;
+  font-size:12px;font-weight:700;
+  color:white;
+  text-transform:uppercase;letter-spacing:1.5px;
+  display:flex;align-items:center;gap:10px;
 }
-.beo-sec-ico{font-size:13px;opacity:0.6}
-.chev{font-size:18px;font-weight:900;color:var(--ink2);transition:transform 0.2s;line-height:1}
+.beo-sec-ico{font-size:15px;opacity:0.9}
+.chev{font-size:18px;font-weight:900;color:rgba(255,255,255,0.55);transition:transform 0.2s;line-height:1}
 .chev.open{transform:rotate(180deg);color:var(--gold)}
 
 .beo-body{padding:0 28px 24px;display:none}
@@ -4504,6 +4504,76 @@ function hideToolbar(id){
 function deptFmt(cmd){document.execCommand(cmd,false,null);}
 function deptColor(color){document.execCommand('foreColor',false,color);}
 
+// ── DEPARTMENT PHOTOS + LINKS (unlimited, per department box) ──
+let deptPhotos = {};
+let deptLinks = {};
+
+function deptExtraHtml(id){
+  return `<div class="dept-extra-wrap" data-dept-extra="${id}" onmousedown="event.stopPropagation()">
+    <div style="display:flex;gap:6px;margin-top:10px;flex-wrap:wrap">
+      <button onclick="deptAddPhotoClick('${id}')" style="padding:6px 12px;border:1.5px solid #E2E8F0;border-radius:7px;background:white;font-size:12px;font-weight:600;color:#64748B;cursor:pointer;font-family:'Inter',sans-serif;display:flex;align-items:center;gap:5px"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2Z"/><circle cx="12" cy="13" r="4"/></svg> Add Photo</button>
+      <button onclick="deptAddLinkClick('${id}')" style="padding:6px 12px;border:1.5px solid #E2E8F0;border-radius:7px;background:white;font-size:12px;font-weight:600;color:#64748B;cursor:pointer;font-family:'Inter',sans-serif;display:flex;align-items:center;gap:5px"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg> Add Link</button>
+    </div>
+    <div id="deptphotos-${id}" style="margin-top:8px"></div>
+    <div id="deptlinks-${id}" style="margin-top:8px"></div>
+  </div>`;
+}
+
+function deptInjectPhotoLinkUI(id){
+  const body = document.getElementById('deptbody-'+id);
+  if(!body) return;
+  if(body.parentElement.querySelector(`[data-dept-extra="${id}"]`)) return;
+  body.insertAdjacentHTML('afterend', deptExtraHtml(id));
+}
+
+function deptInitAllPhotoLinkUI(){
+  ['tb1','tb2','tb3','tb4','tb4b','tb5','tb6','tb7','tb8','tb9','tb10','tb11'].forEach(deptInjectPhotoLinkUI);
+}
+
+function deptAddPhotoClick(id){
+  openPhotoPicker(()=>{ if(!deptPhotos[id]) deptPhotos[id]=[]; return deptPhotos[id]; }, ()=>deptRenderPhotos(id));
+}
+
+function deptRenderPhotos(id){
+  const el = document.getElementById('deptphotos-'+id);
+  if(!el) return;
+  el.innerHTML = photoThumbStrip(deptPhotos[id]||[], ()=>deptPhotos[id], ()=>deptRenderPhotos(id));
+}
+
+function deptAddLinkClick(id){
+  appModalShow({
+    title:'Add Link',
+    fields:[
+      {label:'Label (optional)', placeholder:'e.g. Floor plan PDF', optional:true},
+      {label:'URL', placeholder:'https://...'}
+    ],
+    onOk([label, url]){
+      if(!url) return;
+      if(!deptLinks[id]) deptLinks[id]=[];
+      deptLinks[id].push({label: label || url, url});
+      deptRenderLinks(id);
+      toast('Link added ✓');
+    }
+  });
+}
+
+function deptRenderLinks(id){
+  const el = document.getElementById('deptlinks-'+id);
+  if(!el) return;
+  const links = deptLinks[id]||[];
+  el.innerHTML = links.map((l,idx)=>`
+    <div style="display:flex;align-items:center;gap:8px;background:#F1F5F9;border-radius:8px;padding:7px 10px;margin-bottom:6px">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#64748B" stroke-width="2" style="flex-shrink:0"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+      <a href="${l.url}" target="_blank" style="flex:1;font-size:12.5px;color:#2563EB;text-decoration:none;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0">${l.label}</a>
+      <button onclick="deptDeleteLink('${id}',${idx})" style="background:none;border:none;color:#EF4444;cursor:pointer;font-size:14px;line-height:1;padding:0 2px;flex-shrink:0">×</button>
+    </div>`).join('');
+}
+
+function deptDeleteLink(id, idx){
+  if(deptLinks[id]) deptLinks[id].splice(idx,1);
+  deptRenderLinks(id);
+}
+
 // ── ADD DEPARTMENT ──
 function addDepartment(){
   const container=document.getElementById('bd-dp');
@@ -4511,7 +4581,7 @@ function addDepartment(){
   const id='tb-custom-'+Date.now();
   const div=document.createElement('div');
   div.className='dept dept-wrap';
-  div.innerHTML=`<div class="dept-title" contenteditable="true" style="font-family:'Inter',sans-serif;font-size:13px;font-weight:800;color:#0F1E2E;outline:none;border-bottom:1.5px solid var(--gold);padding-bottom:4px">New Department</div><div class="dept-pic"><span class="dept-pic-label">PIC</span><span class="dept-pic-name" contenteditable="false"></span></div><div class="dept-toolbar" id="toolbar-${id}"><button class="tb-btn" onclick="deptFmt('bold')"><b>B</b></button><button class="tb-btn" onclick="deptFmt('italic')"><i>I</i></button><button class="tb-btn" onclick="deptFmt('underline')"><u>U</u></button><div class="tb-sep"></div><button class="tb-btn" onclick="deptFmt('insertUnorderedList')">•</button><button class="tb-btn" onclick="deptFmt('insertOrderedList')">1.</button><div class="tb-sep"></div><div class="tb-color-btn" style="background:#1A1A1A" onclick="deptColor('#1A1A1A')"></div><div class="tb-color-btn" style="background:#DC2626" onclick="deptColor('#DC2626')"></div><div class="tb-color-btn" style="background:#D97706" onclick="deptColor('#D97706')"></div><div class="tb-color-btn" style="background:#0D9488" onclick="deptColor('#0D9488')"></div><div class="tb-sep"></div><button class="tb-btn" style="color:var(--red)" onclick="this.closest('.dept').remove();toast('Department removed')">×</button></div><div class="dept-body dept-rich" contenteditable="true" id="deptbody-${id}" onfocus="showToolbar('${id}')" onblur="hideToolbar('${id}')">Type department notes here…</div>`;
+  div.innerHTML=`<div class="dept-title" contenteditable="true" style="font-family:'Inter',sans-serif;font-size:13px;font-weight:800;color:#0F1E2E;outline:none;border-bottom:1.5px solid var(--gold);padding-bottom:4px">New Department</div><div class="dept-pic"><span class="dept-pic-label">PIC</span><span class="dept-pic-name" contenteditable="false"></span></div><div class="dept-toolbar" id="toolbar-${id}"><button class="tb-btn" onclick="deptFmt('bold')"><b>B</b></button><button class="tb-btn" onclick="deptFmt('italic')"><i>I</i></button><button class="tb-btn" onclick="deptFmt('underline')"><u>U</u></button><div class="tb-sep"></div><button class="tb-btn" onclick="deptFmt('insertUnorderedList')">•</button><button class="tb-btn" onclick="deptFmt('insertOrderedList')">1.</button><div class="tb-sep"></div><div class="tb-color-btn" style="background:#1A1A1A" onclick="deptColor('#1A1A1A')"></div><div class="tb-color-btn" style="background:#DC2626" onclick="deptColor('#DC2626')"></div><div class="tb-color-btn" style="background:#D97706" onclick="deptColor('#D97706')"></div><div class="tb-color-btn" style="background:#0D9488" onclick="deptColor('#0D9488')"></div><div class="tb-sep"></div><button class="tb-btn" style="color:var(--red)" onclick="this.closest('.dept').remove();toast('Department removed')">×</button></div><div class="dept-body dept-rich" contenteditable="true" id="deptbody-${id}" onfocus="showToolbar('${id}')" onblur="hideToolbar('${id}')">Type department notes here…</div>${deptExtraHtml(id)}`;
   const addBtn=container.querySelector('button[onclick="addDepartment()"]');
   if(addBtn)container.insertBefore(div,addBtn.closest('div'));
   else container.appendChild(div);
@@ -5306,6 +5376,7 @@ const _origNavKB = window.nav;
 window.nav = function(id, pushState){
   if(typeof _origNavKB === 'function') _origNavKB(id, pushState);
   if(id === 'kb') setTimeout(()=>{ kbRenderProjectTabs(); kbRender(); kbInitColColours(); kbApplyColTitles(); }, 50);
+  if(id === 'beo') setTimeout(()=>{ deptInitAllPhotoLinkUI(); }, 50);
   if(id === 'past') setTimeout(()=>{ pastEventsRender(); }, 50);
 };
 

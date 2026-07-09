@@ -2100,6 +2100,29 @@ img.emoji-tw{width:1.15em;height:1.15em;vertical-align:-0.2em;margin:0 1px}
   /* Extra-narrow phones: tighten page padding so content isn't cramped against the edges */
   .page{padding-left:16px !important;padding-right:16px !important}
 }
+
+/* ── PDF EXPORT (window.print, triggered from the Event Plan) ── */
+@media print{
+  .sidebar,#mobile-topbar,#scroll-top-btn,.float-edit,.toast,
+  #appModal,#appConfirm,#photoLightbox,.edit-mode-bar,
+  .beo-back,.beo-btns,.card-colour-btn,.card-colour-popup,
+  .dept-toolbar,.chev,.add-row-btn,.add-artist-btn,.add-pay-btn,
+  .del-row,.myd-back-btn{display:none !important}
+  #p-beo .dept-extra-wrap > div:first-child{display:none !important} /* +Add Photo / +Add Link buttons */
+  #p-beo button[onclick^="addDepartment"],
+  #p-beo button[onclick^="addFtRow"],
+  #p-beo button[onclick^="addFinRow"],
+  #p-beo button[onclick^="addVendorRow"],
+  #p-beo button[onclick^="addFBRow"]{display:none !important}
+  .beo-sec-hd{cursor:default !important}
+  .beo-body{display:block !important;padding:16px 0 !important}
+  .page{position:static !important;visibility:visible !important;height:auto !important;overflow:visible !important;left:0 !important}
+  #app,.right-col{display:block !important;width:100% !important;margin:0 !important;padding:0 !important}
+  body{background:white !important}
+  .beo{border:none !important;box-shadow:none !important}
+  .dept{break-inside:avoid;border-left-width:3px !important}
+  .beo-sec{break-inside:avoid}
+}
 </style>
 </head>
 <body>
@@ -2776,7 +2799,7 @@ img.emoji-tw{width:1.15em;height:1.15em;vertical-align:-0.2em;margin:0 1px}
           <button class="beo-back" onclick="nav('home')">← <span data-en="Current Events" data-id="Acara Aktif">Current Events</span></button>
           <div class="beo-btns">
             <button class="btn btn-ghost" onclick="copyLink()">Share</button>
-            <button class="btn btn-ghost">⬇ PDF</button>
+            <button class="btn btn-ghost" onclick="exportEventPlanPDF()">⬇ PDF</button>
             <button class="btn btn-gold" id="edit-toggle-btn" onclick="toggleEditMode()">✏ Edit Event Plan</button>
           </div>
         </div>
@@ -3095,25 +3118,6 @@ img.emoji-tw{width:1.15em;height:1.15em;vertical-align:-0.2em;margin:0 1px}
                 </div>
               </div>
               <button class="add-pay-btn" onclick="addPayment()">+ Add Payment</button>
-            </div>
-          </div>
-
-          <!-- Maps -->
-          <div class="beo-sec">
-            <div class="beo-sec-hd" onclick="tog('mp')">
-              <div class="beo-sec-label"><span class="beo-sec-ico">🗺</span> <span data-en="Venue Maps & Images" data-id="Peta & Gambar">Venue Maps & Images</span></div>
-              <div class="chev" id="cv-mp">▾</div>
-            </div>
-            <div class="beo-body" id="bd-mp">
-              <div style="font-size:12.5px;font-weight:400;color:var(--ink2);margin-bottom:12px" data-en="Upload venue maps, layouts, food stall positions, barrier and signage photos." data-id="Upload peta venue, tata letak, posisi food stall, foto barikade dan signage.">Upload venue maps, layouts, food stall positions, barrier and signage photos.</div>
-              <div class="ig">
-                <label class="is" for="i1"><div class="is-ico">🗺</div><div class="is-txt" data-en="Venue Map 1" data-id="Layout Main Stage">Venue Map 1</div><input type="file" id="i1" accept="image/*" onchange="prevImg(this)"></label>
-                <label class="is" for="i2"><div class="is-ico">🍺</div><div class="is-txt" data-en="Venue Map 2" data-id="Layout Beer Garden">Venue Map 2</div><input type="file" id="i2" accept="image/*" onchange="prevImg(this)"></label>
-                <label class="is" for="i3"><div class="is-ico">🍽</div><div class="is-txt" data-en="Floor Plan" data-id="Peta Food Stall">Floor Plan</div><input type="file" id="i3" accept="image/*" onchange="prevImg(this)"></label>
-                <label class="is" for="i4"><div class="is-ico">🚧</div><div class="is-txt" data-en="Layout / Setup" data-id="Setup Barikade">Layout / Setup</div><input type="file" id="i4" accept="image/*" onchange="prevImg(this)"></label>
-                <label class="is" for="i5"><div class="is-ico">🪧</div><div class="is-txt" data-en="Other Image" data-id="Other Image">Other Image</div><input type="file" id="i5" accept="image/*" onchange="prevImg(this)"></label>
-                <label class="is" for="i6"><div class="is-ico">+</div><div class="is-txt" data-en="Add Image" data-id="Tambah Foto">Add Image</div><input type="file" id="i6" accept="image/*" onchange="prevImg(this)"></label>
-              </div>
             </div>
           </div>
 
@@ -4068,12 +4072,35 @@ function toast(msg){
 function copyLink(){
   try{
     const ta=document.createElement('textarea');
-    ta.value='https://mavis.app/plan/horizon-tech-summit-2026';
+    ta.value=window.location.href;
     ta.style.cssText='position:fixed;top:0;left:0;opacity:0';
     document.body.appendChild(ta);ta.focus();ta.select();
     document.execCommand('copy');document.body.removeChild(ta);
-    toast('Share link copied — opens without login');
+    toast('Link copied — heads up: this opens Mavis to whatever page is loaded, not this exact event yet');
   }catch(e){toast('Could not copy');}
+}
+
+function exportEventPlanPDF(){
+  // Expand every collapsed section so the PDF captures the full plan, not just
+  // whatever happened to be open on screen. Remember what was open so we can
+  // restore it afterwards.
+  const sections = document.querySelectorAll('#p-beo .beo-body');
+  const wasOpen = new Set();
+  sections.forEach(el=>{ if(el.classList.contains('open')) wasOpen.add(el.id); el.classList.add('open'); });
+  document.querySelectorAll('#p-beo .chev').forEach(el=>el.classList.add('open'));
+
+  const restore = () => {
+    sections.forEach(el=>{ if(!wasOpen.has(el.id)) el.classList.remove('open'); });
+    document.querySelectorAll('#p-beo .chev').forEach(el=>{
+      const id = el.id.replace('cv-','');
+      if(!wasOpen.has('bd-'+id)) el.classList.remove('open');
+    });
+    window.removeEventListener('afterprint', restore);
+  };
+  window.addEventListener('afterprint', restore);
+
+  toast('Opening print dialog — choose "Save as PDF" as the destination');
+  setTimeout(()=>window.print(), 150);
 }
 
 // ── LANGUAGE ──

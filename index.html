@@ -7067,8 +7067,12 @@ let announceScrollAnim = null;
 let announceScrollPos = 0;
 let announceScrollPaused = false;
 
+let announceSnapTimer = null;
+let announceSnapIndex = 0;
+
 function announceStartScroll(list){
   if(announceScrollAnim) cancelAnimationFrame(announceScrollAnim);
+  if(announceSnapTimer) clearInterval(announceSnapTimer);
   const track = document.getElementById('announce-track');
   if(!track) return;
 
@@ -7078,6 +7082,7 @@ function announceStartScroll(list){
   // report as touch devices too but have room to show the ticker like desktop does.
   const isPhoneWidth = window.innerWidth <= 700;
   if(isPhoneWidth){
+    track.style.transition = 'none';
     track.style.transform = 'translateY(0)';
     list.style.overflowY = 'auto';
     return;
@@ -7087,13 +7092,14 @@ function announceStartScroll(list){
   if(announcements.length <= 2) { track.style.transform = 'translateY(0)'; return; }
   announceScrollPaused = false;
 
-  // Double the content for a seamless loop
-  const original = track.innerHTML;
-  track.innerHTML = original + original;
-
-  announceScrollPos = 0;
+  // Snap to full-row positions only - never a continuous mid-row scroll, so a row can never
+  // be caught half-clipped at the top or bottom edge of the visible window.
+  const items = Array.from(track.querySelectorAll('.announce-item'));
+  if(!items.length) return;
+  const offsets = items.map(item => item.offsetTop);
+  announceSnapIndex = 0;
+  track.style.transition = 'transform 0.6s ease';
   track.style.transform = 'translateY(0)';
-  const halfHeight = track.scrollHeight / 2;
 
   // Only pause-on-hover for devices with real mouse hover (desktop). Touch devices like
   // tablets can synthesize a "mouseenter" on tap with no matching "mouseleave", which would
@@ -7102,15 +7108,20 @@ function announceStartScroll(list){
   list.onmouseenter = hasRealHover ? () => { announceScrollPaused = true; } : null;
   list.onmouseleave = hasRealHover ? () => { announceScrollPaused = false; } : null;
 
-  function step(){
-    if(!announceScrollPaused){
-      announceScrollPos += 0.4;
-      if(announceScrollPos >= halfHeight) announceScrollPos = 0;
-      track.style.transform = `translateY(-${announceScrollPos}px)`;
+  announceSnapTimer = setInterval(() => {
+    if(announceScrollPaused) return;
+    const wasLast = announceSnapIndex === offsets.length - 1;
+    announceSnapIndex = (announceSnapIndex + 1) % offsets.length;
+    if(wasLast){
+      // Looping back to the top - jump instantly rather than animating backwards through
+      // every row, which would look like a jarring rewind.
+      track.style.transition = 'none';
+      track.style.transform = `translateY(-${offsets[announceSnapIndex]}px)`;
+      requestAnimationFrame(()=>{ track.style.transition = 'transform 0.6s ease'; });
+    } else {
+      track.style.transform = `translateY(-${offsets[announceSnapIndex]}px)`;
     }
-    announceScrollAnim = requestAnimationFrame(step);
-  }
-  announceScrollAnim = requestAnimationFrame(step);
+  }, 3500);
 }
 
 let announceResizeTimer;

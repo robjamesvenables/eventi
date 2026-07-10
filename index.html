@@ -2288,6 +2288,18 @@ img.emoji-tw{width:1.15em;height:1.15em;vertical-align:-0.2em;margin:0 1px}
       </div>
 
 
+      <!-- TEAM POLL -->
+      <div class="poll-wrap" id="poll-wrap" style="background:white;border:1.5px solid #E2E8F0;border-radius:14px;box-shadow:0 2px 8px rgba(0,0,0,0.06);overflow:hidden;margin-bottom:20px">
+        <div style="background:#0F1E2E;padding:14px 20px;display:flex;align-items:center;justify-content:space-between">
+          <div style="display:flex;align-items:center;gap:10px;color:white;font-weight:800;font-size:13px;text-transform:uppercase;letter-spacing:1px">
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+            Team Poll
+          </div>
+          <button onclick="pollNew()" style="padding:6px 14px;background:rgba(255,255,255,0.12);border:none;border-radius:8px;font-family:'Inter',sans-serif;font-size:12px;font-weight:700;color:white;cursor:pointer">+ New Poll</button>
+        </div>
+        <div id="poll-body" style="padding:20px 20px 22px"></div>
+      </div>
+
       <!-- My Drive — top row solo -->
 
       <!-- MOMENTS STRIP -->
@@ -3690,7 +3702,7 @@ function nav(id, pushState=true){
   if(nb)nb.classList.add('active');
   if(id==='notes'){mnGoToday();}
   if(id==='cal'){calRender();}
-  if(id==='home'){initHome(); announceRender();}
+  if(id==='home'){initHome(); announceRender(); pollRender();}
   if(id==='quicklinks'){quickLinksRender();}
   if(id==='music'){musicRender();}
   if(id==='kitchen'){kitchenRenderMenus(); kitchenRenderRecipes(); kitchenRenderAllergens(); kitchenRenderLinks();}
@@ -3714,6 +3726,103 @@ function nav(id, pushState=true){
     history.pushState({page:id}, '', '#'+id);
   }
 }
+
+// ── TEAM POLL ──
+const POLL_COLORS = ['#0D9488','#2563EB','#C4973B','#A78BFA','#EF4444'];
+let pollData = {
+  question: "What's the best time slot for team lunch?",
+  options: [
+    {id:1, label:'11:00', votes:['David','Sarah']},
+    {id:2, label:'12:00', votes:['Robbie','John','Maria','Priya']},
+    {id:3, label:'1:00', votes:['Kevin']},
+    {id:4, label:'2:00', votes:[]},
+  ]
+};
+let pollMyVote = null;
+
+function pollTotalVotes(){
+  return pollData.options.reduce((sum,o)=>sum+o.votes.length, 0);
+}
+
+function pollRender(){
+  const body = document.getElementById('poll-body');
+  if(!body) return;
+  const total = pollTotalVotes();
+  const me = currentUserFirstName || 'You';
+
+  // Detect if the current user already has a vote recorded (keeps state correct across re-renders)
+  const votedOpt = pollData.options.find(o => o.votes.includes(me));
+  pollMyVote = votedOpt ? votedOpt.id : null;
+
+  let html = `<div style="font-size:15px;font-weight:800;color:#0F1E2E;margin-bottom:16px;line-height:1.4">${pollData.question}</div>`;
+
+  if(pollMyVote === null){
+    // Voting view - tappable option rows
+    html += pollData.options.map((o,i) => `
+      <button onclick="pollVote(${o.id})" style="display:flex;align-items:center;gap:12px;width:100%;text-align:left;padding:13px 16px;margin-bottom:8px;border:1.5px solid #E2E8F0;border-radius:10px;background:white;cursor:pointer;font-family:'Inter',sans-serif;transition:all 0.15s" onmouseover="this.style.borderColor='${POLL_COLORS[i%POLL_COLORS.length]}';this.style.background='${POLL_COLORS[i%POLL_COLORS.length]}0D'" onmouseout="this.style.borderColor='#E2E8F0';this.style.background='white'">
+        <span style="width:18px;height:18px;border-radius:50%;border:2px solid ${POLL_COLORS[i%POLL_COLORS.length]};flex-shrink:0"></span>
+        <span style="font-size:13.5px;font-weight:600;color:#0F1E2E">${o.label}</span>
+      </button>`).join('');
+  } else {
+    // Results view - coloured bars
+    html += pollData.options.map((o,i) => {
+      const pct = total > 0 ? Math.round((o.votes.length/total)*100) : 0;
+      const isMine = o.id === pollMyVote;
+      const color = POLL_COLORS[i%POLL_COLORS.length];
+      return `
+      <div onclick="pollVote(${o.id})" style="cursor:pointer;margin-bottom:12px" title="Tap to change your vote">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:5px">
+          <span style="font-size:13px;font-weight:700;color:#0F1E2E;display:flex;align-items:center;gap:6px">
+            ${o.label}
+            ${isMine ? `<span style="color:${color};font-size:11px;font-weight:800">✓ Your vote</span>` : ''}
+          </span>
+          <span style="font-size:12px;font-weight:700;color:#64748B">${pct}% · ${o.votes.length}</span>
+        </div>
+        <div style="height:14px;background:#F1F5F9;border-radius:20px;overflow:hidden">
+          <div style="height:100%;width:${pct}%;background:${color};border-radius:20px;transition:width 0.4s ease"></div>
+        </div>
+      </div>`;
+    }).join('');
+    html += `<div style="font-size:11.5px;color:#94A3B8;margin-top:8px">${total} vote${total===1?'':'s'} · tap an option to change your vote</div>`;
+  }
+
+  body.innerHTML = html;
+}
+
+window.pollVote = function(id){
+  const me = currentUserFirstName || 'You';
+  pollData.options.forEach(o => { o.votes = o.votes.filter(v => v !== me); });
+  if(pollMyVote !== id){
+    const opt = pollData.options.find(o=>o.id===id);
+    if(opt) opt.votes.push(me);
+    pollMyVote = id;
+    toast('Vote counted ✓');
+  } else {
+    pollMyVote = null;
+  }
+  pollRender();
+};
+
+window.pollNew = function(){
+  appModalShow({
+    title: 'New Team Poll',
+    fields: [
+      {label:'Question', placeholder:"e.g. What's the best time for team lunch?"},
+      {label:'Option 1', placeholder:'e.g. 11:00'},
+      {label:'Option 2', placeholder:'e.g. 12:00'},
+      {label:'Option 3 (optional)', placeholder:'e.g. 1:00', optional:true},
+      {label:'Option 4 (optional)', placeholder:'e.g. 2:00', optional:true},
+      {label:'Option 5 (optional)', placeholder:'e.g. 3:00', optional:true},
+    ],
+    onOk([q, o1, o2, o3, o4, o5]){
+      const opts = [o1, o2, o3, o4, o5].filter(v => v && v.trim()).map((label, i) => ({id: i+1, label, votes: []}));
+      pollData = {question: q, options: opts};
+      pollMyVote = null;
+      pollRender();
+      toast('New poll posted ✓');
+    }
+  });
+};
 
 function initHome(){
   const now = new Date();

@@ -7075,59 +7075,53 @@ function announceStartScroll(list){
   if(announceSnapTimer) clearInterval(announceSnapTimer);
   const track = document.getElementById('announce-track');
   if(!track) return;
+  // Clear out any leftover transform from a previous version of this ticker
+  track.style.transition = 'none';
+  track.style.transform = 'translateY(0)';
 
   // Phone-sized screens: no way to pause a hover-based ticker on touch, so let phone users
   // scroll through normally instead. Tablets and desktop (including touch tablets like iPad)
   // get the auto-scrolling ticker - width decides this, not touch capability, since tablets
   // report as touch devices too but have room to show the ticker like desktop does.
   const isPhoneWidth = window.innerWidth <= 700;
-  if(isPhoneWidth){
-    track.style.transition = 'none';
-    track.style.transform = 'translateY(0)';
-    list.style.overflowY = 'auto';
-    return;
-  }
-  list.style.overflowY = '';
+  list.style.overflowY = 'auto';
+  if(isPhoneWidth) return;
 
-  if(announcements.length <= 2) { track.style.transform = 'translateY(0)'; return; }
+  if(announcements.length <= 2) return;
   announceScrollPaused = false;
+  list.scrollTop = 0;
 
-  // Snap to full-row positions only - never a continuous mid-row scroll, so a row can never
-  // be caught half-clipped at the top or bottom edge of the visible window.
   const items = Array.from(track.querySelectorAll('.announce-item'));
   if(!items.length) return;
-  const offsets = items.map(item => item.offsetTop);
+  const rowOffsets = items.map(item => item.offsetTop);
+  const maxScroll = Math.max(0, list.scrollHeight - list.clientHeight);
   announceSnapIndex = 0;
-  track.style.transition = 'transform 0.6s ease';
-  track.style.transform = 'translateY(0)';
 
   // Only pause-on-hover for devices with an actual precise pointer AND real hover support -
   // both together is a much more reliable "this is a mouse" signal than hover alone, since
-  // some tablets misreport hover:hover even though they're touch-driven. A stray touch there
-  // could otherwise set announceScrollPaused=true with no mouseleave ever following to clear
-  // it, freezing the ticker permanently - which is exactly what happened before.
+  // some tablets misreport hover:hover even though they're touch-driven.
   const hasRealHover = window.matchMedia('(hover: hover) and (pointer: fine)').matches;
   let pausedAt = 0;
   list.onmouseenter = hasRealHover ? () => { announceScrollPaused = true; pausedAt = Date.now(); } : null;
   list.onmouseleave = hasRealHover ? () => { announceScrollPaused = false; } : null;
 
   announceSnapTimer = setInterval(() => {
-    // Safety net: if paused for any reason for more than 10s (stuck hover state, a bug, an
-    // edge case we haven't thought of), force it back on rather than risk a dead ticker.
+    // Safety net: if paused for any reason for more than 10s, force resume rather than risk
+    // a permanently stuck ticker.
     if(announceScrollPaused && Date.now() - pausedAt > 10000) announceScrollPaused = false;
     if(announceScrollPaused) return;
-    const wasLast = announceSnapIndex === offsets.length - 1;
-    announceSnapIndex = (announceSnapIndex + 1) % offsets.length;
-    if(wasLast){
-      // Looping back to the top - jump instantly rather than animating backwards through
-      // every row, which would look like a jarring rewind.
-      track.style.transition = 'none';
-      track.style.transform = `translateY(-${offsets[announceSnapIndex]}px)`;
-      requestAnimationFrame(()=>{ track.style.transition = 'transform 0.6s ease'; });
-    } else {
-      track.style.transform = `translateY(-${offsets[announceSnapIndex]}px)`;
+
+    if(list.scrollTop >= maxScroll - 2){
+      // Reached the bottom - pause a beat on the last row, then scroll smoothly back to the
+      // top. Native scrollTo can never overshoot past real content, so no blank space, ever.
+      announceSnapIndex = 0;
+      list.scrollTo({top: 0, behavior: 'smooth'});
+      return;
     }
-  }, 3500);
+    announceSnapIndex = Math.min(announceSnapIndex + 1, rowOffsets.length - 1);
+    const target = Math.min(rowOffsets[announceSnapIndex], maxScroll);
+    list.scrollTo({top: target, behavior: 'smooth'});
+  }, 2600);
 }
 
 let announceResizeTimer;

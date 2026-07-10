@@ -664,25 +664,17 @@ select.search-inp{max-width:150px;cursor:pointer}
 .empty-sub{font-size:13px;font-weight:300;color:var(--ink2)}
 
 /* Editable stat values */
-.editing .beo-stat-val[contenteditable]{
+.beo-stat-val[contenteditable]{
   cursor:text;
   border-bottom:1.5px dashed rgba(255,255,255,0.3);
   padding-bottom:2px;
   min-width:20px;
 }
-.editing .beo-stat-val[contenteditable]:focus{
+.beo-stat-val[contenteditable]:focus{
   border-bottom-color:white;
   outline:none;
 }
 
-/* ── FLOATING EDIT BUTTON ── */
-.float-edit{
-  position:fixed;
-  bottom:32px;
-  right:32px;
-  z-index:300;
-  display:none;
-}
 #scroll-top-btn{
   position:fixed;
   bottom:24px;
@@ -704,30 +696,6 @@ select.search-inp{max-width:150px;cursor:pointer}
   opacity:1;
   pointer-events:auto;
   transform:translateY(0);
-}
-.float-edit-btn{
-  display:flex;align-items:center;gap:8px;
-  padding:12px 20px;
-  background:var(--navy);
-  color:white;
-  border:none;border-radius:50px;
-  font-family:'Inter',sans-serif;
-  font-size:13px;font-weight:700;
-  cursor:pointer;
-  box-shadow:0 4px 20px rgba(0,0,0,0.25);
-  transition:all 0.2s;
-  white-space:nowrap;
-}
-.float-edit-btn:hover{
-  background:var(--gold);
-  transform:translateY(-2px);
-  box-shadow:0 8px 28px rgba(0,0,0,0.3);
-}
-.float-edit-btn.editing{
-  background:var(--green);
-}
-.float-edit-btn.editing:hover{
-  background:#15803D;
 }
 
 /* ── RICH TEXT TOOLBAR ── */
@@ -833,21 +801,6 @@ td[contenteditable]:empty::before,
   line-height:1.5 !important;
 }
 
-/* ── EDIT MODE ── */
-.edit-mode-bar{
-  display:none;
-  align-items:center;
-  gap:10px;
-  background:#FFFBEB;
-  border:1px solid #FDE68A;
-  border-radius:6px;
-  padding:10px 16px;
-  margin-bottom:16px;
-  font-size:12.5px;font-weight:500;color:var(--amber);
-}
-.edit-mode-bar.on{display:flex}
-.edit-mode-bar span{flex:1}
-
 /* Editable cells */
 [contenteditable]{outline:none;border-radius:3px;transition:background 0.1s,box-shadow 0.1s}
 [contenteditable]:hover{background:rgba(196,151,59,0.06)}
@@ -869,7 +822,7 @@ td[contenteditable]:empty::before,
 
 /* Add row buttons */
 .add-row-btn{
-  display:none;
+  display:block;
   width:100%;
   padding:8px;
   background:none;
@@ -882,7 +835,6 @@ td[contenteditable]:empty::before,
   transition:all 0.15s;
 }
 .add-row-btn:hover{border-color:var(--gold);color:var(--gold);background:var(--gold-lt)}
-.editing .add-row-btn{display:block}
 .add-pay-btn{
   display:block;width:100%;margin-top:10px;
   padding:9px;background:none;
@@ -894,7 +846,7 @@ td[contenteditable]:empty::before,
 
 /* Delete row */
 .del-row{
-  display:none;
+  display:inline-block;
   background:none;border:none;
   color:var(--ink3);font-size:14px;
   cursor:pointer;padding:2px 6px;
@@ -902,7 +854,6 @@ td[contenteditable]:empty::before,
   vertical-align:middle;
 }
 .del-row:hover{color:var(--red)}
-.editing .del-row{display:inline-block}
 
 /* Edit pencil on section header */
 .sec-edit-btn{
@@ -1921,8 +1872,6 @@ img.emoji-tw{width:1.15em;height:1.15em;vertical-align:-0.2em;margin:0 1px}
      there. Fix: keep it hidden until the user has scrolled past the header, same "fade in on
      scroll" pattern as the back-to-top button - by the time it appears, the header is out of
      the way, and it saves having to scroll back to the top bar to edit. */
-  .float-edit{opacity:0;pointer-events:none;transform:translateY(10px);transition:opacity 0.2s, transform 0.2s}
-  .float-edit.mobile-visible{opacity:1;pointer-events:auto;transform:translateY(0)}
 
   /* Task Board: kanban columns don't stack well as a single tall column - use horizontal
      swipe-between-columns instead, same pattern as Trello and similar apps on mobile */
@@ -2785,17 +2734,14 @@ img.emoji-tw{width:1.15em;height:1.15em;vertical-align:-0.2em;margin:0 1px}
     <div class="page" id="p-beo" style="padding:32px 28px 0">
       <div class="beo-wrap">
         <div class="beo-topbar">
-          <button class="beo-back" onclick="nav('home')">← <span data-en="Current Events" data-id="Acara Aktif">Current Events</span></button>
+          <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+            <button class="beo-back" onclick="nav('home')">← <span data-en="Current Events" data-id="Acara Aktif">Current Events</span></button>
+            <span id="beo-autosave-status" style="font-size:11px;font-weight:600;color:var(--amber)"></span>
+          </div>
           <div class="beo-btns">
             <button class="btn btn-ghost" onclick="copyLink()">Share</button>
             <button class="btn btn-ghost" onclick="exportEventPlanPDF()">⬇ PDF</button>
-            <button class="btn btn-gold" id="edit-toggle-btn" onclick="toggleEditMode()">✏ Edit Event Plan</button>
           </div>
-        </div>
-        <div class="edit-mode-bar" id="edit-mode-bar">
-          <span>✏ <strong>Editing</strong> — changes save automatically as you type</span>
-          <span id="beo-autosave-status" style="font-size:11px;font-weight:600;color:var(--amber)"></span>
-          <button class="btn btn-ghost" style="padding:6px 12px;font-size:12px" onclick="toggleEditMode()">✓ Done Editing</button>
         </div>
 
         <div class="beo">
@@ -2828,19 +2774,19 @@ img.emoji-tw{width:1.15em;height:1.15em;vertical-align:-0.2em;margin:0 1px}
           <!-- BEO Stats Bar -->
           <div class="beo-stats" style="grid-template-columns:repeat(4,1fr)">
             <div class="beo-stat">
-              <div class="beo-stat-val" contenteditable="false" id="stat-pax" style="font-family:'Inter',sans-serif;font-size:28px;font-weight:800;line-height:1">—</div>
+              <div class="beo-stat-val" contenteditable="true" id="stat-pax" style="font-family:'Inter',sans-serif;font-size:28px;font-weight:800;line-height:1">—</div>
               <div class="beo-stat-lbl">Guests (Pax)</div>
             </div>
             <div class="beo-stat">
-              <div class="beo-stat-val teal" contenteditable="false" id="stat-rev" style="font-family:'Inter',sans-serif;font-size:28px;font-weight:800;line-height:1">—</div>
+              <div class="beo-stat-val teal" contenteditable="true" id="stat-rev" style="font-family:'Inter',sans-serif;font-size:28px;font-weight:800;line-height:1">—</div>
               <div class="beo-stat-lbl">Revenue</div>
             </div>
             <div class="beo-stat">
-              <div class="beo-stat-val red" contenteditable="false" id="stat-cost" style="font-family:'Inter',sans-serif;font-size:28px;font-weight:800;line-height:1">—</div>
+              <div class="beo-stat-val red" contenteditable="true" id="stat-cost" style="font-family:'Inter',sans-serif;font-size:28px;font-weight:800;line-height:1">—</div>
               <div class="beo-stat-lbl">Vendor Costs</div>
             </div>
             <div class="beo-stat">
-              <div class="beo-stat-val green" contenteditable="false" id="stat-profit" style="font-family:'Inter',sans-serif;font-size:28px;font-weight:800;line-height:1">—</div>
+              <div class="beo-stat-val green" contenteditable="true" id="stat-profit" style="font-family:'Inter',sans-serif;font-size:28px;font-weight:800;line-height:1">—</div>
               <div class="beo-stat-lbl">Net Profit</div>
             </div>
           </div>
@@ -2853,11 +2799,11 @@ img.emoji-tw{width:1.15em;height:1.15em;vertical-align:-0.2em;margin:0 1px}
             </div>
             <div class="beo-body open" id="bd-dt">
               <table class="ft" id="ft-details">
-                <tr><td>Event Name</td><td contenteditable="false" id="det-name" oninput="updateBeoHeader()"></td><td class="del-row" onclick="delRow(this)">×</td></tr>
-                <tr><td>Date</td><td id="det-date-cell" style="padding:6px 14px"><input type="date" id="det-date" onchange="updateBeoHeader()" style="font-family:'Inter',sans-serif;font-size:12px;border:none;outline:none;background:none;color:var(--ink);width:100%;cursor:pointer" disabled></td><td class="del-row" onclick="delRow(this)">×</td></tr>
-                <tr><td>Time</td><td contenteditable="false" id="det-time"></td><td class="del-row" onclick="delRow(this)">×</td></tr>
-                <tr><td>Venue</td><td contenteditable="false" id="det-venue"></td><td class="del-row" onclick="delRow(this)">×</td></tr>
-                <tr><td>Attendance (Pax)</td><td contenteditable="false" id="det-pax" oninput="updateBeoStats()"></td><td class="del-row" onclick="delRow(this)">×</td></tr>
+                <tr><td>Event Name</td><td contenteditable="true" id="det-name" oninput="updateBeoHeader()"></td><td class="del-row" onclick="delRow(this)">×</td></tr>
+                <tr><td>Date</td><td id="det-date-cell" style="padding:6px 14px"><input type="date" id="det-date" onchange="updateBeoHeader()" style="font-family:'Inter',sans-serif;font-size:12px;border:none;outline:none;background:none;color:var(--ink);width:100%;cursor:pointer"></td><td class="del-row" onclick="delRow(this)">×</td></tr>
+                <tr><td>Time</td><td contenteditable="true" id="det-time"></td><td class="del-row" onclick="delRow(this)">×</td></tr>
+                <tr><td>Venue</td><td contenteditable="true" id="det-venue"></td><td class="del-row" onclick="delRow(this)">×</td></tr>
+                <tr><td>Attendance (Pax)</td><td contenteditable="true" id="det-pax" oninput="updateBeoStats()"></td><td class="del-row" onclick="delRow(this)">×</td></tr>
               </table>
               <button class="add-row-btn" onclick="addDetailRow()">+ Add Field</button>
             </div>
@@ -2871,7 +2817,7 @@ img.emoji-tw{width:1.15em;height:1.15em;vertical-align:-0.2em;margin:0 1px}
             </div>
             <div class="beo-body open" id="bd-rd">
               <div class="rd" id="rd-list">
-                <div class="rd-item"><div class="rd-time" contenteditable="false">00:00</div><div class="rd-right"><div class="rd-act" contenteditable="false">Add your first timeline item</div><div class="rd-tags"></div></div><button class="del-row" onclick="this.closest('.rd-item').remove()" title="Delete">×</button></div>
+                <div class="rd-item"><div class="rd-time" contenteditable="true">00:00</div><div class="rd-right"><div class="rd-act" contenteditable="true">Add your first timeline item</div><div class="rd-tags"></div></div><button class="del-row" onclick="this.closest('.rd-item').remove()" title="Delete">×</button></div>
               </div>
               <button class="add-row-btn" onclick="addRundownRow()">+ Add Rundown Item</button>
             </div>
@@ -2887,7 +2833,7 @@ img.emoji-tw{width:1.15em;height:1.15em;vertical-align:-0.2em;margin:0 1px}
               <span style="font-size:11px;font-weight:500;color:rgba(255,255,255,0.55)">11 departments</span>
             </div>
             <div class="beo-body open" id="bd-dp">
-              <div class="dept" style="border-left-color:var(--gold)"><div class="dept-title" contenteditable="false" style="font-family:\'Inter\',sans-serif;font-size:13px;font-weight:800;color:#0F1E2E"><strong style="font-family:'Inter',sans-serif;font-size:14px;font-weight:800;color:#0F1E2E;letter-spacing:0.5px"><strong style="font-weight:900;font-size:13px">Events Team</strong></strong></div><div class="dept-pic"><span class="dept-pic-label">PIC</span><span class="dept-pic-name" contenteditable="false"></span></div><div class="dept-toolbar" id="toolbar-tb1">
+              <div class="dept" style="border-left-color:var(--gold)"><div class="dept-title" contenteditable="true" style="font-family:\'Inter\',sans-serif;font-size:13px;font-weight:800;color:#0F1E2E"><strong style="font-family:'Inter',sans-serif;font-size:14px;font-weight:800;color:#0F1E2E;letter-spacing:0.5px"><strong style="font-weight:900;font-size:13px">Events Team</strong></strong></div><div class="dept-pic"><span class="dept-pic-label">PIC</span><span class="dept-pic-name" contenteditable="true"></span></div><div class="dept-toolbar" id="toolbar-tb1">
                   <button class="tb-btn" onclick="deptFmt('bold')" title="Bold"><b>B</b></button>
                   <button class="tb-btn" onclick="deptFmt('italic')" title="Italic"><i>I</i></button>
                   <button class="tb-btn" onclick="deptFmt('underline')" title="Underline"><u>U</u></button>
@@ -2901,8 +2847,8 @@ img.emoji-tw{width:1.15em;height:1.15em;vertical-align:-0.2em;margin:0 1px}
                   <div class="tb-color-btn" style="background:#0D9488" onclick="deptColor('#0D9488')" title="Teal"></div>
                   <div class="tb-color-btn" style="background:#1D4ED8" onclick="deptColor('#1D4ED8')" title="Blue"></div>
                   <div class="tb-sep"></div>
-                </div><div class="dept-body dept-rich" contenteditable="false" id="deptbody-tb1" onfocus="showToolbar('tb1')" onblur="hideToolbar('tb1')"><ul><li>Events Manager leads all coordination on the day</li><li>Full team briefing at T-2 hours before doors open</li><li>Confirm all department heads are in position 30 mins before start</li><li>Client point of contact throughout — direct all client requests through Events Team</li><li>Walkthrough of venue completed by 10:00 day of event</li><li>Post-event debrief scheduled within 24 hours</li></ul></div></div>
-              <div class="dept dept-wrap"><div class="dept-title" contenteditable="false" style="font-family:\'Inter\',sans-serif;font-size:13px;font-weight:800;color:#0F1E2E"><strong style="font-family:'Inter',sans-serif;font-size:14px;font-weight:800;color:#0F1E2E;letter-spacing:0.5px"><strong style="font-weight:900;font-size:13px">Guest Relations</strong></strong></div><div class="dept-pic"><span class="dept-pic-label">PIC</span><span class="dept-pic-name" contenteditable="false"></span></div><div class="dept-toolbar" id="toolbar-tb2">
+                </div><div class="dept-body dept-rich" contenteditable="true" id="deptbody-tb1" onfocus="showToolbar('tb1')" onblur="hideToolbar('tb1')"><ul><li>Events Manager leads all coordination on the day</li><li>Full team briefing at T-2 hours before doors open</li><li>Confirm all department heads are in position 30 mins before start</li><li>Client point of contact throughout — direct all client requests through Events Team</li><li>Walkthrough of venue completed by 10:00 day of event</li><li>Post-event debrief scheduled within 24 hours</li></ul></div></div>
+              <div class="dept dept-wrap"><div class="dept-title" contenteditable="true" style="font-family:\'Inter\',sans-serif;font-size:13px;font-weight:800;color:#0F1E2E"><strong style="font-family:'Inter',sans-serif;font-size:14px;font-weight:800;color:#0F1E2E;letter-spacing:0.5px"><strong style="font-weight:900;font-size:13px">Guest Relations</strong></strong></div><div class="dept-pic"><span class="dept-pic-label">PIC</span><span class="dept-pic-name" contenteditable="true"></span></div><div class="dept-toolbar" id="toolbar-tb2">
                   <button class="tb-btn" onclick="deptFmt('bold')" title="Bold"><b>B</b></button>
                   <button class="tb-btn" onclick="deptFmt('italic')" title="Italic"><i>I</i></button>
                   <button class="tb-btn" onclick="deptFmt('underline')" title="Underline"><u>U</u></button>
@@ -2916,8 +2862,8 @@ img.emoji-tw{width:1.15em;height:1.15em;vertical-align:-0.2em;margin:0 1px}
                   <div class="tb-color-btn" style="background:#0D9488" onclick="deptColor('#0D9488')" title="Teal"></div>
                   <div class="tb-color-btn" style="background:#1D4ED8" onclick="deptColor('#1D4ED8')" title="Blue"></div>
                   <div class="tb-sep"></div>
-                </div><div class="dept-body dept-rich" contenteditable="false" id="deptbody-tb2" onfocus="showToolbar('tb2')" onblur="hideToolbar('tb2')"><ul><li>GRO team at main entrance from 30 mins before doors open</li><li>Registration table set up with wristbands, guest list and QR codes</li><li>Guests may bring family — allow entry with valid wristband</li><li>VIP guests — escort to designated area on arrival</li><li>Lanyards for organising committee — removed day-of for guests</li></ul></div></div>
-              <div class="dept dept-wrap"><div class="dept-title" contenteditable="false" style="font-family:\'Inter\',sans-serif;font-size:13px;font-weight:800;color:#0F1E2E"><strong style="font-family:'Inter',sans-serif;font-size:14px;font-weight:800;color:#0F1E2E;letter-spacing:0.5px"><strong style="font-weight:900;font-size:13px">Security &amp; Health and Safety</strong></strong></div><div class="dept-pic"><span class="dept-pic-label">PIC</span><span class="dept-pic-name" contenteditable="false"></span></div><div class="dept-toolbar" id="toolbar-tb3">
+                </div><div class="dept-body dept-rich" contenteditable="true" id="deptbody-tb2" onfocus="showToolbar('tb2')" onblur="hideToolbar('tb2')"><ul><li>GRO team at main entrance from 30 mins before doors open</li><li>Registration table set up with wristbands, guest list and QR codes</li><li>Guests may bring family — allow entry with valid wristband</li><li>VIP guests — escort to designated area on arrival</li><li>Lanyards for organising committee — removed day-of for guests</li></ul></div></div>
+              <div class="dept dept-wrap"><div class="dept-title" contenteditable="true" style="font-family:\'Inter\',sans-serif;font-size:13px;font-weight:800;color:#0F1E2E"><strong style="font-family:'Inter',sans-serif;font-size:14px;font-weight:800;color:#0F1E2E;letter-spacing:0.5px"><strong style="font-weight:900;font-size:13px">Security &amp; Health and Safety</strong></strong></div><div class="dept-pic"><span class="dept-pic-label">PIC</span><span class="dept-pic-name" contenteditable="true"></span></div><div class="dept-toolbar" id="toolbar-tb3">
                   <button class="tb-btn" onclick="deptFmt('bold')" title="Bold"><b>B</b></button>
                   <button class="tb-btn" onclick="deptFmt('italic')" title="Italic"><i>I</i></button>
                   <button class="tb-btn" onclick="deptFmt('underline')" title="Underline"><u>U</u></button>
@@ -2931,8 +2877,8 @@ img.emoji-tw{width:1.15em;height:1.15em;vertical-align:-0.2em;margin:0 1px}
                   <div class="tb-color-btn" style="background:#0D9488" onclick="deptColor('#0D9488')" title="Teal"></div>
                   <div class="tb-color-btn" style="background:#1D4ED8" onclick="deptColor('#1D4ED8')" title="Blue"></div>
                   <div class="tb-sep"></div>
-                </div><div class="dept-body dept-rich" contenteditable="false" id="deptbody-tb3" onfocus="showToolbar('tb3')" onblur="hideToolbar('tb3')"><ul><li>Count all pax including adults &amp; kids upon arrival</li><li>2× additional security from Event Organizer on site</li><li>VIP Buggy on standby · 1 unit at entrance · 1 at perimeter</li><li>All vendor vehicles require load-in letter + company sticker ID</li><li><strong>Health &amp; Safety:</strong> First aid kit on site · Nearest hospital: BIMC Kuta · Emergency: +62 811 XXX · Evacuation point: Main car park</li></ul></div></div>
-              <div class="dept dept-wrap"><div class="dept-title" contenteditable="false" style="font-family:\'Inter\',sans-serif;font-size:13px;font-weight:800;color:#0F1E2E"><strong style="font-family:'Inter',sans-serif;font-size:14px;font-weight:800;color:#0F1E2E;letter-spacing:0.5px"><strong style="font-weight:900;font-size:13px">Audio Visual</strong></strong></div><div class="dept-pic"><span class="dept-pic-label">PIC</span><span class="dept-pic-name" contenteditable="false"></span></div><div class="dept-toolbar" id="toolbar-tb4">
+                </div><div class="dept-body dept-rich" contenteditable="true" id="deptbody-tb3" onfocus="showToolbar('tb3')" onblur="hideToolbar('tb3')"><ul><li>Count all pax including adults &amp; kids upon arrival</li><li>2× additional security from Event Organizer on site</li><li>VIP Buggy on standby · 1 unit at entrance · 1 at perimeter</li><li>All vendor vehicles require load-in letter + company sticker ID</li><li><strong>Health &amp; Safety:</strong> First aid kit on site · Nearest hospital: BIMC Kuta · Emergency: +62 811 XXX · Evacuation point: Main car park</li></ul></div></div>
+              <div class="dept dept-wrap"><div class="dept-title" contenteditable="true" style="font-family:\'Inter\',sans-serif;font-size:13px;font-weight:800;color:#0F1E2E"><strong style="font-family:'Inter',sans-serif;font-size:14px;font-weight:800;color:#0F1E2E;letter-spacing:0.5px"><strong style="font-weight:900;font-size:13px">Audio Visual</strong></strong></div><div class="dept-pic"><span class="dept-pic-label">PIC</span><span class="dept-pic-name" contenteditable="true"></span></div><div class="dept-toolbar" id="toolbar-tb4">
                   <button class="tb-btn" onclick="deptFmt('bold')" title="Bold"><b>B</b></button>
                   <button class="tb-btn" onclick="deptFmt('italic')" title="Italic"><i>I</i></button>
                   <button class="tb-btn" onclick="deptFmt('underline')" title="Underline"><u>U</u></button>
@@ -2946,8 +2892,8 @@ img.emoji-tw{width:1.15em;height:1.15em;vertical-align:-0.2em;margin:0 1px}
                   <div class="tb-color-btn" style="background:#0D9488" onclick="deptColor('#0D9488')" title="Teal"></div>
                   <div class="tb-color-btn" style="background:#1D4ED8" onclick="deptColor('#1D4ED8')" title="Blue"></div>
                   <div class="tb-sep"></div>
-                </div><div class="dept-body dept-rich" contenteditable="false" id="deptbody-tb4" onfocus="showToolbar('tb4')" onblur="hideToolbar('tb4')">Follow Technical Rundown — coordinate with production team<br><br><strong>Included:</strong> Pioneer CDJ3000 ×2, V10 Mixer, Standard Lighting, Digital Mapping Projectors, Smoke Machine, CO₂ ×2, LED Screens ×4<br><strong>Not Included (Client):</strong> Sound System, Generator ×4, Band Equipment, Mixer, Mics + Stands, Stage Risers, Artist Tents, Backstage Furniture</div></div>
-              <div class="dept dept-wrap"><div class="dept-title" contenteditable="false" style="font-family:\'Inter\',sans-serif;font-size:13px;font-weight:800;color:#0F1E2E"><strong style="font-family:'Inter',sans-serif;font-size:14px;font-weight:800;color:#0F1E2E;letter-spacing:0.5px"><strong style="font-weight:900;font-size:13px">IT</strong></strong></div><div class="dept-pic"><span class="dept-pic-label">PIC</span><span class="dept-pic-name" contenteditable="false"></span></div><div class="dept-toolbar" id="toolbar-tb4b">
+                </div><div class="dept-body dept-rich" contenteditable="true" id="deptbody-tb4" onfocus="showToolbar('tb4')" onblur="hideToolbar('tb4')">Follow Technical Rundown — coordinate with production team<br><br><strong>Included:</strong> Pioneer CDJ3000 ×2, V10 Mixer, Standard Lighting, Digital Mapping Projectors, Smoke Machine, CO₂ ×2, LED Screens ×4<br><strong>Not Included (Client):</strong> Sound System, Generator ×4, Band Equipment, Mixer, Mics + Stands, Stage Risers, Artist Tents, Backstage Furniture</div></div>
+              <div class="dept dept-wrap"><div class="dept-title" contenteditable="true" style="font-family:\'Inter\',sans-serif;font-size:13px;font-weight:800;color:#0F1E2E"><strong style="font-family:'Inter',sans-serif;font-size:14px;font-weight:800;color:#0F1E2E;letter-spacing:0.5px"><strong style="font-weight:900;font-size:13px">IT</strong></strong></div><div class="dept-pic"><span class="dept-pic-label">PIC</span><span class="dept-pic-name" contenteditable="true"></span></div><div class="dept-toolbar" id="toolbar-tb4b">
                   <button class="tb-btn" onclick="deptFmt('bold')" title="Bold"><b>B</b></button>
                   <button class="tb-btn" onclick="deptFmt('italic')" title="Italic"><i>I</i></button>
                   <button class="tb-btn" onclick="deptFmt('underline')" title="Underline"><u>U</u></button>
@@ -2960,8 +2906,8 @@ img.emoji-tw{width:1.15em;height:1.15em;vertical-align:-0.2em;margin:0 1px}
                   <div class="tb-color-btn" style="background:#D97706" onclick="deptColor('#D97706')"></div>
                   <div class="tb-color-btn" style="background:#0D9488" onclick="deptColor('#0D9488')"></div>
                   <div class="tb-color-btn" style="background:#1D4ED8" onclick="deptColor('#1D4ED8')"></div>
-                </div><div class="dept-body dept-rich" contenteditable="false" id="deptbody-tb4b" onfocus="showToolbar('tb4b')" onblur="hideToolbar('tb4b')"><ul><li>WiFi network and password confirmed for event day</li><li>Live streaming setup confirmed — platform and login details shared with AV team</li><li>Screen content schedule (slides, videos, holding screens) confirmed T-24hrs</li><li>Tech support contact on standby throughout event</li><li>Backup internet connection arranged for mission-critical presentations</li></ul></div></div>
-              <div class="dept dept-wrap"><div class="dept-title" contenteditable="false" style="font-family:\'Inter\',sans-serif;font-size:13px;font-weight:800;color:#0F1E2E"><strong style="font-family:'Inter',sans-serif;font-size:14px;font-weight:800;color:#0F1E2E;letter-spacing:0.5px"><strong style="font-weight:900;font-size:13px">Kitchen</strong></strong></div><div class="dept-pic"><span class="dept-pic-label">PIC</span><span class="dept-pic-name" contenteditable="false"></span></div><div class="dept-toolbar" id="toolbar-tb5">
+                </div><div class="dept-body dept-rich" contenteditable="true" id="deptbody-tb4b" onfocus="showToolbar('tb4b')" onblur="hideToolbar('tb4b')"><ul><li>WiFi network and password confirmed for event day</li><li>Live streaming setup confirmed — platform and login details shared with AV team</li><li>Screen content schedule (slides, videos, holding screens) confirmed T-24hrs</li><li>Tech support contact on standby throughout event</li><li>Backup internet connection arranged for mission-critical presentations</li></ul></div></div>
+              <div class="dept dept-wrap"><div class="dept-title" contenteditable="true" style="font-family:\'Inter\',sans-serif;font-size:13px;font-weight:800;color:#0F1E2E"><strong style="font-family:'Inter',sans-serif;font-size:14px;font-weight:800;color:#0F1E2E;letter-spacing:0.5px"><strong style="font-weight:900;font-size:13px">Kitchen</strong></strong></div><div class="dept-pic"><span class="dept-pic-label">PIC</span><span class="dept-pic-name" contenteditable="true"></span></div><div class="dept-toolbar" id="toolbar-tb5">
                   <button class="tb-btn" onclick="deptFmt('bold')" title="Bold"><b>B</b></button>
                   <button class="tb-btn" onclick="deptFmt('italic')" title="Italic"><i>I</i></button>
                   <button class="tb-btn" onclick="deptFmt('underline')" title="Underline"><u>U</u></button>
@@ -2975,8 +2921,8 @@ img.emoji-tw{width:1.15em;height:1.15em;vertical-align:-0.2em;margin:0 1px}
                   <div class="tb-color-btn" style="background:#0D9488" onclick="deptColor('#0D9488')" title="Teal"></div>
                   <div class="tb-color-btn" style="background:#1D4ED8" onclick="deptColor('#1D4ED8')" title="Blue"></div>
                   <div class="tb-sep"></div>
-                </div><div class="dept-body dept-rich" contenteditable="false" id="deptbody-tb5" onfocus="showToolbar('tb5')" onblur="hideToolbar('tb5')"><ul><li>Head Chef briefed on full menu and service times</li><li>Dietary restrictions list confirmed and distributed to kitchen team</li><li>Live cooking station staffed from dinner service start</li><li>All food stalls set up and ready 30 mins before opening time</li><li>Halal requirements strictly observed — no cross-contamination</li></ul></div></div>
-              <div class="dept dept-wrap"><div class="dept-title" contenteditable="false" style="font-family:\'Inter\',sans-serif;font-size:13px;font-weight:800;color:#0F1E2E"><strong style="font-family:'Inter',sans-serif;font-size:14px;font-weight:800;color:#0F1E2E;letter-spacing:0.5px"><strong style="font-weight:900;font-size:13px">Bar</strong></strong></div><div class="dept-pic"><span class="dept-pic-label">PIC</span><span class="dept-pic-name" contenteditable="false"></span></div><div class="dept-toolbar" id="toolbar-tb6">
+                </div><div class="dept-body dept-rich" contenteditable="true" id="deptbody-tb5" onfocus="showToolbar('tb5')" onblur="hideToolbar('tb5')"><ul><li>Head Chef briefed on full menu and service times</li><li>Dietary restrictions list confirmed and distributed to kitchen team</li><li>Live cooking station staffed from dinner service start</li><li>All food stalls set up and ready 30 mins before opening time</li><li>Halal requirements strictly observed — no cross-contamination</li></ul></div></div>
+              <div class="dept dept-wrap"><div class="dept-title" contenteditable="true" style="font-family:\'Inter\',sans-serif;font-size:13px;font-weight:800;color:#0F1E2E"><strong style="font-family:'Inter',sans-serif;font-size:14px;font-weight:800;color:#0F1E2E;letter-spacing:0.5px"><strong style="font-weight:900;font-size:13px">Bar</strong></strong></div><div class="dept-pic"><span class="dept-pic-label">PIC</span><span class="dept-pic-name" contenteditable="true"></span></div><div class="dept-toolbar" id="toolbar-tb6">
                   <button class="tb-btn" onclick="deptFmt('bold')" title="Bold"><b>B</b></button>
                   <button class="tb-btn" onclick="deptFmt('italic')" title="Italic"><i>I</i></button>
                   <button class="tb-btn" onclick="deptFmt('underline')" title="Underline"><u>U</u></button>
@@ -2990,8 +2936,8 @@ img.emoji-tw{width:1.15em;height:1.15em;vertical-align:-0.2em;margin:0 1px}
                   <div class="tb-color-btn" style="background:#0D9488" onclick="deptColor('#0D9488')" title="Teal"></div>
                   <div class="tb-color-btn" style="background:#1D4ED8" onclick="deptColor('#1D4ED8')" title="Blue"></div>
                   <div class="tb-sep"></div>
-                </div><div class="dept-body dept-rich" contenteditable="false" id="deptbody-tb6" onfocus="showToolbar('tb6')" onblur="hideToolbar('tb6')"><ul><li>Bar Manager to confirm stock quantities before event</li><li>Bar opens non-alcoholic beverages first — alcoholic from scheduled time only</li><li>No service to visibly intoxicated guests</li><li>Underage guests — no alcoholic service under any circumstances</li><li>Leftover stock from first service area transferred to next bar</li><li>Cash and tab system confirmed with Finance team before doors open</li></ul></div></div>
-              <div class="dept dept-wrap"><div class="dept-title" contenteditable="false" style="font-family:\'Inter\',sans-serif;font-size:13px;font-weight:800;color:#0F1E2E"><strong style="font-family:'Inter',sans-serif;font-size:14px;font-weight:800;color:#0F1E2E;letter-spacing:0.5px"><strong style="font-weight:900;font-size:13px">Creative &amp; Photography</strong></strong></div><div class="dept-pic"><span class="dept-pic-label">PIC</span><span class="dept-pic-name" contenteditable="false"></span></div><div class="dept-toolbar" id="toolbar-tb7">
+                </div><div class="dept-body dept-rich" contenteditable="true" id="deptbody-tb6" onfocus="showToolbar('tb6')" onblur="hideToolbar('tb6')"><ul><li>Bar Manager to confirm stock quantities before event</li><li>Bar opens non-alcoholic beverages first — alcoholic from scheduled time only</li><li>No service to visibly intoxicated guests</li><li>Underage guests — no alcoholic service under any circumstances</li><li>Leftover stock from first service area transferred to next bar</li><li>Cash and tab system confirmed with Finance team before doors open</li></ul></div></div>
+              <div class="dept dept-wrap"><div class="dept-title" contenteditable="true" style="font-family:\'Inter\',sans-serif;font-size:13px;font-weight:800;color:#0F1E2E"><strong style="font-family:'Inter',sans-serif;font-size:14px;font-weight:800;color:#0F1E2E;letter-spacing:0.5px"><strong style="font-weight:900;font-size:13px">Creative &amp; Photography</strong></strong></div><div class="dept-pic"><span class="dept-pic-label">PIC</span><span class="dept-pic-name" contenteditable="true"></span></div><div class="dept-toolbar" id="toolbar-tb7">
                   <button class="tb-btn" onclick="deptFmt('bold')" title="Bold"><b>B</b></button>
                   <button class="tb-btn" onclick="deptFmt('italic')" title="Italic"><i>I</i></button>
                   <button class="tb-btn" onclick="deptFmt('underline')" title="Underline"><u>U</u></button>
@@ -3005,8 +2951,8 @@ img.emoji-tw{width:1.15em;height:1.15em;vertical-align:-0.2em;margin:0 1px}
                   <div class="tb-color-btn" style="background:#0D9488" onclick="deptColor('#0D9488')" title="Teal"></div>
                   <div class="tb-color-btn" style="background:#1D4ED8" onclick="deptColor('#1D4ED8')" title="Blue"></div>
                   <div class="tb-sep"></div>
-                </div><div class="dept-body dept-rich" contenteditable="false" id="deptbody-tb7" onfocus="showToolbar('tb7')" onblur="hideToolbar('tb7')"><ul><li>All signage installed and checked by T-2 hours</li><li>Food tags, menus and printed materials distributed to relevant stations</li><li>Photography: photographer on site from doors open · Videographer from evening session</li><li>Drone permitted subject to venue approval — confirm timing with Events Team</li><li>No media access backstage without clearance from Events Team</li></ul></div></div>
-              <div class="dept dept-wrap"><div class="dept-title" contenteditable="false" style="font-family:\'Inter\',sans-serif;font-size:13px;font-weight:800;color:#0F1E2E"><strong style="font-family:'Inter',sans-serif;font-size:14px;font-weight:800;color:#0F1E2E;letter-spacing:0.5px"><strong style="font-weight:900;font-size:13px">Sales &amp; Marketing</strong></strong></div><div class="dept-pic"><span class="dept-pic-label">PIC</span><span class="dept-pic-name" contenteditable="false"></span></div><div class="dept-toolbar" id="toolbar-tb8">
+                </div><div class="dept-body dept-rich" contenteditable="true" id="deptbody-tb7" onfocus="showToolbar('tb7')" onblur="hideToolbar('tb7')"><ul><li>All signage installed and checked by T-2 hours</li><li>Food tags, menus and printed materials distributed to relevant stations</li><li>Photography: photographer on site from doors open · Videographer from evening session</li><li>Drone permitted subject to venue approval — confirm timing with Events Team</li><li>No media access backstage without clearance from Events Team</li></ul></div></div>
+              <div class="dept dept-wrap"><div class="dept-title" contenteditable="true" style="font-family:\'Inter\',sans-serif;font-size:13px;font-weight:800;color:#0F1E2E"><strong style="font-family:'Inter',sans-serif;font-size:14px;font-weight:800;color:#0F1E2E;letter-spacing:0.5px"><strong style="font-weight:900;font-size:13px">Sales &amp; Marketing</strong></strong></div><div class="dept-pic"><span class="dept-pic-label">PIC</span><span class="dept-pic-name" contenteditable="true"></span></div><div class="dept-toolbar" id="toolbar-tb8">
                   <button class="tb-btn" onclick="deptFmt('bold')" title="Bold"><b>B</b></button>
                   <button class="tb-btn" onclick="deptFmt('italic')" title="Italic"><i>I</i></button>
                   <button class="tb-btn" onclick="deptFmt('underline')" title="Underline"><u>U</u></button>
@@ -3020,8 +2966,8 @@ img.emoji-tw{width:1.15em;height:1.15em;vertical-align:-0.2em;margin:0 1px}
                   <div class="tb-color-btn" style="background:#0D9488" onclick="deptColor('#0D9488')" title="Teal"></div>
                   <div class="tb-color-btn" style="background:#1D4ED8" onclick="deptColor('#1D4ED8')" title="Blue"></div>
                   <div class="tb-sep"></div>
-                </div><div class="dept-body dept-rich" contenteditable="false" id="deptbody-tb8" onfocus="showToolbar('tb8')" onblur="hideToolbar('tb8')"><ul><li>Social media coverage — coordinate with Events Team on posting schedule</li><li>All content requires client approval before going live</li><li>Press list confirmed with client PR team minimum 48hrs before event</li><li>Post-event recap content delivered within 48 hours of event close</li></ul></div></div>
-              <div class="dept dept-wrap"><div class="dept-title" contenteditable="false" style="font-family:\'Inter\',sans-serif;font-size:13px;font-weight:800;color:#0F1E2E"><strong style="font-family:'Inter',sans-serif;font-size:14px;font-weight:800;color:#0F1E2E;letter-spacing:0.5px"><strong style="font-weight:900;font-size:13px">Housekeeping</strong></strong></div><div class="dept-pic"><span class="dept-pic-label">PIC</span><span class="dept-pic-name" contenteditable="false"></span></div><div class="dept-toolbar" id="toolbar-tb9">
+                </div><div class="dept-body dept-rich" contenteditable="true" id="deptbody-tb8" onfocus="showToolbar('tb8')" onblur="hideToolbar('tb8')"><ul><li>Social media coverage — coordinate with Events Team on posting schedule</li><li>All content requires client approval before going live</li><li>Press list confirmed with client PR team minimum 48hrs before event</li><li>Post-event recap content delivered within 48 hours of event close</li></ul></div></div>
+              <div class="dept dept-wrap"><div class="dept-title" contenteditable="true" style="font-family:\'Inter\',sans-serif;font-size:13px;font-weight:800;color:#0F1E2E"><strong style="font-family:'Inter',sans-serif;font-size:14px;font-weight:800;color:#0F1E2E;letter-spacing:0.5px"><strong style="font-weight:900;font-size:13px">Housekeeping</strong></strong></div><div class="dept-pic"><span class="dept-pic-label">PIC</span><span class="dept-pic-name" contenteditable="true"></span></div><div class="dept-toolbar" id="toolbar-tb9">
                   <button class="tb-btn" onclick="deptFmt('bold')" title="Bold"><b>B</b></button>
                   <button class="tb-btn" onclick="deptFmt('italic')" title="Italic"><i>I</i></button>
                   <button class="tb-btn" onclick="deptFmt('underline')" title="Underline"><u>U</u></button>
@@ -3035,8 +2981,8 @@ img.emoji-tw{width:1.15em;height:1.15em;vertical-align:-0.2em;margin:0 1px}
                   <div class="tb-color-btn" style="background:#0D9488" onclick="deptColor('#0D9488')" title="Teal"></div>
                   <div class="tb-color-btn" style="background:#1D4ED8" onclick="deptColor('#1D4ED8')" title="Blue"></div>
                   <div class="tb-sep"></div>
-                </div><div class="dept-body dept-rich" contenteditable="false" id="deptbody-tb9" onfocus="showToolbar('tb9')" onblur="hideToolbar('tb9')"><ul><li>Full venue setup completed and inspected by T-3 hours</li><li>Towels prepared per event brief — swimmers and VIP areas</li><li>Bean bags, furniture and props arranged per layout plan</li><li>Continuous cleaning throughout event — team on rotation</li><li>Post-event breakdown begins immediately after close</li></ul></div></div>
-              <div class="dept dept-wrap"><div class="dept-title" contenteditable="false" style="font-family:\'Inter\',sans-serif;font-size:13px;font-weight:800;color:#0F1E2E"><strong style="font-family:'Inter',sans-serif;font-size:14px;font-weight:800;color:#0F1E2E;letter-spacing:0.5px"><strong style="font-weight:900;font-size:13px">Engineering</strong></strong></div><div class="dept-pic"><span class="dept-pic-label">PIC</span><span class="dept-pic-name" contenteditable="false"></span></div><div class="dept-toolbar" id="toolbar-tb10">
+                </div><div class="dept-body dept-rich" contenteditable="true" id="deptbody-tb9" onfocus="showToolbar('tb9')" onblur="hideToolbar('tb9')"><ul><li>Full venue setup completed and inspected by T-3 hours</li><li>Towels prepared per event brief — swimmers and VIP areas</li><li>Bean bags, furniture and props arranged per layout plan</li><li>Continuous cleaning throughout event — team on rotation</li><li>Post-event breakdown begins immediately after close</li></ul></div></div>
+              <div class="dept dept-wrap"><div class="dept-title" contenteditable="true" style="font-family:\'Inter\',sans-serif;font-size:13px;font-weight:800;color:#0F1E2E"><strong style="font-family:'Inter',sans-serif;font-size:14px;font-weight:800;color:#0F1E2E;letter-spacing:0.5px"><strong style="font-weight:900;font-size:13px">Engineering</strong></strong></div><div class="dept-pic"><span class="dept-pic-label">PIC</span><span class="dept-pic-name" contenteditable="true"></span></div><div class="dept-toolbar" id="toolbar-tb10">
                   <button class="tb-btn" onclick="deptFmt('bold')" title="Bold"><b>B</b></button>
                   <button class="tb-btn" onclick="deptFmt('italic')" title="Italic"><i>I</i></button>
                   <button class="tb-btn" onclick="deptFmt('underline')" title="Underline"><u>U</u></button>
@@ -3050,8 +2996,8 @@ img.emoji-tw{width:1.15em;height:1.15em;vertical-align:-0.2em;margin:0 1px}
                   <div class="tb-color-btn" style="background:#0D9488" onclick="deptColor('#0D9488')" title="Teal"></div>
                   <div class="tb-color-btn" style="background:#1D4ED8" onclick="deptColor('#1D4ED8')" title="Blue"></div>
                   <div class="tb-sep"></div>
-                </div><div class="dept-body dept-rich" contenteditable="false" id="deptbody-tb10" onfocus="showToolbar('tb10')" onblur="hideToolbar('tb10')"><ul><li>Barricade setup as per approved layout plan</li><li>All power connections checked and signed off before guest arrival</li><li>Generator backup confirmed and tested</li><li>On-call throughout event for any technical issues</li></ul></div></div>
-              <div class="dept dept-wrap"><div class="dept-title" contenteditable="false" style="font-family:\'Inter\',sans-serif;font-size:13px;font-weight:800;color:#0F1E2E"><strong style="font-family:'Inter',sans-serif;font-size:14px;font-weight:800;color:#0F1E2E;letter-spacing:0.5px"><strong style="font-weight:900;font-size:13px">Finance &amp; Cashier</strong></strong></div><div class="dept-pic"><span class="dept-pic-label">PIC</span><span class="dept-pic-name" contenteditable="false"></span></div><div class="dept-toolbar" id="toolbar-tb11">
+                </div><div class="dept-body dept-rich" contenteditable="true" id="deptbody-tb10" onfocus="showToolbar('tb10')" onblur="hideToolbar('tb10')"><ul><li>Barricade setup as per approved layout plan</li><li>All power connections checked and signed off before guest arrival</li><li>Generator backup confirmed and tested</li><li>On-call throughout event for any technical issues</li></ul></div></div>
+              <div class="dept dept-wrap"><div class="dept-title" contenteditable="true" style="font-family:\'Inter\',sans-serif;font-size:13px;font-weight:800;color:#0F1E2E"><strong style="font-family:'Inter',sans-serif;font-size:14px;font-weight:800;color:#0F1E2E;letter-spacing:0.5px"><strong style="font-weight:900;font-size:13px">Finance &amp; Cashier</strong></strong></div><div class="dept-pic"><span class="dept-pic-label">PIC</span><span class="dept-pic-name" contenteditable="true"></span></div><div class="dept-toolbar" id="toolbar-tb11">
                   <button class="tb-btn" onclick="deptFmt('bold')" title="Bold"><b>B</b></button>
                   <button class="tb-btn" onclick="deptFmt('italic')" title="Italic"><i>I</i></button>
                   <button class="tb-btn" onclick="deptFmt('underline')" title="Underline"><u>U</u></button>
@@ -3065,7 +3011,7 @@ img.emoji-tw{width:1.15em;height:1.15em;vertical-align:-0.2em;margin:0 1px}
                   <div class="tb-color-btn" style="background:#0D9488" onclick="deptColor('#0D9488')" title="Teal"></div>
                   <div class="tb-color-btn" style="background:#1D4ED8" onclick="deptColor('#1D4ED8')" title="Blue"></div>
                   <div class="tb-sep"></div>
-                </div><div class="dept-body dept-rich" contenteditable="false" id="deptbody-tb11" onfocus="showToolbar('tb11')" onblur="hideToolbar('tb11')"><ul><li>Payment status confirmed before event day — see Finance section</li><li>Cashier station set up and float confirmed</li><li>Any additional charges during event logged and approved by Events Manager</li><li>Final reconciliation completed within 24 hours post-event</li></ul></div>
+                </div><div class="dept-body dept-rich" contenteditable="true" id="deptbody-tb11" onfocus="showToolbar('tb11')" onblur="hideToolbar('tb11')"><ul><li>Payment status confirmed before event day — see Finance section</li><li>Cashier station set up and float confirmed</li><li>Any additional charges during event logged and approved by Events Manager</li><li>Final reconciliation completed within 24 hours post-event</li></ul></div>
             </div>
               <div style="padding:12px 0 4px">
                 <button style="width:100%;padding:12px 0;background:none;border:1.5px dashed var(--line);border-radius:6px;font-family:'Inter',sans-serif;font-size:12px;font-weight:600;color:var(--ink3);cursor:pointer;transition:all 0.15s" onmouseover="this.style.borderColor='var(--gold)';this.style.color='var(--gold)'" onmouseout="this.style.borderColor='var(--line)';this.style.color='var(--ink3)'" onclick="addDepartment()">+ Add Department</button>
@@ -3696,15 +3642,10 @@ img.emoji-tw{width:1.15em;height:1.15em;vertical-align:-0.2em;margin:0 1px}
   </div><!-- /right-col -->
   </div><!-- /app -->
 
-  <div class="float-edit" id="float-edit">
-    <button class="float-edit-btn" id="float-edit-btn" onclick="toggleEditMode()">✏ Edit Event Plan</button>
-  </div>
-
   <div class="toast" id="toastEl"></div>
 
 <script>
 // ── CORE ──
-let editMode=false;
 let beoAutoSaveTimer=null;
 let currentLang='en';
 
@@ -3747,7 +3688,6 @@ function nav(id, pushState=true){
   page.classList.add('on');
   const nb=document.getElementById('n-'+id);
   if(nb)nb.classList.add('active');
-  if(id!=='beo'&&editMode)toggleEditMode();
   if(id==='notes'){mnGoToday();}
   if(id==='cal'){calRender();}
   if(id==='home'){initHome(); announceRender();}
@@ -3759,8 +3699,6 @@ function nav(id, pushState=true){
   if(id==='reports'){setTimeout(()=>{ const t=document.getElementById('reports-tab-day'); if(t) reportsSetMode('day', t); }, 0);}
   if(id==='maint'){maintRender();}
   if(id==='inventory'){inventoryRenderAreas(); inventoryRenderList();}
-  const floatBtn=document.getElementById('float-edit');
-  if(floatBtn)floatBtn.style.display=id==='beo'?'block':'none';
 
   // Wait a frame so the page's content/height is fully laid out before positioning scroll
   requestAnimationFrame(() => {
@@ -3807,17 +3745,11 @@ function updateSkyBanner(){
 
 // Handle browser back/forward
 // Show the "back to top" button once scrolled down a bit, on any page
-const isMobileLayout = () => window.matchMedia('(max-width: 860px), (pointer: coarse)').matches;
 window.addEventListener('scroll', () => {
   const btn = document.getElementById('scroll-top-btn');
   if(btn){
     if(window.scrollY > 400) btn.classList.add('visible');
     else btn.classList.remove('visible');
-  }
-  const floatEdit = document.getElementById('float-edit');
-  if(floatEdit && isMobileLayout()){
-    if(window.scrollY > 320) floatEdit.classList.add('mobile-visible');
-    else floatEdit.classList.remove('mobile-visible');
   }
 });
 
@@ -4164,42 +4096,17 @@ function beoTriggerSave(){
   },800);
 }
 
-function toggleEditMode(){
-  editMode=!editMode;
-  const beo=document.getElementById('p-beo');
-  const bar=document.getElementById('edit-mode-bar');
-  const editBtn=document.getElementById('edit-toggle-btn');
-  const fb=document.getElementById('float-edit-btn');
-
-  if(editMode){
-    beo.querySelectorAll('[contenteditable]').forEach(el=>{
-      if(!el.closest('.add-artist-btn'))el.setAttribute('contenteditable','true');
-    });
-    beo.querySelectorAll('.rf-val,.aic-val').forEach(el=>el.setAttribute('contenteditable','true'));
-    // Also enable fin-tax-pct
-    const taxPct=document.getElementById('fin-tax-pct');
-    if(taxPct)taxPct.setAttribute('contenteditable','true');
-    beo.classList.add('editing');
-    if(bar)bar.classList.add('on');
-    if(editBtn){editBtn.innerHTML='✕ Stop Editing';editBtn.className='btn btn-ghost';}
-    if(fb){fb.innerHTML='✓ Done Editing';fb.classList.add('editing');}
-    beo.querySelectorAll('[contenteditable="true"]').forEach(el=>el.addEventListener('input',beoTriggerSave));
-    toast('Edit mode on — changes save automatically');
-    const dp=document.getElementById('det-date');if(dp)dp.disabled=false;
-  } else {
-    beo.querySelectorAll('[contenteditable]').forEach(el=>{
-      el.setAttribute('contenteditable','false');el.blur();el.removeEventListener('input',beoTriggerSave);
-    });
-    beo.querySelectorAll('.rf-val,.aic-val').forEach(el=>{
-      el.setAttribute('contenteditable','false');el.blur();
-    });
-    beo.classList.remove('editing');
-    if(bar)bar.classList.remove('on');
-    if(editBtn){editBtn.innerHTML='✏ Edit Event Plan';editBtn.className='btn btn-gold';}
-    if(fb){fb.innerHTML='✏ Edit Event Plan';fb.classList.remove('editing');}
-    toast('All changes saved ✓');
-    const dp2=document.getElementById('det-date');if(dp2)dp2.disabled=true;
-  }
+let beoAutosaveWired = false;
+function beoInitAlwaysEditable(){
+  const beo = document.getElementById('p-beo');
+  if(!beo || beoAutosaveWired) return;
+  beoAutosaveWired = true;
+  beo.querySelectorAll('[contenteditable="true"]').forEach(el => {
+    el.addEventListener('input', beoTriggerSave);
+    el.addEventListener('blur', beoTriggerSave);
+  });
+  const dateInput = document.getElementById('det-date');
+  if(dateInput) dateInput.addEventListener('change', beoTriggerSave);
 }
 
 // ── ROW MANAGEMENT ──
@@ -4383,7 +4290,6 @@ function addArtist(){
 let activeToolbar=null;
 
 function showToolbar(id){
-  if(!editMode)return;
   if(activeToolbar&&activeToolbar!==id)hideToolbar(activeToolbar);
   const tb=document.getElementById('toolbar-'+id);
   if(tb)tb.classList.add('show');
@@ -4482,7 +4388,7 @@ function addDepartment(){
   const div=document.createElement('div');
   div.className='dept dept-wrap';
   div.dataset.deptId=id;
-  div.innerHTML=`<div class="dept-title" contenteditable="true" style="font-family:'Inter',sans-serif;font-size:13px;font-weight:800;color:#0F1E2E;outline:none;border-bottom:1.5px solid var(--gold);padding-bottom:4px">New Department</div><div class="dept-pic"><span class="dept-pic-label">PIC</span><span class="dept-pic-name" contenteditable="false"></span></div><div class="dept-toolbar" id="toolbar-${id}"><button class="tb-btn" onclick="deptFmt('bold')"><b>B</b></button><button class="tb-btn" onclick="deptFmt('italic')"><i>I</i></button><button class="tb-btn" onclick="deptFmt('underline')"><u>U</u></button><div class="tb-sep"></div><button class="tb-btn" onclick="deptFmt('insertUnorderedList')">•</button><button class="tb-btn" onclick="deptFmt('insertOrderedList')">1.</button><div class="tb-sep"></div><div class="tb-color-btn" style="background:#1A1A1A" onclick="deptColor('#1A1A1A')"></div><div class="tb-color-btn" style="background:#DC2626" onclick="deptColor('#DC2626')"></div><div class="tb-color-btn" style="background:#D97706" onclick="deptColor('#D97706')"></div><div class="tb-color-btn" style="background:#0D9488" onclick="deptColor('#0D9488')"></div><div class="tb-sep"></div><button class="tb-btn" style="color:var(--red)" onclick="this.closest('.dept').remove();toast('Department removed')">×</button></div><div class="dept-body dept-rich" contenteditable="true" id="deptbody-${id}" onfocus="showToolbar('${id}')" onblur="hideToolbar('${id}')">Type department notes here…</div>${deptExtraHtml(id)}`;
+  div.innerHTML=`<div class="dept-title" contenteditable="true" style="font-family:'Inter',sans-serif;font-size:13px;font-weight:800;color:#0F1E2E;outline:none;border-bottom:1.5px solid var(--gold);padding-bottom:4px">New Department</div><div class="dept-pic"><span class="dept-pic-label">PIC</span><span class="dept-pic-name" contenteditable="true"></span></div><div class="dept-toolbar" id="toolbar-${id}"><button class="tb-btn" onclick="deptFmt('bold')"><b>B</b></button><button class="tb-btn" onclick="deptFmt('italic')"><i>I</i></button><button class="tb-btn" onclick="deptFmt('underline')"><u>U</u></button><div class="tb-sep"></div><button class="tb-btn" onclick="deptFmt('insertUnorderedList')">•</button><button class="tb-btn" onclick="deptFmt('insertOrderedList')">1.</button><div class="tb-sep"></div><div class="tb-color-btn" style="background:#1A1A1A" onclick="deptColor('#1A1A1A')"></div><div class="tb-color-btn" style="background:#DC2626" onclick="deptColor('#DC2626')"></div><div class="tb-color-btn" style="background:#D97706" onclick="deptColor('#D97706')"></div><div class="tb-color-btn" style="background:#0D9488" onclick="deptColor('#0D9488')"></div><div class="tb-sep"></div><button class="tb-btn" style="color:var(--red)" onclick="this.closest('.dept').remove();toast('Department removed')">×</button></div><div class="dept-body dept-rich" contenteditable="true" id="deptbody-${id}" onfocus="showToolbar('${id}')" onblur="hideToolbar('${id}')">Type department notes here…</div>${deptExtraHtml(id)}`;
   const addBtn=container.querySelector('button[onclick="addDepartment()"]');
   if(addBtn)container.insertBefore(div,addBtn.closest('div'));
   else container.appendChild(div);
@@ -5340,7 +5246,7 @@ const _origNavKB = window.nav;
 window.nav = function(id, pushState){
   if(typeof _origNavKB === 'function') _origNavKB(id, pushState);
   if(id === 'kb') setTimeout(()=>{ kbRenderProjectTabs(); kbRender(); kbInitColColours(); kbApplyColTitles(); }, 50);
-  if(id === 'beo') setTimeout(()=>{ deptInitAllPhotoLinkUI(); }, 50);
+  if(id === 'beo') setTimeout(()=>{ deptInitAllPhotoLinkUI(); beoInitAlwaysEditable(); }, 50);
   if(id === 'past') setTimeout(()=>{ pastEventsRender(); }, 50);
 };
 

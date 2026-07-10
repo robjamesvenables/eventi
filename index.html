@@ -3825,25 +3825,57 @@ window.pollVote = function(id){
   pollRender();
 };
 
+const POLL_MAX_OPTIONS = 12;
+
+function pollOptFieldHtml(n){
+  return `<div class="poll-opt-field" style="display:flex;gap:6px;margin-bottom:8px">
+    <input type="text" class="poll-opt-input" placeholder="Option ${n}" style="flex:1;padding:10px 14px;border:1.5px solid #E2E8F0;border-radius:9px;font-family:'Inter',sans-serif;font-size:13px;box-sizing:border-box;outline:none">
+    ${n>2 ? `<button onclick="this.closest('.poll-opt-field').remove();pollUpdateAddBtnState()" title="Remove option" style="padding:0 12px;background:none;border:none;color:#EF4444;font-size:18px;cursor:pointer">×</button>` : ''}
+  </div>`;
+}
+
 window.pollNew = function(){
-  appModalShow({
-    title: 'New Team Poll',
-    fields: [
-      {label:'Question', placeholder:"e.g. What's the best time for team lunch?"},
-      {label:'Option 1', placeholder:'e.g. 11:00'},
-      {label:'Option 2', placeholder:'e.g. 12:00'},
-      {label:'Option 3 (optional)', placeholder:'e.g. 1:00', optional:true},
-      {label:'Option 4 (optional)', placeholder:'e.g. 2:00', optional:true},
-      {label:'Option 5 (optional)', placeholder:'e.g. 3:00', optional:true},
-    ],
-    onOk([q, o1, o2, o3, o4, o5]){
-      const opts = [o1, o2, o3, o4, o5].filter(v => v && v.trim()).map((label, i) => ({id: i+1, label, votes: []}));
-      pollData = {question: q, options: opts};
-      pollMyVote = null;
-      pollRender();
-      toast('New poll posted ✓');
-    }
-  });
+  const fields = document.getElementById('pollOptFields');
+  fields.innerHTML = pollOptFieldHtml(1) + pollOptFieldHtml(2);
+  document.getElementById('pollQInput').value = '';
+  pollUpdateAddBtnState();
+  document.getElementById('pollModal').style.display = 'flex';
+  setTimeout(()=>document.getElementById('pollQInput').focus(), 50);
+};
+
+window.pollModalClose = function(){
+  document.getElementById('pollModal').style.display = 'none';
+};
+
+window.pollAddOptionField = function(){
+  const count = document.querySelectorAll('.poll-opt-field').length;
+  if(count >= POLL_MAX_OPTIONS) return;
+  document.getElementById('pollOptFields').insertAdjacentHTML('beforeend', pollOptFieldHtml(count+1));
+  pollUpdateAddBtnState();
+};
+
+function pollUpdateAddBtnState(){
+  const btn = document.getElementById('pollAddOptBtn');
+  const count = document.querySelectorAll('.poll-opt-field').length;
+  if(count >= POLL_MAX_OPTIONS){
+    btn.style.display = 'none';
+  } else {
+    btn.style.display = 'block';
+    btn.textContent = `+ Add Option (${count}/${POLL_MAX_OPTIONS})`;
+  }
+}
+
+window.pollSubmitNew = function(){
+  const q = document.getElementById('pollQInput').value.trim();
+  if(!q){ toast('Add a question first'); return; }
+  const inputs = Array.from(document.querySelectorAll('.poll-opt-input'));
+  const opts = inputs.map(i=>i.value.trim()).filter(Boolean).map((label,i)=>({id:i+1, label, votes:[]}));
+  if(opts.length < 2){ toast('Add at least 2 options'); return; }
+  pollData = {question: q, options: opts};
+  pollMyVote = null;
+  pollRender();
+  pollModalClose();
+  toast('New poll posted ✓');
 };
 
 function initHome(){
@@ -8677,6 +8709,22 @@ document.addEventListener('DOMContentLoaded', initCardColours);
 </script>
 
 <!-- ── REUSABLE INPUT MODAL ── -->
+<!-- ── NEW POLL MODAL (dynamic options, up to 12) ── -->
+<div id="pollModal" style="display:none;position:fixed;inset:0;background:rgba(15,30,46,0.55);z-index:10000;align-items:center;justify-content:center" onclick="if(event.target===this)pollModalClose()">
+  <div style="background:white;border-radius:16px;padding:28px;width:100%;max-width:420px;margin:0 20px;box-shadow:0 20px 60px rgba(0,0,0,0.2);max-height:90vh;overflow-y:auto">
+    <div style="font-size:16px;font-weight:800;color:#0F1E2E;margin-bottom:18px">New Team Poll</div>
+    <div style="font-size:11px;font-weight:700;color:#94A3B8;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px">Question</div>
+    <input id="pollQInput" type="text" placeholder="e.g. What's the best time for team lunch?" style="width:100%;padding:11px 14px;border:1.5px solid #E2E8F0;border-radius:9px;font-family:'Inter',sans-serif;font-size:13px;margin-bottom:18px;box-sizing:border-box;outline:none">
+    <div style="font-size:11px;font-weight:700;color:#94A3B8;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px">Options</div>
+    <div id="pollOptFields"></div>
+    <button id="pollAddOptBtn" onclick="pollAddOptionField()" style="width:100%;padding:9px;background:none;border:1.5px dashed #E2E8F0;border-radius:8px;font-family:'Inter',sans-serif;font-size:12px;font-weight:600;color:#64748B;cursor:pointer;margin-top:2px">+ Add Option</button>
+    <div style="display:flex;gap:10px;margin-top:20px">
+      <button onclick="pollSubmitNew()" style="flex:1;padding:12px;background:#0F1E2E;border:none;border-radius:9px;font-family:'Inter',sans-serif;font-size:14px;font-weight:700;color:white;cursor:pointer">Post Poll</button>
+      <button onclick="pollModalClose()" style="padding:12px 20px;background:#F1F5F9;border:none;border-radius:9px;font-family:'Inter',sans-serif;font-size:14px;font-weight:600;color:#64748B;cursor:pointer">Cancel</button>
+    </div>
+  </div>
+</div>
+
 <div id="appModal" style="display:none;position:fixed;inset:0;background:rgba(15,30,46,0.55);z-index:10000;align-items:center;justify-content:center" onclick="if(event.target===this)appModalClose()">
   <div id="appModalBox" style="background:white;border-radius:16px;padding:28px;width:100%;max-width:400px;margin:0 20px;box-shadow:0 20px 60px rgba(0,0,0,0.2);max-height:90vh;overflow-y:auto">
     <div id="appModalTitle" style="font-size:16px;font-weight:800;color:#0F1E2E;margin-bottom:6px"></div>

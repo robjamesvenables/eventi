@@ -2328,7 +2328,12 @@ img.emoji-tw{width:1.15em;height:1.15em;vertical-align:-0.2em;margin:0 1px}
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
             Team Poll
           </div>
-          <button onclick="pollNew()" style="padding:6px 14px;background:rgba(255,255,255,0.12);border:none;border-radius:8px;font-family:'Inter',sans-serif;font-size:12px;font-weight:700;color:white;cursor:pointer">+ New Poll</button>
+          <div style="display:flex;gap:8px">
+            <button id="poll-edit-btn" onclick="pollEdit()" title="Edit poll" style="display:none;width:32px;background:rgba(255,255,255,0.12);border:none;border-radius:8px;align-items:center;justify-content:center;cursor:pointer">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="white"><circle cx="12" cy="5" r="2.2"/><circle cx="12" cy="12" r="2.2"/><circle cx="12" cy="19" r="2.2"/></svg>
+            </button>
+            <button onclick="pollNew()" style="padding:6px 14px;background:rgba(255,255,255,0.12);border:none;border-radius:8px;font-family:'Inter',sans-serif;font-size:12px;font-weight:700;color:white;cursor:pointer">+ New Poll</button>
+          </div>
         </div>
         <div id="poll-body" style="padding:20px 20px 22px"></div>
       </div>
@@ -3824,7 +3829,10 @@ function pollTotalVotes(){
 function pollRender(){
   const body = document.getElementById('poll-body');
   const wrap = document.getElementById('poll-wrap');
+  const editBtn = document.getElementById('poll-edit-btn');
   if(!body) return;
+
+  if(editBtn) editBtn.style.display = pollData ? 'flex' : 'none';
 
   if(!pollData){
     // Compact empty state - no tall awkward blank card
@@ -3911,10 +3919,30 @@ function pollOptFieldHtml(n){
   </div>`;
 }
 
+let pollModalMode = 'new';
+
 window.pollNew = function(){
+  pollModalMode = 'new';
+  document.getElementById('pollModalTitle').textContent = 'New Team Poll';
+  document.getElementById('pollModalSubmitBtn').textContent = 'Post Poll';
   const fields = document.getElementById('pollOptFields');
   fields.innerHTML = pollOptFieldHtml(1) + pollOptFieldHtml(2);
   document.getElementById('pollQInput').value = '';
+  pollUpdateAddBtnState();
+  document.getElementById('pollModal').style.display = 'flex';
+  setTimeout(()=>document.getElementById('pollQInput').focus(), 50);
+};
+
+window.pollEdit = function(){
+  if(!pollData) return;
+  pollModalMode = 'edit';
+  document.getElementById('pollModalTitle').textContent = 'Edit Team Poll';
+  document.getElementById('pollModalSubmitBtn').textContent = 'Save Changes';
+  const fields = document.getElementById('pollOptFields');
+  fields.innerHTML = pollData.options.map((o,i) => pollOptFieldHtml(i+1)).join('');
+  document.getElementById('pollQInput').value = pollData.question;
+  const inputs = document.querySelectorAll('.poll-opt-input');
+  pollData.options.forEach((o,i) => { if(inputs[i]) inputs[i].value = o.label; });
   pollUpdateAddBtnState();
   document.getElementById('pollModal').style.display = 'flex';
   setTimeout(()=>document.getElementById('pollQInput').focus(), 50);
@@ -3946,8 +3974,25 @@ window.pollSubmitNew = function(){
   const q = document.getElementById('pollQInput').value.trim();
   if(!q){ toast('Add a question first'); return; }
   const inputs = Array.from(document.querySelectorAll('.poll-opt-input'));
-  const opts = inputs.map(i=>i.value.trim()).filter(Boolean).map((label,i)=>({id:i+1, label, votes:[]}));
-  if(opts.length < 2){ toast('Add at least 2 options'); return; }
+  const labels = inputs.map(i=>i.value.trim()).filter(Boolean);
+  if(labels.length < 2){ toast('Add at least 2 options'); return; }
+
+  if(pollModalMode === 'edit' && pollData){
+    const oldOptions = pollData.options;
+    const maxOldId = Math.max(0, ...oldOptions.map(o=>o.id));
+    pollData.question = q;
+    pollData.options = labels.map((label, i) => {
+      const existing = oldOptions[i];
+      return existing ? {...existing, label} : {id: maxOldId + i + 1, label, votes: []};
+    });
+    pollMyVote = null;
+    pollRender();
+    pollModalClose();
+    toast('Poll updated ✓');
+    return;
+  }
+
+  const opts = labels.map((label,i)=>({id:i+1, label, votes:[]}));
   pollData = {question: q, options: opts};
   pollMyVote = null;
   pollRender();
@@ -9163,14 +9208,14 @@ document.addEventListener('DOMContentLoaded', initCardColours);
 <!-- ── NEW POLL MODAL (dynamic options, up to 12) ── -->
 <div id="pollModal" style="display:none;position:fixed;inset:0;background:rgba(15,30,46,0.55);z-index:10000;align-items:center;justify-content:center" onclick="if(event.target===this)pollModalClose()">
   <div style="background:white;border-radius:16px;padding:28px;width:100%;max-width:420px;margin:0 20px;box-shadow:0 20px 60px rgba(0,0,0,0.2);max-height:90vh;overflow-y:auto">
-    <div style="font-size:16px;font-weight:800;color:#0F1E2E;margin-bottom:18px">New Team Poll</div>
+    <div id="pollModalTitle" style="font-size:16px;font-weight:800;color:#0F1E2E;margin-bottom:18px">New Team Poll</div>
     <div style="font-size:11px;font-weight:700;color:#94A3B8;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px">Question</div>
     <input id="pollQInput" type="text" placeholder="e.g. What's the best time for team lunch?" style="width:100%;padding:11px 14px;border:1.5px solid #E2E8F0;border-radius:9px;font-family:'Inter',sans-serif;font-size:13px;margin-bottom:18px;box-sizing:border-box;outline:none">
     <div style="font-size:11px;font-weight:700;color:#94A3B8;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px">Options</div>
     <div id="pollOptFields"></div>
     <button id="pollAddOptBtn" onclick="pollAddOptionField()" style="width:100%;padding:9px;background:none;border:1.5px dashed #E2E8F0;border-radius:8px;font-family:'Inter',sans-serif;font-size:12px;font-weight:600;color:#64748B;cursor:pointer;margin-top:2px">+ Add Option</button>
     <div style="display:flex;gap:10px;margin-top:20px">
-      <button onclick="pollSubmitNew()" style="flex:1;padding:12px;background:#0F1E2E;border:none;border-radius:9px;font-family:'Inter',sans-serif;font-size:14px;font-weight:700;color:white;cursor:pointer">Post Poll</button>
+      <button id="pollModalSubmitBtn" onclick="pollSubmitNew()" style="flex:1;padding:12px;background:#0F1E2E;border:none;border-radius:9px;font-family:'Inter',sans-serif;font-size:14px;font-weight:700;color:white;cursor:pointer">Post Poll</button>
       <button onclick="pollModalClose()" style="padding:12px 20px;background:#F1F5F9;border:none;border-radius:9px;font-family:'Inter',sans-serif;font-size:14px;font-weight:600;color:#64748B;cursor:pointer">Cancel</button>
     </div>
   </div>

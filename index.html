@@ -6791,29 +6791,48 @@ function kitchenViewMenu(menuId){
 // ── KITCHEN RECIPES (data-driven) ──
 let kitchenRecipeNextId = 100;
 let kitchenRecipesData = [
-  {id:1, name:'Grilled Barramundi with Lemon Butter', cat:'Main', catColor:'green', serves:1, allergens:'Fish, Dairy', allergensColor:'amber', ingredients:'200g barramundi fillet, 30g butter, 1 lemon, fresh herbs, salt, pepper', method:'Season fish, grill 4 mins each side. Rest 2 mins. Finish with lemon butter sauce.'},
-  {id:2, name:'Truffle Mushroom Pasta', cat:'Main', catColor:'green', serves:1, allergens:'Gluten, Dairy, Egg', allergensColor:'red', ingredients:'120g tagliatelle, mixed mushrooms, truffle oil, parmesan, cream, garlic, shallots', method:'Sauté mushrooms with garlic. Add cream, reduce. Toss with pasta, finish with truffle oil and parmesan.'},
-  {id:3, name:'Acai Bowl', cat:'Breakfast', catColor:'green', serves:1, allergens:'Vegan', allergensColor:'green', ingredients:'150g frozen acai, banana, coconut milk, granola, fresh fruit, honey', method:'Blend acai with banana and coconut milk. Pour into bowl. Top with granola and fruit.'}
+  {id:1, name:'Grilled Barramundi with Lemon Butter', cat:'Main', catColor:'green', serves:1, allergens:'Fish, Dairy', allergensColor:'amber', ingredients:'200g barramundi fillet, 30g butter, 1 lemon, fresh herbs, salt, pepper', method:'Season fish, grill 4 mins each side. Rest 2 mins. Finish with lemon butter sauce.', photo:'recipe-photos/grilled-barramundi.jpg'},
+  {id:2, name:'Truffle Mushroom Pasta', cat:'Main', catColor:'green', serves:1, allergens:'Gluten, Dairy, Egg', allergensColor:'red', ingredients:'120g tagliatelle, mixed mushrooms, truffle oil, parmesan, cream, garlic, shallots', method:'Sauté mushrooms with garlic. Add cream, reduce. Toss with pasta, finish with truffle oil and parmesan.', photo:''},
+  {id:3, name:'Acai Bowl', cat:'Breakfast', catColor:'green', serves:1, allergens:'Vegan', allergensColor:'green', ingredients:'150g frozen acai, banana, coconut milk, granola, fresh fruit, honey', method:'Blend acai with banana and coconut milk. Pour into bowl. Top with granola and fruit.', photo:''}
 ];
 
 function kitchenRecipeCardHtml(r){
+  const photoBox = r.photo
+    ? `<img src="${r.photo}" onclick="event.stopPropagation();recipePhotoZoom('${r.photo.replace(/'/g,"\\'")}')" style="width:84px;height:84px;object-fit:cover;border-radius:9px;border:1.5px solid #E2E8F0;cursor:pointer;flex-shrink:0" title="Tap to zoom">`
+    : `<div onclick="event.stopPropagation();kitchenEditRecipe(${r.id})" style="width:84px;height:84px;border-radius:9px;border:1.5px dashed #CBD5E1;flex-shrink:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;cursor:pointer;color:#94A3B8" title="Add a photo">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2Z"/><circle cx="12" cy="13" r="4"/></svg>
+        <span style="font-size:9px;font-weight:600">Add photo</span>
+      </div>`;
   return `
     <div class="recipe-card">
-      <div style="display:flex;justify-content:space-between;align-items:flex-start">
-        <div class="recipe-card-name">${r.name}</div>
-        <div style="display:flex;gap:8px;flex-shrink:0">
-          <span onclick="kitchenEditRecipe(${r.id})" style="opacity:0.5;cursor:pointer;font-size:12px">✎</span>
-          <span onclick="kitchenDeleteRecipe(${r.id})" style="opacity:0.5;cursor:pointer;font-size:12px;color:#EF4444">Delete</span>
+      <div style="display:flex;gap:14px">
+        ${photoBox}
+        <div style="flex:1;min-width:0">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start">
+            <div class="recipe-card-name">${r.name}</div>
+            <div style="display:flex;gap:8px;flex-shrink:0">
+              <span onclick="kitchenEditRecipe(${r.id})" style="opacity:0.5;cursor:pointer;font-size:12px">✎</span>
+              <span onclick="kitchenDeleteRecipe(${r.id})" style="opacity:0.5;cursor:pointer;font-size:12px;color:#EF4444">Delete</span>
+            </div>
+          </div>
+          <div class="recipe-card-meta">
+            <span class="recipe-badge ${r.catColor}">${r.cat}</span>
+            <span class="recipe-badge">Serves ${r.serves}</span>
+            <span class="recipe-badge ${r.allergensColor}">Allergens: ${r.allergens}</span>
+          </div>
+          <div style="font-size:12px;color:var(--ink2);line-height:1.7"><strong>Ingredients:</strong> ${r.ingredients}<br><strong>Method:</strong> ${r.method}</div>
         </div>
       </div>
-      <div class="recipe-card-meta">
-        <span class="recipe-badge ${r.catColor}">${r.cat}</span>
-        <span class="recipe-badge">Serves ${r.serves}</span>
-        <span class="recipe-badge ${r.allergensColor}">Allergens: ${r.allergens}</span>
-      </div>
-      <div style="font-size:12px;color:var(--ink2);line-height:1.7"><strong>Ingredients:</strong> ${r.ingredients}<br><strong>Method:</strong> ${r.method}</div>
     </div>`;
 }
+
+window.recipePhotoZoom = function(url){
+  document.getElementById('recipePhotoLightboxImg').src = url;
+  document.getElementById('recipePhotoLightbox').style.display = 'flex';
+};
+window.recipePhotoZoomClose = function(){
+  document.getElementById('recipePhotoLightbox').style.display = 'none';
+};
 
 function kitchenRenderRecipes(){
   const container = document.getElementById('kitchen-recipes-container');
@@ -6829,6 +6848,7 @@ function kitchenAddRecipe(){
   appModalShow({
     title:'Add Recipe',
     fields:[
+      {label:'Photo (optional)', type:'file', optional:true},
       {label:'Recipe name', placeholder:'e.g. Grilled Barramundi'},
       {label:'Category', placeholder:'e.g. Main, Breakfast'},
       {label:'Serves', placeholder:'e.g. 1'},
@@ -6836,8 +6856,8 @@ function kitchenAddRecipe(){
       {label:'Ingredients', type:'textarea', rows:7, placeholder:'e.g. 200g barramundi fillet\n30g butter\n1 lemon\nFresh herbs, salt, pepper'},
       {label:'Method', type:'textarea', rows:9, placeholder:'e.g. Season fish, grill 4 mins each side.\nRest 2 mins.\nFinish with lemon butter sauce.'}
     ],
-    onOk([name, cat, serves, allergens, ingredients, method]){
-      kitchenRecipesData.push({id: kitchenRecipeNextId++, name, cat, catColor:'green', serves, allergens, allergensColor:'amber', ingredients, method});
+    onOk([photo, name, cat, serves, allergens, ingredients, method]){
+      kitchenRecipesData.push({id: kitchenRecipeNextId++, name, cat, catColor:'green', serves, allergens, allergensColor:'amber', ingredients, method, photo: photo||''});
       kitchenRenderRecipes();
       toast('Recipe added ✓');
     }
@@ -6850,6 +6870,7 @@ function kitchenEditRecipe(id){
   appModalShow({
     title:'Edit Recipe',
     fields:[
+      {label:'Photo (optional)', type:'file', optional:true, value:r.photo||''},
       {label:'Recipe name', value:r.name},
       {label:'Category', value:r.cat},
       {label:'Serves', value:String(r.serves)},
@@ -6857,8 +6878,9 @@ function kitchenEditRecipe(id){
       {label:'Ingredients', type:'textarea', rows:7, value:r.ingredients},
       {label:'Method', type:'textarea', rows:9, value:r.method}
     ],
-    onOk([name, cat, serves, allergens, ingredients, method]){
+    onOk([photo, name, cat, serves, allergens, ingredients, method]){
       r.name=name; r.cat=cat; r.serves=serves; r.allergens=allergens; r.ingredients=ingredients; r.method=method;
+      if(photo) r.photo = photo;
       kitchenRenderRecipes();
       toast('Recipe updated ✓');
     }
@@ -8742,6 +8764,16 @@ document.addEventListener('DOMContentLoaded', initCardColours);
 </div>
 
 <!-- ── REUSABLE PHOTO LIGHTBOX (for card attachments) ── -->
+<!-- Recipe photo zoom (view-only, no delete - editing the photo happens via Edit Recipe) -->
+<div id="recipePhotoLightbox" style="display:none;position:fixed;inset:0;background:rgba(15,30,46,0.85);z-index:10001;align-items:center;justify-content:center" onclick="if(event.target===this)recipePhotoZoomClose()">
+  <div style="max-width:90vw;max-height:90vh;position:relative">
+    <img id="recipePhotoLightboxImg" style="max-width:90vw;max-height:80vh;border-radius:10px;display:block;box-shadow:0 20px 60px rgba(0,0,0,0.4)">
+    <div style="display:flex;justify-content:center;margin-top:14px">
+      <button onclick="recipePhotoZoomClose()" style="padding:10px 18px;background:white;border:none;border-radius:9px;font-family:'Inter',sans-serif;font-size:13px;font-weight:700;color:#0F1E2E;cursor:pointer">Close</button>
+    </div>
+  </div>
+</div>
+
 <div id="photoLightbox" style="display:none;position:fixed;inset:0;background:rgba(15,30,46,0.85);z-index:10001;align-items:center;justify-content:center" onclick="if(event.target===this)photoLightboxClose()">
   <div style="max-width:90vw;max-height:90vh;position:relative">
     <img id="photoLightboxImg" style="max-width:90vw;max-height:80vh;border-radius:10px;display:block;box-shadow:0 20px 60px rgba(0,0,0,0.4)">

@@ -692,39 +692,6 @@ select.search-inp{max-width:150px;cursor:pointer}
   transform:translateY(10px);
   transition:opacity 0.2s, transform 0.2s;
 }
-#board-zoom-btn{
-  position:fixed;
-  bottom:24px;
-  right:24px;
-  width:44px;height:44px;
-  border-radius:50%;
-  background:var(--navy);
-  border:none;
-  display:none;
-  align-items:center;justify-content:center;
-  box-shadow:0 4px 16px rgba(0,0,0,0.25);
-  cursor:pointer;
-  z-index:150;
-  transition:background 0.15s, transform 0.15s;
-}
-#board-zoom-btn.showing{display:flex}
-#board-zoom-btn:hover{background:var(--gold);transform:translateY(-2px)}
-#board-zoom-btn.zoomed-active{background:#0D9488}
-
-/* Compact/zoomed-out board view - shrinks card internals so more fit on screen at once.
-   Deliberately not using CSS transform:scale() here, since that would throw off the drag
-   coordinate math (drag reads real clientX/clientY, which scale() doesn't affect the same
-   way as true layout size does) - shrinking actual properties keeps dragging accurate. */
-.board-zoomed-out .kanban-card{padding:8px 10px 7px}
-.board-zoomed-out .kanban-card-title{font-size:12px;margin-bottom:5px}
-.board-zoomed-out .kanban-card-meta,
-.board-zoomed-out .kanban-card-assignee{font-size:10px}
-.board-zoomed-out .kanban-card > div[style*="font-size:12.5px"]{font-size:11px !important;margin-bottom:6px !important}
-.board-zoomed-out .kanban-cards{gap:6px;padding:8px 8px 0}
-.board-zoomed-out .kanban-wrap{gap:12px}
-.board-zoomed-out .kanban-col-hd{padding:9px 12px}
-.board-zoomed-out .kanban-card img{display:none}
-
 #scroll-top-btn.visible{
   opacity:1;
   pointer-events:auto;
@@ -1917,19 +1884,6 @@ img.emoji-tw{width:1.15em;height:1.15em;vertical-align:-0.2em;margin:0 1px}
     flex-shrink:0;
   }
 
-  /* Zoomed-out mode: show all 3 columns side by side instead of one-at-a-time swiping,
-     same as Trello's zoom-out - this is the whole point of the feature, seeing everything
-     at once rather than just shrinking text within a single still-full-width column. */
-  .board-zoomed-out .kanban-wrap{
-    display:grid !important;
-    grid-template-columns:repeat(3,1fr) !important;
-    overflow-x:visible !important;
-    scroll-snap-type:none !important;
-  }
-  .board-zoomed-out .kanban-col{
-    min-width:0 !important;
-  }
-
   /* Event Calendar: the title's forced min-width was pushing the whole toolbar (Today button,
      Month/List/Day switcher) off the right edge of the screen. Let it wrap and size naturally instead. */
   .cal-toolbar{flex-wrap:wrap;gap:10px}
@@ -2272,10 +2226,6 @@ img.emoji-tw{width:1.15em;height:1.15em;vertical-align:-0.2em;margin:0 1px}
 
   <button id="scroll-top-btn" onclick="window.scrollTo({top:0, behavior:'smooth'})" aria-label="Back to top">
     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/></svg>
-  </button>
-
-  <button id="board-zoom-btn" onclick="toggleBoardZoom()" aria-label="Zoom out board" title="See more cards at once">
-    <svg id="board-zoom-icon" width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="8" y1="11" x2="14" y2="11"/></svg>
   </button>
 
   <!-- SLIM TOPBAR -->
@@ -3758,8 +3708,6 @@ function nav(id, pushState=true){
   if(id==='reports'){setTimeout(()=>{ const t=document.getElementById('reports-tab-day'); if(t) reportsSetMode('day', t); }, 0);}
   if(id==='maint'){maintRender();}
   if(id==='inventory'){inventoryRenderAreas(); inventoryRenderList();}
-  const zoomBtn = document.getElementById('board-zoom-btn');
-  if(zoomBtn) zoomBtn.classList.toggle('showing', id==='kb' || id==='maint');
 
   // Wait a frame so the page's content/height is fully laid out before positioning scroll
   requestAnimationFrame(() => {
@@ -4906,25 +4854,6 @@ function wireCardDrag(div, startDrag){
     div.addEventListener('touchcancel', cleanup, {once:true});
   }, {passive:true});
 }
-
-// ── BOARD ZOOM (Task Board + Maintenance) ──
-function applyBoardZoomState(){
-  const on = localStorage.getItem('boardZoomedOut') === '1';
-  document.body.classList.toggle('board-zoomed-out', on);
-  const icon = document.getElementById('board-zoom-icon');
-  const btn = document.getElementById('board-zoom-btn');
-  if(btn) btn.classList.toggle('zoomed-active', on);
-  if(icon) icon.innerHTML = on
-    ? '<circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="8" y1="11" x2="11" y2="11"/><line x1="11" y1="8" x2="11" y2="14"/>'
-    : '<circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="8" y1="11" x2="14" y2="11"/>';
-}
-window.toggleBoardZoom = function(){
-  const isOn = document.body.classList.contains('board-zoomed-out');
-  localStorage.setItem('boardZoomedOut', isOn ? '0' : '1');
-  applyBoardZoomState();
-  toast(isOn ? 'Back to normal view' : 'Zoomed out — showing more cards');
-};
-applyBoardZoomState();
 
 let kbDrag = null; // {cardId, fromCol, ghost, offsetX, offsetY}
 

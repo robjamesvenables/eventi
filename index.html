@@ -1438,17 +1438,10 @@ textarea.rf-val{resize:vertical;min-height:72px;line-height:1.5}
 .kanban-card{
   background:white;border-radius:10px;
   padding:14px 14px 12px;cursor:grab;
-  border-left:4px solid #CBD5E1;
   box-shadow:0 1px 4px rgba(0,0,0,0.08);
   transition:all 0.15s;position:relative;
   user-select:none;
 }
-.kanban-col-todo .kanban-card{border-left-color:#64748B}
-.kanban-col-progress .kanban-card{border-left-color:#F59E0B}
-.kanban-col-done .kanban-card{border-left-color:#10B981}
-/* Maintenance: clean Trello-style cards, no colour accent stripe - the priority badge
-   already conveys status, so a coloured left border would be redundant here. */
-#maint-kanban .kanban-card{border-left:none;padding-left:14px}
 .kanban-card:hover{box-shadow:0 6px 20px rgba(0,0,0,0.12);transform:translateY(-2px)}
 .kanban-card.dragging{opacity:0.25;cursor:grabbing;transform:rotate(2deg);box-shadow:0 12px 32px rgba(0,0,0,0.2)}
 .kanban-card-title{font-size:14px;font-weight:700;color:var(--navy);margin-bottom:10px;line-height:1.4}
@@ -4866,10 +4859,6 @@ let kbDrag = null; // {cardId, fromCol, ghost, offsetX, offsetY}
 
 function kbRender(){
   __photoStripRegistry = [];
-  const isMytodo = kbActiveFilter === 'mytodo';
-  const borderColors = isMytodo
-    ? {todo:'#0D9488', progress:'#0D9488', done:'#0D9488'}
-    : colColors;
 
   ['todo','progress','done'].forEach(colId => {
     const col = document.getElementById('col-'+colId);
@@ -4887,7 +4876,6 @@ function kbRender(){
       div.className = 'kanban-card';
       div.dataset.id = card.id;
       div.dataset.col = colId;
-      div.style.borderLeftColor = borderColors[colId];
       div.style.cursor = 'grab';
       const eventLabels = {horizon:'Horizon',solaris:'Solaris',wedding:'Wedding',playlist:'Playlist',sops:'SOPs',training:'Training',general:'General',mytodo:''};
       const eventTag = (card.event && card.event !== 'mytodo') ? `<span class="kanban-card-event-tag">${eventLabels[card.event]||card.event}</span>` : '';

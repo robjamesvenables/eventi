@@ -1765,9 +1765,12 @@ img.emoji-tw{width:1.15em;height:1.15em;vertical-align:-0.2em;margin:0 1px}
 .kitchen-panel{display:none}
 .kitchen-panel.on{display:block}
 .recipe-card{background:white;border:1px solid var(--line);border-radius:12px;padding:20px;margin-bottom:12px}
+.recipe-card-row{display:flex;gap:16px}
+.recipe-card-photo{width:84px;height:84px}
+.recipe-card-content{flex:1;min-width:0}
 .recipe-card-name{font-size:15px;font-weight:700;color:var(--navy);margin-bottom:6px}
-.recipe-card-meta{display:flex;gap:12px;margin-bottom:10px}
-.recipe-badge{font-size:10px;font-weight:700;padding:3px 9px;border-radius:10px;background:var(--bg);color:var(--ink2)}
+.recipe-card-meta{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px}
+.recipe-badge{font-size:10px;font-weight:700;padding:4px 10px;border-radius:10px;background:var(--bg);color:var(--ink2);white-space:nowrap}
 .recipe-badge.red{background:rgba(239,68,68,0.1);color:#DC2626}
 .recipe-badge.amber{background:rgba(217,119,6,0.1);color:#D97706}
 .recipe-badge.green{background:rgba(5,150,105,0.1);color:#059669}
@@ -2047,6 +2050,15 @@ img.emoji-tw{width:1.15em;height:1.15em;vertical-align:-0.2em;margin:0 1px}
 @media (max-width: 600px){
   /* Extra-narrow phones: tighten page padding so content isn't cramped against the edges */
   .page{padding-left:16px !important;padding-right:16px !important}
+}
+
+@media (max-width: 700px){
+  /* Recipe cards: photo + text side by side left almost no room for the text column on a
+     phone, forcing badges to wrap awkwardly and everything to feel cramped. Stack the photo
+     above the content instead, full width, same threshold used for other phone-only layout
+     changes elsewhere in the app. */
+  .recipe-card-row{flex-direction:column}
+  .recipe-card-photo{width:100% !important;height:180px !important}
 }
 
 /* ── PDF EXPORT (html2pdf.js captures .beo directly - toggled via JS, not @media print) ── */
@@ -6811,8 +6823,8 @@ function kitchenRelativeTime(ts){
 
 function kitchenRecipeCardHtml(r){
   const photoBox = r.photo
-    ? `<img src="${r.photo}" onclick="event.stopPropagation();recipePhotoZoom('${r.photo.replace(/'/g,"\\'")}')" style="width:84px;height:84px;object-fit:cover;border-radius:9px;border:1.5px solid #E2E8F0;cursor:pointer;flex-shrink:0" title="Tap to zoom">`
-    : `<div onclick="event.stopPropagation();kitchenEditRecipe(${r.id})" style="width:84px;height:84px;border-radius:9px;border:1.5px dashed #CBD5E1;flex-shrink:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;cursor:pointer;color:#94A3B8" title="Add a photo">
+    ? `<img src="${r.photo}" onclick="event.stopPropagation();recipePhotoZoom('${r.photo.replace(/'/g,"\\'")}')" class="recipe-card-photo" style="object-fit:cover;border-radius:9px;border:1.5px solid #E2E8F0;cursor:pointer;flex-shrink:0" title="Tap to zoom">`
+    : `<div onclick="event.stopPropagation();kitchenEditRecipe(${r.id})" class="recipe-card-photo" style="border-radius:9px;border:1.5px dashed #CBD5E1;flex-shrink:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;cursor:pointer;color:#94A3B8" title="Add a photo">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2Z"/><circle cx="12" cy="13" r="4"/></svg>
         <span style="font-size:9px;font-weight:600">Add photo</span>
       </div>`;
@@ -6829,13 +6841,13 @@ function kitchenRecipeCardHtml(r){
 
   return `
     <div class="recipe-card">
-      <div style="display:flex;gap:14px">
+      <div class="recipe-card-row">
         ${photoBox}
-        <div style="flex:1;min-width:0">
-          <div style="display:flex;justify-content:space-between;align-items:flex-start">
+        <div class="recipe-card-content">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px">
             <div class="recipe-card-name">${r.name}</div>
-            <div style="display:flex;gap:8px;flex-shrink:0">
-              <span onclick="kitchenEditRecipe(${r.id})" style="opacity:0.5;cursor:pointer;font-size:12px">✎</span>
+            <div style="display:flex;gap:10px;flex-shrink:0">
+              <span onclick="kitchenEditRecipe(${r.id})" style="opacity:0.5;cursor:pointer;font-size:14px">✎</span>
               <span onclick="kitchenDeleteRecipe(${r.id})" style="opacity:0.5;cursor:pointer;font-size:12px;color:#EF4444">Delete</span>
             </div>
           </div>

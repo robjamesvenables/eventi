@@ -6981,6 +6981,7 @@ function kitchenAddRecipe(){
 function kitchenEditRecipe(id){
   const r = kitchenRecipesData.find(x=>x.id===id);
   if(!r) return;
+  const original = {name:r.name, cat:r.cat, serves:String(r.serves), allergens:r.allergens, ingredients:r.ingredients, method:r.method};
   appModalShow({
     title:'Edit Recipe',
     fields:[
@@ -6993,10 +6994,19 @@ function kitchenEditRecipe(id){
       {label:'Method', type:'textarea', rows:9, value:r.method}
     ],
     onOk([photo, name, cat, serves, allergens, ingredients, method]){
+      const changed = name!==original.name || cat!==original.cat || serves!==original.serves
+        || allergens!==original.allergens || ingredients!==original.ingredients || method!==original.method
+        || (photo && photo!==r.photo);
+
       r.name=name; r.cat=cat; r.serves=serves; r.allergens=allergens; r.ingredients=ingredients; r.method=method;
       if(photo) r.photo = photo;
-      if(r.pdfVersion > 0) r.editedSincePdf = true;
       kitchenRenderRecipes();
+
+      if(!changed){
+        toast('No changes made');
+        return;
+      }
+      if(r.pdfVersion > 0) r.editedSincePdf = true;
       kitchenShowPdfPrompt(id);
     }
   });

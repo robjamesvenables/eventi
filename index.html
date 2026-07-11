@@ -2118,6 +2118,10 @@ img.emoji-tw{width:1.15em;height:1.15em;vertical-align:-0.2em;margin:0 1px}
       <svg class="sb-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
       My Drive
     </button>
+    <button class="sb-link" id="n-marketing" onclick="nav('marketing')">
+      <svg class="sb-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+      Marketing
+    </button>
 
     <div class="sb-section">Events</div>
     <button class="sb-link" id="n-dash" onclick="nav('dash')">
@@ -2600,6 +2604,50 @@ img.emoji-tw{width:1.15em;height:1.15em;vertical-align:-0.2em;margin:0 1px}
           <div style="margin-bottom:12px"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#CBD5E1" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="margin:0 auto;display:block"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg></div>
           <div style="font-size:14px;font-weight:600;color:#0F1E2E;margin-bottom:6px">No links yet</div>
           <div style="font-size:13px">Click "+ Add Link" to save your first link here</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- MARKETING -->
+    <div class="page" id="p-marketing" style="padding:32px 28px 0">
+      <div class="ph">
+        <div>
+          <div class="ph-title">Marketing</div>
+          <div class="ph-sub">Sales, marketing and creative assets — organised and shared with the team</div>
+        </div>
+      </div>
+
+      <div style="background:white;border:1.5px solid #E2E8F0;border-radius:12px;padding:16px 20px;margin-bottom:20px">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+          <span style="font-size:12px;font-weight:700;color:#64748B">Storage used across Sales, Marketing &amp; Creative</span>
+          <span id="mkt-storage-label" style="font-size:12px;font-weight:700;color:#0F1E2E"></span>
+        </div>
+        <div style="height:8px;background:#F1F5F9;border-radius:20px;overflow:hidden">
+          <div id="mkt-storage-bar" style="height:100%;background:#0D9488;border-radius:20px;transition:width 0.3s ease"></div>
+        </div>
+      </div>
+
+      <!-- Folder view -->
+      <div id="mkt-folders-view">
+        <div id="mkt-folder-grid" style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px"></div>
+      </div>
+
+      <!-- File view (inside a folder) -->
+      <div id="mkt-files-view" style="display:none">
+        <div id="mkt-folder-banner" style="border-radius:14px;padding:20px 24px;margin-bottom:16px;display:flex;align-items:center;gap:14px">
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+          <div id="mkt-folder-title" style="font-size:19px;font-weight:800;color:white"></div>
+        </div>
+        <div style="display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap">
+          <button class="myd-back-btn" onclick="marketingBack()">← Back</button>
+          <button class="btn btn-navy" onclick="marketingAddFile()">+ Upload File</button>
+          <button class="btn btn-ghost" onclick="marketingAddLink()">+ Add Link</button>
+        </div>
+        <div id="mkt-file-list"></div>
+        <div id="mkt-file-empty" style="display:none;text-align:center;padding:48px;color:#94A3B8">
+          <div style="margin-bottom:12px"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#CBD5E1" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="margin:0 auto;display:block"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg></div>
+          <div style="font-size:14px;font-weight:600;color:#0F1E2E;margin-bottom:6px">No assets yet</div>
+          <div style="font-size:13px">Upload a file (up to 25MB) or add a link to an existing doc</div>
         </div>
       </div>
     </div>
@@ -3718,6 +3766,7 @@ function nav(id, pushState=true){
   if(id==='bar'){barRenderMenus(); barRenderRecipes();}
   if(id==='customers'){customerRenderList();}
   if(id==='reports'){setTimeout(()=>{ const t=document.getElementById('reports-tab-day'); if(t) reportsSetMode('day', t); }, 0);}
+  if(id==='marketing'){ marketingActiveFolder = null; marketingRender(); }
   if(id==='maint'){maintRender();}
   if(id==='inventory'){inventoryRenderAreas(); inventoryRenderList();}
 
@@ -7592,6 +7641,183 @@ function myDriveRenderFiles(){
 
 window.myDriveOpenFolder = function(id){ driveActiveFolder=id; myDriveRender(); };
 window.myDriveBack = function(){ driveActiveFolder=null; myDriveRender(); };
+
+// ── MARKETING (Sales / Marketing / Creative) ──
+const MKT_FILE_LIMIT = 25 * 1024 * 1024;   // 25MB per file - blocks video/raw design files, allows photos/PDFs
+const MKT_TOTAL_LIMIT = 1024 * 1024 * 1024; // 1GB total across all three folders, per venue
+
+let marketingFolders = [
+  {id:'sales', name:'Sales', color:'#0D9488', items:[]},
+  {id:'marketing', name:'Marketing', color:'#C4973B', items:[]},
+  {id:'creative', name:'Creative', color:'#A78BFA', items:[]}
+];
+let marketingActiveFolder = null;
+
+function marketingTotalUsed(){
+  return marketingFolders.reduce((sum,f) => sum + f.items.reduce((s,i) => s + (i.sizeBytes||0), 0), 0);
+}
+function marketingFormatSize(bytes){
+  if(bytes < 1024*1024) return Math.round(bytes/1024) + ' KB';
+  if(bytes < 1024*1024*1024) return (bytes/1024/1024).toFixed(1) + ' MB';
+  return (bytes/1024/1024/1024).toFixed(2) + ' GB';
+}
+function marketingUpdateStorageBar(){
+  const used = marketingTotalUsed();
+  const pct = Math.min(100, (used / MKT_TOTAL_LIMIT) * 100);
+  const bar = document.getElementById('mkt-storage-bar');
+  const label = document.getElementById('mkt-storage-label');
+  if(bar) bar.style.width = pct + '%';
+  if(bar) bar.style.background = pct > 90 ? '#EF4444' : pct > 70 ? '#D97706' : '#0D9488';
+  if(label) label.textContent = `${marketingFormatSize(used)} of 1 GB`;
+}
+
+function marketingRender(){
+  const grid = document.getElementById('mkt-folder-grid');
+  const foldersView = document.getElementById('mkt-folders-view');
+  const filesView = document.getElementById('mkt-files-view');
+  if(!grid) return;
+  marketingUpdateStorageBar();
+
+  if(!marketingActiveFolder){
+    foldersView.style.display = '';
+    filesView.style.display = 'none';
+    grid.innerHTML = marketingFolders.map(f => {
+      const used = f.items.reduce((s,i) => s + (i.sizeBytes||0), 0);
+      return `<div onclick="marketingOpenFolder('${f.id}')" style="background:${f.color};border-radius:14px;padding:22px;cursor:pointer;color:white;transition:transform 0.15s" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='none'">
+        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-bottom:14px"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+        <div style="font-size:16px;font-weight:800;margin-bottom:4px">${f.name}</div>
+        <div style="font-size:12px;opacity:0.85">${f.items.length} item${f.items.length===1?'':'s'} · ${marketingFormatSize(used)}</div>
+      </div>`;
+    }).join('');
+  } else {
+    foldersView.style.display = 'none';
+    filesView.style.display = '';
+    marketingRenderFiles();
+  }
+}
+
+window.marketingOpenFolder = function(id){ marketingActiveFolder = id; marketingRender(); };
+window.marketingBack = function(){ marketingActiveFolder = null; marketingRender(); };
+
+function marketingRenderFiles(){
+  const folder = marketingFolders.find(f=>f.id===marketingActiveFolder);
+  if(!folder) return;
+  document.getElementById('mkt-folder-title').textContent = folder.name;
+  document.getElementById('mkt-folder-banner').style.background = folder.color;
+
+  const list = document.getElementById('mkt-file-list');
+  const empty = document.getElementById('mkt-file-empty');
+  if(!folder.items.length){
+    list.innerHTML = '';
+    empty.style.display = 'block';
+    return;
+  }
+  empty.style.display = 'none';
+  list.innerHTML = folder.items.map(item => {
+    if(item.type === 'link'){
+      return `<div class="myd-file-row">
+        <div class="myd-file-row-ico" style="background:#EDE9FE"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#7C3AED" stroke-width="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg></div>
+        <div style="flex:1;min-width:0">
+          <div class="myd-file-row-name">${item.name}</div>
+          <div class="myd-file-row-url">External link</div>
+        </div>
+        <div class="myd-file-row-actions">
+          <button class="btn btn-navy" style="font-size:12px;padding:7px 14px" onclick="window.open('${item.url}','_blank')">↗ Open</button>
+          <button class="btn btn-ghost" style="font-size:12px;padding:7px 10px;color:#EF4444;border-color:#FECACA" onclick="marketingDeleteItem(${item.id})">×</button>
+        </div>
+      </div>`;
+    }
+    const thumb = item.fileType === 'image'
+      ? `<img src="${item.dataUrl}" style="width:38px;height:38px;object-fit:cover;border-radius:8px;flex-shrink:0">`
+      : `<div class="myd-file-row-ico" style="background:#FEE2E2;color:#DC2626">📄</div>`;
+    return `<div class="myd-file-row">
+      ${thumb}
+      <div style="flex:1;min-width:0">
+        <div class="myd-file-row-name">${item.name}</div>
+        <div class="myd-file-row-url">${marketingFormatSize(item.sizeBytes)}</div>
+      </div>
+      <div class="myd-file-row-actions">
+        <button class="btn btn-navy" style="font-size:12px;padding:7px 14px" onclick="window.open('${item.dataUrl}','_blank')">↗ View</button>
+        <button class="btn btn-ghost" style="font-size:12px;padding:7px 10px;color:#EF4444;border-color:#FECACA" onclick="marketingDeleteItem(${item.id})">×</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+window.marketingAddFile = function(){
+  const input = document.createElement('input');
+  input.type = 'file';
+  input.accept = 'image/*,application/pdf';
+  input.onchange = () => {
+    const file = input.files[0];
+    if(!file) return;
+
+    if(file.size > MKT_FILE_LIMIT){
+      marketingShowRestriction(`This file is ${marketingFormatSize(file.size)} — over the 25MB per-file limit.`);
+      return;
+    }
+    const used = marketingTotalUsed();
+    if(used + file.size > MKT_TOTAL_LIMIT){
+      marketingShowRestriction(`Marketing storage is nearly full (${marketingFormatSize(used)} of 1GB used) — this file won't fit.`);
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const folder = marketingFolders.find(f=>f.id===marketingActiveFolder);
+      folder.items.push({
+        id: Date.now(),
+        type: 'file',
+        name: file.name,
+        sizeBytes: file.size,
+        dataUrl: e.target.result,
+        fileType: file.type.startsWith('image/') ? 'image' : 'pdf',
+        addedAt: Date.now()
+      });
+      marketingRenderFiles();
+      marketingUpdateStorageBar();
+      toast('Uploaded ✓');
+    };
+    reader.readAsDataURL(file);
+  };
+  input.click();
+};
+
+function marketingShowRestriction(reason){
+  appConfirmShow({
+    title: 'Unfortunately, due to Mavis restrictions...',
+    msg: reason + ' Please upload it to Google Drive instead, then add the link here — everything still lives in one place.',
+    onOk: () => marketingAddLink()
+  });
+}
+
+window.marketingAddLink = function(){
+  const folder = marketingFolders.find(f=>f.id===marketingActiveFolder);
+  appModalShow({
+    title: 'Add Link',
+    fields: [
+      {label:'Name', placeholder:'e.g. Summer Campaign Video'},
+      {label:'URL', placeholder:'https://drive.google.com/...'}
+    ],
+    onOk([name, url]){
+      if(!url) return;
+      folder.items.push({id: Date.now(), type:'link', name: name || url, url, addedAt: Date.now()});
+      marketingRenderFiles();
+      toast('Link added ✓');
+    }
+  });
+};
+
+window.marketingDeleteItem = function(itemId){
+  const folder = marketingFolders.find(f=>f.id===marketingActiveFolder);
+  if(!folder) return;
+  appConfirmShow({title:'Remove Asset', msg:'Remove this from ' + folder.name + '?', onOk:()=>{
+    folder.items = folder.items.filter(i=>i.id!==itemId);
+    marketingRenderFiles();
+    marketingUpdateStorageBar();
+    toast('Removed');
+  }});
+};
 
 function myDriveColorPicker(title, onPick){
   const colors = ['#0D9488','#0F1E2E','#C4973B','#A855F7','#F43F5E','#3B82F6','#10B981','#F59E0B','#6366F1','#EC4899','#14B8A6','#F97316'];

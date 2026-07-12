@@ -4133,6 +4133,10 @@ window.addEventListener('scroll', () => {
 });
 
 window.addEventListener('popstate', function(e){
+  if(!e.state || !e.state.chatThread){
+    // Only close an open chat thread if we're not popping back INTO one
+    chatBackToList();
+  }
   const id = e.state ? e.state.page : 'dash';
   isBackNavigation = true;
   nav(id, false);
@@ -8081,7 +8085,7 @@ function chatRenderList(){
   }).join('');
 }
 
-window.chatOpenConversation = function(id){
+window.chatOpenConversation = function(id, skipHistory){
   chatActiveId = id;
   const c = chatConversations.find(x=>x.id===id);
   if(!c) return;
@@ -8092,7 +8096,7 @@ window.chatOpenConversation = function(id){
   document.getElementById('chat-thread-empty').style.display = 'none';
   document.getElementById('chat-thread-active').style.display = 'flex';
   document.getElementById('chat-thread-header').innerHTML = `
-    <button id="chat-thread-mobile-back" onclick="chatBackToList()" style="display:none;background:none;border:none;cursor:pointer;padding:4px;margin-right:2px;flex-shrink:0">
+    <button id="chat-thread-mobile-back" onclick="history.back()" style="display:none;background:none;border:none;cursor:pointer;padding:4px;margin-right:2px;flex-shrink:0">
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#0F1E2E" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
     </button>
     <div style="width:36px;height:36px;border-radius:50%;background:${c.color};color:white;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700">${c.avatar}</div>
@@ -8106,6 +8110,10 @@ window.chatOpenConversation = function(id){
   if(window.innerWidth <= 700){
     document.getElementById('chat-thread-pane').classList.add('mobile-open');
     document.getElementById('chat-list-pane').classList.add('mobile-hidden');
+    // Give the thread its own place in browser history so the phone's physical back
+    // button returns to the conversation list, not straight past it to whatever page
+    // was open before Chat.
+    if(!skipHistory) history.pushState({page:'chat', chatThread:true}, '', '#chat');
   }
 };
 

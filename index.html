@@ -698,6 +698,32 @@ select.search-inp{max-width:150px;cursor:pointer}
   transform:translateY(0);
 }
 
+#chat-float-btn{
+  position:fixed;
+  bottom:24px;
+  right:24px;
+  width:56px;height:56px;
+  border-radius:50%;
+  background:#25D366;
+  border:none;
+  display:flex;align-items:center;justify-content:center;
+  box-shadow:0 4px 18px rgba(0,0,0,0.28);
+  cursor:pointer;
+  z-index:150;
+  transition:transform 0.15s;
+}
+#chat-float-btn:hover{transform:translateY(-2px) scale(1.03)}
+#chat-float-badge{
+  position:absolute;
+  top:-2px;right:-2px;
+  background:#EF4444;color:white;
+  font-size:10px;font-weight:800;
+  min-width:19px;height:19px;border-radius:10px;
+  display:none;align-items:center;justify-content:center;
+  padding:0 5px;
+  border:2px solid var(--bg);
+}
+
 /* ── RICH TEXT TOOLBAR ── */
 .dept-toolbar{
   display:none;
@@ -1592,6 +1618,11 @@ img.emoji-tw{width:1.15em;height:1.15em;vertical-align:-0.2em;margin:0 1px}
 .home-card-ico{font-size:22px;margin-bottom:8px;width:36px;height:36px;background:#0F1E2E;border-radius:9px;display:flex;align-items:center;justify-content:center}
 .home-card-title{font-size:15px;font-weight:800;color:white;margin-bottom:2px;text-shadow:0 1px 3px rgba(0,0,0,0.3)}
 .home-card-sub{font-size:11px;font-weight:400;color:rgba(255,255,255,0.6);line-height:1.4;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+@media (min-width: 701px){
+  /* Desktop and tablet: title only, no subtitle - keeps the tile grid clean and less
+     cluttered. Mobile keeps the subtitle since it has more breathing room there. */
+  .home-card-sub{display:none}
+}
 .home-card-badge{
   position:absolute;top:20px;right:20px;
   background:var(--navy);color:white;
@@ -1992,6 +2023,15 @@ img.emoji-tw{width:1.15em;height:1.15em;vertical-align:-0.2em;margin:0 1px}
    taller window and lets them scroll normally via touch instead of the ticker. */
 @media (max-width: 700px){
   .announce-list-scroll{max-height:420px !important;overflow-y:auto !important;-webkit-overflow-scrolling:touch}
+
+  /* Chat: side-by-side panes only work with real width to share. On phone, show the
+     conversation list full-width, then swap to a full-width thread once one is opened -
+     same "list, then detail" pattern as My Drive's folder navigation. */
+  #chat-list-pane{width:100% !important}
+  #chat-thread-pane{display:none !important}
+  #chat-thread-pane.mobile-open{display:flex !important;position:fixed !important;inset:0;z-index:400;background:white}
+  #chat-list-pane.mobile-hidden{display:none !important}
+  #chat-thread-mobile-back{display:flex !important}
 }
 
 /* Home dashboard category sections (Events/Operations/Resources/Venue) collapse to a tappable
@@ -2207,6 +2247,12 @@ img.emoji-tw{width:1.15em;height:1.15em;vertical-align:-0.2em;margin:0 1px}
       Install App
     </button>
 
+    <button class="sb-link" id="n-chat" onclick="nav('chat')" style="margin-top:auto;position:relative">
+      <svg class="sb-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
+      Chat
+      <span id="chat-nav-badge" style="display:none;margin-left:auto;background:#EF4444;color:white;font-size:10px;font-weight:800;min-width:18px;height:18px;border-radius:9px;align-items:center;justify-content:center;padding:0 5px">1</span>
+    </button>
+
     <div class="sb-bottom" id="sb-bottom-trigger" onclick="toggleProfileMenu(event)" style="cursor:pointer;position:relative">
       <div class="sb-avatar" id="sb-avatar">R</div>
       <span class="sb-uname" id="sb-uname">Robbie</span>
@@ -2242,6 +2288,11 @@ img.emoji-tw{width:1.15em;height:1.15em;vertical-align:-0.2em;margin:0 1px}
 
   <button id="scroll-top-btn" onclick="window.scrollTo({top:0, behavior:'smooth'})" aria-label="Back to top">
     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/></svg>
+  </button>
+
+  <button id="chat-float-btn" onclick="nav('chat')" aria-label="Open Chat">
+    <svg width="25" height="25" viewBox="0 0 24 24" fill="white"><path d="M20 2H4a2 2 0 0 0-2 2v18l4-4h14a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2z"/></svg>
+    <span id="chat-float-badge">1</span>
   </button>
 
   <!-- SLIM TOPBAR -->
@@ -2656,7 +2707,7 @@ img.emoji-tw{width:1.15em;height:1.15em;vertical-align:-0.2em;margin:0 1px}
         <div id="mkt-folder-list"></div>
       </div>
 
-      <!-- File view (inside a folder) -->
+    <!-- File view (inside a folder) -->
       <div id="mkt-files-view" style="display:none">
         <div id="mkt-folder-banner" style="border-radius:14px;padding:20px 24px;margin-bottom:16px;display:flex;align-items:center;gap:14px">
           <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
@@ -2672,6 +2723,48 @@ img.emoji-tw{width:1.15em;height:1.15em;vertical-align:-0.2em;margin:0 1px}
           <div style="margin-bottom:12px"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#CBD5E1" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="margin:0 auto;display:block"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg></div>
           <div style="font-size:14px;font-weight:600;color:#0F1E2E;margin-bottom:6px">No assets yet</div>
           <div style="font-size:13px">Upload a file (up to 25MB) or add a link to an existing doc</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- CHAT -->
+    <div class="page" id="p-chat" style="padding:32px 28px 0">
+      <div class="ph">
+        <div>
+          <div class="ph-title">Chat</div>
+          <div class="ph-sub">Message anyone at your venue directly, or start a group</div>
+        </div>
+      </div>
+
+      <div style="background:white;border:1.5px solid #E2E8F0;border-radius:14px;overflow:hidden;display:flex;height:calc(100vh - 220px);min-height:420px">
+        <!-- Conversation list -->
+        <div id="chat-list-pane" style="width:320px;flex-shrink:0;border-right:1.5px solid #F1F5F9;display:flex;flex-direction:column">
+          <div style="padding:16px;border-bottom:1px solid #F1F5F9">
+            <input id="chat-search" type="text" placeholder="Search by name…" style="width:100%;padding:9px 12px;border:1.5px solid #E2E8F0;border-radius:9px;font-family:'Inter',sans-serif;font-size:13px;box-sizing:border-box;outline:none">
+          </div>
+          <div id="chat-conv-list" style="flex:1;overflow-y:auto"></div>
+          <div style="padding:12px 16px;border-top:1px solid #F1F5F9">
+            <button class="btn btn-navy" style="width:100%" onclick="toast('Full contact search arrives with real accounts — this is a preview of the UI')">+ New Chat</button>
+          </div>
+        </div>
+
+        <!-- Thread -->
+        <div id="chat-thread-pane" style="flex:1;display:flex;flex-direction:column;min-width:0">
+          <div id="chat-thread-empty" style="flex:1;display:flex;align-items:center;justify-content:center;color:#94A3B8;font-size:13px">Select a conversation to start chatting</div>
+          <div id="chat-thread-active" style="display:none;flex:1;flex-direction:column;min-height:0">
+            <div id="chat-thread-header" style="padding:14px 20px;border-bottom:1px solid #F1F5F9;display:flex;align-items:center;gap:12px">
+              <button id="chat-thread-mobile-back" onclick="chatBackToList()" style="display:none;background:none;border:none;cursor:pointer;padding:4px;margin-right:2px;flex-shrink:0">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#0F1E2E" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+              </button>
+            </div>
+            <div id="chat-thread-msgs" style="flex:1;overflow-y:auto;padding:20px;display:flex;flex-direction:column;gap:10px"></div>
+            <div style="padding:14px 16px;border-top:1px solid #F1F5F9;display:flex;gap:10px">
+              <input id="chat-msg-input" type="text" placeholder="Type a message…" style="flex:1;padding:11px 14px;border:1.5px solid #E2E8F0;border-radius:20px;font-family:'Inter',sans-serif;font-size:13px;outline:none" onkeydown="if(event.key==='Enter')chatSendMessage()">
+              <button onclick="chatSendMessage()" style="width:40px;height:40px;border-radius:50%;background:#0F1E2E;border:none;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+              </button>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -3791,6 +3884,7 @@ function nav(id, pushState=true){
   if(id==='customers'){customerRenderList();}
   if(id==='reports'){setTimeout(()=>{ const t=document.getElementById('reports-tab-day'); if(t) reportsSetMode('day', t); }, 0);}
   if(id==='marketing'){ marketingActiveFolder = null; marketingRender(); }
+  if(id==='chat'){ chatInit(); }
   if(id==='maint'){maintRender();}
   if(id==='inventory'){inventoryRenderAreas(); inventoryRenderList();}
 
@@ -4158,6 +4252,7 @@ function doLogin(){
     document.getElementById('login').style.display='none';
     document.getElementById('app').style.display='flex';
     quickLinksRender();
+    chatUpdateBadges();
     nav('home');
   } else {
     toast('Please enter your email and password');
@@ -7937,6 +8032,120 @@ window.marketingDeleteItem = function(itemId){
     toast('Removed');
   }});
 };
+
+// ── CHAT (demo preview) ──
+let chatConversations = [
+  {id:1, name:'John Smith', avatar:'JS', color:'#0D9488', online:true, unread:1, messages:[
+    {from:'them', text:"Hey! Just added the new Barramundi recipe to Kitchen", time:'10:20 AM'},
+    {from:'them', text:'Did you see the recipe I sent? Have a look for me.', time:'10:24 AM'}
+  ]}
+];
+let chatActiveId = null;
+
+function chatUnreadTotal(){
+  return chatConversations.reduce((sum,c) => sum + (c.unread||0), 0);
+}
+
+function chatUpdateBadges(){
+  const total = chatUnreadTotal();
+  const navBadge = document.getElementById('chat-nav-badge');
+  const floatBadge = document.getElementById('chat-float-badge');
+  if(navBadge){ navBadge.style.display = total > 0 ? 'flex' : 'none'; navBadge.textContent = total; }
+  if(floatBadge){ floatBadge.style.display = total > 0 ? 'flex' : 'none'; floatBadge.textContent = total; }
+}
+
+function chatRenderList(){
+  const list = document.getElementById('chat-conv-list');
+  if(!list) return;
+  const q = (document.getElementById('chat-search').value || '').toLowerCase();
+  const filtered = chatConversations.filter(c => c.name.toLowerCase().includes(q));
+  list.innerHTML = filtered.map(c => {
+    const last = c.messages[c.messages.length-1];
+    const isActive = c.id === chatActiveId;
+    return `<div onclick="chatOpenConversation(${c.id})" style="display:flex;gap:12px;padding:13px 16px;cursor:pointer;background:${isActive?'#F0FDFA':'white'};border-bottom:1px solid #F8FAFC" onmouseover="if(!${isActive})this.style.background='#F8FAFC'" onmouseout="this.style.background='${isActive?'#F0FDFA':'white'}'">
+      <div style="width:40px;height:40px;border-radius:50%;background:${c.color};color:white;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;flex-shrink:0;position:relative">
+        ${c.avatar}
+        ${c.online ? '<span style="position:absolute;bottom:-1px;right:-1px;width:10px;height:10px;border-radius:50%;background:#22C55E;border:2px solid white"></span>' : ''}
+      </div>
+      <div style="flex:1;min-width:0">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <span style="font-size:13.5px;font-weight:700;color:#0F1E2E">${c.name}</span>
+          <span style="font-size:10.5px;color:#94A3B8">${last.time}</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:8px">
+          <span style="font-size:12px;color:#64748B;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${last.from==='me'?'You: ':''}${last.text}</span>
+          ${c.unread ? `<span style="background:#0D9488;color:white;font-size:10px;font-weight:800;min-width:18px;height:18px;border-radius:9px;display:flex;align-items:center;justify-content:center;flex-shrink:0">${c.unread}</span>` : ''}
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+window.chatOpenConversation = function(id){
+  chatActiveId = id;
+  const c = chatConversations.find(x=>x.id===id);
+  if(!c) return;
+  c.unread = 0;
+  chatUpdateBadges();
+  chatRenderList();
+
+  document.getElementById('chat-thread-empty').style.display = 'none';
+  document.getElementById('chat-thread-active').style.display = 'flex';
+  document.getElementById('chat-thread-header').innerHTML = `
+    <button id="chat-thread-mobile-back" onclick="chatBackToList()" style="display:none;background:none;border:none;cursor:pointer;padding:4px;margin-right:2px;flex-shrink:0">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#0F1E2E" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+    </button>
+    <div style="width:36px;height:36px;border-radius:50%;background:${c.color};color:white;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700">${c.avatar}</div>
+    <div>
+      <div style="font-size:14px;font-weight:700;color:#0F1E2E">${c.name}</div>
+      <div style="font-size:11px;color:${c.online?'#22C55E':'#94A3B8'}">${c.online?'Online':'Offline'}</div>
+    </div>`;
+  chatRenderMessages();
+
+  // Phone-width: swap to a fullscreen thread view instead of showing both panes squeezed
+  if(window.innerWidth <= 700){
+    document.getElementById('chat-thread-pane').classList.add('mobile-open');
+    document.getElementById('chat-list-pane').classList.add('mobile-hidden');
+  }
+};
+
+window.chatBackToList = function(){
+  document.getElementById('chat-thread-pane').classList.remove('mobile-open');
+  document.getElementById('chat-list-pane').classList.remove('mobile-hidden');
+};
+
+function chatRenderMessages(){
+  const c = chatConversations.find(x=>x.id===chatActiveId);
+  if(!c) return;
+  const wrap = document.getElementById('chat-thread-msgs');
+  wrap.innerHTML = c.messages.map(m => {
+    const mine = m.from === 'me';
+    return `<div style="align-self:${mine?'flex-end':'flex-start'};max-width:70%">
+      <div style="background:${mine?'#0F1E2E':'#F1F5F9'};color:${mine?'white':'#0F1E2E'};padding:10px 14px;border-radius:14px;${mine?'border-bottom-right-radius:4px':'border-bottom-left-radius:4px'};font-size:13.5px;line-height:1.5">${m.text}</div>
+      <div style="font-size:10px;color:#94A3B8;margin-top:3px;text-align:${mine?'right':'left'}">${m.time}</div>
+    </div>`;
+  }).join('');
+  wrap.scrollTop = wrap.scrollHeight;
+}
+
+window.chatSendMessage = function(){
+  const input = document.getElementById('chat-msg-input');
+  const text = input.value.trim();
+  if(!text || !chatActiveId) return;
+  const c = chatConversations.find(x=>x.id===chatActiveId);
+  c.messages.push({from:'me', text, time: new Date().toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'})});
+  input.value = '';
+  chatRenderMessages();
+  chatRenderList();
+};
+
+function chatInit(){
+  chatUpdateBadges();
+  chatRenderList();
+  document.getElementById('chat-search').oninput = chatRenderList;
+  // Open the demo conversation automatically so there's always something to see
+  if(chatConversations.length) chatOpenConversation(chatConversations[0].id);
+}
 
 function myDriveColorPicker(title, onPick){
   const colors = ['#0D9488','#0F1E2E','#C4973B','#A855F7','#F43F5E','#3B82F6','#10B981','#F59E0B','#6366F1','#EC4899','#14B8A6','#F97316'];

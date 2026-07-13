@@ -6859,7 +6859,20 @@ let kitchenMenuNextId = 100;
 let kitchenMenusData = [
   {id:1, area:'main', section:'live', cat:'Breakfast', name:'Morning Menu', meta:'Updated 3 Jun 2026', links:[]},
   {id:2, area:'main', section:'live', cat:'Lunch', name:'Lunch Menu', meta:'Updated 3 Jun 2026', links:[]},
-  {id:3, area:'main', section:'live', cat:'Dinner', name:'Dinner Menu', meta:'Updated 3 Jun 2026', links:[]},
+  {id:3, area:'main', section:'live', cat:'Dinner', name:'Dinner Menu', meta:'Updated 3 Jun 2026', links:[], content:{sections:[
+    {id:1, name:'Starters', dishes:[
+      {id:1, name:'Tuna Tartare', desc:'Yellowfin tuna, avocado, sesame, citrus soy', price:'145,000', allergens:['fish','soy'], photo:''}
+    ]},
+    {id:2, name:'Salads', dishes:[
+      {id:1, name:'Grilled Halloumi Salad', desc:'Rocket, watermelon, mint, balsamic', price:'95,000', allergens:['dairy'], photo:''}
+    ]},
+    {id:3, name:'Mains', dishes:[
+      {id:1, name:'Grilled Barramundi', desc:'Lemon butter sauce, seasonal greens', price:'220,000', allergens:['fish','dairy'], photo:'recipe-photos/grilled-barramundi.jpg'}
+    ]},
+    {id:4, name:'Sides', dishes:[]},
+    {id:5, name:'Desserts', dishes:[]},
+    {id:6, name:'Kids Menu', dishes:[]}
+  ]}},
   {id:4, area:'poolbar', section:'live', cat:'Drinks', name:'Drinks Menu', meta:'Updated 1 Jun 2026', links:[]},
   {id:5, area:'main', section:'live', cat:'Specials', name:'Weekly Specials', meta:'Updated 10 Jun 2026', links:[]},
   {id:6, area:'beachgrill', section:'progress', cat:'Event', name:'Sunset Beach Menu', meta:'With Head Chef · Target: 5 Jul 2026', links:[]},
@@ -6871,11 +6884,18 @@ let kitchenMenusData = [
 function kitchenMenuCardHtml(m){
   const sec = kitchenMenuSections.find(s=>s.id===m.section);
   const area = kitchenAreas.find(a=>a.id===m.area);
-  const linksHtml = m.links.length ? `<div style="margin-top:8px;display:flex;flex-direction:column;gap:4px">${m.links.map((l,i)=>`
+  const hasNativeContent = !!(m.content && m.content.sections);
+  const linksHtml = (!hasNativeContent && m.links.length) ? `<div style="margin-top:8px;display:flex;flex-direction:column;gap:4px">${m.links.map((l,i)=>`
       <div style="display:flex;align-items:center;gap:6px;font-size:11px">
         <a href="${l.url}" target="_blank" style="color:#0D9488;text-decoration:none;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">🔗 ${l.name}</a>
         <span onclick="kitchenRemoveMenuLink(${m.id},${i})" style="cursor:pointer;color:#94A3B8">×</span>
       </div>`).join('')}</div>` : '';
+  const actionsHtml = hasNativeContent
+    ? `<button class="btn btn-navy" style="width:100%" onclick="kitchenMenuOpenDetail(${m.id})">📋 View Menu</button>`
+    : `<div class="menu-card-actions">
+        <button class="btn btn-ghost" style="flex:1" onclick="kitchenViewMenu(${m.id})">👁 View</button>
+        <button class="btn btn-navy" style="flex:1" onclick="kitchenAddLink(${m.id})">+ Add Link</button>
+      </div>`;
   return `
     <div class="menu-card" style="border-left:none;background:${sec.bg};border-color:${sec.border}">
       <div class="menu-card-top">
@@ -6886,10 +6906,7 @@ function kitchenMenuCardHtml(m){
         <span class="menu-badge ${sec.badge}">${sec.badgeLabel}</span>
       </div>
       <div class="menu-card-meta" style="color:#475569">${m.meta}</div>
-      <div class="menu-card-actions">
-        <button class="btn btn-ghost" style="flex:1" onclick="kitchenViewMenu(${m.id})">👁 View</button>
-        <button class="btn btn-navy" style="flex:1" onclick="kitchenAddLink(${m.id})">+ Add Link</button>
-      </div>
+      ${actionsHtml}
       <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:6px">
         <span onclick="kitchenEditMenu(${m.id})" style="opacity:0.5;cursor:pointer;font-size:11px">✎ Edit</span>
         <span onclick="kitchenDeleteMenu(${m.id})" style="opacity:0.5;cursor:pointer;font-size:11px;color:#EF4444">Delete</span>
@@ -7061,6 +7078,139 @@ function kitchenViewMenu(menuId){
   if(!m || !m.links.length){ toast('No menu file linked yet — use + Add Link'); return; }
   window.open(m.links[0].url, '_blank');
 }
+
+// ── NATIVE MENU DETAIL (Sections → Dishes) ──
+let kitchenMenuDetailId = null;
+
+window.kitchenMenuOpenDetail = function(menuId){
+  kitchenMenuDetailId = menuId;
+  document.getElementById('menuDetailOverlay').style.display = 'flex';
+  kitchenMenuDetailRender();
+};
+window.kitchenMenuCloseDetail = function(){
+  document.getElementById('menuDetailOverlay').style.display = 'none';
+  kitchenMenuDetailId = null;
+  kitchenRenderMenus();
+};
+
+function kitchenMenuDetailRender(){
+  const m = kitchenMenusData.find(x=>x.id===kitchenMenuDetailId);
+  if(!m) return;
+  document.getElementById('menuDetailTitle').textContent = m.name;
+  const body = document.getElementById('menuDetailBody');
+  body.innerHTML = m.content.sections.map(sec => `
+    <div style="margin-bottom:22px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+        <div style="font-size:14px;font-weight:800;color:#0F1E2E;text-transform:uppercase;letter-spacing:0.5px">${sec.name}</div>
+        <span onclick="kitchenSectionDelete(${sec.id})" style="opacity:0.4;cursor:pointer;font-size:11px;color:#EF4444">Delete section</span>
+      </div>
+      ${sec.dishes.map(d => kitchenDishCardHtml(sec.id, d)).join('') || '<div style="font-size:12px;color:#94A3B8;margin-bottom:8px">No dishes yet</div>'}
+      <button onclick="kitchenDishAdd(${sec.id})" style="width:100%;padding:9px;background:none;border:1.5px dashed #E2E8F0;border-radius:8px;font-family:'Inter',sans-serif;font-size:12px;font-weight:600;color:#64748B;cursor:pointer">+ Add Dish</button>
+    </div>`).join('') + `
+    <button onclick="kitchenSectionAdd()" style="width:100%;padding:11px;background:none;border:1.5px dashed #CBD5E1;border-radius:10px;font-family:'Inter',sans-serif;font-size:13px;font-weight:700;color:#64748B;cursor:pointer;margin-top:6px">+ Add Section</button>`;
+}
+
+function kitchenDishCardHtml(sectionId, d){
+  const photoBox = d.photo
+    ? `<img src="${d.photo}" style="width:56px;height:56px;object-fit:cover;border-radius:8px;flex-shrink:0">`
+    : `<div style="width:56px;height:56px;border-radius:8px;background:#F1F5F9;flex-shrink:0;display:flex;align-items:center;justify-content:center;color:#CBD5E1;font-size:18px">🍽</div>`;
+  const allergensLabel = (d.allergens||[]).length ? d.allergens.join(', ') : '';
+  return `<div style="display:flex;gap:12px;padding:10px 0;border-bottom:1px solid #F1F5F9">
+    ${photoBox}
+    <div style="flex:1;min-width:0">
+      <div style="display:flex;justify-content:space-between;gap:8px">
+        <div style="font-size:13.5px;font-weight:700;color:#0F1E2E">${d.name}</div>
+        <div style="font-size:13px;font-weight:700;color:#0D9488;white-space:nowrap">Rp ${d.price}</div>
+      </div>
+      <div style="font-size:12px;color:#64748B;margin-top:2px">${d.desc||''}</div>
+      ${allergensLabel ? `<div style="font-size:10.5px;color:#D97706;margin-top:3px">Allergens: ${allergensLabel}</div>` : ''}
+      <div style="display:flex;gap:10px;margin-top:5px">
+        <span onclick="kitchenDishEdit(${sectionId},${d.id})" style="font-size:11px;color:#64748B;cursor:pointer">✎ Edit</span>
+        <span onclick="kitchenDishDelete(${sectionId},${d.id})" style="font-size:11px;color:#EF4444;cursor:pointer">Delete</span>
+      </div>
+    </div>
+  </div>`;
+}
+
+window.kitchenSectionAdd = function(){
+  const m = kitchenMenusData.find(x=>x.id===kitchenMenuDetailId);
+  appModalShow({
+    title:'Add Section',
+    fields:[{label:'Section name', placeholder:'e.g. Sides, Brunch, Set Menu'}],
+    onOk([name]){
+      if(!name) return;
+      const maxId = Math.max(0, ...m.content.sections.map(s=>s.id));
+      m.content.sections.push({id:maxId+1, name, dishes:[]});
+      kitchenMenuDetailRender();
+      toast('Section added ✓');
+    }
+  });
+};
+
+window.kitchenSectionDelete = function(sectionId){
+  const m = kitchenMenusData.find(x=>x.id===kitchenMenuDetailId);
+  appConfirmShow({title:'Delete Section', msg:'Delete this section and all its dishes?', onOk:()=>{
+    m.content.sections = m.content.sections.filter(s=>s.id!==sectionId);
+    kitchenMenuDetailRender();
+    toast('Section deleted');
+  }});
+};
+
+window.kitchenDishAdd = function(sectionId){
+  const m = kitchenMenusData.find(x=>x.id===kitchenMenuDetailId);
+  const sec = m.content.sections.find(s=>s.id===sectionId);
+  appModalShow({
+    title:'Add Dish',
+    fields:[
+      {label:'Photo (optional)', type:'file', optional:true},
+      {label:'Dish name', placeholder:'e.g. Grilled Barramundi'},
+      {label:'Description', placeholder:'e.g. Lemon butter sauce, seasonal greens'},
+      {label:'Price (Rp)', placeholder:'e.g. 220,000'},
+      {label:'Allergens (optional)', placeholder:'e.g. Fish, Dairy', optional:true}
+    ],
+    onOk([photo, name, desc, price, allergens]){
+      if(!name) return;
+      const maxId = Math.max(0, ...sec.dishes.map(d=>d.id));
+      sec.dishes.push({id:maxId+1, name, desc, price, allergens: allergens ? allergens.split(',').map(a=>a.trim()) : [], photo: photo||''});
+      kitchenMenuDetailRender();
+      toast('Dish added ✓');
+    }
+  });
+};
+
+window.kitchenDishEdit = function(sectionId, dishId){
+  const m = kitchenMenusData.find(x=>x.id===kitchenMenuDetailId);
+  const sec = m.content.sections.find(s=>s.id===sectionId);
+  const d = sec.dishes.find(x=>x.id===dishId);
+  if(!d) return;
+  appModalShow({
+    title:'Edit Dish',
+    fields:[
+      {label:'Photo (optional)', type:'file', optional:true, value:d.photo||''},
+      {label:'Dish name', value:d.name},
+      {label:'Description', value:d.desc||''},
+      {label:'Price (Rp)', value:d.price},
+      {label:'Allergens (optional)', value:(d.allergens||[]).join(', '), optional:true}
+    ],
+    onOk([photo, name, desc, price, allergens]){
+      d.name=name; d.desc=desc; d.price=price;
+      d.allergens = allergens ? allergens.split(',').map(a=>a.trim()) : [];
+      if(photo) d.photo = photo;
+      kitchenMenuDetailRender();
+      toast('Dish updated ✓');
+    }
+  });
+};
+
+window.kitchenDishDelete = function(sectionId, dishId){
+  const m = kitchenMenusData.find(x=>x.id===kitchenMenuDetailId);
+  const sec = m.content.sections.find(s=>s.id===sectionId);
+  appConfirmShow({title:'Delete Dish', msg:'Remove this dish from the menu?', onOk:()=>{
+    sec.dishes = sec.dishes.filter(d=>d.id!==dishId);
+    kitchenMenuDetailRender();
+    toast('Dish removed');
+  }});
+};
 
 // ── KITCHEN RECIPES (data-driven) ──
 let kitchenRecipeNextId = 100;
@@ -9655,6 +9805,17 @@ document.addEventListener('DOMContentLoaded', initCardColours);
       <button id="appConfirmOk" style="flex:1;padding:12px;background:#EF4444;border:none;border-radius:9px;font-family:'Inter',sans-serif;font-size:14px;font-weight:700;color:white;cursor:pointer">Delete</button>
       <button onclick="appConfirmClose()" style="padding:12px 20px;background:#F1F5F9;border:none;border-radius:9px;font-family:'Inter',sans-serif;font-size:14px;font-weight:600;color:#64748B;cursor:pointer">Cancel</button>
     </div>
+  </div>
+</div>
+
+<!-- ── NATIVE MENU DETAIL (Sections / Dishes) ── -->
+<div id="menuDetailOverlay" style="display:none;position:fixed;inset:0;background:rgba(15,30,46,0.6);z-index:9999;align-items:flex-start;justify-content:center;overflow-y:auto;padding:40px 20px">
+  <div style="background:white;border-radius:16px;max-width:640px;width:100%;margin-bottom:40px">
+    <div style="background:#0F1E2E;padding:20px 24px;border-radius:16px 16px 0 0;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0">
+      <div style="color:white;font-size:17px;font-weight:800" id="menuDetailTitle"></div>
+      <button onclick="kitchenMenuCloseDetail()" style="background:rgba(255,255,255,0.12);border:none;color:white;width:32px;height:32px;border-radius:50%;cursor:pointer;font-size:16px">×</button>
+    </div>
+    <div style="padding:24px" id="menuDetailBody"></div>
   </div>
 </div>
 

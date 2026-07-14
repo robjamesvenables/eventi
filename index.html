@@ -7165,19 +7165,23 @@ function barViewMenu(menuId){
 // ── BAR RECIPES (how the cocktails are made) ──
 let barRecipeNextId = 100;
 let barRecipesData = [
-  {id:1, name:'Espresso Martini', cat:'Signature', catColor:'green', serves:1, allergens:'None', allergensColor:'green', ingredients:'45ml vodka, 30ml coffee liqueur, 30ml fresh espresso, 10ml sugar syrup', method:'Shake all ingredients hard with ice. Double strain into a chilled martini glass. Garnish with 3 coffee beans.'},
-  {id:2, name:'Bali Sunset', cat:'Signature', catColor:'green', serves:1, allergens:'None', allergensColor:'green', ingredients:'45ml white rum, 20ml passionfruit puree, 15ml lime juice, 10ml grenadine, soda top', method:'Shake rum, passionfruit, and lime with ice. Strain into glass over ice. Float grenadine, top with soda. Garnish with pineapple leaf.'},
-  {id:3, name:'Classic Mojito', cat:'Classic', catColor:'green', serves:1, allergens:'None', allergensColor:'green', ingredients:'50ml white rum, 8 mint leaves, 20ml lime juice, 15ml sugar syrup, soda top', method:'Muddle mint gently with lime and syrup. Add rum and ice, top with soda. Stir and garnish with mint sprig.'}
+  {id:1, name:'Espresso Martini', cat:'Signature', catColor:'green', serves:1, allergens:'None', allergensColor:'green', ingredients:'45ml vodka, 30ml coffee liqueur, 30ml fresh espresso, 10ml sugar syrup', method:'Shake all ingredients hard with ice. Double strain into a chilled martini glass. Garnish with 3 coffee beans.', photo:'recipe-photos/espresso-martini.webp'},
+  {id:2, name:'Bali Sunset', cat:'Signature', catColor:'green', serves:1, allergens:'None', allergensColor:'green', ingredients:'45ml white rum, 20ml passionfruit puree, 15ml lime juice, 10ml grenadine, soda top', method:'Shake rum, passionfruit, and lime with ice. Strain into glass over ice. Float grenadine, top with soda. Garnish with pineapple leaf.', photo:''},
+  {id:3, name:'Classic Mojito', cat:'Classic', catColor:'green', serves:1, allergens:'None', allergensColor:'green', ingredients:'50ml white rum, 8 mint leaves, 20ml lime juice, 15ml sugar syrup, soda top', method:'Muddle mint gently with lime and syrup. Add rum and ice, top with soda. Stir and garnish with mint sprig.', photo:''}
 ];
 
 function barRecipeCardHtml(r){
+  const photoBox = r.photo
+    ? `<img src="${r.photo}" style="width:100%;height:160px;object-fit:cover;border-radius:10px;margin-bottom:10px">`
+    : `<div style="width:100%;height:160px;border-radius:10px;background:#F1F5F9;margin-bottom:10px;display:flex;align-items:center;justify-content:center;color:#CBD5E1"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2Z"/><circle cx="12" cy="13" r="4"/></svg></div>`;
   return `
     <div class="recipe-card">
+      ${photoBox}
       <div style="display:flex;justify-content:space-between;align-items:flex-start">
         <div class="recipe-card-name">${r.name}</div>
         <div style="display:flex;gap:8px;flex-shrink:0">
-          <span onclick="barEditRecipe(${r.id})" style="opacity:0.5;cursor:pointer;font-size:12px"><svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="2.2"/><circle cx="12" cy="12" r="2.2"/><circle cx="12" cy="19" r="2.2"/></svg></span>
-          <span onclick="barDeleteRecipe(${r.id})" style="opacity:0.5;cursor:pointer;font-size:12px;color:#EF4444">Delete</span>
+          <button onclick="barEditRecipe(${r.id})" style="display:flex;align-items:center;gap:5px;padding:7px 13px;background:#F1F5F9;border:1.5px solid #E2E8F0;border-radius:7px;font-family:'Inter',sans-serif;font-size:12px;font-weight:700;color:#334155;cursor:pointer">✎ Edit</button>
+          <button onclick="barDeleteRecipe(${r.id})" style="display:flex;align-items:center;gap:5px;padding:7px 13px;background:#FEF2F2;border:1.5px solid #FECACA;border-radius:7px;font-family:'Inter',sans-serif;font-size:12px;font-weight:700;color:#DC2626;cursor:pointer">🗑 Delete</button>
         </div>
       </div>
       <div class="recipe-card-meta">
@@ -7203,6 +7207,7 @@ function barAddRecipe(){
   appModalShow({
     title:'Add Recipe',
     fields:[
+      {label:'Photo (optional)', type:'file', optional:true},
       {label:'Cocktail name', placeholder:'e.g. Espresso Martini'},
       {label:'Category', placeholder:'e.g. Signature, Classic, Mocktail'},
       {label:'Serves', placeholder:'e.g. 1'},
@@ -7210,8 +7215,8 @@ function barAddRecipe(){
       {label:'Ingredients', type:'textarea', rows:7, placeholder:'e.g. 45ml vodka\n30ml coffee liqueur\n30ml fresh espresso\n10ml sugar syrup'},
       {label:'Method', type:'textarea', rows:9, placeholder:'e.g. Shake all ingredients hard with ice.\nDouble strain into a chilled glass.\nGarnish.'}
     ],
-    onOk([name, cat, serves, allergens, ingredients, method]){
-      barRecipesData.push({id: barRecipeNextId++, name, cat, catColor:'green', serves, allergens, allergensColor:'amber', ingredients, method});
+    onOk([photo, name, cat, serves, allergens, ingredients, method]){
+      barRecipesData.push({id: barRecipeNextId++, name, cat, catColor:'green', serves, allergens, allergensColor:'amber', ingredients, method, photo: photo||''});
       barRenderRecipes();
       toast('Recipe added ✓');
     }
@@ -7224,6 +7229,7 @@ function barEditRecipe(id){
   appModalShow({
     title:'Edit Recipe',
     fields:[
+      {label:'Photo (optional)', type:'file', optional:true, value:r.photo||''},
       {label:'Cocktail name', value:r.name},
       {label:'Category', value:r.cat},
       {label:'Serves', value:String(r.serves)},
@@ -7231,8 +7237,9 @@ function barEditRecipe(id){
       {label:'Ingredients', type:'textarea', rows:7, value:r.ingredients},
       {label:'Method', type:'textarea', rows:9, value:r.method}
     ],
-    onOk([name, cat, serves, allergens, ingredients, method]){
+    onOk([photo, name, cat, serves, allergens, ingredients, method]){
       r.name=name; r.cat=cat; r.serves=serves; r.allergens=allergens; r.ingredients=ingredients; r.method=method;
+      if(photo) r.photo = photo;
       barRenderRecipes();
       toast('Recipe updated ✓');
     }

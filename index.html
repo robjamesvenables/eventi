@@ -6515,28 +6515,28 @@ function sopAddDept(){
 
 const sopData = {
   kitchen: [
-    {title:'Opening Checklist', meta:'Last updated: Jun 2026', objective:'Ensure the kitchen is fully prepped, safe, and ready before service begins each day.', procedure:'1. Check walk-in and reach-in fridge temperatures, log on the board.\n2. Inspect all stations for cleanliness from the previous close.\n3. Rotate stock — oldest ingredients to the front (FIFO).\n4. Switch on and test all cooking equipment.\n5. Confirm par stock levels for the day\'s expected covers.\n6. Brief the team on the day\'s specials and any 86\'d items.', equipment:'Thermometer, cleaning checklist, temperature log sheet', safety:'Report any equipment fault immediately — do not operate faulty gas or electrical equipment.', roles:'All kitchen staff, opening shift', signatures:[]},
-    {title:'F&B Service Protocol', meta:'Last updated: May 2026', objective:'', procedure:'', equipment:'', safety:'', roles:'', signatures:[]},
-    {title:'Allergen Handling', meta:'Last updated: Apr 2026', objective:'', procedure:'', equipment:'', safety:'', roles:'', signatures:[]}
+    {title:'Opening Checklist', meta:'Last updated: Jun 2026', objective:'Ensure the kitchen is fully prepped, safe, and ready before service begins each day.', procedure:'1. Check walk-in and reach-in fridge temperatures, log on the board.\n2. Inspect all stations for cleanliness from the previous close.\n3. Rotate stock — oldest ingredients to the front (FIFO).\n4. Switch on and test all cooking equipment.\n5. Confirm par stock levels for the day\'s expected covers.\n6. Brief the team on the day\'s specials and any 86\'d items.', equipment:'Thermometer, cleaning checklist, temperature log sheet', safety:'Report any equipment fault immediately — do not operate faulty gas or electrical equipment.', roles:'All kitchen staff, opening shift', sections:[], signatures:[]},
+    {title:'F&B Service Protocol', meta:'Last updated: May 2026', objective:'', procedure:'', equipment:'', safety:'', roles:'', sections:[], signatures:[]},
+    {title:'Allergen Handling', meta:'Last updated: Apr 2026', objective:'', procedure:'', equipment:'', safety:'', roles:'', sections:[], signatures:[]}
   ],
   bar: [
-    {title:'Bar Setup Procedure', meta:'Last updated: Jun 2026', objective:'', procedure:'', equipment:'', safety:'', roles:'', signatures:[]},
-    {title:'Closing Checklist', meta:'Last updated: May 2026', objective:'', procedure:'', equipment:'', safety:'', roles:'', signatures:[]}
+    {title:'Bar Setup Procedure', meta:'Last updated: Jun 2026', objective:'', procedure:'', equipment:'', safety:'', roles:'', sections:[], signatures:[]},
+    {title:'Closing Checklist', meta:'Last updated: May 2026', objective:'', procedure:'', equipment:'', safety:'', roles:'', sections:[], signatures:[]}
   ],
   avit: [
-    {title:'AV Load-in Procedure', meta:'Last updated: Jun 2026', objective:'', procedure:'', equipment:'', safety:'', roles:'', signatures:[]},
-    {title:'IT Network Setup', meta:'Last updated: Mar 2026', objective:'', procedure:'', equipment:'', safety:'', roles:'', signatures:[]}
+    {title:'AV Load-in Procedure', meta:'Last updated: Jun 2026', objective:'', procedure:'', equipment:'', safety:'', roles:'', sections:[], signatures:[]},
+    {title:'IT Network Setup', meta:'Last updated: Mar 2026', objective:'', procedure:'', equipment:'', safety:'', roles:'', sections:[], signatures:[]}
   ],
   housekeeping: [
-    {title:'Room Turnover Checklist', meta:'Last updated: Jun 2026', objective:'', procedure:'', equipment:'', safety:'', roles:'', signatures:[]},
-    {title:'Deep Clean Protocol', meta:'Last updated: Apr 2026', objective:'', procedure:'', equipment:'', safety:'', roles:'', signatures:[]}
+    {title:'Room Turnover Checklist', meta:'Last updated: Jun 2026', objective:'', procedure:'', equipment:'', safety:'', roles:'', sections:[], signatures:[]},
+    {title:'Deep Clean Protocol', meta:'Last updated: Apr 2026', objective:'', procedure:'', equipment:'', safety:'', roles:'', sections:[], signatures:[]}
   ],
   gro: [
-    {title:'Guest Relations Protocol', meta:'Last updated: Jun 2026', objective:'', procedure:'', equipment:'', safety:'', roles:'', signatures:[]}
+    {title:'Guest Relations Protocol', meta:'Last updated: Jun 2026', objective:'', procedure:'', equipment:'', safety:'', roles:'', sections:[], signatures:[]}
   ],
   security: [
-    {title:'Entry & Exit Procedure', meta:'Last updated: Jun 2026', objective:'', procedure:'', equipment:'', safety:'', roles:'', signatures:[]},
-    {title:'Emergency Protocol', meta:'Last updated: May 2026', objective:'', procedure:'', equipment:'', safety:'', roles:'', signatures:[]}
+    {title:'Entry & Exit Procedure', meta:'Last updated: Jun 2026', objective:'', procedure:'', equipment:'', safety:'', roles:'', sections:[], signatures:[]},
+    {title:'Emergency Protocol', meta:'Last updated: May 2026', objective:'', procedure:'', equipment:'', safety:'', roles:'', sections:[], signatures:[]}
   ]
 };
 let currentSopDept = 'kitchen';
@@ -6611,6 +6611,18 @@ function sopRenderDoc(){
     ? sopSectionBlock('Objective', doc.objective) + sopSectionBlock('Procedure', doc.procedure) + sopSectionBlock('Equipment / Materials Needed', doc.equipment) + sopSectionBlock('Safety Notes', doc.safety) + sopSectionBlock('Responsible Role(s)', doc.roles)
     : `<div style="padding:32px;text-align:center;color:#94A3B8;font-size:13px;background:#F8FAFC;border-radius:12px;border:1.5px dashed #E2E8F0;margin-bottom:22px">This SOP has no content yet — click "Edit SOP" to add the Objective and Procedure.</div>`;
 
+  const customSectionsHtml = doc.sections.map(sec => `
+    <div style="margin-bottom:22px;padding:16px;background:#F8FAFC;border-radius:10px;border:1px solid #F1F5F9">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+        <div style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:0.7px;color:#0D9488">${sec.name}</div>
+        <div style="display:flex;gap:6px">
+          <button onclick="sopSectionEditCustom(${sec.id})" style="display:flex;align-items:center;gap:4px;padding:5px 10px;background:white;border:1.5px solid #E2E8F0;border-radius:6px;font-family:'Inter',sans-serif;font-size:11px;font-weight:700;color:#334155;cursor:pointer">✎ Edit</button>
+          <button onclick="sopSectionDeleteCustom(${sec.id})" style="display:flex;align-items:center;gap:4px;padding:5px 10px;background:#FEF2F2;border:1.5px solid #FECACA;border-radius:6px;font-family:'Inter',sans-serif;font-size:11px;font-weight:700;color:#DC2626;cursor:pointer">🗑 Delete</button>
+        </div>
+      </div>
+      <div style="font-size:13.5px;color:#334155;line-height:1.7;white-space:pre-line">${sec.content}</div>
+    </div>`).join('');
+
   const sigCount = doc.signatures.length;
   const sigListHtml = sigCount ? doc.signatures.map((s,i) => `
     <div style="display:flex;align-items:center;gap:14px;padding:10px 0;border-bottom:1px solid #F1F5F9">
@@ -6622,7 +6634,8 @@ function sopRenderDoc(){
       <span onclick="sopDeleteSignature(${i})" style="opacity:0.5;cursor:pointer;font-size:15px;color:#EF4444" title="Remove">×</span>
     </div>`).join('') : `<div style="font-size:12px;color:#94A3B8;padding:8px 0">No one has signed this SOP yet.</div>`;
 
-  body.innerHTML = contentHtml + `
+  body.innerHTML = contentHtml + customSectionsHtml + `
+    <button onclick="sopSectionAdd()" style="width:100%;padding:11px;background:none;border:1.5px dashed #CBD5E1;border-radius:10px;font-family:'Inter',sans-serif;font-size:13px;font-weight:700;color:#64748B;cursor:pointer;margin-bottom:22px">+ Add Section</button>
     <div style="margin-top:8px;padding-top:20px;border-top:2px solid #E2E8F0">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
         <div style="font-size:13px;font-weight:800;color:#0F1E2E">Sign-off Log <span style="color:#94A3B8;font-weight:600">(${sigCount} signed)</span></div>
@@ -6630,6 +6643,51 @@ function sopRenderDoc(){
       </div>
       ${sigListHtml}
     </div>`;
+}
+
+function sopSectionAdd(){
+  const doc = sopData[currentSopDept][currentSopDoc];
+  appModalShow({
+    title:'Add Section',
+    fields:[
+      {label:'Section name', placeholder:'e.g. Closing Notes, Chemical Handling'},
+      {label:'Content', type:'textarea', rows:6, placeholder:'Section content'}
+    ],
+    onOk([name, content]){
+      if(!name) return;
+      const maxId = Math.max(0, ...doc.sections.map(s=>s.id));
+      doc.sections.push({id:maxId+1, name, content: content||''});
+      sopRenderDoc();
+      toast('Section added ✓');
+    }
+  });
+}
+
+function sopSectionEditCustom(id){
+  const doc = sopData[currentSopDept][currentSopDoc];
+  const sec = doc.sections.find(s=>s.id===id);
+  if(!sec) return;
+  appModalShow({
+    title:'Edit Section',
+    fields:[
+      {label:'Section name', value:sec.name},
+      {label:'Content', type:'textarea', rows:6, value:sec.content}
+    ],
+    onOk([name, content]){
+      sec.name = name; sec.content = content;
+      sopRenderDoc();
+      toast('Section updated ✓');
+    }
+  });
+}
+
+function sopSectionDeleteCustom(id){
+  const doc = sopData[currentSopDept][currentSopDoc];
+  appConfirmShow({title:'Delete Section', msg:'Delete this section?', onOk:()=>{
+    doc.sections = doc.sections.filter(s=>s.id!==id);
+    sopRenderDoc();
+    toast('Section deleted');
+  }});
 }
 
 function sopDeleteSignature(i){

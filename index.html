@@ -2186,6 +2186,10 @@ img.emoji-tw{width:1.15em;height:1.15em;vertical-align:-0.2em;margin:0 1px}
       <svg class="sb-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
       Dashboard
     </button>
+    <button class="sb-link" id="n-sandbox" onclick="nav('sandbox')">
+      <svg class="sb-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.42 4.58a5.4 5.4 0 0 0-7.65 0l-.77.78-.77-.78a5.4 5.4 0 0 0-7.65 0C1.46 6.7 1.33 10.28 4 13l8 8 8-8c2.67-2.72 2.54-6.3.42-8.42z"/></svg>
+      Sandbox
+    </button>
     <button class="sb-link" id="n-quicklinks" onclick="nav('quicklinks')">
       <svg class="sb-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
       Quick Links
@@ -2645,6 +2649,32 @@ img.emoji-tw{width:1.15em;height:1.15em;vertical-align:-0.2em;margin:0 1px}
       </div>
 
     </div><!-- /p-home -->
+
+    <!-- SANDBOX -->
+    <div class="page" id="p-sandbox" style="padding:32px 28px 60px">
+      <div class="ph">
+        <div>
+          <div class="ph-title">Sandbox</div>
+          <div class="ph-sub">Your personal dump — notes, voice, photos, links. No structure needed, sort it later.</div>
+        </div>
+      </div>
+
+      <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:24px">
+        <button class="btn btn-navy" onclick="sandboxAddNote()">📝 Add Note</button>
+        <button class="btn btn-navy" onclick="sandboxToggleVoice()" id="sandbox-voice-btn">🎙️ Voice Note</button>
+        <button class="btn btn-navy" onclick="document.getElementById('sandbox-photo-input').click()">📷 Add Photo</button>
+        <input type="file" id="sandbox-photo-input" accept="image/*" style="display:none" onchange="sandboxAddPhoto(event)">
+        <button class="btn btn-navy" onclick="sandboxAddLink()">🔗 Add Link</button>
+      </div>
+      <div id="sandbox-recording-status" style="display:none;margin-bottom:16px;padding:10px 16px;background:#FEF2F2;border:1.5px solid #FECACA;border-radius:9px;font-size:13px;font-weight:600;color:#DC2626;align-items:center;gap:8px"></div>
+
+      <div id="sandbox-feed"></div>
+      <div id="sandbox-empty" style="display:none;text-align:center;padding:48px;color:#94A3B8">
+        <div style="margin-bottom:12px"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#CBD5E1" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="margin:0 auto;display:block"><path d="M20.42 4.58a5.4 5.4 0 0 0-7.65 0l-.77.78-.77-.78a5.4 5.4 0 0 0-7.65 0C1.46 6.7 1.33 10.28 4 13l8 8 8-8c2.67-2.72 2.54-6.3.42-8.42z"/></svg></div>
+        <div style="font-size:14px;font-weight:600;color:#0F1E2E;margin-bottom:6px">Sandbox is empty</div>
+        <div style="font-size:13px">Dump a note, voice memo, photo, or link — sort it out whenever you're ready</div>
+      </div>
+    </div>
 
     <!-- MY DRIVE -->
     <div class="page" id="p-quicklinks" style="padding:32px 28px 0">
@@ -3951,6 +3981,7 @@ function nav(id, pushState=true){
   if(id==='cal'){calRender();}
   if(id==='home'){initHome(); announceRender(); pollRender();}
   if(id==='quicklinks'){quickLinksRender();}
+  if(id==='sandbox'){sandboxRender();}
   if(id==='music'){musicRender();}
   if(id==='kitchen'){kitchenRenderMenus(); kitchenRenderRecipes(); kitchenRenderAllergens(); kitchenRenderLinks();}
   if(id==='bar'){barRenderMenus(); barRenderRecipes();}
@@ -11057,6 +11088,147 @@ function appFileToDataUrl(file){
     reader.readAsDataURL(file);
   });
 }
+
+// ── SANDBOX: personal dump — notes, voice, photos, links, no structure required ──
+let sandboxItems = [];
+let sandboxNextId = 1;
+let sandboxMediaRecorder = null;
+let sandboxRecordingChunks = [];
+let sandboxRecordStart = null;
+let sandboxRecordTimer = null;
+
+function sandboxTimestamp(){
+  return new Date().toLocaleString('en-US',{month:'short', day:'numeric', hour:'numeric', minute:'2-digit'});
+}
+
+function sandboxRender(){
+  const feed = document.getElementById('sandbox-feed');
+  const empty = document.getElementById('sandbox-empty');
+  if(!feed) return;
+  if(!sandboxItems.length){
+    feed.innerHTML = '';
+    if(empty) empty.style.display = 'block';
+    return;
+  }
+  if(empty) empty.style.display = 'none';
+  const icons = {note:'📝', voice:'🎙️', photo:'📷', link:'🔗'};
+  feed.innerHTML = sandboxItems.map(item => {
+    let bodyHtml = '';
+    if(item.type === 'note'){
+      bodyHtml = `<div style="font-size:13.5px;color:#334155;line-height:1.6;white-space:pre-line">${item.content}</div>`;
+    } else if(item.type === 'photo'){
+      bodyHtml = `<img src="${item.content}" style="max-width:100%;max-height:280px;border-radius:9px;display:block">`;
+    } else if(item.type === 'voice'){
+      bodyHtml = `<audio controls src="${item.content}" style="width:100%;max-width:360px"></audio>`;
+    } else if(item.type === 'link'){
+      bodyHtml = `<a href="${item.content}" target="_blank" style="color:#0D9488;font-weight:600;text-decoration:none;word-break:break-all">${item.content}</a>`;
+    }
+    const downloadBtn = (item.type==='photo' || item.type==='voice')
+      ? `<a href="${item.content}" download="sandbox-${item.type}-${item.id}.${item.type==='photo'?'png':'webm'}" style="display:flex;align-items:center;gap:5px;padding:6px 12px;background:#F1F5F9;border:1.5px solid #E2E8F0;border-radius:7px;font-family:'Inter',sans-serif;font-size:11.5px;font-weight:700;color:#334155;cursor:pointer;text-decoration:none">⬇ Download</a>`
+      : `<button onclick="sandboxCopy(${item.id})" style="display:flex;align-items:center;gap:5px;padding:6px 12px;background:#F1F5F9;border:1.5px solid #E2E8F0;border-radius:7px;font-family:'Inter',sans-serif;font-size:11.5px;font-weight:700;color:#334155;cursor:pointer">⧉ Copy</button>`;
+    return `
+      <div style="background:white;border:1px solid var(--line);border-radius:12px;padding:16px 18px;margin-bottom:12px">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+          <div style="font-size:11px;color:#94A3B8;font-weight:600">${icons[item.type]} ${item.timestamp}</div>
+          <button onclick="sandboxDelete(${item.id})" style="opacity:0.5;cursor:pointer;font-size:15px;color:#EF4444;background:none;border:none" title="Delete">×</button>
+        </div>
+        ${bodyHtml}
+        <div style="display:flex;gap:8px;margin-top:12px">${downloadBtn}</div>
+      </div>`;
+  }).join('');
+}
+
+function sandboxAddItem(type, content){
+  sandboxItems.unshift({id: sandboxNextId++, type, content, timestamp: sandboxTimestamp()});
+  sandboxRender();
+}
+
+function sandboxDelete(id){
+  appConfirmShow({title:'Delete Item', msg:'Remove this from Sandbox?', onOk:()=>{
+    sandboxItems = sandboxItems.filter(x=>x.id!==id);
+    sandboxRender();
+    toast('Removed');
+  }});
+}
+
+function sandboxCopy(id){
+  const item = sandboxItems.find(x=>x.id===id);
+  if(!item) return;
+  navigator.clipboard.writeText(item.content).then(()=>toast('Copied ✓')).catch(()=>toast('Could not copy'));
+}
+
+function sandboxAddNote(){
+  appModalShow({
+    title:'Add Note',
+    fields:[{label:'Note', type:'textarea', rows:6, placeholder:"Whatever's on your mind"}],
+    onOk([content]){
+      if(!content || !content.trim()) return;
+      sandboxAddItem('note', content);
+      toast('Added to Sandbox ✓');
+    }
+  });
+}
+
+function sandboxAddLink(){
+  appModalShow({
+    title:'Add Link',
+    fields:[{label:'URL', placeholder:'https://...'}],
+    onOk([url]){
+      if(!url) return;
+      sandboxAddItem('link', url);
+      toast('Added to Sandbox ✓');
+    }
+  });
+}
+
+async function sandboxAddPhoto(evt){
+  const file = evt.target.files[0];
+  if(!file) return;
+  const dataUrl = await appFileToDataUrl(file);
+  sandboxAddItem('photo', dataUrl);
+  toast('Added to Sandbox ✓');
+  evt.target.value = '';
+}
+
+async function sandboxToggleVoice(){
+  const btn = document.getElementById('sandbox-voice-btn');
+  const status = document.getElementById('sandbox-recording-status');
+  if(sandboxMediaRecorder && sandboxMediaRecorder.state === 'recording'){
+    sandboxMediaRecorder.stop();
+    return;
+  }
+  try{
+    const stream = await navigator.mediaDevices.getUserMedia({audio:true});
+    sandboxRecordingChunks = [];
+    sandboxMediaRecorder = new MediaRecorder(stream);
+    sandboxMediaRecorder.ondataavailable = e => sandboxRecordingChunks.push(e.data);
+    sandboxMediaRecorder.onstop = async ()=>{
+      clearInterval(sandboxRecordTimer);
+      status.style.display = 'none';
+      btn.textContent = '🎙️ Voice Note';
+      stream.getTracks().forEach(t=>t.stop());
+      const blob = new Blob(sandboxRecordingChunks, {type:'audio/webm'});
+      const dataUrl = await new Promise(res=>{
+        const reader = new FileReader();
+        reader.onload = ()=>res(reader.result);
+        reader.readAsDataURL(blob);
+      });
+      sandboxAddItem('voice', dataUrl);
+      toast('Voice note added ✓');
+    };
+    sandboxMediaRecorder.start();
+    sandboxRecordStart = Date.now();
+    btn.textContent = '⏹ Stop Recording';
+    status.style.display = 'flex';
+    sandboxRecordTimer = setInterval(()=>{
+      const secs = Math.floor((Date.now()-sandboxRecordStart)/1000);
+      status.textContent = `🔴 Recording... ${String(Math.floor(secs/60)).padStart(2,'0')}:${String(secs%60).padStart(2,'0')}`;
+    }, 250);
+  } catch(err){
+    toast('Microphone access denied or unavailable');
+  }
+}
+
 function appModalFilePreview(i){
   const el = document.getElementById('appModalField_'+i);
   if(!(el.files && el.files[0])) return;

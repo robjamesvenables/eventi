@@ -3752,20 +3752,16 @@ img.emoji-tw{width:1.15em;height:1.15em;vertical-align:-0.2em;margin:0 1px}
     </div>
 
     <!-- SOP DOCUMENT -->
-    <div class="page" id="p-sop-doc" style="padding:32px 28px 0">
+    <div class="page" id="p-sop-doc" style="padding:32px 28px 60px">
       <button class="sop-back-btn" id="sop-doc-back" onclick="nav('sop-dept')">← Back to Department</button>
       <div class="ph" style="padding-top:0">
         <div>
           <div class="ph-title" id="sop-doc-title">Opening Checklist</div>
           <div class="ph-sub" id="sop-doc-dept">Kitchen</div>
         </div>
-        <button class="btn btn-navy" onclick="sopAddLink()">+ Add Link</button>
+        <button class="btn btn-navy" onclick="sopEditContent()">✎ Edit SOP</button>
       </div>
-      <div class="sop-doc-wrap">
-        <div style="font-size:13px;font-weight:700;color:var(--navy);margin-bottom:14px">Links & Documents</div>
-        <div class="sop-upload-list" id="sop-upload-list"></div>
-        <div id="sop-empty-msg" style="font-size:12px;color:var(--ink3);display:none">No links added yet — click + Add Link to attach a Google Doc, PDF link, or any URL.</div>
-      </div>
+      <div id="sop-doc-body" style="max-width:760px"></div>
     </div>
 
     <!-- MAINTENANCE -->
@@ -6519,28 +6515,28 @@ function sopAddDept(){
 
 const sopData = {
   kitchen: [
-    {title:'Opening Checklist', meta:'Last updated: Jun 2026', files:[]},
-    {title:'F&B Service Protocol', meta:'Last updated: May 2026', files:[]},
-    {title:'Allergen Handling', meta:'Last updated: Apr 2026', files:[]}
+    {title:'Opening Checklist', meta:'Last updated: Jun 2026', objective:'Ensure the kitchen is fully prepped, safe, and ready before service begins each day.', procedure:'1. Check walk-in and reach-in fridge temperatures, log on the board.\n2. Inspect all stations for cleanliness from the previous close.\n3. Rotate stock — oldest ingredients to the front (FIFO).\n4. Switch on and test all cooking equipment.\n5. Confirm par stock levels for the day\'s expected covers.\n6. Brief the team on the day\'s specials and any 86\'d items.', equipment:'Thermometer, cleaning checklist, temperature log sheet', safety:'Report any equipment fault immediately — do not operate faulty gas or electrical equipment.', roles:'All kitchen staff, opening shift', signatures:[]},
+    {title:'F&B Service Protocol', meta:'Last updated: May 2026', objective:'', procedure:'', equipment:'', safety:'', roles:'', signatures:[]},
+    {title:'Allergen Handling', meta:'Last updated: Apr 2026', objective:'', procedure:'', equipment:'', safety:'', roles:'', signatures:[]}
   ],
   bar: [
-    {title:'Bar Setup Procedure', meta:'Last updated: Jun 2026', files:[]},
-    {title:'Closing Checklist', meta:'Last updated: May 2026', files:[]}
+    {title:'Bar Setup Procedure', meta:'Last updated: Jun 2026', objective:'', procedure:'', equipment:'', safety:'', roles:'', signatures:[]},
+    {title:'Closing Checklist', meta:'Last updated: May 2026', objective:'', procedure:'', equipment:'', safety:'', roles:'', signatures:[]}
   ],
   avit: [
-    {title:'AV Load-in Procedure', meta:'Last updated: Jun 2026', files:[]},
-    {title:'IT Network Setup', meta:'Last updated: Mar 2026', files:[]}
+    {title:'AV Load-in Procedure', meta:'Last updated: Jun 2026', objective:'', procedure:'', equipment:'', safety:'', roles:'', signatures:[]},
+    {title:'IT Network Setup', meta:'Last updated: Mar 2026', objective:'', procedure:'', equipment:'', safety:'', roles:'', signatures:[]}
   ],
   housekeeping: [
-    {title:'Room Turnover Checklist', meta:'Last updated: Jun 2026', files:[]},
-    {title:'Deep Clean Protocol', meta:'Last updated: Apr 2026', files:[]}
+    {title:'Room Turnover Checklist', meta:'Last updated: Jun 2026', objective:'', procedure:'', equipment:'', safety:'', roles:'', signatures:[]},
+    {title:'Deep Clean Protocol', meta:'Last updated: Apr 2026', objective:'', procedure:'', equipment:'', safety:'', roles:'', signatures:[]}
   ],
   gro: [
-    {title:'Guest Relations Protocol', meta:'Last updated: Jun 2026', files:[]}
+    {title:'Guest Relations Protocol', meta:'Last updated: Jun 2026', objective:'', procedure:'', equipment:'', safety:'', roles:'', signatures:[]}
   ],
   security: [
-    {title:'Entry & Exit Procedure', meta:'Last updated: Jun 2026', files:[]},
-    {title:'Emergency Protocol', meta:'Last updated: May 2026', files:[]}
+    {title:'Entry & Exit Procedure', meta:'Last updated: Jun 2026', objective:'', procedure:'', equipment:'', safety:'', roles:'', signatures:[]},
+    {title:'Emergency Protocol', meta:'Last updated: May 2026', objective:'', procedure:'', equipment:'', safety:'', roles:'', signatures:[]}
   ]
 };
 let currentSopDept = 'kitchen';
@@ -6593,49 +6589,162 @@ function sopOpenDoc(idx){
   const doc = sopData[currentSopDept][idx];
   document.getElementById('sop-doc-title').textContent = doc.title;
   document.getElementById('sop-doc-dept').textContent = document.getElementById('sop-dept-title').textContent;
-  sopRenderUploads();
+  sopRenderDoc();
   nav('sop-doc');
 }
 
-function sopRenderUploads(){
-  const doc = sopData[currentSopDept][currentSopDoc];
-  const list = document.getElementById('sop-upload-list');
-  const empty = document.getElementById('sop-empty-msg');
-  if(!list) return;
-  if(!doc.files.length){
-    list.innerHTML = '';
-    if(empty) empty.style.display='block';
-    return;
-  }
-  if(empty) empty.style.display='none';
-  list.innerHTML = doc.files.map((f,i) => `
-    <div class="sop-upload-item">
-      <span style="font-size:18px">🔗</span>
-      <a href="${typeof f==='object'?f.url:'#'}" target="_blank" class="sop-upload-item-name" style="text-decoration:none;color:var(--navy)">${typeof f==='object'?f.name:f}</a>
-      <button class="sop-upload-del" onclick="sopDeleteFile(${i})">×</button>
-    </div>
-  `).join('');
+function sopSectionBlock(label, value){
+  if(!value) return '';
+  const isProcedure = label === 'Procedure';
+  return `<div style="margin-bottom:22px">
+    <div style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:0.7px;color:#0D9488;margin-bottom:6px">${label}</div>
+    <div style="font-size:13.5px;color:#334155;line-height:1.7;white-space:pre-line">${value}</div>
+  </div>`;
 }
 
-function sopAddLink(){
+function sopRenderDoc(){
+  const doc = sopData[currentSopDept][currentSopDoc];
+  const body = document.getElementById('sop-doc-body');
+  if(!body) return;
+  const hasContent = doc.objective || doc.procedure;
+  const contentHtml = hasContent
+    ? sopSectionBlock('Objective', doc.objective) + sopSectionBlock('Procedure', doc.procedure) + sopSectionBlock('Equipment / Materials Needed', doc.equipment) + sopSectionBlock('Safety Notes', doc.safety) + sopSectionBlock('Responsible Role(s)', doc.roles)
+    : `<div style="padding:32px;text-align:center;color:#94A3B8;font-size:13px;background:#F8FAFC;border-radius:12px;border:1.5px dashed #E2E8F0;margin-bottom:22px">This SOP has no content yet — click "Edit SOP" to add the Objective and Procedure.</div>`;
+
+  const sigCount = doc.signatures.length;
+  const sigListHtml = sigCount ? doc.signatures.map((s,i) => `
+    <div style="display:flex;align-items:center;gap:14px;padding:10px 0;border-bottom:1px solid #F1F5F9">
+      ${s.img ? `<img src="${s.img}" style="width:80px;height:36px;object-fit:contain;background:#F8FAFC;border-radius:6px;border:1px solid #E2E8F0">` : `<div style="width:80px;height:36px;display:flex;align-items:center;justify-content:center;font-family:'Brush Script MT',cursive;font-size:18px;color:#0F1E2E;background:#F8FAFC;border-radius:6px;border:1px solid #E2E8F0">${s.name}</div>`}
+      <div style="flex:1;min-width:0">
+        <div style="font-size:13px;font-weight:700;color:#0F1E2E">${s.name}</div>
+        <div style="font-size:11.5px;color:#64748B">${s.role || 'Staff'} · ${s.date}</div>
+      </div>
+      <span onclick="sopDeleteSignature(${i})" style="opacity:0.5;cursor:pointer;font-size:15px;color:#EF4444" title="Remove">×</span>
+    </div>`).join('') : `<div style="font-size:12px;color:#94A3B8;padding:8px 0">No one has signed this SOP yet.</div>`;
+
+  body.innerHTML = contentHtml + `
+    <div style="margin-top:8px;padding-top:20px;border-top:2px solid #E2E8F0">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+        <div style="font-size:13px;font-weight:800;color:#0F1E2E">Sign-off Log <span style="color:#94A3B8;font-weight:600">(${sigCount} signed)</span></div>
+        <button class="btn btn-navy" onclick="sopOpenSign()">✎ Sign this SOP</button>
+      </div>
+      ${sigListHtml}
+    </div>`;
+}
+
+function sopDeleteSignature(i){
+  appConfirmShow({title:'Remove Signature', msg:'Remove this sign-off record?', onOk:()=>{
+    sopData[currentSopDept][currentSopDoc].signatures.splice(i,1);
+    sopRenderDoc();
+    toast('Signature removed');
+  }});
+}
+
+function sopEditContent(){
+  const doc = sopData[currentSopDept][currentSopDoc];
   appModalShow({
-    title:'Add Link to SOP',
+    title:'Edit SOP',
     fields:[
-      {label:'Name', placeholder:'e.g. F&B Opening Checklist'},
-      {label:'URL', placeholder:'https://docs.google.com/...'}
+      {label:'Title', value:doc.title},
+      {label:'Objective', type:'textarea', rows:3, value:doc.objective||'', placeholder:'Why this procedure exists'},
+      {label:'Procedure', type:'textarea', rows:9, value:doc.procedure||'', placeholder:'1. First step\n2. Second step\n3. ...'},
+      {label:'Equipment / Materials (optional)', type:'textarea', rows:2, value:doc.equipment||'', optional:true},
+      {label:'Safety Notes (optional)', type:'textarea', rows:2, value:doc.safety||'', optional:true},
+      {label:'Responsible Role(s) (optional)', value:doc.roles||'', optional:true}
     ],
-    onOk([name, url]){
-      if(!url) return;
-      sopData[currentSopDept][currentSopDoc].files.unshift({name, url});
-      sopRenderUploads();
-      toast('Link added ✓');
+    onOk([title, objective, procedure, equipment, safety, roles]){
+      doc.title = title; doc.objective = objective; doc.procedure = procedure;
+      doc.equipment = equipment; doc.safety = safety; doc.roles = roles;
+      doc.meta = 'Last updated: ' + new Date().toLocaleDateString('en-US',{month:'short',year:'numeric'});
+      document.getElementById('sop-doc-title').textContent = title;
+      sopRenderDoc();
+      toast('SOP updated ✓');
     }
   });
 }
 
-function sopDeleteFile(idx){
-  sopData[currentSopDept][currentSopDoc].files.splice(idx,1);
-  sopRenderUploads();
+// ── Sign-off: canvas draw + typed-name fallback ──
+let sopSignMode = 'draw';
+let sopSignDrawing = false;
+let sopSignHasStroke = false;
+
+function sopOpenSign(){
+  sopSignMode = 'draw';
+  sopSignHasStroke = false;
+  document.getElementById('sopSignOverlay').style.display = 'flex';
+  document.getElementById('sopSignName').value = '';
+  document.getElementById('sopSignRole').value = '';
+  sopSignSetTab('draw');
+  setTimeout(sopSignInitCanvas, 30);
+}
+
+function sopSignClose(){
+  document.getElementById('sopSignOverlay').style.display = 'none';
+}
+
+function sopSignSetTab(mode){
+  sopSignMode = mode;
+  document.getElementById('sopSignTabDraw').style.cssText = mode==='draw' ? 'background:#0F1E2E;color:white' : 'background:#F1F5F9;color:#64748B';
+  document.getElementById('sopSignTabType').style.cssText = mode==='type' ? 'background:#0F1E2E;color:white' : 'background:#F1F5F9;color:#64748B';
+  document.getElementById('sopSignDrawWrap').style.display = mode==='draw' ? 'block' : 'none';
+  document.getElementById('sopSignTypeWrap').style.display = mode==='type' ? 'block' : 'none';
+}
+
+function sopSignInitCanvas(){
+  const canvas = document.getElementById('sopSignCanvas');
+  if(!canvas) return;
+  const ctx = canvas.getContext('2d');
+  canvas.width = canvas.offsetWidth;
+  canvas.height = canvas.offsetHeight;
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  ctx.strokeStyle = '#0F1E2E';
+  ctx.lineWidth = 2.4;
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+  sopSignHasStroke = false;
+
+  const pos = (e)=>{
+    const rect = canvas.getBoundingClientRect();
+    const t = e.touches ? e.touches[0] : e;
+    return {x: t.clientX-rect.left, y: t.clientY-rect.top};
+  };
+  const start = (e)=>{ e.preventDefault(); sopSignDrawing=true; sopSignHasStroke=true; const p=pos(e); ctx.beginPath(); ctx.moveTo(p.x,p.y); };
+  const move = (e)=>{ if(!sopSignDrawing) return; e.preventDefault(); const p=pos(e); ctx.lineTo(p.x,p.y); ctx.stroke(); };
+  const end = ()=>{ sopSignDrawing=false; };
+
+  canvas.onmousedown = start; canvas.onmousemove = move; canvas.onmouseup = end; canvas.onmouseleave = end;
+  canvas.ontouchstart = start; canvas.ontouchmove = move; canvas.ontouchend = end;
+}
+
+function sopSignUpdateTypedPreview(){
+  const name = document.getElementById('sopSignName').value.trim();
+  const preview = document.getElementById('sopSignTypedPreview');
+  if(preview) preview.textContent = name || 'Type your name above';
+}
+
+function sopSignClear(){
+  const canvas = document.getElementById('sopSignCanvas');
+  const ctx = canvas.getContext('2d');
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  sopSignHasStroke = false;
+}
+
+function sopSignSave(){
+  const name = document.getElementById('sopSignName').value.trim();
+  const role = document.getElementById('sopSignRole').value.trim();
+  if(!name){ toast('Please enter a name'); return; }
+
+  let img = '';
+  if(sopSignMode === 'draw'){
+    if(!sopSignHasStroke){ toast('Please draw a signature, or switch to Type'); return; }
+    img = document.getElementById('sopSignCanvas').toDataURL('image/png');
+  }
+
+  const date = new Date().toLocaleDateString('en-US',{day:'numeric',month:'short',year:'numeric'});
+  sopData[currentSopDept][currentSopDoc].signatures.unshift({name, role, date, img});
+  sopSignClose();
+  sopRenderDoc();
+  toast('Signed ✓');
 }
 
 function sopNewDoc(){
@@ -6643,11 +6752,11 @@ function sopNewDoc(){
     title:'New SOP',
     fields:[
       {label:'Title', placeholder:'e.g. Opening Checklist'},
-      {label:'Link URL', placeholder:'https://docs.google.com/...'}
+      {label:'Objective', type:'textarea', rows:3, placeholder:'Why this procedure exists', optional:true},
+      {label:'Procedure', type:'textarea', rows:9, placeholder:'1. First step\n2. Second step\n3. ...', optional:true}
     ],
-    onOk([name, url]){
-      const files = url ? [{name: name, url: url}] : [];
-      sopData[currentSopDept].push({title:name, meta:'Just created', files});
+    onOk([title, objective, procedure]){
+      sopData[currentSopDept].push({title, meta:'Just created', objective:objective||'', procedure:procedure||'', equipment:'', safety:'', roles:'', signatures:[]});
       sopOpenDept(currentSopDept);
     }
   });
@@ -10312,6 +10421,43 @@ document.addEventListener('DOMContentLoaded', initCardColours);
     <div style="display:flex;gap:10px;margin-top:20px">
       <button id="pollModalSubmitBtn" onclick="pollSubmitNew()" style="flex:1;padding:12px;background:#0F1E2E;border:none;border-radius:9px;font-family:'Inter',sans-serif;font-size:14px;font-weight:700;color:white;cursor:pointer">Post Poll</button>
       <button onclick="pollModalClose()" style="padding:12px 20px;background:#F1F5F9;border:none;border-radius:9px;font-family:'Inter',sans-serif;font-size:14px;font-weight:600;color:#64748B;cursor:pointer">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<div id="sopSignOverlay" style="display:none;position:fixed;inset:0;background:rgba(15,30,46,0.55);z-index:10000;align-items:center;justify-content:center" onclick="if(event.target===this)sopSignClose()">
+  <div style="background:white;border-radius:16px;padding:24px;width:calc(100% - 32px);max-width:420px;margin:0 16px;box-shadow:0 20px 60px rgba(0,0,0,0.2);max-height:90vh;overflow-y:auto;box-sizing:border-box">
+    <div style="font-size:16px;font-weight:800;color:#0F1E2E;margin-bottom:16px">Sign this SOP</div>
+
+    <div style="margin-bottom:14px">
+      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.7px;color:#94A3B8;margin-bottom:6px">Name</div>
+      <input id="sopSignName" type="text" placeholder="Your full name" oninput="sopSignUpdateTypedPreview()" style="width:100%;padding:11px 13px;border:1.5px solid #E2E8F0;border-radius:9px;font-family:'Inter',sans-serif;font-size:14px;box-sizing:border-box">
+    </div>
+    <div style="margin-bottom:16px">
+      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.7px;color:#94A3B8;margin-bottom:6px">Role (optional)</div>
+      <input id="sopSignRole" type="text" placeholder="e.g. Sous Chef" style="width:100%;padding:11px 13px;border:1.5px solid #E2E8F0;border-radius:9px;font-family:'Inter',sans-serif;font-size:14px;box-sizing:border-box">
+    </div>
+
+    <div style="display:flex;gap:6px;margin-bottom:12px">
+      <button id="sopSignTabDraw" onclick="sopSignSetTab('draw')" style="flex:1;padding:9px;border:none;border-radius:8px;font-family:'Inter',sans-serif;font-size:12.5px;font-weight:700;cursor:pointer;background:#0F1E2E;color:white">✍️ Draw</button>
+      <button id="sopSignTabType" onclick="sopSignSetTab('type')" style="flex:1;padding:9px;border:none;border-radius:8px;font-family:'Inter',sans-serif;font-size:12.5px;font-weight:700;cursor:pointer;background:#F1F5F9;color:#64748B">⌨️ Type</button>
+    </div>
+
+    <div id="sopSignDrawWrap">
+      <canvas id="sopSignCanvas" style="width:100%;height:140px;background:#F8FAFC;border:1.5px dashed #CBD5E1;border-radius:10px;touch-action:none;cursor:crosshair"></canvas>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-top:6px">
+        <span style="font-size:11px;color:#94A3B8">Draw with your finger or mouse</span>
+        <span onclick="sopSignClear()" style="font-size:11.5px;color:#0D9488;font-weight:700;cursor:pointer">Clear</span>
+      </div>
+    </div>
+
+    <div id="sopSignTypeWrap" style="display:none">
+      <div id="sopSignTypedPreview" style="width:100%;height:140px;background:#F8FAFC;border:1.5px dashed #CBD5E1;border-radius:10px;display:flex;align-items:center;justify-content:center;font-family:'Brush Script MT',cursive;font-size:32px;color:#0F1E2E;text-align:center;padding:0 12px;box-sizing:border-box">Type your name above</div>
+    </div>
+
+    <div style="display:flex;gap:10px;margin-top:18px">
+      <button onclick="sopSignSave()" style="flex:1;padding:12px;background:#0F1E2E;border:none;border-radius:9px;font-family:'Inter',sans-serif;font-size:14px;font-weight:700;color:white;cursor:pointer">Sign & Save</button>
+      <button onclick="sopSignClose()" style="padding:12px 20px;background:#F1F5F9;border:none;border-radius:9px;font-family:'Inter',sans-serif;font-size:14px;font-weight:600;color:#64748B;cursor:pointer">Cancel</button>
     </div>
   </div>
 </div>

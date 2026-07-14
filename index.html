@@ -6515,28 +6515,28 @@ function sopAddDept(){
 
 const sopData = {
   kitchen: [
-    {title:'Opening Checklist', meta:'Last updated: Jun 2026', objective:'Ensure the kitchen is fully prepped, safe, and ready before service begins each day.', procedure:'1. Check walk-in and reach-in fridge temperatures, log on the board.\n2. Inspect all stations for cleanliness from the previous close.\n3. Rotate stock — oldest ingredients to the front (FIFO).\n4. Switch on and test all cooking equipment.\n5. Confirm par stock levels for the day\'s expected covers.\n6. Brief the team on the day\'s specials and any 86\'d items.', equipment:'Thermometer, cleaning checklist, temperature log sheet', safety:'Report any equipment fault immediately — do not operate faulty gas or electrical equipment.', roles:'All kitchen staff, opening shift', sections:[], signatures:[]},
-    {title:'F&B Service Protocol', meta:'Last updated: May 2026', objective:'', procedure:'', equipment:'', safety:'', roles:'', sections:[], signatures:[]},
-    {title:'Allergen Handling', meta:'Last updated: Apr 2026', objective:'', procedure:'', equipment:'', safety:'', roles:'', sections:[], signatures:[]}
+    {title:'Opening Checklist', meta:'Last updated: Jun 2026', objective:'Ensure the kitchen is fully prepped, safe, and ready before service begins each day.', procedure:'1. Check walk-in and reach-in fridge temperatures, log on the board.\n2. Inspect all stations for cleanliness from the previous close.\n3. Rotate stock — oldest ingredients to the front (FIFO).\n4. Switch on and test all cooking equipment.\n5. Confirm par stock levels for the day\'s expected covers.\n6. Brief the team on the day\'s specials and any 86\'d items.', equipment:'Thermometer, cleaning checklist, temperature log sheet', safety:'Report any equipment fault immediately — do not operate faulty gas or electrical equipment.', roles:'All kitchen staff, opening shift', sections:[], signatures:[], photo:''},
+    {title:'F&B Service Protocol', meta:'Last updated: May 2026', objective:'', procedure:'', equipment:'', safety:'', roles:'', sections:[], signatures:[], photo:''},
+    {title:'Allergen Handling', meta:'Last updated: Apr 2026', objective:'', procedure:'', equipment:'', safety:'', roles:'', sections:[], signatures:[], photo:''}
   ],
   bar: [
-    {title:'Bar Setup Procedure', meta:'Last updated: Jun 2026', objective:'', procedure:'', equipment:'', safety:'', roles:'', sections:[], signatures:[]},
-    {title:'Closing Checklist', meta:'Last updated: May 2026', objective:'', procedure:'', equipment:'', safety:'', roles:'', sections:[], signatures:[]}
+    {title:'Bar Setup Procedure', meta:'Last updated: Jun 2026', objective:'', procedure:'', equipment:'', safety:'', roles:'', sections:[], signatures:[], photo:''},
+    {title:'Closing Checklist', meta:'Last updated: May 2026', objective:'', procedure:'', equipment:'', safety:'', roles:'', sections:[], signatures:[], photo:''}
   ],
   avit: [
-    {title:'AV Load-in Procedure', meta:'Last updated: Jun 2026', objective:'', procedure:'', equipment:'', safety:'', roles:'', sections:[], signatures:[]},
-    {title:'IT Network Setup', meta:'Last updated: Mar 2026', objective:'', procedure:'', equipment:'', safety:'', roles:'', sections:[], signatures:[]}
+    {title:'AV Load-in Procedure', meta:'Last updated: Jun 2026', objective:'', procedure:'', equipment:'', safety:'', roles:'', sections:[], signatures:[], photo:''},
+    {title:'IT Network Setup', meta:'Last updated: Mar 2026', objective:'', procedure:'', equipment:'', safety:'', roles:'', sections:[], signatures:[], photo:''}
   ],
   housekeeping: [
-    {title:'Room Turnover Checklist', meta:'Last updated: Jun 2026', objective:'', procedure:'', equipment:'', safety:'', roles:'', sections:[], signatures:[]},
-    {title:'Deep Clean Protocol', meta:'Last updated: Apr 2026', objective:'', procedure:'', equipment:'', safety:'', roles:'', sections:[], signatures:[]}
+    {title:'Room Turnover Checklist', meta:'Last updated: Jun 2026', objective:'', procedure:'', equipment:'', safety:'', roles:'', sections:[], signatures:[], photo:''},
+    {title:'Deep Clean Protocol', meta:'Last updated: Apr 2026', objective:'', procedure:'', equipment:'', safety:'', roles:'', sections:[], signatures:[], photo:''}
   ],
   gro: [
-    {title:'Guest Relations Protocol', meta:'Last updated: Jun 2026', objective:'', procedure:'', equipment:'', safety:'', roles:'', sections:[], signatures:[]}
+    {title:'Guest Relations Protocol', meta:'Last updated: Jun 2026', objective:'', procedure:'', equipment:'', safety:'', roles:'', sections:[], signatures:[], photo:''}
   ],
   security: [
-    {title:'Entry & Exit Procedure', meta:'Last updated: Jun 2026', objective:'', procedure:'', equipment:'', safety:'', roles:'', sections:[], signatures:[]},
-    {title:'Emergency Protocol', meta:'Last updated: May 2026', objective:'', procedure:'', equipment:'', safety:'', roles:'', sections:[], signatures:[]}
+    {title:'Entry & Exit Procedure', meta:'Last updated: Jun 2026', objective:'', procedure:'', equipment:'', safety:'', roles:'', sections:[], signatures:[], photo:''},
+    {title:'Emergency Protocol', meta:'Last updated: May 2026', objective:'', procedure:'', equipment:'', safety:'', roles:'', sections:[], signatures:[], photo:''}
   ]
 };
 let currentSopDept = 'kitchen';
@@ -6606,6 +6606,7 @@ function sopRenderDoc(){
   const doc = sopData[currentSopDept][currentSopDoc];
   const body = document.getElementById('sop-doc-body');
   if(!body) return;
+  const photoHtml = doc.photo ? `<img src="${doc.photo}" style="width:100%;max-height:280px;object-fit:cover;border-radius:12px;margin-bottom:20px">` : '';
   const hasContent = doc.objective || doc.procedure;
   const contentHtml = hasContent
     ? sopSectionBlock('Objective', doc.objective) + sopSectionBlock('Procedure', doc.procedure) + sopSectionBlock('Equipment / Materials Needed', doc.equipment) + sopSectionBlock('Safety Notes', doc.safety) + sopSectionBlock('Responsible Role(s)', doc.roles)
@@ -6628,7 +6629,7 @@ function sopRenderDoc(){
       <span onclick="sopDeleteSignature(${i})" style="opacity:0.5;cursor:pointer;font-size:15px;color:#EF4444" title="Remove">×</span>
     </div>`).join('') : `<div style="font-size:12px;color:#94A3B8;padding:8px 0">No one has signed this SOP yet.</div>`;
 
-  body.innerHTML = contentHtml + customSectionsHtml + `
+  body.innerHTML = photoHtml + contentHtml + customSectionsHtml + `
     <div style="margin-top:8px;padding-top:20px;border-top:2px solid #E2E8F0">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
         <div style="font-size:13px;font-weight:800;color:#0F1E2E">Sign-off Log <span style="color:#94A3B8;font-weight:600">(${sigCount} signed)</span></div>
@@ -6657,9 +6658,34 @@ function sopEditContent(){
   document.getElementById('sopEditEquipment').value = doc.equipment||'';
   document.getElementById('sopEditSafety').value = doc.safety||'';
   document.getElementById('sopEditRoles').value = doc.roles||'';
+  sopEditDraftPhoto = doc.photo||'';
+  const previewWrap = document.getElementById('sopEditPhotoPreviewWrap');
+  const previewImg = document.getElementById('sopEditPhotoPreview');
+  const label = document.getElementById('sopEditPhotoLabel');
+  document.getElementById('sopEditPhotoInput').value = '';
+  if(doc.photo){
+    previewWrap.style.display = 'block';
+    previewImg.src = doc.photo;
+    label.textContent = 'Change photo';
+  } else {
+    previewWrap.style.display = 'none';
+    label.textContent = 'Choose photo';
+  }
   sopEditDraftSections = doc.sections.map(s => ({...s}));
   sopEditRenderSectionRows();
   document.getElementById('sopEditOverlay').style.display = 'flex';
+}
+
+let sopEditDraftPhoto = '';
+
+async function sopEditPhotoChange(evt){
+  const file = evt.target.files[0];
+  if(!file) return;
+  const dataUrl = await appFileToDataUrl(file);
+  sopEditDraftPhoto = dataUrl;
+  document.getElementById('sopEditPhotoPreviewWrap').style.display = 'block';
+  document.getElementById('sopEditPhotoPreview').src = dataUrl;
+  document.getElementById('sopEditPhotoLabel').textContent = 'Change photo';
 }
 
 function sopEditClose(){
@@ -6699,6 +6725,7 @@ function sopEditSave(){
   const title = document.getElementById('sopEditTitle').value.trim();
   if(!title){ toast('Please enter a title'); return; }
   doc.title = title;
+  doc.photo = sopEditDraftPhoto;
   doc.objective = document.getElementById('sopEditObjective').value;
   doc.procedure = document.getElementById('sopEditProcedure').value;
   doc.equipment = document.getElementById('sopEditEquipment').value;
@@ -10478,6 +10505,16 @@ document.addEventListener('DOMContentLoaded', initCardColours);
   <div style="background:white;border-radius:16px;padding:24px;width:100%;max-width:640px;box-shadow:0 20px 60px rgba(0,0,0,0.2);max-height:90vh;overflow-y:auto;box-sizing:border-box">
     <div style="font-size:16px;font-weight:800;color:#0F1E2E;margin-bottom:18px">Edit SOP</div>
 
+    <div style="margin-bottom:14px">
+      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.7px;color:#94A3B8;margin-bottom:6px">Photo (optional)</div>
+      <div id="sopEditPhotoPreviewWrap" style="display:none;margin-bottom:8px">
+        <img id="sopEditPhotoPreview" style="width:100%;height:160px;object-fit:cover;border-radius:9px;border:1.5px solid #E2E8F0;display:block">
+      </div>
+      <label style="display:flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:11px 14px;border:1.5px dashed #CBD5E1;border-radius:9px;font-family:'Inter',sans-serif;font-size:13px;color:#64748B;cursor:pointer;box-sizing:border-box">
+        <span id="sopEditPhotoLabel">Choose photo</span>
+        <input id="sopEditPhotoInput" type="file" accept="image/*" style="display:none" onchange="sopEditPhotoChange(event)">
+      </label>
+    </div>
     <div style="margin-bottom:14px">
       <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.7px;color:#94A3B8;margin-bottom:6px">Title</div>
       <input id="sopEditTitle" type="text" style="width:100%;padding:11px 13px;border:1.5px solid #E2E8F0;border-radius:9px;font-family:'Inter',sans-serif;font-size:14px;box-sizing:border-box">

@@ -7454,44 +7454,44 @@ function barDeleteRecipe(id){
 const kitchenLinkIcon = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#16A34A" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M3 15h18M9 3v18"/></svg>';
 let kitchenLinkNextId = 100;
 let kitchenLinksData = [
-  {id:1, name:'Weekly Food Cost Sheet', meta:'Google Sheets · Updated weekly', url:'https://sheets.google.com'},
-  {id:2, name:'Monthly P&L — Kitchen', meta:'Google Sheets · Finance team', url:'https://sheets.google.com'},
-  {id:3, name:'Stock & Inventory Tracker', meta:'Google Sheets · Daily update', url:'https://sheets.google.com'},
-  {id:4, name:'Supplier Order Template', meta:'Google Sheets · Weekly orders', url:'https://sheets.google.com'}
+  {id:1, name:'Weekly Food Cost Sheet', meta:'Updated weekly', content:''},
+  {id:2, name:'Monthly P&L — Kitchen', meta:'Finance team', content:''},
+  {id:3, name:'Stock & Inventory Tracker', meta:'Daily update', content:''},
+  {id:4, name:'Supplier Order Template', meta:'Weekly orders', content:''}
 ];
 
 function kitchenRenderLinks(){
   const list = document.getElementById('kitchen-links-list');
   if(!list) return;
   if(!kitchenLinksData.length){
-    list.innerHTML = '<div style="text-align:center;padding:32px;color:#94A3B8;font-size:13px">No links yet — click + Add Link</div>';
+    list.innerHTML = '<div style="text-align:center;padding:32px;color:#94A3B8;font-size:13px">No notes yet — click + Add Note</div>';
     return;
   }
   list.innerHTML = kitchenLinksData.map(l => `
     <div class="kitchen-link-card">
       <div style="width:36px;height:36px;background:#E8F5E9;border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0">${kitchenLinkIcon}</div>
-      <div style="flex:1">
+      <div style="flex:1;min-width:0">
         <div style="font-size:13px;font-weight:700;color:var(--navy)">${l.name}</div>
-        <div style="font-size:11px;color:var(--ink3)">${l.meta}</div>
+        <div style="font-size:11px;color:var(--ink3)">${l.meta}${l.content ? ' · has notes' : ' · empty'}</div>
       </div>
       <span onclick="kitchenEditLink(${l.id})" title="Edit" style="opacity:0.5;cursor:pointer;font-size:12px;margin-right:4px"><svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="2.2"/><circle cx="12" cy="12" r="2.2"/><circle cx="12" cy="19" r="2.2"/></svg></span>
       <span onclick="kitchenDeleteLink(${l.id})" title="Delete" style="opacity:0.5;cursor:pointer;font-size:15px;margin-right:8px;color:#EF4444">×</span>
-      <a href="${l.url}" target="_blank" class="btn btn-ghost" style="font-size:11px">Open →</a>
+      <button onclick="kitchenEditLink(${l.id})" class="btn btn-ghost" style="font-size:11px">Open →</button>
     </div>
   `).join('');
 }
 
 function kitchenLinksAdd(){
   appModalShow({
-    title:'Add Link',
+    title:'Add Note',
     fields:[
-      {label:'Link name', placeholder:'e.g. Weekly Food Cost Sheet'},
-      {label:'URL', placeholder:'Paste Google Sheets / Docs URL'}
+      {label:'Title', placeholder:'e.g. Weekly Food Cost Sheet'},
+      {label:'Content', type:'textarea', rows:8, placeholder:'Track it right here — figures, notes, links to internal records', optional:true}
     ],
-    onOk([name, url]){
-      kitchenLinksData.push({id: kitchenLinkNextId++, name, meta:'Added ' + new Date().toLocaleDateString(), url});
+    onOk([name, content]){
+      kitchenLinksData.push({id: kitchenLinkNextId++, name, meta:'Added ' + new Date().toLocaleDateString(), content: content||''});
       kitchenRenderLinks();
-      toast('Link added ✓');
+      toast('Note added ✓');
     }
   });
 }
@@ -7500,15 +7500,16 @@ function kitchenEditLink(id){
   const l = kitchenLinksData.find(x=>x.id===id);
   if(!l) return;
   appModalShow({
-    title:'Edit Link',
+    title:'Edit Note',
     fields:[
-      {label:'Link name', value:l.name, placeholder:'e.g. Weekly Food Cost Sheet'},
-      {label:'URL', value:l.url, placeholder:'Paste Google Sheets / Docs URL'}
+      {label:'Title', value:l.name},
+      {label:'Content', type:'textarea', rows:8, value:l.content||'', optional:true}
     ],
-    onOk([name, url]){
-      l.name = name; l.url = url;
+    onOk([name, content]){
+      l.name = name; l.content = content;
+      l.meta = 'Last updated ' + new Date().toLocaleDateString();
       kitchenRenderLinks();
-      toast('Link updated ✓');
+      toast('Note updated ✓');
     }
   });
 }
@@ -7516,10 +7517,10 @@ function kitchenEditLink(id){
 function kitchenDeleteLink(id){
   const l = kitchenLinksData.find(x=>x.id===id);
   if(!l) return;
-  appConfirmShow({title:'Delete Link', msg:`Delete "${l.name}"?`, onOk:()=>{
+  appConfirmShow({title:'Delete Note', msg:`Delete "${l.name}"?`, onOk:()=>{
     kitchenLinksData = kitchenLinksData.filter(x=>x.id!==id);
     kitchenRenderLinks();
-    toast('Link deleted');
+    toast('Note deleted');
   }});
 }
 

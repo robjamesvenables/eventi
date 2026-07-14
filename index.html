@@ -6606,11 +6606,14 @@ function sopRenderDoc(){
   const doc = sopData[currentSopDept][currentSopDoc];
   const body = document.getElementById('sop-doc-body');
   if(!body) return;
-  const photoHtml = doc.photo ? `<img src="${doc.photo}" style="width:100%;max-height:280px;object-fit:cover;border-radius:12px;margin-bottom:20px">` : '';
+  const photoHtml = doc.photo ? `<img src="${doc.photo}" onclick="recipePhotoZoom('${doc.photo.replace(/'/g,"\\'")}')" class="recipe-card-photo" style="object-fit:cover;border-radius:9px;border:1.5px solid #E2E8F0;cursor:pointer;flex-shrink:0" title="Tap to zoom">` : '';
   const hasContent = doc.objective || doc.procedure;
   const contentHtml = hasContent
     ? sopSectionBlock('Objective', doc.objective) + sopSectionBlock('Procedure', doc.procedure) + sopSectionBlock('Equipment / Materials Needed', doc.equipment) + sopSectionBlock('Safety Notes', doc.safety) + sopSectionBlock('Responsible Role(s)', doc.roles)
     : `<div style="padding:32px;text-align:center;color:#94A3B8;font-size:13px;background:#F8FAFC;border-radius:12px;border:1.5px dashed #E2E8F0;margin-bottom:22px">This SOP has no content yet — click "Edit SOP" to add the Objective and Procedure.</div>`;
+  const topBlockHtml = photoHtml
+    ? `<div class="recipe-card-row" style="margin-bottom:8px"><div class="recipe-card-content">${contentHtml}</div></div>`.replace('<div class="recipe-card-content">', photoHtml + '<div class="recipe-card-content">')
+    : contentHtml;
 
   const customSectionsHtml = doc.sections.map(sec => `
     <div style="margin-bottom:22px;padding:16px;background:#F8FAFC;border-radius:10px;border:1px solid #F1F5F9">

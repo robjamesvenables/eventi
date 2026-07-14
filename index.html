@@ -1157,6 +1157,30 @@ textarea.rf-val{resize:vertical;min-height:72px;line-height:1.5}
 .cal-ev-pending .cal-ev-dot{background:#D97706}
 .cal-ev-live .cal-ev-dot{background:#DC2626}
 .cal-ev-note .cal-ev-dot{background:#7C3AED}
+.cal-ev-sport{background:#FCE7D9;color:#7C2D12}
+.cal-ev-sport .cal-ev-dot{background:#C4622D}
+
+/* Calendar layers row */
+.cal-layers{display:flex;align-items:center;gap:10px;margin-bottom:16px;flex-wrap:wrap}
+.cal-layer-chip{
+  display:flex;align-items:center;gap:7px;
+  padding:6px 12px 6px 10px;border-radius:20px;
+  border:1.5px solid var(--line);background:var(--w);
+  cursor:pointer;user-select:none;font-size:12.5px;font-weight:600;color:var(--ink2);
+  transition:all 0.15s;
+}
+.cal-layer-chip:hover{border-color:#CBD5E1}
+.cal-layer-chip input{accent-color:#0D9488;width:14px;height:14px;cursor:pointer}
+.cal-layer-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.cal-import-btn{
+  display:flex;align-items:center;gap:6px;
+  padding:6px 14px;border-radius:20px;
+  border:1.5px dashed #CBD5E1;background:transparent;
+  cursor:pointer;font-family:'Inter',sans-serif;font-size:12.5px;font-weight:600;
+  color:var(--ink3);transition:all 0.15s;margin-left:auto;
+}
+.cal-import-btn:hover{border-color:#C4622D;color:#C4622D}
+.cal-import-status{font-size:11.5px;font-weight:600;color:#0D9488;margin-left:8px}
 
 /* List view */
 .cal-list{display:flex;flex-direction:column;gap:2px}
@@ -3310,6 +3334,24 @@ img.emoji-tw{width:1.15em;height:1.15em;vertical-align:-0.2em;margin:0 1px}
           <button class="cal-view-btn" id="cvb-day" onclick="calSetView('day')">Day</button>
         </div>
       </div>
+      <div class="cal-layers">
+        <label class="cal-layer-chip">
+          <input type="checkbox" checked onchange="calToggleLayer('events',this.checked)">
+          <span class="cal-layer-dot" style="background:#0D9488"></span>
+          Events
+        </label>
+        <label class="cal-layer-chip">
+          <input type="checkbox" checked onchange="calToggleLayer('sports',this.checked)">
+          <span class="cal-layer-dot" style="background:#C4622D"></span>
+          Sports Fixtures<span id="cal-sport-count" style="color:#94A3B8;font-weight:700"></span>
+        </label>
+        <button class="cal-import-btn" onclick="document.getElementById('cal-ics-input').click()">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12"/></svg>
+          Import .ics
+        </button>
+        <input type="file" id="cal-ics-input" accept=".ics" style="display:none" onchange="calImportICS(event)">
+        <span class="cal-import-status" id="cal-import-status"></span>
+      </div>
       <div id="cal-body"></div>
     </div>
 
@@ -4865,6 +4907,81 @@ const calDowsFull=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','
 const calTodayInit = new Date();
 let calYear=calTodayInit.getFullYear(),calMonth=calTodayInit.getMonth(),calView='month',calSelectedDay=null;
 
+// Sports Fixtures layer — populated via .ics import, read-only, re-import replaces the set
+let calSportsEvents = [];
+let calLayers = {events:true, sports:true};
+
+function calToggleLayer(layer, checked){
+  calLayers[layer] = checked;
+  calRender();
+}
+
+function calUpdateSportCount(){
+  const el = document.getElementById('cal-sport-count');
+  if(el) el.textContent = calSportsEvents.length ? ` (${calSportsEvents.length})` : '';
+}
+
+function calParseICS(text){
+  const rawLines = text.split(/\r\n|\n|\r/);
+  const lines = [];
+  rawLines.forEach(line=>{
+    if(line.startsWith(' ') && lines.length){ lines[lines.length-1] += line.slice(1); }
+    else lines.push(line);
+  });
+  const toDateStr = (val)=>{
+    const clean = val.replace('Z','');
+    const yyyy=clean.slice(0,4), mm=clean.slice(4,6), dd=clean.slice(6,8);
+    let time = 'TBC';
+    if(clean.length>8){
+      let hh=parseInt(clean.slice(9,11),10), mi=clean.slice(11,13);
+      const ampm = hh>=12?'pm':'am';
+      hh = hh%12; if(hh===0)hh=12;
+      time = `${hh}:${mi}${ampm}`;
+    }
+    return {date:`${yyyy}-${mm}-${dd}`, time};
+  };
+  const out=[];
+  let cur=null;
+  lines.forEach(line=>{
+    if(line.startsWith('BEGIN:VEVENT')) cur={};
+    else if(line.startsWith('END:VEVENT')){ if(cur && cur.name && cur.date) out.push(cur); cur=null; }
+    else if(cur){
+      if(line.startsWith('SUMMARY:')) cur.name=line.slice(8).trim();
+      else if(line.startsWith('DTSTART')){
+        const val=line.split(':')[1];
+        if(val){ const {date,time}=toDateStr(val.trim()); cur.date=date; cur.time=time; }
+      }
+      else if(line.startsWith('UID:')) cur.uid=line.slice(4).trim();
+      else if(line.startsWith('LOCATION:')) cur.venue=line.slice(9).trim();
+    }
+  });
+  return out;
+}
+
+function calImportICS(evt){
+  const file = evt.target.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = (e)=>{
+    const fixtures = calParseICS(e.target.result);
+    calSportsEvents = fixtures.map((f,i)=>({
+      id:'sport-'+(f.uid||i),
+      name:f.name,
+      date:f.date,
+      time:f.time||'TBC',
+      venue:f.venue||'',
+      status:'sport'
+    }));
+    calUpdateSportCount();
+    calRender();
+    const statusEl = document.getElementById('cal-import-status');
+    if(statusEl) statusEl.textContent = `Imported ${calSportsEvents.length} fixture${calSportsEvents.length===1?'':'s'} from ${file.name}`;
+    toast(`Sports Fixtures updated ✓ (${calSportsEvents.length} imported)`);
+  };
+  reader.readAsText(file);
+  evt.target.value = '';
+}
+
 function calRender(){
   const title=document.getElementById('cal-title');
   if(title)title.textContent=calView==='day'&&calSelectedDay?`${calDowsFull[new Date(calSelectedDay).getDay()]}, ${new Date(calSelectedDay).getDate()} ${calMonths[new Date(calSelectedDay).getMonth()]} ${new Date(calSelectedDay).getFullYear()}`:`${calMonths[calMonth]} ${calYear}`;
@@ -4890,11 +5007,13 @@ function calRenderMonth(){
     const y=c.month<0?c.year-1:c.month>11?c.year+1:c.year;
     const dateStr=`${y}-${String(m+1).padStart(2,'0')}-${String(c.day).padStart(2,'0')}`;
     const isToday=today.getFullYear()===y&&today.getMonth()===m&&today.getDate()===c.day;
-    const dayEvents=calEvents.filter(e=>e.date===dateStr);
+    const dayEvents=calLayers.events?calEvents.filter(e=>e.date===dateStr):[];
+    const daySports=calLayers.sports?calSportsEvents.filter(e=>e.date===dateStr):[];
     let cls=`cal-cell${c.other?' other-month':''}${isToday?' is-today':''}`;
     let bars=dayEvents.map(e=>`<div class="cal-event-bar cal-ev-${e.status}" onclick="event.stopPropagation();nav('beo')"><div class="cal-ev-dot"></div>${e.name.length>16?e.name.substring(0,16)+'…':e.name}</div>`).join('');
+    bars+=daySports.map(e=>`<div class="cal-event-bar cal-ev-sport" onclick="event.stopPropagation();calShowSportFixture('${e.id}')"><div class="cal-ev-dot"></div>${e.name.length>16?e.name.substring(0,16)+'…':e.name}</div>`).join('');
     const manualEntry = calManualEntries[dateStr];
-    if(manualEntry){
+    if(manualEntry && calLayers.events){
       bars += `<div class="cal-event-bar" style="background:${manualEntry.color}1A;border-left:3px solid ${manualEntry.color};color:${manualEntry.color};position:relative;padding-right:20px" onclick="event.stopPropagation();calClickDay('${dateStr}')"><div class="cal-ev-dot" style="background:${manualEntry.color}"></div>${manualEntry.text}<span onclick="event.stopPropagation();calDeleteEntry('${dateStr}')" style="position:absolute;right:4px;top:50%;transform:translateY(-50%);font-size:13px;font-weight:700;color:${manualEntry.color};opacity:0.6;cursor:pointer;padding:0 3px">×</span></div>`;
     }
     html+=`<div class="${cls}" onclick="calClickDay('${dateStr}')"><div class="cal-day-num">${c.day}</div>${bars}</div>`;
@@ -4906,11 +5025,18 @@ function calRenderMonth(){
 function calRenderList(){
   const body=document.getElementById('cal-body');
   if(!body)return;
-  const sorted=[...calEvents].sort((a,b)=>new Date(b.date)-new Date(a.date));
+  const merged=[
+    ...(calLayers.events?calEvents:[]),
+    ...(calLayers.sports?calSportsEvents.map(e=>({...e,pax:null,company:'Sports Fixture'})):[])
+  ];
+  const sorted=merged.sort((a,b)=>new Date(b.date)-new Date(a.date));
   let html='<div class="cal-list">';
   sorted.forEach(e=>{
     const d=new Date(e.date);
-    html+=`<div class="cal-list-item" onclick="nav('beo')"><div class="cal-list-date"><div class="cal-list-day">${calDows[d.getDay()]}</div><div class="cal-list-num">${d.getDate()}</div><div class="cal-list-mon">${calMonths[d.getMonth()].substring(0,3)}</div></div><div><div class="cal-list-name">${e.name}</div><div class="cal-list-meta">📍 ${e.venue} · 🕐 ${e.time} · 👥 ${e.pax} pax</div></div><span class="pill ${e.status==='confirmed'?'pill-green':'pill-amber'}">${e.status==='confirmed'?'Confirmed':'Pending'}</span></div>`;
+    const isSport = e.status==='sport';
+    const meta = isSport ? `📍 ${e.venue||'Venue TBC'} · 🕐 ${e.time}` : `📍 ${e.venue} · 🕐 ${e.time} · 👥 ${e.pax} pax`;
+    const pill = isSport ? `<span class="pill" style="background:#FCE7D9;color:#7C2D12">Fixture</span>` : `<span class="pill ${e.status==='confirmed'?'pill-green':'pill-amber'}">${e.status==='confirmed'?'Confirmed':'Pending'}</span>`;
+    html+=`<div class="cal-list-item" onclick="${isSport?`calShowSportFixture('${e.id}')`:`nav('beo')`}"><div class="cal-list-date"><div class="cal-list-day">${calDows[d.getDay()]}</div><div class="cal-list-num">${d.getDate()}</div><div class="cal-list-mon">${calMonths[d.getMonth()].substring(0,3)}</div></div><div><div class="cal-list-name">${e.name}</div><div class="cal-list-meta">${meta}</div></div>${pill}</div>`;
   });
   html+='</div>';
   body.innerHTML=html;
@@ -4921,10 +5047,26 @@ function calRenderDay(){
   if(!body)return;
   const key=calSelectedDay||`${calYear}-${String(calMonth+1).padStart(2,'0')}-01`;
   const d=new Date(key);
-  const dayEvents=calEvents.filter(e=>e.date===key);
+  const dayEvents=calLayers.events?calEvents.filter(e=>e.date===key):[];
+  const daySports=calLayers.sports?calSportsEvents.filter(e=>e.date===key):[];
   let evHtml=dayEvents.map(e=>`<div class="cal-day-event${e.status==='pending'?' pending':''}" onclick="nav('beo')"><div class="cal-day-event-time">${e.time}</div><div><div class="cal-day-event-name">${e.name}</div><div class="cal-day-event-meta">📍 ${e.venue} · 👥 ${e.pax} pax · ${e.company}</div></div></div>`).join('');
+  evHtml+=daySports.map(e=>`<div class="cal-day-event" style="border-left-color:#C4622D" onclick="calShowSportFixture('${e.id}')"><div class="cal-day-event-time">${e.time}</div><div><div class="cal-day-event-name">${e.name}</div><div class="cal-day-event-meta">📍 ${e.venue||'Venue TBC'} · Sports Fixture (imported)</div></div></div>`).join('');
   if(!evHtml)evHtml=`<div class="cal-day-empty">No events for this day.<br><br><button class="btn btn-ghost" onclick="nav('new')">+ Create Event Plan</button></div>`;
   body.innerHTML=`<div class="cal-day-view"><div class="cal-day-hd"><div class="cal-day-title">${calDowsFull[d.getDay()]}, ${d.getDate()} ${calMonths[d.getMonth()]} ${d.getFullYear()}</div><button class="btn btn-ghost" onclick="calSetView('month')" style="font-size:12px;padding:7px 14px">← Month</button></div><div class="cal-day-body">${evHtml}</div></div>`;
+}
+
+function calShowSportFixture(id){
+  const e = calSportsEvents.find(x=>x.id===id);
+  if(!e) return;
+  const d = new Date(e.date);
+  appConfirmShow({
+    title: e.name,
+    msg: `${calDowsFull[d.getDay()]}, ${d.getDate()} ${calMonths[d.getMonth()]} · ${e.time}${e.venue?' · 📍 '+e.venue:''} — Imported from .ics (read-only). Re-import the fixture list to refresh.`,
+    label: 'Close',
+    onOk: ()=>{}
+  });
+  const okBtn = document.getElementById('appConfirmOk');
+  if(okBtn){ okBtn.style.background='#0F1E2E'; okBtn.nextElementSibling.style.display='none'; }
 }
 
 const CAL_ENTRY_COLORS = ['#2563EB','#16A34A','#EF4444','#C4973B'];

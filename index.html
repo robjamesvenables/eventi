@@ -6613,13 +6613,7 @@ function sopRenderDoc(){
 
   const customSectionsHtml = doc.sections.map(sec => `
     <div style="margin-bottom:22px;padding:16px;background:#F8FAFC;border-radius:10px;border:1px solid #F1F5F9">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
-        <div style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:0.7px;color:#0D9488">${sec.name}</div>
-        <div style="display:flex;gap:6px">
-          <button onclick="sopSectionEditCustom(${sec.id})" style="display:flex;align-items:center;gap:4px;padding:5px 10px;background:white;border:1.5px solid #E2E8F0;border-radius:6px;font-family:'Inter',sans-serif;font-size:11px;font-weight:700;color:#334155;cursor:pointer">✎ Edit</button>
-          <button onclick="sopSectionDeleteCustom(${sec.id})" style="display:flex;align-items:center;gap:4px;padding:5px 10px;background:#FEF2F2;border:1.5px solid #FECACA;border-radius:6px;font-family:'Inter',sans-serif;font-size:11px;font-weight:700;color:#DC2626;cursor:pointer">🗑 Delete</button>
-        </div>
-      </div>
+      <div style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:0.7px;color:#0D9488;margin-bottom:8px">${sec.name}</div>
       <div style="font-size:13.5px;color:#334155;line-height:1.7;white-space:pre-line">${sec.content}</div>
     </div>`).join('');
 
@@ -6635,7 +6629,6 @@ function sopRenderDoc(){
     </div>`).join('') : `<div style="font-size:12px;color:#94A3B8;padding:8px 0">No one has signed this SOP yet.</div>`;
 
   body.innerHTML = contentHtml + customSectionsHtml + `
-    <button onclick="sopSectionAdd()" style="width:100%;padding:11px;background:none;border:1.5px dashed #CBD5E1;border-radius:10px;font-family:'Inter',sans-serif;font-size:13px;font-weight:700;color:#64748B;cursor:pointer;margin-bottom:22px">+ Add Section</button>
     <div style="margin-top:8px;padding-top:20px;border-top:2px solid #E2E8F0">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
         <div style="font-size:13px;font-weight:800;color:#0F1E2E">Sign-off Log <span style="color:#94A3B8;font-weight:600">(${sigCount} signed)</span></div>
@@ -6643,51 +6636,6 @@ function sopRenderDoc(){
       </div>
       ${sigListHtml}
     </div>`;
-}
-
-function sopSectionAdd(){
-  const doc = sopData[currentSopDept][currentSopDoc];
-  appModalShow({
-    title:'Add Section',
-    fields:[
-      {label:'Section name', placeholder:'e.g. Closing Notes, Chemical Handling'},
-      {label:'Content', type:'textarea', rows:6, placeholder:'Section content'}
-    ],
-    onOk([name, content]){
-      if(!name) return;
-      const maxId = Math.max(0, ...doc.sections.map(s=>s.id));
-      doc.sections.push({id:maxId+1, name, content: content||''});
-      sopRenderDoc();
-      toast('Section added ✓');
-    }
-  });
-}
-
-function sopSectionEditCustom(id){
-  const doc = sopData[currentSopDept][currentSopDoc];
-  const sec = doc.sections.find(s=>s.id===id);
-  if(!sec) return;
-  appModalShow({
-    title:'Edit Section',
-    fields:[
-      {label:'Section name', value:sec.name},
-      {label:'Content', type:'textarea', rows:6, value:sec.content}
-    ],
-    onOk([name, content]){
-      sec.name = name; sec.content = content;
-      sopRenderDoc();
-      toast('Section updated ✓');
-    }
-  });
-}
-
-function sopSectionDeleteCustom(id){
-  const doc = sopData[currentSopDept][currentSopDoc];
-  appConfirmShow({title:'Delete Section', msg:'Delete this section?', onOk:()=>{
-    doc.sections = doc.sections.filter(s=>s.id!==id);
-    sopRenderDoc();
-    toast('Section deleted');
-  }});
 }
 
 function sopDeleteSignature(i){
@@ -6698,27 +6646,70 @@ function sopDeleteSignature(i){
   }});
 }
 
+// ── Edit SOP: unified overlay with all fields + inline dynamic sections ──
+let sopEditDraftSections = [];
+
 function sopEditContent(){
   const doc = sopData[currentSopDept][currentSopDoc];
-  appModalShow({
-    title:'Edit SOP',
-    fields:[
-      {label:'Title', value:doc.title},
-      {label:'Objective', type:'textarea', rows:3, value:doc.objective||'', placeholder:'Why this procedure exists'},
-      {label:'Procedure', type:'textarea', rows:9, value:doc.procedure||'', placeholder:'1. First step\n2. Second step\n3. ...'},
-      {label:'Equipment / Materials (optional)', type:'textarea', rows:2, value:doc.equipment||'', optional:true},
-      {label:'Safety Notes (optional)', type:'textarea', rows:2, value:doc.safety||'', optional:true},
-      {label:'Responsible Role(s) (optional)', value:doc.roles||'', optional:true}
-    ],
-    onOk([title, objective, procedure, equipment, safety, roles]){
-      doc.title = title; doc.objective = objective; doc.procedure = procedure;
-      doc.equipment = equipment; doc.safety = safety; doc.roles = roles;
-      doc.meta = 'Last updated: ' + new Date().toLocaleDateString('en-US',{month:'short',year:'numeric'});
-      document.getElementById('sop-doc-title').textContent = title;
-      sopRenderDoc();
-      toast('SOP updated ✓');
-    }
-  });
+  document.getElementById('sopEditTitle').value = doc.title;
+  document.getElementById('sopEditObjective').value = doc.objective||'';
+  document.getElementById('sopEditProcedure').value = doc.procedure||'';
+  document.getElementById('sopEditEquipment').value = doc.equipment||'';
+  document.getElementById('sopEditSafety').value = doc.safety||'';
+  document.getElementById('sopEditRoles').value = doc.roles||'';
+  sopEditDraftSections = doc.sections.map(s => ({...s}));
+  sopEditRenderSectionRows();
+  document.getElementById('sopEditOverlay').style.display = 'flex';
+}
+
+function sopEditClose(){
+  document.getElementById('sopEditOverlay').style.display = 'none';
+}
+
+function sopEditRenderSectionRows(){
+  const wrap = document.getElementById('sopEditSectionsList');
+  if(!wrap) return;
+  if(!sopEditDraftSections.length){
+    wrap.innerHTML = '';
+    return;
+  }
+  wrap.innerHTML = sopEditDraftSections.map((sec, i) => `
+    <div style="margin-bottom:12px;padding:12px;background:#F8FAFC;border-radius:9px;border:1px solid #F1F5F9">
+      <div style="display:flex;gap:8px;margin-bottom:8px">
+        <input type="text" value="${sec.name.replace(/"/g,'&quot;')}" placeholder="Section name" oninput="sopEditDraftSections[${i}].name=this.value" style="flex:1;padding:9px 11px;border:1.5px solid #E2E8F0;border-radius:7px;font-family:'Inter',sans-serif;font-size:13px;box-sizing:border-box">
+        <span onclick="sopEditRemoveSectionRow(${i})" style="display:flex;align-items:center;padding:0 6px;cursor:pointer;color:#EF4444;font-size:15px" title="Remove section">×</span>
+      </div>
+      <textarea rows="3" placeholder="Section content" oninput="sopEditDraftSections[${i}].content=this.value" style="width:100%;padding:9px 11px;border:1.5px solid #E2E8F0;border-radius:7px;font-family:'Inter',sans-serif;font-size:13px;box-sizing:border-box;resize:vertical">${sec.content}</textarea>
+    </div>`).join('');
+}
+
+function sopEditAddSectionRow(){
+  const maxId = Math.max(0, ...sopEditDraftSections.map(s=>s.id||0));
+  sopEditDraftSections.push({id:maxId+1, name:'', content:''});
+  sopEditRenderSectionRows();
+}
+
+function sopEditRemoveSectionRow(i){
+  sopEditDraftSections.splice(i,1);
+  sopEditRenderSectionRows();
+}
+
+function sopEditSave(){
+  const doc = sopData[currentSopDept][currentSopDoc];
+  const title = document.getElementById('sopEditTitle').value.trim();
+  if(!title){ toast('Please enter a title'); return; }
+  doc.title = title;
+  doc.objective = document.getElementById('sopEditObjective').value;
+  doc.procedure = document.getElementById('sopEditProcedure').value;
+  doc.equipment = document.getElementById('sopEditEquipment').value;
+  doc.safety = document.getElementById('sopEditSafety').value;
+  doc.roles = document.getElementById('sopEditRoles').value;
+  doc.sections = sopEditDraftSections.filter(s => s.name.trim() || s.content.trim());
+  doc.meta = 'Last updated: ' + new Date().toLocaleDateString('en-US',{month:'short',year:'numeric'});
+  document.getElementById('sop-doc-title').textContent = title;
+  sopEditClose();
+  sopRenderDoc();
+  toast('SOP updated ✓');
 }
 
 // ── Sign-off: canvas draw + typed-name fallback ──
@@ -10479,6 +10470,48 @@ document.addEventListener('DOMContentLoaded', initCardColours);
     <div style="display:flex;gap:10px;margin-top:20px">
       <button id="pollModalSubmitBtn" onclick="pollSubmitNew()" style="flex:1;padding:12px;background:#0F1E2E;border:none;border-radius:9px;font-family:'Inter',sans-serif;font-size:14px;font-weight:700;color:white;cursor:pointer">Post Poll</button>
       <button onclick="pollModalClose()" style="padding:12px 20px;background:#F1F5F9;border:none;border-radius:9px;font-family:'Inter',sans-serif;font-size:14px;font-weight:600;color:#64748B;cursor:pointer">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<div id="sopEditOverlay" style="display:none;position:fixed;inset:0;background:rgba(15,30,46,0.55);z-index:10000;align-items:center;justify-content:center;padding:20px;box-sizing:border-box" onclick="if(event.target===this)sopEditClose()">
+  <div style="background:white;border-radius:16px;padding:24px;width:100%;max-width:640px;box-shadow:0 20px 60px rgba(0,0,0,0.2);max-height:90vh;overflow-y:auto;box-sizing:border-box">
+    <div style="font-size:16px;font-weight:800;color:#0F1E2E;margin-bottom:18px">Edit SOP</div>
+
+    <div style="margin-bottom:14px">
+      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.7px;color:#94A3B8;margin-bottom:6px">Title</div>
+      <input id="sopEditTitle" type="text" style="width:100%;padding:11px 13px;border:1.5px solid #E2E8F0;border-radius:9px;font-family:'Inter',sans-serif;font-size:14px;box-sizing:border-box">
+    </div>
+    <div style="margin-bottom:14px">
+      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.7px;color:#94A3B8;margin-bottom:6px">Objective</div>
+      <textarea id="sopEditObjective" rows="3" placeholder="Why this procedure exists" style="width:100%;padding:11px 13px;border:1.5px solid #E2E8F0;border-radius:9px;font-family:'Inter',sans-serif;font-size:14px;box-sizing:border-box;resize:vertical"></textarea>
+    </div>
+    <div style="margin-bottom:14px">
+      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.7px;color:#94A3B8;margin-bottom:6px">Procedure</div>
+      <textarea id="sopEditProcedure" rows="8" placeholder="1. First step&#10;2. Second step&#10;3. ..." style="width:100%;padding:11px 13px;border:1.5px solid #E2E8F0;border-radius:9px;font-family:'Inter',sans-serif;font-size:14px;box-sizing:border-box;resize:vertical"></textarea>
+    </div>
+    <div style="margin-bottom:14px">
+      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.7px;color:#94A3B8;margin-bottom:6px">Equipment / Materials <span style="text-transform:none;font-weight:500">(optional)</span></div>
+      <textarea id="sopEditEquipment" rows="2" style="width:100%;padding:11px 13px;border:1.5px solid #E2E8F0;border-radius:9px;font-family:'Inter',sans-serif;font-size:14px;box-sizing:border-box;resize:vertical"></textarea>
+    </div>
+    <div style="margin-bottom:14px">
+      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.7px;color:#94A3B8;margin-bottom:6px">Safety Notes <span style="text-transform:none;font-weight:500">(optional)</span></div>
+      <textarea id="sopEditSafety" rows="2" style="width:100%;padding:11px 13px;border:1.5px solid #E2E8F0;border-radius:9px;font-family:'Inter',sans-serif;font-size:14px;box-sizing:border-box;resize:vertical"></textarea>
+    </div>
+    <div style="margin-bottom:18px">
+      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.7px;color:#94A3B8;margin-bottom:6px">Responsible Role(s) <span style="text-transform:none;font-weight:500">(optional)</span></div>
+      <input id="sopEditRoles" type="text" style="width:100%;padding:11px 13px;border:1.5px solid #E2E8F0;border-radius:9px;font-family:'Inter',sans-serif;font-size:14px;box-sizing:border-box">
+    </div>
+
+    <div style="padding-top:16px;border-top:1.5px solid #F1F5F9;margin-bottom:18px">
+      <div style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:0.7px;color:#0D9488;margin-bottom:10px">Additional Sections</div>
+      <div id="sopEditSectionsList"></div>
+      <button onclick="sopEditAddSectionRow()" style="width:100%;padding:10px;background:none;border:1.5px dashed #CBD5E1;border-radius:9px;font-family:'Inter',sans-serif;font-size:12.5px;font-weight:700;color:#64748B;cursor:pointer">+ Add Section</button>
+    </div>
+
+    <div style="display:flex;gap:10px">
+      <button onclick="sopEditSave()" style="flex:1;padding:12px;background:#0F1E2E;border:none;border-radius:9px;font-family:'Inter',sans-serif;font-size:14px;font-weight:700;color:white;cursor:pointer">Save</button>
+      <button onclick="sopEditClose()" style="padding:12px 20px;background:#F1F5F9;border:none;border-radius:9px;font-family:'Inter',sans-serif;font-size:14px;font-weight:600;color:#64748B;cursor:pointer">Cancel</button>
     </div>
   </div>
 </div>

@@ -7426,7 +7426,7 @@ function kitchenMenuDetailRender(){
     <div style="margin-bottom:22px">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
         <div style="font-size:14px;font-weight:800;color:#0F1E2E;text-transform:uppercase;letter-spacing:0.5px">${sec.name}</div>
-        <span onclick="kitchenSectionDelete(${sec.id})" style="opacity:0.4;cursor:pointer;font-size:11px;color:#EF4444">Delete section</span>
+        <button onclick="kitchenSectionDelete(${sec.id})" style="display:flex;align-items:center;gap:5px;padding:6px 12px;background:#FEF2F2;border:1.5px solid #FECACA;border-radius:7px;font-family:'Inter',sans-serif;font-size:11.5px;font-weight:700;color:#DC2626;cursor:pointer">🗑 Delete Section</button>
       </div>
       ${sec.dishes.map(d => kitchenDishCardHtml(sec.id, d)).join('') || '<div style="font-size:12px;color:#94A3B8;margin-bottom:8px">No dishes yet</div>'}
       <button onclick="kitchenDishAdd(${sec.id})" style="width:100%;padding:9px;background:none;border:1.5px dashed #E2E8F0;border-radius:8px;font-family:'Inter',sans-serif;font-size:12px;font-weight:600;color:#64748B;cursor:pointer">+ Add Dish</button>
@@ -7448,9 +7448,9 @@ function kitchenDishCardHtml(sectionId, d){
       </div>
       <div style="font-size:12px;color:#64748B;margin-top:2px">${d.desc||''}</div>
       ${allergensLabel ? `<div style="font-size:10.5px;color:#D97706;margin-top:3px">Allergens: ${allergensLabel}</div>` : ''}
-      <div style="display:flex;gap:10px;margin-top:5px">
-        <span onclick="kitchenDishEdit(${sectionId},${d.id})" style="font-size:11px;color:#64748B;cursor:pointer">✎ Edit</span>
-        <span onclick="kitchenDishDelete(${sectionId},${d.id})" style="font-size:11px;color:#EF4444;cursor:pointer">Delete</span>
+      <div style="display:flex;gap:8px;margin-top:8px">
+        <button onclick="kitchenDishEdit(${sectionId},${d.id})" style="display:flex;align-items:center;gap:5px;padding:7px 13px;background:#F1F5F9;border:1.5px solid #E2E8F0;border-radius:7px;font-family:'Inter',sans-serif;font-size:12px;font-weight:700;color:#334155;cursor:pointer">✎ Edit</button>
+        <button onclick="kitchenDishDelete(${sectionId},${d.id})" style="display:flex;align-items:center;gap:5px;padding:7px 13px;background:#FEF2F2;border:1.5px solid #FECACA;border-radius:7px;font-family:'Inter',sans-serif;font-size:12px;font-weight:700;color:#DC2626;cursor:pointer">🗑 Delete</button>
       </div>
     </div>
   </div>`;
@@ -7488,7 +7488,7 @@ window.kitchenDishAdd = function(sectionId){
     fields:[
       {label:'Photo (optional)', type:'file', optional:true},
       {label:'Dish name', placeholder:'e.g. Grilled Barramundi'},
-      {label:'Description', placeholder:'e.g. Lemon butter sauce, seasonal greens'},
+      {label:'Description', type:'textarea', rows:4, placeholder:'e.g. Lemon butter sauce, seasonal greens'},
       {label:'Price (Rp)', placeholder:'e.g. 220,000'},
       {label:'Allergens (optional)', placeholder:'e.g. Fish, Dairy', optional:true}
     ],
@@ -7512,7 +7512,7 @@ window.kitchenDishEdit = function(sectionId, dishId){
     fields:[
       {label:'Photo (optional)', type:'file', optional:true, value:d.photo||''},
       {label:'Dish name', value:d.name},
-      {label:'Description', value:d.desc||''},
+      {label:'Description', type:'textarea', rows:4, value:d.desc||''},
       {label:'Price (Rp)', value:d.price},
       {label:'Allergens (optional)', value:(d.allergens||[]).join(', '), optional:true}
     ],
@@ -10109,7 +10109,7 @@ document.addEventListener('DOMContentLoaded', initCardColours);
 </div>
 
 <div id="appModal" style="display:none;position:fixed;inset:0;background:rgba(15,30,46,0.55);z-index:10000;align-items:center;justify-content:center" onclick="if(event.target===this)appModalClose()">
-  <div id="appModalBox" style="background:white;border-radius:16px;padding:28px;width:100%;max-width:400px;margin:0 20px;box-shadow:0 20px 60px rgba(0,0,0,0.2);max-height:90vh;overflow-y:auto">
+  <div id="appModalBox" style="background:white;border-radius:16px;padding:24px;width:calc(100% - 32px);max-width:400px;margin:0 16px;box-shadow:0 20px 60px rgba(0,0,0,0.2);max-height:88vh;overflow-y:auto;box-sizing:border-box">
     <div id="appModalTitle" style="font-size:16px;font-weight:800;color:#0F1E2E;margin-bottom:6px"></div>
     <div id="appModalSub" style="font-size:12px;color:#94A3B8;margin-bottom:18px"></div>
     <div id="appModalFields"></div>
@@ -10328,15 +10328,16 @@ function appModalShow({title, sub='', fields, onOk}){
   document.getElementById('appModalBox').style.maxWidth = hasTextarea ? '640px' : '400px';
   fc.innerHTML = fields.map((f,i)=>{
     if(f.type==='file'){
+      const hasExisting = !!f.value;
       return `
     <div style="margin-bottom:${i<fields.length-1?'14px':'0'}">
       ${f.label?`<div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.7px;color:#94A3B8;margin-bottom:6px">${f.label}</div>`:''}
-      <div id="appModalFilePreviewWrap_${i}" style="display:none;margin-bottom:8px">
-        <img id="appModalFilePreview_${i}" style="width:100%;height:140px;object-fit:cover;border-radius:9px;border:1.5px solid #E2E8F0;display:block">
+      <div id="appModalFilePreviewWrap_${i}" style="display:${hasExisting?'block':'none'};margin-bottom:8px">
+        <img id="appModalFilePreview_${i}" src="${hasExisting?f.value:''}" style="width:100%;height:140px;object-fit:cover;border-radius:9px;border:1.5px solid #E2E8F0;display:block">
       </div>
       <label id="appModalFileLabelWrap_${i}" style="display:flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:11px 14px;border:1.5px dashed #CBD5E1;border-radius:9px;font-family:'Inter',sans-serif;font-size:13px;color:#64748B;cursor:pointer;box-sizing:border-box"
         onmouseover="this.style.borderColor='#0D9488'" onmouseout="this.style.borderColor='#CBD5E1'">
-        <span id="appModalFileLabel_${i}">Choose photo</span>
+        <span id="appModalFileLabel_${i}">${hasExisting?'Change photo':'Choose photo'}</span>
         <input id="appModalField_${i}" type="file" accept="image/*" style="display:none" onchange="appModalFilePreview(${i})">
       </label>
     </div>`;

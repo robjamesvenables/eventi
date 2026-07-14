@@ -4224,7 +4224,7 @@ window.addEventListener('popstate', function(e){
   const menuOverlay = document.getElementById('menuDetailOverlay');
   const menuModalOpen = menuOverlay && menuOverlay.style.display === 'flex';
   if(menuModalOpen && (!e.state || !e.state.menuDetailOpen)){
-    kitchenMenuCloseDetail(true);
+    if(menuDetailMode==='bar') barMenuCloseDetail(true); else kitchenMenuCloseDetail(true);
   }
   if(!e.state || !e.state.chatThread){
     // Only close an open chat thread if we're not popping back INTO one
@@ -6801,20 +6801,44 @@ let barActiveArea = 'all';
 
 let barMenuNextId = 100;
 let barMenusData = [
-  {id:1, area:'mainbar', section:'live', cat:'Cocktails', name:'Cocktail Menu', meta:'Updated 3 Jun 2026', links:[]},
-  {id:2, area:'mainbar', section:'live', cat:'Specials', name:'Weekly Specials', meta:'Updated 10 Jun 2026', links:[]},
-  {id:3, area:'poolbar', section:'live', cat:'Cocktails', name:'Pool Bar Cocktails', meta:'Updated 3 Jun 2026', links:[]},
-  {id:4, area:'sunsetbar', section:'progress', cat:'Cocktails', name:'Sunset Bar Menu', meta:'With Head Bartender · Target: 5 Jul 2026', links:[]}
+  {id:1, area:'mainbar', section:'live', cat:'Cocktails', name:'Cocktail Menu', meta:'Updated 3 Jun 2026', links:[], content:{sections:[
+    {id:1, name:'Signature Cocktails', dishes:[
+      {id:1, name:'Bali Sunset', desc:'White rum, passionfruit puree, lime juice, grenadine, soda top', price:'145,000', allergens:[], photo:''}
+    ]},
+    {id:2, name:'Classics', dishes:[
+      {id:1, name:'Espresso Martini', desc:'Vodka, coffee liqueur, fresh espresso, sugar syrup', price:'135,000', allergens:[], photo:''}
+    ]},
+    {id:3, name:'Mocktails', dishes:[]}
+  ]}},
+  {id:2, area:'mainbar', section:'live', cat:'Specials', name:'Weekly Specials', meta:'Updated 10 Jun 2026', links:[], content:{sections:[
+    {id:1, name:"This Week's Specials", dishes:[]}
+  ]}},
+  {id:3, area:'poolbar', section:'live', cat:'Cocktails', name:'Pool Bar Cocktails', meta:'Updated 3 Jun 2026', links:[], content:{sections:[
+    {id:1, name:'Cocktails', dishes:[]},
+    {id:2, name:'Frozen & Blended', dishes:[]},
+    {id:3, name:'Non-Alcoholic', dishes:[]}
+  ]}},
+  {id:4, area:'sunsetbar', section:'progress', cat:'Cocktails', name:'Sunset Bar Menu', meta:'With Head Bartender · Target: 5 Jul 2026', links:[], content:{sections:[
+    {id:1, name:'Sunset Specials', dishes:[]},
+    {id:2, name:'Classics', dishes:[]}
+  ]}}
 ];
 
 function barMenuCardHtml(m){
   const sec = kitchenMenuSections.find(s=>s.id===m.section);
   const area = barAreas.find(a=>a.id===m.area);
-  const linksHtml = m.links.length ? `<div style="margin-top:8px;display:flex;flex-direction:column;gap:4px">${m.links.map((l,i)=>`
+  const hasNativeContent = !!(m.content && m.content.sections);
+  const linksHtml = (!hasNativeContent && m.links.length) ? `<div style="margin-top:8px;display:flex;flex-direction:column;gap:4px">${m.links.map((l,i)=>`
       <div style="display:flex;align-items:center;gap:6px;font-size:11px">
         <a href="${l.url}" target="_blank" style="color:#0D9488;text-decoration:none;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">🔗 ${l.name}</a>
         <span onclick="barRemoveMenuLink(${m.id},${i})" style="cursor:pointer;color:#94A3B8">×</span>
       </div>`).join('')}</div>` : '';
+  const actionsHtml = hasNativeContent
+    ? `<button class="btn btn-navy" style="width:100%" onclick="barMenuOpenDetail(${m.id})">📋 View Menu</button>`
+    : `<div class="menu-card-actions">
+        <button class="btn btn-ghost" style="flex:1" onclick="barViewMenu(${m.id})">👁 View</button>
+        <button class="btn btn-navy" style="flex:1" onclick="barAddLink(${m.id})">+ Add Link</button>
+      </div>`;
   return `
     <div class="menu-card" style="border-left:none;background:${sec.bg};border-color:${sec.border}">
       <div class="menu-card-top">
@@ -6825,10 +6849,7 @@ function barMenuCardHtml(m){
         <span class="menu-badge ${sec.badge}">${sec.badgeLabel}</span>
       </div>
       <div class="menu-card-meta" style="color:#475569">${m.meta}</div>
-      <div class="menu-card-actions">
-        <button class="btn btn-ghost" style="flex:1" onclick="barViewMenu(${m.id})">👁 View</button>
-        <button class="btn btn-navy" style="flex:1" onclick="barAddLink(${m.id})">+ Add Link</button>
-      </div>
+      ${actionsHtml}
       <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:6px">
         <span onclick="barEditMenu(${m.id})" style="opacity:0.5;cursor:pointer;font-size:11px">✎ Edit</span>
         <span onclick="barDeleteMenu(${m.id})" style="opacity:0.5;cursor:pointer;font-size:11px;color:#EF4444">Delete</span>
@@ -6836,6 +6857,141 @@ function barMenuCardHtml(m){
       ${linksHtml}
     </div>`;
 }
+
+let barMenuDetailId = null;
+
+window.barMenuOpenDetail = function(menuId){
+  menuDetailMode = 'bar';
+  barMenuDetailId = menuId;
+  document.getElementById('menuDetailOverlay').style.display = 'flex';
+  barMenuDetailRender();
+  history.pushState({page:'bar', menuDetailOpen:true}, '', '#bar');
+};
+window.barMenuCloseDetail = function(fromPopstate){
+  document.getElementById('menuDetailOverlay').style.display = 'none';
+  barMenuDetailId = null;
+  barRenderMenus();
+  if(!fromPopstate) history.back();
+};
+
+function barMenuDetailRender(){
+  const m = barMenusData.find(x=>x.id===barMenuDetailId);
+  if(!m) return;
+  document.getElementById('menuDetailTitle').textContent = m.name;
+  const body = document.getElementById('menuDetailBody');
+  body.innerHTML = m.content.sections.map(sec => `
+    <div style="margin-bottom:22px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+        <div style="font-size:14px;font-weight:800;color:#0F1E2E;text-transform:uppercase;letter-spacing:0.5px">${sec.name}</div>
+        <button onclick="barSectionDelete(${sec.id})" style="display:flex;align-items:center;gap:5px;padding:6px 12px;background:#FEF2F2;border:1.5px solid #FECACA;border-radius:7px;font-family:'Inter',sans-serif;font-size:11.5px;font-weight:700;color:#DC2626;cursor:pointer">🗑 Delete Section</button>
+      </div>
+      ${sec.dishes.map(d => barDishCardHtml(sec.id, d)).join('') || '<div style="font-size:12px;color:#94A3B8;margin-bottom:8px">No drinks yet</div>'}
+      <button onclick="barDishAdd(${sec.id})" style="width:100%;padding:9px;background:none;border:1.5px dashed #E2E8F0;border-radius:8px;font-family:'Inter',sans-serif;font-size:12px;font-weight:600;color:#64748B;cursor:pointer">+ Add Drink</button>
+    </div>`).join('') + `
+    <button onclick="barSectionAdd()" style="width:100%;padding:11px;background:none;border:1.5px dashed #CBD5E1;border-radius:10px;font-family:'Inter',sans-serif;font-size:13px;font-weight:700;color:#64748B;cursor:pointer;margin-top:6px">+ Add Section</button>`;
+}
+
+function barDishCardHtml(sectionId, d){
+  const photoBox = d.photo
+    ? `<img src="${d.photo}" style="width:56px;height:56px;object-fit:cover;border-radius:8px;flex-shrink:0">`
+    : `<div style="width:56px;height:56px;border-radius:8px;background:#F1F5F9;flex-shrink:0;display:flex;align-items:center;justify-content:center;color:#CBD5E1;font-size:18px">🍸</div>`;
+  const allergensLabel = (d.allergens||[]).length ? d.allergens.join(', ') : '';
+  return `<div style="display:flex;gap:12px;padding:10px 0;border-bottom:1px solid #F1F5F9">
+    ${photoBox}
+    <div style="flex:1;min-width:0">
+      <div style="display:flex;justify-content:space-between;gap:8px">
+        <div style="font-size:13.5px;font-weight:700;color:#0F1E2E">${d.name}</div>
+        <div style="font-size:13px;font-weight:700;color:#0D9488;white-space:nowrap">Rp ${d.price}</div>
+      </div>
+      <div style="font-size:12px;color:#64748B;margin-top:2px">${d.desc||''}</div>
+      ${allergensLabel ? `<div style="font-size:10.5px;color:#D97706;margin-top:3px">Allergens: ${allergensLabel}</div>` : ''}
+      <div style="display:flex;gap:8px;margin-top:8px">
+        <button onclick="barDishEdit(${sectionId},${d.id})" style="display:flex;align-items:center;gap:5px;padding:7px 13px;background:#F1F5F9;border:1.5px solid #E2E8F0;border-radius:7px;font-family:'Inter',sans-serif;font-size:12px;font-weight:700;color:#334155;cursor:pointer">✎ Edit</button>
+        <button onclick="barDishDelete(${sectionId},${d.id})" style="display:flex;align-items:center;gap:5px;padding:7px 13px;background:#FEF2F2;border:1.5px solid #FECACA;border-radius:7px;font-family:'Inter',sans-serif;font-size:12px;font-weight:700;color:#DC2626;cursor:pointer">🗑 Delete</button>
+      </div>
+    </div>
+  </div>`;
+}
+
+window.barSectionAdd = function(){
+  const m = barMenusData.find(x=>x.id===barMenuDetailId);
+  appModalShow({
+    title:'Add Section',
+    fields:[{label:'Section name', placeholder:'e.g. Mocktails, Wine, Beer'}],
+    onOk([name]){
+      if(!name) return;
+      const maxId = Math.max(0, ...m.content.sections.map(s=>s.id));
+      m.content.sections.push({id:maxId+1, name, dishes:[]});
+      barMenuDetailRender();
+      toast('Section added ✓');
+    }
+  });
+};
+
+window.barSectionDelete = function(sectionId){
+  const m = barMenusData.find(x=>x.id===barMenuDetailId);
+  appConfirmShow({title:'Delete Section', msg:'Delete this section and all its drinks?', onOk:()=>{
+    m.content.sections = m.content.sections.filter(s=>s.id!==sectionId);
+    barMenuDetailRender();
+    toast('Section deleted');
+  }});
+};
+
+window.barDishAdd = function(sectionId){
+  const m = barMenusData.find(x=>x.id===barMenuDetailId);
+  const sec = m.content.sections.find(s=>s.id===sectionId);
+  appModalShow({
+    title:'Add Drink',
+    fields:[
+      {label:'Photo (optional)', type:'file', optional:true},
+      {label:'Drink name', placeholder:'e.g. Bali Sunset'},
+      {label:'Description', type:'textarea', rows:4, placeholder:'e.g. White rum, passionfruit, lime, grenadine, soda'},
+      {label:'Price (Rp)', placeholder:'e.g. 145,000'},
+      {label:'Allergens (optional)', placeholder:'e.g. Dairy', optional:true}
+    ],
+    onOk([photo, name, desc, price, allergens]){
+      if(!name) return;
+      const maxId = Math.max(0, ...sec.dishes.map(d=>d.id));
+      sec.dishes.push({id:maxId+1, name, desc, price, allergens: allergens ? allergens.split(',').map(a=>a.trim()) : [], photo: photo||''});
+      barMenuDetailRender();
+      toast('Drink added ✓');
+    }
+  });
+};
+
+window.barDishEdit = function(sectionId, dishId){
+  const m = barMenusData.find(x=>x.id===barMenuDetailId);
+  const sec = m.content.sections.find(s=>s.id===sectionId);
+  const d = sec.dishes.find(x=>x.id===dishId);
+  if(!d) return;
+  appModalShow({
+    title:'Edit Drink',
+    fields:[
+      {label:'Photo (optional)', type:'file', optional:true, value:d.photo||''},
+      {label:'Drink name', value:d.name},
+      {label:'Description', type:'textarea', rows:4, value:d.desc||''},
+      {label:'Price (Rp)', value:d.price},
+      {label:'Allergens (optional)', value:(d.allergens||[]).join(', '), optional:true}
+    ],
+    onOk([photo, name, desc, price, allergens]){
+      d.name=name; d.desc=desc; d.price=price;
+      d.allergens = allergens ? allergens.split(',').map(a=>a.trim()) : [];
+      if(photo) d.photo = photo;
+      barMenuDetailRender();
+      toast('Drink updated ✓');
+    }
+  });
+};
+
+window.barDishDelete = function(sectionId, dishId){
+  const m = barMenusData.find(x=>x.id===barMenuDetailId);
+  const sec = m.content.sections.find(s=>s.id===sectionId);
+  appConfirmShow({title:'Delete Drink', msg:'Remove this drink from the menu?', onOk:()=>{
+    sec.dishes = sec.dishes.filter(d=>d.id!==dishId);
+    barMenuDetailRender();
+    toast('Drink removed');
+  }});
+};
 
 function barRenderAreaTabs(){
   const strip = document.getElementById('bar-area-strip');
@@ -7434,7 +7590,10 @@ function kitchenViewMenu(menuId){
 // ── NATIVE MENU DETAIL (Sections → Dishes) ──
 let kitchenMenuDetailId = null;
 
+let menuDetailMode = 'kitchen';
+
 window.kitchenMenuOpenDetail = function(menuId){
+  menuDetailMode = 'kitchen';
   kitchenMenuDetailId = menuId;
   document.getElementById('menuDetailOverlay').style.display = 'flex';
   kitchenMenuDetailRender();
@@ -7612,9 +7771,9 @@ function kitchenRecipeCardHtml(r){
         <div class="recipe-card-content">
           <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px">
             <div class="recipe-card-name">${r.name}</div>
-            <div style="display:flex;gap:10px;flex-shrink:0">
-              <span onclick="kitchenEditRecipe(${r.id})" style="opacity:0.5;cursor:pointer;font-size:14px"><svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="2.2"/><circle cx="12" cy="12" r="2.2"/><circle cx="12" cy="19" r="2.2"/></svg></span>
-              <span onclick="kitchenDeleteRecipe(${r.id})" style="opacity:0.5;cursor:pointer;font-size:12px;color:#EF4444">Delete</span>
+            <div style="display:flex;gap:8px;flex-shrink:0">
+              <button onclick="kitchenEditRecipe(${r.id})" style="display:flex;align-items:center;gap:5px;padding:7px 13px;background:#F1F5F9;border:1.5px solid #E2E8F0;border-radius:7px;font-family:'Inter',sans-serif;font-size:12px;font-weight:700;color:#334155;cursor:pointer">✎ Edit</button>
+              <button onclick="kitchenDeleteRecipe(${r.id})" style="display:flex;align-items:center;gap:5px;padding:7px 13px;background:#FEF2F2;border:1.5px solid #FECACA;border-radius:7px;font-family:'Inter',sans-serif;font-size:12px;font-weight:700;color:#DC2626;cursor:pointer">🗑 Delete</button>
             </div>
           </div>
           ${versionLine}

@@ -2416,7 +2416,7 @@ img.emoji-tw{width:1.15em;height:1.15em;vertical-align:-0.2em;margin:0 1px}
       <!-- My Drive — top row solo -->
 
       <!-- MOMENTS STRIP -->
-      <div class="moments-wrap" id="moments-wrap" style="background:#EFF6FF;border:1.5px solid #DBEAFE;border-radius:14px;box-shadow:0 2px 8px rgba(0,0,0,0.06);overflow:hidden;padding-bottom:16px">
+      <div class="moments-wrap" id="moments-wrap" style="background:#FDF6E7;border:1.5px solid #F0E0B4;border-radius:14px;box-shadow:0 2px 8px rgba(0,0,0,0.06);overflow:hidden;padding-bottom:16px">
         <div class="moments-hd" style="background:#0F1E2E;padding:8px 14px;margin-bottom:16px">
           <div class="moments-hd-title" style="color:white">
             <div class="moments-hd-dot"></div>
@@ -8412,9 +8412,62 @@ function announceInitScroll(){
   if(naturalW <= outerW){
     outer.classList.add('moments-fit');
     outer.scrollLeft = 0;
+    if(announceAutoScrollAnim) cancelAnimationFrame(announceAutoScrollAnim);
+    return;
   } else {
     outer.classList.remove('moments-fit');
   }
+  announceStartAutoScroll(strip, outer);
+}
+
+let announceAutoScrollAnim = null;
+let announceAutoScrollPaused = false;
+let announceAutoScrollSetup = false;
+
+function announceStartAutoScroll(strip, outer){
+  if(announceAutoScrollAnim) cancelAnimationFrame(announceAutoScrollAnim);
+
+  // Phone: leave it as plain native scroll, finger-only, no auto-play (matches Highlights on phone).
+  const isPhoneWidth = window.innerWidth <= 700;
+  if(isPhoneWidth) return;
+
+  // Duplicate the cards once so the loop can wrap seamlessly.
+  if(!announceAutoScrollSetup){
+    strip.innerHTML = strip.innerHTML + strip.innerHTML;
+    announceAutoScrollSetup = true;
+  }
+  const halfWidth = strip.scrollWidth / 2;
+  announceAutoScrollPaused = false;
+
+  // Pause on real mouse hover (desktop) - and always pause while the user is actively
+  // touching/dragging it themselves, on any device, resuming a moment after they let go.
+  const hasRealHover = window.matchMedia('(hover: hover)').matches;
+  if(hasRealHover){
+    outer.onmouseenter = () => { announceAutoScrollPaused = true; };
+    outer.onmouseleave = () => { announceAutoScrollPaused = false; };
+  }
+  let resumeTimer;
+  const pauseForInteraction = () => {
+    announceAutoScrollPaused = true;
+    clearTimeout(resumeTimer);
+  };
+  const resumeAfterInteraction = () => {
+    clearTimeout(resumeTimer);
+    resumeTimer = setTimeout(() => { announceAutoScrollPaused = false; }, 2500);
+  };
+  outer.addEventListener('touchstart', pauseForInteraction, {passive:true});
+  outer.addEventListener('touchend', resumeAfterInteraction, {passive:true});
+  outer.addEventListener('pointerdown', pauseForInteraction);
+  outer.addEventListener('pointerup', resumeAfterInteraction);
+
+  function step(){
+    if(!announceAutoScrollPaused){
+      outer.scrollLeft += 0.4;
+      if(outer.scrollLeft >= halfWidth) outer.scrollLeft = 0;
+    }
+    announceAutoScrollAnim = requestAnimationFrame(step);
+  }
+  announceAutoScrollAnim = requestAnimationFrame(step);
 }
 
 let announceResizeTimer2;

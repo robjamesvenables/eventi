@@ -8483,16 +8483,18 @@ function announceStartAutoScroll(strip, outer){
   const halfWidth = strip.scrollWidth / 2;
   announceAutoScrollPaused = false;
 
-  // Pause on mouse hover - and always pause while the user is actively touching/dragging
-  // it themselves, on any device, resuming a moment after they let go. Not gating this behind
-  // a hover-capability check anymore: some Android tablets under-report hover support even with
-  // a mouse connected, which silently disabled this. The pointerup resume timer below is the
-  // safety net against a stray touch triggering mouseenter with no matching mouseleave.
-  outer.onmouseenter = () => { announceAutoScrollPaused = true; };
-  outer.onmouseleave = () => { announceAutoScrollPaused = false; };
-  outer.addEventListener('pointerenter', (e) => { if(e.pointerType !== 'touch') announceAutoScrollPaused = true; });
-  outer.addEventListener('pointerleave', (e) => { if(e.pointerType !== 'touch') announceAutoScrollPaused = false; });
-  outer.addEventListener('pointermove', () => { announceAutoScrollPaused = true; clearTimeout(resumeTimer); resumeTimer = setTimeout(() => { announceAutoScrollPaused = false; }, 1500); });
+  // Pause on hover: instead of relying on mouseenter/mouseleave/pointerenter firing reliably
+  // (they've proven inconsistent on this tablet), check the actual cursor position against the
+  // strip's bounding box on every mouse move, globally. This can't silently fail the way
+  // enter/leave event wiring can.
+  let announceHoverCheckActive = true;
+  const checkHoverPosition = (clientX, clientY) => {
+    const rect = outer.getBoundingClientRect();
+    const inside = clientX >= rect.left && clientX <= rect.right && clientY >= rect.top && clientY <= rect.bottom;
+    announceAutoScrollPaused = inside;
+  };
+  window.addEventListener('mousemove', (e) => { if(announceHoverCheckActive) checkHoverPosition(e.clientX, e.clientY); });
+
   let resumeTimer;
   const pauseForInteraction = () => {
     announceAutoScrollPaused = true;

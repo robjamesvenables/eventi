@@ -8290,9 +8290,25 @@ window.addEventListener('load',()=>{ initCurrency(); announceRender(); });
 const announcements = [
   {id:1, text:'Tonight — 27 pax, Restaurant, 7PM. Please check the rundown before 5PM.', tag:'Events', color:'#0D9488', tagBg:'#CCFBF1', tagColor:'#065F46', by:'John', time:'Today, 8:00 AM'},
   {id:2, text:'Kitchen & Bar SOPs deadline — please submit by end of this week.', tag:'SOPs', color:'#C4973B', tagBg:'#FEF3C7', tagColor:'#78350F', by:'John', time:'Today, 8:05 AM'},
+  // Demo: general cross-department "Urgent" flag - posted by GRO because they didn't know which
+  // department (Engineering/Housekeeping) owns the issue. Visible to everyone on the Noticeboard,
+  // unlike the role-gated Maintenance kanban. Posting an Urgent flag is itself permission-gated
+  // (see ANNOUNCE_URGENT_POSTERS below) to a short list of trusted roles/people.
+  {id:5, text:'Daybed by the pool needs repair — cushion/frame damage, guest-facing. Not sure who owns this, flagging so someone can pick it up.', tag:'Urgent', color:'#F43F5E', tagBg:'#FEE2E2', tagColor:'#7F1D1D', by:'Ayu (GRO)', time:'Today, 9:14 AM', photo:'notice-photos/daybed-urgent-demo.jpg'},
   {id:3, text:'Reminder — Horizon Tech Summit deposit 2 due Friday. Follow up with client.', tag:'Urgent', color:'#F43F5E', tagBg:'#FEE2E2', tagColor:'#7F1D1D', by:'John', time:'Yesterday'},
   {id:4, text:'Bar stock order placed for the weekend. Delivery confirmed Thursday AM.', tag:'Info', color:'#0D9488', tagBg:'#CCFBF1', tagColor:'#065F46', by:'Sarah', time:'Yesterday'},
 ];
+
+// ── URGENT POST PERMISSIONS (demo stub) ──
+// Only these roles/people may select the "Urgent" tag when posting to the Noticeboard.
+// Regular floor/daily staff can post other tags (Info, Events, Kitchen, Reminder, Other)
+// but not Urgent - keeps the urgent channel trustworthy and low-noise.
+// Backend admin should expose this as a per-role toggle, not a hardcoded list.
+const ANNOUNCE_URGENT_ALLOWED_ROLES = ['Manager', 'Supervisor'];
+const ANNOUNCE_URGENT_ALLOWED_USERS = ['Ayu (GRO)']; // named exceptions, e.g. specific trusted GRO staff
+function announceCanPostUrgent(user, role){
+  return ANNOUNCE_URGENT_ALLOWED_ROLES.includes(role) || ANNOUNCE_URGENT_ALLOWED_USERS.includes(user);
+}
 let announceNextId = 10;
 let announceEditId = null;
 let announceSelectedTag = 'Info';

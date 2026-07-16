@@ -1572,32 +1572,25 @@ textarea.rf-val{resize:vertical;min-height:72px;line-height:1.5}
 .moments-strip-outer{position:relative;overflow-x:auto;overflow-y:hidden;-webkit-overflow-scrolling:touch;scrollbar-width:thin;scrollbar-color:#94A3B8 #E2E8F0;padding-bottom:8px}
 
 /* ── HIGHLIGHTS FEATURED CAROUSEL ── */
-.hl-carousel{position:relative;height:260px;display:flex;align-items:center;justify-content:center;overflow:hidden;background:#E9EDF3;border-radius:12px}
-.hl-slide{position:absolute;width:230px;background:white;border-radius:14px;overflow:hidden;box-shadow:0 4px 14px rgba(0,0,0,0.10);cursor:pointer;transition:transform 0.7s cubic-bezier(.22,1,.36,1),opacity 0.7s cubic-bezier(.22,1,.36,1);transform:translateX(0) scale(1);opacity:1}
-@media (min-width:701px){
-  .hl-carousel{height:280px}
-  .hl-slide{width:280px}
-  .hl-slide-img{height:175px !important}
-  .hl-slide.hl-peek-right{transform:translateX(180px) scale(0.72);opacity:0.55}
-  .hl-slide.hl-peek-left{transform:translateX(-180px) scale(0.72);opacity:0.55}
-  .hl-slide.hl-peek-right2{transform:translateX(300px) scale(0.5);opacity:0.3}
-  .hl-slide.hl-peek-left2{transform:translateX(-300px) scale(0.5);opacity:0.3}
-  .hl-slide.hl-enter{transform:translateX(110px) scale(0.72);opacity:0}
-  .hl-slide.hl-exit{transform:translateX(-130px) scale(0.72);opacity:0}
+.hl-strip-outer{position:relative;overflow-x:auto;overflow-y:hidden;-webkit-overflow-scrolling:touch;scrollbar-width:thin;scrollbar-color:#94A3B8 #E2E8F0;padding-bottom:8px;cursor:grab}
+.hl-strip-outer:active{cursor:grabbing}
+.hl-strip-outer::-webkit-scrollbar{height:7px}
+.hl-strip-outer::-webkit-scrollbar-track{background:#E2E8F0;border-radius:4px}
+.hl-strip-outer::-webkit-scrollbar-thumb{background:#94A3B8;border-radius:4px}
+.hl-strip{display:flex;gap:14px;width:max-content}
+.hl-slide{width:200px;flex-shrink:0;background:white;border-radius:12px;overflow:hidden;box-shadow:0 2px 10px rgba(0,0,0,0.08);border:1px solid #E2E8F0;cursor:pointer}
+@media (max-width:700px){
+  .hl-strip{flex-direction:column !important;width:100% !important;gap:12px !important}
+  .hl-slide{width:100% !important}
 }
-.hl-slide.hl-enter{transform:translateX(90px) scale(0.72);opacity:0}
-.hl-slide.hl-exit{transform:translateX(-110px) scale(0.72);opacity:0}
-.hl-slide.hl-peek-right{transform:translateX(150px) scale(0.72);opacity:0.55}
-.hl-slide.hl-peek-left{transform:translateX(-150px) scale(0.72);opacity:0.55}
-.hl-slide.hl-peek-right2{transform:translateX(240px) scale(0.5);opacity:0.3}
-.hl-slide.hl-peek-left2{transform:translateX(-240px) scale(0.5);opacity:0.3}
+.hl-slide-img{width:100%;height:130px;object-fit:cover;display:block}
+.hl-slide-body{padding:12px 14px;background:#0F1E2E}
+.hl-slide-caption{font-size:12px;color:white;line-height:1.4;font-weight:500;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.hl-slide-meta{font-size:10px;color:rgba(255,255,255,0.6);margin-top:6px}
 .hl-slide-img{width:100%;height:150px;object-fit:cover;display:block}
 .hl-slide-body{padding:12px 14px;background:#0F1E2E}
 .hl-slide-caption{font-size:12px;color:white;line-height:1.4;font-weight:500;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
 .hl-slide-meta{font-size:10px;color:rgba(255,255,255,0.6);margin-top:6px}
-.hl-dots{display:flex;justify-content:center;align-items:center;gap:6px;padding:16px 0 4px;margin:0}
-.hl-dot{width:6px;height:6px;border-radius:50%;background:#94A3B8;cursor:pointer;transition:background 0.25s,transform 0.25s}
-.hl-dot.active{background:#0F1E2E;transform:scale(1.3)}
 .moments-strip-outer::-webkit-scrollbar{height:7px}
 .moments-strip-outer::-webkit-scrollbar-track{background:#E2E8F0;border-radius:4px}
 .moments-strip-outer::-webkit-scrollbar-thumb{background:#94A3B8;border-radius:4px}
@@ -2433,10 +2426,11 @@ img.emoji-tw{width:1.15em;height:1.15em;vertical-align:-0.2em;margin:0 1px}
           <button onclick="openAddMoment()" style="padding:6px 14px;background:rgba(255,255,255,0.12);border:none;border-radius:8px;font-family:'Inter',sans-serif;font-size:12px;font-weight:700;color:white;cursor:pointer">+ Add Highlight</button>
         </div>
         <div style="padding:0 20px">
-        <div class="hl-carousel" id="hl-carousel">
-          <!-- populated by momentsRebuild() on load -->
+        <div class="hl-strip-outer" id="hl-outer">
+          <div class="hl-strip" id="hl-strip">
+            <!-- populated by momentsRebuild() on load -->
+          </div>
         </div>
-        <div class="hl-dots" id="hl-dots"></div>
         </div>
       </div>
 
@@ -10629,27 +10623,26 @@ function highlightPlaceholderHtml(i){
 }
 
 function momentsRebuild(){
-  const carousel = document.getElementById('hl-carousel');
-  const dotsWrap = document.getElementById('hl-dots');
-  if(!carousel) return;
+  const strip = document.getElementById('hl-strip');
+  if(!strip) return;
 
   const hasReal = momentsData.length > 0;
   const items = hasReal ? momentsData.map((m,i)=>({real:true, idx:i, img:m.img, caption:momentsTwemojiParse(m.caption), meta:m.meta}))
     : [0,1,2].map(i=>({real:false, idx:i}));
 
-  carousel.innerHTML = items.map((it,i)=>{
+  strip.innerHTML = items.map((it,i)=>{
     if(!it.real){
-      return `<div class="hl-slide" data-i="${i}" onclick="openAddMoment()" style="border:1.5px dashed #CBD5E1;opacity:0.7">
-        <div style="width:100%;height:150px;background:#F1F5F9;display:flex;align-items:center;justify-content:center">
-          <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#94A3B8" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>
+      return `<div class="hl-slide" onclick="openAddMoment()" style="border:1.5px dashed #CBD5E1;opacity:0.7">
+        <div style="width:100%;height:130px;background:#F1F5F9;display:flex;align-items:center;justify-content:center">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#94A3B8" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>
         </div>
         <div class="hl-slide-body">
-          <div class="hl-slide-caption" style="font-style:italic;color:#94A3B8">${highlightPlaceholders[it.idx % highlightPlaceholders.length]}</div>
+          <div class="hl-slide-caption" style="font-style:italic;color:rgba(255,255,255,0.7)">${highlightPlaceholders[it.idx % highlightPlaceholders.length]}</div>
           <div class="hl-slide-meta" style="font-style:italic">Tap + Add Highlight above ↑</div>
         </div>
       </div>`;
     }
-    return `<div class="hl-slide" data-i="${i}" onclick="openMoment(${it.idx})">
+    return `<div class="hl-slide" onclick="openMoment(${it.idx})">
       <img class="hl-slide-img" src="${it.img}" alt="">
       <div class="hl-slide-body">
         <div class="hl-slide-caption">${it.caption}</div>
@@ -10658,117 +10651,83 @@ function momentsRebuild(){
     </div>`;
   }).join('');
 
-  if(dotsWrap){
-    dotsWrap.innerHTML = items.length > 1 ? items.map((it,i)=>`<div class="hl-dot ${i===0?'active':''}" data-i="${i}" onclick="event.stopPropagation();hlGoTo(${i})"></div>`).join('') : '';
+  hlInitScroll();
+}
+
+function hlInitScroll(){
+  const strip = document.getElementById('hl-strip');
+  const outer = document.getElementById('hl-outer');
+  if(!strip || !outer) return;
+  const cards = Array.from(strip.children);
+  const outerW = outer.offsetWidth || 800;
+  const cardW = 200 + 14;
+  const naturalW = cards.length * cardW - 14;
+  if(naturalW <= outerW){
+    if(hlAutoScrollAnim) cancelAnimationFrame(hlAutoScrollAnim);
+    return;
   }
-
-  hlCarouselStart(items.length);
+  hlStartAutoScroll(strip, outer);
 }
 
-let hlCarouselIdx = 0;
-let hlCarouselTimer = null;
-function hlPositionSlides(activeIdx, total){
-  const carousel = document.getElementById('hl-carousel');
-  if(!carousel) return;
-  const slides = Array.from(carousel.children);
-  const prevIdx = (activeIdx - 1 + total) % total;
-  const nextIdx = (activeIdx + 1) % total;
-  slides.forEach((el,i)=>{
-    el.classList.remove('hl-enter','hl-exit','hl-peek-left','hl-peek-right');
-    if(i === activeIdx){
-      el.style.zIndex = 3;
-    } else if(i === nextIdx && total > 1){
-      el.classList.add('hl-peek-right'); // small preview peeking in on the right
-      el.style.zIndex = 2;
-    } else if(i === prevIdx && total > 2){
-      el.classList.add('hl-peek-left'); // small preview peeking in on the left
-      el.style.zIndex = 2;
-    } else {
-      el.classList.add('hl-exit'); // out of view entirely
-      el.style.zIndex = 0;
-    }
-  });
-  const dots = document.querySelectorAll('#hl-dots .hl-dot');
-  dots.forEach((d,i)=>d.classList.toggle('active', i===activeIdx));
-}
+let hlAutoScrollAnim = null;
+let hlAutoScrollPaused = false;
+let hlAutoScrollSetup = false;
 
-function hlCarouselStart(total){
-  clearInterval(hlCarouselTimer);
-  hlCarouselIdx = 0;
-  if(total === 0) return;
-  hlPositionSlides(0, total);
-  hlWireDrag(total);
-  if(total <= 1) return;
-  hlResumeAutoplay(total);
-}
+function hlStartAutoScroll(strip, outer){
+  if(hlAutoScrollAnim) cancelAnimationFrame(hlAutoScrollAnim);
 
-function hlResumeAutoplay(total){
-  clearInterval(hlCarouselTimer);
-  if(total <= 1) return;
-  hlCarouselTimer = setInterval(()=>{
-    hlCarouselIdx = (hlCarouselIdx+1) % total;
-    hlPositionSlides(hlCarouselIdx, total);
-  }, 3200);
-}
+  const isPhoneWidth = window.innerWidth <= 700;
+  if(isPhoneWidth) return;
 
-function hlNext(total){
-  clearInterval(hlCarouselTimer);
-  hlCarouselIdx = (hlCarouselIdx+1) % total;
-  hlPositionSlides(hlCarouselIdx, total);
-  hlScheduleResume(total);
-}
-function hlPrev(total){
-  clearInterval(hlCarouselTimer);
-  hlCarouselIdx = (hlCarouselIdx-1+total) % total;
-  hlPositionSlides(hlCarouselIdx, total);
-  hlScheduleResume(total);
-}
-let hlResumeTimer;
-function hlScheduleResume(total){
-  clearTimeout(hlResumeTimer);
-  hlResumeTimer = setTimeout(()=>hlResumeAutoplay(total), 2500);
-}
+  // Duplicate once so the loop can wrap seamlessly.
+  if(!hlAutoScrollSetup){
+    strip.innerHTML = strip.innerHTML + strip.innerHTML;
+    hlAutoScrollSetup = true;
+  }
+  const halfWidth = strip.scrollWidth / 2;
+  hlAutoScrollPaused = false;
+  // Start scrolled to the halfway point so there's room to scroll backwards (right-moving effect).
+  outer.scrollLeft = halfWidth;
 
-let hlDragWired = false;
-function hlWireDrag(total){
-  const carousel = document.getElementById('hl-carousel');
-  if(!carousel || hlDragWired) return; // listeners persist across re-renders, only wire once
-  hlDragWired = true;
-  let startX = null, dragging = false;
-
-  const onDown = (x) => { startX = x; dragging = true; clearInterval(hlCarouselTimer); };
-  const onMove = (x) => { if(!dragging) return; };
-  const onUp = (x) => {
-    if(!dragging || startX === null){ dragging = false; return; }
-    const dx = x - startX;
-    const liveTotal = carousel.children.length;
-    if(dx < -40) hlNext(liveTotal);
-    else if(dx > 40) hlPrev(liveTotal);
-    else hlScheduleResume(liveTotal);
-    dragging = false; startX = null;
+  const hasRealHover = window.matchMedia('(hover: hover)').matches;
+  if(hasRealHover){
+    outer.onmouseenter = () => { hlAutoScrollPaused = true; };
+    outer.onmouseleave = () => { hlAutoScrollPaused = false; };
+  }
+  let resumeTimer;
+  const pauseForInteraction = () => {
+    hlAutoScrollPaused = true;
+    clearTimeout(resumeTimer);
   };
+  const resumeAfterInteraction = () => {
+    clearTimeout(resumeTimer);
+    resumeTimer = setTimeout(() => { hlAutoScrollPaused = false; }, 2500);
+  };
+  outer.addEventListener('touchstart', pauseForInteraction, {passive:true});
+  outer.addEventListener('touchend', resumeAfterInteraction, {passive:true});
+  outer.addEventListener('pointerdown', pauseForInteraction);
+  outer.addEventListener('pointerup', resumeAfterInteraction);
 
-  carousel.addEventListener('touchstart', (e)=>onDown(e.touches[0].clientX), {passive:true});
-  carousel.addEventListener('touchmove', (e)=>onMove(e.touches[0].clientX), {passive:true});
-  carousel.addEventListener('touchend', (e)=>onUp(e.changedTouches[0].clientX));
-
-  carousel.addEventListener('mousedown', (e)=>{ onDown(e.clientX); e.preventDefault(); });
-  window.addEventListener('mousemove', (e)=>onMove(e.clientX));
-  window.addEventListener('mouseup', (e)=>{ if(dragging) onUp(e.clientX); });
+  function step(){
+    if(!hlAutoScrollPaused){
+      // Opposite direction to Noticeboard: scrollLeft decreases, content appears to move right.
+      outer.scrollLeft -= 0.4;
+      if(outer.scrollLeft <= 0) outer.scrollLeft = halfWidth;
+    }
+    hlAutoScrollAnim = requestAnimationFrame(step);
+  }
+  hlAutoScrollAnim = requestAnimationFrame(step);
 }
 
-function hlGoTo(i){
-  const carousel = document.getElementById('hl-carousel');
-  if(!carousel) return;
-  const total = carousel.children.length;
-  hlCarouselIdx = i;
-  hlPositionSlides(i, total);
-  hlScheduleResume(total);
-}
+let hlResizeTimer;
+window.addEventListener('resize', ()=>{
+  clearTimeout(hlResizeTimer);
+  hlResizeTimer = setTimeout(hlInitScroll, 150);
+});
 
 document.addEventListener('DOMContentLoaded', function(){
-  const carousel = document.getElementById('hl-carousel');
-  if(carousel) momentsRebuild();
+  const strip = document.getElementById('hl-strip');
+  if(strip) momentsRebuild();
   const activeEl = document.getElementById('stat-active-events');
   const sbBadge = document.getElementById('sb-badge-dash');
   if(activeEl && sbBadge) sbBadge.textContent = activeEl.textContent;

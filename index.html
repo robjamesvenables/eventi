@@ -8483,13 +8483,13 @@ function announceStartAutoScroll(strip, outer){
   const halfWidth = strip.scrollWidth / 2;
   announceAutoScrollPaused = false;
 
-  // Pause on real mouse hover (desktop) - and always pause while the user is actively
-  // touching/dragging it themselves, on any device, resuming a moment after they let go.
-  const hasRealHover = window.matchMedia('(hover: hover)').matches;
-  if(hasRealHover){
-    outer.onmouseenter = () => { announceAutoScrollPaused = true; };
-    outer.onmouseleave = () => { announceAutoScrollPaused = false; };
-  }
+  // Pause on mouse hover - and always pause while the user is actively touching/dragging
+  // it themselves, on any device, resuming a moment after they let go. Not gating this behind
+  // a hover-capability check anymore: some Android tablets under-report hover support even with
+  // a mouse connected, which silently disabled this. The pointerup resume timer below is the
+  // safety net against a stray touch triggering mouseenter with no matching mouseleave.
+  outer.onmouseenter = () => { announceAutoScrollPaused = true; };
+  outer.onmouseleave = () => { announceAutoScrollPaused = false; };
   let resumeTimer;
   const pauseForInteraction = () => {
     announceAutoScrollPaused = true;

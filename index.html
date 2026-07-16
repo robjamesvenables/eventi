@@ -8334,6 +8334,11 @@ window.addEventListener('load',()=>{ initCurrency(); announceRender(); });
 
 // ── ANNOUNCEMENTS ──
 const announcements = [
+  // Pinned/evergreen: demo of the "guaranteed floor" content so the board never looks empty
+  // even if everything else gets deleted. Pinned posts can't be deleted by regular staff -
+  // only unpinned/removed by a manager or admin.
+  {id:10, text:'Welcome to the team! New starters — check the Knowledge Base for your first-week checklist and say hi here.', tag:'Info', color:'#0D9488', tagBg:'#CCFBF1', tagColor:'#065F46', by:'HR', time:'Pinned', pinned:true},
+  {id:11, text:'House rule reminder — always confirm guest allergies before service, every table, every time.', tag:'SOPs', color:'#C4973B', tagBg:'#FEF3C7', tagColor:'#78350F', by:'HR', time:'Pinned', pinned:true},
   {id:1, text:'Tonight — 27 pax, Restaurant, 7PM. Please check the rundown before 5PM.', tag:'Events', color:'#0D9488', tagBg:'#CCFBF1', tagColor:'#065F46', by:'John', time:'Today, 8:00 AM'},
   {id:2, text:'Kitchen & Bar SOPs deadline — please submit by end of this week.', tag:'SOPs', color:'#C4973B', tagBg:'#FEF3C7', tagColor:'#78350F', by:'John', time:'Today, 8:05 AM'},
   // Demo: general cross-department "Urgent" flag - posted by GRO because they didn't know which
@@ -8399,17 +8404,22 @@ function announceRender(){
   if(badge) badge.textContent = announcements.length;
   const realHtml = announcements.map((a)=>{
     const isOwner = a.by === announceCurrentUser;
-    const actions = isOwner ? `
+    const pinIcon = a.pinned ? `<span title="Pinned - visible to everyone until a manager unpins it" style="position:absolute;top:8px;left:8px;z-index:2;background:rgba(15,30,46,0.75);border-radius:6px;padding:3px 5px;display:flex;align-items:center"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M12 17v5"/><path d="M9 10.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V7a1 1 0 0 1 1-1 2 2 0 0 0 0-4H8a2 2 0 0 0 0 4 1 1 0 0 1 1 1z"/></svg></span>` : '';
+    const actions = (isOwner && !a.pinned) ? `
       <div style="position:absolute;top:8px;right:8px;display:flex;align-items:center;gap:6px;z-index:2;background:rgba(255,255,255,0.85);border-radius:8px;padding:3px 5px">
         <span onclick="event.stopPropagation();announceEdit(${a.id})" title="Edit" style="opacity:0.6;cursor:pointer"><svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="2.2"/><circle cx="12" cy="12" r="2.2"/><circle cx="12" cy="19" r="2.2"/></svg></span>
         <button class="announce-del" onclick="event.stopPropagation();announceDel(${a.id})" title="Delete" style="font-size:16px;line-height:1">×</button>
+      </div>` : a.pinned ? `
+      <div style="position:absolute;top:8px;right:8px;display:flex;align-items:center;gap:6px;z-index:2;background:rgba(255,255,255,0.85);border-radius:8px;padding:3px 5px">
+        <span onclick="event.stopPropagation();announceEdit(${a.id})" title="Edit (managers/admins can also unpin)" style="opacity:0.6;cursor:pointer"><svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="2.2"/><circle cx="12" cy="12" r="2.2"/><circle cx="12" cy="19" r="2.2"/></svg></span>
       </div>` : '';
     const isUrgent = a.tag === 'Urgent';
     const urgentStyle = isUrgent ? `background:#EF4444;color:white;` : `background:${a.tagBg};color:${a.tagColor}`;
     const styledText = announceStyleEmojis(a.text);
     const imgHtml = a.photo ? `<img class="announce-card-img" src="${a.photo}" alt="">` : '';
     return `
-      <div class="announce-card" onclick="announceOpenDetail(${a.id})">
+      <div class="announce-card" onclick="announceOpenDetail(${a.id})" style="${a.pinned ? 'border:1.5px solid #C4973B' : ''}">
+        ${pinIcon}
         ${imgHtml}
         <div class="announce-card-body">
           <span class="announce-card-tag" style="${urgentStyle}">${a.tag}</span>

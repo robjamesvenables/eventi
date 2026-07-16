@@ -10663,7 +10663,7 @@ function hlInitScroll(){
   const cardW = 200 + 14;
   const naturalW = cards.length * cardW - 14;
   if(naturalW <= outerW){
-    if(hlAutoScrollAnim) cancelAnimationFrame(hlAutoScrollAnim);
+    if(hlAutoScrollAnim) clearInterval(hlAutoScrollAnim);
     return;
   }
   hlStartAutoScroll(strip, outer);
@@ -10674,7 +10674,7 @@ let hlAutoScrollPaused = false;
 let hlAutoScrollSetup = false;
 
 function hlStartAutoScroll(strip, outer){
-  if(hlAutoScrollAnim) cancelAnimationFrame(hlAutoScrollAnim);
+  clearInterval(hlAutoScrollAnim);
 
   const isPhoneWidth = window.innerWidth <= 700;
   if(isPhoneWidth) return;
@@ -10684,10 +10684,10 @@ function hlStartAutoScroll(strip, outer){
     strip.innerHTML = strip.innerHTML + strip.innerHTML;
     hlAutoScrollSetup = true;
   }
+  const cardW = 200 + 14;
   const halfWidth = strip.scrollWidth / 2;
   hlAutoScrollPaused = false;
-  // Start scrolled to the halfway point so there's room to scroll backwards (right-moving effect).
-  outer.scrollLeft = halfWidth;
+  outer.scrollLeft = 0;
 
   const hasRealHover = window.matchMedia('(hover: hover)').matches;
   if(hasRealHover){
@@ -10708,15 +10708,17 @@ function hlStartAutoScroll(strip, outer){
   outer.addEventListener('pointerdown', pauseForInteraction);
   outer.addEventListener('pointerup', resumeAfterInteraction);
 
-  function step(){
-    if(!hlAutoScrollPaused){
-      // Opposite direction to Noticeboard: scrollLeft decreases, content appears to move right.
-      outer.scrollLeft -= 0.4;
-      if(outer.scrollLeft <= 0) outer.scrollLeft = halfWidth;
+  // Same direction as Noticeboard (left), but stepping one card at a time with a pause
+  // between each step, instead of a continuous smooth flow.
+  hlAutoScrollAnim = setInterval(()=>{
+    if(hlAutoScrollPaused) return;
+    let next = outer.scrollLeft + cardW;
+    if(next >= halfWidth){
+      outer.scrollLeft = 0;
+      next = cardW;
     }
-    hlAutoScrollAnim = requestAnimationFrame(step);
-  }
-  hlAutoScrollAnim = requestAnimationFrame(step);
+    outer.scrollTo({left: next, behavior: 'smooth'});
+  }, 2600);
 }
 
 let hlResizeTimer;

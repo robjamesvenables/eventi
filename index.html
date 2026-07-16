@@ -8337,6 +8337,12 @@ const announcements = [
   // only unpinned/removed by a manager or admin.
   {id:10, text:'Welcome to the team! New starters — check the Knowledge Base for your first-week checklist and say hi here.', tag:'Info', color:'#0D9488', tagBg:'#CCFBF1', tagColor:'#065F46', by:'HR', time:'Pinned', pinned:true},
   {id:11, text:'House rule reminder — always confirm guest allergies before service, every table, every time.', tag:'SOPs', color:'#C4973B', tagBg:'#FEF3C7', tagColor:'#78350F', by:'HR', time:'Pinned', pinned:true},
+  // Demo: @mention support - tagging a specific person or a whole department. Real version would
+  // look up an actual staff/department directory and fire a notification to whoever's mentioned;
+  // this is just the visual styling + example content for now.
+  {id:12, text:'@John Smith can you confirm the linen order for tomorrow before you head out tonight?', tag:'Info', color:'#0D9488', tagBg:'#CCFBF1', tagColor:'#065F46', by:'Sarah', time:'Today, 3:40 PM'},
+  {id:13, text:'@James Smith the new POS terminal is ready for setup whenever you have a moment.', tag:'Info', color:'#0D9488', tagBg:'#CCFBF1', tagColor:'#065F46', by:'John', time:'Today, 4:05 PM'},
+  {id:14, text:'@Operations heads up — beach access path will be closed for maintenance from 6AM tomorrow.', tag:'Info', color:'#0D9488', tagBg:'#CCFBF1', tagColor:'#065F46', by:'Made', time:'Today, 4:20 PM'},
   {id:1, text:'Tonight — 27 pax, Restaurant, 7PM. Please check the rundown before 5PM.', tag:'Events', color:'#0D9488', tagBg:'#CCFBF1', tagColor:'#065F46', by:'John', time:'Today, 8:00 AM'},
   {id:2, text:'Kitchen & Bar SOPs deadline — please submit by end of this week.', tag:'SOPs', color:'#C4973B', tagBg:'#FEF3C7', tagColor:'#78350F', by:'John', time:'Today, 8:05 AM'},
   // Demo: general cross-department "Urgent" flag - posted by GRO because they didn't know which
@@ -8559,7 +8565,17 @@ function announceStyleEmojis(text){
     const badge = `<span data-emoji="${e.id}" style="display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;border-radius:50%;background:${e.bg};vertical-align:-4px;margin:0 2px;user-select:none">${e.svg.replace('width="14" height="14"','width="11" height="11"')}</span>`;
     out = out.split(e.char).join(badge);
   });
+  out = announceStyleMentions(out);
   return out;
+}
+
+// Highlights @Name / @Department mentions as a pill so it reads as a tag rather than plain text.
+// Real version would look up a directory of staff/departments and fire a notification to whoever
+// is mentioned; this just does the visual styling for the demo.
+function announceStyleMentions(text){
+  return text.replace(/@([A-Za-z][A-Za-z.]*(?:\s[A-Za-z][A-Za-z.]*){0,2})/g, (match, name) => {
+    return `<span style="display:inline-flex;align-items:center;background:#DBEAFE;color:#1D4ED8;font-weight:700;padding:1px 7px 1px 6px;border-radius:10px;font-size:10.5px">@${name}</span>`;
+  });
 }
 
 function announceExtractText(){

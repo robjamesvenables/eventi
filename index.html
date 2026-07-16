@@ -8465,6 +8465,7 @@ function announceInitScroll(){
 }
 
 let announceAutoScrollAnim = null;
+let announceModalOpen = false;
 let announceAutoScrollPaused = false;
 let announceAutoScrollSetup = false;
 
@@ -8489,6 +8490,7 @@ function announceStartAutoScroll(strip, outer){
   // enter/leave event wiring can.
   let announceHoverCheckActive = true;
   const checkHoverPosition = (clientX, clientY) => {
+    if(announceModalOpen){ announceAutoScrollPaused = true; return; } // modal open always wins
     const rect = outer.getBoundingClientRect();
     const inside = clientX >= rect.left && clientX <= rect.right && clientY >= rect.top && clientY <= rect.bottom;
     announceAutoScrollPaused = inside;
@@ -8779,6 +8781,7 @@ window.announceOpenDetail = function(id){
   document.getElementById('announceDetailMeta').textContent = `Posted by ${a.by} · ${a.time}`;
   document.getElementById('announceDetailModal').style.display = 'flex';
   document.body.style.overflow = 'hidden';
+  announceModalOpen = true;
   announceAutoScrollPaused = true;
   history.pushState({page:'home', announceDetailOpen:true}, '', '#home');
 };
@@ -8786,6 +8789,7 @@ window.announceOpenDetail = function(id){
 window.announceCloseDetail = function(fromPopstate){
   document.getElementById('announceDetailModal').style.display = 'none';
   document.body.style.overflow = '';
+  announceModalOpen = false;
   announceAutoScrollPaused = false;
   if(!fromPopstate) history.back();
 };

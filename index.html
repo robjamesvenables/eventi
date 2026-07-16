@@ -1613,7 +1613,7 @@ img.emoji-tw{width:1.15em;height:1.15em;vertical-align:-0.2em;margin:0 1px}
 .announce-bar{width:4px;border-radius:4px;flex-shrink:0;align-self:stretch;min-height:36px}
 .announce-body{flex:1;min-width:0}
 .announce-tag{display:inline-block;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;padding:2px 8px;border-radius:10px;margin-bottom:5px}
-.announce-text{font-size:13px;font-weight:500;color:var(--navy);line-height:1.5}
+.announce-text{font-size:13px;font-weight:500;color:var(--navy);line-height:1.5;white-space:pre-wrap}
 .announce-meta{font-size:11px;color:var(--ink3);margin-top:4px}
 .announce-del{background:none;border:none;color:#94A3B8;cursor:pointer;font-size:16px;padding:2px 6px;border-radius:4px;transition:all 0.15s;flex-shrink:0}
 .announce-del:hover{background:#FEE2E2;color:#EF4444}
@@ -8480,20 +8480,31 @@ function announceStyleEmojis(text){
 
 function announceExtractText(){
   const input = document.getElementById('announce-input');
+  return announceWalkNode(input).replace(/\u200B/g,'').trim();
+}
+
+function announceWalkNode(el){
   let out = '';
-  input.childNodes.forEach(node=>{
+  el.childNodes.forEach(node=>{
     if(node.nodeType === Node.TEXT_NODE){
-      out += node.textContent.replace(/\u200B/g,'');
+      out += node.textContent;
     } else if(node.nodeType === Node.ELEMENT_NODE){
-      if(node.dataset && node.dataset.emoji){
+      if(node.tagName === 'BR'){
+        out += '\n';
+      } else if(node.dataset && node.dataset.emoji){
         const e = ANNOUNCE_EMOJIS.find(x=>x.id===node.dataset.emoji);
-        if(e) out += e.char;
+        out += e ? e.char : '';
+      } else if(node.tagName === 'DIV' || node.tagName === 'P'){
+        // Pressing Enter in a contenteditable wraps the new line in its own block element -
+        // that's a line break, not just adjacent content to concatenate.
+        if(out.length > 0 && !out.endsWith('\n')) out += '\n';
+        out += announceWalkNode(node);
       } else {
-        out += node.textContent;
+        out += announceWalkNode(node);
       }
     }
   });
-  return out.trim();
+  return out;
 }
 
 let announcePhotoData = '';
@@ -8502,7 +8513,7 @@ function announceOpenModal(title, text, tag, link, photo){
   announceSelectedTag = tag || 'Info';
   announcePhotoData = photo || '';
   document.getElementById('announce-modal-title').textContent = title;
-  document.getElementById('announce-input').innerHTML = text ? announceStyleEmojis(text) : '';
+  document.getElementById('announce-input').innerHTML = text ? announceStyleEmojis(text).replace(/\n/g,'<br>') : '';
   document.getElementById('announce-link').value = link || '';
   document.getElementById('announce-modal').style.display = 'flex';
   announceUpdatePhotoPreview();

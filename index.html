@@ -8340,13 +8340,17 @@ function announceRender(){
     const linkHtml = a.link ? `<a href="${a.link}" target="_blank" onclick="event.stopPropagation()" style="margin-left:8px;font-size:11px;font-weight:700;color:#0D9488;text-decoration:underline">Open link →</a>` : '';
     const styledText = announceStyleEmojis(a.text);
     const stripeBg = i % 2 === 1 ? '#E9EDF3' : 'white';
+    const photoHtml = a.photo ? `<img src="${a.photo}" onclick="event.stopPropagation();recipePhotoZoom('${a.photo.replace(/'/g,"\\'")}')" style="width:48px;height:48px;object-fit:cover;border-radius:8px;cursor:pointer;flex-shrink:0;margin-right:12px" title="Tap to zoom">` : '';
     return `
       <div class="announce-item" style="position:relative;background:${stripeBg}">
         <div class="announce-bar" style="background:${a.color}"></div>
-        <div class="announce-body">
-          <span class="announce-tag" style="${urgentStyle}">${a.tag}</span>
-          <div class="announce-text">${styledText}${linkHtml}</div>
-          <div class="announce-meta">Posted by ${a.by} · ${a.time}</div>
+        <div class="announce-body" style="display:flex;align-items:flex-start">
+          ${photoHtml}
+          <div style="flex:1;min-width:0">
+            <span class="announce-tag" style="${urgentStyle}">${a.tag}</span>
+            <div class="announce-text">${styledText}${linkHtml}</div>
+            <div class="announce-meta">Posted by ${a.by} · ${a.time}</div>
+          </div>
         </div>
         ${actions}
       </div>`;
@@ -8487,16 +8491,55 @@ function announceExtractText(){
   return out.trim();
 }
 
-function announceOpenModal(title, text, tag, link){
+let announcePhotoData = '';
+
+function announceOpenModal(title, text, tag, link, photo){
   announceSelectedTag = tag || 'Info';
+  announcePhotoData = photo || '';
   document.getElementById('announce-modal-title').textContent = title;
   document.getElementById('announce-input').innerHTML = text ? announceStyleEmojis(text) : '';
   document.getElementById('announce-link').value = link || '';
   document.getElementById('announce-modal').style.display = 'flex';
+  announceUpdatePhotoPreview();
   announceRenderTags();
   announceRenderEmojis();
   setTimeout(()=>document.getElementById('announce-input').focus(),100);
 }
+
+function announceUpdatePhotoPreview(){
+  const preview = document.getElementById('announce-photo-preview');
+  const addBox = document.getElementById('announce-photo-add');
+  if(announcePhotoData){
+    document.getElementById('announce-photo-img').src = announcePhotoData;
+    preview.style.display = 'block';
+    addBox.style.display = 'none';
+  } else {
+    preview.style.display = 'none';
+    addBox.style.display = 'flex';
+  }
+}
+
+window.announcePickPhoto = function(){
+  const input = document.createElement('input');
+  input.type = 'file';
+  input.accept = 'image/*';
+  input.onchange = () => {
+    const file = input.files[0];
+    if(!file) return;
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      announcePhotoData = e.target.result;
+      announceUpdatePhotoPreview();
+    };
+    reader.readAsDataURL(file);
+  };
+  input.click();
+};
+
+window.announceRemovePhoto = function(){
+  announcePhotoData = '';
+  announceUpdatePhotoPreview();
+};
 
 function announceRenderEmojis(){
   const c = document.getElementById('announce-emojis');
@@ -8563,10 +8606,10 @@ window.announceSubmit = function(){
   const time = 'Today, '+now.getHours()+':'+String(now.getMinutes()).padStart(2,'0');
   if(announceEditId!==null){
     const a = announcements.find(a=>a.id===announceEditId);
-    if(a){ a.text=text; a.tag=announceSelectedTag; a.link=link; Object.assign(a,s); }
+    if(a){ a.text=text; a.tag=announceSelectedTag; a.link=link; a.photo=announcePhotoData; Object.assign(a,s); }
     toast('Updated ✓');
   } else {
-    announcements.unshift({id:announceNextId++, text, tag:announceSelectedTag, link, ...s, by:'John', time, ts:Date.now()});
+    announcements.unshift({id:announceNextId++, text, tag:announceSelectedTag, link, photo:announcePhotoData, ...s, by:'John', time, ts:Date.now()});
     toast('Posted ✓');
   }
   announceCloseModal();
@@ -8575,14 +8618,14 @@ window.announceSubmit = function(){
 
 window.announceAdd = function(){
   announceEditId = null;
-  announceOpenModal('Post Announcement','','Info','');
+  announceOpenModal('Post Announcement','','Info','','');
 };
 
 window.announceEdit = function(id){
   const a = announcements.find(a=>a.id===id);
   if(!a) return;
   announceEditId = id;
-  announceOpenModal('Edit Announcement', a.text, a.tag, a.link);
+  announceOpenModal('Edit Announcement', a.text, a.tag, a.link, a.photo);
 };
 
 window.announceDel = function(id){
@@ -10108,7 +10151,18 @@ window.nav = function(id, pushState){
     <div style="font-size:13px;color:#94A3B8;margin-bottom:20px">Visible to everyone on the team</div>
     <div id="announce-input" contenteditable="true" data-placeholder="Write your announcement here..." style="width:100%;min-height:90px;max-height:160px;overflow-y:auto;padding:14px;border:1.5px solid #E2E8F0;border-radius:10px;font-family:'Inter',sans-serif;font-size:14px;color:#0F1E2E;outline:none;line-height:1.6;box-sizing:border-box"></div>
     <div id="announce-emojis" style="display:flex;align-items:center;gap:6px;padding:8px 2px 0"></div>
-    <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;color:#94A3B8;margin:14px 0 8px">Link (optional)</div>
+    <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;color:#94A3B8;margin:16px 0 8px">Photo (optional)</div>
+    <div id="announce-photo-wrap" style="display:flex;align-items:center;gap:12px">
+      <div id="announce-photo-preview" style="display:none;position:relative">
+        <img id="announce-photo-img" style="width:56px;height:56px;object-fit:cover;border-radius:9px;border:1.5px solid #E2E8F0">
+        <span onclick="announceRemovePhoto()" style="position:absolute;top:-6px;right:-6px;width:18px;height:18px;border-radius:50%;background:#EF4444;color:white;font-size:11px;display:flex;align-items:center;justify-content:center;cursor:pointer">×</span>
+      </div>
+      <div id="announce-photo-add" onclick="announcePickPhoto()" style="width:56px;height:56px;border-radius:9px;border:1.5px dashed #CBD5E1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;cursor:pointer;color:#94A3B8">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2Z"/><circle cx="12" cy="13" r="4"/></svg>
+        <span style="font-size:8px;font-weight:600">Add</span>
+      </div>
+    </div>
+    <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;color:#94A3B8;margin:16px 0 8px">Link (optional)</div>
     <input id="announce-link" type="text" placeholder="https://..." style="width:100%;padding:11px 14px;border:1.5px solid #E2E8F0;border-radius:9px;font-family:'Inter',sans-serif;font-size:13px;color:#0F1E2E;outline:none;box-sizing:border-box">
     <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;color:#94A3B8;margin:16px 0 10px">Tag</div>
     <div id="announce-tags" style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:24px"></div>

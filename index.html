@@ -8490,6 +8490,9 @@ function announceStartAutoScroll(strip, outer){
   // safety net against a stray touch triggering mouseenter with no matching mouseleave.
   outer.onmouseenter = () => { announceAutoScrollPaused = true; };
   outer.onmouseleave = () => { announceAutoScrollPaused = false; };
+  outer.addEventListener('pointerenter', (e) => { if(e.pointerType !== 'touch') announceAutoScrollPaused = true; });
+  outer.addEventListener('pointerleave', (e) => { if(e.pointerType !== 'touch') announceAutoScrollPaused = false; });
+  outer.addEventListener('pointermove', () => { announceAutoScrollPaused = true; clearTimeout(resumeTimer); resumeTimer = setTimeout(() => { announceAutoScrollPaused = false; }, 1500); });
   let resumeTimer;
   const pauseForInteraction = () => {
     announceAutoScrollPaused = true;

@@ -10681,6 +10681,13 @@ function hlCarouselStart(total){
   hlCarouselIdx = 0;
   if(total === 0) return;
   hlPositionSlides(0, total);
+  hlWireDrag(total);
+  if(total <= 1) return;
+  hlResumeAutoplay(total);
+}
+
+function hlResumeAutoplay(total){
+  clearInterval(hlCarouselTimer);
   if(total <= 1) return;
   hlCarouselTimer = setInterval(()=>{
     hlCarouselIdx = (hlCarouselIdx+1) % total;
@@ -10688,19 +10695,59 @@ function hlCarouselStart(total){
   }, 3200);
 }
 
+function hlNext(total){
+  clearInterval(hlCarouselTimer);
+  hlCarouselIdx = (hlCarouselIdx+1) % total;
+  hlPositionSlides(hlCarouselIdx, total);
+  hlScheduleResume(total);
+}
+function hlPrev(total){
+  clearInterval(hlCarouselTimer);
+  hlCarouselIdx = (hlCarouselIdx-1+total) % total;
+  hlPositionSlides(hlCarouselIdx, total);
+  hlScheduleResume(total);
+}
+let hlResumeTimer;
+function hlScheduleResume(total){
+  clearTimeout(hlResumeTimer);
+  hlResumeTimer = setTimeout(()=>hlResumeAutoplay(total), 2500);
+}
+
+let hlDragWired = false;
+function hlWireDrag(total){
+  const carousel = document.getElementById('hl-carousel');
+  if(!carousel || hlDragWired) return; // listeners persist across re-renders, only wire once
+  hlDragWired = true;
+  let startX = null, dragging = false;
+
+  const onDown = (x) => { startX = x; dragging = true; clearInterval(hlCarouselTimer); };
+  const onMove = (x) => { if(!dragging) return; };
+  const onUp = (x) => {
+    if(!dragging || startX === null){ dragging = false; return; }
+    const dx = x - startX;
+    const liveTotal = carousel.children.length;
+    if(dx < -40) hlNext(liveTotal);
+    else if(dx > 40) hlPrev(liveTotal);
+    else hlScheduleResume(liveTotal);
+    dragging = false; startX = null;
+  };
+
+  carousel.addEventListener('touchstart', (e)=>onDown(e.touches[0].clientX), {passive:true});
+  carousel.addEventListener('touchmove', (e)=>onMove(e.touches[0].clientX), {passive:true});
+  carousel.addEventListener('touchend', (e)=>onUp(e.changedTouches[0].clientX));
+
+  carousel.addEventListener('mousedown', (e)=>{ onDown(e.clientX); e.preventDefault(); });
+  window.addEventListener('mousemove', (e)=>onMove(e.clientX));
+  window.addEventListener('mouseup', (e)=>{ if(dragging) onUp(e.clientX); });
+}
+
 function hlGoTo(i){
   const carousel = document.getElementById('hl-carousel');
   if(!carousel) return;
   const total = carousel.children.length;
-  clearInterval(hlCarouselTimer);
   hlCarouselIdx = i;
   hlPositionSlides(i, total);
-  if(total > 1){
-    hlCarouselTimer = setInterval(()=>{
-      hlCarouselIdx = (hlCarouselIdx+1) % total;
-      hlPositionSlides(hlCarouselIdx, total);
-    }, 3200);
-  }
+  hlScheduleResume(total);
 }
 
 document.addEventListener('DOMContentLoaded', function(){

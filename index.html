@@ -1580,6 +1580,8 @@ textarea.rf-val{resize:vertical;min-height:72px;line-height:1.5}
   .hl-slide-img{height:175px !important}
   .hl-slide.hl-peek-right{transform:translateX(180px) scale(0.72);opacity:0.55}
   .hl-slide.hl-peek-left{transform:translateX(-180px) scale(0.72);opacity:0.55}
+  .hl-slide.hl-peek-right2{transform:translateX(300px) scale(0.5);opacity:0.3}
+  .hl-slide.hl-peek-left2{transform:translateX(-300px) scale(0.5);opacity:0.3}
   .hl-slide.hl-enter{transform:translateX(110px) scale(0.72);opacity:0}
   .hl-slide.hl-exit{transform:translateX(-130px) scale(0.72);opacity:0}
 }
@@ -1587,6 +1589,8 @@ textarea.rf-val{resize:vertical;min-height:72px;line-height:1.5}
 .hl-slide.hl-exit{transform:translateX(-110px) scale(0.72);opacity:0}
 .hl-slide.hl-peek-right{transform:translateX(150px) scale(0.72);opacity:0.55}
 .hl-slide.hl-peek-left{transform:translateX(-150px) scale(0.72);opacity:0.55}
+.hl-slide.hl-peek-right2{transform:translateX(240px) scale(0.5);opacity:0.3}
+.hl-slide.hl-peek-left2{transform:translateX(-240px) scale(0.5);opacity:0.3}
 .hl-slide-img{width:100%;height:150px;object-fit:cover;display:block}
 .hl-slide-body{padding:12px 14px;background:#0F1E2E}
 .hl-slide-caption{font-size:12px;color:white;line-height:1.4;font-weight:500;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
@@ -10669,8 +10673,10 @@ function hlPositionSlides(activeIdx, total){
   const slides = Array.from(carousel.children);
   const prevIdx = (activeIdx - 1 + total) % total;
   const nextIdx = (activeIdx + 1) % total;
+  const prevIdx2 = (activeIdx - 2 + total) % total;
+  const nextIdx2 = (activeIdx + 2) % total;
   slides.forEach((el,i)=>{
-    el.classList.remove('hl-enter','hl-exit','hl-peek-left','hl-peek-right');
+    el.classList.remove('hl-enter','hl-exit','hl-peek-left','hl-peek-right','hl-peek-left2','hl-peek-right2');
     if(i === activeIdx){
       el.style.zIndex = 3;
     } else if(i === nextIdx && total > 1){
@@ -10679,6 +10685,12 @@ function hlPositionSlides(activeIdx, total){
     } else if(i === prevIdx && total > 2){
       el.classList.add('hl-peek-left'); // small preview peeking in on the left
       el.style.zIndex = 2;
+    } else if(i === nextIdx2 && total > 3 && nextIdx2 !== prevIdx){
+      el.classList.add('hl-peek-right2'); // second, further preview on the right
+      el.style.zIndex = 1;
+    } else if(i === prevIdx2 && total > 4 && prevIdx2 !== nextIdx){
+      el.classList.add('hl-peek-left2'); // second, further preview on the left
+      el.style.zIndex = 1;
     } else {
       el.classList.add('hl-exit'); // out of view entirely
       el.style.zIndex = 0;

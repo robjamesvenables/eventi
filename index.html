@@ -8422,29 +8422,28 @@ function announceRender(){
   };
   const realHtml = announcements.map((a)=>{
     const isOwner = a.by === announceCurrentUser;
-    const newBadge = (!a.pinned && isToday(a.ts)) ? `<span style="position:absolute;top:8px;right:8px;z-index:2;background:#0D9488;color:white;font-size:9px;font-weight:800;letter-spacing:0.5px;padding:3px 8px;border-radius:8px;box-shadow:0 2px 6px rgba(0,0,0,0.2)">NEW</span>` : '';
+    const isUrgent = a.tag === 'Urgent';
+    const newBadge = (!a.pinned && isToday(a.ts)) ? `<span style="position:absolute;top:8px;left:8px;z-index:2;background:${isUrgent?'#7F1D1D':'#0D9488'};color:white;font-size:9px;font-weight:800;letter-spacing:0.5px;padding:3px 8px;border-radius:8px;box-shadow:0 2px 6px rgba(0,0,0,0.2)">NEW</span>` : '';
     const pinIcon = a.pinned ? `<span title="Pinned - visible to everyone until a manager unpins it" style="position:absolute;bottom:8px;left:8px;z-index:2;background:#DC2626;border-radius:7px;padding:5px 6px;display:flex;align-items:center;box-shadow:0 2px 6px rgba(0,0,0,0.25)"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 17v5"/><path d="M9 10.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V7a1 1 0 0 1 1-1 2 2 0 0 0 0-4H8a2 2 0 0 0 0 4 1 1 0 0 1 1 1z"/></svg></span>` : '';
     const pinSpacer = '';
     const actions = (isOwner && !a.pinned) ? `
-      <div style="position:absolute;top:${newBadge?'34px':'8px'};right:8px;display:flex;align-items:center;gap:6px;z-index:2;background:rgba(255,255,255,0.85);border-radius:8px;padding:3px 5px">
+      <div style="position:absolute;top:8px;right:8px;display:flex;align-items:center;gap:6px;z-index:2;background:rgba(255,255,255,0.85);border-radius:8px;padding:3px 5px">
         <span onclick="event.stopPropagation();announceEdit(${a.id})" title="Edit" style="opacity:0.6;cursor:pointer"><svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="2.2"/><circle cx="12" cy="12" r="2.2"/><circle cx="12" cy="19" r="2.2"/></svg></span>
         <button class="announce-del" onclick="event.stopPropagation();announceDel(${a.id})" title="Delete" style="font-size:16px;line-height:1">×</button>
       </div>` : a.pinned ? `
-      <div style="position:absolute;top:${newBadge?'34px':'8px'};right:8px;display:flex;align-items:center;gap:6px;z-index:2;background:rgba(255,255,255,0.85);border-radius:8px;padding:3px 5px">
+      <div style="position:absolute;top:8px;right:8px;display:flex;align-items:center;gap:6px;z-index:2;background:rgba(255,255,255,0.85);border-radius:8px;padding:3px 5px">
         <span onclick="event.stopPropagation();announceEdit(${a.id})" title="Edit (managers/admins can also unpin)" style="opacity:0.6;cursor:pointer"><svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="2.2"/><circle cx="12" cy="12" r="2.2"/><circle cx="12" cy="19" r="2.2"/></svg></span>
       </div>` : '';
-    const isUrgent = a.tag === 'Urgent';
-    const urgentStyle = isUrgent ? `background:#EF4444;color:white;` : `background:${a.tagBg};color:${a.tagColor}`;
     const styledText = announceStyleEmojis(a.text);
     const imgHtml = a.photo ? `<img class="announce-card-img" src="${a.photo}" alt="" onclick="event.stopPropagation();recipePhotoZoom('${a.photo.replace(/'/g,"\\'")}')" title="Tap to view">` : '';
+    const cardBg = isUrgent ? 'background:#FDECEC' : '';
     return `
-      <div class="announce-card" onclick="announceOpenDetail(${a.id})" style="${a.pinned ? 'border:1.5px solid #DC2626' : ''}">
+      <div class="announce-card" onclick="announceOpenDetail(${a.id})" style="${a.pinned ? 'border:1.5px solid #DC2626;' : isUrgent ? 'border:1.5px solid #F87171;' : ''}${cardBg}">
         ${pinIcon}
         ${newBadge}
-        <div class="announce-card-body">
+        <div class="announce-card-body" style="${cardBg}">
           ${pinSpacer}
-          <span class="announce-card-tag" style="${urgentStyle}">${a.tag}</span>
-          <div class="announce-card-text">${styledText}</div>
+          <div class="announce-card-text" style="${newBadge || pinIcon ? 'margin-top:22px' : ''}${isUrgent?';color:#7F1D1D':''}">${styledText}</div>
           ${imgHtml}
           <div class="announce-card-meta">${a.by} · ${a.time}</div>
         </div>
@@ -8721,11 +8720,11 @@ window.announceInsertEmoji = function(id){
 function announceRenderTags(){
   const container = document.getElementById('announce-tags');
   if(!container) return;
-  container.innerHTML = Object.keys(announceTags).map(t=>{
-    const s = announceTags[t];
-    const active = announceSelectedTag===t;
-    return `<button onclick="announceSelectTag('${t}')" style="padding:7px 16px;border-radius:20px;border:2px solid ${active?s.color:'#E2E8F0'};background:${active?s.tagBg:'#fff'};color:${active?s.tagColor:'#64748B'};font-family:'Inter',sans-serif;font-size:12px;font-weight:700;cursor:pointer;transition:all 0.15s">${t}</button>`;
-  }).join('');
+  const isUrgent = announceSelectedTag === 'Urgent';
+  container.innerHTML = `<button onclick="announceSelectTag('${isUrgent ? 'Info' : 'Urgent'}')" style="display:flex;align-items:center;gap:8px;padding:9px 16px;border-radius:20px;border:2px solid ${isUrgent?'#F43F5E':'#E2E8F0'};background:${isUrgent?'#FEE2E2':'#fff'};color:${isUrgent?'#7F1D1D':'#64748B'};font-family:'Inter',sans-serif;font-size:12px;font-weight:700;cursor:pointer;transition:all 0.15s">
+    <span style="width:16px;height:16px;border-radius:50%;border:2px solid currentColor;display:inline-flex;align-items:center;justify-content:center">${isUrgent ? '<span style="width:8px;height:8px;border-radius:50%;background:currentColor"></span>' : ''}</span>
+    Mark as Urgent
+  </button>`;
 }
 
 window.announceSelectTag = function(tag){
@@ -8775,9 +8774,14 @@ window.announceOpenDetail = function(id){
   const a = announcements.find(a=>a.id===id);
   if(!a) return;
   const tagEl = document.getElementById('announceDetailTag');
-  tagEl.textContent = a.tag;
-  tagEl.style.background = a.tag === 'Urgent' ? '#EF4444' : a.tagBg;
-  tagEl.style.color = a.tag === 'Urgent' ? 'white' : a.tagColor;
+  if(a.tag === 'Urgent'){
+    tagEl.textContent = 'URGENT';
+    tagEl.style.display = 'inline-block';
+    tagEl.style.background = '#EF4444';
+    tagEl.style.color = 'white';
+  } else {
+    tagEl.style.display = 'none';
+  }
 
   const photoEl = document.getElementById('announceDetailPhoto');
   if(a.photo){

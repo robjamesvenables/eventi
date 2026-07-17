@@ -8549,12 +8549,10 @@ function announceStartAutoScroll(strip, outer){
   const isPhoneWidth = window.innerWidth <= 700;
   if(isPhoneWidth) return;
 
-  // Duplicate the cards once so the loop can wrap seamlessly.
-  if(!announceAutoScrollSetup){
-    strip.innerHTML = strip.innerHTML + strip.innerHTML;
-    announceAutoScrollSetup = true;
-  }
-  const halfWidth = strip.scrollWidth / 2;
+  // No longer duplicating the strip's content for a "seamless" loop - that content-doubling
+  // trick was the root cause of a recurring visual bug where cards would appear to split or
+  // overlap. Instead: scroll to the natural end of the real content, then snap back to the
+  // start. Slightly less seamless, but no duplicated DOM to ever get out of sync.
   announceAutoScrollPaused = false;
 
   // Pause on hover: instead of relying on mouseenter/mouseleave/pointerenter firing reliably
@@ -8586,8 +8584,9 @@ function announceStartAutoScroll(strip, outer){
 
   function step(){
     if(!announceAutoScrollPaused){
+      const maxScroll = strip.scrollWidth - outer.clientWidth;
       outer.scrollLeft += 0.4;
-      if(outer.scrollLeft >= halfWidth) outer.scrollLeft = 0;
+      if(outer.scrollLeft >= maxScroll) outer.scrollLeft = 0;
     }
     announceAutoScrollAnim = requestAnimationFrame(step);
   }

@@ -8550,6 +8550,36 @@ async function announceLoadFromSupabase(){
   announceLoadedFromDb = true;
 }
 
+function announceReactionBarHtml(id){
+  const a = announcements.find(a=>a.id===id);
+  if(!a) return '';
+  if(!a.reactions) a.reactions = {};
+  const me = currentUserFirstName || announceCurrentUser || 'You';
+  return `<div style="display:flex;gap:5px;flex-wrap:wrap" onmousedown="event.stopPropagation()" onclick="event.stopPropagation()">
+    ${REACTION_EMOJIS.map(r=>{
+      const list = a.reactions[r.id] || [];
+      const mine = list.includes(me);
+      const count = list.length;
+      return `<button onclick="announceToggleReaction(${id},'${r.id}')" title="${r.char}" style="display:flex;align-items:center;gap:4px;padding:4px 8px;border-radius:16px;border:1.5px solid ${mine?'#0D9488':'#E2E8F0'};background:${mine?'rgba(13,148,136,0.1)':'white'};cursor:pointer;font-size:13px;line-height:1;font-family:'Inter',sans-serif">
+        <span>${momentsTwemojiParse(r.char)}</span>${count>0?`<span style="font-size:10.5px;font-weight:700;color:${mine?'#0D9488':'#64748B'}">${count}</span>`:''}
+      </button>`;
+    }).join('')}
+  </div>`;
+}
+
+window.announceToggleReaction = function(id, emojiId){
+  const a = announcements.find(a=>a.id===id);
+  if(!a) return;
+  if(!a.reactions) a.reactions = {};
+  if(!a.reactions[emojiId]) a.reactions[emojiId] = [];
+  const me = currentUserFirstName || announceCurrentUser || 'You';
+  const list = a.reactions[emojiId];
+  const at = list.indexOf(me);
+  if(at > -1) list.splice(at, 1);
+  else list.push(me);
+  announceRender();
+};
+
 function announceRender(){
   const strip = document.getElementById('announce-strip');
   const badge = document.getElementById('announce-badge');
@@ -8570,7 +8600,7 @@ function announceRender(){
   const realHtml = announcements.map((a)=>{
     const isOwner = a.by === announceCurrentUser;
     const isUrgent = a.tag === 'Urgent';
-    const newBadge = isToday(a.ts) ? `<span style="display:inline-block;background:${isUrgent?'#7F1D1D':'#0D9488'};color:white;font-size:9px;font-weight:800;letter-spacing:0.5px;padding:3px 8px;border-radius:8px;margin-bottom:6px">NEW</span>` : '';
+    const newBadge = isToday(a.ts) ? `<span style="display:inline-block;background:${isUrgent?'#7F1D1D':'#0D9488'};color:white;font-size:8.5px;font-weight:800;letter-spacing:0.5px;padding:2px 7px;border-radius:8px;margin-left:6px;vertical-align:middle">NEW</span>` : '';
     const pinBadge = a.pinned ? `<span title="Pinned" style="position:absolute;top:12px;right:12px;z-index:2;background:#DC2626;border-radius:50%;width:28px;height:28px;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 6px rgba(0,0,0,0.25)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 17v5"/><path d="M9 10.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V7a1 1 0 0 1 1-1 2 2 0 0 0 0-4H8a2 2 0 0 0 0 4 1 1 0 0 1 1 1z"/></svg></span>` : '';
     const actions = (isOwner && !a.pinned) ? `
       <div style="position:absolute;top:12px;right:12px;display:flex;align-items:center;gap:6px;z-index:2;background:rgba(255,255,255,0.85);border-radius:8px;padding:3px 5px">
@@ -8589,12 +8619,12 @@ function announceRender(){
           <div class="announce-post-hd">
             <div class="announce-post-avatar" style="background:${avatarColor(a.by)}">${initial}</div>
             <div class="announce-post-who">
-              <span class="announce-post-name">${a.by}</span>
+              <span class="announce-post-name">${a.by}${newBadge}</span>
               <span class="announce-card-meta">${a.time}</span>
             </div>
           </div>
-          ${newBadge}
           <div class="announce-card-text" style="${isUrgent?'color:#7F1D1D':''}">${styledText}</div>
+          <div style="margin-top:12px">${announceReactionBarHtml(a.id)}</div>
         </div>
         ${actions}
       </div>`;

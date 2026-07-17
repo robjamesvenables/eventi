@@ -8555,6 +8555,10 @@ function announceRender(){
   const badge = document.getElementById('announce-badge');
   if(!strip) return;
   if(badge) badge.textContent = announcements.length;
+  announcements.sort((a,b) => {
+    if(!!a.pinned !== !!b.pinned) return a.pinned ? -1 : 1; // pinned always first
+    return (b.ts||0) - (a.ts||0); // then newest first
+  });
   const now = new Date();
   const isToday = (ts) => {
     if(!ts) return false;
@@ -8567,7 +8571,8 @@ function announceRender(){
     const isOwner = a.by === announceCurrentUser;
     const isUrgent = a.tag === 'Urgent';
     const newBadge = isToday(a.ts) ? `<span style="display:inline-block;background:${isUrgent?'#7F1D1D':'#0D9488'};color:white;font-size:9px;font-weight:800;letter-spacing:0.5px;padding:3px 8px;border-radius:8px;margin-bottom:6px">NEW</span>` : '';
-    const actions = isOwner ? `
+    const pinBadge = a.pinned ? `<span title="Pinned" style="position:absolute;top:12px;right:12px;z-index:2;background:#DC2626;border-radius:50%;width:28px;height:28px;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 6px rgba(0,0,0,0.25)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 17v5"/><path d="M9 10.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V7a1 1 0 0 1 1-1 2 2 0 0 0 0-4H8a2 2 0 0 0 0 4 1 1 0 0 1 1 1z"/></svg></span>` : '';
+    const actions = (isOwner && !a.pinned) ? `
       <div style="position:absolute;top:12px;right:12px;display:flex;align-items:center;gap:6px;z-index:2;background:rgba(255,255,255,0.85);border-radius:8px;padding:3px 5px">
         <span onclick="event.stopPropagation();announceEdit(${a.id})" title="Edit" style="opacity:0.6;cursor:pointer"><svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="2.2"/><circle cx="12" cy="12" r="2.2"/><circle cx="12" cy="19" r="2.2"/></svg></span>
         <button class="announce-del" onclick="event.stopPropagation();announceDel(${a.id})" title="Delete" style="font-size:16px;line-height:1">×</button>
@@ -8577,9 +8582,10 @@ function announceRender(){
     const cardBg = isUrgent ? 'background:#FDECEC' : '';
     const initial = a.by ? a.by.charAt(0).toUpperCase() : '?';
     return `
-      <div class="announce-card" onclick="announceOpenDetail(${a.id})" style="${isUrgent ? 'border:1.5px solid #F87171;' : ''}">
+      <div class="announce-card" onclick="announceOpenDetail(${a.id})" style="${isUrgent ? 'border:1.5px solid #F87171;' : a.pinned ? 'border:1.5px solid #FCA5A5;' : ''}">
         ${imgHtml}
         <div class="announce-card-body" style="${cardBg}">
+          ${pinBadge}
           <div class="announce-post-hd">
             <div class="announce-post-avatar" style="background:${avatarColor(a.by)}">${initial}</div>
             <div class="announce-post-who">
@@ -8842,6 +8848,21 @@ window.announceEdit = function(id){
   announceOpenModal('Edit Announcement', a.text, a.tag, a.link, a.photo);
 };
 
+let announceDetailCurrentId = null;
+function announceUpdatePinBtn(a){
+  const btn = document.getElementById('announceDetailPinBtn');
+  if(!btn || !a) return;
+  if(a.pinned){
+    btn.textContent = 'Unpin';
+    btn.style.background = '#DC2626';
+    btn.style.color = 'white';
+  } else {
+    btn.textContent = 'Pin';
+    btn.style.background = 'white';
+    btn.style.color = '#DC2626';
+  }
+}
+
 window.announceOpenDetail = function(id){
   const a = announcements.find(a=>a.id===id);
   if(!a) return;
@@ -8875,6 +8896,8 @@ window.announceOpenDetail = function(id){
   }
 
   document.getElementById('announceDetailMeta').textContent = `Posted by ${a.by} · ${a.time}`;
+  announceDetailCurrentId = a.id;
+  announceUpdatePinBtn(a);
   document.getElementById('announceDetailModal').style.display = 'flex';
   document.body.style.overflow = 'hidden';
   announceModalOpen = true;
@@ -8910,6 +8933,7 @@ window.announceTogglePin = async function(id){
   if(!a) return;
   a.pinned = !a.pinned;
   announceRender();
+  announceUpdatePinBtn(a);
   if(a.dbId){
     const { error } = await sb.from('announcements').update({ pinned: a.pinned }).eq('id', a.dbId);
     if(error) console.warn('Supabase pin update failed', error);
@@ -11066,6 +11090,13 @@ document.addEventListener('DOMContentLoaded', initCardColours);
       <div id="announceDetailText" style="font-size:14.5px;line-height:1.7;color:#0F1E2E;white-space:pre-wrap;font-weight:700"></div>
       <a id="announceDetailLink" href="#" target="_blank" style="display:none;margin-top:14px;font-size:13px;font-weight:700;color:#0D9488;text-decoration:underline">Open link →</a>
       <div id="announceDetailMeta" style="margin-top:18px;padding-top:14px;border-top:1px solid #F1F5F9;font-size:12px;color:#94A3B8"></div>
+      <div id="announceDetailPinRow" style="margin-top:14px;display:flex;align-items:center;justify-content:space-between;background:#F8FAFC;border-radius:10px;padding:10px 14px">
+        <div style="display:flex;align-items:center;gap:8px">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#64748B" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 17v5"/><path d="M9 10.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V7a1 1 0 0 1 1-1 2 2 0 0 0 0-4H8a2 2 0 0 0 0 4 1 1 0 0 1 1 1z"/></svg>
+          <span style="font-size:12.5px;color:#64748B;font-weight:600">Pin this post to the top for everyone</span>
+        </div>
+        <button id="announceDetailPinBtn" onclick="announceTogglePin(announceDetailCurrentId)" style="padding:6px 14px;border-radius:20px;border:1.5px solid #DC2626;background:white;color:#DC2626;font-family:'Inter',sans-serif;font-size:12px;font-weight:700;cursor:pointer">Pin</button>
+      </div>
     </div>
   </div>
 </div>

@@ -8443,6 +8443,10 @@ async function announceLoadFromSupabase(){
           dbId: row.id
         });
       });
+      announcements.sort((a,b) => {
+        if(a.pinned !== b.pinned) return a.pinned ? -1 : 1; // pinned always first
+        return b.ts - a.ts; // then newest first
+      });
     }
   } catch(e){
     console.warn('Supabase load failed, using demo data', e);
@@ -8799,7 +8803,8 @@ window.announceSubmit = async function(){
     toast('Updated ✓');
   } else {
     const newPost = {id:announceNextId++, text, tag:announceSelectedTag, link, photo:announcePhotoData, ...s, by:'John', time, ts:Date.now()};
-    announcements.unshift(newPost);
+    const insertAt = announcements.findIndex(a => !a.pinned);
+    announcements.splice(insertAt === -1 ? announcements.length : insertAt, 0, newPost);
     const { data, error } = await sb.from('announcements').insert({ text, tag: announceSelectedTag, by_name: 'John', photo: announcePhotoData || null, link: link || null }).select().single();
     if(error) console.warn('Supabase insert failed', error);
     else { newPost.dbId = data.id; newPost.id = data.id; }

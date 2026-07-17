@@ -1621,6 +1621,7 @@ img.emoji-tw{width:1.15em;height:1.15em;vertical-align:-0.2em;margin:0 1px}
 .announce-fade-top{position:absolute;top:0;left:0;right:0;height:32px;background:linear-gradient(to bottom, rgba(255,255,255,0.95), rgba(255,255,255,0));pointer-events:none;z-index:2}
 
 /* ── ANNOUNCE STRIP (Team Noticeboard, side-scrolling like Highlights) ── */
+.announce-pinned-col{display:flex;flex-direction:column;gap:14px;flex-shrink:0}
 .announce-strip-outer{position:relative;overflow-x:auto;overflow-y:hidden;-webkit-overflow-scrolling:touch;scrollbar-width:thin;scrollbar-color:#94A3B8 #E2E8F0;padding:6px 0 8px;cursor:grab}
 .announce-strip-outer:active{cursor:grabbing}
 .announce-strip-outer::-webkit-scrollbar{height:7px}
@@ -2461,12 +2462,13 @@ img.emoji-tw{width:1.15em;height:1.15em;vertical-align:-0.2em;margin:0 1px}
           </div>
           <button class="announce-add-btn" onclick="announceAdd()">+ Post</button>
         </div>
-        <div style="padding:0 20px 4px;position:relative">
-          <div class="announce-strip-outer" id="announce-outer">
+        <div style="padding:0 20px 4px;position:relative;display:flex;gap:14px">
+          <div class="announce-pinned-col" id="announce-pinned-col"></div>
+          <div class="announce-strip-outer" id="announce-outer" style="flex:1;position:relative">
             <div class="announce-strip" id="announce-strip"></div>
+            <div class="announce-fade-left"></div>
+            <div class="announce-fade-right"></div>
           </div>
-          <div class="announce-fade-left"></div>
-          <div class="announce-fade-right"></div>
         </div>
       </div>
 
@@ -8482,7 +8484,7 @@ function announceRender(){
     const styledText = announceStyleEmojis(a.text);
     const imgHtml = a.photo ? `<img class="announce-card-img" src="${a.photo}" alt="" onclick="event.stopPropagation();recipePhotoZoom('${a.photo.replace(/'/g,"\\'")}')" title="Tap to view">` : '';
     const cardBg = isUrgent ? 'background:#FDECEC' : '';
-    return `
+    return {pinned: a.pinned, html: `
       <div class="announce-card" onclick="announceOpenDetail(${a.id})" style="${isUrgent ? 'border:1.5px solid #F87171;' : ''}${cardBg}">
         ${pinIcon}
         ${newBadge}
@@ -8493,14 +8495,21 @@ function announceRender(){
           <div class="announce-card-meta">${a.by} · ${a.time}</div>
         </div>
         ${actions}
-      </div>`;
-  }).join('');
+      </div>`};
+  });
+
+  const pinnedCol = document.getElementById('announce-pinned-col');
+  if(pinnedCol){
+    const pinnedHtml = realHtml.filter(x=>x.pinned).map(x=>x.html).join('');
+    pinnedCol.innerHTML = pinnedHtml;
+    pinnedCol.style.display = pinnedHtml ? 'flex' : 'none';
+  }
 
   const missing = announcements.length === 0 ? 3 : 0;
   let placeholderHtml = '';
   for(let i=0; i<missing; i++) placeholderHtml += announcePlaceholderHtml(i);
 
-  strip.innerHTML = realHtml + placeholderHtml;
+  strip.innerHTML = realHtml.filter(x=>!x.pinned).map(x=>x.html).join('') + placeholderHtml;
   announceAutoScrollSetup = false;
   announceInitScroll();
 }

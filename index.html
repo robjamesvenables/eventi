@@ -9010,17 +9010,55 @@ window.announceTogglePin = async function(id){
 // ── ANNOUNCEMENT REPLIES ──
 const announceRepliesCache = {}; // keyed by announcement.id, holds array of {by, text, ts}
 
+const announceReplyReactions = {}; // keyed by reply id, holds {emojiId: [names]}
+
+function announceReplyReactionBarHtml(replyId){
+  if(!announceReplyReactions[replyId]) announceReplyReactions[replyId] = {};
+  const me = announceCurrentUser;
+  return `<div style="display:flex;gap:4px;flex-wrap:wrap;margin-top:6px" onclick="event.stopPropagation()">
+    ${REACTION_EMOJIS.map(r=>{
+      const list = announceReplyReactions[replyId][r.id] || [];
+      const mine = list.includes(me);
+      const count = list.length;
+      return `<button onclick="announceToggleReplyReaction(${replyId},'${r.id}')" title="${r.char}" style="display:flex;align-items:center;gap:3px;padding:2px 6px;border-radius:14px;border:1px solid ${mine?'#0D9488':'#E2E8F0'};background:${mine?'rgba(13,148,136,0.1)':'white'};cursor:pointer;font-size:11px;line-height:1;font-family:'Inter',sans-serif">
+        <span>${momentsTwemojiParse(r.char)}</span>${count>0?`<span style="font-size:9.5px;font-weight:700;color:${mine?'#0D9488':'#64748B'}">${count}</span>`:''}
+      </button>`;
+    }).join('')}
+  </div>`;
+}
+
+window.announceToggleReplyReaction = function(replyId, emojiId){
+  if(!announceReplyReactions[replyId]) announceReplyReactions[replyId] = {};
+  if(!announceReplyReactions[replyId][emojiId]) announceReplyReactions[replyId][emojiId] = [];
+  const me = announceCurrentUser;
+  const list = announceReplyReactions[replyId][emojiId];
+  const at = list.indexOf(me);
+  if(at > -1) list.splice(at, 1);
+  else list.push(me);
+  announceRender();
+};
+
 function announceInlineRepliesHtml(a){
   const list = announceRepliesCache[a.id];
   const listHtml = (!list) ? `<div style="font-size:12.5px;color:#94A3B8">Loading replies...</div>`
     : list.length === 0 ? `<div style="font-size:12.5px;color:#94A3B8;font-style:italic">No replies yet — be the first to reply.</div>`
     : list.map(r => {
         const initial = r.by ? r.by.charAt(0).toUpperCase() : '?';
-        return `<div style="display:flex;gap:10px;margin-bottom:10px">
-          <div style="width:28px;height:28px;border-radius:50%;background:${announceAvatarColor(r.by)};display:flex;align-items:center;justify-content:center;color:white;font-weight:800;font-size:11px;flex-shrink:0">${initial}</div>
-          <div style="background:#F1F5F9;border-radius:12px;padding:8px 12px;flex:1">
-            <div style="font-size:12px;font-weight:700;color:var(--navy)">${r.by}</div>
-            <div style="font-size:12.5px;color:var(--navy);line-height:1.4;white-space:pre-wrap">${r.text}</div>
+        const isReplyOwner = r.by === announceCurrentUser;
+        const replyActions = isReplyOwner ? `
+          <span onclick="announceEditReply(${a.id},${r.id})" title="Edit" style="opacity:0.5;cursor:pointer"><svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="2.2"/><circle cx="12" cy="12" r="2.2"/><circle cx="12" cy="19" r="2.2"/></svg></span>
+          <span onclick="announceDeleteReply(${a.id},${r.id})" title="Delete" style="opacity:0.5;cursor:pointer;font-size:14px;line-height:1">×</span>` : '';
+        return `<div style="margin-bottom:14px">
+          <div style="display:flex;gap:10px">
+            <div style="width:26px;height:26px;border-radius:50%;background:${announceAvatarColor(r.by)};display:flex;align-items:center;justify-content:center;color:white;font-weight:800;font-size:10.5px;flex-shrink:0">${initial}</div>
+            <div style="flex:1;min-width:0">
+              <div style="display:flex;align-items:center;gap:8px">
+                <span style="font-size:12.5px;font-weight:700;color:var(--navy)">${r.by}</span>
+                ${replyActions}
+              </div>
+              <div id="announceReplyText_${r.id}" style="font-size:12.5px;color:var(--navy);line-height:1.4;white-space:pre-wrap;margin-top:2px">${r.text}</div>
+              ${announceReplyReactionBarHtml(r.id)}
+            </div>
           </div>
         </div>`;
       }).join('');
@@ -9048,7 +9086,7 @@ window.announceToggleReplies = async function(id){
       try{
         const { data, error } = await sb.from('announcement_replies').select('*').eq('announcement_id', a.dbId).order('created_at', { ascending: true });
         if(error) throw error;
-        announceRepliesCache[a.id] = (data||[]).map(r => ({ by: r.by_name, text: r.text, ts: new Date(r.created_at).getTime() }));
+        announceRepliesCache[a.id] = (data||[]).map(r => ({ id: r.id, by: r.by_name, text: r.text, ts: new Date(r.created_at).getTime() }));
       } catch(e){
         console.warn('Supabase reply load failed', e);
         announceRepliesCache[a.id] = [];
@@ -9069,13 +9107,47 @@ window.announceSubmitInlineReply = async function(id){
   if(!a) return;
   const by = announceCurrentUser;
   if(!announceRepliesCache[a.id]) announceRepliesCache[a.id] = [];
-  announceRepliesCache[a.id].push({ by, text, ts: Date.now() });
+  const tempId = 'temp_' + Date.now();
+  announceRepliesCache[a.id].push({ id: tempId, by, text, ts: Date.now() });
   a.replyCount = (a.replyCount || 0) + 1;
   announceRender();
   if(a.dbId){
-    const { error } = await sb.from('announcement_replies').insert({ announcement_id: a.dbId, by_name: by, text });
-    if(error) console.warn('Supabase reply insert failed', error);
+    const { data, error } = await sb.from('announcement_replies').insert({ announcement_id: a.dbId, by_name: by, text }).select().single();
+    if(error){ console.warn('Supabase reply insert failed', error); return; }
+    const saved = announceRepliesCache[a.id].find(r => r.id === tempId);
+    if(saved && data) saved.id = data.id;
   }
+};
+
+window.announceEditReply = function(announcementId, replyId){
+  const list = announceRepliesCache[announcementId];
+  const r = list && list.find(r => r.id === replyId);
+  if(!r) return;
+  const newText = prompt('Edit reply:', r.text);
+  if(newText === null || !newText.trim()) return;
+  r.text = newText.trim();
+  announceRender();
+  if(typeof replyId === 'number'){
+    sb.from('announcement_replies').update({ text: r.text }).eq('id', replyId).then(({error}) => {
+      if(error) console.warn('Supabase reply edit failed', error);
+    });
+  }
+};
+
+window.announceDeleteReply = function(announcementId, replyId){
+  appConfirmShow({title:'Delete Reply', msg:'Are you sure you want to delete this reply?', onOk: async ()=>{
+    const list = announceRepliesCache[announcementId];
+    if(!list) return;
+    const i = list.findIndex(r => r.id === replyId);
+    if(i>-1) list.splice(i,1);
+    const a = announcements.find(a=>a.id===announcementId);
+    if(a) a.replyCount = Math.max(0, (a.replyCount||1) - 1);
+    announceRender();
+    if(typeof replyId === 'number'){
+      const { error } = await sb.from('announcement_replies').delete().eq('id', replyId);
+      if(error) console.warn('Supabase reply delete failed', error);
+    }
+  }});
 };
 
 function announceRenderReplies(a){

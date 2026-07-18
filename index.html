@@ -4541,6 +4541,7 @@ function doLogin(){
   if(!e||!p)return;
   if(e.value.trim()&&p.value.trim()){
     setCurrentUserFromEmail(e.value.trim());
+    try{ localStorage.setItem('mavis_logged_in_email', e.value.trim()); }catch(err){}
     document.getElementById('login').style.display='none';
     document.getElementById('app').style.display='flex';
     quickLinksRender();
@@ -4565,9 +4566,25 @@ function setCurrentUserFromEmail(email){
   if(sbAvatar) sbAvatar.textContent = firstName.charAt(0).toUpperCase();
 }
 function doLogout(){
+  try{ localStorage.removeItem('mavis_logged_in_email'); }catch(err){}
   document.getElementById('login').style.display='flex';
   document.getElementById('app').style.display='none';
 }
+
+// Auto-restore a previous session on page load, so a hard refresh doesn't ask to log in again.
+window.addEventListener('load', () => {
+  try{
+    const savedEmail = localStorage.getItem('mavis_logged_in_email');
+    if(savedEmail){
+      setCurrentUserFromEmail(savedEmail);
+      document.getElementById('login').style.display='none';
+      document.getElementById('app').style.display='flex';
+      quickLinksRender();
+      chatUpdateBadges();
+      nav('home');
+    }
+  }catch(err){}
+});
 
 function toggleProfileMenu(e){
   e.stopPropagation();

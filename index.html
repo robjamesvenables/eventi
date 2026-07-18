@@ -8593,6 +8593,7 @@ window.announceToggleReaction = function(id, emojiId){
 };
 
 let announceVisibleCount = 8;
+const announceExpandedReplies = new Set();
 function announceRender(){
   const strip = document.getElementById('announce-strip');
   const badge = document.getElementById('announce-badge');
@@ -8615,8 +8616,8 @@ function announceRender(){
     const isOwner = a.by === announceCurrentUser;
     const isUrgent = a.tag === 'Urgent';
     const newBadge = isToday(a.ts) ? `<span style="display:inline-block;background:${isUrgent?'#7F1D1D':'#0D9488'};color:white;font-size:8.5px;font-weight:800;letter-spacing:0.5px;padding:2px 7px;border-radius:8px;margin-left:6px;vertical-align:middle">NEW</span>` : '';
-    const pinBadge = a.pinned ? `<span title="Pinned" style="position:absolute;top:12px;right:12px;z-index:2;background:#DC2626;border-radius:50%;width:28px;height:28px;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 6px rgba(0,0,0,0.25)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 17v5"/><path d="M9 10.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V7a1 1 0 0 1 1-1 2 2 0 0 0 0-4H8a2 2 0 0 0 0 4 1 1 0 0 1 1 1z"/></svg></span>` : '';
-    const actions = (isOwner && !a.pinned) ? `
+    const pinIcon = `<span onclick="event.stopPropagation();announceTogglePin(${a.id})" title="${a.pinned?'Unpin':'Pin to top'}" style="position:absolute;top:12px;right:${isOwner?'48px':'12px'};z-index:2;width:28px;height:28px;border-radius:50%;background:${a.pinned?'#DC2626':'rgba(255,255,255,0.85)'};display:flex;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 2px 6px rgba(0,0,0,0.15)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="${a.pinned?'white':'#94A3B8'}" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 17v5"/><path d="M9 10.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V7a1 1 0 0 1 1-1 2 2 0 0 0 0-4H8a2 2 0 0 0 0 4 1 1 0 0 1 1 1z"/></svg></span>`;
+    const actions = isOwner ? `
       <div style="position:absolute;top:12px;right:12px;display:flex;align-items:center;gap:6px;z-index:2;background:rgba(255,255,255,0.85);border-radius:8px;padding:3px 5px">
         <span onclick="event.stopPropagation();announceEdit(${a.id})" title="Edit" style="opacity:0.6;cursor:pointer"><svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="2.2"/><circle cx="12" cy="12" r="2.2"/><circle cx="12" cy="19" r="2.2"/></svg></span>
         <button class="announce-del" onclick="event.stopPropagation();announceDel(${a.id})" title="Delete" style="font-size:16px;line-height:1">×</button>
@@ -8625,10 +8626,12 @@ function announceRender(){
     const imgHtml = a.photo ? `<img class="announce-card-img" src="${a.photo}" alt="" onclick="event.stopPropagation();recipePhotoZoom('${a.photo.replace(/'/g,"\\'")}')" title="Tap to view">` : '';
     const cardBg = isUrgent ? 'background:#FDECEC' : '';
     const initial = a.by ? a.by.charAt(0).toUpperCase() : '?';
+    const isExpanded = announceExpandedReplies.has(a.id);
+    const repliesHtml = isExpanded ? announceInlineRepliesHtml(a) : '';
     return `
-      <div class="announce-card" onclick="announceOpenDetail(${a.id})" style="${isUrgent ? 'border:1.5px solid #F87171;' : ''}">
+      <div class="announce-card" style="${isUrgent ? 'border:1.5px solid #F87171;' : ''}">
         <div class="announce-card-body" style="${cardBg}">
-          ${pinBadge}
+          ${pinIcon}
           <div class="announce-post-hd">
             <div class="announce-post-avatar" style="background:${avatarColor(a.by)}">${initial}</div>
             <div class="announce-post-who">
@@ -8639,7 +8642,10 @@ function announceRender(){
           <div class="announce-card-text" style="${isUrgent?'color:#7F1D1D':''}">${styledText}</div>
           ${imgHtml ? `<div style="margin:12px -16px 0">${imgHtml}</div>` : ''}
           <div style="margin-top:12px">${announceReactionBarHtml(a.id)}</div>
-          ${a.replyCount > 0 ? `<div style="margin-top:8px;font-size:12.5px;color:#64748B;font-weight:600;cursor:pointer" onclick="event.stopPropagation();announceOpenDetail(${a.id})">💬 ${a.replyCount} repl${a.replyCount===1?'y':'ies'}</div>` : ''}
+          <div style="margin-top:8px;font-size:12.5px;color:#64748B;font-weight:600;cursor:pointer" onclick="announceToggleReplies(${a.id})">
+            ${a.replyCount > 0 ? `💬 ${a.replyCount} repl${a.replyCount===1?'y':'ies'}` : 'Reply'}${isExpanded ? ' ▲' : ' ▼'}
+          </div>
+          ${repliesHtml}
         </div>
         ${actions}
       </div>`;
@@ -9003,6 +9009,74 @@ window.announceTogglePin = async function(id){
 
 // ── ANNOUNCEMENT REPLIES ──
 const announceRepliesCache = {}; // keyed by announcement.id, holds array of {by, text, ts}
+
+function announceInlineRepliesHtml(a){
+  const list = announceRepliesCache[a.id];
+  const listHtml = (!list) ? `<div style="font-size:12.5px;color:#94A3B8">Loading replies...</div>`
+    : list.length === 0 ? `<div style="font-size:12.5px;color:#94A3B8;font-style:italic">No replies yet — be the first to reply.</div>`
+    : list.map(r => {
+        const initial = r.by ? r.by.charAt(0).toUpperCase() : '?';
+        return `<div style="display:flex;gap:10px;margin-bottom:10px">
+          <div style="width:28px;height:28px;border-radius:50%;background:${announceAvatarColor(r.by)};display:flex;align-items:center;justify-content:center;color:white;font-weight:800;font-size:11px;flex-shrink:0">${initial}</div>
+          <div style="background:#F1F5F9;border-radius:12px;padding:8px 12px;flex:1">
+            <div style="font-size:12px;font-weight:700;color:var(--navy)">${r.by}</div>
+            <div style="font-size:12.5px;color:var(--navy);line-height:1.4;white-space:pre-wrap">${r.text}</div>
+          </div>
+        </div>`;
+      }).join('');
+  return `<div style="margin-top:12px;padding-top:12px;border-top:1px solid #F1F5F9" onclick="event.stopPropagation()">
+    ${listHtml}
+    <div style="display:flex;gap:8px;margin-top:4px">
+      <input id="announceReplyInput_${a.id}" type="text" placeholder="Write a reply..." onkeydown="if(event.key==='Enter')announceSubmitInlineReply(${a.id})" style="flex:1;min-width:0;padding:8px 12px;border:1.5px solid #E2E8F0;border-radius:20px;font-family:'Inter',sans-serif;font-size:12.5px;outline:none">
+      <button onclick="announceSubmitInlineReply(${a.id})" style="flex-shrink:0;padding:8px 16px;background:#0D9488;color:white;border:none;border-radius:20px;font-family:'Inter',sans-serif;font-size:12.5px;font-weight:700;cursor:pointer">Reply</button>
+    </div>
+  </div>`;
+}
+
+window.announceToggleReplies = async function(id){
+  const a = announcements.find(a=>a.id===id);
+  if(!a) return;
+  if(announceExpandedReplies.has(id)){
+    announceExpandedReplies.delete(id);
+    announceRender();
+    return;
+  }
+  announceExpandedReplies.add(id);
+  announceRender(); // shows "Loading replies..." immediately
+  if(!announceRepliesCache[a.id]){
+    if(a.dbId){
+      try{
+        const { data, error } = await sb.from('announcement_replies').select('*').eq('announcement_id', a.dbId).order('created_at', { ascending: true });
+        if(error) throw error;
+        announceRepliesCache[a.id] = (data||[]).map(r => ({ by: r.by_name, text: r.text, ts: new Date(r.created_at).getTime() }));
+      } catch(e){
+        console.warn('Supabase reply load failed', e);
+        announceRepliesCache[a.id] = [];
+      }
+    } else {
+      announceRepliesCache[a.id] = [];
+    }
+    announceRender();
+  }
+};
+
+window.announceSubmitInlineReply = async function(id){
+  const input = document.getElementById(`announceReplyInput_${id}`);
+  if(!input) return;
+  const text = input.value.trim();
+  if(!text) return;
+  const a = announcements.find(a=>a.id===id);
+  if(!a) return;
+  const by = announceCurrentUser;
+  if(!announceRepliesCache[a.id]) announceRepliesCache[a.id] = [];
+  announceRepliesCache[a.id].push({ by, text, ts: Date.now() });
+  a.replyCount = (a.replyCount || 0) + 1;
+  announceRender();
+  if(a.dbId){
+    const { error } = await sb.from('announcement_replies').insert({ announcement_id: a.dbId, by_name: by, text });
+    if(error) console.warn('Supabase reply insert failed', error);
+  }
+};
 
 function announceRenderReplies(a){
   const box = document.getElementById('announceDetailReplies');

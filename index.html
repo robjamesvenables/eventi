@@ -8537,11 +8537,13 @@ async function announceLoadFromSupabase(){
           link: row.link || null,
           ts: new Date(row.created_at).getTime(),
           dbId: row.id,
-          replyCount: 0
+          replyCount: 0,
+          pinnedAt: row.pinned_at ? new Date(row.pinned_at).getTime() : null
         });
       });
       announcements.sort((a,b) => {
         if(a.pinned !== b.pinned) return a.pinned ? -1 : 1; // pinned always first
+        if(a.pinned && b.pinned) return (b.pinnedAt||0) - (a.pinnedAt||0); // most recently pinned first
         return b.ts - a.ts; // then newest first
       });
       // Bulk-fetch reply counts for every post in one query, rather than one query per card
@@ -8598,6 +8600,7 @@ function announceRender(){
   if(badge) badge.textContent = announcements.length;
   announcements.sort((a,b) => {
     if(!!a.pinned !== !!b.pinned) return a.pinned ? -1 : 1; // pinned always first
+    if(a.pinned && b.pinned) return (b.pinnedAt||0) - (a.pinnedAt||0); // most recently pinned first
     return (b.ts||0) - (a.ts||0); // then newest first
   });
   const now = new Date();
@@ -8983,10 +8986,11 @@ window.announceTogglePin = async function(id){
   const a = announcements.find(a=>a.id===id);
   if(!a) return;
   a.pinned = !a.pinned;
+  a.pinnedAt = a.pinned ? Date.now() : null;
   announceRender();
   announceUpdatePinBtn(a);
   if(a.dbId){
-    const { error } = await sb.from('announcements').update({ pinned: a.pinned }).eq('id', a.dbId);
+    const { error } = await sb.from('announcements').update({ pinned: a.pinned, pinned_at: a.pinned ? new Date(a.pinnedAt).toISOString() : null }).eq('id', a.dbId);
     if(error) console.warn('Supabase pin update failed', error);
   }
   toast(a.pinned ? 'Pinned ✓' : 'Unpinned ✓');

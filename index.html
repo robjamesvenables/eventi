@@ -8580,6 +8580,7 @@ window.announceToggleReaction = function(id, emojiId){
   announceRender();
 };
 
+let announceShowAll = false;
 function announceRender(){
   const strip = document.getElementById('announce-strip');
   const badge = document.getElementById('announce-badge');
@@ -8597,7 +8598,9 @@ function announceRender(){
   };
   const avatarColors = {'Sarah':'#0D9488','Wayan':'#475569','Made':'#A855F7','Ayu (GRO)':'#EF4444','James Smith':'#0F1E2E','Greta':'#0D9488','I Gede Bagus':'#475569','John':'#A855F7','Robbie':'#EF4444','HR':'#0F1E2E'};
   const avatarColor = (name) => avatarColors[name] || '#64748B';
-  const realHtml = announcements.map((a)=>{
+  const POSTS_PAGE_SIZE = 8;
+  const visibleAnnouncements = announceShowAll ? announcements : announcements.slice(0, POSTS_PAGE_SIZE);
+  const realHtml = visibleAnnouncements.map((a)=>{
     const isOwner = a.by === announceCurrentUser;
     const isUrgent = a.tag === 'Urgent';
     const newBadge = isToday(a.ts) ? `<span style="display:inline-block;background:${isUrgent?'#7F1D1D':'#0D9488'};color:white;font-size:8.5px;font-weight:800;letter-spacing:0.5px;padding:2px 7px;border-radius:8px;margin-left:6px;vertical-align:middle">NEW</span>` : '';
@@ -8634,7 +8637,12 @@ function announceRender(){
   let placeholderHtml = '';
   for(let i=0; i<missing; i++) placeholderHtml += announcePlaceholderHtml(i);
 
-  strip.innerHTML = realHtml + placeholderHtml;
+  const showMoreHtml = (!announceShowAll && announcements.length > POSTS_PAGE_SIZE) ? `
+    <button onclick="announceShowAll=true;announceRender()" style="width:100%;padding:12px;background:white;border:1.5px solid #E2E8F0;border-radius:12px;font-family:'Inter',sans-serif;font-size:13px;font-weight:700;color:#0D9488;cursor:pointer">
+      Show ${announcements.length - POSTS_PAGE_SIZE} more post${announcements.length - POSTS_PAGE_SIZE === 1 ? '' : 's'} ↓
+    </button>` : '';
+
+  strip.innerHTML = realHtml + placeholderHtml + showMoreHtml;
 }
 
 let announceModalOpen = false;

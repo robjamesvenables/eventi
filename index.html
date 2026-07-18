@@ -8536,13 +8536,23 @@ async function announceLoadFromSupabase(){
           photo: row.photo || null,
           link: row.link || null,
           ts: new Date(row.created_at).getTime(),
-          dbId: row.id
+          dbId: row.id,
+          replyCount: 0
         });
       });
       announcements.sort((a,b) => {
         if(a.pinned !== b.pinned) return a.pinned ? -1 : 1; // pinned always first
         return b.ts - a.ts; // then newest first
       });
+      // Bulk-fetch reply counts for every post in one query, rather than one query per card
+      try{
+        const { data: replyRows, error: replyErr } = await sb.from('announcement_replies').select('announcement_id');
+        if(!replyErr && replyRows){
+          const counts = {};
+          replyRows.forEach(r => { counts[r.announcement_id] = (counts[r.announcement_id]||0) + 1; });
+          announcements.forEach(a => { a.replyCount = counts[a.dbId] || 0; });
+        }
+      } catch(e){ console.warn('Reply count fetch failed', e); }
     }
   } catch(e){
     console.warn('Supabase load failed, using demo data', e);
@@ -8627,6 +8637,7 @@ function announceRender(){
           <div class="announce-card-text" style="${isUrgent?'color:#7F1D1D':''}">${styledText}</div>
           ${imgHtml ? `<div style="margin:12px -16px 0">${imgHtml}</div>` : ''}
           <div style="margin-top:12px">${announceReactionBarHtml(a.id)}</div>
+          ${a.replyCount > 0 ? `<div style="margin-top:8px;font-size:12.5px;color:#64748B;font-weight:600;cursor:pointer" onclick="event.stopPropagation();announceOpenDetail(${a.id})">💬 ${a.replyCount} repl${a.replyCount===1?'y':'ies'}</div>` : ''}
         </div>
         ${actions}
       </div>`;
@@ -9031,6 +9042,8 @@ window.announceSubmitReply = async function(){
   if(!announceRepliesCache[a.id]) announceRepliesCache[a.id] = [];
   announceRepliesCache[a.id].push({ by, text, ts: Date.now() });
   announceRenderReplies(a);
+  a.replyCount = (a.replyCount || 0) + 1;
+  announceRender();
   input.value = '';
   if(a.dbId){
     const { error } = await sb.from('announcement_replies').insert({ announcement_id: a.dbId, by_name: by, text });

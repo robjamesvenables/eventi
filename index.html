@@ -8720,11 +8720,7 @@ const ANNOUNCE_EMOJIS = HIGHLIGHT_TAGS;
 
 function announceStyleEmojis(text){
   if(!text) return text;
-  let out = text;
-  ANNOUNCE_EMOJIS.forEach(e=>{
-    const badge = `<span data-emoji="${e.id}" style="display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;border-radius:50%;background:${e.bg};vertical-align:-4px;margin:0 2px;user-select:none">${e.svg.replace(/width="\d+" height="\d+"/,'width="11" height="11"')}</span>`;
-    out = out.split(e.char).join(badge);
-  });
+  let out = momentsTwemojiParse(text);
   out = announceStyleMentions(out);
   return out;
 }
@@ -8823,7 +8819,7 @@ function announceRenderEmojis(){
   const c = document.getElementById('announce-emojis');
   if(!c) return;
   c.innerHTML = ANNOUNCE_EMOJIS.map(e=>
-    `<button onclick="announceInsertEmoji('${e.id}')" style="width:28px;height:28px;flex-shrink:0;padding:0;margin:0;border-radius:50%;border:none;background:${e.bg};cursor:pointer;display:flex;align-items:center;justify-content:center;transition:transform 0.1s;line-height:0" onmousedown="this.style.transform='scale(0.88)'" onmouseup="this.style.transform='scale(1)'">${e.svg}</button>`
+    `<button onclick="announceInsertEmoji('${e.id}')" title="${e.label}" style="display:flex;align-items:center;justify-content:center;width:34px;height:34px;flex-shrink:0;padding:0;margin:0;border-radius:50%;border:1.5px solid #E2E8F0;background:white;cursor:pointer;font-size:17px;line-height:1;transition:transform 0.1s,border-color 0.15s" onmousedown="this.style.transform='scale(0.88)'" onmouseup="this.style.transform='scale(1)'">${momentsTwemojiParse(e.char)}</button>`
   ).join('');
 }
 
@@ -8831,25 +8827,21 @@ window.announceInsertEmoji = function(id){
   const e = ANNOUNCE_EMOJIS.find(x=>x.id===id);
   if(!e) return;
   const input = document.getElementById('announce-input');
-  const badge = document.createElement('span');
-  badge.dataset.emoji = e.id;
-  badge.style.cssText = 'display:inline-block;width:18px;height:18px;border-radius:50%;background:'+e.bg+';vertical-align:0px;margin:0 2px;text-align:center;line-height:18px;user-select:none';
-  badge.innerHTML = e.svg.replace('width="14" height="14"','width="10" height="10"');
-  const spacer = document.createTextNode('\u200B');
   input.focus();
   const sel = window.getSelection();
   let range;
   if(sel.rangeCount > 0 && input.contains(sel.anchorNode)){
     range = sel.getRangeAt(0);
     range.deleteContents();
-    range.insertNode(spacer);
-    range.insertNode(badge);
+    const node = document.createTextNode(e.char);
+    range.insertNode(node);
+    range.setStartAfter(node);
   } else {
-    input.appendChild(badge);
-    input.appendChild(spacer);
+    const node = document.createTextNode(e.char);
+    input.appendChild(node);
     range = document.createRange();
+    range.setStartAfter(node);
   }
-  range.setStart(spacer, 1);
   range.collapse(true);
   sel.removeAllRanges();
   sel.addRange(range);
@@ -11683,7 +11675,7 @@ function appModalShow({title, sub='', fields, onOk}){
         style="width:100%;padding:11px 14px;border:1.5px solid #E2E8F0;border-radius:9px;font-family:'Inter',sans-serif;font-size:14px;color:#0F1E2E;outline:none;box-sizing:border-box;margin-bottom:8px;resize:vertical;line-height:1.5"
         onfocus="this.style.borderColor='#0D9488'" onblur="this.style.borderColor='#E2E8F0'">${f.value||''}</textarea>
       <div style="display:flex;flex-wrap:wrap;gap:6px">
-        ${(f.options||[]).map(o=>`<span onclick="appModalInsertEmoji(${i},'${o.char}')" title="${o.label}" style="display:inline-flex;align-items:center;justify-content:center;width:30px;height:30px;border-radius:50%;background:#F1F5F9;cursor:pointer;font-size:18px;transition:background 0.15s" onmouseover="this.style.background='#E2E8F0'" onmouseout="this.style.background='#F1F5F9'">${momentsTwemojiParse(o.char)}</span>`).join('')}
+        ${(f.options||[]).map(o=>`<span onclick="appModalInsertEmoji(${i},'${o.char}')" title="${o.label}" style="display:inline-flex;align-items:center;justify-content:center;width:34px;height:34px;border-radius:50%;background:white;border:1.5px solid #E2E8F0;cursor:pointer;font-size:17px;transition:transform 0.1s,border-color 0.15s" onmousedown="this.style.transform='scale(0.88)'" onmouseup="this.style.transform='scale(1)'">${momentsTwemojiParse(o.char)}</span>`).join('')}
       </div>
     </div>`;
     }

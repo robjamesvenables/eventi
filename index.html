@@ -6207,41 +6207,61 @@ function djSchedBuildExportHtml(weeks, title){
 // real, currently-visible page element, not a detached off-screen clone (which html2canvas
 // rendered blank both times that was tried).
 function djSchedCapturePdf(htmlContent, filenamePart, orientation){
-  // Use the browser's native print engine for this schedule. html2canvas/html2pdf was
-  // producing blank pages in some browsers, while native print reliably preserves the grid.
+  // Print from a temporary same-page iframe. This avoids pop-up blockers and avoids
+  // the blank html2canvas/html2pdf captures seen in some browsers.
   const filename = ('entertainment-schedule-' + filenamePart)
     .replace(/[^a-z0-9]+/gi,'-')
     .replace(/^-+|-+$/g,'')
     .toLowerCase() + '.pdf';
-
-  const printWindow = window.open('', '_blank');
-  if(!printWindow){
-    toast('Please allow pop-ups for Mavis, then try Save as PDF again');
-    return;
-  }
-
   const landscape = (orientation || 'landscape') === 'landscape';
-  const doc = printWindow.document;
+
+  const oldFrame = document.getElementById('dj-schedule-print-frame');
+  if(oldFrame) oldFrame.remove();
+
+  const frame = document.createElement('iframe');
+  frame.id = 'dj-schedule-print-frame';
+  frame.setAttribute('title','Entertainment Schedule PDF');
+  frame.style.position = 'fixed';
+  frame.style.left = '0';
+  frame.style.top = '0';
+  frame.style.width = '1px';
+  frame.style.height = '1px';
+  frame.style.opacity = '0';
+  frame.style.pointerEvents = 'none';
+  frame.style.border = '0';
+  document.body.appendChild(frame);
+
+  const doc = frame.contentDocument || frame.contentWindow.document;
   doc.open();
   doc.write('<!DOCTYPE html><html><head><meta charset="UTF-8">');
   doc.write('<meta name="viewport" content="width=device-width,initial-scale=1">');
   doc.write('<title>'+filename.replace(/</g,'&lt;')+'</title>');
-  doc.write('<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">');
   doc.write('<style>');
   doc.write('@page{size:A4 '+(landscape?'landscape':'portrait')+';margin:6mm;}');
   doc.write('html,body{margin:0;padding:0;background:#fff;color:#0F1E2E;-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important;}');
-  doc.write('body{font-family:Inter,Arial,sans-serif;}');
+  doc.write('body{font-family:Arial,sans-serif;}');
   doc.write('*{box-sizing:border-box;}');
   doc.write('section{width:100%!important;max-width:none!important;break-inside:avoid;page-break-inside:avoid;}');
   doc.write('[style*="page-break-after:always"]{break-after:page;page-break-after:always;}');
-  doc.write('@media print{html,body{width:100%;} body{overflow:visible!important;}}');
   doc.write('</style></head><body>');
   doc.write(htmlContent);
-  doc.write('<script>window.addEventListener("load",function(){setTimeout(function(){window.focus();window.print();},400);});<\\/script>');
   doc.write('</body></html>');
   doc.close();
 
-  toast('Print window opened — choose “Save as PDF”');
+  const doPrint = function(){
+    try{
+      frame.contentWindow.focus();
+      frame.contentWindow.print();
+      toast('Print window opened — choose “Save as PDF”');
+    }catch(err){
+      console.error('Schedule print failed', err);
+      toast('Could not open the PDF print window');
+    }
+    setTimeout(function(){ if(frame && frame.parentNode) frame.remove(); }, 3000);
+  };
+
+  if(doc.readyState === 'complete') setTimeout(doPrint, 250);
+  else frame.onload = function(){ setTimeout(doPrint, 250); };
 }
 function djSchedExportPdf(weeks, title, filenamePart){
   if(!weeks.length){ toast('No dates in that range'); return; }

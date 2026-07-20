@@ -6153,17 +6153,18 @@ function djSchedBuildExportHtml(weeks, title){
   weeks.forEach(function(week){
     const weekLabel = week.days[0].toLocaleDateString('en-GB',{day:'numeric',month:'short'})+' – '+week.days[6].toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'});
 
-    djStages.forEach(function(stage){
-      const stageColor = stage.color || '#0F1E2E';
-      let page = '<section style="font-family:Inter,sans-serif;background:white;width:100%;box-sizing:border-box;padding:4px;page-break-inside:avoid">';
-      page += '<div style="display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:12px;padding-bottom:10px;border-bottom:2px solid #E2E8F0">';
-      page += '<div><div style="font-size:10px;font-weight:800;letter-spacing:1.4px;text-transform:uppercase;color:#0D9488;margin-bottom:4px">Entertainment Schedule</div>';
-      page += '<div style="font-size:20px;font-weight:800;color:#0F1E2E">'+title+'</div></div>';
-      page += '<div style="font-size:11px;font-weight:700;color:#64748B;text-align:right">Week of<br><span style="font-size:13px;color:#0F1E2E">'+weekLabel+'</span></div></div>';
+    let page = '<section style="font-family:Inter,Arial,sans-serif;background:white;width:100%;box-sizing:border-box;padding:0;page-break-inside:avoid">';
+    page += '<div style="display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:7px;padding-bottom:6px;border-bottom:2px solid #E2E8F0">';
+    page += '<div><div style="font-size:8px;font-weight:800;letter-spacing:1.2px;text-transform:uppercase;color:#0D9488;margin-bottom:2px">Entertainment Schedule</div>';
+    page += '<div style="font-size:16px;font-weight:800;color:#0F1E2E">'+title+'</div></div>';
+    page += '<div style="font-size:8px;font-weight:700;color:#64748B;text-align:right">Week of<br><span style="font-size:10px;color:#0F1E2E">'+weekLabel+'</span></div></div>';
 
-      page += '<div style="background:'+stageColor+';padding:11px 16px;border-radius:10px 10px 0 0;text-align:center">';
-      page += '<span style="color:white;font-weight:800;font-size:16px;text-transform:uppercase;letter-spacing:0.7px">'+stage.name+'</span></div>';
-      page += '<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:7px;border:1.5px solid #E2E8F0;border-top:0;border-radius:0 0 10px 10px;padding:10px">';
+    djStages.forEach(function(stage,stageIndex){
+      const stageColor = stage.color || '#0F1E2E';
+      page += '<div style="'+(stageIndex ? 'margin-top:7px;' : '')+'page-break-inside:avoid">';
+      page += '<div style="background:'+stageColor+';padding:6px 12px;border-radius:7px 7px 0 0;text-align:center">';
+      page += '<span style="color:white;font-weight:800;font-size:11px;text-transform:uppercase;letter-spacing:0.6px">'+stage.name+'</span></div>';
+      page += '<div style="display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px;border:1px solid #E2E8F0;border-top:0;border-radius:0 0 7px 7px;padding:5px">';
 
       week.days.forEach(function(d,i){
         const key = djSchedDateKey(d);
@@ -6171,17 +6172,17 @@ function djSchedBuildExportHtml(weeks, title){
           const so = (a.sortOrder||0) - (b2.sortOrder||0);
           return so !== 0 ? so : a.start.localeCompare(b2.start);
         });
-        page += '<div style="background:#F8FAFC;border:1px solid #E2E8F0;border-radius:8px;padding:8px;min-height:132px;box-sizing:border-box">';
-        page += '<div style="font-size:10px;font-weight:800;color:#0D9488;text-transform:uppercase;letter-spacing:0.5px">'+dayNames[i]+'</div>';
-        page += '<div style="font-size:11px;font-weight:700;color:#64748B;margin:2px 0 8px">'+d.getDate()+' '+d.toLocaleDateString('en-GB',{month:'short'})+'</div>';
+        page += '<div style="background:#F8FAFC;border:1px solid #E2E8F0;border-radius:5px;padding:5px;min-height:82px;box-sizing:border-box;overflow:hidden">';
+        page += '<div style="font-size:7px;font-weight:800;color:#0D9488;text-transform:uppercase;letter-spacing:0.4px">'+dayNames[i]+'</div>';
+        page += '<div style="font-size:8px;font-weight:700;color:#64748B;margin:1px 0 4px">'+d.getDate()+' '+d.toLocaleDateString('en-GB',{month:'short'})+'</div>';
         if(dayBookings.length === 0){
-          page += '<div style="font-size:10px;color:#CBD5E1;text-align:center;padding-top:28px">No bookings</div>';
+          page += '<div style="font-size:7px;color:#CBD5E1;text-align:center;padding-top:17px">No bookings</div>';
         } else {
           dayBookings.forEach(function(b){
             const bg = b.type==='takeover' ? djBookingColors.takeover : djBookingColors.resident;
-            page += '<div style="background:'+bg+';border-radius:6px;padding:7px 6px;margin-bottom:6px;text-align:center;page-break-inside:avoid">';
-            page += '<div style="font-size:9px;font-weight:700;color:#0F1E2E">'+b.start+' - '+b.end+'</div>';
-            page += '<div style="font-size:11px;font-weight:800;color:#0F1E2E;margin-top:4px;line-height:1.25">'+b.dj+'</div>';
+            page += '<div style="background:'+bg+';border-radius:4px;padding:4px 3px;margin-bottom:3px;text-align:center;page-break-inside:avoid">';
+            page += '<div style="font-size:6.5px;font-weight:700;color:#0F1E2E;white-space:nowrap">'+b.start+' - '+b.end+'</div>';
+            page += '<div style="font-size:8px;font-weight:800;color:#0F1E2E;margin-top:2px;line-height:1.15;overflow-wrap:anywhere">'+b.dj+'</div>';
             page += djSchedCompBadge(b.drinks, b.food);
             page += '</div>';
           });
@@ -6189,11 +6190,12 @@ function djSchedBuildExportHtml(weeks, title){
         page += '</div>';
       });
 
-      page += '</div>';
-      page += '<div style="margin-top:9px;text-align:right;font-size:9px;color:#94A3B8">Generated from Mavis</div>';
-      page += '</section>';
-      pages.push(page);
+      page += '</div></div>';
     });
+
+    page += '<div style="margin-top:5px;text-align:right;font-size:7px;color:#94A3B8">Generated from Mavis</div>';
+    page += '</section>';
+    pages.push(page);
   });
 
   return '<div style="background:white">'+pages.map(function(page,i){

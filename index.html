@@ -3591,6 +3591,7 @@ img.emoji-tw{width:1.15em;height:1.15em;vertical-align:-0.2em;margin:0 1px}
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#0F1E2E" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
         </button>
       </div>
+      <div id="djsched-legend" style="display:flex;align-items:center;justify-content:center;gap:24px;margin-bottom:20px"></div>
       <div id="djsched-body"></div>
       <div style="background:white;border:1.5px solid #E2E8F0;border-radius:14px;overflow:hidden;margin-top:8px;margin-bottom:24px">
         <div style="background:#0F1E2E;padding:12px 18px;display:flex;align-items:center;justify-content:space-between">
@@ -5569,6 +5570,7 @@ let djSchedYear, djSchedMonth;
   djSchedMonth = t.getMonth();
 })();
 let djSchedEditingKey = null; // null, a booking id, or "new:<stageId>:<dateKey>"
+let djBookingColors = {resident:'#16A34A', takeover:'#2563EB'};
 
 function djSchedShiftMonth(dir){
   djSchedMonth += dir;
@@ -5619,7 +5621,7 @@ function djSchedBookingHtml(b){
   if(djSchedEditingKey === editKey){
     return djSchedInlineFormHtml(b);
   }
-  const bg = b.type==='takeover' ? '#22D3EE' : '#22C55E';
+  const bg = b.type==='takeover' ? djBookingColors.takeover : djBookingColors.resident;
   let html = '';
   html += '<div style="position:relative;background:'+bg+';border-radius:7px;padding:6px 8px;margin-bottom:5px">';
   html += '<span onclick="event.stopPropagation();djSchedDeleteBooking('+b.id+')" style="position:absolute;top:2px;right:3px;font-size:13px;line-height:1;color:#0F1E2E;opacity:0.5;cursor:pointer;padding:3px">×</span>';
@@ -5676,9 +5678,34 @@ function djSchedDayCellHtml(stage, d, inMonth, dayName){
   return html;
 }
 
+function djSchedRenderLegend(){
+  const el = document.getElementById('djsched-legend');
+  if(!el) return;
+  let html = '';
+  html += '<span onclick="djSchedPickTypeColor(\'resident\')" style="display:flex;align-items:center;gap:7px;cursor:pointer">';
+  html += '<span style="width:16px;height:16px;border-radius:50%;background:'+djBookingColors.resident+'"></span>';
+  html += '<span style="font-size:12.5px;font-weight:700;color:#64748B">Resident</span></span>';
+  html += '<span onclick="djSchedPickTypeColor(\'takeover\')" style="display:flex;align-items:center;gap:7px;cursor:pointer">';
+  html += '<span style="width:16px;height:16px;border-radius:50%;background:'+djBookingColors.takeover+'"></span>';
+  html += '<span style="font-size:12.5px;font-weight:700;color:#64748B">Takeover</span></span>';
+  el.innerHTML = html;
+}
+
+window.djSchedPickTypeColor = function(type){
+  appModalShow({
+    title: type === 'resident' ? 'Resident Color' : 'Takeover Color',
+    fields: [{label:'', type:'color', options:DEPT_COLORS, value:djBookingColors[type]}],
+    onOk: function(vals){
+      djBookingColors[type] = vals[0];
+      djSchedRender();
+    }
+  });
+};
+
 function djSchedRender(){
   const label = document.getElementById('djsched-month-label');
   if(label) label.textContent = new Date(djSchedYear, djSchedMonth, 1).toLocaleString('en-GB',{month:'long', year:'numeric'});
+  djSchedRenderLegend();
   const body = document.getElementById('djsched-body');
   if(body){
     if(djStages.length === 0){
@@ -5790,22 +5817,12 @@ window.djSchedRenameStage = function(id){
   });
 };
 
-const DJ_STAGE_COLORS = [
-  {id:'#0F1E2E', label:'Navy', bg:'#0F1E2E', svg:''},
-  {id:'#2563EB', label:'Blue', bg:'#2563EB', svg:''},
-  {id:'#16A34A', label:'Green', bg:'#16A34A', svg:''},
-  {id:'#0D9488', label:'Teal', bg:'#0D9488', svg:''},
-  {id:'#C4973B', label:'Gold', bg:'#C4973B', svg:''},
-  {id:'#DC2626', label:'Red', bg:'#DC2626', svg:''},
-  {id:'#7C3AED', label:'Purple', bg:'#7C3AED', svg:''}
-];
-
 window.djSchedPickColor = function(id){
   const stage = djStages.find(function(s){ return s.id===id; });
   if(!stage) return;
   appModalShow({
     title: 'Stage Color',
-    fields: [{label:'Pick a color', type:'colordot', options:DJ_STAGE_COLORS, value:stage.color||'#0F1E2E'}],
+    fields: [{label:'', type:'color', options:DEPT_COLORS, value:stage.color||'#0F1E2E'}],
     onOk: function(vals){
       stage.color = vals[0];
       djSchedRender();

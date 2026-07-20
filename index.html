@@ -6143,25 +6143,32 @@ function djSchedExportPdf(weeks, title, filenamePart){
   const filename = ('entertainment-schedule-' + filenamePart).replace(/[^a-z0-9]+/gi,'-').replace(/^-+|-+$/g,'').toLowerCase() + '.pdf';
   toast('Preparing your PDF…');
 
+  // position:absolute (not fixed) - html2canvas reliably captures absolutely-positioned
+  // off-screen elements since they're part of normal document coordinate space, but often
+  // produces a blank canvas for position:fixed elements outside the viewport.
   const container = document.createElement('div');
-  container.style.position = 'fixed';
+  container.style.position = 'absolute';
   container.style.left = '-9999px';
   container.style.top = '0';
   container.style.width = '1400px';
   container.innerHTML = djSchedBuildExportHtml(weeks, title);
   document.body.appendChild(container);
 
-  html2pdf().set({
-    margin: 10,
-    filename: filename,
-    image: { type: 'jpeg', quality: 0.95 },
-    html2canvas: { scale: 2, useCORS: true, backgroundColor: '#ffffff' },
-    jsPDF: { unit: 'mm', format: 'a4', orientation: 'landscape' },
-    pagebreak: { mode: ['css','avoid-all'] }
-  }).from(container).save()
-    .then(()=>{ toast('PDF downloaded ✓'); })
-    .catch((err)=>{ toast('PDF export failed — please try again'); console.error(err); })
-    .finally(()=>{ document.body.removeChild(container); });
+  // Give the browser a paint frame so the freshly-inserted content is actually laid out
+  // and rendered before html2canvas tries to capture it.
+  requestAnimationFrame(()=>{ requestAnimationFrame(()=>{
+    html2pdf().set({
+      margin: 10,
+      filename: filename,
+      image: { type: 'jpeg', quality: 0.95 },
+      html2canvas: { scale: 2, useCORS: true, backgroundColor: '#ffffff' },
+      jsPDF: { unit: 'mm', format: 'a4', orientation: 'landscape' },
+      pagebreak: { mode: ['css','avoid-all'] }
+    }).from(container).save()
+      .then(()=>{ toast('PDF downloaded ✓'); })
+      .catch((err)=>{ toast('PDF export failed — please try again'); console.error(err); })
+      .finally(()=>{ document.body.removeChild(container); });
+  }); });
 }
 
 window.djSchedPrint = function(){

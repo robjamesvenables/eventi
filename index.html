@@ -6125,7 +6125,7 @@ function djSchedExportPdf(weeks, title, filenamePart){
 window.djSchedPrint = function(){
   appModalShow({
     title: 'Export as PDF',
-    fields: [{label:'Range', type:'pillpicker', options:[{id:'week',name:'This Week'},{id:'month',name:'This Month'},{id:'custom',name:'Custom Range'}], value:'month'}],
+    fields: [{label:'Range', type:'pillpicker', options:[{id:'week',name:'This Week'},{id:'nextweek',name:'Next Week'},{id:'month',name:'This Month'},{id:'custom',name:'Custom Range'}], value:'month'}],
     onOk: function(vals){
       const choice = vals[0];
       if(choice === 'custom'){
@@ -6143,6 +6143,13 @@ window.djSchedPrint = function(){
       } else if(choice === 'week'){
         const todayKey = djSchedDateKey(new Date());
         const weeks = djSchedWeeksForRange(todayKey, todayKey);
+        const weekLabel = weeks[0].days[0].toLocaleDateString('en-GB',{day:'numeric',month:'short'})+' – '+weeks[0].days[6].toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'});
+        djSchedExportPdf(weeks, 'Week of '+weekLabel, weekLabel);
+      } else if(choice === 'nextweek'){
+        const nextWeekDate = new Date();
+        nextWeekDate.setDate(nextWeekDate.getDate()+7);
+        const nextWeekKey = djSchedDateKey(nextWeekDate);
+        const weeks = djSchedWeeksForRange(nextWeekKey, nextWeekKey);
         const weekLabel = weeks[0].days[0].toLocaleDateString('en-GB',{day:'numeric',month:'short'})+' – '+weeks[0].days[6].toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'});
         djSchedExportPdf(weeks, 'Week of '+weekLabel, weekLabel);
       } else {

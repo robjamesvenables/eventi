@@ -2202,6 +2202,17 @@ img.emoji-tw{width:1.15em;height:1.15em;vertical-align:-0.2em;margin:0 1px}
 .pdf-export-mode button[onclick^="addDepartment"]{display:none !important}
 .pdf-export-mode .beo-sec-hd{cursor:default !important}
 
+/* ── DJ SCHEDULE PRINT/PDF EXPORT ── */
+@media print{
+  .sidebar, .topbar, .sidebar-overlay, .chat-float-btn, #chat-float-btn{display:none !important}
+  #app-content{margin-left:0 !important}
+  body *{visibility:hidden}
+  #p-djsched, #p-djsched *{visibility:visible}
+  #p-djsched{position:absolute;left:0;top:0;width:100%;padding:0 !important}
+  #p-djsched button{display:none !important}
+  #p-djsched input{border:none !important;background:none !important}
+}
+
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <script>
@@ -2286,6 +2297,10 @@ img.emoji-tw{width:1.15em;height:1.15em;vertical-align:-0.2em;margin:0 1px}
     <button class="sb-link" id="n-cal" onclick="nav('cal')">
       <svg class="sb-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
       Event Calendar
+    </button>
+    <button class="sb-link" id="n-djsched" onclick="nav('djsched')">
+      <svg class="sb-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="2.5"/><path d="M12 3v2M21 12h-2M12 21v-2M3 12h2"/></svg>
+      DJ Schedule
     </button>
     <button class="sb-link" id="n-new" onclick="nav('new')">
       <svg class="sb-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
@@ -3555,6 +3570,37 @@ img.emoji-tw{width:1.15em;height:1.15em;vertical-align:-0.2em;margin:0 1px}
       <div id="cal-body"></div>
     </div>
 
+    <!-- DJ SCHEDULE -->
+    <div class="page" id="p-djsched" style="padding:32px 28px 0">
+      <div class="ph" style="margin-bottom:16px">
+        <div>
+          <div class="ph-title">DJ Schedule</div>
+          <div class="ph-sub">Click any slot to add or edit — scroll down to see previous weeks</div>
+        </div>
+        <div style="display:flex;gap:10px">
+          <button class="btn btn-ghost" onclick="djSchedPrint()">Print / Save as PDF</button>
+          <button class="btn btn-navy" onclick="djSchedAddStage()">+ Add Stage</button>
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;justify-content:center;gap:16px;margin-bottom:20px;background:white;border:1.5px solid #E2E8F0;border-radius:12px;padding:12px 20px">
+        <button onclick="djSchedShiftMonth(-1)" style="width:36px;height:36px;border-radius:50%;border:1.5px solid #E2E8F0;background:white;cursor:pointer;display:flex;align-items:center;justify-content:center">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#0F1E2E" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+        </button>
+        <div id="djsched-month-label" style="font-size:17px;font-weight:800;color:#0F1E2E;min-width:180px;text-align:center"></div>
+        <button onclick="djSchedShiftMonth(1)" style="width:36px;height:36px;border-radius:50%;border:1.5px solid #E2E8F0;background:white;cursor:pointer;display:flex;align-items:center;justify-content:center">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#0F1E2E" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+        </button>
+      </div>
+      <div id="djsched-body"></div>
+      <div style="background:white;border:1.5px solid #E2E8F0;border-radius:14px;overflow:hidden;margin-top:8px;margin-bottom:24px">
+        <div style="background:#0F1E2E;padding:12px 18px;display:flex;align-items:center;justify-content:space-between">
+          <span style="color:white;font-weight:800;font-size:14px;text-transform:uppercase;letter-spacing:0.5px">Hours & Cost — This Month</span>
+          <button onclick="djSchedAddHoursRow()" style="padding:6px 14px;background:rgba(255,255,255,0.12);border:none;border-radius:8px;color:white;font-family:'Inter',sans-serif;font-size:12px;font-weight:700;cursor:pointer">+ Add Row</button>
+        </div>
+        <div id="djsched-hours-body" style="padding:16px"></div>
+      </div>
+    </div>
+
     <!-- MEETING NOTES -->
     <div class="page" id="p-notes" style="padding:32px 28px 0">
       <div class="ph" style="margin-bottom:16px">
@@ -4150,6 +4196,7 @@ function nav(id, pushState=true){
   if(nb)nb.classList.add('active');
   if(id==='notes'){mnGoToday();}
   if(id==='cal'){calRender();}
+  if(id==='djsched'){djSchedRender();}
   if(id==='home'){initHome(); announceRender(); pollRender();}
   if(id==='quicklinks'){quickLinksRender();}
   if(id==='sandbox'){sandboxRender();}
@@ -5501,6 +5548,302 @@ function calGoToday(){
   const t=new Date();calYear=t.getFullYear();calMonth=t.getMonth();
   calSelectedDay=t.toISOString().split('T')[0];calRender();
 }
+
+// ── DJ SCHEDULE ──
+// Data model (demo/in-memory for now, same pattern as other not-yet-Supabase modules):
+// djStages: [{id, name}] — venue-defined, unlimited, addable/renameable/deletable
+// djBookings: [{id, stageId, date:'YYYY-MM-DD', start:'HH:MM', end:'HH:MM', dj, type:'resident'|'takeover', drinks, food}]
+// djStaffHours: [{id, name, hours, cost}] — manually entered, summed at the bottom
+let djStages = [
+  {id:1, name:'Main Stage'},
+  {id:2, name:'Utopia'}
+];
+let djBookingNextId = 1;
+let djBookings = [];
+let djStaffHoursNextId = 1;
+let djStaffHours = [];
+let djSchedYear, djSchedMonth;
+(function djSchedInitDate(){
+  const t = new Date();
+  djSchedYear = t.getFullYear();
+  djSchedMonth = t.getMonth();
+})();
+let djSchedEditingKey = null; // null, a booking id, or "new:<stageId>:<dateKey>"
+
+function djSchedShiftMonth(dir){
+  djSchedMonth += dir;
+  if(djSchedMonth < 0){ djSchedMonth = 11; djSchedYear--; }
+  if(djSchedMonth > 11){ djSchedMonth = 0; djSchedYear++; }
+  djSchedRender();
+}
+
+// Returns each Monday-start week touching the given month, so a week spanning the month
+// boundary still shows in full - lets Robbie scroll and see the current week plus prior weeks.
+function djSchedWeeksForMonth(year, month){
+  const firstOfMonth = new Date(year, month, 1);
+  const lastOfMonth = new Date(year, month+1, 0);
+  let cursor = new Date(firstOfMonth);
+  const dow = (cursor.getDay()+6)%7; // 0=Mon..6=Sun
+  cursor.setDate(cursor.getDate()-dow);
+  const weeks = [];
+  while(cursor <= lastOfMonth){
+    const days = [];
+    for(let i=0;i<7;i++){
+      const d = new Date(cursor);
+      d.setDate(d.getDate()+i);
+      days.push(d);
+    }
+    weeks.push({start:new Date(cursor), days});
+    cursor.setDate(cursor.getDate()+7);
+  }
+  return weeks;
+}
+
+function djSchedDateKey(d){
+  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+}
+
+function djSchedCompBadge(drinks, food){
+  if(!drinks && !food) return '';
+  const parts = [];
+  if(drinks) parts.push('<span style="display:inline-flex;align-items:center;gap:2px">🍸'+drinks+'</span>');
+  if(food) parts.push('<span style="display:inline-flex;align-items:center;gap:2px">🍽'+food+'</span>');
+  return '<div style="display:flex;gap:6px;margin-top:2px;font-size:10px;color:#0F1E2E;opacity:0.75">'+parts.join('')+'</div>';
+}
+
+// Renders one booking card: either its normal display form, or an inline edit form if it's
+// the one currently being edited. This is the "click to edit in place" pattern (matching
+// Team Feed's reply editing) instead of a popup modal.
+function djSchedBookingHtml(b){
+  const editKey = 'b:'+b.id;
+  if(djSchedEditingKey === editKey){
+    return djSchedInlineFormHtml(b);
+  }
+  const bg = b.type==='takeover' ? '#22D3EE' : '#22C55E';
+  let html = '';
+  html += '<div style="position:relative;background:'+bg+';border-radius:7px;padding:6px 8px;margin-bottom:5px">';
+  html += '<span onclick="event.stopPropagation();djSchedDeleteBooking('+b.id+')" style="position:absolute;top:2px;right:3px;font-size:13px;line-height:1;color:#0F1E2E;opacity:0.5;cursor:pointer;padding:3px">×</span>';
+  html += '<div onclick="djSchedStartEdit('+b.id+')" style="cursor:pointer;padding-right:12px">';
+  html += '<div style="font-size:10px;font-weight:700;color:#0F1E2E">'+b.start+'-'+b.end+'</div>';
+  html += '<div style="font-size:11.5px;font-weight:800;color:#0F1E2E">'+b.dj+'</div>';
+  html += djSchedCompBadge(b.drinks, b.food);
+  html += '</div></div>';
+  return html;
+}
+
+// The inline edit form itself - used both for editing an existing booking and for a brand
+// new one (b.id will be null for a new booking, with stageId/date pre-filled).
+function djSchedInlineFormHtml(b){
+  const idAttr = b.id || 'new';
+  let html = '';
+  html += '<div onclick="event.stopPropagation()" style="background:white;border:1.5px solid #0D9488;border-radius:8px;padding:8px;margin-bottom:5px">';
+  html += '<input id="djf-dj-'+idAttr+'" type="text" value="'+(b.dj||'')+'" placeholder="DJ name" style="width:100%;padding:5px 7px;margin-bottom:4px;border:1px solid #E2E8F0;border-radius:5px;font-family:Inter,sans-serif;font-size:11.5px;box-sizing:border-box">';
+  html += '<div style="display:flex;gap:4px;margin-bottom:4px">';
+  html += '<input id="djf-start-'+idAttr+'" type="text" value="'+(b.start||'')+'" placeholder="Start" style="width:50%;padding:5px 7px;border:1px solid #E2E8F0;border-radius:5px;font-family:Inter,sans-serif;font-size:11px;box-sizing:border-box">';
+  html += '<input id="djf-end-'+idAttr+'" type="text" value="'+(b.end||'')+'" placeholder="End" style="width:50%;padding:5px 7px;border:1px solid #E2E8F0;border-radius:5px;font-family:Inter,sans-serif;font-size:11px;box-sizing:border-box">';
+  html += '</div>';
+  html += '<div style="display:flex;gap:6px;margin-bottom:4px">';
+  html += '<label style="display:flex;align-items:center;gap:3px;font-size:10.5px;color:#0F1E2E"><input type="radio" name="djf-type-'+idAttr+'" id="djf-type-resident-'+idAttr+'" '+(b.type!=='takeover'?'checked':'')+'> Resident</label>';
+  html += '<label style="display:flex;align-items:center;gap:3px;font-size:10.5px;color:#0F1E2E"><input type="radio" name="djf-type-'+idAttr+'" id="djf-type-takeover-'+idAttr+'" '+(b.type==='takeover'?'checked':'')+'> Takeover</label>';
+  html += '</div>';
+  html += '<div style="display:flex;gap:4px;margin-bottom:6px">';
+  html += '<input id="djf-drinks-'+idAttr+'" type="text" value="'+(b.drinks||'')+'" placeholder="🍸 drinks" style="width:50%;padding:5px 7px;border:1px solid #E2E8F0;border-radius:5px;font-family:Inter,sans-serif;font-size:11px;box-sizing:border-box">';
+  html += '<input id="djf-food-'+idAttr+'" type="text" value="'+(b.food||'')+'" placeholder="🍽 food" style="width:50%;padding:5px 7px;border:1px solid #E2E8F0;border-radius:5px;font-family:Inter,sans-serif;font-size:11px;box-sizing:border-box">';
+  html += '</div>';
+  html += '<div style="display:flex;gap:4px">';
+  html += '<button onclick="djSchedSave('+(b.id||'null')+',\''+b.stageId+'\',\''+b.date+'\')" style="flex:1;padding:5px;background:#0D9488;color:white;border:none;border-radius:5px;font-family:Inter,sans-serif;font-size:10.5px;font-weight:700;cursor:pointer">Save</button>';
+  html += '<button onclick="djSchedCancelEdit()" style="flex:1;padding:5px;background:#F1F5F9;color:#64748B;border:none;border-radius:5px;font-family:Inter,sans-serif;font-size:10.5px;font-weight:700;cursor:pointer">Cancel</button>';
+  html += '</div>';
+  html += '</div>';
+  return html;
+}
+
+function djSchedDayCellHtml(stage, d, inMonth, dayName){
+  const key = djSchedDateKey(d);
+  const dayBookings = djBookings.filter(function(b){ return b.stageId===stage.id && b.date===key; }).sort(function(a,b2){ return a.start.localeCompare(b2.start); });
+  let html = '';
+  html += '<div style="background:'+(inMonth?'#F8FAFC':'#FCFCFD')+';border:1px solid #EDF0F4;border-radius:10px;padding:8px;min-height:90px;opacity:'+(inMonth?1:0.55)+'">';
+  html += '<div style="font-size:10.5px;font-weight:800;color:#64748B;text-transform:uppercase">'+dayName+'</div>';
+  html += '<div style="font-size:11px;color:#94A3B8;margin-bottom:6px">'+d.getDate()+' '+d.toLocaleDateString('en-GB',{month:'short'})+'</div>';
+  dayBookings.forEach(function(b){ html += djSchedBookingHtml(b); });
+  const newKey = 'new:'+stage.id+':'+key;
+  if(djSchedEditingKey === newKey){
+    html += djSchedInlineFormHtml({id:null, stageId:stage.id, date:key, dj:'', start:'', end:'', type:'resident', drinks:'', food:''});
+  } else {
+    html += '<button onclick="djSchedStartNew('+stage.id+',\''+key+'\')" style="width:100%;padding:4px;background:none;border:1.5px dashed #CBD5E1;border-radius:6px;color:#94A3B8;font-family:Inter,sans-serif;font-size:10.5px;font-weight:700;cursor:pointer">+ Add</button>';
+  }
+  html += '</div>';
+  return html;
+}
+
+function djSchedRender(){
+  const label = document.getElementById('djsched-month-label');
+  if(label) label.textContent = new Date(djSchedYear, djSchedMonth, 1).toLocaleString('en-GB',{month:'long', year:'numeric'});
+  const body = document.getElementById('djsched-body');
+  if(body){
+    if(djStages.length === 0){
+      body.innerHTML = '<div style="text-align:center;padding:60px 20px;color:#94A3B8"><div style="font-size:15px;font-weight:700;margin-bottom:6px">No stages yet</div><div style="font-size:13px">Tap "+ Add Stage" above to set up your first stage or area</div></div>';
+    } else {
+      const weeks = djSchedWeeksForMonth(djSchedYear, djSchedMonth);
+      const dayNames = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+      let out = '';
+      djStages.forEach(function(stage){
+        out += '<div style="background:white;border:1.5px solid #E2E8F0;border-radius:14px;overflow:hidden;margin-bottom:24px;box-shadow:0 2px 8px rgba(0,0,0,0.06)">';
+        out += '<div style="background:#0F1E2E;padding:12px 18px;display:flex;align-items:center;justify-content:space-between">';
+        out += '<span style="color:white;font-weight:800;font-size:15px;text-transform:uppercase;letter-spacing:0.5px">'+stage.name+'</span>';
+        out += '<div style="display:flex;gap:8px">';
+        out += '<button onclick="djSchedRenameStage('+stage.id+')" style="padding:5px 12px;background:rgba(255,255,255,0.12);border:none;border-radius:7px;color:white;font-family:Inter,sans-serif;font-size:11.5px;font-weight:700;cursor:pointer">Rename</button>';
+        out += '<button onclick="djSchedDeleteStage('+stage.id+')" style="padding:5px 12px;background:rgba(220,38,38,0.25);border:none;border-radius:7px;color:white;font-family:Inter,sans-serif;font-size:11.5px;font-weight:700;cursor:pointer">Delete</button>';
+        out += '</div></div>';
+        out += '<div style="padding:16px">';
+        weeks.forEach(function(week){
+          const weekLabel = week.days[0].toLocaleDateString('en-GB',{day:'numeric',month:'short'})+' – '+week.days[6].toLocaleDateString('en-GB',{day:'numeric',month:'short'});
+          out += '<div style="margin-bottom:18px">';
+          out += '<div style="font-size:11.5px;font-weight:800;color:#94A3B8;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px">Week of '+weekLabel+'</div>';
+          out += '<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:8px">';
+          week.days.forEach(function(d,i){
+            out += djSchedDayCellHtml(stage, d, d.getMonth()===djSchedMonth, dayNames[i]);
+          });
+          out += '</div></div>';
+        });
+        out += '</div></div>';
+      });
+      body.innerHTML = out;
+    }
+  }
+  djSchedRenderHours();
+}
+
+window.djSchedStartEdit = function(bookingId){
+  djSchedEditingKey = 'b:'+bookingId;
+  djSchedRender();
+  setTimeout(function(){ const f = document.getElementById('djf-dj-'+bookingId); if(f) f.focus(); }, 0);
+};
+
+window.djSchedStartNew = function(stageId, dateKey){
+  djSchedEditingKey = 'new:'+stageId+':'+dateKey;
+  djSchedRender();
+  setTimeout(function(){ const f = document.getElementById('djf-dj-new'); if(f) f.focus(); }, 0);
+};
+
+window.djSchedCancelEdit = function(){
+  djSchedEditingKey = null;
+  djSchedRender();
+};
+
+window.djSchedSave = function(bookingId, stageId, dateKey){
+  const idAttr = bookingId || 'new';
+  const dj = document.getElementById('djf-dj-'+idAttr).value.trim();
+  const start = document.getElementById('djf-start-'+idAttr).value.trim();
+  const end = document.getElementById('djf-end-'+idAttr).value.trim();
+  const isTakeover = document.getElementById('djf-type-takeover-'+idAttr).checked;
+  const drinks = parseInt(document.getElementById('djf-drinks-'+idAttr).value) || 0;
+  const food = parseInt(document.getElementById('djf-food-'+idAttr).value) || 0;
+  if(!dj || !start || !end){ toast('DJ name, start and end time are required'); return; }
+  if(bookingId){
+    const b = djBookings.find(function(x){ return x.id===bookingId; });
+    if(b){ b.dj=dj; b.start=start; b.end=end; b.type=isTakeover?'takeover':'resident'; b.drinks=drinks; b.food=food; }
+  } else {
+    djBookings.push({id:djBookingNextId++, stageId:parseInt(stageId), date:dateKey, dj:dj, start:start, end:end, type:isTakeover?'takeover':'resident', drinks:drinks, food:food});
+  }
+  djSchedEditingKey = null;
+  djSchedRender();
+  toast('Saved ✓');
+};
+
+window.djSchedDeleteBooking = function(id){
+  appConfirmShow({title:'Delete Booking', msg:'Are you sure you want to remove this DJ booking?', onOk:function(){
+    djBookings = djBookings.filter(function(x){ return x.id!==id; });
+    djSchedRender();
+  }});
+};
+
+window.djSchedAddStage = function(){
+  appModalShow({
+    title: 'Add Stage / Area',
+    fields: [{label:'Name', type:'text', placeholder:'e.g. Main Stage, Utopia, Pool Deck'}],
+    onOk: function(vals){
+      const name = vals[0];
+      if(!name || !name.trim()) return;
+      djStages.push({id:Date.now(), name:name.trim()});
+      djSchedRender();
+      toast('Stage added ✓');
+    }
+  });
+};
+
+window.djSchedRenameStage = function(id){
+  const stage = djStages.find(function(s){ return s.id===id; });
+  if(!stage) return;
+  appModalShow({
+    title: 'Rename Stage',
+    fields: [{label:'Name', type:'text', value:stage.name}],
+    onOk: function(vals){
+      const name = vals[0];
+      if(!name || !name.trim()) return;
+      stage.name = name.trim();
+      djSchedRender();
+    }
+  });
+};
+
+window.djSchedDeleteStage = function(id){
+  appConfirmShow({title:'Delete Stage', msg:'This will also remove every booking under this stage. Are you sure?', onOk:function(){
+    djStages = djStages.filter(function(s){ return s.id!==id; });
+    djBookings = djBookings.filter(function(b){ return b.stageId!==id; });
+    djSchedRender();
+  }});
+};
+
+// ── DJ SCHEDULE: Hours & Cost summary ──
+function djSchedRenderHours(){
+  const body = document.getElementById('djsched-hours-body');
+  if(!body) return;
+  let out = '';
+  if(djStaffHours.length === 0){
+    out += '<div style="text-align:center;padding:20px;color:#94A3B8;font-size:13px">No hours logged yet — tap "+ Add Row" to start</div>';
+  } else {
+    out += '<div style="display:grid;grid-template-columns:2fr 1fr 1fr 40px;gap:10px;margin-bottom:8px;font-size:11px;font-weight:800;color:#94A3B8;text-transform:uppercase;letter-spacing:0.5px">';
+    out += '<div>Name</div><div>Hours</div><div>Cost</div><div></div></div>';
+    let totalHours = 0, totalCost = 0;
+    djStaffHours.forEach(function(row){
+      totalHours += (parseFloat(row.hours)||0);
+      totalCost += (parseFloat(row.cost)||0);
+      out += '<div style="display:grid;grid-template-columns:2fr 1fr 1fr 40px;gap:10px;margin-bottom:8px;align-items:center">';
+      out += '<input value="'+(row.name||'')+'" onchange="djSchedUpdateHoursRow('+row.id+',\'name\',this.value)" placeholder="Staff name" style="padding:7px 10px;border:1.5px solid #E2E8F0;border-radius:7px;font-family:Inter,sans-serif;font-size:13px;box-sizing:border-box">';
+      out += '<input value="'+(row.hours||'')+'" onchange="djSchedUpdateHoursRow('+row.id+',\'hours\',this.value)" placeholder="0" style="padding:7px 10px;border:1.5px solid #E2E8F0;border-radius:7px;font-family:Inter,sans-serif;font-size:13px;box-sizing:border-box">';
+      out += '<input value="'+(row.cost||'')+'" onchange="djSchedUpdateHoursRow('+row.id+',\'cost\',this.value)" placeholder="0" style="padding:7px 10px;border:1.5px solid #E2E8F0;border-radius:7px;font-family:Inter,sans-serif;font-size:13px;box-sizing:border-box">';
+      out += '<span onclick="djSchedDeleteHoursRow('+row.id+')" style="cursor:pointer;color:#94A3B8;font-size:18px;text-align:center">×</span>';
+      out += '</div>';
+    });
+    out += '<div style="display:grid;grid-template-columns:2fr 1fr 1fr 40px;gap:10px;padding-top:10px;border-top:1.5px solid #E2E8F0;font-weight:800;color:#0F1E2E">';
+    out += '<div>Total</div><div>'+totalHours+'</div><div>'+totalCost.toLocaleString()+'</div><div></div></div>';
+  }
+  body.innerHTML = out;
+}
+
+window.djSchedAddHoursRow = function(){
+  djStaffHours.push({id:djStaffHoursNextId++, name:'', hours:'', cost:''});
+  djSchedRenderHours();
+};
+
+window.djSchedUpdateHoursRow = function(id, field, value){
+  const row = djStaffHours.find(function(r){ return r.id===id; });
+  if(row) row[field] = value;
+  djSchedRenderHours();
+};
+
+window.djSchedDeleteHoursRow = function(id){
+  djStaffHours = djStaffHours.filter(function(r){ return r.id!==id; });
+  djSchedRenderHours();
+};
+
+// ── DJ SCHEDULE: Print / Save as PDF ──
+// Uses the browser's native print dialog (which every browser can "Save as PDF" through) rather
+// than a heavy PDF-generation library - genuinely functional, no extra dependencies.
+window.djSchedPrint = function(){
+  window.print();
+};
 
 // ── MEETING NOTES ──
 const mnNotes={

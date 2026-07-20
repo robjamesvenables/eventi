@@ -6021,21 +6021,93 @@ window.djSchedDeleteHoursRow = async function(id){
 };
 
 // ── ENTERTAINMENT SCHEDULE: Save as PDF ──
-// Uses html2pdf.js (same library as Event Plan/Recipe exports) to capture the schedule and
-// download a genuine PDF file directly - not the browser's print dialog, which was defaulting
-// to a printer rather than actually producing a PDF.
-window.djSchedPrint = function(){
+// Uses html2pdf.js (same library as Event Plan/Recipe exports) to capture a purpose-built
+// clean export view and download a genuine PDF file directly. Lets Robbie choose the scope
+// first - This Week, This Month (the current default behaviour), or a Custom Range.
+
+// Monday-start weeks touching an arbitrary [from,to] range - same logic as
+// djSchedWeeksForMonth but generalised to a date range instead of a calendar month.
+function djSchedWeeksForRange(fromStr, toStr){
+  const from = new Date(fromStr);
+  const to = new Date(toStr);
+  let cursor = new Date(from);
+  const dow = (cursor.getDay()+6)%7;
+  cursor.setDate(cursor.getDate()-dow);
+  const weeks = [];
+  while(cursor <= to){
+    const days = [];
+    for(let i=0;i<7;i++){
+      const d = new Date(cursor);
+      d.setDate(d.getDate()+i);
+      days.push(d);
+    }
+    weeks.push({start:new Date(cursor), days});
+    cursor.setDate(cursor.getDate()+7);
+  }
+  return weeks;
+}
+
+// Builds a clean, non-interactive version of the schedule (no edit/delete/color buttons)
+// for the given weeks, sized for a PDF page rather than the live app view.
+function djSchedBuildExportHtml(weeks, title){
+  const dayNames = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+  let out = '<div style="font-family:Inter,sans-serif;padding:10px;background:white">';
+  out += '<div style="font-size:20px;font-weight:800;color:#0F1E2E;margin-bottom:18px;text-align:center">'+title+'</div>';
+  weeks.forEach(function(week){
+    const weekLabel = week.days[0].toLocaleDateString('en-GB',{day:'numeric',month:'short'})+' – '+week.days[6].toLocaleDateString('en-GB',{day:'numeric',month:'short'});
+    out += '<div style="margin-bottom:28px">';
+    out += '<div style="font-size:13px;font-weight:800;color:#0F1E2E;text-transform:uppercase;letter-spacing:0.8px;margin-bottom:12px;padding:8px 14px;background:#EDE6D8;border-radius:8px">Week of '+weekLabel+'</div>';
+    djStages.forEach(function(stage){
+      const stageColor = stage.color || '#0F1E2E';
+      out += '<div style="background:white;border:1.5px solid #E2E8F0;border-radius:14px;overflow:hidden;margin-bottom:14px">';
+      out += '<div style="background:'+stageColor+';padding:12px 18px;text-align:center">';
+      out += '<span style="color:white;font-weight:800;font-size:15px;text-transform:uppercase;letter-spacing:0.5px">'+stage.name+'</span>';
+      out += '</div>';
+      out += '<div style="padding:16px"><div style="display:grid;grid-template-columns:repeat(7,1fr);gap:8px">';
+      week.days.forEach(function(d,i){
+        const key = djSchedDateKey(d);
+        const dayBookings = djBookings.filter(function(b){ return b.stageId===stage.id && b.date===key; }).sort(function(a,b2){ return a.start.localeCompare(b2.start); });
+        out += '<div style="background:#F8FAFC;border:1px solid #EDF0F4;border-radius:10px;padding:8px;min-height:70px">';
+        out += '<div style="font-size:10.5px;font-weight:800;color:#64748B;text-transform:uppercase">'+dayNames[i]+'</div>';
+        out += '<div style="font-size:11px;color:#94A3B8;margin-bottom:6px">'+d.getDate()+' '+d.toLocaleDateString('en-GB',{month:'short'})+'</div>';
+        if(dayBookings.length === 0){
+          out += '<div style="font-size:10px;color:#CBD5E1">—</div>';
+        } else {
+          dayBookings.forEach(function(b){
+            const bg = b.type==='takeover' ? djBookingColors.takeover : djBookingColors.resident;
+            out += '<div style="background:'+bg+';border-radius:7px;padding:9px 8px;margin-bottom:5px;text-align:center">';
+            out += '<div style="font-size:10px;font-weight:700;color:#0F1E2E">'+b.start+' - '+b.end+'</div>';
+            out += '<div style="font-size:11.5px;font-weight:800;color:#0F1E2E;margin-top:6px">'+b.dj+'</div>';
+            out += djSchedCompBadge(b.drinks, b.food);
+            out += '</div>';
+          });
+        }
+        out += '</div>';
+      });
+      out += '</div></div></div>';
+    });
+    out += '</div>';
+  });
+  out += '</div>';
+  return out;
+}
+
+function djSchedExportPdf(weeks, title, filenamePart){
   if(typeof html2pdf === 'undefined'){
     toast('PDF library failed to load — check your connection and try again');
     return;
   }
-  const el = document.getElementById('djsched-body');
-  if(!el){ toast('Nothing to export yet'); return; }
-  const monthLabel = document.getElementById('djsched-month-label');
-  const rawName = (monthLabel && monthLabel.textContent.trim()) || 'Entertainment Schedule';
-  const filename = ('entertainment-schedule-' + rawName).replace(/[^a-z0-9]+/gi,'-').replace(/^-+|-+$/g,'').toLowerCase() + '.pdf';
-
+  if(!weeks.length){ toast('No dates in that range'); return; }
+  const filename = ('entertainment-schedule-' + filenamePart).replace(/[^a-z0-9]+/gi,'-').replace(/^-+|-+$/g,'').toLowerCase() + '.pdf';
   toast('Preparing your PDF…');
+
+  const container = document.createElement('div');
+  container.style.position = 'fixed';
+  container.style.left = '-9999px';
+  container.style.top = '0';
+  container.style.width = '1400px';
+  container.innerHTML = djSchedBuildExportHtml(weeks, title);
+  document.body.appendChild(container);
 
   html2pdf().set({
     margin: 10,
@@ -6044,9 +6116,42 @@ window.djSchedPrint = function(){
     html2canvas: { scale: 2, useCORS: true, backgroundColor: '#ffffff' },
     jsPDF: { unit: 'mm', format: 'a4', orientation: 'landscape' },
     pagebreak: { mode: ['css','avoid-all'] }
-  }).from(el).save()
+  }).from(container).save()
     .then(()=>{ toast('PDF downloaded ✓'); })
-    .catch((err)=>{ toast('PDF export failed — please try again'); console.error(err); });
+    .catch((err)=>{ toast('PDF export failed — please try again'); console.error(err); })
+    .finally(()=>{ document.body.removeChild(container); });
+}
+
+window.djSchedPrint = function(){
+  appModalShow({
+    title: 'Export as PDF',
+    fields: [{label:'Range', type:'pillpicker', options:[{id:'week',name:'This Week'},{id:'month',name:'This Month'},{id:'custom',name:'Custom Range'}], value:'month'}],
+    onOk: function(vals){
+      const choice = vals[0];
+      if(choice === 'custom'){
+        appModalShow({
+          title: 'Custom Date Range',
+          fields: [{label:'Pick the from and to date', type:'daterange'}],
+          onOk: function(vals2){
+            const range = vals2[0];
+            if(!range || !range.from || !range.to){ toast('Please pick both dates'); return; }
+            const fromLabel = new Date(range.from).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'});
+            const toLabel = new Date(range.to).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'});
+            djSchedExportPdf(djSchedWeeksForRange(range.from, range.to), fromLabel+' – '+toLabel, range.from+'-to-'+range.to);
+          }
+        });
+      } else if(choice === 'week'){
+        const todayKey = djSchedDateKey(new Date());
+        const weeks = djSchedWeeksForRange(todayKey, todayKey);
+        const weekLabel = weeks[0].days[0].toLocaleDateString('en-GB',{day:'numeric',month:'short'})+' – '+weeks[0].days[6].toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'});
+        djSchedExportPdf(weeks, 'Week of '+weekLabel, weekLabel);
+      } else {
+        const weeks = djSchedWeeksForMonth(djSchedYear, djSchedMonth);
+        const monthTitle = new Date(djSchedYear, djSchedMonth, 1).toLocaleString('en-GB',{month:'long', year:'numeric'});
+        djSchedExportPdf(weeks, monthTitle, monthTitle);
+      }
+    }
+  });
 };
 
 // ── MEETING NOTES ──

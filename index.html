@@ -6216,20 +6216,48 @@ function djSchedCapturePdf(htmlContent, filenamePart, orientation){
   const filename = ('entertainment-schedule-' + filenamePart).replace(/[^a-z0-9]+/gi,'-').replace(/^-+|-+$/g,'').toLowerCase() + '.pdf';
   toast('Preparing your PDF…');
 
-  body.innerHTML = htmlContent;
+  // Render into a temporary full-width visible layer. Exporting from the live schedule body
+  // inherited the app/sidebar width and clipped Sunday on the right-hand edge.
+  const exportHost = document.createElement('div');
+  exportHost.id = 'djsched-pdf-export-host';
+  exportHost.style.cssText = [
+    'position:fixed',
+    'left:0',
+    'top:0',
+    'width:1120px',
+    'min-width:1120px',
+    'max-width:none',
+    'height:auto',
+    'overflow:visible',
+    'background:#fff',
+    'z-index:999999',
+    'padding:0',
+    'margin:0',
+    'box-sizing:border-box'
+  ].join(';');
+  exportHost.innerHTML = htmlContent;
+  document.body.appendChild(exportHost);
 
   requestAnimationFrame(()=>{ requestAnimationFrame(()=>{
     html2pdf().set({
-      margin: 10,
+      margin: [6,6,6,6],
       filename: filename,
-      image: { type: 'jpeg', quality: 0.95 },
-      html2canvas: { scale: 2, useCORS: true, backgroundColor: '#ffffff' },
+      image: { type: 'jpeg', quality: 0.98 },
+      html2canvas: {
+        scale: 2,
+        useCORS: true,
+        backgroundColor: '#ffffff',
+        width: 1120,
+        windowWidth: 1120,
+        scrollX: 0,
+        scrollY: 0
+      },
       jsPDF: { unit: 'mm', format: 'a4', orientation: orientation || 'landscape' },
-      pagebreak: { mode: ['css','avoid-all'] }
-    }).from(body).save()
+      pagebreak: { mode: ['css','legacy'] }
+    }).from(exportHost).save()
       .then(()=>{ toast('PDF downloaded ✓'); })
       .catch((err)=>{ toast('PDF export failed — please try again'); console.error(err); })
-      .finally(()=>{ djSchedRender(); });
+      .finally(()=>{ exportHost.remove(); });
   }); });
 }
 

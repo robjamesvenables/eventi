@@ -5715,7 +5715,7 @@ function djSchedInlineFormHtml(b){
   html += '</div>';
   html += '<div style="display:flex;gap:6px;margin-bottom:4px">';
   html += '<label style="display:flex;align-items:center;gap:3px;font-size:10.5px;color:#0F1E2E"><input type="radio" name="djf-type-'+idAttr+'" id="djf-type-resident-'+idAttr+'" '+(b.type!=='takeover'?'checked':'')+'> Resident</label>';
-  html += '<label style="display:flex;align-items:center;gap:3px;font-size:10.5px;color:#0F1E2E"><input type="radio" name="djf-type-'+idAttr+'" id="djf-type-takeover-'+idAttr+'" '+(b.type==='takeover'?'checked':'')+'> Takeover</label>';
+  html += '<label style="display:flex;align-items:center;gap:3px;font-size:10.5px;color:#0F1E2E"><input type="radio" name="djf-type-'+idAttr+'" id="djf-type-takeover-'+idAttr+'" '+(b.type==='takeover'?'checked':'')+'> Event</label>';
   html += '</div>';
   html += '<div style="display:flex;gap:4px;margin-bottom:6px">';
   html += '<input id="djf-drinks-'+idAttr+'" type="text" value="'+(b.drinks||'')+'" placeholder="drinks" style="width:50%;padding:5px 7px;border:1px solid #E2E8F0;border-radius:5px;font-family:Inter,sans-serif;font-size:11px;box-sizing:border-box">';
@@ -5759,13 +5759,13 @@ function djSchedRenderLegend(){
   html += '<span style="font-size:12.5px;font-weight:700;color:#64748B">Resident</span></span>';
   html += '<span onclick="djSchedPickTypeColor(\'takeover\')" style="display:flex;align-items:center;gap:7px;cursor:pointer">';
   html += '<span style="width:16px;height:16px;border-radius:50%;background:'+djBookingColors.takeover+'"></span>';
-  html += '<span style="font-size:12.5px;font-weight:700;color:#64748B">Takeover</span></span>';
+  html += '<span style="font-size:12.5px;font-weight:700;color:#64748B">Event</span></span>';
   el.innerHTML = html;
 }
 
 window.djSchedPickTypeColor = function(type){
   appModalShow({
-    title: type === 'resident' ? 'Resident Color' : 'Takeover Color',
+    title: type === 'resident' ? 'Resident Color' : 'Event Color',
     fields: [{label:'', type:'color', options:DEPT_COLORS, value:djBookingColors[type]}],
     onOk: async function(vals){
       djBookingColors[type] = vals[0];
@@ -6134,22 +6134,22 @@ function djSchedBuildExportHtml(weeks, title){
   return out;
 }
 
-function djSchedExportPdf(weeks, title, filenamePart){
+// Generic capture step shared by every export scope (day, week, month): temporarily swap
+// the live schedule body to the given export HTML, capture it with html2pdf, then rebuild
+// the normal interactive view. Same technique as the working Event Plan PDF export - a
+// real, currently-visible page element, not a detached off-screen clone (which html2canvas
+// rendered blank both times that was tried).
+function djSchedCapturePdf(htmlContent, filenamePart, orientation){
   if(typeof html2pdf === 'undefined'){
     toast('PDF library failed to load — check your connection and try again');
     return;
   }
-  if(!weeks.length){ toast('No dates in that range'); return; }
   const body = document.getElementById('djsched-body');
   if(!body){ toast('Open the Entertainment Schedule tab first, then try again'); return; }
   const filename = ('entertainment-schedule-' + filenamePart).replace(/[^a-z0-9]+/gi,'-').replace(/^-+|-+$/g,'').toLowerCase() + '.pdf';
   toast('Preparing your PDF…');
 
-  // Same approach as the Event Plan PDF export: capture a real, currently-visible page
-  // element rather than a detached off-screen clone (which html2canvas often rendered
-  // blank for). Temporarily swap the live schedule body to the clean export layout,
-  // capture it, then rebuild the normal interactive view afterwards.
-  body.innerHTML = djSchedBuildExportHtml(weeks, title);
+  body.innerHTML = htmlContent;
 
   requestAnimationFrame(()=>{ requestAnimationFrame(()=>{
     html2pdf().set({
@@ -6157,7 +6157,7 @@ function djSchedExportPdf(weeks, title, filenamePart){
       filename: filename,
       image: { type: 'jpeg', quality: 0.95 },
       html2canvas: { scale: 2, useCORS: true, backgroundColor: '#ffffff' },
-      jsPDF: { unit: 'mm', format: 'a4', orientation: 'landscape' },
+      jsPDF: { unit: 'mm', format: 'a4', orientation: orientation || 'landscape' },
       pagebreak: { mode: ['css','avoid-all'] }
     }).from(body).save()
       .then(()=>{ toast('PDF downloaded ✓'); })
@@ -6166,24 +6166,56 @@ function djSchedExportPdf(weeks, title, filenamePart){
   }); });
 }
 
+function djSchedExportPdf(weeks, title, filenamePart){
+  if(!weeks.length){ toast('No dates in that range'); return; }
+  djSchedCapturePdf(djSchedBuildExportHtml(weeks, title), filenamePart, 'landscape');
+}
+
+// Single-day export - one column per stage instead of the full 7-day week grid.
+function djSchedBuildDayExportHtml(d, title){
+  const key = djSchedDateKey(d);
+  let out = '<div style="font-family:Inter,sans-serif;padding:10px;background:white">';
+  out += '<div style="font-size:20px;font-weight:800;color:#0F1E2E;margin-bottom:18px;text-align:center">'+title+'</div>';
+  out += '<div style="display:grid;grid-template-columns:repeat('+Math.max(djStages.length,1)+',1fr);gap:16px;max-width:900px;margin:0 auto">';
+  djStages.forEach(function(stage){
+    const stageColor = stage.color || '#0F1E2E';
+    const dayBookings = djBookings.filter(function(b){ return b.stageId===stage.id && b.date===key; }).sort(function(a,b2){
+      const so = (a.sortOrder||0) - (b2.sortOrder||0);
+      return so !== 0 ? so : a.start.localeCompare(b2.start);
+    });
+    out += '<div style="background:white;border:1.5px solid #E2E8F0;border-radius:14px;overflow:hidden">';
+    out += '<div style="background:'+stageColor+';padding:12px 18px;text-align:center">';
+    out += '<span style="color:white;font-weight:800;font-size:15px;text-transform:uppercase;letter-spacing:0.5px">'+stage.name+'</span>';
+    out += '</div>';
+    out += '<div style="padding:16px">';
+    if(dayBookings.length === 0){
+      out += '<div style="font-size:12px;color:#CBD5E1;text-align:center;padding:20px 0">No bookings</div>';
+    } else {
+      dayBookings.forEach(function(b){
+        const bg = b.type==='takeover' ? djBookingColors.takeover : djBookingColors.resident;
+        out += '<div style="background:'+bg+';border-radius:7px;padding:9px 8px;margin-bottom:8px;text-align:center">';
+        out += '<div style="font-size:11px;font-weight:700;color:#0F1E2E">'+b.start+' - '+b.end+'</div>';
+        out += '<div style="font-size:12.5px;font-weight:800;color:#0F1E2E;margin-top:6px">'+b.dj+'</div>';
+        out += djSchedCompBadge(b.drinks, b.food);
+        out += '</div>';
+      });
+    }
+    out += '</div></div>';
+  });
+  out += '</div></div>';
+  return out;
+}
+
 window.djSchedPrint = function(){
   appModalShow({
     title: 'Export as PDF',
-    fields: [{label:'Range', type:'pillpicker', options:[{id:'week',name:'This Week'},{id:'nextweek',name:'Next Week'},{id:'month',name:'This Month'},{id:'custom',name:'Custom Range'}], value:'month'}],
+    fields: [{label:'Range', type:'pillpicker', options:[{id:'day',name:'Day'},{id:'week',name:'This Week'},{id:'nextweek',name:'Next Week'},{id:'month',name:'This Month'}], value:'week'}],
     onOk: function(vals){
       const choice = vals[0];
-      if(choice === 'custom'){
-        appModalShow({
-          title: 'Custom Date Range',
-          fields: [{label:'Pick the from and to date', type:'daterange'}],
-          onOk: function(vals2){
-            const range = vals2[0];
-            if(!range || !range.from || !range.to){ toast('Please pick both dates'); return; }
-            const fromLabel = new Date(range.from).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'});
-            const toLabel = new Date(range.to).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'});
-            djSchedExportPdf(djSchedWeeksForRange(range.from, range.to), fromLabel+' – '+toLabel, range.from+'-to-'+range.to);
-          }
-        });
+      if(choice === 'day'){
+        const today = new Date();
+        const dayLabel = today.toLocaleDateString('en-GB',{weekday:'long', day:'numeric', month:'long', year:'numeric'});
+        djSchedCapturePdf(djSchedBuildDayExportHtml(today, dayLabel), dayLabel, 'portrait');
       } else if(choice === 'week'){
         const todayKey = djSchedDateKey(new Date());
         const weeks = djSchedWeeksForRange(todayKey, todayKey);

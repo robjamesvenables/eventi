@@ -5570,7 +5570,7 @@ let djSchedYear, djSchedMonth;
   djSchedMonth = t.getMonth();
 })();
 let djSchedEditingKey = null; // null, a booking id, or "new:<stageId>:<dateKey>"
-let djBookingColors = {resident:'#E2E8F0', takeover:'#E2E8F0'};
+let djBookingColors = {resident:'#16A34A', takeover:'#A78BFA'};
 
 function djSchedShiftMonth(dir){
   djSchedMonth += dir;
@@ -5642,6 +5642,16 @@ async function djSchedLoadFromSupabase(){
         if(r.key === 'resident_color') djBookingColors.resident = r.value;
         if(r.key === 'takeover_color') djBookingColors.takeover = r.value;
       });
+      // Any color not yet saved in the DB gets seeded with the current default so it
+      // sticks from here on, rather than silently reverting to gray/gray on reload.
+      const haveKeys = settingsRows.map(function(r){ return r.key; });
+      const toSeed = [];
+      if(haveKeys.indexOf('resident_color') === -1) toSeed.push({key:'resident_color', value:djBookingColors.resident});
+      if(haveKeys.indexOf('takeover_color') === -1) toSeed.push({key:'takeover_color', value:djBookingColors.takeover});
+      if(toSeed.length){
+        const { error: seedSettingsErr } = await sb.from('dj_settings').upsert(toSeed);
+        if(seedSettingsErr) console.warn('Entertainment Schedule settings seeding failed', seedSettingsErr);
+      }
     }
   } catch(e){
     console.warn('Entertainment Schedule Supabase load failed, using demo data', e);

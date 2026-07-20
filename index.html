@@ -2153,6 +2153,18 @@ img.emoji-tw{width:1.15em;height:1.15em;vertical-align:-0.2em;margin:0 1px}
      what was pushing the edit form's right edge into the next day column. */
   .djsched-week-grid > div{min-width:0;width:176px}
 
+  /* Keep every day column the same height on mobile. Busy days and an open inline
+     editor scroll inside the day card rather than stretching one stage taller than
+     the others. This keeps every stage panel aligned and predictable while swiping. */
+  .djsched-day-cell{
+    height:310px !important;
+    min-height:310px !important;
+    overflow-y:auto !important;
+    overscroll-behavior:contain;
+    -webkit-overflow-scrolling:touch;
+    scrollbar-width:thin;
+  }
+
   /* Comp badge (Drinks/Food) was overflowing the narrow mobile day card and visually
      spilling into the next column. Stack it vertically instead of side-by-side with a
      divider, which needs more horizontal room than a ~130px-wide card has. */
@@ -5776,7 +5788,7 @@ function djSchedDayCellHtml(stage, d, inMonth, dayName){
     return so !== 0 ? so : a.start.localeCompare(b2.start);
   });
   let html = '';
-  html += '<div style="background:'+(inMonth?'#F8FAFC':'#FCFCFD')+';border:1px solid #EDF0F4;border-radius:10px;padding:8px;min-height:90px;opacity:'+(inMonth?1:0.55)+';box-sizing:border-box;max-width:100%">';
+  html += '<div class="djsched-day-cell" style="background:'+(inMonth?'#F8FAFC':'#FCFCFD')+';border:1px solid #EDF0F4;border-radius:10px;padding:8px;min-height:90px;opacity:'+(inMonth?1:0.55)+';box-sizing:border-box;max-width:100%">';
   html += '<div style="font-size:10.5px;font-weight:800;color:#64748B;text-transform:uppercase">'+dayName+'</div>';
   html += '<div style="font-size:11px;color:#94A3B8;margin-bottom:6px">'+d.getDate()+' '+d.toLocaleDateString('en-GB',{month:'short'})+'</div>';
   dayBookings.forEach(function(b, i){ html += djSchedBookingHtml(b, i===0, i===dayBookings.length-1); });
@@ -6136,48 +6148,57 @@ function djSchedWeeksForRange(fromStr, toStr){
 // for the given weeks, sized for a PDF page rather than the live app view.
 function djSchedBuildExportHtml(weeks, title){
   const dayNames = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
-  let out = '<div style="font-family:Inter,sans-serif;padding:10px;background:white">';
-  out += '<div style="font-size:20px;font-weight:800;color:#0F1E2E;margin-bottom:18px;text-align:center">'+title+'</div>';
+  let pages = [];
+
   weeks.forEach(function(week){
-    const weekLabel = week.days[0].toLocaleDateString('en-GB',{day:'numeric',month:'short'})+' – '+week.days[6].toLocaleDateString('en-GB',{day:'numeric',month:'short'});
-    out += '<div style="margin-bottom:28px">';
-    out += '<div style="font-size:13px;font-weight:800;color:#0F1E2E;text-transform:uppercase;letter-spacing:0.8px;margin-bottom:12px;padding:8px 14px;background:#EDE6D8;border-radius:8px">Week of '+weekLabel+'</div>';
+    const weekLabel = week.days[0].toLocaleDateString('en-GB',{day:'numeric',month:'short'})+' – '+week.days[6].toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'});
+
     djStages.forEach(function(stage){
       const stageColor = stage.color || '#0F1E2E';
-      out += '<div style="background:white;border:1.5px solid #E2E8F0;border-radius:14px;overflow:hidden;margin-bottom:14px">';
-      out += '<div style="background:'+stageColor+';padding:12px 18px;text-align:center">';
-      out += '<span style="color:white;font-weight:800;font-size:15px;text-transform:uppercase;letter-spacing:0.5px">'+stage.name+'</span>';
-      out += '</div>';
-      out += '<div style="padding:16px"><div style="display:grid;grid-template-columns:repeat(7,1fr);gap:8px">';
+      let page = '<section style="font-family:Inter,sans-serif;background:white;width:100%;box-sizing:border-box;padding:4px;page-break-inside:avoid">';
+      page += '<div style="display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:12px;padding-bottom:10px;border-bottom:2px solid #E2E8F0">';
+      page += '<div><div style="font-size:10px;font-weight:800;letter-spacing:1.4px;text-transform:uppercase;color:#0D9488;margin-bottom:4px">Entertainment Schedule</div>';
+      page += '<div style="font-size:20px;font-weight:800;color:#0F1E2E">'+title+'</div></div>';
+      page += '<div style="font-size:11px;font-weight:700;color:#64748B;text-align:right">Week of<br><span style="font-size:13px;color:#0F1E2E">'+weekLabel+'</span></div></div>';
+
+      page += '<div style="background:'+stageColor+';padding:11px 16px;border-radius:10px 10px 0 0;text-align:center">';
+      page += '<span style="color:white;font-weight:800;font-size:16px;text-transform:uppercase;letter-spacing:0.7px">'+stage.name+'</span></div>';
+      page += '<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:7px;border:1.5px solid #E2E8F0;border-top:0;border-radius:0 0 10px 10px;padding:10px">';
+
       week.days.forEach(function(d,i){
         const key = djSchedDateKey(d);
         const dayBookings = djBookings.filter(function(b){ return b.stageId===stage.id && b.date===key; }).sort(function(a,b2){
           const so = (a.sortOrder||0) - (b2.sortOrder||0);
           return so !== 0 ? so : a.start.localeCompare(b2.start);
         });
-        out += '<div style="background:#F8FAFC;border:1px solid #EDF0F4;border-radius:10px;padding:8px;min-height:70px">';
-        out += '<div style="font-size:10.5px;font-weight:800;color:#64748B;text-transform:uppercase">'+dayNames[i]+'</div>';
-        out += '<div style="font-size:11px;color:#94A3B8;margin-bottom:6px">'+d.getDate()+' '+d.toLocaleDateString('en-GB',{month:'short'})+'</div>';
+        page += '<div style="background:#F8FAFC;border:1px solid #E2E8F0;border-radius:8px;padding:8px;min-height:132px;box-sizing:border-box">';
+        page += '<div style="font-size:10px;font-weight:800;color:#0D9488;text-transform:uppercase;letter-spacing:0.5px">'+dayNames[i]+'</div>';
+        page += '<div style="font-size:11px;font-weight:700;color:#64748B;margin:2px 0 8px">'+d.getDate()+' '+d.toLocaleDateString('en-GB',{month:'short'})+'</div>';
         if(dayBookings.length === 0){
-          out += '<div style="font-size:10px;color:#CBD5E1">—</div>';
+          page += '<div style="font-size:10px;color:#CBD5E1;text-align:center;padding-top:28px">No bookings</div>';
         } else {
           dayBookings.forEach(function(b){
             const bg = b.type==='takeover' ? djBookingColors.takeover : djBookingColors.resident;
-            out += '<div style="background:'+bg+';border-radius:7px;padding:9px 8px;margin-bottom:5px;text-align:center">';
-            out += '<div style="font-size:10px;font-weight:700;color:#0F1E2E">'+b.start+' - '+b.end+'</div>';
-            out += '<div style="font-size:11.5px;font-weight:800;color:#0F1E2E;margin-top:6px">'+b.dj+'</div>';
-            out += djSchedCompBadge(b.drinks, b.food);
-            out += '</div>';
+            page += '<div style="background:'+bg+';border-radius:6px;padding:7px 6px;margin-bottom:6px;text-align:center;page-break-inside:avoid">';
+            page += '<div style="font-size:9px;font-weight:700;color:#0F1E2E">'+b.start+' - '+b.end+'</div>';
+            page += '<div style="font-size:11px;font-weight:800;color:#0F1E2E;margin-top:4px;line-height:1.25">'+b.dj+'</div>';
+            page += djSchedCompBadge(b.drinks, b.food);
+            page += '</div>';
           });
         }
-        out += '</div>';
+        page += '</div>';
       });
-      out += '</div></div></div>';
+
+      page += '</div>';
+      page += '<div style="margin-top:9px;text-align:right;font-size:9px;color:#94A3B8">Generated from Mavis</div>';
+      page += '</section>';
+      pages.push(page);
     });
-    out += '</div>';
   });
-  out += '</div>';
-  return out;
+
+  return '<div style="background:white">'+pages.map(function(page,i){
+    return '<div style="'+(i < pages.length-1 ? 'page-break-after:always;' : '')+'">'+page+'</div>';
+  }).join('')+'</div>';
 }
 
 // Generic capture step shared by every export scope (day, week, month): temporarily swap
@@ -12894,4 +12915,3 @@ document.addEventListener('DOMContentLoaded', updateInstallButtonVisibility);
 </script>
 </body>
 </html>
-

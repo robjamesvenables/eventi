@@ -5656,6 +5656,17 @@ async function djSchedLoadFromSupabase(){
         console.warn('Entertainment Schedule stage seeding failed', seedErr);
       }
     }
+    // One-time safety recovery for the old repeated-header Delete bug. That button
+    // used to delete the shared stage row, so Main Stage vanished from all weeks.
+    // Recreate it only when it is genuinely missing.
+    if(!stageErr && !djStages.some(function(s){ return String(s.name).trim().toLowerCase()==='main stage'; })){
+      const { data: restoredStage, error: restoreStageErr } = await sb.from('dj_stages').insert({ name:'Main Stage', color:'#0F1E2E' }).select().single();
+      if(!restoreStageErr && restoredStage){
+        djStages.unshift({ id:restoredStage.id, name:restoredStage.name, color:restoredStage.color || '#0F1E2E' });
+      } else if(restoreStageErr){
+        console.warn('Main Stage recovery failed', restoreStageErr);
+      }
+    }
     const { data: bookingRows, error: bookingErr } = await sb.from('dj_bookings').select('*').order('id', { ascending: true });
     if(!bookingErr && bookingRows){
       djBookings = bookingRows.map(function(r){
@@ -5834,7 +5845,7 @@ function djSchedRender(){
           out += '<button class="djsched-hdr-btn" onclick="djSchedPickColor('+stage.id+')" title="Change color" style="width:28px;height:28px;padding:0;background:rgba(255,255,255,0.12);border:none;border-radius:50%;color:white;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="13.5" cy="6.5" r=".5"/><circle cx="17.5" cy="10.5" r=".5"/><circle cx="8.5" cy="7.5" r=".5"/><circle cx="6.5" cy="12.5" r=".5"/><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.289-.438-.652-.438-1.125a1.64 1.64 0 0 1 1.668-1.668h1.996c3.051 0 5.555-2.503 5.555-5.554C21.965 6.012 17.461 2 12 2z"/></svg></button>';
           out += '<button class="djsched-hdr-btn" onclick="djSchedCopyPrevWeek('+stage.id+',\''+djSchedDateKey(week.start)+'\')" title="Copy last week into this week" style="padding:5px 10px;background:rgba(255,255,255,0.12);border:none;border-radius:7px;color:white;font-family:Inter,sans-serif;font-size:11.5px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:5px;flex-shrink:0;white-space:nowrap"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg><span class="djsched-btn-label">Copy last week</span></button>';
           out += '<button class="djsched-hdr-btn" onclick="djSchedRenameStage('+stage.id+')" title="Rename" style="padding:5px 10px;background:rgba(255,255,255,0.12);border:none;border-radius:7px;color:white;font-family:Inter,sans-serif;font-size:11.5px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:5px;flex-shrink:0;white-space:nowrap"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg><span class="djsched-btn-label">Rename</span></button>';
-          out += '<button class="djsched-hdr-btn" onclick="djSchedDeleteStage('+stage.id+')" title="Delete" style="padding:5px 10px;background:rgba(220,38,38,0.25);border:none;border-radius:7px;color:white;font-family:Inter,sans-serif;font-size:11.5px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:5px;flex-shrink:0;white-space:nowrap"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0-1 14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2L4 6"/></svg><span class="djsched-btn-label">Delete</span></button>';
+          out += '<button class="djsched-hdr-btn" onclick="djSchedDeleteStageWeek('+stage.id+',\''+djSchedDateKey(week.start)+'\')" title="Clear this stage for this week" style="padding:5px 10px;background:rgba(220,38,38,0.25);border:none;border-radius:7px;color:white;font-family:Inter,sans-serif;font-size:11.5px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:5px;flex-shrink:0;white-space:nowrap"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0-1 14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2L4 6"/></svg><span class="djsched-btn-label">Delete</span></button>';
           out += '</div></div>';
           out += '<div style="padding:16px">';
           out += '<div class="djsched-week-grid" style="display:grid;grid-template-columns:repeat(7,1fr);gap:8px">';
@@ -6064,8 +6075,42 @@ window.djSchedPickColor = function(id){
   });
 };
 
+// The stage header is repeated once per week, so its Delete button must only clear
+// that displayed week. Previously it deleted the shared stage record, which made the
+// stage disappear from every week in the calendar.
+window.djSchedDeleteStageWeek = function(id, weekStartKey){
+  const stage = djStages.find(function(s){ return s.id===id; });
+  const weekStart = new Date(weekStartKey+'T00:00:00');
+  const weekEnd = new Date(weekStart);
+  weekEnd.setDate(weekEnd.getDate()+6);
+  const weekEndKey = djSchedDateKey(weekEnd);
+  const weekBookings = djBookings.filter(function(b){
+    return b.stageId===id && b.date>=weekStartKey && b.date<=weekEndKey;
+  });
+  const stageName = stage ? stage.name : 'this stage';
+  if(weekBookings.length===0){
+    toast('There are no bookings to delete for '+stageName+' in this week');
+    return;
+  }
+  appConfirmShow({
+    title:'Delete Week Bookings',
+    msg:'Delete all '+weekBookings.length+' booking'+(weekBookings.length===1?'':'s')+' from '+stageName+' for this week only? The stage will remain in every week.',
+    onOk:async function(){
+      djBookings = djBookings.filter(function(b){
+        return !(b.stageId===id && b.date>=weekStartKey && b.date<=weekEndKey);
+      });
+      djSchedRender();
+      const { error } = await sb.from('dj_bookings').delete().eq('stage_id', id).gte('date', weekStartKey).lte('date', weekEndKey);
+      if(error) console.warn('Supabase week booking delete failed', error);
+      else toast('This week cleared ✓');
+    }
+  });
+};
+
+// Kept as a separate explicit function for any future settings/admin screen where a
+// stage really should be permanently removed from the whole schedule.
 window.djSchedDeleteStage = function(id){
-  appConfirmShow({title:'Delete Stage', msg:'This will also remove every booking under this stage. Are you sure?', onOk:async function(){
+  appConfirmShow({title:'Permanently Delete Stage', msg:'Permanently remove this stage and every booking in every week?', onOk:async function(){
     djStages = djStages.filter(function(s){ return s.id!==id; });
     djBookings = djBookings.filter(function(b){ return b.stageId!==id; });
     djSchedRender();

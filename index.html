@@ -9044,8 +9044,8 @@ function announceReactionBarHtml(id){
       const list = a.reactions[r.id] || [];
       const mine = list.includes(me);
       const count = list.length;
-      return `<button onclick="announceToggleReaction(${id},'${r.id}')" title="${r.char}" style="display:flex;align-items:center;gap:4px;padding:4px 8px;border-radius:16px;border:1.5px solid ${mine?'#0D9488':'#E2E8F0'};background:${mine?'rgba(13,148,136,0.1)':'white'};cursor:pointer;font-size:13px;line-height:1;font-family:'Inter',sans-serif">
-        <span>${momentsTwemojiParse(r.char)}</span>${count>0?`<span style="font-size:10.5px;font-weight:700;color:${mine?'#0D9488':'#64748B'}">${count}</span>`:''}
+      return `<button onclick="announceToggleReaction(${id},'${r.id}')" title="${r.label}" style="display:flex;align-items:center;gap:4px;padding:4px 8px;border-radius:16px;border:1.5px solid ${mine?'#0D9488':'#E2E8F0'};background:${mine?'rgba(13,148,136,0.1)':'white'};cursor:pointer;font-size:13px;line-height:1;font-family:'Inter',sans-serif">
+        <span>${r.char?momentsTwemojiParse(r.char):`<span style="font-size:11px;font-weight:700">${r.label}</span>`}</span>${count>0?`<span style="font-size:10.5px;font-weight:700;color:${mine?'#0D9488':'#64748B'}">${count}</span>`:''}
       </button>`;
     }).join('')}
   </div>`;
@@ -9153,11 +9153,11 @@ const HIGHLIGHT_TAGS = [
   {id:'highfive', label:'High five', bg:'#0D9488', char:'🙌', svg:'<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><g transform="translate(-1.39,-0.35)"><path d="M18 11V5.5a1.5 1.5 0 0 0-3 0V11"/><path d="M15 11V4a1.5 1.5 0 0 0-3 0v9"/><path d="M12 13V6a1.5 1.5 0 0 0-3 0v9"/><path d="M9 15v-3a1.5 1.5 0 0 0-3 0v4a7 7 0 0 0 7 7h1a7 7 0 0 0 7-7v-4a1.5 1.5 0 0 0-3 0v2"/></g></svg>'},
   {id:'party', label:'Party', bg:'#7C3AED', char:'🎉', svg:'<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><g transform="translate(0.05,0.05)"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></g></svg>'},
   {id:'star', label:'Star', bg:'#CA8A04', char:'⭐', svg:'<svg width="16" height="16" viewBox="0 0 24 24" fill="white" stroke="white" stroke-width="1" stroke-linejoin="round"><g transform="translate(0.05,-0.47)"><polygon points="12 2 15 9 22 9 16.5 13.5 18.5 21 12 17 5.5 21 7.5 13.5 2 9 9 9 12 2"/></g></svg>'},
-  {id:'food', label:'Food', bg:'#EA580C', char:'🍔', svg:'<span style="font-size:15px;line-height:1">🍔</span>'},
-  {id:'drink', label:'Drink', bg:'#B45309', char:'🍺', svg:'<span style="font-size:15px;line-height:1">🍺</span>'}
+  {id:'food', label:'Food', bg:'#EA580C', char:'', svg:''},
+  {id:'drink', label:'Drinks', bg:'#B45309', char:'', svg:''}
 ];
 
-const REACTION_EMOJIS = HIGHLIGHT_TAGS.map(t => ({id: t.id, char: t.char}));
+const REACTION_EMOJIS = HIGHLIGHT_TAGS.map(t => ({id: t.id, char: t.char, label: t.label}));
 
 
 const ANNOUNCE_EMOJIS = HIGHLIGHT_TAGS;
@@ -9262,14 +9262,16 @@ window.announceRemovePhoto = function(){
 function announceRenderEmojis(){
   const c = document.getElementById('announce-emojis');
   if(!c) return;
-  c.innerHTML = ANNOUNCE_EMOJIS.map(e=>
-    `<button onclick="announceInsertEmoji('${e.id}')" title="${e.label}" style="display:flex;align-items:center;justify-content:center;width:34px;height:34px;flex-shrink:0;padding:0;margin:0;border-radius:50%;border:1.5px solid #E2E8F0;background:white;cursor:pointer;font-size:17px;line-height:1;transition:transform 0.1s,border-color 0.15s" onmousedown="this.style.transform='scale(0.88)'" onmouseup="this.style.transform='scale(1)'">${momentsTwemojiParse(e.char)}</button>`
+  c.innerHTML = ANNOUNCE_EMOJIS.map(e=> e.char
+    ? `<button onclick="announceInsertEmoji('${e.id}')" title="${e.label}" style="display:flex;align-items:center;justify-content:center;width:34px;height:34px;flex-shrink:0;padding:0;margin:0;border-radius:50%;border:1.5px solid #E2E8F0;background:white;cursor:pointer;font-size:17px;line-height:1;transition:transform 0.1s,border-color 0.15s" onmousedown="this.style.transform='scale(0.88)'" onmouseup="this.style.transform='scale(1)'">${momentsTwemojiParse(e.char)}</button>`
+    : `<button onclick="announceInsertEmoji('${e.id}')" title="${e.label}" style="display:flex;align-items:center;justify-content:center;height:34px;padding:0 12px;flex-shrink:0;margin:0;border-radius:17px;border:1.5px solid #E2E8F0;background:white;cursor:pointer;font-size:12px;font-weight:700;line-height:1;transition:transform 0.1s,border-color 0.15s" onmousedown="this.style.transform='scale(0.88)'" onmouseup="this.style.transform='scale(1)'">${e.label}</button>`
   ).join('');
 }
 
 window.announceInsertEmoji = function(id){
   const e = ANNOUNCE_EMOJIS.find(x=>x.id===id);
   if(!e) return;
+  const insertText = e.char || e.label;
   const input = document.getElementById('announce-input');
   input.focus();
   const sel = window.getSelection();
@@ -9277,11 +9279,11 @@ window.announceInsertEmoji = function(id){
   if(sel.rangeCount > 0 && input.contains(sel.anchorNode)){
     range = sel.getRangeAt(0);
     range.deleteContents();
-    const node = document.createTextNode(e.char);
+    const node = document.createTextNode(insertText);
     range.insertNode(node);
     range.setStartAfter(node);
   } else {
-    const node = document.createTextNode(e.char);
+    const node = document.createTextNode(insertText);
     input.appendChild(node);
     range = document.createRange();
     range.setStartAfter(node);
@@ -9468,8 +9470,8 @@ function announceReplyReactionBarHtml(replyId){
       const list = announceReplyReactions[replyId][r.id] || [];
       const mine = list.includes(me);
       const count = list.length;
-      return `<button onclick="announceToggleReplyReaction(${typeof replyId === 'string' ? `'${replyId}'` : replyId},'${r.id}')" title="${r.char}" style="display:flex;align-items:center;gap:3px;padding:2px 6px;border-radius:14px;border:1px solid ${mine?'#0D9488':'#E2E8F0'};background:${mine?'rgba(13,148,136,0.1)':'white'};cursor:pointer;font-size:11px;line-height:1;font-family:'Inter',sans-serif">
-        <span>${momentsTwemojiParse(r.char)}</span>${count>0?`<span style="font-size:9.5px;font-weight:700;color:${mine?'#0D9488':'#64748B'}">${count}</span>`:''}
+      return `<button onclick="announceToggleReplyReaction(${typeof replyId === 'string' ? `'${replyId}'` : replyId},'${r.id}')" title="${r.label}" style="display:flex;align-items:center;gap:3px;padding:2px 6px;border-radius:14px;border:1px solid ${mine?'#0D9488':'#E2E8F0'};background:${mine?'rgba(13,148,136,0.1)':'white'};cursor:pointer;font-size:11px;line-height:1;font-family:'Inter',sans-serif">
+        <span>${r.char?momentsTwemojiParse(r.char):`<span style="font-size:9.5px;font-weight:700">${r.label}</span>`}</span>${count>0?`<span style="font-size:9.5px;font-weight:700;color:${mine?'#0D9488':'#64748B'}">${count}</span>`:''}
       </button>`;
     }).join('')}
   </div>`;
@@ -10149,7 +10151,7 @@ window.chatBackToList = function(){
   document.getElementById('chat-list-pane').classList.remove('mobile-hidden');
 };
 
-const CHAT_REACTION_EMOJIS = HIGHLIGHT_TAGS.map(t => ({id: t.id, char: t.char}));
+const CHAT_REACTION_EMOJIS = HIGHLIGHT_TAGS.map(t => ({id: t.id, char: t.char, label: t.label}));
 
 function chatRenderMessages(){
   const c = chatConversations.find(x=>x.id===chatActiveId);
@@ -10179,8 +10181,9 @@ function chatRenderMessages(){
         ${attachmentHtml}${textHtml}
       </div>
       <div id="chat-react-picker-${i}" style="display:none;gap:5px;margin-top:5px;justify-content:${mine?'flex-end':'flex-start'}">
-        ${CHAT_REACTION_EMOJIS.map(r =>
-          `<button onclick="chatToggleReaction(${i},'${r.id}')" style="width:28px;height:28px;border-radius:50%;background:white;border:1.5px solid #E2E8F0;font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0" title="${r.char}">${r.char}</button>`
+        ${CHAT_REACTION_EMOJIS.map(r => r.char
+          ? `<button onclick="chatToggleReaction(${i},'${r.id}')" style="width:28px;height:28px;border-radius:50%;background:white;border:1.5px solid #E2E8F0;font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0" title="${r.label}">${r.char}</button>`
+          : `<button onclick="chatToggleReaction(${i},'${r.id}')" style="height:28px;padding:0 9px;border-radius:14px;background:white;border:1.5px solid #E2E8F0;font-size:10.5px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center" title="${r.label}">${r.label}</button>`
         ).join('')}
       </div>
       <div style="font-size:10px;color:#94A3B8;margin-top:3px;text-align:${mine?'right':'left'}">${m.time}</div>
@@ -10198,7 +10201,7 @@ function chatReactionBarHtml(i, m){
     ${CHAT_REACTION_EMOJIS.map(r => {
       const list = m.reactions[r.id] || [];
       if(!list.length) return '';
-      return `<span onclick="chatToggleReaction(${i},'${r.id}')" style="display:flex;align-items:center;gap:3px;padding:3px 8px;border-radius:20px;background:white;border:1.5px solid #E2E8F0;font-size:12px;cursor:pointer">${r.char}<span style="font-size:10px;font-weight:700;color:#64748B">${list.length}</span></span>`;
+      return `<span onclick="chatToggleReaction(${i},'${r.id}')" style="display:flex;align-items:center;gap:3px;padding:3px 8px;border-radius:20px;background:white;border:1.5px solid #E2E8F0;font-size:12px;cursor:pointer">${r.char?r.char:`<span style="font-weight:700">${r.label}</span>`}<span style="font-size:10px;font-weight:700;color:#64748B">${list.length}</span></span>`;
     }).join('')}
   </div>`;
 }
@@ -11408,8 +11411,8 @@ function momentsReactionBarHtml(idx, small){
       const list = m.reactions[r.id] || [];
       const mine = list.includes(me);
       const count = list.length;
-      return `<button onclick="momentToggleReaction(${idx},'${r.id}')" title="${r.char}" style="display:flex;align-items:center;gap:4px;padding:${pad};border-radius:20px;border:1.5px solid ${mine?'#0D9488':'#E2E8F0'};background:${mine?'rgba(13,148,136,0.1)':'white'};cursor:pointer;font-size:${fsz};line-height:1;font-family:'Inter',sans-serif">
-        <span>${momentsTwemojiParse(r.char)}</span>${count>0?`<span style="font-size:11px;font-weight:700;color:${mine?'#0D9488':'#64748B'}">${count}</span>`:''}
+      return `<button onclick="momentToggleReaction(${idx},'${r.id}')" title="${r.label}" style="display:flex;align-items:center;gap:4px;padding:${pad};border-radius:20px;border:1.5px solid ${mine?'#0D9488':'#E2E8F0'};background:${mine?'rgba(13,148,136,0.1)':'white'};cursor:pointer;font-size:${fsz};line-height:1;font-family:'Inter',sans-serif">
+        <span>${r.char?momentsTwemojiParse(r.char):`<span style="font-weight:700">${r.label}</span>`}</span>${count>0?`<span style="font-size:11px;font-weight:700;color:${mine?'#0D9488':'#64748B'}">${count}</span>`:''}
       </button>`;
     }).join('')}
   </div>`;
@@ -12119,7 +12122,10 @@ function appModalShow({title, sub='', fields, onOk}){
         style="width:100%;padding:11px 14px;border:1.5px solid #E2E8F0;border-radius:9px;font-family:'Inter',sans-serif;font-size:14px;color:#0F1E2E;outline:none;box-sizing:border-box;margin-bottom:8px;resize:vertical;line-height:1.5"
         onfocus="this.style.borderColor='#0D9488'" onblur="this.style.borderColor='#E2E8F0'">${f.value||''}</textarea>
       <div style="display:flex;flex-wrap:wrap;gap:6px">
-        ${(f.options||[]).map(o=>`<span onclick="appModalInsertEmoji(${i},'${o.char}')" title="${o.label}" style="display:inline-flex;align-items:center;justify-content:center;width:34px;height:34px;border-radius:50%;background:white;border:1.5px solid #E2E8F0;cursor:pointer;font-size:17px;transition:transform 0.1s,border-color 0.15s" onmousedown="this.style.transform='scale(0.88)'" onmouseup="this.style.transform='scale(1)'">${momentsTwemojiParse(o.char)}</span>`).join('')}
+        ${(f.options||[]).map(o=> o.char
+          ? `<span onclick="appModalInsertEmoji(${i},'${o.char}')" title="${o.label}" style="display:inline-flex;align-items:center;justify-content:center;width:34px;height:34px;border-radius:50%;background:white;border:1.5px solid #E2E8F0;cursor:pointer;font-size:17px;transition:transform 0.1s,border-color 0.15s" onmousedown="this.style.transform='scale(0.88)'" onmouseup="this.style.transform='scale(1)'">${momentsTwemojiParse(o.char)}</span>`
+          : `<span onclick="appModalInsertEmoji(${i},'${o.label}')" title="${o.label}" style="display:inline-flex;align-items:center;justify-content:center;height:34px;padding:0 12px;border-radius:17px;background:white;border:1.5px solid #E2E8F0;cursor:pointer;font-size:12px;font-weight:700;transition:transform 0.1s,border-color 0.15s" onmousedown="this.style.transform='scale(0.88)'" onmouseup="this.style.transform='scale(1)'">${o.label}</span>`
+        ).join('')}
       </div>
     </div>`;
     }

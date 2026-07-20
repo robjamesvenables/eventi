@@ -6221,9 +6221,9 @@ function djSchedCapturePdf(htmlContent, filenamePart, orientation){
   const exportHost = document.createElement('div');
   exportHost.id = 'djsched-pdf-export-host';
   exportHost.style.cssText = [
-    'position:fixed',
+    'position:absolute',
     'left:0',
-    'top:0',
+    'top:'+window.scrollY+'px',
     'width:1120px',
     'min-width:1120px',
     'max-width:none',
@@ -6238,7 +6238,7 @@ function djSchedCapturePdf(htmlContent, filenamePart, orientation){
   exportHost.innerHTML = htmlContent;
   document.body.appendChild(exportHost);
 
-  requestAnimationFrame(()=>{ requestAnimationFrame(()=>{
+  const startExport = function(){
     html2pdf().set({
       margin: [6,6,6,6],
       filename: filename,
@@ -6258,7 +6258,19 @@ function djSchedCapturePdf(htmlContent, filenamePart, orientation){
       .then(()=>{ toast('PDF downloaded ✓'); })
       .catch((err)=>{ toast('PDF export failed — please try again'); console.error(err); })
       .finally(()=>{ exportHost.remove(); });
-  }); });
+  };
+
+  // Wait until the browser has laid out the temporary export and loaded Inter.
+  const runAfterLayout = function(){
+    requestAnimationFrame(function(){
+      requestAnimationFrame(startExport);
+    });
+  };
+  if(document.fonts && document.fonts.ready){
+    document.fonts.ready.then(runAfterLayout).catch(runAfterLayout);
+  } else {
+    runAfterLayout();
+  }
 }
 
 function djSchedExportPdf(weeks, title, filenamePart){

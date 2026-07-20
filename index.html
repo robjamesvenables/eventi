@@ -5555,8 +5555,8 @@ function calGoToday(){
 // djBookings: [{id, stageId, date:'YYYY-MM-DD', start:'HH:MM', end:'HH:MM', dj, type:'resident'|'takeover', drinks, food}]
 // djStaffHours: [{id, name, hours, cost}] — manually entered, summed at the bottom
 let djStages = [
-  {id:1, name:'Main Stage'},
-  {id:2, name:'Utopia'}
+  {id:1, name:'Main Stage', color:'#2563EB'},
+  {id:2, name:'Utopia', color:'#16A34A'}
 ];
 let djBookingNextId = 1;
 let djBookings = [];
@@ -5606,8 +5606,8 @@ function djSchedDateKey(d){
 function djSchedCompBadge(drinks, food){
   if(!drinks && !food) return '';
   const parts = [];
-  if(drinks) parts.push('<span style="display:inline-flex;align-items:center;gap:2px">🍸'+drinks+'</span>');
-  if(food) parts.push('<span style="display:inline-flex;align-items:center;gap:2px">🍽'+food+'</span>');
+  if(drinks) parts.push('<span style="display:inline-flex;align-items:center;gap:2px">🍷'+drinks+'</span>');
+  if(food) parts.push('<span style="display:inline-flex;align-items:center;gap:2px">🍔'+food+'</span>');
   return '<div style="display:flex;gap:6px;margin-top:2px;font-size:10px;color:#0F1E2E;opacity:0.75">'+parts.join('')+'</div>';
 }
 
@@ -5647,8 +5647,8 @@ function djSchedInlineFormHtml(b){
   html += '<label style="display:flex;align-items:center;gap:3px;font-size:10.5px;color:#0F1E2E"><input type="radio" name="djf-type-'+idAttr+'" id="djf-type-takeover-'+idAttr+'" '+(b.type==='takeover'?'checked':'')+'> Takeover</label>';
   html += '</div>';
   html += '<div style="display:flex;gap:4px;margin-bottom:6px">';
-  html += '<input id="djf-drinks-'+idAttr+'" type="text" value="'+(b.drinks||'')+'" placeholder="🍸 drinks" style="width:50%;padding:5px 7px;border:1px solid #E2E8F0;border-radius:5px;font-family:Inter,sans-serif;font-size:11px;box-sizing:border-box">';
-  html += '<input id="djf-food-'+idAttr+'" type="text" value="'+(b.food||'')+'" placeholder="🍽 food" style="width:50%;padding:5px 7px;border:1px solid #E2E8F0;border-radius:5px;font-family:Inter,sans-serif;font-size:11px;box-sizing:border-box">';
+  html += '<input id="djf-drinks-'+idAttr+'" type="text" value="'+(b.drinks||'')+'" placeholder="🍷 drinks" style="width:50%;padding:5px 7px;border:1px solid #E2E8F0;border-radius:5px;font-family:Inter,sans-serif;font-size:11px;box-sizing:border-box">';
+  html += '<input id="djf-food-'+idAttr+'" type="text" value="'+(b.food||'')+'" placeholder="🍔 food" style="width:50%;padding:5px 7px;border:1px solid #E2E8F0;border-radius:5px;font-family:Inter,sans-serif;font-size:11px;box-sizing:border-box">';
   html += '</div>';
   html += '<div style="display:flex;gap:4px">';
   html += '<button onclick="djSchedSave('+(b.id||'null')+',\''+b.stageId+'\',\''+b.date+'\')" style="flex:1;padding:5px;background:#0D9488;color:white;border:none;border-radius:5px;font-family:Inter,sans-serif;font-size:10.5px;font-weight:700;cursor:pointer">Save</button>';
@@ -5688,10 +5688,13 @@ function djSchedRender(){
       const dayNames = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
       let out = '';
       djStages.forEach(function(stage){
+        const stageColor = stage.color || '#0F1E2E';
         out += '<div style="background:white;border:1.5px solid #E2E8F0;border-radius:14px;overflow:hidden;margin-bottom:24px;box-shadow:0 2px 8px rgba(0,0,0,0.06)">';
-        out += '<div style="background:#0F1E2E;padding:12px 18px;display:flex;align-items:center;justify-content:space-between">';
-        out += '<span style="color:white;font-weight:800;font-size:15px;text-transform:uppercase;letter-spacing:0.5px">'+stage.name+'</span>';
-        out += '<div style="display:flex;gap:8px">';
+        out += '<div style="background:'+stageColor+';padding:12px 18px;display:grid;grid-template-columns:1fr auto 1fr;align-items:center">';
+        out += '<span></span>';
+        out += '<span style="color:white;font-weight:800;font-size:15px;text-transform:uppercase;letter-spacing:0.5px;text-align:center">'+stage.name+'</span>';
+        out += '<div style="display:flex;gap:8px;justify-self:end">';
+        out += '<button onclick="djSchedPickColor('+stage.id+')" title="Change color" style="width:28px;height:28px;padding:0;background:rgba(255,255,255,0.12);border:none;border-radius:50%;color:white;cursor:pointer;display:flex;align-items:center;justify-content:center"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="13.5" cy="6.5" r=".5"/><circle cx="17.5" cy="10.5" r=".5"/><circle cx="8.5" cy="7.5" r=".5"/><circle cx="6.5" cy="12.5" r=".5"/><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.289-.438-.652-.438-1.125a1.64 1.64 0 0 1 1.668-1.668h1.996c3.051 0 5.555-2.503 5.555-5.554C21.965 6.012 17.461 2 12 2z"/></svg></button>';
         out += '<button onclick="djSchedRenameStage('+stage.id+')" style="padding:5px 12px;background:rgba(255,255,255,0.12);border:none;border-radius:7px;color:white;font-family:Inter,sans-serif;font-size:11.5px;font-weight:700;cursor:pointer">Rename</button>';
         out += '<button onclick="djSchedDeleteStage('+stage.id+')" style="padding:5px 12px;background:rgba(220,38,38,0.25);border:none;border-radius:7px;color:white;font-family:Inter,sans-serif;font-size:11.5px;font-weight:700;cursor:pointer">Delete</button>';
         out += '</div></div>';
@@ -5782,6 +5785,29 @@ window.djSchedRenameStage = function(id){
       const name = vals[0];
       if(!name || !name.trim()) return;
       stage.name = name.trim();
+      djSchedRender();
+    }
+  });
+};
+
+const DJ_STAGE_COLORS = [
+  {id:'#0F1E2E', label:'Navy', bg:'#0F1E2E', svg:''},
+  {id:'#2563EB', label:'Blue', bg:'#2563EB', svg:''},
+  {id:'#16A34A', label:'Green', bg:'#16A34A', svg:''},
+  {id:'#0D9488', label:'Teal', bg:'#0D9488', svg:''},
+  {id:'#C4973B', label:'Gold', bg:'#C4973B', svg:''},
+  {id:'#DC2626', label:'Red', bg:'#DC2626', svg:''},
+  {id:'#7C3AED', label:'Purple', bg:'#7C3AED', svg:''}
+];
+
+window.djSchedPickColor = function(id){
+  const stage = djStages.find(function(s){ return s.id===id; });
+  if(!stage) return;
+  appModalShow({
+    title: 'Stage Color',
+    fields: [{label:'Pick a color', type:'colordot', options:DJ_STAGE_COLORS, value:stage.color||'#0F1E2E'}],
+    onOk: function(vals){
+      stage.color = vals[0];
       djSchedRender();
     }
   });

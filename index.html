@@ -5726,6 +5726,7 @@ function djSchedRender(){
           out += '<span style="color:white;font-weight:800;font-size:15px;text-transform:uppercase;letter-spacing:0.5px;text-align:center">'+stage.name+'</span>';
           out += '<div style="display:flex;gap:8px;justify-self:end">';
           out += '<button onclick="djSchedPickColor('+stage.id+')" title="Change color" style="width:28px;height:28px;padding:0;background:rgba(255,255,255,0.12);border:none;border-radius:50%;color:white;cursor:pointer;display:flex;align-items:center;justify-content:center"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="13.5" cy="6.5" r=".5"/><circle cx="17.5" cy="10.5" r=".5"/><circle cx="8.5" cy="7.5" r=".5"/><circle cx="6.5" cy="12.5" r=".5"/><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.289-.438-.652-.438-1.125a1.64 1.64 0 0 1 1.668-1.668h1.996c3.051 0 5.555-2.503 5.555-5.554C21.965 6.012 17.461 2 12 2z"/></svg></button>';
+          out += '<button onclick="djSchedCopyPrevWeek('+stage.id+',\''+djSchedDateKey(week.start)+'\')" title="Copy last week into this week" style="padding:5px 10px;background:rgba(255,255,255,0.12);border:none;border-radius:7px;color:white;font-family:Inter,sans-serif;font-size:11.5px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:5px"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>Copy last week</button>';
           out += '<button onclick="djSchedRenameStage('+stage.id+')" style="padding:5px 12px;background:rgba(255,255,255,0.12);border:none;border-radius:7px;color:white;font-family:Inter,sans-serif;font-size:11.5px;font-weight:700;cursor:pointer">Rename</button>';
           out += '<button onclick="djSchedDeleteStage('+stage.id+')" style="padding:5px 12px;background:rgba(220,38,38,0.25);border:none;border-radius:7px;color:white;font-family:Inter,sans-serif;font-size:11.5px;font-weight:700;cursor:pointer">Delete</button>';
           out += '</div></div>';
@@ -5787,6 +5788,38 @@ window.djSchedDeleteBooking = function(id){
     djBookings = djBookings.filter(function(x){ return x.id!==id; });
     djSchedRender();
   }});
+};
+
+window.djSchedCopyPrevWeek = function(stageId, weekStartKey){
+  const weekStart = new Date(weekStartKey);
+  const prevWeekStart = new Date(weekStart);
+  prevWeekStart.setDate(prevWeekStart.getDate()-7);
+
+  function inWeek(dateStr, startDate){
+    const d = new Date(dateStr);
+    const diffDays = Math.round((d - startDate) / 86400000);
+    return diffDays >= 0 && diffDays <= 6;
+  }
+
+  const prevBookings = djBookings.filter(function(b){ return b.stageId===stageId && inWeek(b.date, prevWeekStart); });
+  if(prevBookings.length === 0){ toast('No bookings found in the previous week to copy'); return; }
+
+  const doCopy = function(){
+    prevBookings.forEach(function(b){
+      const newDate = new Date(b.date);
+      newDate.setDate(newDate.getDate()+7);
+      djBookings.push({id:djBookingNextId++, stageId:stageId, date:djSchedDateKey(newDate), start:b.start, end:b.end, dj:b.dj, type:b.type, drinks:b.drinks, food:b.food});
+    });
+    djSchedRender();
+    toast('Copied '+prevBookings.length+' booking'+(prevBookings.length===1?'':'s')+' from last week ✓');
+  };
+
+  const existingThisWeek = djBookings.filter(function(b){ return b.stageId===stageId && inWeek(b.date, weekStart); });
+  if(existingThisWeek.length > 0){
+    appConfirmShow({title:'Copy Last Week', msg:'This week already has '+existingThisWeek.length+' booking'+(existingThisWeek.length===1?'':'s')+' for this stage. Copying last week will add to them, not replace them. Continue?', onOk:doCopy});
+  } else {
+    doCopy();
+  }
 };
 
 window.djSchedAddStage = function(){

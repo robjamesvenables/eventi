@@ -5627,7 +5627,7 @@ async function djSchedLoadFromSupabase(){
     const { data: bookingRows, error: bookingErr } = await sb.from('dj_bookings').select('*').order('id', { ascending: true });
     if(!bookingErr && bookingRows){
       djBookings = bookingRows.map(function(r){
-        return { id: r.id, stageId: r.stage_id, date: r.date, start: r.start_time, end: r.end_time, dj: r.dj_name, type: r.type, drinks: r.drinks || 0, food: r.food || 0 };
+        return { id: r.id, stageId: r.stage_id, date: r.date, start: r.start_time, end: r.end_time, dj: r.dj_name, type: r.type, drinks: r.drinks || 0, food: r.food || 0, sortOrder: r.sort_order || 0 };
       });
       djBookingNextId = djBookings.length ? Math.max.apply(null, djBookings.map(function(b){ return b.id; })) + 1 : 1;
     }
@@ -5677,7 +5677,7 @@ function djSchedCompBadge(drinks, food){
 // Renders one booking card: either its normal display form, or an inline edit form if it's
 // the one currently being edited. This is the "click to edit in place" pattern (matching
 // Team Feed's reply editing) instead of a popup modal.
-function djSchedBookingHtml(b){
+function djSchedBookingHtml(b, isFirst, isLast){
   const editKey = 'b:'+b.id;
   if(djSchedEditingKey === editKey){
     return djSchedInlineFormHtml(b);
@@ -5686,6 +5686,14 @@ function djSchedBookingHtml(b){
   let html = '';
   html += '<div style="position:relative;background:'+bg+';border-radius:7px;padding:9px 8px;margin-bottom:5px">';
   html += '<span onclick="event.stopPropagation();djSchedDeleteBooking('+b.id+')" style="position:absolute;top:2px;right:3px;font-size:13px;line-height:1;color:#0F1E2E;opacity:0.5;cursor:pointer;padding:3px">×</span>';
+  html += '<div style="position:absolute;top:2px;left:3px;display:flex;flex-direction:column;gap:1px">';
+  html += isFirst
+    ? '<span style="width:14px;height:11px"></span>'
+    : '<span onclick="event.stopPropagation();djSchedMoveBooking('+b.id+',-1)" title="Move up" style="width:14px;height:11px;display:flex;align-items:center;justify-content:center;color:#0F1E2E;opacity:0.5;cursor:pointer"><svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M18 15l-6-6-6 6"/></svg></span>';
+  html += isLast
+    ? '<span style="width:14px;height:11px"></span>'
+    : '<span onclick="event.stopPropagation();djSchedMoveBooking('+b.id+',1)" title="Move down" style="width:14px;height:11px;display:flex;align-items:center;justify-content:center;color:#0F1E2E;opacity:0.5;cursor:pointer"><svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></span>';
+  html += '</div>';
   html += '<div onclick="djSchedStartEdit('+b.id+')" style="cursor:pointer;text-align:center">';
   html += '<div style="font-size:10px;font-weight:700;color:#0F1E2E">'+b.start+' - '+b.end+'</div>';
   html += '<div style="font-size:11.5px;font-weight:800;color:#0F1E2E;margin-top:6px">'+b.dj+'</div>';
@@ -5723,12 +5731,15 @@ function djSchedInlineFormHtml(b){
 
 function djSchedDayCellHtml(stage, d, inMonth, dayName){
   const key = djSchedDateKey(d);
-  const dayBookings = djBookings.filter(function(b){ return b.stageId===stage.id && b.date===key; }).sort(function(a,b2){ return a.start.localeCompare(b2.start); });
+  const dayBookings = djBookings.filter(function(b){ return b.stageId===stage.id && b.date===key; }).sort(function(a,b2){
+    const so = (a.sortOrder||0) - (b2.sortOrder||0);
+    return so !== 0 ? so : a.start.localeCompare(b2.start);
+  });
   let html = '';
   html += '<div style="background:'+(inMonth?'#F8FAFC':'#FCFCFD')+';border:1px solid #EDF0F4;border-radius:10px;padding:8px;min-height:90px;opacity:'+(inMonth?1:0.55)+'">';
   html += '<div style="font-size:10.5px;font-weight:800;color:#64748B;text-transform:uppercase">'+dayName+'</div>';
   html += '<div style="font-size:11px;color:#94A3B8;margin-bottom:6px">'+d.getDate()+' '+d.toLocaleDateString('en-GB',{month:'short'})+'</div>';
-  dayBookings.forEach(function(b){ html += djSchedBookingHtml(b); });
+  dayBookings.forEach(function(b, i){ html += djSchedBookingHtml(b, i===0, i===dayBookings.length-1); });
   const newKey = 'new:'+stage.id+':'+key;
   if(djSchedEditingKey === newKey){
     html += djSchedInlineFormHtml({id:null, stageId:stage.id, date:key, dj:'', start:'', end:'', type:'resident', drinks:'', food:''});
@@ -5845,11 +5856,13 @@ window.djSchedSave = async function(bookingId, stageId, dateKey){
     if(error) console.warn('Supabase booking update failed', error);
   } else {
     const tempId = djBookingNextId++;
-    const newBooking = {id:tempId, stageId:parseInt(stageId), date:dateKey, dj:dj, start:start, end:end, type:type, drinks:drinks, food:food};
+    const siblingOrders = djBookings.filter(function(x){ return x.stageId===parseInt(stageId) && x.date===dateKey; }).map(function(x){ return x.sortOrder||0; });
+    const sortOrder = siblingOrders.length ? Math.max.apply(null, siblingOrders) + 1 : 0;
+    const newBooking = {id:tempId, stageId:parseInt(stageId), date:dateKey, dj:dj, start:start, end:end, type:type, drinks:drinks, food:food, sortOrder:sortOrder};
     djBookings.push(newBooking);
     djSchedEditingKey = null;
     djSchedRender();
-    const { data, error } = await sb.from('dj_bookings').insert({ stage_id: parseInt(stageId), date: dateKey, start_time: start, end_time: end, dj_name: dj, type: type, drinks: drinks, food: food }).select().single();
+    const { data, error } = await sb.from('dj_bookings').insert({ stage_id: parseInt(stageId), date: dateKey, start_time: start, end_time: end, dj_name: dj, type: type, drinks: drinks, food: food, sort_order: sortOrder }).select().single();
     if(error) console.warn('Supabase booking insert failed', error);
     else { newBooking.id = data.id; djSchedRender(); }
   }
@@ -5863,6 +5876,32 @@ window.djSchedDeleteBooking = function(id){
     const { error } = await sb.from('dj_bookings').delete().eq('id', id);
     if(error) console.warn('Supabase booking delete failed', error);
   }});
+};
+
+// Moves a booking up (-1) or down (1) within its own day+stage group by swapping its
+// sort_order with the neighbour in that direction. Mirrors the Task Board's reordering,
+// just as tap-to-move arrows instead of drag, since the day cells are quite small.
+window.djSchedMoveBooking = async function(id, dir){
+  const b = djBookings.find(function(x){ return x.id===id; });
+  if(!b) return;
+  const siblings = djBookings.filter(function(x){ return x.stageId===b.stageId && x.date===b.date; }).sort(function(a,c){
+    const so = (a.sortOrder||0) - (c.sortOrder||0);
+    return so !== 0 ? so : a.start.localeCompare(c.start);
+  });
+  const idx = siblings.indexOf(b);
+  const swapIdx = idx + dir;
+  if(swapIdx < 0 || swapIdx >= siblings.length) return;
+  const other = siblings[swapIdx];
+  // Normalise sortOrder across the whole group first (0,1,2...) so ties from booking that
+  // never had a manual order don't cause the swap to look like a no-op.
+  siblings.forEach(function(s, i){ s.sortOrder = i; });
+  const tmp = b.sortOrder;
+  b.sortOrder = other.sortOrder;
+  other.sortOrder = tmp;
+  djSchedRender();
+  const { error: err1 } = await sb.from('dj_bookings').update({ sort_order: b.sortOrder }).eq('id', b.id);
+  const { error: err2 } = await sb.from('dj_bookings').update({ sort_order: other.sortOrder }).eq('id', other.id);
+  if(err1 || err2) console.warn('Supabase booking reorder failed', err1 || err2);
 };
 
 window.djSchedCopyPrevWeek = function(stageId, weekStartKey){
@@ -5883,13 +5922,13 @@ window.djSchedCopyPrevWeek = function(stageId, weekStartKey){
     const newRows = prevBookings.map(function(b){
       const newDate = new Date(b.date);
       newDate.setDate(newDate.getDate()+7);
-      return {id:djBookingNextId++, stageId:stageId, date:djSchedDateKey(newDate), start:b.start, end:b.end, dj:b.dj, type:b.type, drinks:b.drinks, food:b.food};
+      return {id:djBookingNextId++, stageId:stageId, date:djSchedDateKey(newDate), start:b.start, end:b.end, dj:b.dj, type:b.type, drinks:b.drinks, food:b.food, sortOrder:b.sortOrder||0};
     });
     newRows.forEach(function(r){ djBookings.push(r); });
     djSchedRender();
     toast('Copied '+newRows.length+' booking'+(newRows.length===1?'':'s')+' from last week ✓');
     const { data, error } = await sb.from('dj_bookings').insert(newRows.map(function(r){
-      return { stage_id: r.stageId, date: r.date, start_time: r.start, end_time: r.end, dj_name: r.dj, type: r.type, drinks: r.drinks, food: r.food };
+      return { stage_id: r.stageId, date: r.date, start_time: r.start, end_time: r.end, dj_name: r.dj, type: r.type, drinks: r.drinks, food: r.food, sort_order: r.sortOrder };
     })).select();
     if(error){ console.warn('Supabase copy-last-week insert failed', error); }
     else if(data){
@@ -6066,7 +6105,10 @@ function djSchedBuildExportHtml(weeks, title){
       out += '<div style="padding:16px"><div style="display:grid;grid-template-columns:repeat(7,1fr);gap:8px">';
       week.days.forEach(function(d,i){
         const key = djSchedDateKey(d);
-        const dayBookings = djBookings.filter(function(b){ return b.stageId===stage.id && b.date===key; }).sort(function(a,b2){ return a.start.localeCompare(b2.start); });
+        const dayBookings = djBookings.filter(function(b){ return b.stageId===stage.id && b.date===key; }).sort(function(a,b2){
+          const so = (a.sortOrder||0) - (b2.sortOrder||0);
+          return so !== 0 ? so : a.start.localeCompare(b2.start);
+        });
         out += '<div style="background:#F8FAFC;border:1px solid #EDF0F4;border-radius:10px;padding:8px;min-height:70px">';
         out += '<div style="font-size:10.5px;font-weight:800;color:#64748B;text-transform:uppercase">'+dayNames[i]+'</div>';
         out += '<div style="font-size:11px;color:#94A3B8;margin-bottom:6px">'+d.getDate()+' '+d.toLocaleDateString('en-GB',{month:'short'})+'</div>';

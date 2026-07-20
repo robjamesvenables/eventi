@@ -2300,7 +2300,7 @@ img.emoji-tw{width:1.15em;height:1.15em;vertical-align:-0.2em;margin:0 1px}
     </button>
     <button class="sb-link" id="n-djsched" onclick="nav('djsched')">
       <svg class="sb-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="2.5"/><path d="M12 3v2M21 12h-2M12 21v-2M3 12h2"/></svg>
-      DJ Schedule
+      Entertainment Schedule
     </button>
     <button class="sb-link" id="n-new" onclick="nav('new')">
       <svg class="sb-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
@@ -3574,11 +3574,11 @@ img.emoji-tw{width:1.15em;height:1.15em;vertical-align:-0.2em;margin:0 1px}
     <div class="page" id="p-djsched" style="padding:32px 28px 0">
       <div class="ph" style="margin-bottom:16px">
         <div>
-          <div class="ph-title">DJ Schedule</div>
+          <div class="ph-title">Entertainment Schedule</div>
           <div class="ph-sub">Click any slot to add or edit — scroll down to see previous weeks</div>
         </div>
         <div style="display:flex;gap:10px">
-          <button class="btn btn-ghost" onclick="djSchedPrint()">Print / Save as PDF</button>
+          <button class="btn btn-ghost" onclick="djSchedPrint()">Save as PDF</button>
           <button class="btn btn-navy" onclick="djSchedAddStage()">+ Add Stage</button>
         </div>
       </div>
@@ -5864,11 +5864,33 @@ window.djSchedDeleteHoursRow = function(id){
   djSchedRenderHours();
 };
 
-// ── DJ SCHEDULE: Print / Save as PDF ──
-// Uses the browser's native print dialog (which every browser can "Save as PDF" through) rather
-// than a heavy PDF-generation library - genuinely functional, no extra dependencies.
+// ── ENTERTAINMENT SCHEDULE: Save as PDF ──
+// Uses html2pdf.js (same library as Event Plan/Recipe exports) to capture the schedule and
+// download a genuine PDF file directly - not the browser's print dialog, which was defaulting
+// to a printer rather than actually producing a PDF.
 window.djSchedPrint = function(){
-  window.print();
+  if(typeof html2pdf === 'undefined'){
+    toast('PDF library failed to load — check your connection and try again');
+    return;
+  }
+  const el = document.getElementById('djsched-body');
+  if(!el){ toast('Nothing to export yet'); return; }
+  const monthLabel = document.getElementById('djsched-month-label');
+  const rawName = (monthLabel && monthLabel.textContent.trim()) || 'Entertainment Schedule';
+  const filename = ('entertainment-schedule-' + rawName).replace(/[^a-z0-9]+/gi,'-').replace(/^-+|-+$/g,'').toLowerCase() + '.pdf';
+
+  toast('Preparing your PDF…');
+
+  html2pdf().set({
+    margin: 10,
+    filename: filename,
+    image: { type: 'jpeg', quality: 0.95 },
+    html2canvas: { scale: 2, useCORS: true, backgroundColor: '#ffffff' },
+    jsPDF: { unit: 'mm', format: 'a4', orientation: 'landscape' },
+    pagebreak: { mode: ['css','avoid-all'] }
+  }).from(el).save()
+    .then(()=>{ toast('PDF downloaded ✓'); })
+    .catch((err)=>{ toast('PDF export failed — please try again'); console.error(err); });
 };
 
 // ── MEETING NOTES ──

@@ -5612,6 +5612,17 @@ async function djSchedLoadFromSupabase(){
     const { data: stageRows, error: stageErr } = await sb.from('dj_stages').select('*').order('id', { ascending: true });
     if(!stageErr && stageRows && stageRows.length > 0){
       djStages = stageRows.map(function(r){ return { id: r.id, name: r.name, color: r.color || '#0F1E2E' }; });
+    } else if(!stageErr){
+      // Table exists but is empty - seed it with the current local default stages so
+      // bookings have a real stage row to reference (foreign key requires it).
+      const { data: seeded, error: seedErr } = await sb.from('dj_stages').insert(
+        djStages.map(function(s){ return { name: s.name, color: s.color }; })
+      ).select();
+      if(!seedErr && seeded){
+        djStages = seeded.map(function(r){ return { id: r.id, name: r.name, color: r.color || '#0F1E2E' }; });
+      } else if(seedErr){
+        console.warn('Entertainment Schedule stage seeding failed', seedErr);
+      }
     }
     const { data: bookingRows, error: bookingErr } = await sb.from('dj_bookings').select('*').order('id', { ascending: true });
     if(!bookingErr && bookingRows){

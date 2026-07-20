@@ -6140,22 +6140,17 @@ function djSchedExportPdf(weeks, title, filenamePart){
     return;
   }
   if(!weeks.length){ toast('No dates in that range'); return; }
+  const body = document.getElementById('djsched-body');
+  if(!body){ toast('Open the Entertainment Schedule tab first, then try again'); return; }
   const filename = ('entertainment-schedule-' + filenamePart).replace(/[^a-z0-9]+/gi,'-').replace(/^-+|-+$/g,'').toLowerCase() + '.pdf';
   toast('Preparing your PDF…');
 
-  // position:absolute (not fixed) - html2canvas reliably captures absolutely-positioned
-  // off-screen elements since they're part of normal document coordinate space, but often
-  // produces a blank canvas for position:fixed elements outside the viewport.
-  const container = document.createElement('div');
-  container.style.position = 'absolute';
-  container.style.left = '-9999px';
-  container.style.top = '0';
-  container.style.width = '1400px';
-  container.innerHTML = djSchedBuildExportHtml(weeks, title);
-  document.body.appendChild(container);
+  // Same approach as the Event Plan PDF export: capture a real, currently-visible page
+  // element rather than a detached off-screen clone (which html2canvas often rendered
+  // blank for). Temporarily swap the live schedule body to the clean export layout,
+  // capture it, then rebuild the normal interactive view afterwards.
+  body.innerHTML = djSchedBuildExportHtml(weeks, title);
 
-  // Give the browser a paint frame so the freshly-inserted content is actually laid out
-  // and rendered before html2canvas tries to capture it.
   requestAnimationFrame(()=>{ requestAnimationFrame(()=>{
     html2pdf().set({
       margin: 10,
@@ -6164,10 +6159,10 @@ function djSchedExportPdf(weeks, title, filenamePart){
       html2canvas: { scale: 2, useCORS: true, backgroundColor: '#ffffff' },
       jsPDF: { unit: 'mm', format: 'a4', orientation: 'landscape' },
       pagebreak: { mode: ['css','avoid-all'] }
-    }).from(container).save()
+    }).from(body).save()
       .then(()=>{ toast('PDF downloaded ✓'); })
       .catch((err)=>{ toast('PDF export failed — please try again'); console.error(err); })
-      .finally(()=>{ document.body.removeChild(container); });
+      .finally(()=>{ djSchedRender(); });
   }); });
 }
 

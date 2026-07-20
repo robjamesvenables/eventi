@@ -5605,6 +5605,32 @@ function djSchedDateKey(d){
   return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
 }
 
+let djSchedLoadedFromDb = false;
+
+async function djSchedLoadFromSupabase(){
+  try{
+    const { data: stageRows, error: stageErr } = await sb.from('dj_stages').select('*').order('id', { ascending: true });
+    if(!stageErr && stageRows && stageRows.length > 0){
+      djStages = stageRows.map(function(r){ return { id: r.id, name: r.name, color: r.color || '#0F1E2E' }; });
+    }
+    const { data: bookingRows, error: bookingErr } = await sb.from('dj_bookings').select('*').order('id', { ascending: true });
+    if(!bookingErr && bookingRows){
+      djBookings = bookingRows.map(function(r){
+        return { id: r.id, stageId: r.stage_id, date: r.date, start: r.start_time, end: r.end_time, dj: r.dj_name, type: r.type, drinks: r.drinks || 0, food: r.food || 0 };
+      });
+      djBookingNextId = djBookings.length ? Math.max.apply(null, djBookings.map(function(b){ return b.id; })) + 1 : 1;
+    }
+    const { data: hoursRows, error: hoursErr } = await sb.from('dj_staff_hours').select('*').order('id', { ascending: true });
+    if(!hoursErr && hoursRows){
+      djStaffHours = hoursRows.map(function(r){ return { id: r.id, name: r.name || '', hours: r.hours || '', cost: r.cost || '' }; });
+      djStaffHoursNextId = djStaffHours.length ? Math.max.apply(null, djStaffHours.map(function(r){ return r.id; })) + 1 : 1;
+    }
+  } catch(e){
+    console.warn('Entertainment Schedule Supabase load failed, using demo data', e);
+  }
+  djSchedLoadedFromDb = true;
+}
+
 function djSchedCompBadge(drinks, food){
   if(!drinks && !food) return '';
   const parts = [];
@@ -5764,7 +5790,7 @@ window.djSchedCancelEdit = function(){
   djSchedRender();
 };
 
-window.djSchedSave = function(bookingId, stageId, dateKey){
+window.djSchedSave = async function(bookingId, stageId, dateKey){
   const idAttr = bookingId || 'new';
   const dj = document.getElementById('djf-dj-'+idAttr).value.trim();
   const start = document.getElementById('djf-start-'+idAttr).value.trim();
@@ -5772,22 +5798,34 @@ window.djSchedSave = function(bookingId, stageId, dateKey){
   const isTakeover = document.getElementById('djf-type-takeover-'+idAttr).checked;
   const drinks = parseInt(document.getElementById('djf-drinks-'+idAttr).value) || 0;
   const food = parseInt(document.getElementById('djf-food-'+idAttr).value) || 0;
+  const type = isTakeover ? 'takeover' : 'resident';
   if(!dj || !start || !end){ toast('DJ name, start and end time are required'); return; }
   if(bookingId){
     const b = djBookings.find(function(x){ return x.id===bookingId; });
-    if(b){ b.dj=dj; b.start=start; b.end=end; b.type=isTakeover?'takeover':'resident'; b.drinks=drinks; b.food=food; }
+    if(b){ b.dj=dj; b.start=start; b.end=end; b.type=type; b.drinks=drinks; b.food=food; }
+    djSchedEditingKey = null;
+    djSchedRender();
+    const { error } = await sb.from('dj_bookings').update({ dj_name: dj, start_time: start, end_time: end, type: type, drinks: drinks, food: food }).eq('id', bookingId);
+    if(error) console.warn('Supabase booking update failed', error);
   } else {
-    djBookings.push({id:djBookingNextId++, stageId:parseInt(stageId), date:dateKey, dj:dj, start:start, end:end, type:isTakeover?'takeover':'resident', drinks:drinks, food:food});
+    const tempId = djBookingNextId++;
+    const newBooking = {id:tempId, stageId:parseInt(stageId), date:dateKey, dj:dj, start:start, end:end, type:type, drinks:drinks, food:food};
+    djBookings.push(newBooking);
+    djSchedEditingKey = null;
+    djSchedRender();
+    const { data, error } = await sb.from('dj_bookings').insert({ stage_id: parseInt(stageId), date: dateKey, start_time: start, end_time: end, dj_name: dj, type: type, drinks: drinks, food: food }).select().single();
+    if(error) console.warn('Supabase booking insert failed', error);
+    else { newBooking.id = data.id; djSchedRender(); }
   }
-  djSchedEditingKey = null;
-  djSchedRender();
   toast('Saved ✓');
 };
 
 window.djSchedDeleteBooking = function(id){
-  appConfirmShow({title:'Delete Booking', msg:'Are you sure you want to remove this DJ booking?', onOk:function(){
+  appConfirmShow({title:'Delete Booking', msg:'Are you sure you want to remove this DJ booking?', onOk:async function(){
     djBookings = djBookings.filter(function(x){ return x.id!==id; });
     djSchedRender();
+    const { error } = await sb.from('dj_bookings').delete().eq('id', id);
+    if(error) console.warn('Supabase booking delete failed', error);
   }});
 };
 
@@ -5805,14 +5843,23 @@ window.djSchedCopyPrevWeek = function(stageId, weekStartKey){
   const prevBookings = djBookings.filter(function(b){ return b.stageId===stageId && inWeek(b.date, prevWeekStart); });
   if(prevBookings.length === 0){ toast('No bookings found in the previous week to copy'); return; }
 
-  const doCopy = function(){
-    prevBookings.forEach(function(b){
+  const doCopy = async function(){
+    const newRows = prevBookings.map(function(b){
       const newDate = new Date(b.date);
       newDate.setDate(newDate.getDate()+7);
-      djBookings.push({id:djBookingNextId++, stageId:stageId, date:djSchedDateKey(newDate), start:b.start, end:b.end, dj:b.dj, type:b.type, drinks:b.drinks, food:b.food});
+      return {id:djBookingNextId++, stageId:stageId, date:djSchedDateKey(newDate), start:b.start, end:b.end, dj:b.dj, type:b.type, drinks:b.drinks, food:b.food};
     });
+    newRows.forEach(function(r){ djBookings.push(r); });
     djSchedRender();
-    toast('Copied '+prevBookings.length+' booking'+(prevBookings.length===1?'':'s')+' from last week ✓');
+    toast('Copied '+newRows.length+' booking'+(newRows.length===1?'':'s')+' from last week ✓');
+    const { data, error } = await sb.from('dj_bookings').insert(newRows.map(function(r){
+      return { stage_id: r.stageId, date: r.date, start_time: r.start, end_time: r.end, dj_name: r.dj, type: r.type, drinks: r.drinks, food: r.food };
+    })).select();
+    if(error){ console.warn('Supabase copy-last-week insert failed', error); }
+    else if(data){
+      newRows.forEach(function(r, i){ if(data[i]) r.id = data[i].id; });
+      djSchedRender();
+    }
   };
 
   const existingThisWeek = djBookings.filter(function(b){ return b.stageId===stageId && inWeek(b.date, weekStart); });
@@ -5827,12 +5874,16 @@ window.djSchedAddStage = function(){
   appModalShow({
     title: 'Add Stage / Area',
     fields: [{label:'Name', type:'text', placeholder:'e.g. Main Stage, Utopia, Pool Deck'}],
-    onOk: function(vals){
+    onOk: async function(vals){
       const name = vals[0];
       if(!name || !name.trim()) return;
-      djStages.push({id:Date.now(), name:name.trim()});
+      const tempStage = {id:Date.now(), name:name.trim(), color:'#0F1E2E'};
+      djStages.push(tempStage);
       djSchedRender();
       toast('Stage added ✓');
+      const { data, error } = await sb.from('dj_stages').insert({ name: name.trim(), color: '#0F1E2E' }).select().single();
+      if(error) console.warn('Supabase stage insert failed', error);
+      else { tempStage.id = data.id; djSchedRender(); }
     }
   });
 };
@@ -5843,11 +5894,13 @@ window.djSchedRenameStage = function(id){
   appModalShow({
     title: 'Rename Stage',
     fields: [{label:'Name', type:'text', value:stage.name}],
-    onOk: function(vals){
+    onOk: async function(vals){
       const name = vals[0];
       if(!name || !name.trim()) return;
       stage.name = name.trim();
       djSchedRender();
+      const { error } = await sb.from('dj_stages').update({ name: stage.name }).eq('id', id);
+      if(error) console.warn('Supabase stage rename failed', error);
     }
   });
 };
@@ -5858,18 +5911,22 @@ window.djSchedPickColor = function(id){
   appModalShow({
     title: 'Stage Color',
     fields: [{label:'', type:'color', options:DEPT_COLORS, value:stage.color||'#0F1E2E'}],
-    onOk: function(vals){
+    onOk: async function(vals){
       stage.color = vals[0];
       djSchedRender();
+      const { error } = await sb.from('dj_stages').update({ color: stage.color }).eq('id', id);
+      if(error) console.warn('Supabase stage color update failed', error);
     }
   });
 };
 
 window.djSchedDeleteStage = function(id){
-  appConfirmShow({title:'Delete Stage', msg:'This will also remove every booking under this stage. Are you sure?', onOk:function(){
+  appConfirmShow({title:'Delete Stage', msg:'This will also remove every booking under this stage. Are you sure?', onOk:async function(){
     djStages = djStages.filter(function(s){ return s.id!==id; });
     djBookings = djBookings.filter(function(b){ return b.stageId!==id; });
     djSchedRender();
+    const { error } = await sb.from('dj_stages').delete().eq('id', id);
+    if(error) console.warn('Supabase stage delete failed', error);
   }});
 };
 
@@ -5900,20 +5957,31 @@ function djSchedRenderHours(){
   body.innerHTML = out;
 }
 
-window.djSchedAddHoursRow = function(){
-  djStaffHours.push({id:djStaffHoursNextId++, name:'', hours:'', cost:''});
+window.djSchedAddHoursRow = async function(){
+  const tempRow = {id:djStaffHoursNextId++, name:'', hours:'', cost:''};
+  djStaffHours.push(tempRow);
   djSchedRenderHours();
+  const { data, error } = await sb.from('dj_staff_hours').insert({ name: '', hours: '', cost: '' }).select().single();
+  if(error) console.warn('Supabase staff hours insert failed', error);
+  else { tempRow.id = data.id; djSchedRenderHours(); }
 };
 
-window.djSchedUpdateHoursRow = function(id, field, value){
+window.djSchedUpdateHoursRow = async function(id, field, value){
   const row = djStaffHours.find(function(r){ return r.id===id; });
   if(row) row[field] = value;
   djSchedRenderHours();
+  const colMap = {name:'name', hours:'hours', cost:'cost'};
+  const patch = {};
+  patch[colMap[field]] = value;
+  const { error } = await sb.from('dj_staff_hours').update(patch).eq('id', id);
+  if(error) console.warn('Supabase staff hours update failed', error);
 };
 
-window.djSchedDeleteHoursRow = function(id){
+window.djSchedDeleteHoursRow = async function(id){
   djStaffHours = djStaffHours.filter(function(r){ return r.id!==id; });
   djSchedRenderHours();
+  const { error } = await sb.from('dj_staff_hours').delete().eq('id', id);
+  if(error) console.warn('Supabase staff hours delete failed', error);
 };
 
 // ── ENTERTAINMENT SCHEDULE: Save as PDF ──
@@ -8906,7 +8974,7 @@ function kitchenDeleteAllergenDish(id){
 }
 // ── INIT ──
 window.addEventListener('keydown',e=>{if(e.key==='Enter'&&document.getElementById('login').style.display!=='none')doLogin();});
-window.addEventListener('load',async ()=>{ initCurrency(); await announceLoadFromSupabase(); announceRender(); });
+window.addEventListener('load',async ()=>{ initCurrency(); await announceLoadFromSupabase(); announceRender(); await djSchedLoadFromSupabase(); djSchedRender(); });
 
 // ── ANNOUNCEMENTS ──
 const announcements = [

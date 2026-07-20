@@ -3630,7 +3630,7 @@ img.emoji-tw{width:1.15em;height:1.15em;vertical-align:-0.2em;margin:0 1px}
           <div class="ph-sub">Click any slot to add or edit — scroll down to see previous weeks</div>
         </div>
         <div style="display:flex;gap:10px">
-          <button class="btn btn-ghost" onclick="djSchedPrint()">Save as PDF</button>
+          <button class="btn btn-ghost" onclick="djSchedSavePng()">Save as PNG</button>
           <button class="btn btn-navy" onclick="djSchedAddStage()">+ Add Stage</button>
         </div>
       </div>
@@ -6117,6 +6117,19 @@ window.djSchedDeleteHoursRow = async function(id){
   if(error) console.warn('Supabase staff hours delete failed', error);
 };
 
+
+async function djSchedSavePng(){
+ const node=document.getElementById("djsched-body");
+ if(!node){toast("Schedule not found");return;}
+ if(typeof html2canvas!=="function"){toast("Image library not loaded");return;}
+ toast("Preparing PNG…");
+ const canvas=await html2canvas(node,{scale:2,backgroundColor:'#fff'});
+ const a=document.createElement('a');
+ a.download='Entertainment Schedule.png';
+ a.href=canvas.toDataURL('image/png');
+ a.click();
+ toast('PNG downloaded ✓');
+}
 // ── ENTERTAINMENT SCHEDULE: Save as PDF ──
 // Uses html2pdf.js (same library as Event Plan/Recipe exports) to capture a purpose-built
 // clean export view and download a genuine PDF file directly. Lets Robbie choose the scope

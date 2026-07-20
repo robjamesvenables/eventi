@@ -5588,8 +5588,8 @@ function calGoToday(){
 // djBookings: [{id, stageId, date:'YYYY-MM-DD', start:'HH:MM', end:'HH:MM', dj, type:'resident'|'takeover', drinks, food}]
 // djStaffHours: [{id, name, hours, cost}] — manually entered, summed at the bottom
 let djStages = [
-  {id:1, name:'Main Stage', color:'#0F1E2E'},
-  {id:2, name:'Utopia', color:'#C4973B'}
+  {id:1, name:'Area A', color:'#0F1E2E'},
+  {id:2, name:'Area B', color:'#C4973B'}
 ];
 let djBookingNextId = 1;
 let djBookings = [];
@@ -5656,15 +5656,50 @@ async function djSchedLoadFromSupabase(){
         console.warn('Entertainment Schedule stage seeding failed', seedErr);
       }
     }
-    // One-time safety recovery for the old repeated-header Delete bug. That button
-    // used to delete the shared stage row, so Main Stage vanished from all weeks.
-    // Recreate it only when it is genuinely missing.
-    if(!stageErr && !djStages.some(function(s){ return String(s.name).trim().toLowerCase()==='main stage'; })){
-      const { data: restoredStage, error: restoreStageErr } = await sb.from('dj_stages').insert({ name:'Main Stage', color:'#0F1E2E' }).select().single();
-      if(!restoreStageErr && restoredStage){
-        djStages.unshift({ id:restoredStage.id, name:restoredStage.name, color:restoredStage.color || '#0F1E2E' });
-      } else if(restoreStageErr){
-        console.warn('Main Stage recovery failed', restoreStageErr);
+    // Generic client defaults. Older builds used "Main Stage" and "Utopia";
+    // rename those exact legacy defaults once, then always ensure Area A and Area B exist.
+    if(!stageErr){
+      const legacyRenames = [
+        { from:'Main Stage', to:'Area A' },
+        { from:'Utopia', to:'Area B' }
+      ];
+      for(const item of legacyRenames){
+        const legacy = djStages.find(function(s){
+          return String(s.name).trim().toLowerCase() === item.from.toLowerCase();
+        });
+        const targetExists = djStages.some(function(s){
+          return String(s.name).trim().toLowerCase() === item.to.toLowerCase();
+        });
+        if(legacy && !targetExists){
+          const { data: renamedStage, error: renameStageErr } = await sb.from('dj_stages')
+            .update({ name:item.to }).eq('id', legacy.id).select().single();
+          if(!renameStageErr && renamedStage){
+            legacy.name = renamedStage.name;
+          } else if(renameStageErr){
+            console.warn(item.from+' default rename failed', renameStageErr);
+          }
+        }
+      }
+
+      const requiredStages = [
+        { name:'Area A', color:'#0F1E2E', position:'start' },
+        { name:'Area B', color:'#C99A36', position:'end' }
+      ];
+      for(const required of requiredStages){
+        const exists = djStages.some(function(s){
+          return String(s.name).trim().toLowerCase() === required.name.toLowerCase();
+        });
+        if(!exists){
+          const { data: restoredStage, error: restoreStageErr } = await sb.from('dj_stages')
+            .insert({ name:required.name, color:required.color }).select().single();
+          if(!restoreStageErr && restoredStage){
+            const restored = { id:restoredStage.id, name:restoredStage.name, color:restoredStage.color || required.color };
+            if(required.position === 'start') djStages.unshift(restored);
+            else djStages.push(restored);
+          } else if(restoreStageErr){
+            console.warn(required.name+' recovery failed', restoreStageErr);
+          }
+        }
       }
     }
     const { data: bookingRows, error: bookingErr } = await sb.from('dj_bookings').select('*').order('id', { ascending: true });
@@ -6028,7 +6063,7 @@ window.djSchedCopyPrevWeek = function(stageId, weekStartKey){
 window.djSchedAddStage = function(){
   appModalShow({
     title: 'Add Stage / Area',
-    fields: [{label:'Name', type:'text', placeholder:'e.g. Main Stage, Utopia, Pool Deck'}],
+    fields: [{label:'Name', type:'text', placeholder:'e.g. Area A, Area B, Pool Deck'}],
     onOk: async function(vals){
       const name = vals[0];
       if(!name || !name.trim()) return;

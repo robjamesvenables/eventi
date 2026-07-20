@@ -8,6 +8,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@twemoji/api@17.0.3/dist/twemoji.min.js" integrity="sha384-Y5xukbGJwykbHHkTbLJykYLcBPFxrwipTbEh0puxhkz9CZ90raTPGe2Ks4vCxsYU" crossorigin="anonymous"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js" integrity="sha512-GsLlZN/3F2ErC5ifS5QtgpiJtWd43JWSuIgh7mbzZ8zBps+dvLusV+eNQATqgA/HdeKFVgA5v3S/cIrLF7QnIg==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 <link rel="manifest" href="/manifest.json">
 <meta name="theme-color" content="#0F1E2E">
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
@@ -2140,7 +2141,10 @@ img.emoji-tw{width:1.15em;height:1.15em;vertical-align:-0.2em;margin:0 1px}
   .djsched-week-grid{
     grid-template-columns:repeat(7,176px) !important;
     overflow-x:auto !important;
+    overflow-y:hidden !important;
     -webkit-overflow-scrolling:touch;
+    touch-action:pan-x pan-y;
+    overscroll-behavior-x:contain;
     padding-bottom:6px;
     margin:0 -16px;
     padding-left:16px;
@@ -3630,7 +3634,7 @@ img.emoji-tw{width:1.15em;height:1.15em;vertical-align:-0.2em;margin:0 1px}
           <div class="ph-sub">Click any slot to add or edit — scroll down to see previous weeks</div>
         </div>
         <div style="display:flex;gap:10px">
-          <button class="btn btn-ghost" onclick="djSchedSavePng()">Save as PNG</button>
+          <button type="button" class="btn btn-ghost" onclick="window.djSchedSavePng(event)">Save as PNG</button>
           <button class="btn btn-navy" onclick="djSchedAddStage()">+ Add Stage</button>
         </div>
       </div>
@@ -5867,9 +5871,40 @@ function djSchedRender(){
         out += '</div>';
       });
       body.innerHTML = out;
+      djSchedEnableMobileSwipe();
     }
   }
   djSchedRenderHours();
+}
+
+/* Mobile browsers can hand a swipe to the vertically scrolling day card instead of the
+   horizontal week strip. This small fallback locks only clearly horizontal gestures to
+   the week strip, while vertical swipes continue to scroll inside each day. */
+function djSchedEnableMobileSwipe(){
+  document.querySelectorAll('.djsched-week-grid').forEach(function(grid){
+    if(grid.dataset.swipeReady === '1') return;
+    grid.dataset.swipeReady = '1';
+    let startX = 0, startY = 0, startScroll = 0, horizontal = false;
+    grid.addEventListener('touchstart', function(e){
+      if(!e.touches || e.touches.length !== 1) return;
+      startX = e.touches[0].clientX;
+      startY = e.touches[0].clientY;
+      startScroll = grid.scrollLeft;
+      horizontal = false;
+    }, {passive:true});
+    grid.addEventListener('touchmove', function(e){
+      if(!e.touches || e.touches.length !== 1) return;
+      const dx = e.touches[0].clientX - startX;
+      const dy = e.touches[0].clientY - startY;
+      if(!horizontal && Math.abs(dx) > 7 && Math.abs(dx) > Math.abs(dy) * 1.15){
+        horizontal = true;
+      }
+      if(horizontal){
+        grid.scrollLeft = startScroll - dx;
+        e.preventDefault();
+      }
+    }, {passive:false});
+  });
 }
 
 window.djSchedStartEdit = function(bookingId){
@@ -6118,18 +6153,112 @@ window.djSchedDeleteHoursRow = async function(id){
 };
 
 
-async function djSchedSavePng(){
- const node=document.getElementById("djsched-body");
- if(!node){toast("Schedule not found");return;}
- if(typeof html2canvas!=="function"){toast("Image library not loaded");return;}
- toast("Preparing PNG…");
- const canvas=await html2canvas(node,{scale:2,backgroundColor:'#fff'});
- const a=document.createElement('a');
- a.download='Entertainment Schedule.png';
- a.href=canvas.toDataURL('image/png');
- a.click();
- toast('PNG downloaded ✓');
+function djSchedSafeFilePart(value){
+  return String(value || 'schedule')
+    .replace(/[^a-z0-9]+/gi,'-')
+    .replace(/^-+|-+$/g,'')
+    .toLowerCase();
 }
+
+async function djSchedCapturePng(htmlContent, filenamePart, button){
+  if(typeof window.html2canvas !== 'function'){
+    alert('The image export library did not load. Please refresh the page and try again.');
+    return;
+  }
+
+  const oldText = button ? button.textContent : '';
+  if(button){ button.disabled = true; button.textContent = 'Creating PNG…'; }
+
+  let exportWrap = null;
+  try{
+    exportWrap = document.createElement('div');
+    exportWrap.id = 'djsched-png-export';
+    exportWrap.style.cssText = 'position:fixed;left:0;top:0;width:1400px;max-height:none;overflow:visible;background:#fff;padding:28px;box-sizing:border-box;z-index:2147483647;pointer-events:none;';
+    exportWrap.innerHTML = htmlContent;
+    exportWrap.querySelectorAll('button,input,select,textarea').forEach(function(el){ el.style.display = 'none'; });
+    document.body.appendChild(exportWrap);
+
+    await new Promise(function(resolve){ requestAnimationFrame(function(){ requestAnimationFrame(resolve); }); });
+
+    const canvas = await window.html2canvas(exportWrap, {
+      scale: 2,
+      backgroundColor: '#ffffff',
+      useCORS: true,
+      allowTaint: false,
+      logging: false,
+      width: exportWrap.scrollWidth,
+      height: exportWrap.scrollHeight,
+      windowWidth: exportWrap.scrollWidth,
+      windowHeight: exportWrap.scrollHeight,
+      scrollX: 0,
+      scrollY: 0
+    });
+
+    const blob = await new Promise(function(resolve){ canvas.toBlob(resolve, 'image/png', 1); });
+    if(!blob) throw new Error('The PNG could not be created.');
+
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.download = 'entertainment-schedule-' + djSchedSafeFilePart(filenamePart) + '.png';
+    link.href = url;
+    link.style.display = 'none';
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    setTimeout(function(){ URL.revokeObjectURL(url); }, 1500);
+    if(typeof toast === 'function') toast('PNG downloaded ✓');
+  }catch(err){
+    console.error('PNG export failed:', err);
+    alert('PNG export failed. Please refresh the page and try again.');
+  }finally{
+    if(exportWrap && exportWrap.parentNode) exportWrap.remove();
+    if(button){ button.disabled = false; button.textContent = oldText || 'Save as PNG'; }
+  }
+}
+
+window.djSchedSavePng = function(event){
+  if(event){ event.preventDefault(); event.stopPropagation(); }
+  const button = event && event.currentTarget ? event.currentTarget : null;
+  const today = djSchedDateKey(new Date());
+
+  appModalShow({
+    title: 'Save Schedule as PNG',
+    fields: [
+      {label:'View', type:'pillpicker', options:[
+        {id:'day',name:'Daily'},
+        {id:'week',name:'Weekly'},
+        {id:'month',name:'Monthly'}
+      ], value:'week'},
+      {label:'Date', type:'date', value:today}
+    ],
+    onOk: function(vals){
+      const choice = vals[0] || 'week';
+      const selectedKey = vals[1] || today;
+      const selectedDate = new Date(selectedKey + 'T12:00:00');
+
+      if(choice === 'day'){
+        const dayLabel = selectedDate.toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
+        djSchedCapturePng(djSchedBuildDayExportHtml(selectedDate, dayLabel), dayLabel, button);
+        return;
+      }
+
+      if(choice === 'week'){
+        const weeks = djSchedWeeksForRange(selectedKey, selectedKey);
+        const week = weeks[0];
+        const weekLabel = week.days[0].toLocaleDateString('en-GB',{day:'numeric',month:'short'})+' – '+week.days[6].toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'});
+        djSchedCapturePng(djSchedBuildExportHtml([week], 'Week of '+weekLabel), weekLabel, button);
+        return;
+      }
+
+      const year = selectedDate.getFullYear();
+      const month = selectedDate.getMonth();
+      const weeks = djSchedWeeksForMonth(year, month);
+      const monthTitle = new Date(year, month, 1).toLocaleString('en-GB',{month:'long',year:'numeric'});
+      djSchedCapturePng(djSchedBuildExportHtml(weeks, monthTitle), monthTitle, button);
+    }
+  });
+};
+
 // ── ENTERTAINMENT SCHEDULE: Save as PDF ──
 // Uses html2pdf.js (same library as Event Plan/Recipe exports) to capture a purpose-built
 // clean export view and download a genuine PDF file directly. Lets Robbie choose the scope

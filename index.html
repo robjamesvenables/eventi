@@ -2132,7 +2132,7 @@ img.emoji-tw{width:1.15em;height:1.15em;vertical-align:-0.2em;margin:0 1px}
      reach the cut-off days (no horizontal scroll existed at all). Give each day a real
      minimum width and make the row scroll horizontally so every day is swipe-reachable. */
   .djsched-week-grid{
-    grid-template-columns:repeat(7,minmax(132px,1fr)) !important;
+    grid-template-columns:repeat(7,176px) !important;
     overflow-x:auto !important;
     -webkit-overflow-scrolling:touch;
     padding-bottom:6px;
@@ -2143,9 +2143,10 @@ img.emoji-tw{width:1.15em;height:1.15em;vertical-align:-0.2em;margin:0 1px}
     box-sizing:border-box;
   }
   /* Grid items default to min-width:auto, which lets their content's intrinsic size (a
-     text input's default minimum width) force the column wider than its 132px track -
-     that's what was pushing the edit form's right edge into the next day column. */
-  .djsched-week-grid > div{min-width:0}
+     text input's default minimum width) force the column wider than its track - that's
+     what was pushing the edit form's right edge into the next day column. Fixed 176px
+     columns (not minmax/1fr) also stop columns stretching to different widths. */
+  .djsched-week-grid > div{min-width:0;width:176px}
 
   /* Comp badge (Drinks/Food) was overflowing the narrow mobile day card and visually
      spilling into the next column. Stack it vertically instead of side-by-side with a
@@ -5741,13 +5742,13 @@ function djSchedBookingHtml(b, isFirst, isLast){
 function djSchedInlineFormHtml(b){
   const idAttr = b.id || 'new';
   let html = '';
-  html += '<div onclick="event.stopPropagation()" style="background:white;border:1.5px solid #0D9488;border-radius:8px;padding:8px;margin-bottom:5px;box-sizing:border-box;max-width:100%;overflow:hidden">';
+  html += '<div onclick="event.stopPropagation()" style="background:white;border:1.5px solid #0D9488;border-radius:8px;padding:8px;margin-bottom:5px;box-sizing:border-box;max-width:100%">';
   html += '<input id="djf-dj-'+idAttr+'" type="text" value="'+(b.dj||'')+'" placeholder="DJ name" style="width:100%;padding:5px 7px;margin-bottom:4px;border:1px solid #E2E8F0;border-radius:5px;font-family:Inter,sans-serif;font-size:11.5px;box-sizing:border-box">';
   html += '<div style="display:flex;gap:4px;margin-bottom:4px">';
   html += '<input id="djf-start-'+idAttr+'" type="text" value="'+(b.start||'')+'" placeholder="Start" style="width:50%;padding:5px 7px;border:1px solid #E2E8F0;border-radius:5px;font-family:Inter,sans-serif;font-size:11px;box-sizing:border-box">';
   html += '<input id="djf-end-'+idAttr+'" type="text" value="'+(b.end||'')+'" placeholder="End" style="width:50%;padding:5px 7px;border:1px solid #E2E8F0;border-radius:5px;font-family:Inter,sans-serif;font-size:11px;box-sizing:border-box">';
   html += '</div>';
-  html += '<div style="display:flex;gap:6px;margin-bottom:4px">';
+  html += '<div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:4px">';
   html += '<label style="display:flex;align-items:center;gap:3px;font-size:10.5px;color:#0F1E2E"><input type="radio" name="djf-type-'+idAttr+'" id="djf-type-resident-'+idAttr+'" '+(b.type!=='takeover'?'checked':'')+'> Resident</label>';
   html += '<label style="display:flex;align-items:center;gap:3px;font-size:10.5px;color:#0F1E2E"><input type="radio" name="djf-type-'+idAttr+'" id="djf-type-takeover-'+idAttr+'" '+(b.type==='takeover'?'checked':'')+'> Event</label>';
   html += '</div>';
@@ -5770,7 +5771,7 @@ function djSchedDayCellHtml(stage, d, inMonth, dayName){
     return so !== 0 ? so : a.start.localeCompare(b2.start);
   });
   let html = '';
-  html += '<div style="background:'+(inMonth?'#F8FAFC':'#FCFCFD')+';border:1px solid #EDF0F4;border-radius:10px;padding:8px;min-height:90px;opacity:'+(inMonth?1:0.55)+';box-sizing:border-box;max-width:100%;overflow:hidden">';
+  html += '<div style="background:'+(inMonth?'#F8FAFC':'#FCFCFD')+';border:1px solid #EDF0F4;border-radius:10px;padding:8px;min-height:90px;opacity:'+(inMonth?1:0.55)+';box-sizing:border-box;max-width:100%">';
   html += '<div style="font-size:10.5px;font-weight:800;color:#64748B;text-transform:uppercase">'+dayName+'</div>';
   html += '<div style="font-size:11px;color:#94A3B8;margin-bottom:6px">'+d.getDate()+' '+d.toLocaleDateString('en-GB',{month:'short'})+'</div>';
   dayBookings.forEach(function(b, i){ html += djSchedBookingHtml(b, i===0, i===dayBookings.length-1); });

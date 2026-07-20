@@ -5636,6 +5636,13 @@ async function djSchedLoadFromSupabase(){
       djStaffHours = hoursRows.map(function(r){ return { id: r.id, name: r.name || '', hours: r.hours || '', cost: r.cost || '' }; });
       djStaffHoursNextId = djStaffHours.length ? Math.max.apply(null, djStaffHours.map(function(r){ return r.id; })) + 1 : 1;
     }
+    const { data: settingsRows, error: settingsErr } = await sb.from('dj_settings').select('*');
+    if(!settingsErr && settingsRows){
+      settingsRows.forEach(function(r){
+        if(r.key === 'resident_color') djBookingColors.resident = r.value;
+        if(r.key === 'takeover_color') djBookingColors.takeover = r.value;
+      });
+    }
   } catch(e){
     console.warn('Entertainment Schedule Supabase load failed, using demo data', e);
   }
@@ -5733,9 +5740,11 @@ window.djSchedPickTypeColor = function(type){
   appModalShow({
     title: type === 'resident' ? 'Resident Color' : 'Takeover Color',
     fields: [{label:'', type:'color', options:DEPT_COLORS, value:djBookingColors[type]}],
-    onOk: function(vals){
+    onOk: async function(vals){
       djBookingColors[type] = vals[0];
       djSchedRender();
+      const { error } = await sb.from('dj_settings').upsert({ key: type+'_color', value: vals[0] });
+      if(error) console.warn('Supabase settings save failed', error);
     }
   });
 };

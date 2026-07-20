@@ -2135,7 +2135,6 @@ img.emoji-tw{width:1.15em;height:1.15em;vertical-align:-0.2em;margin:0 1px}
     grid-template-columns:repeat(7,minmax(132px,1fr)) !important;
     overflow-x:auto !important;
     -webkit-overflow-scrolling:touch;
-    scroll-snap-type:x proximity;
     padding-bottom:6px;
     margin:0 -16px;
     padding-left:16px;
@@ -2143,7 +2142,6 @@ img.emoji-tw{width:1.15em;height:1.15em;vertical-align:-0.2em;margin:0 1px}
     width:calc(100% + 32px);
     box-sizing:border-box;
   }
-  .djsched-week-grid > div{scroll-snap-align:start}
 
   /* Comp badge (Drinks/Food) was overflowing the narrow mobile day card and visually
      spilling into the next column. Stack it vertically instead of side-by-side with a
@@ -5855,13 +5853,19 @@ function djSchedRender(){
 window.djSchedStartEdit = function(bookingId){
   djSchedEditingKey = 'b:'+bookingId;
   djSchedRender();
-  setTimeout(function(){ const f = document.getElementById('djf-dj-'+bookingId); if(f) f.focus(); }, 0);
+  setTimeout(function(){
+    const f = document.getElementById('djf-dj-'+bookingId);
+    if(f){ f.closest('.djsched-week-grid > div')?.scrollIntoView({inline:'center', block:'nearest', behavior:'smooth'}); f.focus({preventScroll:true}); }
+  }, 0);
 };
 
 window.djSchedStartNew = function(stageId, dateKey){
   djSchedEditingKey = 'new:'+stageId+':'+dateKey;
   djSchedRender();
-  setTimeout(function(){ const f = document.getElementById('djf-dj-new'); if(f) f.focus(); }, 0);
+  setTimeout(function(){
+    const f = document.getElementById('djf-dj-new');
+    if(f){ f.closest('.djsched-week-grid > div')?.scrollIntoView({inline:'center', block:'nearest', behavior:'smooth'}); f.focus({preventScroll:true}); }
+  }, 0);
 };
 
 window.djSchedCancelEdit = function(){

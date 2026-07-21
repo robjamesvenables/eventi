@@ -9673,6 +9673,7 @@ window.chatOpenThread = function(el, name){
       messages: []
     };
     chatConversations.unshift(conversation);
+    chatSaveLocal();
   }
 
   nav('chat');
@@ -10865,6 +10866,7 @@ window.chatSelectPerson = function(name){
       messages: []
     };
     chatConversations.unshift(conversation);
+    chatSaveLocal();
   }
   chatClosePeopleSelector();
   chatRenderList();
@@ -10885,6 +10887,28 @@ let chatConversations = [
 ];
 let chatActiveId = null;
 let chatLoadedFromDb = false;
+const CHAT_LOCAL_STORAGE_KEY = 'mavis_chat_conversations_v1';
+
+function chatSaveLocal(){
+  try{
+    localStorage.setItem(CHAT_LOCAL_STORAGE_KEY, JSON.stringify(chatConversations));
+  }catch(err){
+    console.warn('Chat local save failed:', err);
+  }
+}
+
+function chatLoadLocal(){
+  try{
+    const raw = localStorage.getItem(CHAT_LOCAL_STORAGE_KEY);
+    if(!raw) return;
+    const saved = JSON.parse(raw);
+    if(Array.isArray(saved) && saved.length){
+      chatConversations = saved;
+    }
+  }catch(err){
+    console.warn('Chat local load failed:', err);
+  }
+}
 
 function chatCurrentUserName(){
   return (typeof currentUserFirstName !== 'undefined' && currentUserFirstName) ? currentUserFirstName : 'Robbie';
@@ -10929,7 +10953,7 @@ async function chatLoadFromDb(){
 
     if(byName.size){
       const existingByName = new Map(chatConversations.map(c => [c.name.toLowerCase(), c]));
-      chatConversations = Array.from(byName.entries()).map(([name, messages], idx) => {
+      const dbConversations = Array.from(byName.entries()).map(([name, messages], idx) => {
         const old = existingByName.get(name.toLowerCase());
         return {
           id: old ? old.id : Date.now() + idx,
@@ -10940,13 +10964,35 @@ async function chatLoadFromDb(){
           unread: old ? old.unread : 0,
           messages
         };
-      }).sort((a,b) => {
+      });
+
+      // Merge database messages with locally saved messages. This keeps messages
+      // visible after a hard refresh even when Supabase is unavailable or a send failed.
+      const merged = new Map();
+      [...chatConversations, ...dbConversations].forEach(conv => {
+        const key = String(conv.name || '').toLowerCase();
+        if(!merged.has(key)){
+          merged.set(key, {...conv, messages:[...(conv.messages || [])]});
+          return;
+        }
+        const target = merged.get(key);
+        const seen = new Set((target.messages || []).map(m =>
+          m.dbId ? 'db:'+m.dbId : 'local:'+[(m.from||''),(m.text||''),(m.createdAt||''),(m.time||'')].join('|')
+        ));
+        (conv.messages || []).forEach(m => {
+          const mk = m.dbId ? 'db:'+m.dbId : 'local:'+[(m.from||''),(m.text||''),(m.createdAt||''),(m.time||'')].join('|');
+          if(!seen.has(mk)){ target.messages.push(m); seen.add(mk); }
+        });
+        target.messages.sort((a,b) => String(a.createdAt||'').localeCompare(String(b.createdAt||'')));
+      });
+      chatConversations = Array.from(merged.values()).sort((a,b) => {
         const ad = a.messages[a.messages.length-1]?.createdAt || '';
         const bd = b.messages[b.messages.length-1]?.createdAt || '';
         return String(bd).localeCompare(String(ad));
       });
     }
     chatLoadedFromDb = true;
+    chatSaveLocal();
   }catch(err){
     console.warn('Chat backend not ready:', err.message || err);
   }
@@ -11158,6 +11204,7 @@ window.chatToggleReaction = function(i, emojiId){
   const list = m.reactions[emojiId];
   const at = list.indexOf(me);
   if(at > -1) list.splice(at,1); else list.push(me);
+  chatSaveLocal();
   chatRenderMessages();
 };
 
@@ -11251,6 +11298,7 @@ window.chatPickAttachment = function(kind){
         attachmentName: file.name,
         time: new Date().toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'})
       });
+      chatSaveLocal();
       chatRenderMessages();
       chatRenderList();
       chatRenderDashboardList();
@@ -11269,6 +11317,7 @@ window.chatSendMessage = async function(){
 
   const pending = {from:'me', text, time: chatFormatTime(), createdAt: new Date().toISOString(), pending:true};
   c.messages.push(pending);
+  chatSaveLocal();
   input.innerHTML = '';
   chatRenderMessages();
   chatRenderList();
@@ -11287,18 +11336,21 @@ window.chatSendMessage = async function(){
     pending.createdAt = data.created_at;
     pending.time = chatFormatTime(data.created_at);
     pending.pending = false;
+    chatSaveLocal();
     chatRenderMessages();
     chatRenderList();
     chatRenderDashboardList();
   }catch(err){
     pending.failed = true;
     pending.pending = false;
+    chatSaveLocal();
     console.error('Chat send failed:', err);
     toast('Message not saved — run the Chat SQL in Supabase');
   }
 };
 
 function chatInit(){
+  chatLoadLocal();
   chatUpdateBadges();
   chatRenderList();
   chatRenderDashboardList();

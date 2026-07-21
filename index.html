@@ -5591,6 +5591,7 @@ let djStages = [
   {id:1, name:'Area A', color:'#0F1E2E'},
   {id:2, name:'Area B', color:'#C4973B'}
 ];
+let djProtectedStageIds = new Set([1,2]); // Area A / Area B remain protected even after clients rename them
 let djBookingNextId = 1;
 let djBookings = [];
 let djStaffHoursNextId = 1;
@@ -5701,6 +5702,12 @@ async function djSchedLoadFromSupabase(){
           }
         }
       }
+      // Capture the two built-in stage IDs after legacy rename/recovery. Protection is by ID,
+      // so clients may rename Area A / Area B without accidentally making them deletable.
+      djProtectedStageIds = new Set(djStages.filter(function(s){
+        const n = String(s.name).trim().toLowerCase();
+        return n === 'area a' || n === 'area b';
+      }).map(function(s){ return s.id; }));
     }
     const { data: bookingRows, error: bookingErr } = await sb.from('dj_bookings').select('*').order('id', { ascending: true });
     if(!bookingErr && bookingRows){
@@ -5786,7 +5793,7 @@ function djSchedInlineFormHtml(b){
   const idAttr = b.id || 'new';
   let html = '';
   html += '<div onclick="event.stopPropagation()" style="background:white;border:1.5px solid #0D9488;border-radius:8px;padding:8px;margin-bottom:5px;box-sizing:border-box;max-width:100%">';
-  html += '<input id="djf-dj-'+idAttr+'" type="text" value="'+(b.dj||'')+'" placeholder="DJ name" style="width:100%;padding:5px 7px;margin-bottom:4px;border:1px solid #E2E8F0;border-radius:5px;font-family:Inter,sans-serif;font-size:11.5px;box-sizing:border-box">';
+  html += '<input id="djf-dj-'+idAttr+'" type="text" maxlength="18" value="'+String(b.dj||'').slice(0,18)+'" placeholder="DJ name (max 18 characters)" oninput="if(this.value.length>18)this.value=this.value.slice(0,18)" style="width:100%;padding:5px 7px;margin-bottom:4px;border:1px solid #E2E8F0;border-radius:5px;font-family:Inter,sans-serif;font-size:11.5px;box-sizing:border-box">';
   html += '<div style="display:flex;gap:4px;margin-bottom:4px">';
   html += '<input id="djf-start-'+idAttr+'" type="text" value="'+(b.start||'')+'" placeholder="Start" style="width:50%;padding:5px 7px;border:1px solid #E2E8F0;border-radius:5px;font-family:Inter,sans-serif;font-size:11px;box-sizing:border-box">';
   html += '<input id="djf-end-'+idAttr+'" type="text" value="'+(b.end||'')+'" placeholder="End" style="width:50%;padding:5px 7px;border:1px solid #E2E8F0;border-radius:5px;font-family:Inter,sans-serif;font-size:11px;box-sizing:border-box">';
@@ -5880,7 +5887,11 @@ function djSchedRender(){
           out += '<button class="djsched-hdr-btn" onclick="djSchedPickColor('+stage.id+')" title="Change color" style="width:28px;height:28px;padding:0;background:rgba(255,255,255,0.12);border:none;border-radius:50%;color:white;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="13.5" cy="6.5" r=".5"/><circle cx="17.5" cy="10.5" r=".5"/><circle cx="8.5" cy="7.5" r=".5"/><circle cx="6.5" cy="12.5" r=".5"/><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.289-.438-.652-.438-1.125a1.64 1.64 0 0 1 1.668-1.668h1.996c3.051 0 5.555-2.503 5.555-5.554C21.965 6.012 17.461 2 12 2z"/></svg></button>';
           out += '<button class="djsched-hdr-btn" onclick="djSchedCopyPrevWeek('+stage.id+',\''+djSchedDateKey(week.start)+'\')" title="Copy last week into this week" style="padding:5px 10px;background:rgba(255,255,255,0.12);border:none;border-radius:7px;color:white;font-family:Inter,sans-serif;font-size:11.5px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:5px;flex-shrink:0;white-space:nowrap"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg><span class="djsched-btn-label">Copy last week</span></button>';
           out += '<button class="djsched-hdr-btn" onclick="djSchedRenameStage('+stage.id+')" title="Rename" style="padding:5px 10px;background:rgba(255,255,255,0.12);border:none;border-radius:7px;color:white;font-family:Inter,sans-serif;font-size:11.5px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:5px;flex-shrink:0;white-space:nowrap"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg><span class="djsched-btn-label">Rename</span></button>';
-          out += '<button class="djsched-hdr-btn" onclick="djSchedDeleteStageWeek('+stage.id+',\''+djSchedDateKey(week.start)+'\')" title="Clear this stage for this week" style="padding:5px 10px;background:rgba(220,38,38,0.25);border:none;border-radius:7px;color:white;font-family:Inter,sans-serif;font-size:11.5px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:5px;flex-shrink:0;white-space:nowrap"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0-1 14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2L4 6"/></svg><span class="djsched-btn-label">Delete</span></button>';
+          if(djProtectedStageIds.has(stage.id)){
+            out += '<button class="djsched-hdr-btn" onclick="djSchedDeleteStageWeek('+stage.id+',\''+djSchedDateKey(week.start)+'\')" title="Clear this stage for this week" style="padding:5px 10px;background:rgba(220,38,38,0.25);border:none;border-radius:7px;color:white;font-family:Inter,sans-serif;font-size:11.5px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:5px;flex-shrink:0;white-space:nowrap"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0-1 14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2L4 6"/></svg><span class="djsched-btn-label">Clear week</span></button>';
+          } else {
+            out += '<button class="djsched-hdr-btn" onclick="djSchedDeleteStage('+stage.id+')" title="Permanently delete this added stage" style="padding:5px 10px;background:rgba(220,38,38,0.25);border:none;border-radius:7px;color:white;font-family:Inter,sans-serif;font-size:11.5px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:5px;flex-shrink:0;white-space:nowrap"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0-1 14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2L4 6"/></svg><span class="djsched-btn-label">Delete stage</span></button>';
+          }
           out += '</div></div>';
           out += '<div style="padding:16px">';
           out += '<div class="djsched-week-grid" style="display:grid;grid-template-columns:repeat(7,1fr);gap:8px">';
@@ -5954,7 +5965,7 @@ window.djSchedCancelEdit = function(){
 
 window.djSchedSave = async function(bookingId, stageId, dateKey){
   const idAttr = bookingId || 'new';
-  const dj = document.getElementById('djf-dj-'+idAttr).value.trim();
+  const dj = document.getElementById('djf-dj-'+idAttr).value.trim().slice(0,18);
   const start = document.getElementById('djf-start-'+idAttr).value.trim();
   const end = document.getElementById('djf-end-'+idAttr).value.trim();
   const isTakeover = document.getElementById('djf-type-takeover-'+idAttr).checked;
@@ -6145,12 +6156,22 @@ window.djSchedDeleteStageWeek = function(id, weekStartKey){
 // Kept as a separate explicit function for any future settings/admin screen where a
 // stage really should be permanently removed from the whole schedule.
 window.djSchedDeleteStage = function(id){
-  appConfirmShow({title:'Permanently Delete Stage', msg:'Permanently remove this stage and every booking in every week?', onOk:async function(){
+  if(djProtectedStageIds.has(id)){
+    toast('The two default stages cannot be deleted — rename them or clear a week instead');
+    return;
+  }
+  const stage = djStages.find(function(s){ return s.id===id; });
+  const stageName = stage ? stage.name : 'this stage';
+  appConfirmShow({title:'Permanently Delete Stage', msg:'Permanently remove '+stageName+' and every booking for it in every week?', onOk:async function(){
     djStages = djStages.filter(function(s){ return s.id!==id; });
     djBookings = djBookings.filter(function(b){ return b.stageId!==id; });
     djSchedRender();
+    // Delete bookings first so this also works when the database foreign key does not cascade.
+    const { error: bookingError } = await sb.from('dj_bookings').delete().eq('stage_id', id);
+    if(bookingError) console.warn('Supabase stage booking delete failed', bookingError);
     const { error } = await sb.from('dj_stages').delete().eq('id', id);
     if(error) console.warn('Supabase stage delete failed', error);
+    else toast('Stage deleted ✓');
   }});
 };
 

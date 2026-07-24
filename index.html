@@ -4553,14 +4553,35 @@ async function newsWeatherLoadNews(){
   const el = document.getElementById('newsweather-list');
   if(!el) return;
   try{
-    const { data, error } = await sb.from('rss_news_items').select('*').order('pub_date', { ascending:false }).limit(12);
+    const { data, error } = await sb.from('rss_news_items').select('*').order('pub_date', { ascending:false }).limit(60);
     if(error){ console.warn('News load failed', error); el.innerHTML = '<div style="padding:16px;text-align:center;color:#94A3B8;font-size:12px">Couldn\'t load news yet</div>'; return; }
     if(!data || data.length === 0){
       el.innerHTML = '<div style="padding:16px;text-align:center;color:#94A3B8;font-size:12px">No news yet — tap refresh to fetch</div>';
       newsWeatherRefresh(false);
       return;
     }
-    el.innerHTML = data.map(function(item){
+
+    // Take up to 3 most-recent items per source first, so a less-frequently-updated
+    // source still gets shown rather than being crowded out by prolific ones, then
+    // fill any remaining slots (up to 15 total) with whatever's next by date.
+    const perSourceCap = 3, totalCap = 15;
+    const bySource = {};
+    const picked = [];
+    data.forEach(function(item){
+      bySource[item.source] = bySource[item.source] || 0;
+      if(bySource[item.source] < perSourceCap && picked.length < totalCap){
+        bySource[item.source]++;
+        picked.push(item);
+      }
+    });
+    if(picked.length < totalCap){
+      data.forEach(function(item){
+        if(picked.length < totalCap && picked.indexOf(item) === -1) picked.push(item);
+      });
+    }
+    picked.sort(function(a,b){ return new Date(b.pub_date) - new Date(a.pub_date); });
+
+    el.innerHTML = picked.map(function(item){
       return '<a href="'+item.link+'" target="_blank" rel="noopener" style="display:block;padding:10px 14px;border-bottom:1px solid #F1F5F9;text-decoration:none;color:inherit">'+
         '<div style="font-size:9.5px;font-weight:700;color:#0D9488;text-transform:uppercase;letter-spacing:0.4px;margin-bottom:3px">'+item.source+'</div>'+
         '<div style="font-size:12.5px;font-weight:700;color:#0F1E2E;line-height:1.35">'+item.title+'</div>'+

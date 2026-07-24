@@ -1578,12 +1578,22 @@ textarea.rf-val{resize:vertical;min-height:72px;line-height:1.5}
 .hl-strip-outer::-webkit-scrollbar{height:7px}
 .hl-strip-outer::-webkit-scrollbar-track{background:#E2E8F0;border-radius:4px}
 .hl-strip-outer::-webkit-scrollbar-thumb{background:#94A3B8;border-radius:4px}
-.hl-strip{display:flex;gap:16px;width:max-content;padding:2px}
-.hl-story{width:72px;flex-shrink:0;display:flex;flex-direction:column;align-items:center;gap:6px;cursor:pointer}
-.hl-story-ring{width:64px;height:64px;border-radius:50%;padding:3px;background:linear-gradient(135deg,#C4973B,#0D9488)}
-.hl-story-ring.hl-story-placeholder{background:#E2E8F0}
-.hl-story-img{width:100%;height:100%;border-radius:50%;object-fit:cover;display:block;border:2.5px solid white}
-.hl-story-label{font-size:10.5px;color:var(--navy);font-weight:600;text-align:center;max-width:72px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.hl-strip{display:flex;gap:14px;width:max-content;padding:2px}
+.hl-story{width:200px;flex-shrink:0;background:white;border-radius:12px;overflow:hidden;box-shadow:0 2px 10px rgba(0,0,0,0.08);border:1px solid #E2E8F0;cursor:pointer;display:block}
+.hl-story-ring{width:100%;height:150px;border-radius:0;padding:0;background:none;display:block}
+.hl-story-ring.hl-story-placeholder{background:#F1F5F9;display:flex;align-items:center;justify-content:center}
+.hl-story-img{width:100%;height:100%;border-radius:0;object-fit:cover;display:block;border:none}
+.hl-story-label{font-size:12px;color:white;font-weight:500;text-align:left;max-width:none;overflow:visible;text-overflow:clip;white-space:normal;background:#0F1E2E;padding:12px 14px;line-height:1.4;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+.hl-story-mobile-label{display:none}
+
+@media (max-width:700px){
+  .hl-story{width:72px;background:none;border-radius:0;box-shadow:none;border:none;display:flex;flex-direction:column;align-items:center;gap:6px}
+  .hl-story-ring{width:64px;height:64px;border-radius:50%;padding:3px;background:linear-gradient(135deg,#C4973B,#0D9488)}
+  .hl-story-ring.hl-story-placeholder{background:#E2E8F0}
+  .hl-story-img{width:100%;height:100%;border-radius:50%;object-fit:cover;border:2.5px solid white}
+  .hl-story-label{display:none}
+  .hl-story-mobile-label{display:block;font-size:10.5px;color:var(--navy);font-weight:600;text-align:center;max-width:72px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+}
 .moments-strip-outer::-webkit-scrollbar{height:7px}
 .moments-strip-outer::-webkit-scrollbar-track{background:#E2E8F0;border-radius:4px}
 .moments-strip-outer::-webkit-scrollbar-thumb{background:#94A3B8;border-radius:4px}
@@ -12756,16 +12766,16 @@ function momentsRebuild(){
     if(!it.real){
       return `<div class="hl-story" onclick="openAddMoment()">
         <div class="hl-story-ring hl-story-placeholder">
-          <div style="width:100%;height:100%;border-radius:50%;background:#F1F5F9;display:flex;align-items:center;justify-content:center;border:2.5px solid white">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#94A3B8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-          </div>
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#94A3B8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
         </div>
-        <div class="hl-story-label" style="color:#94A3B8;font-style:italic">Add</div>
+        <div class="hl-story-label" style="color:rgba(255,255,255,0.6);font-style:italic">Tap + Add Highlight above ↑</div>
+        <div class="hl-story-mobile-label" style="color:#94A3B8;font-style:italic">Add</div>
       </div>`;
     }
     return `<div class="hl-story" onclick="openMoment(${it.idx})">
       <div class="hl-story-ring"><img class="hl-story-img" src="${it.img}" alt=""></div>
-      <div class="hl-story-label">${it.meta.replace(/^Posted by\s*/i,'').split('\u00b7')[0].trim() || 'Highlight'}</div>
+      <div class="hl-story-label">${it.caption}</div>
+      <div class="hl-story-mobile-label">${it.meta.replace(/^Posted by\s*/i,'').split('\u00b7')[0].trim() || 'Highlight'}</div>
     </div>`;
   }).join('');
 
@@ -12778,8 +12788,10 @@ function hlInitScroll(){
   if(!strip || !outer) return;
   const cards = Array.from(strip.children);
   const outerW = outer.offsetWidth || 800;
-  const cardW = 72 + 16;
-  const naturalW = cards.length * cardW - 16;
+  const isMobile = window.innerWidth <= 700;
+  const cardGap = isMobile ? 16 : 14;
+  const cardW = isMobile ? (72 + cardGap) : (200 + cardGap);
+  const naturalW = cards.length * cardW - cardGap;
   if(naturalW <= outerW){
     if(hlAutoScrollAnim) clearInterval(hlAutoScrollAnim);
     return;

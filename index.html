@@ -4223,8 +4223,14 @@ img.emoji-tw{width:1.15em;height:1.15em;vertical-align:-0.2em;margin:0 1px}
 
       <!-- TABS -->
       <div style="display:flex;gap:4px;background:#F1F5F9;padding:4px;border-radius:10px;width:fit-content;margin-bottom:24px">
-        <button id="admin-tab-roles" onclick="adminSwitchTab('roles')" style="padding:9px 18px;border:none;border-radius:7px;font-family:'Inter',sans-serif;font-size:13px;font-weight:700;cursor:pointer">Roles &amp; Permissions</button>
-        <button id="admin-tab-people" onclick="adminSwitchTab('people')" style="padding:9px 18px;border:none;border-radius:7px;font-family:'Inter',sans-serif;font-size:13px;font-weight:700;cursor:pointer">People</button>
+        <button id="admin-tab-roles" onclick="adminSwitchTab('roles')" style="padding:9px 18px;border:none;border-radius:7px;font-family:'Inter',sans-serif;font-size:13px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:7px">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+          Roles &amp; Permissions
+        </button>
+        <button id="admin-tab-people" onclick="adminSwitchTab('people')" style="padding:9px 18px;border:none;border-radius:7px;font-family:'Inter',sans-serif;font-size:13px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:7px">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+          People <span id="admin-tab-people-count" style="opacity:0.7"></span>
+        </button>
       </div>
 
       <!-- ROLES & PERMISSIONS TAB -->
@@ -7980,16 +7986,16 @@ let ADMIN_PERMS = {
   dailyworker: {teamfeed:1,chat:1,suggestions:0,tasks:1,inventory:0,entertainment:0,calendar:0,sops:1,reports:0,directory:0,marketing:0,adminconsole:0},
 };
 
-const PEOPLE_DEPARTMENTS = ['Operations', 'Kitchen', 'Housekeeping', 'Front of House', 'Guest Relations', 'Visual & Technical', 'Marketing', 'Ownership'];
+let PEOPLE_DEPARTMENTS = ['Operations', 'Kitchen', 'Housekeeping', 'Front of House', 'Guest Relations', 'Visual & Technical', 'Marketing', 'Ownership'];
 
 let PEOPLE = [
-  {id:1, firstName:'Robbie', lastName:'', title:'', dob:'', role:'superadmin', departments:['Ownership']},
-  {id:2, firstName:'Greta', lastName:'Steccanella', title:'Ms', dob:'', role:'director', departments:['Guest Relations']},
-  {id:3, firstName:'James', lastName:'Smith', title:'Mr', dob:'', role:'manager', departments:['Operations']},
-  {id:4, firstName:'I Gede Bagus', lastName:'Tri Prayoga', title:'Mr', dob:'', role:'teammember', departments:['Kitchen']},
-  {id:5, firstName:'John', lastName:'Smith', title:'Mr', dob:'1994-03-12', role:'supervisor', departments:['Front of House']},
-  {id:6, firstName:'Emma', lastName:'Evans', title:'Ms', dob:'1998-07-22', role:'teammember', departments:['Kitchen','Housekeeping']},
-  {id:7, firstName:'Peter', lastName:'Jackson', title:'Mr', dob:'2001-11-05', role:'dailyworker', departments:['Housekeeping']},
+  {id:1, firstName:'Robbie', lastName:'', role:'superadmin', departments:['Ownership']},
+  {id:2, firstName:'Greta', lastName:'Steccanella', role:'director', departments:['Guest Relations']},
+  {id:3, firstName:'James', lastName:'Smith', role:'manager', departments:['Operations']},
+  {id:4, firstName:'I Gede Bagus', lastName:'Tri Prayoga', role:'teammember', departments:['Kitchen']},
+  {id:5, firstName:'John', lastName:'Smith', role:'supervisor', departments:['Front of House']},
+  {id:6, firstName:'Emma', lastName:'Evans', role:'teammember', departments:['Kitchen','Housekeeping']},
+  {id:7, firstName:'Peter', lastName:'Jackson', role:'dailyworker', departments:['Housekeeping']},
 ];
 let peopleNextId = 8;
 let peopleEditingId = null;
@@ -8008,7 +8014,7 @@ function peopleRender(){
     return `<div style="display:flex;align-items:center;gap:14px;padding:14px 18px;${i<PEOPLE.length-1?'border-bottom:1px solid #F1F5F9':''}">
       <div style="width:38px;height:38px;border-radius:50%;background:${role.color};color:white;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px;flex-shrink:0">${initial}</div>
       <div style="flex:1;min-width:0">
-        <div style="font-size:13.5px;font-weight:700;color:#0F1E2E">${p.title ? p.title+' ' : ''}${peopleFullName(p)}</div>
+        <div style="font-size:13.5px;font-weight:700;color:#0F1E2E">${peopleFullName(p)}</div>
         <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:5px">${tags || '<span style="font-size:11px;color:#CBD5E1;font-style:italic">No department set</span>'}</div>
       </div>
       <div style="font-size:11px;font-weight:700;color:white;background:${role.color};padding:5px 12px;border-radius:20px;flex-shrink:0;white-space:nowrap">${role.name}</div>
@@ -8021,20 +8027,14 @@ function peopleRender(){
 
 function peopleOpenForm(personId){
   peopleEditingId = personId || null;
-  const p = personId ? PEOPLE.find(x=>x.id===personId) : {firstName:'',lastName:'',title:'',dob:'',role:'teammember',departments:[]};
+  const p = personId ? PEOPLE.find(x=>x.id===personId) : {firstName:'',lastName:'',role:'teammember',departments:[]};
   const wrap = document.getElementById('people-form-wrap');
   if(!wrap) return;
 
   wrap.style.display = 'block';
   wrap.innerHTML = `<div style="background:white;border:1.5px solid #E2E8F0;border-radius:14px;padding:22px;box-shadow:0 2px 8px rgba(0,0,0,0.06)">
     <div style="font-size:15px;font-weight:800;color:#0F1E2E;margin-bottom:16px">${personId ? 'Edit' : 'Add'} Person</div>
-    <div style="display:grid;grid-template-columns:100px 1fr 1fr;gap:12px;margin-bottom:12px">
-      <div>
-        <label style="font-size:11px;font-weight:700;color:#64748B;display:block;margin-bottom:5px">Title</label>
-        <select id="people-form-title" style="width:100%;padding:9px 10px;border:1.5px solid #E2E8F0;border-radius:8px;font-family:'Inter',sans-serif;font-size:13px">
-          ${['','Mr','Ms','Mrs','Mx'].map(t=>`<option value="${t}" ${p.title===t?'selected':''}>${t||'—'}</option>`).join('')}
-        </select>
-      </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px">
       <div>
         <label style="font-size:11px;font-weight:700;color:#64748B;display:block;margin-bottom:5px">First name</label>
         <input id="people-form-first" value="${p.firstName}" style="width:100%;padding:9px 10px;border:1.5px solid #E2E8F0;border-radius:8px;font-family:'Inter',sans-serif;font-size:13px;box-sizing:border-box">
@@ -8044,26 +8044,24 @@ function peopleOpenForm(personId){
         <input id="people-form-last" value="${p.lastName}" style="width:100%;padding:9px 10px;border:1.5px solid #E2E8F0;border-radius:8px;font-family:'Inter',sans-serif;font-size:13px;box-sizing:border-box">
       </div>
     </div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px">
-      <div>
-        <label style="font-size:11px;font-weight:700;color:#64748B;display:block;margin-bottom:5px">Date of birth (optional)</label>
-        <input id="people-form-dob" type="date" value="${p.dob}" style="width:100%;padding:9px 10px;border:1.5px solid #E2E8F0;border-radius:8px;font-family:'Inter',sans-serif;font-size:13px;box-sizing:border-box">
-      </div>
-      <div>
-        <label style="font-size:11px;font-weight:700;color:#64748B;display:block;margin-bottom:5px">Role</label>
-        <select id="people-form-role" style="width:100%;padding:9px 10px;border:1.5px solid #E2E8F0;border-radius:8px;font-family:'Inter',sans-serif;font-size:13px">
-          ${ADMIN_ROLES.map(r=>`<option value="${r.id}" ${p.role===r.id?'selected':''}>${r.name}</option>`).join('')}
-        </select>
-      </div>
+    <div style="margin-bottom:16px">
+      <label style="font-size:11px;font-weight:700;color:#64748B;display:block;margin-bottom:5px">Role</label>
+      <select id="people-form-role" style="width:100%;padding:9px 10px;border:1.5px solid #E2E8F0;border-radius:8px;font-family:'Inter',sans-serif;font-size:13px">
+        ${ADMIN_ROLES.map(r=>`<option value="${r.id}" ${p.role===r.id?'selected':''}>${r.name}</option>`).join('')}
+      </select>
     </div>
     <div style="margin-bottom:18px">
-      <label style="font-size:11px;font-weight:700;color:#64748B;display:block;margin-bottom:7px">Departments (choose as many as apply)</label>
-      <div style="display:flex;flex-wrap:wrap;gap:8px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:7px">
+        <label style="font-size:11px;font-weight:700;color:#64748B">Departments (choose as many as apply)</label>
+        <a onclick="deptManagerOpen()" style="font-size:11px;font-weight:700;color:#0D9488;cursor:pointer">Add / edit departments</a>
+      </div>
+      <div id="people-form-dept-list" style="display:flex;flex-wrap:wrap;gap:8px">
         ${PEOPLE_DEPARTMENTS.map(d => `<label style="display:flex;align-items:center;gap:6px;font-size:12.5px;color:#0F1E2E;background:#F8FAFC;border:1px solid #E2E8F0;padding:6px 12px;border-radius:20px;cursor:pointer">
           <input type="checkbox" class="people-form-dept" value="${d}" ${p.departments.includes(d)?'checked':''} style="margin:0">${d}
         </label>`).join('')}
       </div>
     </div>
+    <div id="dept-manager-wrap" style="display:none;margin-bottom:18px"></div>
     <div style="display:flex;gap:10px">
       <button onclick="peopleSaveForm()" style="padding:10px 18px;background:#0F1E2E;color:white;border:none;border-radius:8px;font-family:'Inter',sans-serif;font-size:13px;font-weight:700;cursor:pointer">Save</button>
       <button onclick="peopleCloseForm()" style="padding:10px 18px;background:#F1F5F9;color:#64748B;border:none;border-radius:8px;font-family:'Inter',sans-serif;font-size:13px;font-weight:700;cursor:pointer">Cancel</button>
@@ -8079,11 +8077,76 @@ function peopleCloseForm(){
   if(wrap){ wrap.style.display = 'none'; wrap.innerHTML = ''; }
 }
 
+function deptManagerOpen(){
+  const wrap = document.getElementById('dept-manager-wrap');
+  if(!wrap) return;
+  const isOpen = wrap.style.display === 'block';
+  wrap.style.display = isOpen ? 'none' : 'block';
+  if(!isOpen) deptManagerRender();
+}
+
+function deptManagerRender(){
+  const wrap = document.getElementById('dept-manager-wrap');
+  if(!wrap) return;
+  wrap.innerHTML = `<div style="background:#F8FAFC;border:1px solid #E2E8F0;border-radius:10px;padding:14px">
+    <div style="font-size:12px;font-weight:800;color:#0F1E2E;margin-bottom:10px">Manage departments</div>
+    ${PEOPLE_DEPARTMENTS.map((d,i) => `<div style="display:flex;gap:6px;align-items:center;margin-bottom:8px">
+      <input value="${d}" id="dept-rename-${i}" style="flex:1;padding:7px 10px;border:1.5px solid #E2E8F0;border-radius:7px;font-family:'Inter',sans-serif;font-size:12.5px;box-sizing:border-box">
+      <button onclick="deptRename(${i})" style="padding:7px 10px;background:#0F1E2E;color:white;border:none;border-radius:7px;font-family:'Inter',sans-serif;font-size:11.5px;font-weight:700;cursor:pointer;white-space:nowrap">Save</button>
+      <button onclick="deptDelete(${i})" title="Delete" style="width:30px;height:30px;background:none;border:none;color:#DC2626;cursor:pointer;flex-shrink:0">×</button>
+    </div>`).join('')}
+    <div style="display:flex;gap:6px;align-items:center;margin-top:12px;padding-top:12px;border-top:1px solid #E2E8F0">
+      <input id="dept-new-name" placeholder="New department name" style="flex:1;padding:7px 10px;border:1.5px solid #E2E8F0;border-radius:7px;font-family:'Inter',sans-serif;font-size:12.5px;box-sizing:border-box">
+      <button onclick="deptAdd()" style="padding:7px 14px;background:#0D9488;color:white;border:none;border-radius:7px;font-family:'Inter',sans-serif;font-size:11.5px;font-weight:700;cursor:pointer;white-space:nowrap">+ Add</button>
+    </div>
+  </div>`;
+}
+
+function deptRefreshCheckboxes(){
+  // Re-render the department checkbox list in the open person form, preserving any checks already made
+  const listEl = document.getElementById('people-form-dept-list');
+  if(!listEl) return;
+  const currentlyChecked = Array.from(document.querySelectorAll('.people-form-dept:checked')).map(c=>c.value);
+  listEl.innerHTML = PEOPLE_DEPARTMENTS.map(d => `<label style="display:flex;align-items:center;gap:6px;font-size:12.5px;color:#0F1E2E;background:#F8FAFC;border:1px solid #E2E8F0;padding:6px 12px;border-radius:20px;cursor:pointer">
+    <input type="checkbox" class="people-form-dept" value="${d}" ${currentlyChecked.includes(d)?'checked':''} style="margin:0">${d}
+  </label>`).join('');
+}
+
+function deptAdd(){
+  const input = document.getElementById('dept-new-name');
+  const name = input.value.trim();
+  if(!name) return;
+  if(PEOPLE_DEPARTMENTS.includes(name)){ alert('That department already exists.'); return; }
+  PEOPLE_DEPARTMENTS.push(name);
+  deptManagerRender();
+  deptRefreshCheckboxes();
+}
+
+function deptRename(index){
+  const newName = document.getElementById('dept-rename-'+index).value.trim();
+  const oldName = PEOPLE_DEPARTMENTS[index];
+  if(!newName || newName === oldName) return;
+  PEOPLE_DEPARTMENTS[index] = newName;
+  // Cascade the rename to every person currently carrying the old department name
+  PEOPLE.forEach(p => { p.departments = p.departments.map(d => d === oldName ? newName : d); });
+  deptManagerRender();
+  deptRefreshCheckboxes();
+  peopleRender();
+}
+
+function deptDelete(index){
+  const name = PEOPLE_DEPARTMENTS[index];
+  if(!confirm('Delete "'+name+'"? This removes it from anyone currently tagged with it.')) return;
+  PEOPLE_DEPARTMENTS.splice(index, 1);
+  PEOPLE.forEach(p => { p.departments = p.departments.filter(d => d !== name); });
+  deptManagerRender();
+  deptRefreshCheckboxes();
+  peopleRender();
+}
+
 function peopleSaveForm(){
   const firstName = document.getElementById('people-form-first').value.trim();
   const lastName = document.getElementById('people-form-last').value.trim();
-  const title = document.getElementById('people-form-title').value;
-  const dob = document.getElementById('people-form-dob').value;
   const role = document.getElementById('people-form-role').value;
   const departments = Array.from(document.querySelectorAll('.people-form-dept:checked')).map(c=>c.value);
 
@@ -8091,9 +8154,9 @@ function peopleSaveForm(){
 
   if(peopleEditingId){
     const p = PEOPLE.find(x=>x.id===peopleEditingId);
-    Object.assign(p, {firstName, lastName, title, dob, role, departments});
+    Object.assign(p, {firstName, lastName, role, departments});
   } else {
-    PEOPLE.push({id:peopleNextId++, firstName, lastName, title, dob, role, departments});
+    PEOPLE.push({id:peopleNextId++, firstName, lastName, role, departments});
   }
   peopleCloseForm();
   peopleRender();
@@ -8150,8 +8213,11 @@ function adminSwitchTab(tab){
 function adminUpdateTabStyles(){
   const rolesBtn = document.getElementById('admin-tab-roles');
   const peopleBtn = document.getElementById('admin-tab-people');
-  if(rolesBtn) rolesBtn.style.cssText = 'padding:9px 18px;border:none;border-radius:7px;font-family:\'Inter\',sans-serif;font-size:13px;font-weight:700;cursor:pointer;' + (adminActiveTab==='roles' ? 'background:#0F1E2E;color:white' : 'background:none;color:#64748B');
-  if(peopleBtn) peopleBtn.style.cssText = 'padding:9px 18px;border:none;border-radius:7px;font-family:\'Inter\',sans-serif;font-size:13px;font-weight:700;cursor:pointer;' + (adminActiveTab==='people' ? 'background:#0F1E2E;color:white' : 'background:none;color:#64748B');
+  const baseStyle = 'padding:9px 18px;border:none;border-radius:7px;font-family:\'Inter\',sans-serif;font-size:13px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:7px;';
+  if(rolesBtn) rolesBtn.style.cssText = baseStyle + (adminActiveTab==='roles' ? 'background:#0F1E2E;color:white' : 'background:none;color:#64748B');
+  if(peopleBtn) peopleBtn.style.cssText = baseStyle + (adminActiveTab==='people' ? 'background:#0F1E2E;color:white' : 'background:none;color:#64748B');
+  const countEl = document.getElementById('admin-tab-people-count');
+  if(countEl) countEl.textContent = '(' + PEOPLE.length + ')';
 }
 
 function adminSelectRole(roleId){

@@ -2492,6 +2492,10 @@ img.emoji-tw{width:1.15em;height:1.15em;vertical-align:-0.2em;margin:0 1px}
     </button>
 
     <div style="border-top:1px solid rgba(255,255,255,0.08);margin:8px 18px 4px"></div>
+    <button class="sb-link" id="n-people" onclick="nav('people')" style="color:#C4973B">
+      <svg class="sb-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+      People
+    </button>
     <button class="sb-link" id="n-admin" onclick="nav('admin')" style="color:#C4973B">
       <svg class="sb-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
       Admin Console
@@ -4211,6 +4215,26 @@ img.emoji-tw{width:1.15em;height:1.15em;vertical-align:-0.2em;margin:0 1px}
       <button class="btn btn-navy" style="margin-top:12px" onclick="suggestionSubmit()">Submit Anonymously</button>
     </div>
 
+    <!-- PEOPLE -->
+    <div class="page" id="p-people" style="padding:32px 28px 60px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:24px;flex-wrap:wrap;gap:12px">
+        <div>
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#C4973B" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+            <h1 style="font-size:24px;font-weight:800;color:#0F1E2E;margin:0">People</h1>
+          </div>
+          <div style="font-size:13px;color:#64748B">Everyone on the team, their role, and which departments they belong to — <span style="font-weight:700;color:#C4973B">DEMO preview, not yet wired to real accounts</span></div>
+        </div>
+        <button onclick="peopleOpenForm()" style="padding:10px 18px;background:#0F1E2E;color:white;border:none;border-radius:8px;font-family:'Inter',sans-serif;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap">+ Add Person</button>
+      </div>
+
+      <div id="people-form-wrap" style="display:none;margin-bottom:24px"></div>
+
+      <div style="background:white;border:1.5px solid #E2E8F0;border-radius:14px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.06)">
+        <div id="people-list"></div>
+      </div>
+    </div>
+
     <!-- ADMIN CONSOLE -->
     <div class="page" id="p-admin" style="padding:32px 28px 60px">
       <div style="margin-bottom:24px">
@@ -4324,6 +4348,7 @@ function nav(id, pushState=true){
   if(id==='maint'){maintRender();}
   if(id==='inventory'){inventoryRenderAreas(); inventoryRenderList();}
   if(id==='admin'){adminConsoleRender();}
+  if(id==='people'){peopleRender();}
 
   // Wait a frame so the page's content/height is fully laid out before positioning scroll
   requestAnimationFrame(() => {
@@ -7968,13 +7993,132 @@ let ADMIN_PERMS = {
   dailyworker: {teamfeed:1,chat:1,suggestions:0,tasks:1,inventory:0,entertainment:0,calendar:0,sops:1,reports:0,directory:0,marketing:0,adminconsole:0},
 };
 
-const ADMIN_MEMBERS = [
-  {name:'Robbie', role:'superadmin', dept:'Ownership'},
-  {name:'Greta Steccanella', role:'director', dept:'Guest Relations'},
-  {name:'James Smith', role:'manager', dept:'Operations'},
-  {name:'I Gede Bagus Tri Prayoga', role:'teammember', dept:'Kitchen'},
-  {name:'John', role:'supervisor', dept:'Front of House'},
+const PEOPLE_DEPARTMENTS = ['Operations', 'Kitchen', 'Housekeeping', 'Front of House', 'Guest Relations', 'Visual & Technical', 'Marketing', 'Ownership'];
+
+let PEOPLE = [
+  {id:1, firstName:'Robbie', lastName:'', title:'', dob:'', role:'superadmin', departments:['Ownership']},
+  {id:2, firstName:'Greta', lastName:'Steccanella', title:'Ms', dob:'', role:'director', departments:['Guest Relations']},
+  {id:3, firstName:'James', lastName:'Smith', title:'Mr', dob:'', role:'manager', departments:['Operations']},
+  {id:4, firstName:'I Gede Bagus', lastName:'Tri Prayoga', title:'Mr', dob:'', role:'teammember', departments:['Kitchen']},
+  {id:5, firstName:'John', lastName:'Smith', title:'Mr', dob:'1994-03-12', role:'supervisor', departments:['Front of House']},
+  {id:6, firstName:'Emma', lastName:'Evans', title:'Ms', dob:'1998-07-22', role:'teammember', departments:['Kitchen','Housekeeping']},
+  {id:7, firstName:'Peter', lastName:'Jackson', title:'Mr', dob:'2001-11-05', role:'dailyworker', departments:['Housekeeping']},
 ];
+let peopleNextId = 8;
+let peopleEditingId = null;
+
+function peopleFullName(p){
+  return (p.firstName + ' ' + p.lastName).trim();
+}
+
+function peopleRender(){
+  const el = document.getElementById('people-list');
+  if(!el) return;
+  el.innerHTML = PEOPLE.map((p,i) => {
+    const role = ADMIN_ROLES.find(r=>r.id===p.role) || {name:'—', color:'#94A3B8'};
+    const initial = p.firstName.charAt(0);
+    const tags = p.departments.map(d => `<span style="font-size:10.5px;font-weight:600;color:#0F1E2E;background:#F1F5F9;padding:3px 9px;border-radius:20px">${d}</span>`).join(' ');
+    return `<div style="display:flex;align-items:center;gap:14px;padding:14px 18px;${i<PEOPLE.length-1?'border-bottom:1px solid #F1F5F9':''}">
+      <div style="width:38px;height:38px;border-radius:50%;background:${role.color};color:white;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px;flex-shrink:0">${initial}</div>
+      <div style="flex:1;min-width:0">
+        <div style="font-size:13.5px;font-weight:700;color:#0F1E2E">${p.title ? p.title+' ' : ''}${peopleFullName(p)}</div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:5px">${tags || '<span style="font-size:11px;color:#CBD5E1;font-style:italic">No department set</span>'}</div>
+      </div>
+      <div style="font-size:11px;font-weight:700;color:white;background:${role.color};padding:5px 12px;border-radius:20px;flex-shrink:0;white-space:nowrap">${role.name}</div>
+      <button onclick="peopleOpenForm(${p.id})" title="Edit" style="width:32px;height:32px;background:#F1F5F9;border:none;border-radius:8px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#64748B" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+      </button>
+    </div>`;
+  }).join('');
+}
+
+function peopleOpenForm(personId){
+  peopleEditingId = personId || null;
+  const p = personId ? PEOPLE.find(x=>x.id===personId) : {firstName:'',lastName:'',title:'',dob:'',role:'teammember',departments:[]};
+  const wrap = document.getElementById('people-form-wrap');
+  if(!wrap) return;
+
+  wrap.style.display = 'block';
+  wrap.innerHTML = `<div style="background:white;border:1.5px solid #E2E8F0;border-radius:14px;padding:22px;box-shadow:0 2px 8px rgba(0,0,0,0.06)">
+    <div style="font-size:15px;font-weight:800;color:#0F1E2E;margin-bottom:16px">${personId ? 'Edit' : 'Add'} Person</div>
+    <div style="display:grid;grid-template-columns:100px 1fr 1fr;gap:12px;margin-bottom:12px">
+      <div>
+        <label style="font-size:11px;font-weight:700;color:#64748B;display:block;margin-bottom:5px">Title</label>
+        <select id="people-form-title" style="width:100%;padding:9px 10px;border:1.5px solid #E2E8F0;border-radius:8px;font-family:'Inter',sans-serif;font-size:13px">
+          ${['','Mr','Ms','Mrs','Mx'].map(t=>`<option value="${t}" ${p.title===t?'selected':''}>${t||'—'}</option>`).join('')}
+        </select>
+      </div>
+      <div>
+        <label style="font-size:11px;font-weight:700;color:#64748B;display:block;margin-bottom:5px">First name</label>
+        <input id="people-form-first" value="${p.firstName}" style="width:100%;padding:9px 10px;border:1.5px solid #E2E8F0;border-radius:8px;font-family:'Inter',sans-serif;font-size:13px;box-sizing:border-box">
+      </div>
+      <div>
+        <label style="font-size:11px;font-weight:700;color:#64748B;display:block;margin-bottom:5px">Surname</label>
+        <input id="people-form-last" value="${p.lastName}" style="width:100%;padding:9px 10px;border:1.5px solid #E2E8F0;border-radius:8px;font-family:'Inter',sans-serif;font-size:13px;box-sizing:border-box">
+      </div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px">
+      <div>
+        <label style="font-size:11px;font-weight:700;color:#64748B;display:block;margin-bottom:5px">Date of birth (optional)</label>
+        <input id="people-form-dob" type="date" value="${p.dob}" style="width:100%;padding:9px 10px;border:1.5px solid #E2E8F0;border-radius:8px;font-family:'Inter',sans-serif;font-size:13px;box-sizing:border-box">
+      </div>
+      <div>
+        <label style="font-size:11px;font-weight:700;color:#64748B;display:block;margin-bottom:5px">Role</label>
+        <select id="people-form-role" style="width:100%;padding:9px 10px;border:1.5px solid #E2E8F0;border-radius:8px;font-family:'Inter',sans-serif;font-size:13px">
+          ${ADMIN_ROLES.map(r=>`<option value="${r.id}" ${p.role===r.id?'selected':''}>${r.name}</option>`).join('')}
+        </select>
+      </div>
+    </div>
+    <div style="margin-bottom:18px">
+      <label style="font-size:11px;font-weight:700;color:#64748B;display:block;margin-bottom:7px">Departments (choose as many as apply)</label>
+      <div style="display:flex;flex-wrap:wrap;gap:8px">
+        ${PEOPLE_DEPARTMENTS.map(d => `<label style="display:flex;align-items:center;gap:6px;font-size:12.5px;color:#0F1E2E;background:#F8FAFC;border:1px solid #E2E8F0;padding:6px 12px;border-radius:20px;cursor:pointer">
+          <input type="checkbox" class="people-form-dept" value="${d}" ${p.departments.includes(d)?'checked':''} style="margin:0">${d}
+        </label>`).join('')}
+      </div>
+    </div>
+    <div style="display:flex;gap:10px">
+      <button onclick="peopleSaveForm()" style="padding:10px 18px;background:#0F1E2E;color:white;border:none;border-radius:8px;font-family:'Inter',sans-serif;font-size:13px;font-weight:700;cursor:pointer">Save</button>
+      <button onclick="peopleCloseForm()" style="padding:10px 18px;background:#F1F5F9;color:#64748B;border:none;border-radius:8px;font-family:'Inter',sans-serif;font-size:13px;font-weight:700;cursor:pointer">Cancel</button>
+      ${personId ? `<button onclick="peopleDelete(${personId})" style="padding:10px 18px;background:none;color:#DC2626;border:none;font-family:'Inter',sans-serif;font-size:13px;font-weight:700;cursor:pointer;margin-left:auto">Remove person</button>` : ''}
+    </div>
+  </div>`;
+  wrap.scrollIntoView({behavior:'smooth', block:'nearest'});
+}
+
+function peopleCloseForm(){
+  peopleEditingId = null;
+  const wrap = document.getElementById('people-form-wrap');
+  if(wrap){ wrap.style.display = 'none'; wrap.innerHTML = ''; }
+}
+
+function peopleSaveForm(){
+  const firstName = document.getElementById('people-form-first').value.trim();
+  const lastName = document.getElementById('people-form-last').value.trim();
+  const title = document.getElementById('people-form-title').value;
+  const dob = document.getElementById('people-form-dob').value;
+  const role = document.getElementById('people-form-role').value;
+  const departments = Array.from(document.querySelectorAll('.people-form-dept:checked')).map(c=>c.value);
+
+  if(!firstName){ alert('First name is required.'); return; }
+
+  if(peopleEditingId){
+    const p = PEOPLE.find(x=>x.id===peopleEditingId);
+    Object.assign(p, {firstName, lastName, title, dob, role, departments});
+  } else {
+    PEOPLE.push({id:peopleNextId++, firstName, lastName, title, dob, role, departments});
+  }
+  peopleCloseForm();
+  peopleRender();
+  adminConsoleRender();
+}
+
+function peopleDelete(personId){
+  PEOPLE = PEOPLE.filter(p=>p.id!==personId);
+  peopleCloseForm();
+  peopleRender();
+  adminConsoleRender();
+}
 
 let adminSelectedRole = null;
 
@@ -7984,6 +8128,7 @@ function adminConsoleRender(){
   if(!cardsEl || !membersEl) return;
 
   cardsEl.innerHTML = ADMIN_ROLES.map(r => {
+    const memberCount = PEOPLE.filter(p=>p.role===r.id).length;
     const onCount = Object.values(ADMIN_PERMS[r.id]).filter(v=>v).length;
     const totalCount = Object.values(ADMIN_PERMS[r.id]).length;
     const isSelected = adminSelectedRole === r.id;
@@ -7994,24 +8139,24 @@ function adminConsoleRender(){
       </div>
       <div style="font-size:11.5px;color:#94A3B8;line-height:1.4;margin-bottom:10px;min-height:32px">${r.desc}</div>
       <div style="display:flex;align-items:center;justify-content:space-between">
-        <div style="font-size:11px;color:#64748B;font-weight:600">${r.members} member${r.members!==1?'s':''}</div>
+        <div style="font-size:11px;color:#64748B;font-weight:600">${memberCount} member${memberCount!==1?'s':''}</div>
         <div style="font-size:10.5px;color:${r.color};font-weight:700">${onCount}/${totalCount} tools</div>
       </div>
     </div>`;
   }).join('');
 
-  membersEl.innerHTML = ADMIN_MEMBERS.map((m,i) => {
-    const role = ADMIN_ROLES.find(r=>r.id===m.role);
-    const initial = m.name.charAt(0);
-    return `<div style="display:flex;align-items:center;gap:12px;padding:14px 18px;${i<ADMIN_MEMBERS.length-1?'border-bottom:1px solid #F1F5F9':''}">
+  membersEl.innerHTML = PEOPLE.map((p,i) => {
+    const role = ADMIN_ROLES.find(r=>r.id===p.role);
+    const initial = p.firstName.charAt(0);
+    return `<div style="display:flex;align-items:center;gap:12px;padding:14px 18px;border-bottom:1px solid #F1F5F9">
       <div style="width:36px;height:36px;border-radius:50%;background:${role.color};color:white;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px;flex-shrink:0">${initial}</div>
       <div style="flex:1;min-width:0">
-        <div style="font-size:13px;font-weight:700;color:#0F1E2E">${m.name}</div>
-        <div style="font-size:11px;color:#94A3B8">${m.dept}</div>
+        <div style="font-size:13px;font-weight:700;color:#0F1E2E">${peopleFullName(p)}</div>
+        <div style="font-size:11px;color:#94A3B8">${p.departments.join(', ') || 'No department set'}</div>
       </div>
       <div style="font-size:11px;font-weight:700;color:white;background:${role.color};padding:5px 12px;border-radius:20px;flex-shrink:0">${role.name}</div>
     </div>`;
-  }).join('');
+  }).join('') + '<div style="padding:12px 18px"><a onclick="nav(\'people\')" style="font-size:12px;font-weight:700;color:#0D9488;cursor:pointer">Manage people →</a></div>';
 
   adminRenderEditor();
 }

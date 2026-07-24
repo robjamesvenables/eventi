@@ -2634,6 +2634,23 @@ img.emoji-tw{width:1.15em;height:1.15em;vertical-align:-0.2em;margin:0 1px}
             <div style="padding:24px 16px;text-align:center;color:#94A3B8;font-size:12px">Loading conversations…</div>
           </div>
         </div>
+
+        <!-- INDUSTRY NEWS & WEATHER -->
+        <div class="chat-panel-wrap" id="newsweather-wrap" style="margin-top:16px">
+          <div class="chat-panel-hd">
+            <div style="display:flex;align-items:center;gap:8px">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 22h16"/><path d="M18 11.66V22H6V11.66"/><path d="M12 2 2 9h20L12 2Z"/></svg>
+              <span style="font-weight:800;font-size:13px;text-transform:uppercase;letter-spacing:1px;color:white">Industry News &amp; Weather</span>
+            </div>
+            <button onclick="newsWeatherRefresh(true)" title="Refresh" style="width:28px;height:28px;background:rgba(255,255,255,0.12);border:none;border-radius:7px;color:white;cursor:pointer;display:flex;align-items:center;justify-content:center">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-2.64-6.36"/><path d="M21 3v6h-6"/></svg>
+            </button>
+          </div>
+          <div id="newsweather-weather" style="display:flex;gap:8px;padding:12px 14px;border-bottom:1px solid #EDF0F4"></div>
+          <div id="newsweather-list" style="max-height:360px;overflow-y:auto">
+            <div style="padding:24px 16px;text-align:center;color:#94A3B8;font-size:12px">Loading news…</div>
+          </div>
+        </div>
       </div>
       </div>
 
@@ -4476,6 +4493,103 @@ function initHome(){
   if(!window._skyInterval){
     window._skyInterval = setInterval(updateSkyBanner, 60000);
   }
+
+  newsWeatherLoadWeather();
+  newsWeatherLoadNews();
+}
+
+// ── INDUSTRY NEWS & WEATHER (Home Dashboard widget) ──
+const NEWSWEATHER_LOCATIONS = [
+  {name:'Bali', lat:-8.65, lon:115.22},
+  {name:'Singapore', lat:1.35, lon:103.82},
+  {name:'Bangkok', lat:13.75, lon:100.50}
+];
+
+function newsWeatherCodeLabel(code){
+  if(code===0) return 'Clear';
+  if(code>=1 && code<=3) return 'Cloudy';
+  if(code===45 || code===48) return 'Fog';
+  if(code>=51 && code<=57) return 'Drizzle';
+  if(code>=61 && code<=67) return 'Rain';
+  if(code>=71 && code<=77) return 'Snow';
+  if(code>=80 && code<=82) return 'Showers';
+  if(code>=95) return 'Storms';
+  return '—';
+}
+
+async function newsWeatherLoadWeather(){
+  const el = document.getElementById('newsweather-weather');
+  if(!el) return;
+  try{
+    const results = await Promise.all(NEWSWEATHER_LOCATIONS.map(async function(loc){
+      const res = await fetch('https://api.open-meteo.com/v1/forecast?latitude='+loc.lat+'&longitude='+loc.lon+'&current_weather=true');
+      const data = await res.json();
+      return { name: loc.name, temp: Math.round(data.current_weather.temperature), label: newsWeatherCodeLabel(data.current_weather.weathercode) };
+    }));
+    el.innerHTML = results.map(function(r){
+      return '<div style="flex:1;text-align:center;padding:6px 4px;background:#F8FAFC;border-radius:8px">'+
+        '<div style="font-size:10.5px;font-weight:700;color:#64748B;text-transform:uppercase;letter-spacing:0.3px">'+r.name+'</div>'+
+        '<div style="font-size:17px;font-weight:800;color:#0F1E2E;margin-top:2px">'+r.temp+'°</div>'+
+        '<div style="font-size:10px;color:#94A3B8">'+r.label+'</div>'+
+      '</div>';
+    }).join('');
+  } catch(e){
+    el.innerHTML = '<div style="font-size:11px;color:#94A3B8;padding:4px">Weather unavailable</div>';
+    console.warn('Weather fetch failed', e);
+  }
+}
+
+function newsWeatherTimeAgo(iso){
+  if(!iso) return '';
+  const diffMs = Date.now() - new Date(iso).getTime();
+  const mins = Math.floor(diffMs/60000);
+  if(mins < 60) return mins+'m ago';
+  const hrs = Math.floor(mins/60);
+  if(hrs < 24) return hrs+'h ago';
+  return Math.floor(hrs/24)+'d ago';
+}
+
+async function newsWeatherLoadNews(){
+  const el = document.getElementById('newsweather-list');
+  if(!el) return;
+  try{
+    const { data, error } = await sb.from('rss_news_items').select('*').order('pub_date', { ascending:false }).limit(12);
+    if(error){ console.warn('News load failed', error); el.innerHTML = '<div style="padding:16px;text-align:center;color:#94A3B8;font-size:12px">Couldn\'t load news yet</div>'; return; }
+    if(!data || data.length === 0){
+      el.innerHTML = '<div style="padding:16px;text-align:center;color:#94A3B8;font-size:12px">No news yet — tap refresh to fetch</div>';
+      newsWeatherRefresh(false);
+      return;
+    }
+    el.innerHTML = data.map(function(item){
+      return '<a href="'+item.link+'" target="_blank" rel="noopener" style="display:block;padding:10px 14px;border-bottom:1px solid #F1F5F9;text-decoration:none;color:inherit">'+
+        '<div style="font-size:9.5px;font-weight:700;color:#0D9488;text-transform:uppercase;letter-spacing:0.4px;margin-bottom:3px">'+item.source+'</div>'+
+        '<div style="font-size:12.5px;font-weight:700;color:#0F1E2E;line-height:1.35">'+item.title+'</div>'+
+        '<div style="font-size:10.5px;color:#94A3B8;margin-top:3px">'+newsWeatherTimeAgo(item.pub_date)+'</div>'+
+      '</a>';
+    }).join('');
+
+    // If the cache looks stale (nothing fetched in the last 90 minutes), quietly refresh in the background.
+    const newestFetch = data.reduce(function(max,item){ return item.fetched_at > max ? item.fetched_at : max; }, data[0].fetched_at);
+    if(Date.now() - new Date(newestFetch).getTime() > 90*60000){
+      newsWeatherRefresh(false);
+    }
+  } catch(e){
+    console.warn('News load failed', e);
+    el.innerHTML = '<div style="padding:16px;text-align:center;color:#94A3B8;font-size:12px">Couldn\'t load news yet</div>';
+  }
+}
+
+async function newsWeatherRefresh(isManual){
+  const el = document.getElementById('newsweather-list');
+  if(isManual && el) el.innerHTML = '<div style="padding:16px;text-align:center;color:#94A3B8;font-size:12px">Refreshing…</div>';
+  try{
+    await fetch(SUPABASE_URL+'/functions/v1/fetch-news', {
+      headers: { 'Authorization': 'Bearer '+SUPABASE_ANON_KEY }
+    });
+  } catch(e){
+    console.warn('News refresh failed', e);
+  }
+  newsWeatherLoadNews();
 }
 
 function updateSkyBanner(){

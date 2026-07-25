@@ -2442,6 +2442,10 @@ img.emoji-tw{width:1.15em;height:1.15em;vertical-align:-0.2em;margin:0 1px}
       <svg class="sb-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
       Meeting Notes
     </button>
+    <button class="sb-link" id="n-survey" onclick="nav('survey')">
+      <svg class="sb-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/><line x1="7" y1="8" x2="15" y2="8"/><line x1="7" y1="12" x2="12" y2="12"/></svg>
+      Customer Survey
+    </button>
     <button class="sb-link" id="n-sop" onclick="nav('sop')">
       <svg class="sb-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
       SOPs
@@ -2927,6 +2931,38 @@ img.emoji-tw{width:1.15em;height:1.15em;vertical-align:-0.2em;margin:0 1px}
     </div><!-- /p-home -->
 
     <!-- SANDBOX -->
+    <!-- CUSTOMER SURVEY -->
+    <div class="page" id="p-survey" style="padding:32px 28px 60px">
+      <div class="ph" style="margin-bottom:16px">
+        <div>
+          <div class="ph-title">Customer Survey</div>
+          <div class="ph-sub">Quick guest comments, logged by voice or typed — one entry at a time</div>
+        </div>
+        <button class="btn btn-ghost" onclick="surveyGoToday()">Today</button>
+      </div>
+
+      <div style="display:flex;align-items:center;justify-content:center;gap:16px;background:white;border:1.5px solid #E2E8F0;border-radius:12px;padding:12px;margin-bottom:16px">
+        <button onclick="surveyNavDay(-1)" style="width:32px;height:32px;border:none;background:#F1F5F9;border-radius:8px;cursor:pointer;font-size:16px;color:#334155">‹</button>
+        <div id="survey-date-label" style="font-size:14px;font-weight:800;color:#0F1E2E;min-width:180px;text-align:center"></div>
+        <button onclick="surveyNavDay(1)" style="width:32px;height:32px;border:none;background:#F1F5F9;border-radius:8px;cursor:pointer;font-size:16px;color:#334155">›</button>
+      </div>
+
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:10px">
+        <div id="survey-tally" style="font-size:13px;font-weight:700;color:#64748B"></div>
+        <div style="display:flex;gap:8px">
+          <button onclick="surveyPdf()" style="padding:9px 14px;background:#F1F5F9;color:#334155;border:none;border-radius:8px;font-family:'Inter',sans-serif;font-size:12.5px;font-weight:700;cursor:pointer">PDF</button>
+          <button onclick="surveyShare()" style="padding:9px 14px;background:#F1F5F9;color:#334155;border:none;border-radius:8px;font-family:'Inter',sans-serif;font-size:12.5px;font-weight:700;cursor:pointer">Share</button>
+          <button onclick="surveyOpenForm()" style="padding:9px 16px;background:#0F1E2E;color:white;border:none;border-radius:8px;font-family:'Inter',sans-serif;font-size:12.5px;font-weight:700;cursor:pointer">+ Add Comment</button>
+        </div>
+      </div>
+
+      <div id="survey-form-wrap" style="display:none;margin-bottom:20px"></div>
+
+      <div style="background:white;border:1.5px solid #E2E8F0;border-radius:14px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.06)">
+        <div id="survey-list"></div>
+      </div>
+    </div>
+
     <!-- AI NOTETAKER -->
     <div class="page" id="p-notetaker" style="padding:32px 28px 60px">
       <div style="margin-bottom:24px">
@@ -4372,6 +4408,7 @@ function nav(id, pushState=true){
   if(id==='inventory'){inventoryRenderAreas(); inventoryRenderList();}
   if(id==='admin'){adminConsoleRender(); adminSwitchTab(adminActiveTab);}
   if(id==='notetaker'){notetakerRender();}
+  if(id==='survey'){surveyRender();}
 
   // Wait a frame so the page's content/height is fully laid out before positioning scroll
   requestAnimationFrame(() => {
@@ -7997,6 +8034,7 @@ const ADMIN_MODULE_GROUPS = [
     {id:'entertainment', name:'Entertainment Schedule', desc:'View or edit DJ/event bookings'},
     {id:'calendar', name:'Event Calendar', desc:'View or manage upcoming events'},
     {id:'sops', name:'SOPs & Knowledge Base', desc:'View house procedures and guides'},
+    {id:'survey', name:'Customer Survey', desc:'Log and view guest comments (typed or by voice)'},
   ]},
   {label:'Business & Admin', modules:[
     {id:'reports', name:'Reports & Analytics', desc:'View sales and performance data'},
@@ -8008,12 +8046,12 @@ const ADMIN_MODULE_GROUPS = [
 
 // Default permission bundle per role - true/false per module id. Editable in the demo.
 let ADMIN_PERMS = {
-  superadmin:  {teamfeed:1,chat:1,suggestions:1,tasks:1,inventory:1,entertainment:1,calendar:1,sops:1,reports:1,directory:1,marketing:1,adminconsole:1},
-  director:    {teamfeed:1,chat:1,suggestions:1,tasks:1,inventory:1,entertainment:1,calendar:1,sops:1,reports:1,directory:1,marketing:1,adminconsole:1},
-  manager:     {teamfeed:1,chat:1,suggestions:1,tasks:1,inventory:1,entertainment:1,calendar:1,sops:1,reports:1,directory:1,marketing:1,adminconsole:0},
-  supervisor:  {teamfeed:1,chat:1,suggestions:1,tasks:1,inventory:1,entertainment:1,calendar:1,sops:1,reports:0,directory:1,marketing:0,adminconsole:0},
-  teammember:  {teamfeed:1,chat:1,suggestions:1,tasks:1,inventory:1,entertainment:0,calendar:0,sops:1,reports:0,directory:0,marketing:0,adminconsole:0},
-  dailyworker: {teamfeed:1,chat:1,suggestions:0,tasks:1,inventory:0,entertainment:0,calendar:0,sops:1,reports:0,directory:0,marketing:0,adminconsole:0},
+  superadmin:  {teamfeed:1,chat:1,suggestions:1,tasks:1,inventory:1,entertainment:1,calendar:1,sops:1,survey:1,reports:1,directory:1,marketing:1,adminconsole:1},
+  director:    {teamfeed:1,chat:1,suggestions:1,tasks:1,inventory:1,entertainment:1,calendar:1,sops:1,survey:1,reports:1,directory:1,marketing:1,adminconsole:1},
+  manager:     {teamfeed:1,chat:1,suggestions:1,tasks:1,inventory:1,entertainment:1,calendar:1,sops:1,survey:1,reports:1,directory:1,marketing:1,adminconsole:0},
+  supervisor:  {teamfeed:1,chat:1,suggestions:1,tasks:1,inventory:1,entertainment:1,calendar:1,sops:1,survey:1,reports:0,directory:1,marketing:0,adminconsole:0},
+  teammember:  {teamfeed:1,chat:1,suggestions:1,tasks:1,inventory:1,entertainment:0,calendar:0,sops:1,survey:0,reports:0,directory:0,marketing:0,adminconsole:0},
+  dailyworker: {teamfeed:1,chat:1,suggestions:0,tasks:1,inventory:0,entertainment:0,calendar:0,sops:1,survey:0,reports:0,directory:0,marketing:0,adminconsole:0},
 };
 
 let PEOPLE_DEPARTMENTS = ['Operations', 'Kitchen', 'Housekeeping', 'Front of House', 'Guest Relations', 'Visual & Technical', 'Marketing', 'Ownership'];
@@ -8456,6 +8494,208 @@ function notetakerViewPast(id){
   notetakerCurrentResult = r;
   notetakerRenderRecorderCard();
   document.getElementById('notetaker-recorder-card').scrollIntoView({behavior:'smooth', block:'start'});
+}
+
+// ── CUSTOMER SURVEY (guest comments, logged by voice or typed) ──
+let surveySelectedDate = new Date();
+let surveyEntries = [
+  {id:1, dateKey: surveyDateKey(new Date()), name:'Table 12', comment:'Guests loved the sunset seating and asked if they could book the same table again next visit.', time:'19:42'},
+  {id:2, dateKey: surveyDateKey(new Date()), name:'', comment:'Guest at the bar mentioned the music was a touch loud for conversation tonight.', time:'20:15'},
+];
+let surveyNextId = 3;
+let surveyRecognition = null;
+let surveyIsRecording = false;
+let surveyUsedVoiceThisEntry = false;
+
+function surveyDateKey(d){
+  return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+}
+
+function surveyGoToday(){
+  surveySelectedDate = new Date();
+  surveyRender();
+}
+
+function surveyNavDay(dir){
+  surveySelectedDate = new Date(surveySelectedDate.getTime() + dir*86400000);
+  surveyRender();
+}
+
+function surveyEntriesForSelectedDay(){
+  const key = surveyDateKey(surveySelectedDate);
+  return surveyEntries.filter(e => e.dateKey === key);
+}
+
+function surveyRender(){
+  const label = document.getElementById('survey-date-label');
+  const tally = document.getElementById('survey-tally');
+  const list = document.getElementById('survey-list');
+  if(!label || !tally || !list) return;
+
+  const isToday = surveyDateKey(surveySelectedDate) === surveyDateKey(new Date());
+  label.textContent = surveySelectedDate.toLocaleDateString('en-GB', {weekday:'long', day:'numeric', month:'long'}) + (isToday ? ' (Today)' : '');
+
+  const dayEntries = surveyEntriesForSelectedDay();
+  tally.textContent = dayEntries.length + ' comment' + (dayEntries.length!==1?'s':'') + (isToday ? ' today' : '');
+
+  if(dayEntries.length === 0){
+    list.innerHTML = '<div style="padding:30px;text-align:center;color:#94A3B8;font-size:13px">No comments logged for this day yet</div>';
+    return;
+  }
+
+  list.innerHTML = dayEntries.map((e,i) => `
+    <div style="padding:16px 18px;${i<dayEntries.length-1?'border-bottom:1px solid #F1F5F9':''}">
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:6px">
+        <div style="font-size:13px;font-weight:800;color:#0F1E2E">${e.name ? e.name : 'Comment'}</div>
+        <div style="display:flex;align-items:center;gap:10px;flex-shrink:0">
+          <div style="font-size:11.5px;color:#94A3B8">${e.time}</div>
+          <button onclick="surveyDelete(${e.id})" style="background:none;border:none;color:#CBD5E1;cursor:pointer;font-size:15px;padding:0">×</button>
+        </div>
+      </div>
+      <div style="font-size:13px;color:#334155;line-height:1.55">${e.comment}</div>
+    </div>
+  `).join('');
+}
+
+function surveyOpenForm(){
+  const wrap = document.getElementById('survey-form-wrap');
+  if(!wrap) return;
+  surveyUsedVoiceThisEntry = false;
+  wrap.style.display = 'block';
+  wrap.innerHTML = `<div style="background:white;border:1.5px solid #E2E8F0;border-radius:14px;padding:20px;box-shadow:0 2px 8px rgba(0,0,0,0.06)">
+    <div style="font-size:14px;font-weight:800;color:#0F1E2E;margin-bottom:14px">Add Comment</div>
+    <div style="margin-bottom:12px">
+      <label style="font-size:11px;font-weight:700;color:#64748B;display:block;margin-bottom:5px">Name or table (optional)</label>
+      <input id="survey-form-name" placeholder="e.g. Table 12, or leave blank" style="width:100%;padding:9px 10px;border:1.5px solid #E2E8F0;border-radius:8px;font-family:'Inter',sans-serif;font-size:13px;box-sizing:border-box">
+    </div>
+    <div style="margin-bottom:8px">
+      <label style="font-size:11px;font-weight:700;color:#64748B;display:block;margin-bottom:5px">Comment</label>
+      <div style="display:flex;gap:8px;align-items:flex-start">
+        <textarea id="survey-form-comment" rows="3" placeholder="Type here, or tap the mic and speak…" style="flex:1;padding:9px 10px;border:1.5px solid #E2E8F0;border-radius:8px;font-family:'Inter',sans-serif;font-size:13px;box-sizing:border-box;resize:vertical"></textarea>
+        <button id="survey-mic-btn" onclick="surveyToggleMic()" title="Speak instead of typing" style="width:40px;height:40px;border-radius:50%;background:#0D9488;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
+        </button>
+      </div>
+      <div id="survey-mic-status" style="font-size:11px;color:#94A3B8;margin-top:6px"></div>
+    </div>
+    <div style="display:flex;gap:10px;margin-top:14px">
+      <button onclick="surveySaveForm()" style="padding:10px 18px;background:#0F1E2E;color:white;border:none;border-radius:8px;font-family:'Inter',sans-serif;font-size:13px;font-weight:700;cursor:pointer">Save</button>
+      <button onclick="surveyCloseForm()" style="padding:10px 18px;background:#F1F5F9;color:#64748B;border:none;border-radius:8px;font-family:'Inter',sans-serif;font-size:13px;font-weight:700;cursor:pointer">Cancel</button>
+    </div>
+  </div>`;
+  wrap.scrollIntoView({behavior:'smooth', block:'nearest'});
+}
+
+function surveyCloseForm(){
+  if(surveyIsRecording) surveyToggleMic();
+  const wrap = document.getElementById('survey-form-wrap');
+  if(wrap){ wrap.style.display = 'none'; wrap.innerHTML = ''; }
+}
+
+function surveyToggleMic(){
+  const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
+  const statusEl = document.getElementById('survey-mic-status');
+  const btn = document.getElementById('survey-mic-btn');
+  if(!SpeechRec){
+    if(statusEl) statusEl.textContent = 'Voice input isn\'t supported in this browser - try Chrome, or just type instead.';
+    return;
+  }
+
+  if(surveyIsRecording){
+    if(surveyRecognition) surveyRecognition.stop();
+    return;
+  }
+
+  surveyRecognition = new SpeechRec();
+  surveyRecognition.continuous = true;
+  surveyRecognition.interimResults = false;
+  surveyRecognition.lang = 'en-US';
+
+  surveyRecognition.onstart = () => {
+    surveyIsRecording = true;
+    surveyUsedVoiceThisEntry = true;
+    if(btn) btn.style.background = '#DC2626';
+    if(statusEl) statusEl.textContent = '● Listening… tap the mic again to stop';
+  };
+  surveyRecognition.onresult = (event) => {
+    const textarea = document.getElementById('survey-form-comment');
+    if(!textarea) return;
+    let finalText = '';
+    for(let i = event.resultIndex; i < event.results.length; i++){
+      if(event.results[i].isFinal) finalText += event.results[i][0].transcript;
+    }
+    if(finalText) textarea.value = (textarea.value + ' ' + finalText).trim();
+  };
+  surveyRecognition.onerror = () => {
+    if(statusEl) statusEl.textContent = 'Didn\'t catch that - tap the mic to try again, or type instead.';
+  };
+  surveyRecognition.onend = () => {
+    surveyIsRecording = false;
+    if(btn) btn.style.background = '#0D9488';
+    if(statusEl) statusEl.textContent = 'Please check the text below and edit anything the speech got wrong before saving.';
+  };
+  surveyRecognition.start();
+}
+
+function surveySaveForm(){
+  const name = document.getElementById('survey-form-name').value.trim();
+  const comment = document.getElementById('survey-form-comment').value.trim();
+  if(!comment){ alert('Please add a comment first.'); return; }
+
+  surveyEntries.push({
+    id: surveyNextId++,
+    dateKey: surveyDateKey(surveySelectedDate),
+    name, comment,
+    time: new Date().toLocaleTimeString('en-GB', {hour:'2-digit', minute:'2-digit'})
+  });
+  surveyCloseForm();
+  surveyRender();
+  toast(surveyUsedVoiceThisEntry ? 'Saved — please double check it read your speech correctly ✓' : 'Comment saved ✓');
+}
+
+function surveyDelete(id){
+  surveyEntries = surveyEntries.filter(e => e.id !== id);
+  surveyRender();
+}
+
+function surveyPdf(){
+  const dayEntries = surveyEntriesForSelectedDay();
+  if(dayEntries.length === 0){ toast('No comments to export for this day'); return; }
+
+  const tpl = document.createElement('div');
+  tpl.style.cssText = 'position:fixed;left:-9999px;top:0;width:700px;background:white;padding:36px;font-family:Inter,sans-serif';
+  tpl.innerHTML = `
+    <div style="font-size:22px;font-weight:800;color:#0F1E2E;margin-bottom:4px">Customer Survey</div>
+    <div style="font-size:12px;color:#94A3B8;margin-bottom:20px">${surveySelectedDate.toLocaleDateString('en-GB', {weekday:'long', day:'numeric', month:'long', year:'numeric'})} · ${dayEntries.length} comment${dayEntries.length!==1?'s':''}</div>
+    ${dayEntries.map(e => `
+      <div style="margin-bottom:16px;padding-bottom:16px;border-bottom:1px solid #E2E8F0">
+        <div style="font-size:13px;font-weight:700;color:#0F1E2E">${e.name ? e.name : 'Comment'} <span style="font-weight:400;color:#94A3B8">· ${e.time}</span></div>
+        <div style="font-size:13px;color:#334155;line-height:1.6;margin-top:4px">${e.comment}</div>
+      </div>
+    `).join('')}
+  `;
+  document.body.appendChild(tpl);
+  toast('Preparing your PDF…');
+  html2pdf().set({
+    margin: 10,
+    filename: 'customer-survey-' + surveyDateKey(surveySelectedDate) + '.pdf',
+    image: { type: 'jpeg', quality: 0.95 },
+    html2canvas: { scale: 2, useCORS: true, backgroundColor: '#ffffff' },
+    jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+  }).from(tpl).save().then(()=>{ tpl.remove(); }).catch(()=>{ tpl.remove(); toast('PDF export failed — please try again'); });
+}
+
+function surveyShare(){
+  const dayEntries = surveyEntriesForSelectedDay();
+  if(dayEntries.length === 0){ toast('No comments to share for this day'); return; }
+  const dateStr = surveySelectedDate.toLocaleDateString('en-GB', {weekday:'long', day:'numeric', month:'long'});
+  let text = `📋 *Customer Survey — ${dateStr}*\n${dayEntries.length} comment${dayEntries.length!==1?'s':''}\n\n`;
+  dayEntries.forEach(e => { text += `• ${e.name ? e.name+': ' : ''}${e.comment}\n`; });
+  if(navigator.share){
+    navigator.share({text}).catch(()=>{});
+  } else {
+    window.open('https://wa.me/?text=' + encodeURIComponent(text), '_blank');
+  }
 }
 
 function inventoryRenderAreas(){

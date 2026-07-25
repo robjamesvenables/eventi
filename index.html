@@ -10585,28 +10585,14 @@ const announcements = [
   {id:14, text:'@Operations heads up — beach access path will be closed for maintenance from 6AM tomorrow.', tag:'Info', color:'#0D9488', tagBg:'#CCFBF1', tagColor:'#065F46', by:'Made', time:'Today, 4:20 PM', ts:Date.now()},
   {id:1, text:'Tonight — 27 pax, Restaurant, 7PM. Please check the rundown before 5PM.', tag:'Events', color:'#0D9488', tagBg:'#CCFBF1', tagColor:'#065F46', by:'John', time:'Today, 8:00 AM'},
   {id:2, text:'Kitchen & Bar SOPs deadline — please submit by end of this week.', tag:'SOPs', color:'#C4973B', tagBg:'#FEF3C7', tagColor:'#78350F', by:'John', time:'Today, 8:05 AM'},
-  // Demo: general cross-department "Urgent" flag - posted by GRO because they didn't know which
-  // department (Engineering/Housekeeping) owns the issue. Visible to everyone on the Noticeboard,
-  // unlike the role-gated Maintenance kanban. Posting an Urgent flag is itself permission-gated
-  // (see ANNOUNCE_URGENT_POSTERS below) to a short list of trusted roles/people.
-  {id:5, text:'Daybed by the pool needs repair — cushion/frame damage, guest-facing. Not sure who owns this, flagging so someone can pick it up.', tag:'Urgent', color:'#F43F5E', tagBg:'#FEE2E2', tagColor:'#7F1D1D', by:'Ayu (GRO)', time:'Today, 9:14 AM', photo:'notice-photos/daybed-urgent-demo.jpg'},
+  {id:5, text:'Daybed by the pool needs repair — cushion/frame damage, guest-facing. Not sure who owns this, flagging so someone can pick it up.', tag:'Info', color:'#0D9488', tagBg:'#CCFBF1', tagColor:'#065F46', by:'Ayu (GRO)', time:'Today, 9:14 AM', photo:'notice-photos/daybed-urgent-demo.jpg'},
   // Test entries so the horizontal strip has enough cards to demonstrate side-scrolling - remove once confirmed
   {id:6, text:'Pool towels running low at the main station — restock requested from housekeeping.', tag:'Info', color:'#0D9488', tagBg:'#CCFBF1', tagColor:'#065F46', by:'Wayan', time:'Today, 10:02 AM'},
   {id:7, text:'Sunset DJ set moved to the north deck tonight due to wind — update guests if asked.', tag:'Events', color:'#0D9488', tagBg:'#CCFBF1', tagColor:'#065F46', by:'Made', time:'Today, 11:20 AM'},
-  {id:3, text:'Reminder — Horizon Tech Summit deposit 2 due Friday. Follow up with client.', tag:'Urgent', color:'#F43F5E', tagBg:'#FEE2E2', tagColor:'#7F1D1D', by:'John', time:'Yesterday'},
+  {id:3, text:'Reminder — Horizon Tech Summit deposit 2 due Friday. Follow up with client.', tag:'Info', color:'#0D9488', tagBg:'#CCFBF1', tagColor:'#065F46', by:'John', time:'Yesterday'},
   {id:4, text:'Bar stock order placed for the weekend. Delivery confirmed Thursday AM.', tag:'Info', color:'#0D9488', tagBg:'#CCFBF1', tagColor:'#065F46', by:'Sarah', time:'Yesterday'},
 ];
 
-// ── URGENT POST PERMISSIONS (demo stub) ──
-// Only these roles/people may select the "Urgent" tag when posting to the Noticeboard.
-// Regular floor/daily staff can post other tags (Info, Events, Kitchen, Reminder, Other)
-// but not Urgent - keeps the urgent channel trustworthy and low-noise.
-// Backend admin should expose this as a per-role toggle, not a hardcoded list.
-const ANNOUNCE_URGENT_ALLOWED_ROLES = ['Manager', 'Supervisor'];
-const ANNOUNCE_URGENT_ALLOWED_USERS = ['Ayu (GRO)']; // named exceptions, e.g. specific trusted GRO staff
-function announceCanPostUrgent(user, role){
-  return ANNOUNCE_URGENT_ALLOWED_ROLES.includes(role) || ANNOUNCE_URGENT_ALLOWED_USERS.includes(user);
-}
 let announceNextId = 10;
 let announceEditId = null;
 let announceSelectedTag = 'Info';
@@ -10616,7 +10602,6 @@ const announceTags = {
   Events:  {color:'#0D9488', tagBg:'#CCFBF1', tagColor:'#065F46'},
   SOPs:    {color:'#C4973B', tagBg:'#FEF3C7', tagColor:'#78350F'},
   Kitchen: {color:'#10B981', tagBg:'#D1FAE5', tagColor:'#065F46'},
-  Urgent:  {color:'#F43F5E', tagBg:'#FEE2E2', tagColor:'#7F1D1D'},
   Reminder:{color:'#A855F7', tagBg:'#EDE9FE', tagColor:'#4C1D95'},
   Other:   {color:'#64748B', tagBg:'#F1F5F9', tagColor:'#334155'},
 };
@@ -10678,14 +10663,13 @@ async function announceLoadFromSupabase(){
     if(data.length > 0){
       announcements.length = 0;
       data.forEach(row => {
-        const isUrgent = row.tag === 'Urgent';
         announcements.push({
           id: row.id,
           text: row.text,
           tag: row.tag,
-          color: isUrgent ? '#F43F5E' : '#0D9488',
-          tagBg: isUrgent ? '#FEE2E2' : '#CCFBF1',
-          tagColor: isUrgent ? '#7F1D1D' : '#065F46',
+          color: '#0D9488',
+          tagBg: '#CCFBF1',
+          tagColor: '#065F46',
           by: row.by_name,
           time: new Date(row.created_at).toLocaleString('en-GB',{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'}),
           pinned: row.pinned,
@@ -10770,8 +10754,7 @@ function announceRender(){
   const visibleAnnouncements = announcements.slice(0, announceVisibleCount);
   const realHtml = visibleAnnouncements.map((a)=>{
     const isOwner = a.by === announceCurrentUser;
-    const isUrgent = a.tag === 'Urgent';
-    const newBadge = isToday(a.ts) ? `<span style="display:inline-block;background:${isUrgent?'#7F1D1D':'#0D9488'};color:white;font-size:8.5px;font-weight:800;letter-spacing:0.5px;padding:2px 7px;border-radius:8px;margin-left:6px;position:relative;top:-1.5px;vertical-align:middle">NEW</span>` : '';
+    const newBadge = isToday(a.ts) ? `<span style="display:inline-block;background:#0D9488;color:white;font-size:8.5px;font-weight:800;letter-spacing:0.5px;padding:2px 7px;border-radius:8px;margin-left:6px;position:relative;top:-1.5px;vertical-align:middle">NEW</span>` : '';
     const pinIcon = `<span onclick="event.stopPropagation();announceTogglePin(${a.id})" title="${a.pinned?'Unpin':'Pin to top'}" style="position:absolute;top:12px;right:${isOwner?'62px':'12px'};z-index:2;width:28px;height:28px;border-radius:50%;background:${a.pinned?'#DC2626':'rgba(255,255,255,0.85)'};display:flex;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 2px 6px rgba(0,0,0,0.15)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="${a.pinned?'white':'#94A3B8'}" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 17v5"/><path d="M9 10.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V7a1 1 0 0 1 1-1 2 2 0 0 0 0-4H8a2 2 0 0 0 0 4 1 1 0 0 1 1 1z"/></svg></span>`;
     const actions = isOwner ? `
       <div style="position:absolute;top:12px;right:12px;display:flex;align-items:center;gap:6px;z-index:2;background:rgba(255,255,255,0.85);border-radius:8px;padding:3px 5px">
@@ -10780,22 +10763,21 @@ function announceRender(){
       </div>` : '';
     const styledText = announceStyleEmojis(a.text);
     const imgHtml = a.photo ? `<img class="announce-card-img" src="${a.photo}" alt="" onclick="event.stopPropagation();recipePhotoZoom('${a.photo.replace(/'/g,"\\'")}')" title="Tap to view">` : '';
-    const cardBg = isUrgent ? 'background:#FDECEC' : '';
     const initial = a.by ? a.by.charAt(0).toUpperCase() : '?';
     const isExpanded = announceExpandedReplies.has(a.id);
     const repliesHtml = isExpanded ? announceInlineRepliesHtml(a) : '';
     return `
-      <div class="announce-card" style="${isUrgent ? 'border:1.5px solid #F87171;' : ''}">
-        <div class="announce-card-body" style="${cardBg}">
+      <div class="announce-card">
+        <div class="announce-card-body">
           ${pinIcon}
-          <div class="announce-post-hd" style="${isUrgent ? 'background:#FCA5A5' : ''}">
+          <div class="announce-post-hd">
             <div class="announce-post-avatar" style="background:${avatarColor(a.by)}">${initial}</div>
             <div class="announce-post-who">
-              <span class="announce-post-name" style="${isUrgent ? 'color:#7F1D1D' : ''}">${a.by}${newBadge}</span>
-              <span class="announce-card-meta" style="${isUrgent ? 'color:#7F1D1D' : ''}">${a.time}</span>
+              <span class="announce-post-name">${a.by}${newBadge}</span>
+              <span class="announce-card-meta">${a.time}</span>
             </div>
           </div>
-          <div class="announce-card-text" style="${isUrgent?'color:#7F1D1D':''}">${styledText}</div>
+          <div class="announce-card-text">${styledText}</div>
           ${imgHtml ? `<div style="margin:12px -16px 0">${imgHtml}</div>` : ''}
           <div style="margin-top:12px">${announceReactionBarHtml(a.id)}</div>
           <div style="margin-top:8px;font-size:12.5px;color:#64748B;font-weight:600;cursor:pointer" onclick="announceToggleReplies(${a.id})">
@@ -10976,11 +10958,7 @@ window.announceInsertEmoji = function(id){
 function announceRenderTags(){
   const container = document.getElementById('announce-tags');
   if(!container) return;
-  const isUrgent = announceSelectedTag === 'Urgent';
-  container.innerHTML = `<button onclick="announceSelectTag('${isUrgent ? 'Info' : 'Urgent'}')" style="display:flex;align-items:center;gap:8px;padding:9px 16px;border-radius:20px;border:2px solid ${isUrgent?'#F43F5E':'#E2E8F0'};background:${isUrgent?'#FEE2E2':'#fff'};color:${isUrgent?'#7F1D1D':'#64748B'};font-family:'Inter',sans-serif;font-size:12px;font-weight:700;cursor:pointer;transition:all 0.15s">
-    <span style="width:16px;height:16px;border-radius:50%;border:2px solid currentColor;display:inline-flex;align-items:center;justify-content:center">${isUrgent ? '<span style="width:8px;height:8px;border-radius:50%;background:currentColor"></span>' : ''}</span>
-    Mark as Urgent
-  </button>`;
+  container.innerHTML = '';
 }
 
 window.announceSelectTag = function(tag){
@@ -11061,14 +11039,7 @@ window.announceOpenDetail = function(id){
     <div style="width:36px;height:36px;border-radius:50%;background:${announceAvatarColor(a.by)};display:flex;align-items:center;justify-content:center;color:white;font-weight:800;font-size:14px;flex-shrink:0">${initial}</div>
     <span style="font-size:15px;font-weight:800;color:var(--navy)">${a.by}</span>`;
   const tagEl = document.getElementById('announceDetailTag');
-  if(a.tag === 'Urgent'){
-    tagEl.textContent = 'URGENT';
-    tagEl.style.display = 'inline-block';
-    tagEl.style.background = '#EF4444';
-    tagEl.style.color = 'white';
-  } else {
-    tagEl.style.display = 'none';
-  }
+  if(tagEl) tagEl.style.display = 'none';
 
   const photoEl = document.getElementById('announceDetailPhoto');
   if(a.photo){

@@ -8561,6 +8561,7 @@ function surveyOpenForm(){
   const wrap = document.getElementById('survey-form-wrap');
   if(!wrap) return;
   surveyUsedVoiceThisEntry = false;
+  const voiceSupported = !!(window.SpeechRecognition || window.webkitSpeechRecognition);
   wrap.style.display = 'block';
   wrap.innerHTML = `<div style="background:white;border:1.5px solid #E2E8F0;border-radius:14px;padding:20px;box-shadow:0 2px 8px rgba(0,0,0,0.06)">
     <div style="font-size:14px;font-weight:800;color:#0F1E2E;margin-bottom:14px">Add Comment</div>
@@ -8571,12 +8572,12 @@ function surveyOpenForm(){
     <div style="margin-bottom:8px">
       <label style="font-size:11px;font-weight:700;color:#64748B;display:block;margin-bottom:5px">Comment</label>
       <div style="display:flex;gap:8px;align-items:flex-start">
-        <textarea id="survey-form-comment" rows="3" placeholder="Type here, or tap the mic and speak…" style="flex:1;padding:9px 10px;border:1.5px solid #E2E8F0;border-radius:8px;font-family:'Inter',sans-serif;font-size:13px;box-sizing:border-box;resize:vertical"></textarea>
-        <button id="survey-mic-btn" onclick="surveyToggleMic()" title="Speak instead of typing" style="width:40px;height:40px;border-radius:50%;background:#0D9488;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0">
+        <textarea id="survey-form-comment" rows="3" placeholder="Type here${voiceSupported ? ', or tap the mic and speak…' : '…'}" style="flex:1;padding:9px 10px;border:1.5px solid #E2E8F0;border-radius:8px;font-family:'Inter',sans-serif;font-size:13px;box-sizing:border-box;resize:vertical"></textarea>
+        <button id="survey-mic-btn" onclick="surveyToggleMic()" ${voiceSupported ? '' : 'disabled'} title="${voiceSupported ? 'Speak instead of typing' : 'Voice input isn\'t available in this browser - please type instead'}" style="width:40px;height:40px;border-radius:50%;background:${voiceSupported ? '#0D9488' : '#CBD5E1'};border:none;cursor:${voiceSupported ? 'pointer' : 'not-allowed'};display:flex;align-items:center;justify-content:center;flex-shrink:0">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
         </button>
       </div>
-      <div id="survey-mic-status" style="font-size:11px;color:#94A3B8;margin-top:6px"></div>
+      <div id="survey-mic-status" style="font-size:11px;color:#94A3B8;margin-top:6px">${voiceSupported ? '' : 'Voice input needs Chrome or Edge - not available in this browser, so just type your comment below.'}</div>
     </div>
     <div style="display:flex;gap:10px;margin-top:14px">
       <button onclick="surveySaveForm()" style="padding:10px 18px;background:#0F1E2E;color:white;border:none;border-radius:8px;font-family:'Inter',sans-serif;font-size:13px;font-weight:700;cursor:pointer">Save</button>

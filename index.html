@@ -9872,13 +9872,13 @@ let kitchenMenusData = [
   ]}},
   {id:3, area:'main', section:'live', cat:'Dinner', name:'Dinner Menu', meta:'Updated 3 Jun 2026', links:[], content:{sections:[
     {id:1, name:'Starters', dishes:[
-      {id:1, name:'Tuna Tartare', desc:'Yellowfin tuna, avocado, sesame, citrus soy', price:'145,000', allergens:['fish','soy'], photo:''}
+      {id:1, name:'Tuna Tartare', desc:'Yellowfin tuna, avocado, sesame, citrus soy', price:'145,000', allergens:['fish','soy'], photo:'', foodCostPct:34}
     ]},
     {id:2, name:'Salads', dishes:[
-      {id:1, name:'Grilled Halloumi Salad', desc:'Rocket, watermelon, mint, balsamic', price:'95,000', allergens:['dairy'], photo:''}
+      {id:1, name:'Grilled Halloumi Salad', desc:'Rocket, watermelon, mint, balsamic', price:'95,000', allergens:['dairy'], photo:'', foodCostPct:38}
     ]},
     {id:3, name:'Mains', dishes:[
-      {id:1, name:'Grilled Barramundi', desc:'Lemon butter sauce, seasonal greens', price:'220,000', allergens:['fish','dairy'], photo:'recipe-photos/grilled-barramundi.jpg'}
+      {id:1, name:'Grilled Barramundi', desc:'Lemon butter sauce, seasonal greens', price:'220,000', allergens:['fish','dairy'], photo:'recipe-photos/grilled-barramundi.jpg', foodCostPct:39}
     ]},
     {id:4, name:'Sides', dishes:[]},
     {id:5, name:'Desserts', dishes:[]},
@@ -9914,10 +9914,17 @@ let kitchenMenusData = [
   ]}}
 ];
 
+function kitchenMenuAvgFoodCost(m){
+  const allDishes = m.content.sections.flatMap(s=>s.dishes).filter(d=>d.foodCostPct!=null);
+  return allDishes.length ? Math.round(allDishes.reduce((sum,d)=>sum+d.foodCostPct,0) / allDishes.length) : null;
+}
+
 function kitchenMenuCardHtml(m){
   const sec = kitchenMenuSections.find(s=>s.id===m.section);
   const area = kitchenAreas.find(a=>a.id===m.area);
   const actionsHtml = `<button class="btn btn-navy" style="width:100%" onclick="kitchenMenuOpenDetail(${m.id})">📋 View Menu</button>`;
+  const avgFoodCost = kitchenMenuAvgFoodCost(m);
+  const foodCostBadge = avgFoodCost!=null ? `<div style="text-align:right;font-size:11.5px;font-weight:700;color:${avgFoodCost<=32?'#059669':avgFoodCost<=40?'#D97706':'#DC2626'};margin-top:6px">Food cost: ${avgFoodCost}%</div>` : '';
   return `
     <div class="menu-card" style="border-left:none;background:${sec.bg};border-color:${sec.border}">
       <div class="menu-card-top">
@@ -9929,6 +9936,7 @@ function kitchenMenuCardHtml(m){
       </div>
       <div class="menu-card-meta" style="color:#475569">${m.meta}</div>
       ${actionsHtml}
+      ${foodCostBadge}
       <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:6px">
         <span onclick="kitchenEditMenu(${m.id})" style="opacity:0.5;cursor:pointer;font-size:11px">✎ Edit</span>
         <span onclick="kitchenDeleteMenu(${m.id})" style="opacity:0.5;cursor:pointer;font-size:11px;color:#EF4444">Delete</span>
@@ -10124,24 +10132,47 @@ function kitchenMenuDetailRender(){
   if(!m) return;
   document.getElementById('menuDetailTitle').textContent = m.name;
   const body = document.getElementById('menuDetailBody');
-  body.innerHTML = m.content.sections.map(sec => `
+  const avgFoodCost = kitchenMenuAvgFoodCost(m);
+  const summaryBar = avgFoodCost!=null ? `
+    <div style="display:flex;justify-content:flex-end;margin-bottom:16px">
+      <div style="background:#F8FAFC;border:1.5px solid #E2E8F0;border-radius:9px;padding:8px 14px;font-size:12.5px;font-weight:700;color:${avgFoodCost<=32?'#059669':avgFoodCost<=40?'#D97706':'#DC2626'}">
+        Food cost: ${avgFoodCost}% across the board
+      </div>
+    </div>` : '';
+  body.innerHTML = summaryBar + m.content.sections.map(sec => `
     <div style="margin-bottom:22px">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
         <div style="font-size:14px;font-weight:800;color:#0F1E2E;text-transform:uppercase;letter-spacing:0.5px">${sec.name}</div>
         <button onclick="kitchenSectionDelete(${sec.id})" style="display:flex;align-items:center;gap:5px;padding:6px 12px;background:#FEF2F2;border:1.5px solid #FECACA;border-radius:7px;font-family:'Inter',sans-serif;font-size:11.5px;font-weight:700;color:#DC2626;cursor:pointer">🗑 Delete Section</button>
       </div>
-      ${sec.dishes.map(d => kitchenDishCardHtml(sec.id, d)).join('') || '<div style="font-size:12px;color:#94A3B8;margin-bottom:8px">No dishes yet</div>'}
+      ${sec.dishes.map((d,idx) => kitchenDishCardHtml(sec.id, d, idx, sec.dishes.length)).join('') || '<div style="font-size:12px;color:#94A3B8;margin-bottom:8px">No dishes yet</div>'}
       <button onclick="kitchenDishAdd(${sec.id})" style="width:100%;padding:9px;background:none;border:1.5px dashed #E2E8F0;border-radius:8px;font-family:'Inter',sans-serif;font-size:12px;font-weight:600;color:#64748B;cursor:pointer">+ Add Dish</button>
     </div>`).join('') + `
     <button onclick="kitchenSectionAdd()" style="width:100%;padding:11px;background:none;border:1.5px dashed #CBD5E1;border-radius:10px;font-family:'Inter',sans-serif;font-size:13px;font-weight:700;color:#64748B;cursor:pointer;margin-top:6px">+ Add Section</button>`;
 }
+window.kitchenDishMove = function(sectionId, dishId, direction){
+  const m = kitchenMenusData.find(x=>x.id===kitchenMenuDetailId);
+  const sec = m.content.sections.find(s=>s.id===sectionId);
+  const idx = sec.dishes.findIndex(d=>d.id===dishId);
+  const swapWith = idx + direction;
+  if(swapWith < 0 || swapWith >= sec.dishes.length) return;
+  [sec.dishes[idx], sec.dishes[swapWith]] = [sec.dishes[swapWith], sec.dishes[idx]];
+  kitchenMenuDetailRender();
+};
 
-function kitchenDishCardHtml(sectionId, d){
+function kitchenDishCardHtml(sectionId, d, idx, total){
   const photoBox = d.photo
     ? `<img src="${d.photo}" style="width:56px;height:56px;object-fit:cover;border-radius:8px;flex-shrink:0">`
     : `<div style="width:56px;height:56px;border-radius:8px;background:#F1F5F9;flex-shrink:0;display:flex;align-items:center;justify-content:center;color:#CBD5E1"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2Z"/><circle cx="12" cy="13" r="4"/></svg></div>`;
   const allergensLabel = (d.allergens||[]).length ? d.allergens.join(', ') : '';
-  return `<div style="display:flex;gap:12px;padding:10px 0;border-bottom:1px solid #F1F5F9">
+  const foodCostLabel = d.foodCostPct!=null ? `<div style="font-size:10.5px;color:${d.foodCostPct<=32?'#059669':d.foodCostPct<=40?'#D97706':'#DC2626'};margin-top:3px;font-weight:700">Food cost: ${d.foodCostPct}%</div>` : '';
+  const moveButtons = `
+    <div style="display:flex;flex-direction:column;gap:2px;flex-shrink:0">
+      <button onclick="kitchenDishMove(${sectionId},${d.id},-1)" ${idx===0?'disabled':''} style="width:24px;height:22px;background:${idx===0?'#F8FAFC':'#F1F5F9'};border:1px solid #E2E8F0;border-radius:5px 5px 0 0;cursor:${idx===0?'default':'pointer'};color:${idx===0?'#CBD5E1':'#64748B'};font-size:11px;line-height:1">▲</button>
+      <button onclick="kitchenDishMove(${sectionId},${d.id},1)" ${idx===total-1?'disabled':''} style="width:24px;height:22px;background:${idx===total-1?'#F8FAFC':'#F1F5F9'};border:1px solid #E2E8F0;border-top:none;border-radius:0 0 5px 5px;cursor:${idx===total-1?'default':'pointer'};color:${idx===total-1?'#CBD5E1':'#64748B'};font-size:11px;line-height:1">▼</button>
+    </div>`;
+  return `<div style="display:flex;gap:10px;padding:10px 0;border-bottom:1px solid #F1F5F9">
+    ${moveButtons}
     ${photoBox}
     <div style="flex:1;min-width:0">
       <div style="display:flex;justify-content:space-between;gap:8px">
@@ -10150,6 +10181,7 @@ function kitchenDishCardHtml(sectionId, d){
       </div>
       <div style="font-size:12px;color:#64748B;margin-top:2px">${d.desc||''}</div>
       ${allergensLabel ? `<div style="font-size:10.5px;color:#D97706;margin-top:3px">Allergens: ${allergensLabel}</div>` : ''}
+      ${foodCostLabel}
       <div style="display:flex;gap:8px;margin-top:8px">
         <button onclick="kitchenDishEdit(${sectionId},${d.id})" style="display:flex;align-items:center;gap:5px;padding:7px 13px;background:#F1F5F9;border:1.5px solid #E2E8F0;border-radius:7px;font-family:'Inter',sans-serif;font-size:12px;font-weight:700;color:#334155;cursor:pointer">✎ Edit</button>
         <button onclick="kitchenDishDelete(${sectionId},${d.id})" style="display:flex;align-items:center;gap:5px;padding:7px 13px;background:#FEF2F2;border:1.5px solid #FECACA;border-radius:7px;font-family:'Inter',sans-serif;font-size:12px;font-weight:700;color:#DC2626;cursor:pointer">🗑 Delete</button>
@@ -10192,12 +10224,13 @@ window.kitchenDishAdd = function(sectionId){
       {label:'Dish name', placeholder:'e.g. Grilled Barramundi'},
       {label:'Description', type:'textarea', rows:4, placeholder:'e.g. Lemon butter sauce, seasonal greens'},
       {label:'Price (Rp)', placeholder:'e.g. 220,000'},
-      {label:'Allergens (optional)', placeholder:'e.g. Fish, Dairy', optional:true}
+      {label:'Allergens (optional)', placeholder:'e.g. Fish, Dairy', optional:true},
+      {label:'Food cost %', placeholder:'e.g. 32', optional:true}
     ],
-    onOk([photo, name, desc, price, allergens]){
+    onOk([photo, name, desc, price, allergens, foodCostPct]){
       if(!name) return;
       const maxId = Math.max(0, ...sec.dishes.map(d=>d.id));
-      sec.dishes.push({id:maxId+1, name, desc, price, allergens: allergens ? allergens.split(',').map(a=>a.trim()) : [], photo: photo||''});
+      sec.dishes.push({id:maxId+1, name, desc, price, allergens: allergens ? allergens.split(',').map(a=>a.trim()) : [], photo: photo||'', foodCostPct: foodCostPct ? parseFloat(foodCostPct) : null});
       kitchenMenuDetailRender();
       toast('Dish added ✓');
     }
@@ -10216,11 +10249,13 @@ window.kitchenDishEdit = function(sectionId, dishId){
       {label:'Dish name', value:d.name},
       {label:'Description', type:'textarea', rows:4, value:d.desc||''},
       {label:'Price (Rp)', value:d.price},
-      {label:'Allergens (optional)', value:(d.allergens||[]).join(', '), optional:true}
+      {label:'Allergens (optional)', value:(d.allergens||[]).join(', '), optional:true},
+      {label:'Food cost %', value: d.foodCostPct!=null?String(d.foodCostPct):'', placeholder:'e.g. 32', optional:true}
     ],
-    onOk([photo, name, desc, price, allergens]){
+    onOk([photo, name, desc, price, allergens, foodCostPct]){
       d.name=name; d.desc=desc; d.price=price;
       d.allergens = allergens ? allergens.split(',').map(a=>a.trim()) : [];
+      d.foodCostPct = foodCostPct ? parseFloat(foodCostPct) : null;
       if(photo) d.photo = photo;
       kitchenMenuDetailRender();
       toast('Dish updated ✓');
@@ -10241,9 +10276,9 @@ window.kitchenDishDelete = function(sectionId, dishId){
 // ── KITCHEN RECIPES (data-driven) ──
 let kitchenRecipeNextId = 100;
 let kitchenRecipesData = [
-  {id:1, name:'Grilled Barramundi with Lemon Butter', cat:'Main', catColor:'green', serves:1, allergens:'Fish, Dairy', allergensColor:'amber', ingredients:'200g barramundi fillet, 30g butter, 1 lemon, fresh herbs, salt, pepper', method:'Season fish, grill 4 mins each side. Rest 2 mins. Finish with lemon butter sauce.', photo:'recipe-photos/grilled-barramundi.jpg', pdfVersion:0, editedSincePdf:false, pdfHistory:[]},
-  {id:2, name:'Truffle Mushroom Pasta', cat:'Main', catColor:'green', serves:1, allergens:'Gluten, Dairy, Egg', allergensColor:'red', ingredients:'120g tagliatelle, mixed mushrooms, truffle oil, parmesan, cream, garlic, shallots', method:'Sauté mushrooms with garlic. Add cream, reduce. Toss with pasta, finish with truffle oil and parmesan.', photo:'', pdfVersion:0, editedSincePdf:false, pdfHistory:[]},
-  {id:3, name:'Acai Bowl', cat:'Breakfast', catColor:'green', serves:1, allergens:'Vegan', allergensColor:'green', ingredients:'150g frozen acai, banana, coconut milk, granola, fresh fruit, honey', method:'Blend acai with banana and coconut milk. Pour into bowl. Top with granola and fruit.', photo:'', pdfVersion:0, editedSincePdf:false, pdfHistory:[]}
+  {id:1, name:'Grilled Barramundi with Lemon Butter', cat:'Main', catColor:'green', serves:1, allergens:'Fish, Dairy', allergensColor:'amber', ingredients:'200g barramundi fillet, 30g butter, 1 lemon, fresh herbs, salt, pepper', method:'Season fish, grill 4 mins each side. Rest 2 mins. Finish with lemon butter sauce.', photo:'recipe-photos/grilled-barramundi.jpg', foodCostPct:34, pdfVersion:0, editedSincePdf:false, pdfHistory:[]},
+  {id:2, name:'Truffle Mushroom Pasta', cat:'Main', catColor:'green', serves:1, allergens:'Gluten, Dairy, Egg', allergensColor:'red', ingredients:'120g tagliatelle, mixed mushrooms, truffle oil, parmesan, cream, garlic, shallots', method:'Sauté mushrooms with garlic. Add cream, reduce. Toss with pasta, finish with truffle oil and parmesan.', photo:'', foodCostPct:41, pdfVersion:0, editedSincePdf:false, pdfHistory:[]},
+  {id:3, name:'Acai Bowl', cat:'Breakfast', catColor:'green', serves:1, allergens:'Vegan', allergensColor:'green', ingredients:'150g frozen acai, banana, coconut milk, granola, fresh fruit, honey', method:'Blend acai with banana and coconut milk. Pour into bowl. Top with granola and fruit.', photo:'', foodCostPct:28, pdfVersion:0, editedSincePdf:false, pdfHistory:[]}
 ];
 
 function kitchenRelativeTime(ts){
@@ -10296,6 +10331,12 @@ function kitchenRecipeCardHtml(r){
             <span class="recipe-badge ${r.allergensColor}">Allergens: ${r.allergens}</span>
           </div>
           <div style="font-size:12px;color:var(--ink2);line-height:1.7"><strong>Ingredients:</strong> ${r.ingredients}<br><strong>Method:</strong> ${r.method}</div>
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-top:12px;padding-top:12px;border-top:1px solid #F1F5F9">
+            <div style="font-size:12px;font-weight:700;color:${r.foodCostPct!=null ? (r.foodCostPct<=32?'#059669':r.foodCostPct<=40?'#D97706':'#DC2626') : '#94A3B8'}">
+              ${r.foodCostPct!=null ? `Food cost: ${r.foodCostPct}%` : 'Food cost: not set'}
+            </div>
+            <button onclick="kitchenMoveToMenuOpen(${r.id})" style="display:flex;align-items:center;gap:5px;padding:7px 13px;background:#0F1E2E;border:none;border-radius:7px;font-family:'Inter',sans-serif;font-size:12px;font-weight:700;color:white;cursor:pointer">→ Move to Menu</button>
+          </div>
         </div>
       </div>
     </div>`;
@@ -10417,11 +10458,12 @@ function kitchenAddRecipe(){
       {label:'Serves', placeholder:'e.g. 1'},
       {label:'Allergens', placeholder:'e.g. Fish, Dairy'},
       {label:'Ingredients', type:'textarea', rows:7, placeholder:'e.g. 200g barramundi fillet\n30g butter\n1 lemon\nFresh herbs, salt, pepper'},
-      {label:'Method', type:'textarea', rows:9, placeholder:'e.g. Season fish, grill 4 mins each side.\nRest 2 mins.\nFinish with lemon butter sauce.'}
+      {label:'Method', type:'textarea', rows:9, placeholder:'e.g. Season fish, grill 4 mins each side.\nRest 2 mins.\nFinish with lemon butter sauce.'},
+      {label:'Food cost %', placeholder:'e.g. 32', optional:true}
     ],
-    onOk([photo, name, cat, serves, allergens, ingredients, method]){
+    onOk([photo, name, cat, serves, allergens, ingredients, method, foodCostPct]){
       const newId = kitchenRecipeNextId++;
-      kitchenRecipesData.push({id: newId, name, cat, catColor:'green', serves, allergens, allergensColor:'amber', ingredients, method, photo: photo||'', pdfVersion:0, editedSincePdf:false, pdfHistory:[]});
+      kitchenRecipesData.push({id: newId, name, cat, catColor:'green', serves, allergens, allergensColor:'amber', ingredients, method, photo: photo||'', foodCostPct: foodCostPct ? parseFloat(foodCostPct) : null, pdfVersion:0, editedSincePdf:false, pdfHistory:[]});
       kitchenRenderRecipes();
       kitchenShowPdfPrompt(newId);
     }
@@ -10431,7 +10473,7 @@ function kitchenAddRecipe(){
 function kitchenEditRecipe(id){
   const r = kitchenRecipesData.find(x=>x.id===id);
   if(!r) return;
-  const original = {name:r.name, cat:r.cat, serves:String(r.serves), allergens:r.allergens, ingredients:r.ingredients, method:r.method};
+  const original = {name:r.name, cat:r.cat, serves:String(r.serves), allergens:r.allergens, ingredients:r.ingredients, method:r.method, foodCostPct: r.foodCostPct!=null?String(r.foodCostPct):''};
   appModalShow({
     title:'Edit Recipe',
     fields:[
@@ -10441,14 +10483,16 @@ function kitchenEditRecipe(id){
       {label:'Serves', value:String(r.serves)},
       {label:'Allergens', value:r.allergens},
       {label:'Ingredients', type:'textarea', rows:7, value:r.ingredients},
-      {label:'Method', type:'textarea', rows:9, value:r.method}
+      {label:'Method', type:'textarea', rows:9, value:r.method},
+      {label:'Food cost %', value: r.foodCostPct!=null?String(r.foodCostPct):'', placeholder:'e.g. 32', optional:true}
     ],
-    onOk([photo, name, cat, serves, allergens, ingredients, method]){
+    onOk([photo, name, cat, serves, allergens, ingredients, method, foodCostPct]){
       const changed = name!==original.name || cat!==original.cat || serves!==original.serves
         || allergens!==original.allergens || ingredients!==original.ingredients || method!==original.method
-        || (photo && photo!==r.photo);
+        || foodCostPct!==original.foodCostPct || (photo && photo!==r.photo);
 
       r.name=name; r.cat=cat; r.serves=serves; r.allergens=allergens; r.ingredients=ingredients; r.method=method;
+      r.foodCostPct = foodCostPct ? parseFloat(foodCostPct) : null;
       if(photo) r.photo = photo;
       kitchenRenderRecipes();
 
@@ -10471,6 +10515,87 @@ function kitchenDeleteRecipe(id){
     toast('Recipe deleted');
   }});
 }
+
+// ── MOVE RECIPE TO MENU ──
+let kitchenMoveToMenuRecipeId = null;
+let kitchenMoveToMenuSelections = {}; // {menuId: {checked, sectionId}}
+
+window.kitchenMoveToMenuOpen = function(recipeId){
+  kitchenMoveToMenuRecipeId = recipeId;
+  kitchenMoveToMenuSelections = {};
+  kitchenMenusData.forEach(m => {
+    kitchenMoveToMenuSelections[m.id] = {checked:false, sectionId: m.content.sections[0] ? m.content.sections[0].id : null};
+  });
+  document.getElementById('moveToMenuOverlay').style.display = 'flex';
+  kitchenMoveToMenuRender();
+};
+window.kitchenMoveToMenuClose = function(){
+  document.getElementById('moveToMenuOverlay').style.display = 'none';
+  kitchenMoveToMenuRecipeId = null;
+};
+window.kitchenMoveToMenuToggle = function(menuId){
+  kitchenMoveToMenuSelections[menuId].checked = !kitchenMoveToMenuSelections[menuId].checked;
+  kitchenMoveToMenuRender();
+};
+window.kitchenMoveToMenuSectionChange = function(menuId, sectionId){
+  kitchenMoveToMenuSelections[menuId].sectionId = parseInt(sectionId);
+};
+function kitchenMoveToMenuRender(){
+  const body = document.getElementById('moveToMenuBody');
+  if(!kitchenMenusData.length){
+    body.innerHTML = '<div style="text-align:center;padding:24px;color:#94A3B8;font-size:13px">No menus yet — add one on the Menus tab first.</div>';
+    return;
+  }
+  body.innerHTML = kitchenMenusData.map(m => {
+    const sec = kitchenMenuSections.find(s=>s.id===m.section);
+    const sel = kitchenMoveToMenuSelections[m.id];
+    const sectionPicker = sel.checked ? `
+      <select onchange="kitchenMoveToMenuSectionChange(${m.id}, this.value)" style="margin-top:8px;width:100%;padding:8px 10px;border:1.5px solid #E2E8F0;border-radius:7px;font-family:'Inter',sans-serif;font-size:12.5px;color:#334155">
+        ${m.content.sections.map(s => `<option value="${s.id}" ${s.id===sel.sectionId?'selected':''}>${s.name}</option>`).join('')}
+      </select>` : '';
+    return `
+      <div style="padding:12px 0;border-bottom:1px solid #F1F5F9">
+        <div style="display:flex;align-items:center;gap:10px;cursor:pointer" onclick="kitchenMoveToMenuToggle(${m.id})">
+          <input type="checkbox" ${sel.checked?'checked':''} style="width:18px;height:18px;flex-shrink:0;accent-color:#0D9488" onclick="event.stopPropagation();kitchenMoveToMenuToggle(${m.id})">
+          <div style="flex:1;min-width:0">
+            <div style="font-size:13.5px;font-weight:700;color:#0F1E2E">${m.name}</div>
+            <div style="font-size:11.5px;color:#64748B">${m.cat}</div>
+          </div>
+          <span class="menu-badge ${sec.badge}">${sec.badgeLabel}</span>
+        </div>
+        ${sectionPicker}
+      </div>`;
+  }).join('');
+}
+window.kitchenMoveToMenuConfirm = function(){
+  const r = kitchenRecipesData.find(x=>x.id===kitchenMoveToMenuRecipeId);
+  if(!r) return;
+  const targets = Object.entries(kitchenMoveToMenuSelections).filter(([id,sel]) => sel.checked);
+  if(!targets.length){
+    toast('Select at least one menu');
+    return;
+  }
+  let count = 0;
+  targets.forEach(([menuId, sel]) => {
+    const m = kitchenMenusData.find(x=>x.id===parseInt(menuId));
+    if(!m) return;
+    const sec = m.content.sections.find(s=>s.id===sel.sectionId) || m.content.sections[0];
+    if(!sec) return;
+    const maxId = Math.max(0, ...sec.dishes.map(d=>d.id));
+    sec.dishes.push({
+      id: maxId+1,
+      name: r.name,
+      desc: '',
+      price: '',
+      allergens: r.allergens ? r.allergens.split(',').map(a=>a.trim()) : [],
+      photo: r.photo || '',
+      foodCostPct: r.foodCostPct
+    });
+    count++;
+  });
+  kitchenMoveToMenuClose();
+  toast(`Added to ${count} menu${count===1?'':'s'} ✓`);
+};
 
 // ── KITCHEN ALLERGENS TABLE ──
 const ALLERGEN_CATS = ['gluten','dairy','egg','fish','shellfish','nuts','soy','vegan'];
@@ -13861,6 +13986,21 @@ document.addEventListener('DOMContentLoaded', initCardColours);
       <button onclick="kitchenMenuCloseDetail()" style="background:rgba(255,255,255,0.12);border:none;color:white;width:32px;height:32px;border-radius:50%;cursor:pointer;font-size:16px;flex-shrink:0">×</button>
     </div>
     <div style="padding:24px;overflow-y:auto;flex:1" id="menuDetailBody"></div>
+  </div>
+</div>
+
+<!-- ── MOVE RECIPE TO MENU picker ── -->
+<div id="moveToMenuOverlay" style="display:none;position:fixed;inset:0;background:rgba(15,30,46,0.6);z-index:10001;align-items:center;justify-content:center;padding:20px" onclick="if(event.target===this)kitchenMoveToMenuClose()">
+  <div style="background:white;border-radius:16px;max-width:480px;width:100%;max-height:85vh;display:flex;flex-direction:column;overflow:hidden">
+    <div style="background:#0F1E2E;padding:20px 24px;border-radius:16px 16px 0 0;display:flex;align-items:center;justify-content:space-between;flex-shrink:0">
+      <div style="color:white;font-size:16px;font-weight:800">Move to Menu</div>
+      <button onclick="kitchenMoveToMenuClose()" style="background:rgba(255,255,255,0.12);border:none;color:white;width:32px;height:32px;border-radius:50%;cursor:pointer;font-size:16px;flex-shrink:0">×</button>
+    </div>
+    <div style="padding:8px 24px 20px;font-size:12.5px;color:#64748B;flex-shrink:0">Select which menu(s) to add this dish to. The recipe stays here too — this copies it in.</div>
+    <div style="padding:0 24px;overflow-y:auto;flex:1" id="moveToMenuBody"></div>
+    <div style="padding:16px 24px;border-top:1px solid #F1F5F9;flex-shrink:0">
+      <button onclick="kitchenMoveToMenuConfirm()" style="width:100%;padding:12px;background:#0D9488;border:none;border-radius:9px;font-family:'Inter',sans-serif;font-size:13.5px;font-weight:700;color:white;cursor:pointer">Add to Selected Menu(s)</button>
+    </div>
   </div>
 </div>
 

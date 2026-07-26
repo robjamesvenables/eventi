@@ -2453,6 +2453,10 @@ img.emoji-tw{width:1.15em;height:1.15em;vertical-align:-0.2em;margin:0 1px}
       <svg class="sb-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/><line x1="7" y1="8" x2="15" y2="8"/><line x1="7" y1="12" x2="12" y2="12"/></svg>
       Customer Survey
     </button>
+    <button class="sb-link" id="n-vacancies" onclick="nav('vacancies')">
+      <svg class="sb-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>
+      Job Vacancies
+    </button>
     <button class="sb-link" id="n-sop" onclick="nav('sop')">
       <svg class="sb-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
       SOPs
@@ -2968,6 +2972,24 @@ img.emoji-tw{width:1.15em;height:1.15em;vertical-align:-0.2em;margin:0 1px}
       <div style="background:white;border:1.5px solid #E2E8F0;border-radius:14px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.06)">
         <div id="survey-list"></div>
       </div>
+    </div>
+
+    <!-- JOB VACANCIES -->
+    <div class="page" id="p-vacancies" style="padding:32px 28px 60px">
+      <div class="ph" style="margin-bottom:16px">
+        <div>
+          <div class="ph-title">Job Vacancies</div>
+          <div class="ph-sub">Open roles within the company — anyone can view, share, or apply</div>
+        </div>
+        <button class="btn btn-navy" onclick="vacancyAdd()">+ Add Vacancy</button>
+      </div>
+
+      <div style="display:flex;gap:8px;margin-bottom:20px" id="vacancies-tabs">
+        <button class="month-tab on" id="vac-tab-current" onclick="vacanciesSetTab('current', this)">Current Vacancies</button>
+        <button class="month-tab" id="vac-tab-past" onclick="vacanciesSetTab('past', this)">Past Vacancies</button>
+      </div>
+
+      <div id="vacancies-list"></div>
     </div>
 
     <!-- AI NOTETAKER -->
@@ -4416,6 +4438,7 @@ function nav(id, pushState=true){
   if(id==='admin'){adminConsoleRender(); adminSwitchTab(adminActiveTab);}
   if(id==='notetaker'){notetakerRender();}
   if(id==='survey'){surveyRender();}
+  if(id==='vacancies'){vacanciesRender();}
 
   // Wait a frame so the page's content/height is fully laid out before positioning scroll
   requestAnimationFrame(() => {
@@ -8034,6 +8057,7 @@ const ADMIN_MODULE_GROUPS = [
     {id:'teamfeed', name:'Team Feed & Highlights', desc:'Post and view team updates'},
     {id:'chat', name:'Chat', desc:'Message other team members'},
     {id:'suggestions', name:'Suggestion Box', desc:'Submit anonymous feedback'},
+    {id:'vacancies', name:'Job Vacancies', desc:'View and post open roles within the company'},
   ]},
   {label:'Operations Tools', modules:[
     {id:'tasks', name:'Task Board & Maintenance', desc:'View and manage work assigned to them'},
@@ -8053,12 +8077,12 @@ const ADMIN_MODULE_GROUPS = [
 
 // Default permission bundle per role - true/false per module id. Editable in the demo.
 let ADMIN_PERMS = {
-  superadmin:  {teamfeed:1,chat:1,suggestions:1,tasks:1,inventory:1,entertainment:1,calendar:1,sops:1,survey:1,reports:1,directory:1,marketing:1,adminconsole:1},
-  director:    {teamfeed:1,chat:1,suggestions:1,tasks:1,inventory:1,entertainment:1,calendar:1,sops:1,survey:1,reports:1,directory:1,marketing:1,adminconsole:1},
-  manager:     {teamfeed:1,chat:1,suggestions:1,tasks:1,inventory:1,entertainment:1,calendar:1,sops:1,survey:1,reports:1,directory:1,marketing:1,adminconsole:0},
-  supervisor:  {teamfeed:1,chat:1,suggestions:1,tasks:1,inventory:1,entertainment:1,calendar:1,sops:1,survey:1,reports:0,directory:1,marketing:0,adminconsole:0},
-  teammember:  {teamfeed:1,chat:1,suggestions:1,tasks:1,inventory:1,entertainment:0,calendar:0,sops:1,survey:0,reports:0,directory:0,marketing:0,adminconsole:0},
-  dailyworker: {teamfeed:1,chat:1,suggestions:0,tasks:1,inventory:0,entertainment:0,calendar:0,sops:1,survey:0,reports:0,directory:0,marketing:0,adminconsole:0},
+  superadmin:  {teamfeed:1,chat:1,suggestions:1,vacancies:1,tasks:1,inventory:1,entertainment:1,calendar:1,sops:1,survey:1,reports:1,directory:1,marketing:1,adminconsole:1},
+  director:    {teamfeed:1,chat:1,suggestions:1,vacancies:1,tasks:1,inventory:1,entertainment:1,calendar:1,sops:1,survey:1,reports:1,directory:1,marketing:1,adminconsole:1},
+  manager:     {teamfeed:1,chat:1,suggestions:1,vacancies:1,tasks:1,inventory:1,entertainment:1,calendar:1,sops:1,survey:1,reports:1,directory:1,marketing:1,adminconsole:0},
+  supervisor:  {teamfeed:1,chat:1,suggestions:1,vacancies:1,tasks:1,inventory:1,entertainment:1,calendar:1,sops:1,survey:1,reports:0,directory:1,marketing:0,adminconsole:0},
+  teammember:  {teamfeed:1,chat:1,suggestions:1,vacancies:1,tasks:1,inventory:1,entertainment:0,calendar:0,sops:1,survey:0,reports:0,directory:0,marketing:0,adminconsole:0},
+  dailyworker: {teamfeed:1,chat:1,suggestions:0,vacancies:1,tasks:1,inventory:0,entertainment:0,calendar:0,sops:1,survey:0,reports:0,directory:0,marketing:0,adminconsole:0},
 };
 
 let PEOPLE_DEPARTMENTS = ['Operations', 'Kitchen', 'Housekeeping', 'Front of House', 'Guest Relations', 'Visual & Technical', 'Marketing', 'Ownership'];
@@ -8705,6 +8729,196 @@ function surveyShare(){
     window.open('https://wa.me/?text=' + encodeURIComponent(text), '_blank');
   }
 }
+
+// ── JOB VACANCIES ──
+let vacanciesNextId = 3;
+let vacanciesActiveTab = 'current';
+let vacanciesData = [
+  {id:1, title:'Front of House Supervisor', department:'Front of House', dateNeeded:'2026-08-15', description:'We\'re looking for an experienced Front of House Supervisor to lead our guest-facing team during peak season. You\'ll oversee daily service flow, train new staff, and be the go-to person for guest issues.', requirements:'2+ years hospitality supervisory experience. Fluent English and Bahasa Indonesia. Available for evening and weekend shifts.', applyEmail:'hr@mavis.com', status:'open', filledAt:null},
+  {id:2, title:'Commis Chef', department:'Kitchen', dateNeeded:'2026-08-01', description:'Join our kitchen team as a Commis Chef, working across sections and learning directly from our Head Chef. Great opportunity for someone early in their culinary career.', requirements:'Culinary school background or 1+ years kitchen experience. Willing to learn and take direction.', applyEmail:'hr@mavis.com', status:'filled', filledAt:Date.now()-1000*60*60*24*10}
+];
+
+function vacanciesSetTab(tab, el){
+  vacanciesActiveTab = tab;
+  document.querySelectorAll('#vacancies-tabs .month-tab').forEach(t=>t.classList.remove('on'));
+  if(el) el.classList.add('on');
+  vacanciesRender();
+}
+
+function vacanciesFormatDate(dateStr){
+  if(!dateStr) return '';
+  const d = new Date(dateStr);
+  if(isNaN(d)) return dateStr;
+  return d.toLocaleDateString('en-GB', {day:'numeric', month:'short', year:'numeric'});
+}
+
+function vacanciesRender(){
+  const container = document.getElementById('vacancies-list');
+  if(!container) return;
+  const filtered = vacanciesData.filter(v => vacanciesActiveTab==='current' ? v.status==='open' : v.status==='filled');
+  if(!filtered.length){
+    container.innerHTML = `<div style="text-align:center;padding:40px;color:#94A3B8;font-size:13px">${vacanciesActiveTab==='current' ? 'No open vacancies right now — click + Add Vacancy' : 'No past vacancies yet'}</div>`;
+    return;
+  }
+  container.innerHTML = `<div style="display:flex;flex-direction:column;gap:12px">${filtered.map(vacancyCardHtml).join('')}</div>`;
+}
+
+function vacancyCardHtml(v){
+  const filledLabel = v.status==='filled' && v.filledAt ? `<span style="font-size:11.5px;color:#94A3B8;margin-left:8px">Filled ${vacanciesFormatDate(new Date(v.filledAt).toISOString())}</span>` : '';
+  return `
+    <div style="background:white;border:1.5px solid #E2E8F0;border-radius:12px;padding:16px 18px;cursor:pointer" onclick="vacancyOpenDetail(${v.id})">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px">
+        <div>
+          <div style="font-size:15px;font-weight:800;color:#0F1E2E">${v.title}</div>
+          <div style="font-size:12.5px;color:#64748B;margin-top:3px">${v.department} · Needed from ${vacanciesFormatDate(v.dateNeeded)}${filledLabel}</div>
+        </div>
+        <span style="flex-shrink:0;font-size:11px;font-weight:700;padding:4px 10px;border-radius:10px;background:${v.status==='open'?'#D1FAE5':'#F1F5F9'};color:${v.status==='open'?'#065F46':'#64748B'}">${v.status==='open'?'Open':'Filled'}</span>
+      </div>
+      <div style="font-size:12.5px;color:#334155;margin-top:8px;line-height:1.5;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical">${v.description}</div>
+    </div>`;
+}
+
+window.vacancyAdd = function(){
+  appModalShow({
+    title:'Add Vacancy',
+    fields:[
+      {label:'Job title', placeholder:'e.g. Front of House Supervisor'},
+      {label:'Department', placeholder:'e.g. Front of House, Kitchen'},
+      {label:'Date needed', type:'date'},
+      {label:'Description', type:'textarea', rows:6, placeholder:'What the role involves, who they\'d be working with...'},
+      {label:'Requirements (optional)', type:'textarea', rows:4, optional:true, placeholder:'Experience, language, availability...'}
+    ],
+    onOk([title, department, dateNeeded, description, requirements]){
+      if(!title) return;
+      vacanciesData.push({id: vacanciesNextId++, title, department, dateNeeded, description, requirements: requirements||'', applyEmail:'hr@mavis.com', status:'open', filledAt:null});
+      vacanciesRender();
+      toast('Vacancy added ✓');
+    }
+  });
+};
+
+window.vacancyEdit = function(id){
+  const v = vacanciesData.find(x=>x.id===id);
+  if(!v) return;
+  appModalShow({
+    title:'Edit Vacancy',
+    fields:[
+      {label:'Job title', value:v.title},
+      {label:'Department', value:v.department},
+      {label:'Date needed', type:'date', value:v.dateNeeded},
+      {label:'Description', type:'textarea', rows:6, value:v.description},
+      {label:'Requirements (optional)', type:'textarea', rows:4, value:v.requirements||'', optional:true}
+    ],
+    onOk([title, department, dateNeeded, description, requirements]){
+      v.title=title; v.department=department; v.dateNeeded=dateNeeded; v.description=description; v.requirements=requirements||'';
+      vacanciesRender();
+      vacancyDetailClose();
+      toast('Vacancy updated ✓');
+    }
+  });
+};
+
+window.vacancyMarkFilled = function(id){
+  const v = vacanciesData.find(x=>x.id===id);
+  if(!v) return;
+  v.status = 'filled';
+  v.filledAt = Date.now();
+  vacanciesRender();
+  vacancyDetailClose();
+  toast('Moved to Past Vacancies ✓');
+};
+
+window.vacancyReopen = function(id){
+  const v = vacanciesData.find(x=>x.id===id);
+  if(!v) return;
+  v.status = 'open';
+  v.filledAt = null;
+  vacanciesRender();
+  vacancyDetailClose();
+  toast('Reopened — back in Current Vacancies ✓');
+};
+
+window.vacancyDeletePermanently = function(id){
+  const v = vacanciesData.find(x=>x.id===id);
+  if(!v) return;
+  appConfirmShow({title:'Delete Permanently', msg:`Delete "${v.title}" permanently? This can't be undone.`, onOk:()=>{
+    vacanciesData = vacanciesData.filter(x=>x.id!==id);
+    vacanciesRender();
+    vacancyDetailClose();
+    toast('Vacancy deleted permanently');
+  }});
+};
+
+let vacancyDetailId = null;
+window.vacancyOpenDetail = function(id){
+  vacancyDetailId = id;
+  document.getElementById('vacancyDetailOverlay').style.display = 'flex';
+  vacancyDetailRender();
+};
+window.vacancyDetailClose = function(){
+  document.getElementById('vacancyDetailOverlay').style.display = 'none';
+  vacancyDetailId = null;
+};
+function vacancyDetailRender(){
+  const v = vacanciesData.find(x=>x.id===vacancyDetailId);
+  if(!v) return;
+  const actionButtons = v.status==='open'
+    ? `<button onclick="vacancyEdit(${v.id})" style="padding:9px 14px;background:#F1F5F9;border:1.5px solid #E2E8F0;border-radius:8px;font-family:'Inter',sans-serif;font-size:12.5px;font-weight:700;color:#334155;cursor:pointer">✎ Edit</button>
+       <button onclick="vacancyMarkFilled(${v.id})" style="padding:9px 14px;background:#0F1E2E;border:none;border-radius:8px;font-family:'Inter',sans-serif;font-size:12.5px;font-weight:700;color:white;cursor:pointer">Mark as Filled</button>`
+    : `<button onclick="vacancyReopen(${v.id})" style="padding:9px 14px;background:#F1F5F9;border:1.5px solid #E2E8F0;border-radius:8px;font-family:'Inter',sans-serif;font-size:12.5px;font-weight:700;color:#334155;cursor:pointer">↺ Reopen</button>
+       <button onclick="vacancyDeletePermanently(${v.id})" style="padding:9px 14px;background:#FEF2F2;border:1.5px solid #FECACA;border-radius:8px;font-family:'Inter',sans-serif;font-size:12.5px;font-weight:700;color:#DC2626;cursor:pointer">🗑 Delete Permanently</button>`;
+  document.getElementById('vacancyDetailBody').innerHTML = `
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:6px">
+      <div style="font-size:19px;font-weight:800;color:#0F1E2E">${v.title}</div>
+      <span style="flex-shrink:0;font-size:11px;font-weight:700;padding:4px 10px;border-radius:10px;background:${v.status==='open'?'#D1FAE5':'#F1F5F9'};color:${v.status==='open'?'#065F46':'#64748B'}">${v.status==='open'?'Open':'Filled'}</span>
+    </div>
+    <div style="font-size:13px;color:#64748B;margin-bottom:18px">${v.department} · Needed from ${vacanciesFormatDate(v.dateNeeded)}</div>
+    <div style="font-size:13px;color:#334155;line-height:1.7;margin-bottom:16px">${v.description}</div>
+    ${v.requirements ? `<div style="font-size:13px;font-weight:800;color:#0F1E2E;margin-bottom:6px">Requirements</div><div style="font-size:13px;color:#334155;line-height:1.7;margin-bottom:16px">${v.requirements}</div>` : ''}
+    <div style="background:#F1F5F9;border-radius:9px;padding:12px 14px;font-size:13px;color:#334155;margin-bottom:20px"><strong>To apply:</strong> ${v.applyEmail}</div>
+    <div style="display:flex;gap:8px;margin-bottom:16px">
+      <button onclick="vacancyShare(${v.id})" style="flex:1;padding:10px;background:#F1F5F9;border:1.5px solid #E2E8F0;border-radius:8px;font-family:'Inter',sans-serif;font-size:12.5px;font-weight:700;color:#334155;cursor:pointer">↗ Share</button>
+      <button onclick="vacancyPdf(${v.id})" style="flex:1;padding:10px;background:#F1F5F9;border:1.5px solid #E2E8F0;border-radius:8px;font-family:'Inter',sans-serif;font-size:12.5px;font-weight:700;color:#334155;cursor:pointer">⬇ Download PDF</button>
+    </div>
+    <div style="display:flex;gap:8px;padding-top:16px;border-top:1px solid #F1F5F9">${actionButtons}</div>
+  `;
+}
+
+window.vacancyShare = function(id){
+  const v = vacanciesData.find(x=>x.id===id);
+  if(!v) return;
+  const text = `💼 *${v.title}*\n${v.department} · Needed from ${vacanciesFormatDate(v.dateNeeded)}\n\n${v.description}\n\nTo apply: ${v.applyEmail}`;
+  if(navigator.share){
+    navigator.share({title: v.title, text}).catch(()=>{});
+  } else {
+    window.open('https://wa.me/?text=' + encodeURIComponent(text), '_blank');
+  }
+};
+
+window.vacancyPdf = function(id){
+  const v = vacanciesData.find(x=>x.id===id);
+  if(!v) return;
+  const tpl = document.createElement('div');
+  tpl.style.cssText = 'position:fixed;left:-9999px;top:0;width:700px;background:white;padding:36px;font-family:Inter,sans-serif';
+  tpl.innerHTML = `
+    <div style="font-size:22px;font-weight:800;color:#0F1E2E;margin-bottom:4px">${v.title}</div>
+    <div style="font-size:12px;color:#94A3B8;margin-bottom:20px">${v.department} · Needed from ${vacanciesFormatDate(v.dateNeeded)}</div>
+    <div style="font-size:13px;color:#334155;line-height:1.8;margin-bottom:20px">${v.description}</div>
+    ${v.requirements ? `<div style="font-size:14px;font-weight:800;color:#0F1E2E;margin-bottom:8px">Requirements</div><div style="font-size:13px;color:#334155;line-height:1.8;margin-bottom:20px">${v.requirements}</div>` : ''}
+    <div style="font-size:13px;color:#334155;background:#F1F5F9;border-radius:9px;padding:12px 14px"><strong>To apply:</strong> ${v.applyEmail}</div>
+  `;
+  document.body.appendChild(tpl);
+  toast('Preparing your PDF…');
+  const slug = v.title.replace(/[^a-z0-9]+/gi,'-').replace(/^-+|-+$/g,'').toLowerCase();
+  html2pdf().set({
+    margin: 10,
+    filename: `vacancy-${slug}.pdf`,
+    image: { type: 'jpeg', quality: 0.95 },
+    html2canvas: { scale: 2, useCORS: true, backgroundColor: '#ffffff' },
+    jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+  }).from(tpl).save().then(()=>{ tpl.remove(); }).catch(()=>{ tpl.remove(); toast('PDF export failed — please try again'); });
+};
+
 
 function inventoryRenderAreas(){
 
@@ -14001,6 +14215,17 @@ document.addEventListener('DOMContentLoaded', initCardColours);
     <div style="padding:16px 24px;border-top:1px solid #F1F5F9;flex-shrink:0">
       <button onclick="kitchenMoveToMenuConfirm()" style="width:100%;padding:12px;background:#0D9488;border:none;border-radius:9px;font-family:'Inter',sans-serif;font-size:13.5px;font-weight:700;color:white;cursor:pointer">Add to Selected Menu(s)</button>
     </div>
+  </div>
+</div>
+
+<!-- ── JOB VACANCY DETAIL ── -->
+<div id="vacancyDetailOverlay" style="display:none;position:fixed;inset:0;background:rgba(15,30,46,0.6);z-index:10001;align-items:center;justify-content:center;padding:20px" onclick="if(event.target===this)vacancyDetailClose()">
+  <div style="background:white;border-radius:16px;max-width:520px;width:100%;max-height:85vh;display:flex;flex-direction:column;overflow:hidden">
+    <div style="background:#0F1E2E;padding:20px 24px;border-radius:16px 16px 0 0;display:flex;align-items:center;justify-content:space-between;flex-shrink:0">
+      <div style="color:white;font-size:16px;font-weight:800">Job Vacancy</div>
+      <button onclick="vacancyDetailClose()" style="background:rgba(255,255,255,0.12);border:none;color:white;width:32px;height:32px;border-radius:50%;cursor:pointer;font-size:16px;flex-shrink:0">×</button>
+    </div>
+    <div style="padding:24px;overflow-y:auto;flex:1" id="vacancyDetailBody"></div>
   </div>
 </div>
 

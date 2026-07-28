@@ -13979,8 +13979,9 @@ function momentsRebuild(){
   const strip = document.getElementById('hl-strip');
   if(!strip) return;
 
+  const placeholdersNeeded = Math.max(0, 3 - momentsData.length);
   const items = momentsData.map((m,i)=>({real:true, idx:i, img:m.img, caption:momentsTwemojiParse(m.caption), meta:m.meta}))
-    .concat([0,1,2].map(i=>({real:false, idx:i})));
+    .concat(Array.from({length: placeholdersNeeded}, (_,i)=>({real:false, idx:i})));
 
   strip.innerHTML = items.map((it,i)=>{
     if(!it.real){
@@ -14021,7 +14022,6 @@ function hlInitScroll(){
 
 let hlAutoScrollAnim = null;
 let hlAutoScrollPaused = false;
-let hlAutoScrollSetup = false;
 
 function hlStartAutoScroll(strip, outer){
   clearInterval(hlAutoScrollAnim);
@@ -14029,11 +14029,10 @@ function hlStartAutoScroll(strip, outer){
   const isPhoneWidth = window.innerWidth <= 700;
   if(isPhoneWidth) return;
 
-  // Duplicate once so the loop can wrap seamlessly.
-  if(!hlAutoScrollSetup){
-    strip.innerHTML = strip.innerHTML + strip.innerHTML;
-    hlAutoScrollSetup = true;
-  }
+  // Duplicate so the loop can wrap seamlessly. strip.innerHTML is always a fresh,
+  // un-doubled render at this point (momentsRebuild rebuilds it from scratch every
+  // time), so this must run on every call, not just the first.
+  strip.innerHTML = strip.innerHTML + strip.innerHTML;
   const cardW = 200 + 14;
   const halfWidth = strip.scrollWidth / 2;
   hlAutoScrollPaused = false;
@@ -14053,10 +14052,10 @@ function hlStartAutoScroll(strip, outer){
     clearTimeout(resumeTimer);
     resumeTimer = setTimeout(() => { hlAutoScrollPaused = false; }, 2500);
   };
-  outer.addEventListener('touchstart', pauseForInteraction, {passive:true});
-  outer.addEventListener('touchend', resumeAfterInteraction, {passive:true});
-  outer.addEventListener('pointerdown', pauseForInteraction);
-  outer.addEventListener('pointerup', resumeAfterInteraction);
+  outer.ontouchstart = pauseForInteraction;
+  outer.ontouchend = resumeAfterInteraction;
+  outer.onpointerdown = pauseForInteraction;
+  outer.onpointerup = resumeAfterInteraction;
 
   // Same direction as Noticeboard (left), but stepping one card at a time with a pause
   // between each step, instead of a continuous smooth flow.

@@ -4827,6 +4827,11 @@ window.addEventListener('popstate', function(e){
   if(announceModalOpen && (!e.state || !e.state.announceDetailOpen)){
     announceCloseDetail(true);
   }
+  const momentLightbox = document.getElementById('moment-lightbox');
+  const momentLightboxOpen = momentLightbox && momentLightbox.classList.contains('open');
+  if(momentLightboxOpen && (!e.state || !e.state.momentOpen)){
+    closeMoment(true);
+  }
   if(!e.state || !e.state.chatThread){
     // Only close an open chat thread if we're not popping back INTO one
     chatBackToList();
@@ -13785,6 +13790,7 @@ function openMoment(idx){
   const lbBar = document.getElementById('moment-lb-reactions');
   if(lbBar) lbBar.innerHTML = momentsReactionBarHtml(idx, false);
   document.getElementById('moment-lightbox').classList.add('open');
+  history.pushState({page:'home', momentOpen:true}, '', '#highlight');
 }
 
 function momentStoryNav(dir){
@@ -13801,8 +13807,9 @@ function mobileToggleSection(bodyId, chevronId){
   if(chevron) chevron.classList.toggle('expanded');
 }
 
-function closeMoment(){
+function closeMoment(fromPopstate){
   document.getElementById('moment-lightbox').classList.remove('open');
+  if(!fromPopstate) history.back();
 }
 
 function deleteMoment(idx){

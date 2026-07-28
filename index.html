@@ -14014,7 +14014,7 @@ function hlInitScroll(){
   const cardW = isMobile ? (72 + cardGap) : (200 + cardGap);
   const naturalW = cards.length * cardW - cardGap;
   if(naturalW <= outerW){
-    if(hlAutoScrollAnim) clearInterval(hlAutoScrollAnim);
+    hlStopAutoScroll();
     return;
   }
   hlStartAutoScroll(strip, outer);
@@ -14023,8 +14023,13 @@ function hlInitScroll(){
 let hlAutoScrollAnim = null;
 let hlAutoScrollPaused = false;
 
+function hlStopAutoScroll(){
+  if(hlAutoScrollAnim) cancelAnimationFrame(hlAutoScrollAnim);
+  hlAutoScrollAnim = null;
+}
+
 function hlStartAutoScroll(strip, outer){
-  clearInterval(hlAutoScrollAnim);
+  hlStopAutoScroll();
 
   const isPhoneWidth = window.innerWidth <= 700;
   if(isPhoneWidth) return;
@@ -14033,7 +14038,6 @@ function hlStartAutoScroll(strip, outer){
   // un-doubled render at this point (momentsRebuild rebuilds it from scratch every
   // time), so this must run on every call, not just the first.
   strip.innerHTML = strip.innerHTML + strip.innerHTML;
-  const cardW = 200 + 14;
   const halfWidth = strip.scrollWidth / 2;
   hlAutoScrollPaused = false;
   outer.scrollLeft = 0;
@@ -14057,17 +14061,22 @@ function hlStartAutoScroll(strip, outer){
   outer.onpointerdown = pauseForInteraction;
   outer.onpointerup = resumeAfterInteraction;
 
-  // Same direction as Noticeboard (left), but stepping one card at a time with a pause
-  // between each step, instead of a continuous smooth flow.
-  hlAutoScrollAnim = setInterval(()=>{
-    if(hlAutoScrollPaused) return;
-    let next = outer.scrollLeft + cardW;
-    if(next >= halfWidth){
-      outer.scrollLeft = 0;
-      next = cardW;
+  // Slow, constant smooth flow (same direction as Noticeboard - left) rather than
+  // stepping one card at a time with a pause between steps.
+  const pxPerSecond = 26;
+  let lastTs = null;
+  function step(ts){
+    if(lastTs === null) lastTs = ts;
+    const dt = ts - lastTs;
+    lastTs = ts;
+    if(!hlAutoScrollPaused){
+      let next = outer.scrollLeft + (pxPerSecond * dt) / 1000;
+      if(next >= halfWidth) next -= halfWidth;
+      outer.scrollLeft = next;
     }
-    outer.scrollTo({left: next, behavior: 'smooth'});
-  }, 2600);
+    hlAutoScrollAnim = requestAnimationFrame(step);
+  }
+  hlAutoScrollAnim = requestAnimationFrame(step);
 }
 
 let hlResizeTimer;

@@ -10918,7 +10918,7 @@ function kitchenDeleteAllergenDish(id){
 }
 // ── INIT ──
 window.addEventListener('keydown',e=>{if(e.key==='Enter'&&document.getElementById('login').style.display!=='none')doLogin();});
-window.addEventListener('load',async ()=>{ initCurrency(); await announceLoadFromSupabase(); announceRender(); await djSchedLoadFromSupabase(); djSchedRender(); });
+window.addEventListener('load',async ()=>{ initCurrency(); await announceLoadFromSupabase(); announceRender(); await djSchedLoadFromSupabase(); djSchedRender(); await momentsLoadFromSupabase(); momentsRebuild(); });
 
 // ── ANNOUNCEMENTS ──
 const announcements = [
@@ -13854,7 +13854,18 @@ function closeMoment(fromPopstate){
 
 function deleteMoment(idx){
   if(idx===null || idx===undefined || !momentsData[idx]) return;
-  appConfirmShow({title:'Delete Highlight', msg:'Delete this highlight? This cannot be undone.', onOk:()=>{
+  const m = momentsData[idx];
+  appConfirmShow({title:'Delete Highlight', msg:'Delete this highlight? This cannot be undone.', onOk: async ()=>{
+    if(m.dbId){
+      try{
+        const { error } = await sb.from('highlights').delete().eq('id', m.dbId);
+        if(error) throw error;
+      } catch(e){
+        console.error(e);
+        toast('Could not delete - check your connection');
+        return;
+      }
+    }
     momentsData.splice(idx,1);
     closeMoment();
     toast('Highlight deleted \u2713');
@@ -13869,14 +13880,22 @@ function openAddMoment(){
       {label: 'Photo', type: 'file'},
       {label: 'Caption — tap an emoji to insert it anywhere', type: 'captionEmoji', options: HIGHLIGHT_TAGS, placeholder: 'e.g. Happy Birthday Greta!'}
     ],
-    onOk([img, caption]){
-      momentsData.unshift({
-        img: img,
-        caption,
-        meta: 'Posted by Robbie \u00b7 Today'
-      });
-      toast('Highlight added \u2713');
-      momentsRebuild();
+    async onOk([img, caption]){
+      try{
+        const { data, error } = await sb.from('highlights').insert({ img, caption, by_name: 'Robbie' }).select().single();
+        if(error) throw error;
+        momentsData.unshift({
+          dbId: data.id,
+          img: data.img,
+          caption: data.caption,
+          meta: 'Posted by Robbie \u00b7 Today'
+        });
+        toast('Highlight added \u2713');
+        momentsRebuild();
+      } catch(e){
+        console.error(e);
+        toast('Could not save highlight - check your connection');
+      }
     }
   });
 }
@@ -13892,7 +13911,19 @@ function editMoment(idx){
       {label: 'Photo (leave blank to keep current)', type: 'file', optional: true},
       {label: 'Caption — tap an emoji to insert it anywhere', type: 'captionEmoji', options: HIGHLIGHT_TAGS, value: m.caption, placeholder: 'e.g. Happy Birthday Greta!'}
     ],
-    onOk([img, caption]){
+    async onOk([img, caption]){
+      if(m.dbId){
+        try{
+          const updates = { caption };
+          if(img) updates.img = img;
+          const { error } = await sb.from('highlights').update(updates).eq('id', m.dbId);
+          if(error) throw error;
+        } catch(e){
+          console.error(e);
+          toast('Could not save changes - check your connection');
+          return;
+        }
+      }
       if(img) m.img = img;
       m.caption = caption;
       toast('Highlight updated \u2713');
@@ -13921,6 +13952,27 @@ function highlightPlaceholderHtml(i){
         <div class="moment-card-meta" style="font-style:italic">Tap + Add Highlight above ↑</div>
       </div>
     </div>`;
+}
+
+// ── HIGHLIGHTS (wired to Supabase - falls back to the demo data above if the table is empty or unreachable) ──
+async function momentsLoadFromSupabase(){
+  try{
+    const { data, error } = await sb.from('highlights').select('*').order('created_at', { ascending: false });
+    if(error || !data) throw error || new Error('no data');
+    if(data.length > 0){
+      momentsData.length = 0;
+      data.forEach(row => {
+        momentsData.push({
+          dbId: row.id,
+          img: row.img,
+          caption: row.caption,
+          meta: `Posted by ${row.by_name} \u00b7 ${new Date(row.created_at).toLocaleDateString('en-GB',{day:'numeric',month:'short'})}`
+        });
+      });
+    }
+  } catch(e){
+    console.warn('Highlights Supabase load failed, using demo data', e);
+  }
 }
 
 function momentsRebuild(){

@@ -1597,7 +1597,6 @@ textarea.rf-val{resize:vertical;min-height:72px;line-height:1.5}
   .hl-story-label{display:none}
   .hl-story-mobile-label{display:block;font-size:13px;color:var(--navy);font-weight:800;text-align:center;max-width:88px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   .hl-strip{gap:18px}
-  .moment-lightbox-nav{display:none}
   #moments-wrap{background:transparent!important;border:none!important;box-shadow:none!important;padding-bottom:0!important}
   #moments-wrap .moments-hd{background:transparent!important;padding:0 0 10px 0!important}
   #moments-wrap .moments-hd-title{color:var(--navy)!important}
@@ -2711,13 +2710,7 @@ img.emoji-tw{width:1.15em;height:1.15em;vertical-align:-0.2em;margin:0 1px}
       <!-- LIGHTBOX -->
       <div class="moment-lightbox" id="moment-lightbox" onclick="closeMoment()">
         <button class="moment-lightbox-close" onclick="closeMoment()">×</button>
-        <button class="moment-lightbox-nav" onclick="event.stopPropagation();momentStoryNav(-1)" title="Previous" style="position:absolute;left:14px;top:50%;transform:translateY(-50%);width:38px;height:38px;border-radius:50%;background:rgba(255,255,255,0.15);border:none;color:white;cursor:pointer;display:flex;align-items:center;justify-content:center;z-index:2">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
-        </button>
-        <button class="moment-lightbox-nav" onclick="event.stopPropagation();momentStoryNav(1)" title="Next" style="position:absolute;right:14px;top:50%;transform:translateY(-50%);width:38px;height:38px;border-radius:50%;background:rgba(255,255,255,0.15);border:none;color:white;cursor:pointer;display:flex;align-items:center;justify-content:center;z-index:2">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
-        </button>
-        <img class="moment-lightbox-img" id="moment-lb-img" src="" alt="" onclick="event.stopPropagation();recipePhotoZoom(document.getElementById('moment-lb-img').src)" style="cursor:pointer" title="Tap to zoom">
+        <img class="moment-lightbox-img" id="moment-lb-img" src="" alt="" onclick="event.stopPropagation();momentImageTap(event)" style="cursor:pointer">
         <div class="moment-lightbox-body" onclick="event.stopPropagation()">
           <div class="moment-lightbox-caption" id="moment-lb-caption"></div>
           <div id="moment-lb-reactions" style="margin:10px 0"></div>
@@ -13804,6 +13797,13 @@ function momentStoryNav(dir){
   const next = ((momentsCurrentIdx + dir) % momentsData.length + momentsData.length) % momentsData.length;
   openMoment(next);
 }
+
+// Tap left half of the photo = previous, tap right half = next (Instagram/Facebook style)
+window.momentImageTap = function(e){
+  const rect = e.target.getBoundingClientRect();
+  const tapX = e.clientX - rect.left;
+  momentStoryNav(tapX < rect.width / 2 ? -1 : 1);
+};
 
 // Swipe left/right to navigate between highlights, like Instagram Stories
 (function(){

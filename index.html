@@ -4832,6 +4832,11 @@ window.addEventListener('popstate', function(e){
   if(momentLightboxOpen && (!e.state || !e.state.momentOpen)){
     closeMoment(true);
   }
+  const appModal = document.getElementById('appModal');
+  const appModalOpen = appModal && appModal.style.display === 'flex';
+  if(appModalOpen && (!e.state || !e.state.appModalOpen)){
+    appModalClose(true);
+  }
   if(!e.state || !e.state.chatThread){
     // Only close an open chat thread if we're not popping back INTO one
     chatBackToList();
@@ -14574,6 +14579,7 @@ function appModalShow({title, sub='', fields, onOk}){
   }).join('');
   const modal = document.getElementById('appModal');
   modal.style.display='flex';
+  history.pushState({page: (document.querySelector('.page.on')||{}).id ? (document.querySelector('.page.on').id.replace('p-','')) : 'home', appModalOpen:true}, '', '#form');
   setTimeout(()=>{ const f=document.getElementById('appModalField_0'); if(f && f.type!=='file' && fields[0]?.type!=='color' && fields[0]?.type!=='icon' && fields[0]?.type!=='deptpicker' && fields[0]?.type!=='iconmulti' && fields[0]?.type!=='pillpicker' && fields[0]?.type!=='colordot' && fields[0]?.type!=='daterange') f.focus(); },80);
   document.getElementById('appModalOk').onclick = async ()=>{
     const vals = [];
@@ -14844,7 +14850,7 @@ function appModalFilePreview(i){
   reader.onload = ()=>{ img.src = reader.result; wrap.style.display='block'; };
   reader.readAsDataURL(el.files[0]);
 }
-function appModalClose(){ document.getElementById('appModal').style.display='none'; }
+function appModalClose(fromPopstate){ document.getElementById('appModal').style.display='none'; if(!fromPopstate) history.back(); }
 
 // ── APP CONFIRM (replaces confirm) ──
 function appConfirmShow({title, msg, label='Delete', onOk}){

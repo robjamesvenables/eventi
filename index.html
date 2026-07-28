@@ -13969,6 +13969,24 @@ async function momentsLoadFromSupabase(){
           meta: `Posted by ${row.by_name} \u00b7 ${new Date(row.created_at).toLocaleDateString('en-GB',{day:'numeric',month:'short'})}`
         });
       });
+    } else if(momentsData.length > 0){
+      // Table exists but is empty - one-time migration of the existing demo photos into
+      // real rows, so they stick around instead of disappearing the first time someone
+      // adds a real highlight through the app.
+      const seeds = momentsData.map(m => ({ img: m.img, caption: m.caption, by_name: 'Robbie' }));
+      const { data: inserted, error: seedError } = await sb.from('highlights').insert(seeds).select();
+      if(seedError) throw seedError;
+      if(inserted && inserted.length){
+        momentsData.length = 0;
+        inserted.forEach(row => {
+          momentsData.push({
+            dbId: row.id,
+            img: row.img,
+            caption: row.caption,
+            meta: `Posted by ${row.by_name} \u00b7 ${new Date(row.created_at).toLocaleDateString('en-GB',{day:'numeric',month:'short'})}`
+          });
+        });
+      }
     }
   } catch(e){
     console.warn('Highlights Supabase load failed, using demo data', e);

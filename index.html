@@ -13787,14 +13787,25 @@ function openMoment(idx){
   const m = momentsData[idx];
   if(!m) return;
   momentsCurrentIdx = idx;
-  document.getElementById('moment-lb-img').src = m.img;
+  // Show the thumbnail immediately so there's no blank gap, then swap in the full-size
+  // photo once it arrives (it's only fetched on-demand, not as part of the strip load).
+  document.getElementById('moment-lb-img').src = m.img || m.thumb;
   document.getElementById('moment-lb-caption').innerHTML = momentsTwemojiParse(m.caption);
   document.getElementById('moment-lb-meta').textContent = m.meta;
-  document.getElementById('moment-lb-download').href = m.img;
+  document.getElementById('moment-lb-download').href = m.img || m.thumb;
   const lbBar = document.getElementById('moment-lb-reactions');
   if(lbBar) lbBar.innerHTML = momentsReactionBarHtml(idx, false);
   document.getElementById('moment-lightbox').classList.add('open');
   history.pushState({page:'home', momentOpen:true}, '', '#highlight');
+
+  if(!m.img && m.dbId){
+    sb.from('highlights').select('img').eq('id', m.dbId).single().then(({data, error})=>{
+      if(error || !data || momentsCurrentIdx !== idx) return;
+      m.img = data.img;
+      document.getElementById('moment-lb-img').src = m.img;
+      document.getElementById('moment-lb-download').href = m.img;
+    });
+  }
 }
 
 function momentStoryNav(dir){
@@ -13880,11 +13891,13 @@ function openAddMoment(){
     ],
     async onOk([img, caption]){
       try{
-        const { data, error } = await sb.from('highlights').insert({ img, caption, by_name: 'Robbie' }).select().single();
+        const thumb = await appDataUrlToThumb(img);
+        const { data, error } = await sb.from('highlights').insert({ img, thumb, caption, by_name: 'Robbie' }).select().single();
         if(error) throw error;
         momentsData.unshift({
           dbId: data.id,
           img: data.img,
+          thumb: data.thumb,
           caption: data.caption,
           meta: 'Posted by Robbie \u00b7 Today'
         });
@@ -13910,10 +13923,11 @@ function editMoment(idx){
       {label: 'Caption — tap an emoji to insert it anywhere', type: 'captionEmoji', options: HIGHLIGHT_TAGS, value: m.caption, placeholder: 'e.g. Happy Birthday Greta!'}
     ],
     async onOk([img, caption]){
+      const thumb = img ? await appDataUrlToThumb(img) : null;
       if(m.dbId){
         try{
           const updates = { caption };
-          if(img) updates.img = img;
+          if(img){ updates.img = img; updates.thumb = thumb; }
           const { error } = await sb.from('highlights').update(updates).eq('id', m.dbId);
           if(error) throw error;
         } catch(e){
@@ -13922,7 +13936,7 @@ function editMoment(idx){
           return;
         }
       }
-      if(img) m.img = img;
+      if(img){ m.img = img; m.thumb = thumb; }
       m.caption = caption;
       toast('Highlight updated \u2713');
       momentsRebuild();
@@ -13955,7 +13969,11 @@ function highlightPlaceholderHtml(i){
 // ── HIGHLIGHTS (wired to Supabase - falls back to the demo data above if the table is empty or unreachable) ──
 async function momentsLoadFromSupabase(){
   try{
-    const { data, error } = await sb.from('highlights').select('*').order('created_at', { ascending: false });
+    // Only fetch the small thumbnail for the initial strip - not the full photo. This is
+    // the fix for the "3 seconds to load" report: previously every load pulled the full,
+    // multi-hundred-KB photo for every highlight just to show tiny strip circles. The full
+    // photo now only gets fetched (see openMoment) when someone actually opens one.
+    const { data, error } = await sb.from('highlights').select('id, thumb, caption, by_name, created_at').order('created_at', { ascending: false });
     if(error || !data) throw error || new Error('no data');
     // Always trust the database as the source of truth once it's reachable - clean slate,
     // no leftover demo photos, even when the table is empty.
@@ -13963,7 +13981,8 @@ async function momentsLoadFromSupabase(){
     data.forEach(row => {
       momentsData.push({
         dbId: row.id,
-        img: row.img,
+        thumb: row.thumb,
+        img: null,
         caption: row.caption,
         meta: `Posted by ${row.by_name} \u00b7 ${new Date(row.created_at).toLocaleDateString('en-GB',{day:'numeric',month:'short'})}`
       });
@@ -13991,7 +14010,7 @@ function momentsRebuild(){
   }
 
   const placeholdersNeeded = Math.max(0, 3 - momentsData.length);
-  const items = momentsData.map((m,i)=>({real:true, idx:i, img:m.img, caption:momentsTwemojiParse(m.caption), meta:m.meta}))
+  const items = momentsData.map((m,i)=>({real:true, idx:i, img: m.thumb || m.img, caption:momentsTwemojiParse(m.caption), meta:m.meta}))
     .concat(Array.from({length: placeholdersNeeded}, (_,i)=>({real:false, idx:i})));
 
   strip.innerHTML = items.map((it,i)=>{
@@ -14752,11 +14771,11 @@ function appModalToggleIcon(i, iconId, el){
   }
   wrap.dataset.selected = ids.join(',');
 }
-function appFileToDataUrl(file){
+function appFileToDataUrls(file){
   return new Promise((resolve, reject)=>{
     if(!file.type.startsWith('image/')){
       const reader = new FileReader();
-      reader.onload = ()=>resolve(reader.result);
+      reader.onload = ()=>resolve({full: reader.result, thumb: reader.result});
       reader.onerror = reject;
       reader.readAsDataURL(file);
       return;
@@ -14764,22 +14783,28 @@ function appFileToDataUrl(file){
     // Resize/compress on the client before it ever becomes a base64 string - raw phone
     // photos can be several MB each, and that's what was making Highlights (and anything
     // else with photos) slow to load, since every byte gets fetched from the database
-    // before the page can render.
+    // before the page can render. Also produces a small thumbnail from the same decoded
+    // image, so list/strip views can load a fraction of the data instead of the full photo.
+    const resize = (img, maxDim, quality) => {
+      let { width, height } = img;
+      if(width > maxDim || height > maxDim){
+        if(width > height){ height = Math.round(height * maxDim / width); width = maxDim; }
+        else { width = Math.round(width * maxDim / height); height = maxDim; }
+      }
+      const canvas = document.createElement('canvas');
+      canvas.width = width; canvas.height = height;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(img, 0, 0, width, height);
+      return canvas.toDataURL('image/jpeg', quality);
+    };
     const reader = new FileReader();
     reader.onload = ()=>{
       const img = new Image();
       img.onload = ()=>{
-        const maxDim = 1600;
-        let { width, height } = img;
-        if(width > maxDim || height > maxDim){
-          if(width > height){ height = Math.round(height * maxDim / width); width = maxDim; }
-          else { width = Math.round(width * maxDim / height); height = maxDim; }
-        }
-        const canvas = document.createElement('canvas');
-        canvas.width = width; canvas.height = height;
-        const ctx = canvas.getContext('2d');
-        ctx.drawImage(img, 0, 0, width, height);
-        resolve(canvas.toDataURL('image/jpeg', 0.82));
+        resolve({
+          full: resize(img, 1600, 0.82),
+          thumb: resize(img, 260, 0.65)
+        });
       };
       img.onerror = reject;
       img.src = reader.result;
@@ -14787,6 +14812,29 @@ function appFileToDataUrl(file){
     reader.onerror = reject;
     reader.readAsDataURL(file);
   });
+}
+function appDataUrlToThumb(dataUrl, maxDim=260, quality=0.65){
+  return new Promise((resolve, reject)=>{
+    if(!dataUrl){ resolve(''); return; }
+    const img = new Image();
+    img.onload = ()=>{
+      let { width, height } = img;
+      if(width > maxDim || height > maxDim){
+        if(width > height){ height = Math.round(height * maxDim / width); width = maxDim; }
+        else { width = Math.round(width * maxDim / height); height = maxDim; }
+      }
+      const canvas = document.createElement('canvas');
+      canvas.width = width; canvas.height = height;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(img, 0, 0, width, height);
+      resolve(canvas.toDataURL('image/jpeg', quality));
+    };
+    img.onerror = reject;
+    img.src = dataUrl;
+  });
+}
+function appFileToDataUrl(file){
+  return appFileToDataUrls(file).then(r => r.full);
 }
 
 // ── SANDBOX: personal dump — notes, voice, photos, links, no structure required ──

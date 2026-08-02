@@ -13973,7 +13973,15 @@ async function momentsLoadFromSupabase(){
     // the fix for the "3 seconds to load" report: previously every load pulled the full,
     // multi-hundred-KB photo for every highlight just to show tiny strip circles. The full
     // photo now only gets fetched (see openMoment) when someone actually opens one.
-    const { data, error } = await sb.from('highlights').select('id, thumb, caption, by_name, created_at').order('created_at', { ascending: false });
+    let { data, error } = await sb.from('highlights').select('id, thumb, caption, by_name, created_at').order('created_at', { ascending: false });
+    if(error){
+      // The 'thumb' column doesn't exist yet (SQL not run yet) - fall back to fetching
+      // everything so highlights still show correctly. Once the column is added, this
+      // fallback stops triggering and the lighter query above takes over automatically.
+      const fallback = await sb.from('highlights').select('*').order('created_at', { ascending: false });
+      data = fallback.data;
+      error = fallback.error;
+    }
     if(error || !data) throw error || new Error('no data');
     // Always trust the database as the source of truth once it's reachable - clean slate,
     // no leftover demo photos, even when the table is empty.
@@ -13981,8 +13989,8 @@ async function momentsLoadFromSupabase(){
     data.forEach(row => {
       momentsData.push({
         dbId: row.id,
-        thumb: row.thumb,
-        img: null,
+        thumb: row.thumb || row.img || null,
+        img: row.img || null,
         caption: row.caption,
         meta: `Posted by ${row.by_name} \u00b7 ${new Date(row.created_at).toLocaleDateString('en-GB',{day:'numeric',month:'short'})}`
       });

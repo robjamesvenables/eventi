@@ -1590,7 +1590,7 @@ textarea.rf-val{resize:vertical;min-height:72px;line-height:1.5}
 @keyframes hlPulse{0%,100%{opacity:1}50%{opacity:0.5}}
 .hl-story-ring.hl-story-placeholder{background:#F1F5F9;display:flex;align-items:center;justify-content:center}
 .hl-story-img{width:100%;height:100%;border-radius:0;object-fit:cover;display:block;border:none}
-.hl-story-label{font-size:12px;color:white;font-weight:500;text-align:left;background:#0F1E2E;padding:12px 14px;line-height:1.4}
+.hl-story-label{font-size:12px;color:white;font-weight:500;text-align:left;background:#0F1E2E;padding:12px 14px;line-height:1.4;height:66px;overflow:hidden;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;box-sizing:border-box}
 .hl-story-mobile-label{display:none}
 
 #home-tile-grid-wrap{display:none}
@@ -14290,9 +14290,10 @@ function openAddMoment(){
     title: 'Add a Highlight',
     fields: [
       {label: 'Photo', type: 'file'},
-      {label: 'Caption — tap an emoji to insert it anywhere', type: 'captionEmoji', options: HIGHLIGHT_TAGS, placeholder: 'Add a caption here...'}
+      {label: 'Caption — tap an emoji to insert it anywhere', type: 'captionEmoji', options: HIGHLIGHT_TAGS, minLength: 3, maxLength: 100, placeholder: 'Add a caption here...'}
     ],
     async onOk([img, caption]){
+      if(caption.trim().length < 3){ toast('Caption needs to be at least 3 characters'); return; }
       try{
         const thumb = await appDataUrlToThumb(img);
         let { data, error } = await sb.from('highlights').insert({ img, thumb, caption, by_name: 'John' }).select().single();
@@ -14329,9 +14330,10 @@ function editMoment(idx){
     title: 'Edit Highlight',
     fields: [
       {label: 'Photo (leave blank to keep current)', type: 'file', optional: true},
-      {label: 'Caption — tap an emoji to insert it anywhere', type: 'captionEmoji', options: HIGHLIGHT_TAGS, value: m.caption, placeholder: 'Add a caption here...'}
+      {label: 'Caption — tap an emoji to insert it anywhere', type: 'captionEmoji', options: HIGHLIGHT_TAGS, value: m.caption, minLength: 3, maxLength: 100, placeholder: 'Add a caption here...'}
     ],
     async onOk([img, caption]){
+      if(caption.trim().length < 3){ toast('Caption needs to be at least 3 characters'); return; }
       const thumb = img ? await appDataUrlToThumb(img) : null;
       if(m.dbId){
         try{
@@ -14433,6 +14435,14 @@ async function momentsLoadFromSupabase(){
 
 let momentsLoading = true;
 
+function hlTruncateCaption(text, max){
+  max = max || 100;
+  if(!text) return '';
+  const trimmed = text.trim();
+  if(trimmed.length <= max) return trimmed;
+  return trimmed.slice(0, max).trim() + '…';
+}
+
 function momentsRebuild(){
   const strip = document.getElementById('hl-strip');
   if(!strip) return;
@@ -14447,7 +14457,7 @@ function momentsRebuild(){
   }
 
   const placeholdersNeeded = Math.max(0, 3 - momentsData.length);
-  const items = momentsData.map((m,i)=>({real:true, idx:i, img: m.thumb || m.img, caption:momentsTwemojiParse(m.caption), meta:m.meta}))
+  const items = momentsData.map((m,i)=>({real:true, idx:i, img: m.thumb || m.img, caption:momentsTwemojiParse(hlTruncateCaption(m.caption)), meta:m.meta}))
     .concat(Array.from({length: placeholdersNeeded}, (_,i)=>({real:false, idx:i})));
 
   strip.innerHTML = items.map((it,i)=>{
@@ -15007,12 +15017,16 @@ function appModalShow({title, sub='', fields, onOk}){
     </div>`;
     }
     if(f.type==='captionEmoji'){
+      const maxLen = f.maxLength || 100;
+      const minLen = f.minLength || 3;
       return `
     <div style="margin-bottom:${i<fields.length-1?'14px':'0'}">
       ${f.label?`<div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.7px;color:#94A3B8;margin-bottom:6px">${f.label}</div>`:''}
-      <textarea id="appModalField_${i}" rows="4" placeholder="${f.placeholder||''}"
-        style="width:100%;padding:11px 14px;border:1.5px solid #E2E8F0;border-radius:9px;font-family:'Inter',sans-serif;font-size:14px;color:#0F1E2E;outline:none;box-sizing:border-box;margin-bottom:8px;resize:vertical;line-height:1.5"
+      <textarea id="appModalField_${i}" rows="4" maxlength="${maxLen}" data-minlen="${minLen}" placeholder="${f.placeholder||''}"
+        style="width:100%;padding:11px 14px;border:1.5px solid #E2E8F0;border-radius:9px;font-family:'Inter',sans-serif;font-size:14px;color:#0F1E2E;outline:none;box-sizing:border-box;margin-bottom:4px;resize:vertical;line-height:1.5"
+        oninput="appModalUpdateCharCounter(${i})"
         onfocus="this.style.borderColor='#0D9488'" onblur="this.style.borderColor='#E2E8F0'">${f.value||''}</textarea>
+      <div id="appModalField_${i}_counter" style="font-size:10.5px;color:#94A3B8;text-align:right;margin-bottom:8px">${(f.value||'').length}/${maxLen} · min ${minLen}</div>
       <div style="display:flex;flex-wrap:wrap;gap:6px">
         ${(f.options||[]).map(o=>`<span onclick="appModalInsertEmoji(${i},'${o.char}')" title="${o.label}" style="display:inline-flex;align-items:center;justify-content:center;width:34px;height:34px;border-radius:50%;background:white;border:1.5px solid #E2E8F0;cursor:pointer;font-size:17px;transition:transform 0.1s,border-color 0.15s" onmousedown="this.style.transform='scale(0.88)'" onmouseup="this.style.transform='scale(1)'">${momentsTwemojiParse(o.char)}</span>`).join('')}
       </div>
@@ -15155,15 +15169,29 @@ function appModalPickDept(i, deptId, el){
   wrap.querySelectorAll('.app-dept-swatch').forEach(s=>{ s.style.border='2px solid transparent'; });
   el.style.border = '2px solid #0D9488';
 }
+function appModalUpdateCharCounter(i){
+  const el = document.getElementById('appModalField_'+i);
+  const counter = document.getElementById('appModalField_'+i+'_counter');
+  if(!el || !counter) return;
+  const max = el.getAttribute('maxlength') || 100;
+  const min = el.dataset.minlen || 3;
+  counter.textContent = el.value.length + '/' + max + ' · min ' + min;
+  counter.style.color = el.value.length < min ? '#EF4444' : '#94A3B8';
+}
+
 function appModalInsertEmoji(i, char){
   const el = document.getElementById('appModalField_'+i);
   if(!el) return;
+  const maxLen = parseInt(el.getAttribute('maxlength')||'0', 10);
   const start = el.selectionStart != null ? el.selectionStart : el.value.length;
   const end = el.selectionEnd != null ? el.selectionEnd : el.value.length;
-  el.value = el.value.slice(0, start) + char + el.value.slice(end);
+  const nextValue = el.value.slice(0, start) + char + el.value.slice(end);
+  if(maxLen && nextValue.length > maxLen) return; // would exceed the cap - ignore the tap
+  el.value = nextValue;
   el.focus();
   const pos = start + char.length;
   el.setSelectionRange(pos, pos);
+  appModalUpdateCharCounter(i);
 }
 function appModalPickColorDot(i, dotId, el){
   const wrap = document.getElementById('appModalField_'+i);

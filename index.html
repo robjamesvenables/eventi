@@ -10751,7 +10751,7 @@ function kitchenDeleteAllergenDish(id){
 }
 // ── INIT ──
 window.addEventListener('keydown',e=>{if(e.key==='Enter'&&document.getElementById('login').style.display!=='none')doLogin();});
-window.addEventListener('load',async ()=>{ initCurrency(); await announceLoadFromSupabase(); announceRender(); await djSchedLoadFromSupabase(); djSchedRender(); await momentsLoadFromSupabase(); momentsRebuild(); await sandboxLoadFromSupabase(); sandboxRender(); await quickLinksLoadFromSupabase(); quickLinksRender(); });
+window.addEventListener('load',async ()=>{ initCurrency(); await announceLoadFromSupabase(); announceRender(); await djSchedLoadFromSupabase(); djSchedRender(); await momentsLoadFromSupabase(); momentsRebuild(); await sandboxLoadFromSupabase(); sandboxRender(); await quickLinksLoadFromSupabase(); quickLinksRender(); await myDriveLoadFromSupabase(); myDriveRender(); });
 
 // ── ANNOUNCEMENTS ──
 const announcements = [
@@ -11618,7 +11618,7 @@ window.announceSubmitReply = async function(){
 
 // ── MY DRIVE ──
 // MY DRIVE — folder system
-const driveFolders = [
+let driveFolders = [
   {id:1, name:'Personal', ico:'', color:'#0F1E2E', files:[
     {id:1, name:'My Goals 2026', url:'https://docs.google.com/document/d/example', type:'docs'},
   ]},
@@ -11632,6 +11632,44 @@ const driveFolders = [
 let driveFolderNextId = 10;
 let driveFileNextId = 20;
 let driveActiveFolder = null;
+let driveLoading = true;
+
+function driveDetectFileType(url){
+  if(url.includes('docs.google.com/spreadsheets')) return 'sheets';
+  if(url.includes('docs.google.com/document')) return 'docs';
+  if(url.includes('docs.google.com/presentation')) return 'slides';
+  if(url.includes('drive.google.com')) return 'drive';
+  return 'link';
+}
+
+async function myDriveLoadFromSupabase(){
+  try{
+    const [{ data: folderRows, error: folderErr }, { data: fileRows, error: fileErr }] = await Promise.all([
+      sb.from('drive_folders').select('*').order('created_at', { ascending: true }),
+      sb.from('drive_files').select('*').order('created_at', { ascending: false })
+    ]);
+    if(folderErr || !folderRows) throw folderErr || new Error('no folder data');
+    if(fileErr || !fileRows) throw fileErr || new Error('no file data');
+    driveFolders = folderRows.map(row => ({
+      id: row.id,
+      dbId: row.id,
+      name: row.name,
+      ico: '',
+      color: row.color,
+      files: fileRows.filter(f => f.folder_id === row.id).map(f => ({
+        id: f.id,
+        dbId: f.id,
+        name: f.name,
+        url: f.url,
+        type: driveDetectFileType(f.url)
+      }))
+    }));
+  } catch(e){
+    console.warn('My Drive Supabase load failed, using demo data', e);
+  } finally {
+    driveLoading = false;
+  }
+}
 
 const driveFileIco = {
   sheets:{icon:'sheets',bg:'#E8F5E9',color:'#16A34A'},
@@ -11646,6 +11684,16 @@ function myDriveRender(){
   const filesView = document.getElementById('myd-files-view');
   const addBtn = document.getElementById('myd-add-btn');
   if(!foldersView) return;
+  if(driveLoading){
+    foldersView.style.display='';
+    filesView.style.display='none';
+    if(addBtn) addBtn.style.display='none';
+    const grid = document.getElementById('myd-folder-grid');
+    const list = document.getElementById('myd-folder-list');
+    if(grid){ grid.style.display='block'; grid.innerHTML = '<div style="text-align:center;padding:30px;color:#94A3B8;font-size:12.5px;grid-column:1/-1">Loading…</div>'; }
+    if(list) list.style.display='none';
+    return;
+  }
   if(driveActiveFolder===null){
     foldersView.style.display='';
     filesView.style.display='none';
@@ -12629,10 +12677,18 @@ window.myDriveAddFolder = function(){
   appModalShow({
     title:'New Folder',
     fields:[{label:'Folder name', placeholder:'e.g. Marketing Assets'}],
-    onOk([name]){
-      driveFolders.push({id:driveFolderNextId++, name, ico:'', color:'#0F1E2E', files:[]});
+    async onOk([name]){
+      try{
+        const { data, error } = await sb.from('drive_folders').insert({ name, color: '#0F1E2E' }).select().single();
+        if(error) throw error;
+        driveFolders.push({id:data.id, dbId:data.id, name, ico:'', color:'#0F1E2E', files:[]});
+        toast('Folder created ✓');
+      } catch(e){
+        console.warn('Could not save folder to Supabase', e);
+        driveFolders.push({id:driveFolderNextId++, name, ico:'', color:'#0F1E2E', files:[]});
+        toast('Created here, but not saved - check your connection');
+      }
       myDriveRender();
-      toast('Folder created ✓');
     }
   });
 };
@@ -12646,19 +12702,28 @@ window.myDriveEditFolder = function(id){
       {label:'Folder name', value:folder.name, placeholder:'Folder name'},
       {label:'Colour', type:'color', options: DEPT_COLORS, value: folder.color}
     ],
-    onOk([newName, color]){
+    async onOk([newName, color]){
       if(newName) folder.name = newName;
       folder.color = color;
       myDriveRender();
       toast('Folder updated ✓');
+      if(folder.dbId){
+        const { error } = await sb.from('drive_folders').update({ name: folder.name, color }).eq('id', folder.dbId);
+        if(error) console.warn('Could not save folder edit to Supabase', error);
+      }
     }
   });
 };
 
 window.myDriveDeleteFolder = function(id){
-  appConfirmShow({title:'Delete Folder', msg:'Delete this folder and all its links? This cannot be undone.', onOk:()=>{
+  appConfirmShow({title:'Delete Folder', msg:'Delete this folder and all its links? This cannot be undone.', onOk: async ()=>{
+    const folder = driveFolders.find(f=>f.id===id);
     const i = driveFolders.findIndex(f=>f.id===id);
     if(i>-1){ driveFolders.splice(i,1); myDriveRender(); toast('Folder removed'); }
+    if(folder && folder.dbId){
+      const { error } = await sb.from('drive_folders').delete().eq('id', folder.dbId);
+      if(error) console.warn('Could not delete folder from Supabase', error);
+    }
   }});
 };
 
@@ -12671,16 +12736,25 @@ window.myDriveAddFile = function(){
       {label:'Link name', placeholder:'e.g. Q3 Budget Sheet'},
       {label:'URL', placeholder:'https://...'}
     ],
-    onOk([name, url]){
+    async onOk([name, url]){
       if(!url) return;
-      let type = 'link';
-      if(url.includes('docs.google.com/spreadsheets')) type='sheets';
-      else if(url.includes('docs.google.com/document')) type='docs';
-      else if(url.includes('docs.google.com/presentation')) type='slides';
-      else if(url.includes('drive.google.com')) type='drive';
-      folder.files.unshift({id:driveFileNextId++, name, url, type});
+      const type = driveDetectFileType(url);
+      if(folder.dbId){
+        try{
+          const { data, error } = await sb.from('drive_files').insert({ folder_id: folder.dbId, name, url }).select().single();
+          if(error) throw error;
+          folder.files.unshift({id:data.id, dbId:data.id, name, url, type});
+          toast('Link added ✓');
+        } catch(e){
+          console.warn('Could not save link to Supabase', e);
+          folder.files.unshift({id:driveFileNextId++, name, url, type});
+          toast('Added here, but not saved - check your connection');
+        }
+      } else {
+        folder.files.unshift({id:driveFileNextId++, name, url, type});
+        toast('Link added ✓');
+      }
       myDriveRender();
-      toast('Link added ✓');
     }
   });
 };
@@ -12696,18 +12770,17 @@ window.myDriveEditFile = function(id){
       {label:'Link name', placeholder:'e.g. Q3 Budget Sheet', value: file.name},
       {label:'URL', placeholder:'https://...', value: file.url}
     ],
-    onOk([name, url]){
+    async onOk([name, url]){
       if(!url) return;
-      let type = 'link';
-      if(url.includes('docs.google.com/spreadsheets')) type='sheets';
-      else if(url.includes('docs.google.com/document')) type='docs';
-      else if(url.includes('docs.google.com/presentation')) type='slides';
-      else if(url.includes('drive.google.com')) type='drive';
       file.name = name;
       file.url = url;
-      file.type = type;
+      file.type = driveDetectFileType(url);
       myDriveRender();
       toast('Link updated ✓');
+      if(file.dbId){
+        const { error } = await sb.from('drive_files').update({ name, url }).eq('id', file.dbId);
+        if(error) console.warn('Could not save link edit to Supabase', error);
+      }
     }
   });
 };
@@ -12715,10 +12788,15 @@ window.myDriveEditFile = function(id){
 window.myDriveDeleteFile = function(id){
   const folder = driveFolders.find(f=>f.id===driveActiveFolder);
   if(!folder) return;
-  appConfirmShow({title:'Remove Link', msg:'Remove this link from the folder?', onOk:()=>{
+  appConfirmShow({title:'Remove Link', msg:'Remove this link from the folder?', onOk: async ()=>{
+    const file = folder.files.find(f=>f.id===id);
     folder.files = folder.files.filter(f=>f.id!==id);
     myDriveRender();
     toast('Removed');
+    if(file && file.dbId){
+      const { error } = await sb.from('drive_files').delete().eq('id', file.dbId);
+      if(error) console.warn('Could not delete link from Supabase', error);
+    }
   }});
 };
 

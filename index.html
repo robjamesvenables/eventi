@@ -10892,7 +10892,7 @@ function kitchenDeleteAllergenDish(id){
 }
 // ── INIT ──
 window.addEventListener('keydown',e=>{if(e.key==='Enter'&&document.getElementById('login').style.display!=='none')doLogin();});
-window.addEventListener('load',async ()=>{ initCurrency(); await announceLoadFromSupabase(); announceRender(); await djSchedLoadFromSupabase(); djSchedRender(); await momentsLoadFromSupabase(); momentsRebuild(); await sandboxLoadFromSupabase(); sandboxRender(); await quickLinksLoadFromSupabase(); quickLinksRender(); await myDriveLoadFromSupabase(); myDriveRender(); await sopLoadFromSupabase(); sopRenderDeptList(); await suggestionLoadFromSupabase(); suggestionRenderList(); });
+window.addEventListener('load',async ()=>{ initCurrency(); await announceLoadFromSupabase(); announceRender(); await djSchedLoadFromSupabase(); djSchedRender(); await momentsLoadFromSupabase(); momentsRebuild(); await sandboxLoadFromSupabase(); sandboxRender(); await quickLinksLoadFromSupabase(); quickLinksRender(); await myDriveLoadFromSupabase(); myDriveRender(); await sopLoadFromSupabase(); sopRenderDeptList(); await suggestionLoadFromSupabase(); suggestionRenderList(); await vendorLoadFromSupabase(); vendorRenderDepts(); });
 
 // ── ANNOUNCEMENTS ──
 const announcements = [
@@ -13333,10 +13333,52 @@ let vendorData = [
 ];
 let vendorNextId = 10;
 let vendorActiveDept = null;
+let vendorLoading = true;
+
+async function vendorLoadFromSupabase(){
+  try{
+    let { data: deptRows, error: deptErr } = await sb.from('vendor_departments').select('*').order('created_at', { ascending: true });
+    if(deptErr) throw deptErr;
+
+    if(!deptRows || deptRows.length === 0){
+      // First run: seed Supabase with the starter departments + vendors that ship in the app
+      const seedDepts = vendorDepts.map(d => ({ id: d.id, name: d.name, color: d.color, icon_id: iconIdFromSvg(d.icon) }));
+      const { data: insertedDepts, error: seedDeptErr } = await sb.from('vendor_departments').insert(seedDepts).select();
+      if(seedDeptErr) throw seedDeptErr;
+      deptRows = insertedDepts;
+
+      const seedItems = vendorData.map(v => ({ dept_id: v.dept, name: v.name, supplies: v.supplies, contact: v.contact }));
+      if(seedItems.length){
+        const { error: seedItemErr } = await sb.from('vendor_items').insert(seedItems);
+        if(seedItemErr) throw seedItemErr;
+      }
+    }
+
+    const { data: itemRows, error: itemErr } = await sb.from('vendor_items').select('*').order('created_at', { ascending: true });
+    if(itemErr) throw itemErr;
+
+    vendorDepts.length = 0;
+    (deptRows||[]).forEach(d => {
+      vendorDepts.push({ id: d.id, name: d.name, color: d.color, icon: iconSvgFromId(d.icon_id) });
+    });
+
+    vendorData = (itemRows||[]).map(row => ({
+      id: row.id, dbId: row.id, dept: row.dept_id, name: row.name, supplies: row.supplies||'', contact: row.contact||''
+    }));
+  } catch(e){
+    console.warn('Vendor Directory Supabase load failed, using demo data', e);
+  } finally {
+    vendorLoading = false;
+  }
+}
 
 function vendorRenderDepts(){
   const grid = document.getElementById('vendor-dept-grid');
   if(!grid) return;
+  if(vendorLoading){
+    grid.innerHTML = '<div style="text-align:center;padding:30px;color:#94A3B8;font-size:12.5px">Loading…</div>';
+    return;
+  }
   grid.innerHTML = vendorDepts.map(d=>{
     const count = vendorData.filter(v=>v.dept===d.id).length;
     return `
@@ -13360,12 +13402,19 @@ function vendorEditDept(id){
       {label:'Colour', type:'color', options: DEPT_COLORS, value:d.color},
       {label:'Icon', type:'icon', options: ICON_LIBRARY, value: iconIdFromSvg(d.icon)}
     ],
-    onOk([name, color, iconId]){
+    async onOk([name, color, iconId]){
       d.name = name;
       d.color = color;
       d.icon = iconSvgFromId(iconId);
       vendorRenderDepts();
       toast('Department updated ✓');
+      try{
+        const { error } = await sb.from('vendor_departments').update({ name, color, icon_id: iconId || 'other' }).eq('id', id);
+        if(error) throw error;
+      } catch(e){
+        console.warn('Could not save department update to Supabase', e);
+        toast('Updated here, but not saved - check your connection');
+      }
     }
   });
 }
@@ -13373,12 +13422,14 @@ function vendorEditDept(id){
 function vendorDeleteDept(id){
   const d = vendorDepts.find(x=>x.id===id);
   if(!d) return;
-  appConfirmShow({title:'Delete Department', msg:`Delete "${d.name}"? This will permanently remove all its vendors.`, onOk:()=>{
+  appConfirmShow({title:'Delete Department', msg:`Delete "${d.name}"? This will permanently remove all its vendors.`, onOk: async ()=>{
     const idx = vendorDepts.findIndex(x=>x.id===id);
     if(idx>-1) vendorDepts.splice(idx,1);
     vendorData = vendorData.filter(v=>v.dept!==id);
     vendorRenderDepts();
     toast('Department deleted');
+    const { error } = await sb.from('vendor_departments').delete().eq('id', id);
+    if(error) console.warn('Could not delete department from Supabase', error);
   }});
 }
 
@@ -13390,12 +13441,19 @@ function vendorAddDept(){
       {label:'Colour', type:'color', options: DEPT_COLORS, value:'#0F1E2E'},
       {label:'Icon', type:'icon', options: ICON_LIBRARY}
     ],
-    onOk([name, color, iconId]){
+    async onOk([name, color, iconId]){
       const id = name.trim().toLowerCase().replace(/[^a-z0-9]+/g,'-');
       if(!id || vendorDepts.find(d=>d.id===id)){ toast('Please use a unique department name'); return; }
       vendorDepts.push({id, name, color, icon: iconSvgFromId(iconId)});
       vendorRenderDepts();
-      toast('Department added ✓');
+      try{
+        const { error } = await sb.from('vendor_departments').insert({ id, name, color, icon_id: iconId || 'other' });
+        if(error) throw error;
+        toast('Department added ✓');
+      } catch(e){
+        console.warn('Could not save department to Supabase', e);
+        toast('Added here, but not saved - check your connection');
+      }
     }
   });
 }
@@ -13403,6 +13461,10 @@ function vendorAddDept(){
 function vendorRenderItems(){
   const list = document.getElementById('vendor-detail-list');
   if(!list) return;
+  if(vendorLoading){
+    list.innerHTML = '<div style="text-align:center;padding:30px;color:#94A3B8;font-size:12.5px">Loading…</div>';
+    return;
+  }
   const items = vendorData.filter(v=>v.dept===vendorActiveDept);
   if(items.length===0){
     list.innerHTML = '<div style="text-align:center;padding:32px;color:#94A3B8;font-size:13px">No vendors added yet</div>';
@@ -13430,10 +13492,14 @@ function vendorEdit(id){
       {label:'What they supply', value:v.supplies, placeholder:'e.g. Fruit & vegetables'},
       {label:'Contact (phone / email)', value:v.contact, placeholder:'e.g. +62 812-... · orders@...'}
     ],
-    onOk([name, supplies, contact]){
+    async onOk([name, supplies, contact]){
       v.name = name; v.supplies = supplies; v.contact = contact;
       vendorRenderItems();
       toast('Vendor updated ✓');
+      if(v.dbId){
+        const { error } = await sb.from('vendor_items').update({ name, supplies, contact }).eq('id', v.dbId);
+        if(error) console.warn('Could not save vendor update to Supabase', error);
+      }
     }
   });
 }
@@ -13712,19 +13778,33 @@ function vendorAdd(){
       {label:'What they supply', placeholder:'e.g. Fruit & vegetables'},
       {label:'Contact (phone / email)', placeholder:'e.g. +62 812-... · orders@...'}
     ],
-    onOk([name, supplies, contact]){
-      vendorData.push({id: vendorNextId++, dept: vendorActiveDept, name, supplies, contact});
+    async onOk([name, supplies, contact]){
+      const v = {id: vendorNextId++, dept: vendorActiveDept, name, supplies, contact};
+      vendorData.push(v);
       vendorRenderItems();
-      toast('Vendor added ✓');
+      try{
+        const { data, error } = await sb.from('vendor_items').insert({ dept_id: vendorActiveDept, name, supplies, contact }).select().single();
+        if(error) throw error;
+        v.dbId = data.id;
+        toast('Vendor added ✓');
+      } catch(e){
+        console.warn('Could not save vendor to Supabase', e);
+        toast('Added here, but not saved - check your connection');
+      }
     }
   });
 }
 
 function vendorDelete(id){
-  appConfirmShow({title:'Remove Vendor', msg:'Remove this vendor?', onOk:()=>{
+  appConfirmShow({title:'Remove Vendor', msg:'Remove this vendor?', onOk: async ()=>{
+    const v = vendorData.find(x=>x.id===id);
     vendorData = vendorData.filter(v=>v.id!==id);
     vendorRenderItems();
     toast('Removed');
+    if(v && v.dbId){
+      const { error } = await sb.from('vendor_items').delete().eq('id', v.dbId);
+      if(error) console.warn('Could not delete vendor from Supabase', error);
+    }
   }});
 }
 

@@ -11257,7 +11257,13 @@ window.announceSubmit = async function(){
       a.text=text; a.tag=announceSelectedTag; a.link=link; a.photo=announcePhotoData; Object.assign(a,s);
       if(a.dbId){
         const { error } = await sb.from('announcements').update({ text, tag: announceSelectedTag, photo: announcePhotoData || null, link: link || null }).eq('id', a.dbId);
-        if(error) console.warn('Supabase update failed', error);
+        if(error){
+          console.warn('Supabase update failed', error);
+          toast('Updated here, but could not save - check your connection');
+          announceCloseModal();
+          announceRender();
+          return;
+        }
       }
     }
     toast('Updated ✓');
@@ -11266,9 +11272,13 @@ window.announceSubmit = async function(){
     const insertAt = announcements.findIndex(a => !a.pinned);
     announcements.splice(insertAt === -1 ? announcements.length : insertAt, 0, newPost);
     const { data, error } = await sb.from('announcements').insert({ text, tag: announceSelectedTag, by_name: 'John', photo: announcePhotoData || null, link: link || null }).select().single();
-    if(error) console.warn('Supabase insert failed', error);
-    else { newPost.dbId = data.id; newPost.id = data.id; }
-    toast('Posted ✓');
+    if(error){
+      console.warn('Supabase insert failed', error);
+      toast('Posted here, but not saved - check your connection');
+    } else {
+      newPost.dbId = data.id; newPost.id = data.id;
+      toast('Posted ✓');
+    }
   }
   announceCloseModal();
   announceRender();

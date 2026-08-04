@@ -4721,11 +4721,20 @@ function editDashStat(key){
   });
 }
 
-function toast(msg){
+function toast(msg, anchorEl){
   const t=document.getElementById('toastEl');
   if(!t)return;
-  t.textContent=msg;t.classList.add('show');
-  setTimeout(()=>t.classList.remove('show'),2800);
+  t.textContent=msg;
+  if(anchorEl){
+    const r = anchorEl.getBoundingClientRect();
+    t.style.top = (r.top + r.height/2) + 'px';
+    t.style.left = (r.left + r.width/2) + 'px';
+  } else {
+    t.style.top = '';
+    t.style.left = '';
+  }
+  t.classList.add('show');
+  setTimeout(()=>{ t.classList.remove('show'); t.style.top=''; t.style.left=''; },2800);
 }
 
 function copyLink(){
@@ -13747,10 +13756,10 @@ async function suggestionSubmit(){
     const { data, error } = await sb.from('suggestions').insert({ text }).select().single();
     if(error) throw error;
     item.dbId = data.id;
-    toast('Thanks! Submitted anonymously — 100% confidential, no name attached ✓');
+    toast('Thanks! Submitted anonymously — 100% confidential, no name attached ✓', input);
   } catch(e){
     console.warn('Could not save suggestion to Supabase', e);
-    toast('Submitted, but not saved - check your connection');
+    toast('Submitted, but not saved - check your connection', input);
   }
   suggestionRenderList();
 }

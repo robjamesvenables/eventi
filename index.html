@@ -8842,13 +8842,28 @@ window.vacancyPdf = function(id){
   document.body.appendChild(tpl);
   toast('Preparing your PDF…');
   const slug = v.title.replace(/[^a-z0-9]+/gi,'-').replace(/^-+|-+$/g,'').toLowerCase();
-  html2pdf().set({
-    margin: 10,
-    filename: `vacancy-${slug}.pdf`,
-    image: { type: 'jpeg', quality: 0.95 },
-    html2canvas: { scale: 2, useCORS: true, backgroundColor: '#ffffff' },
-    jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
-  }).from(tpl).save().then(()=>{ tpl.remove(); }).catch(()=>{ tpl.remove(); toast('PDF export failed — please try again'); });
+  // Wait two animation frames so the browser has fully laid out and painted tpl
+  // before html2canvas measures it - a common fix for elements measuring as 0-height
+  // when captured in the same synchronous tick they were inserted.
+  requestAnimationFrame(() => requestAnimationFrame(() => {
+    const rect = tpl.getBoundingClientRect();
+    console.log('MAVIS-PDF-DEBUG', {
+      offsetWidth: tpl.offsetWidth,
+      offsetHeight: tpl.offsetHeight,
+      scrollHeight: tpl.scrollHeight,
+      rect: { width: rect.width, height: rect.height, top: rect.top, left: rect.left },
+      innerHTMLLength: tpl.innerHTML.length,
+      isConnected: tpl.isConnected,
+      computedDisplay: getComputedStyle(tpl).display
+    });
+    html2pdf().set({
+      margin: 10,
+      filename: `vacancy-${slug}.pdf`,
+      image: { type: 'jpeg', quality: 0.95 },
+      html2canvas: { scale: 2, useCORS: true, backgroundColor: '#ffffff' },
+      jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+    }).from(tpl).save().then(()=>{ tpl.remove(); }).catch((err)=>{ console.error('MAVIS-PDF-ERROR', err); tpl.remove(); toast('PDF export failed — please try again'); });
+  }));
 };
 
 

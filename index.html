@@ -10892,7 +10892,7 @@ function kitchenDeleteAllergenDish(id){
 }
 // ── INIT ──
 window.addEventListener('keydown',e=>{if(e.key==='Enter'&&document.getElementById('login').style.display!=='none')doLogin();});
-window.addEventListener('load',async ()=>{ initCurrency(); await announceLoadFromSupabase(); announceRender(); await djSchedLoadFromSupabase(); djSchedRender(); await momentsLoadFromSupabase(); momentsRebuild(); await sandboxLoadFromSupabase(); sandboxRender(); await quickLinksLoadFromSupabase(); quickLinksRender(); await myDriveLoadFromSupabase(); myDriveRender(); await sopLoadFromSupabase(); sopRenderDeptList(); await suggestionLoadFromSupabase(); suggestionRenderList(); await vendorLoadFromSupabase(); vendorRenderDepts(); });
+window.addEventListener('load',async ()=>{ initCurrency(); await announceLoadFromSupabase(); announceRender(); await djSchedLoadFromSupabase(); djSchedRender(); await momentsLoadFromSupabase(); momentsRebuild(); await sandboxLoadFromSupabase(); sandboxRender(); await quickLinksLoadFromSupabase(); quickLinksRender(); await myDriveLoadFromSupabase(); myDriveRender(); await sopLoadFromSupabase(); sopRenderDeptList(); await suggestionLoadFromSupabase(); suggestionRenderList(); await vendorLoadFromSupabase(); vendorRenderDepts(); await customerLoadFromSupabase(); customerRenderList(); });
 
 // ── ANNOUNCEMENTS ──
 const announcements = [
@@ -13566,10 +13566,38 @@ let customerData = [
   {id:2, name:'Priya Sharma', company:'Solaris Events Asia', phone:'+62 813-3333-4444', email:'priya@solarisevents.com'},
   {id:3, name:'Made Wirawan', company:'Ku De Ta Seminyak', phone:'+62 811-5555-6666', email:'made@kudeta.com'}
 ];
+let customerLoading = true;
+
+async function customerLoadFromSupabase(){
+  try{
+    let { data, error } = await sb.from('customer_contacts').select('*').order('created_at', { ascending: true });
+    if(error) throw error;
+
+    if(!data || data.length === 0){
+      // First run: seed Supabase with the starter contacts that ship in the app
+      const seed = customerData.map(c => ({ name: c.name, company: c.company, phone: c.phone, email: c.email }));
+      const { data: inserted, error: seedErr } = await sb.from('customer_contacts').insert(seed).select();
+      if(seedErr) throw seedErr;
+      data = inserted;
+    }
+
+    customerData = (data||[]).map(row => ({
+      id: row.id, dbId: row.id, name: row.name, company: row.company||'', phone: row.phone||'', email: row.email||''
+    }));
+  } catch(e){
+    console.warn('Address Book Supabase load failed, using demo data', e);
+  } finally {
+    customerLoading = false;
+  }
+}
 
 function customerRenderList(){
   const list = document.getElementById('customer-list');
   if(!list) return;
+  if(customerLoading){
+    list.innerHTML = '<div style="text-align:center;padding:32px;color:#94A3B8;font-size:13px">Loading…</div>';
+    return;
+  }
   const q = (document.getElementById('customer-search').value || '').trim().toLowerCase();
   let items = customerData.slice().sort((a,b)=>a.name.localeCompare(b.name));
   if(q){
@@ -13604,10 +13632,19 @@ function customerAdd(){
       {label:'Phone', placeholder:'e.g. +62 812-1111-2222'},
       {label:'Email', placeholder:'e.g. james@nexusglobal.id'}
     ],
-    onOk([name, company, phone, email]){
-      customerData.push({id: customerNextId++, name, company, phone, email});
+    async onOk([name, company, phone, email]){
+      const c = {id: customerNextId++, name, company, phone, email};
+      customerData.push(c);
       customerRenderList();
-      toast('Contact added ✓');
+      try{
+        const { data, error } = await sb.from('customer_contacts').insert({ name, company, phone, email }).select().single();
+        if(error) throw error;
+        c.dbId = data.id;
+        toast('Contact added ✓');
+      } catch(e){
+        console.warn('Could not save contact to Supabase', e);
+        toast('Added here, but not saved - check your connection');
+      }
     }
   });
 }
@@ -13623,10 +13660,14 @@ function customerEdit(id){
       {label:'Phone', value:c.phone},
       {label:'Email', value:c.email}
     ],
-    onOk([name, company, phone, email]){
+    async onOk([name, company, phone, email]){
       c.name=name; c.company=company; c.phone=phone; c.email=email;
       customerRenderList();
       toast('Contact updated ✓');
+      if(c.dbId){
+        const { error } = await sb.from('customer_contacts').update({ name, company, phone, email }).eq('id', c.dbId);
+        if(error) console.warn('Could not save contact update to Supabase', error);
+      }
     }
   });
 }
@@ -13634,10 +13675,14 @@ function customerEdit(id){
 function customerDelete(id){
   const c = customerData.find(x=>x.id===id);
   if(!c) return;
-  appConfirmShow({title:'Delete Contact', msg:`Delete "${c.name}"?`, onOk:()=>{
+  appConfirmShow({title:'Delete Contact', msg:`Delete "${c.name}"?`, onOk: async ()=>{
     customerData = customerData.filter(x=>x.id!==id);
     customerRenderList();
     toast('Contact deleted');
+    if(c.dbId){
+      const { error } = await sb.from('customer_contacts').delete().eq('id', c.dbId);
+      if(error) console.warn('Could not delete contact from Supabase', error);
+    }
   }});
 }
 
@@ -13751,23 +13796,32 @@ function customerCsvFileChosen(input){
   reader.readAsText(file);
 }
 
-function customerCsvImport(){
+async function customerCsvImport(){
   if(!customerCsvParsedRows || !customerCsvParsedRows.length) return;
-  customerCsvParsedRows.forEach(r => {
-    customerData.push({
-      id: customerNextId++,
-      name: r[0] || '',
-      company: r[1] || '',
-      phone: r[2] || '',
-      email: r[3] || ''
-    });
-  });
+  const newContacts = customerCsvParsedRows.map(r => ({
+    id: customerNextId++,
+    name: r[0] || '',
+    company: r[1] || '',
+    phone: r[2] || '',
+    email: r[3] || ''
+  }));
+  newContacts.forEach(c => customerData.push(c));
   const count = customerCsvParsedRows.length;
   customerCsvParsedRows = null;
   const modal = document.getElementById('csv-upload-modal');
   if(modal) modal.remove();
   customerRenderList();
-  toast(`${count} contact${count===1?'':'s'} added ✓ — ${customerData.length} total`);
+  try{
+    const { data, error } = await sb.from('customer_contacts').insert(
+      newContacts.map(c => ({ name: c.name, company: c.company, phone: c.phone, email: c.email }))
+    ).select();
+    if(error) throw error;
+    data.forEach((row, i) => { newContacts[i].dbId = row.id; });
+    toast(`${count} contact${count===1?'':'s'} added ✓ — ${customerData.length} total`);
+  } catch(e){
+    console.warn('Could not save imported contacts to Supabase', e);
+    toast(`${count} added here, but not saved - check your connection`);
+  }
 }
 
 function vendorAdd(){

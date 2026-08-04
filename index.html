@@ -8831,7 +8831,7 @@ window.vacancyPdf = function(id){
   if(!v) return;
   vacancyDetailClose();
   const tpl = document.createElement('div');
-  tpl.style.cssText = 'position:fixed;top:0;left:0;width:700px;max-height:100vh;overflow:auto;background:white;padding:36px;font-family:Inter,sans-serif;z-index:99999';
+  tpl.style.cssText = 'position:absolute;top:0;left:0;width:700px;background:white;padding:36px;font-family:Inter,sans-serif;z-index:99999';
   tpl.innerHTML = `
     <div style="font-size:22px;font-weight:800;color:#0F1E2E;margin-bottom:4px">${v.title}</div>
     <div style="font-size:12px;color:#94A3B8;margin-bottom:20px">${v.department} · Needed from ${vacanciesFormatDate(v.dateNeeded)}</div>
@@ -8860,7 +8860,11 @@ window.vacancyPdf = function(id){
       margin: 10,
       filename: `vacancy-${slug}.pdf`,
       image: { type: 'jpeg', quality: 0.95 },
-      html2canvas: { scale: 2, useCORS: true, backgroundColor: '#ffffff' },
+      html2canvas: {
+        scale: 2, useCORS: true, backgroundColor: '#ffffff',
+        x: 0, y: 0, width: rect.width, height: rect.height,
+        windowWidth: rect.width, windowHeight: rect.height
+      },
       jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
     }).from(tpl).save().then(()=>{ tpl.remove(); }).catch((err)=>{ console.error('MAVIS-PDF-ERROR', err); tpl.remove(); toast('PDF export failed — please try again'); });
   }));

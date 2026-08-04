@@ -4474,16 +4474,26 @@ function nav(id, pushState=true){
 
 // ── TEAM POLL ──
 const POLL_COLORS = ['#0D9488','#2563EB','#C4973B','#A78BFA','#EF4444'];
-let pollData = {
-  question: "What's the best time slot for team lunch?",
-  options: [
-    {id:1, label:'11:00', votes:['David','Sarah']},
-    {id:2, label:'12:00', votes:['Robbie','John','Maria','Priya']},
-    {id:3, label:'1:00', votes:['Kevin']},
-    {id:4, label:'2:00', votes:['Sofia','Ahmad']},
-  ]
-};
+let pollData = null;
+let pollDbId = null;
 let pollMyVote = null;
+
+// ── TEAM POLL (wired to Supabase - clean slate, no info until a poll is added) ──
+async function pollLoadFromSupabase(){
+  try{
+    const { data, error } = await sb.from('team_poll').select('*').order('created_at', { ascending: false }).limit(1);
+    if(error) throw error;
+    if(data && data.length){
+      pollData = { question: data[0].question, options: data[0].options || [] };
+      pollDbId = data[0].id;
+    } else {
+      pollData = null;
+      pollDbId = null;
+    }
+  } catch(e){
+    console.warn('Team Poll Supabase load failed', e);
+  }
+}
 
 function pollTotalVotes(){
   return pollData.options.reduce((sum,o)=>sum+o.votes.length, 0);
@@ -4550,11 +4560,17 @@ function pollRender(){
 }
 
 window.pollClear = function(){
-  appConfirmShow({title:'Clear Poll', msg:'Remove this poll and all its votes? This can\'t be undone.', onOk:()=>{
+  appConfirmShow({title:'Clear Poll', msg:'Remove this poll and all its votes? This can\'t be undone.', onOk: async ()=>{
+    const idToDelete = pollDbId;
     pollData = null;
     pollMyVote = null;
+    pollDbId = null;
     pollRender();
     toast('Poll cleared');
+    if(idToDelete){
+      const { error } = await sb.from('team_poll').delete().eq('id', idToDelete);
+      if(error) console.warn('Could not delete poll from Supabase', error);
+    }
   }});
 };
 
@@ -4571,6 +4587,10 @@ window.pollVote = function(id){
     pollMyVote = null;
   }
   pollRender();
+  if(pollDbId){
+    sb.from('team_poll').update({ options: pollData.options, updated_at: new Date().toISOString() }).eq('id', pollDbId)
+      .then(({error}) => { if(error) console.warn('Could not save vote to Supabase', error); });
+  }
 };
 
 const POLL_MAX_OPTIONS = 12;
@@ -4633,7 +4653,7 @@ function pollUpdateAddBtnState(){
   }
 }
 
-window.pollSubmitNew = function(){
+window.pollSubmitNew = async function(){
   const q = document.getElementById('pollQInput').value.trim();
   if(!q){ toast('Add a question first'); return; }
   const inputs = Array.from(document.querySelectorAll('.poll-opt-input'));
@@ -4643,15 +4663,20 @@ window.pollSubmitNew = function(){
   if(pollModalMode === 'edit' && pollData){
     const oldOptions = pollData.options;
     const maxOldId = Math.max(0, ...oldOptions.map(o=>o.id));
-    pollData.question = q;
-    pollData.options = labels.map((label, i) => {
+    const newOptions = labels.map((label, i) => {
       const existing = oldOptions[i];
       return existing ? {...existing, label} : {id: maxOldId + i + 1, label, votes: []};
     });
+    pollData.question = q;
+    pollData.options = newOptions;
     pollMyVote = null;
     pollRender();
     pollModalClose();
     toast('Poll updated ✓');
+    if(pollDbId){
+      const { error } = await sb.from('team_poll').update({ question: q, options: newOptions, updated_at: new Date().toISOString() }).eq('id', pollDbId);
+      if(error) console.warn('Could not save poll edit to Supabase', error);
+    }
     return;
   }
 
@@ -4661,6 +4686,14 @@ window.pollSubmitNew = function(){
   pollRender();
   pollModalClose();
   toast('New poll posted ✓');
+  try{
+    const { data, error } = await sb.from('team_poll').insert({ question: q, options: opts }).select().single();
+    if(error) throw error;
+    pollDbId = data.id;
+  } catch(e){
+    console.warn('Could not save new poll to Supabase', e);
+    toast('Poll saved locally but not synced - check your connection');
+  }
 };
 
 function initHome(){
@@ -10920,7 +10953,7 @@ function kitchenDeleteAllergenDish(id){
 }
 // ── INIT ──
 window.addEventListener('keydown',e=>{if(e.key==='Enter'&&document.getElementById('login').style.display!=='none')doLogin();});
-window.addEventListener('load',async ()=>{ initCurrency(); await announceLoadFromSupabase(); announceRender(); await djSchedLoadFromSupabase(); djSchedRender(); await momentsLoadFromSupabase(); momentsRebuild(); });
+window.addEventListener('load',async ()=>{ initCurrency(); await announceLoadFromSupabase(); announceRender(); await djSchedLoadFromSupabase(); djSchedRender(); await momentsLoadFromSupabase(); momentsRebuild(); await pollLoadFromSupabase(); pollRender(); });
 
 // ── ANNOUNCEMENTS ──
 const announcements = [

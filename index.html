@@ -4263,12 +4263,22 @@ img.emoji-tw{width:1.15em;height:1.15em;vertical-align:-0.2em;margin:0 1px}
           <div class="ph-sub">Got an idea? Tell us — no names, ever.</div>
         </div>
       </div>
-      <div style="background:#0F1E2E;border-radius:14px;padding:20px 24px;margin-bottom:24px;text-align:center">
-        <div style="font-size:22px;font-weight:800;color:#0D9488;letter-spacing:0.5px">100% ANONYMOUS</div>
-        <div style="font-size:13px;color:rgba(255,255,255,0.6);margin-top:4px">We never collect or show who submitted a suggestion</div>
+      <div style="display:flex;gap:8px;margin-bottom:20px">
+        <button id="sugg-tab-submit-btn" onclick="suggestionSetTab('submit')" style="flex:1;padding:10px;border-radius:9px;font-family:'Inter',sans-serif;font-size:13px;font-weight:700;cursor:pointer;border:1.5px solid #0F1E2E;background:#0F1E2E;color:white">Submit</button>
+        <button id="sugg-tab-view-btn" onclick="suggestionSetTab('view')" style="flex:1;padding:10px;border-radius:9px;font-family:'Inter',sans-serif;font-size:13px;font-weight:700;cursor:pointer;border:1.5px solid #E2E8F0;background:white;color:#64748B">View Submitted</button>
       </div>
-      <textarea id="suggestion-input" placeholder="What's on your mind? Ideas, frustrations, wild ideas — all welcome..." style="width:100%;min-height:260px;padding:14px 16px;border:1.5px solid #E2E8F0;border-radius:10px;font-family:'Inter',sans-serif;font-size:14px;outline:none;box-sizing:border-box;resize:vertical"></textarea>
-      <button class="btn btn-navy" style="margin-top:12px" onclick="suggestionSubmit()">Submit Anonymously</button>
+      <div id="sugg-submit-view">
+        <div style="background:#0F1E2E;border-radius:14px;padding:20px 24px;margin-bottom:24px;text-align:center">
+          <div style="font-size:22px;font-weight:800;color:#0D9488;letter-spacing:0.5px">100% ANONYMOUS</div>
+          <div style="font-size:13px;color:rgba(255,255,255,0.6);margin-top:4px">We never collect or show who submitted a suggestion</div>
+        </div>
+        <textarea id="suggestion-input" placeholder="What's on your mind? Ideas, frustrations, wild ideas — all welcome..." style="width:100%;min-height:260px;padding:14px 16px;border:1.5px solid #E2E8F0;border-radius:10px;font-family:'Inter',sans-serif;font-size:14px;outline:none;box-sizing:border-box;resize:vertical"></textarea>
+        <button class="btn btn-navy" style="margin-top:12px" onclick="suggestionSubmit()">Submit Anonymously</button>
+      </div>
+      <div id="sugg-view-view" style="display:none">
+        <div style="font-size:12.5px;color:#94A3B8;margin-bottom:14px">Submissions are anonymous — no name or user info is ever attached.</div>
+        <div id="sugg-list"></div>
+      </div>
     </div>
 
     <!-- ADMIN CONSOLE (Roles & Permissions + People, as tabs) -->
@@ -10871,7 +10881,7 @@ function kitchenDeleteAllergenDish(id){
 }
 // ── INIT ──
 window.addEventListener('keydown',e=>{if(e.key==='Enter'&&document.getElementById('login').style.display!=='none')doLogin();});
-window.addEventListener('load',async ()=>{ initCurrency(); await announceLoadFromSupabase(); announceRender(); await djSchedLoadFromSupabase(); djSchedRender(); await momentsLoadFromSupabase(); momentsRebuild(); await sandboxLoadFromSupabase(); sandboxRender(); await quickLinksLoadFromSupabase(); quickLinksRender(); await myDriveLoadFromSupabase(); myDriveRender(); await sopLoadFromSupabase(); sopRenderDeptList(); });
+window.addEventListener('load',async ()=>{ initCurrency(); await announceLoadFromSupabase(); announceRender(); await djSchedLoadFromSupabase(); djSchedRender(); await momentsLoadFromSupabase(); momentsRebuild(); await sandboxLoadFromSupabase(); sandboxRender(); await quickLinksLoadFromSupabase(); quickLinksRender(); await myDriveLoadFromSupabase(); myDriveRender(); await sopLoadFromSupabase(); sopRenderDeptList(); await suggestionLoadFromSupabase(); suggestionRenderList(); });
 
 // ── ANNOUNCEMENTS ──
 const announcements = [
@@ -13710,14 +13720,89 @@ function vendorDelete(id){
 // ── SUGGESTION BOX ──
 let suggestionsData = [];
 let suggestionNextId = 1;
+let suggestionLoading = true;
 
-function suggestionSubmit(){
+async function suggestionLoadFromSupabase(){
+  try{
+    const { data, error } = await sb.from('suggestions').select('*').order('created_at', { ascending: false });
+    if(error) throw error;
+    suggestionsData = (data||[]).map(row => ({ id: row.id, dbId: row.id, text: row.text, createdAt: new Date(row.created_at).getTime() }));
+  } catch(e){
+    console.warn('Suggestion Box Supabase load failed', e);
+  } finally {
+    suggestionLoading = false;
+  }
+}
+
+async function suggestionSubmit(){
   const input = document.getElementById('suggestion-input');
   const text = input.value.trim();
   if(!text) return;
-  suggestionsData.push({id: suggestionNextId++, text, createdAt: Date.now()});
+  const item = {id: suggestionNextId++, text, createdAt: Date.now()};
+  suggestionsData.unshift(item);
   input.value = '';
-  toast('Suggestion submitted anonymously ✓');
+  try{
+    const { data, error } = await sb.from('suggestions').insert({ text }).select().single();
+    if(error) throw error;
+    item.dbId = data.id;
+    toast('Suggestion submitted anonymously ✓');
+  } catch(e){
+    console.warn('Could not save suggestion to Supabase', e);
+    toast('Submitted, but not saved - check your connection');
+  }
+  suggestionRenderList();
+}
+
+function suggestionSetTab(tab){
+  const submitBtn = document.getElementById('sugg-tab-submit-btn');
+  const viewBtn = document.getElementById('sugg-tab-view-btn');
+  document.getElementById('sugg-submit-view').style.display = tab==='submit' ? 'block' : 'none';
+  document.getElementById('sugg-view-view').style.display = tab==='view' ? 'block' : 'none';
+  submitBtn.style.cssText = tab==='submit'
+    ? 'flex:1;padding:10px;border-radius:9px;font-family:\'Inter\',sans-serif;font-size:13px;font-weight:700;cursor:pointer;border:1.5px solid #0F1E2E;background:#0F1E2E;color:white'
+    : 'flex:1;padding:10px;border-radius:9px;font-family:\'Inter\',sans-serif;font-size:13px;font-weight:700;cursor:pointer;border:1.5px solid #E2E8F0;background:white;color:#64748B';
+  viewBtn.style.cssText = tab==='view'
+    ? 'flex:1;padding:10px;border-radius:9px;font-family:\'Inter\',sans-serif;font-size:13px;font-weight:700;cursor:pointer;border:1.5px solid #0F1E2E;background:#0F1E2E;color:white'
+    : 'flex:1;padding:10px;border-radius:9px;font-family:\'Inter\',sans-serif;font-size:13px;font-weight:700;cursor:pointer;border:1.5px solid #E2E8F0;background:white;color:#64748B';
+  if(tab==='view') suggestionRenderList();
+}
+
+function suggestionRenderList(){
+  const wrap = document.getElementById('sugg-list');
+  if(!wrap) return;
+  if(suggestionLoading){
+    wrap.innerHTML = '<div style="text-align:center;padding:30px;color:#94A3B8;font-size:12.5px">Loading…</div>';
+    return;
+  }
+  if(!suggestionsData.length){
+    wrap.innerHTML = '<div style="text-align:center;padding:30px;color:#94A3B8;font-size:12.5px">No suggestions submitted yet.</div>';
+    return;
+  }
+  const sorted = [...suggestionsData].sort((a,b)=>(b.createdAt||0)-(a.createdAt||0));
+  wrap.innerHTML = sorted.map(s => {
+    const dateLabel = new Date(s.createdAt).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'});
+    return `
+      <div style="background:#F8FAFC;border:1.5px solid #E2E8F0;border-radius:10px;padding:14px 16px;margin-bottom:10px">
+        <div style="font-size:13.5px;color:#334155;line-height:1.6;white-space:pre-line;margin-bottom:8px">${s.text}</div>
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <div style="font-size:11px;color:#94A3B8">${dateLabel}</div>
+          <span onclick="suggestionDelete(${s.id})" style="opacity:0.5;cursor:pointer;font-size:12px;color:#EF4444;font-weight:700" title="Delete">Delete</span>
+        </div>
+      </div>`;
+  }).join('');
+}
+
+function suggestionDelete(id){
+  appConfirmShow({title:'Delete Suggestion', msg:'Delete this suggestion? This cannot be undone.', onOk: async ()=>{
+    const item = suggestionsData.find(s=>s.id===id);
+    suggestionsData = suggestionsData.filter(s=>s.id!==id);
+    suggestionRenderList();
+    toast('Deleted');
+    if(item && item.dbId){
+      const { error } = await sb.from('suggestions').delete().eq('id', item.dbId);
+      if(error) console.warn('Could not delete suggestion from Supabase', error);
+    }
+  }});
 }
 
 const _origNavMD = window.nav;
@@ -13727,6 +13812,7 @@ window.nav = function(id, pushState){
   if(id==='faq') setTimeout(faqRenderDepts, 0);
   if(id==='vendors') setTimeout(()=>{ vendorActiveDept=null; document.getElementById('vendor-detail-view').style.display='none'; document.getElementById('vendor-dept-view').style.display='block'; vendorRenderDepts(); }, 0);
   if(id==='sop') setTimeout(sopRenderDeptList, 0);
+  if(id==='suggestions') setTimeout(()=>{ suggestionSetTab('submit'); }, 0);
 };
 </script>
 <!-- Announcement Modal -->

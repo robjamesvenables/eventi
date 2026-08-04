@@ -11237,7 +11237,13 @@ window.announceSubmit = async function(){
         a.pollOptions = newOptions;
         if(a.dbId){
           const { error } = await sb.from('announcements').update({ text: q, poll_options: newOptions }).eq('id', a.dbId);
-          if(error) console.warn('Supabase poll update failed', error);
+          if(error){
+            console.warn('Supabase poll update failed', error);
+            toast('Poll updated here, but could not save - check your connection or Supabase setup');
+            announceCloseModal();
+            announceRender();
+            return;
+          }
         }
       }
       toast('Poll updated ✓');
@@ -11249,9 +11255,13 @@ window.announceSubmit = async function(){
       const insertAt = announcements.findIndex(a => !a.pinned);
       announcements.splice(insertAt === -1 ? announcements.length : insertAt, 0, newPost);
       const { data, error } = await sb.from('announcements').insert({ text: q, tag: 'Info', by_name: 'John', poll_options: opts }).select().single();
-      if(error) console.warn('Supabase poll insert failed', error);
-      else { newPost.dbId = data.id; newPost.id = data.id; }
-      toast('Poll posted ✓');
+      if(error){
+        console.warn('Supabase poll insert failed', error);
+        toast('Poll shown here, but not saved - check your connection or Supabase setup');
+      } else {
+        newPost.dbId = data.id; newPost.id = data.id;
+        toast('Poll posted ✓');
+      }
     }
     announceCloseModal();
     announceRender();

@@ -11077,6 +11077,12 @@ function announceWalkNode(el){
     } else if(node.nodeType === Node.ELEMENT_NODE){
       if(node.tagName === 'BR'){
         out += '\n';
+      } else if(node.tagName === 'IMG'){
+        // Twemoji-rendered emoji (e.g. loaded back in when editing a post that already
+        // has emoji) - the image itself has no text content, but twemoji always sets
+        // alt to the original character, so read that back rather than silently
+        // dropping the emoji on save.
+        out += node.alt || '';
       } else if(node.dataset && node.dataset.emoji){
         const e = ANNOUNCE_EMOJIS.find(x=>x.id===node.dataset.emoji);
         out += e ? e.char : '';

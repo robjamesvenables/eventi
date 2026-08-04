@@ -14006,6 +14006,20 @@ async function momentsLoadFromSupabase(){
         meta: `Posted by ${row.by_name} \u00b7 ${new Date(row.created_at).toLocaleDateString('en-GB',{day:'numeric',month:'short'})}`
       });
     });
+
+    // Legacy rows saved before the thumb column existed have no thumb value, and the
+    // lean query above doesn't fetch the full photo either - without this they'd show
+    // as blank circles until individually re-saved. One small extra query patches them.
+    const legacyIds = momentsData.filter(m => !m.thumb).map(m => m.dbId);
+    if(legacyIds.length){
+      const { data: legacyRows } = await sb.from('highlights').select('id, img').in('id', legacyIds);
+      if(legacyRows){
+        legacyRows.forEach(row => {
+          const m = momentsData.find(x => x.dbId === row.id);
+          if(m){ m.thumb = row.img; m.img = row.img; }
+        });
+      }
+    }
   } catch(e){
     console.warn('Highlights Supabase load failed, using demo data', e);
   } finally {

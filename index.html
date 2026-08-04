@@ -8833,9 +8833,72 @@ function inventoryDelete(id){
   }});
 }
 
+let sopLoading = true;
+
+async function sopLoadFromSupabase(){
+  try{
+    let { data: deptRows, error: deptErr } = await sb.from('sop_departments').select('*').order('created_at', { ascending: true });
+    if(deptErr) throw deptErr;
+
+    if(!deptRows || deptRows.length === 0){
+      // First run: seed Supabase with the starter departments + SOPs that ship in the app
+      const seedDepts = sopDepts.map(d => ({ id: d.id, name: d.name, color: d.color, icon_id: iconIdFromSvg(d.icon) }));
+      const { data: insertedDepts, error: seedDeptErr } = await sb.from('sop_departments').insert(seedDepts).select();
+      if(seedDeptErr) throw seedDeptErr;
+      deptRows = insertedDepts;
+
+      const seedDocs = [];
+      Object.keys(sopData).forEach(deptId => {
+        (sopData[deptId]||[]).forEach(doc => {
+          seedDocs.push({
+            dept_id: deptId, title: doc.title, objective: doc.objective||'', procedure: doc.procedure||'',
+            equipment: doc.equipment||'', safety: doc.safety||'', roles: doc.roles||'',
+            sections: doc.sections||[], signatures: doc.signatures||[], photo: doc.photo||''
+          });
+        });
+      });
+      if(seedDocs.length){
+        const { error: seedDocErr } = await sb.from('sop_docs').insert(seedDocs);
+        if(seedDocErr) throw seedDocErr;
+      }
+    }
+
+    const { data: docRows, error: docErr } = await sb.from('sop_docs').select('*').order('created_at', { ascending: true });
+    if(docErr) throw docErr;
+
+    sopDepts.length = 0;
+    (deptRows||[]).forEach(d => {
+      sopDepts.push({ id: d.id, name: d.name, color: d.color, icon: iconSvgFromId(d.icon_id) });
+    });
+
+    Object.keys(sopData).forEach(k => delete sopData[k]);
+    sopDepts.forEach(d => { sopData[d.id] = []; });
+    (docRows||[]).forEach(row => {
+      if(!sopData[row.dept_id]) sopData[row.dept_id] = [];
+      const updated = new Date(row.updated_at || row.created_at);
+      sopData[row.dept_id].push({
+        dbId: row.id,
+        title: row.title,
+        meta: 'Last updated: ' + updated.toLocaleDateString('en-US',{month:'short', year:'numeric'}),
+        objective: row.objective||'', procedure: row.procedure||'', equipment: row.equipment||'',
+        safety: row.safety||'', roles: row.roles||'',
+        sections: row.sections||[], signatures: row.signatures||[], photo: row.photo||''
+      });
+    });
+  } catch(e){
+    console.warn('SOPs Supabase load failed, using demo data', e);
+  } finally {
+    sopLoading = false;
+  }
+}
+
 function sopRenderDeptList(){
   const list = document.getElementById('sop-dept-list');
   if(!list) return;
+  if(sopLoading){
+    list.innerHTML = '<div style="text-align:center;padding:30px;color:#94A3B8;font-size:12.5px">Loading…</div>';
+    return;
+  }
   list.innerHTML = sopDepts.map(d=>{
     const count = (sopData[d.id]||[]).length;
     return `
@@ -8859,12 +8922,19 @@ function sopEditDept(id){
       {label:'Colour', type:'color', options: DEPT_COLORS, value:d.color},
       {label:'Icon', type:'icon', options: ICON_LIBRARY, value: iconIdFromSvg(d.icon)}
     ],
-    onOk([name, color, iconId]){
+    async onOk([name, color, iconId]){
       d.name = name;
       d.color = color;
       d.icon = iconSvgFromId(iconId);
       sopRenderDeptList();
       toast('Department updated ✓');
+      try{
+        const { error } = await sb.from('sop_departments').update({ name, color, icon_id: iconId || 'other' }).eq('id', id);
+        if(error) throw error;
+      } catch(e){
+        console.warn('Could not save department update to Supabase', e);
+        toast('Updated here, but not saved - check your connection');
+      }
     }
   });
 }
@@ -8872,12 +8942,14 @@ function sopEditDept(id){
 function sopDeleteDept(id){
   const d = sopDepts.find(x=>x.id===id);
   if(!d) return;
-  appConfirmShow({title:'Delete Department', msg:`Delete "${d.name}"? This will permanently remove all its SOPs.`, onOk:()=>{
+  appConfirmShow({title:'Delete Department', msg:`Delete "${d.name}"? This will permanently remove all its SOPs.`, onOk: async ()=>{
     const idx = sopDepts.findIndex(x=>x.id===id);
     if(idx>-1) sopDepts.splice(idx,1);
     delete sopData[id];
     sopRenderDeptList();
     toast('Department deleted');
+    const { error } = await sb.from('sop_departments').delete().eq('id', id);
+    if(error) console.warn('Could not delete department from Supabase', error);
   }});
 }
 
@@ -8889,13 +8961,20 @@ function sopAddDept(){
       {label:'Colour', type:'color', options: DEPT_COLORS, value:'#0F1E2E'},
       {label:'Icon', type:'icon', options: ICON_LIBRARY}
     ],
-    onOk([name, color, iconId]){
+    async onOk([name, color, iconId]){
       const id = name.trim().toLowerCase().replace(/[^a-z0-9]+/g,'-');
       if(!id || sopDepts.find(d=>d.id===id)){ toast('Please use a unique department name'); return; }
       sopDepts.push({id, name, color, icon: iconSvgFromId(iconId)});
       sopData[id] = [];
       sopRenderDeptList();
-      toast('Department added ✓');
+      try{
+        const { error } = await sb.from('sop_departments').insert({ id, name, color, icon_id: iconId || 'other' });
+        if(error) throw error;
+        toast('Department added ✓');
+      } catch(e){
+        console.warn('Could not save department to Supabase', e);
+        toast('Added here, but not saved - check your connection');
+      }
     }
   });
 }
@@ -8955,19 +9034,27 @@ function sopEditDocTitle(idx){
   appModalShow({
     title:'Rename SOP',
     fields:[{label:'SOP name', value:doc.title, placeholder:'e.g. Opening Checklist'}],
-    onOk([title]){
+    async onOk([title]){
       doc.title = title;
       sopOpenDept(currentSopDept);
+      if(doc.dbId){
+        const { error } = await sb.from('sop_docs').update({ title }).eq('id', doc.dbId);
+        if(error) console.warn('Could not rename SOP in Supabase', error);
+      }
     }
   });
 }
 
 function sopDeleteDoc(idx){
   const doc = sopData[currentSopDept][idx];
-  appConfirmShow({title:'Delete SOP', msg:`Delete "${doc.title}"?`, onOk:()=>{
+  appConfirmShow({title:'Delete SOP', msg:`Delete "${doc.title}"?`, onOk: async ()=>{
     sopData[currentSopDept].splice(idx,1);
     sopOpenDept(currentSopDept);
     toast('SOP deleted');
+    if(doc.dbId){
+      const { error } = await sb.from('sop_docs').delete().eq('id', doc.dbId);
+      if(error) console.warn('Could not delete SOP from Supabase', error);
+    }
   }});
 }
 
@@ -9031,9 +9118,15 @@ function sopRenderDoc(){
 
 function sopDeleteSignature(i){
   appConfirmShow({title:'Remove Signature', msg:'Remove this sign-off record?', onOk:()=>{
-    sopData[currentSopDept][currentSopDoc].signatures.splice(i,1);
+    const doc = sopData[currentSopDept][currentSopDoc];
+    doc.signatures.splice(i,1);
     sopRenderDoc();
     toast('Signature removed');
+    if(doc.dbId){
+      sb.from('sop_docs').update({ signatures: doc.signatures }).eq('id', doc.dbId).then(({error})=>{
+        if(error) console.warn('Could not remove signature in Supabase', error);
+      });
+    }
   }});
 }
 
@@ -9127,6 +9220,15 @@ function sopEditSave(){
   sopEditClose();
   sopRenderDoc();
   toast('SOP updated ✓');
+  if(doc.dbId){
+    sb.from('sop_docs').update({
+      title: doc.title, objective: doc.objective, procedure: doc.procedure,
+      equipment: doc.equipment, safety: doc.safety, roles: doc.roles,
+      sections: doc.sections, photo: doc.photo, updated_at: new Date().toISOString()
+    }).eq('id', doc.dbId).then(({error})=>{
+      if(error) console.warn('Could not save SOP edits to Supabase', error);
+    });
+  }
 }
 
 // ── Sign-off: canvas draw + typed-name fallback ──
@@ -9207,10 +9309,16 @@ function sopSignSave(){
   }
 
   const date = new Date().toLocaleDateString('en-US',{day:'numeric',month:'short',year:'numeric'});
-  sopData[currentSopDept][currentSopDoc].signatures.unshift({name, role, date, img});
+  const doc = sopData[currentSopDept][currentSopDoc];
+  doc.signatures.unshift({name, role, date, img});
   sopSignClose();
   sopRenderDoc();
   toast('Signed ✓');
+  if(doc.dbId){
+    sb.from('sop_docs').update({ signatures: doc.signatures }).eq('id', doc.dbId).then(({error})=>{
+      if(error) console.warn('Could not save signature to Supabase', error);
+    });
+  }
 }
 
 function sopNewDoc(){
@@ -9221,9 +9329,21 @@ function sopNewDoc(){
       {label:'Objective', type:'textarea', rows:3, placeholder:'Why this procedure exists', optional:true},
       {label:'Procedure', type:'textarea', rows:9, placeholder:'1. First step\n2. Second step\n3. ...', optional:true}
     ],
-    onOk([title, objective, procedure]){
-      sopData[currentSopDept].push({title, meta:'Just created', objective:objective||'', procedure:procedure||'', equipment:'', safety:'', roles:'', signatures:[]});
+    async onOk([title, objective, procedure]){
+      const doc = {title, meta:'Just created', objective:objective||'', procedure:procedure||'', equipment:'', safety:'', roles:'', sections:[], signatures:[], photo:''};
+      sopData[currentSopDept].push(doc);
       sopOpenDept(currentSopDept);
+      try{
+        const { data, error } = await sb.from('sop_docs').insert({
+          dept_id: currentSopDept, title, objective: objective||'', procedure: procedure||'',
+          equipment:'', safety:'', roles:'', sections:[], signatures:[], photo:''
+        }).select().single();
+        if(error) throw error;
+        doc.dbId = data.id;
+      } catch(e){
+        console.warn('Could not save SOP to Supabase', e);
+        toast('Added here, but not saved - check your connection');
+      }
     }
   });
 }
@@ -10751,7 +10871,7 @@ function kitchenDeleteAllergenDish(id){
 }
 // ── INIT ──
 window.addEventListener('keydown',e=>{if(e.key==='Enter'&&document.getElementById('login').style.display!=='none')doLogin();});
-window.addEventListener('load',async ()=>{ initCurrency(); await announceLoadFromSupabase(); announceRender(); await djSchedLoadFromSupabase(); djSchedRender(); await momentsLoadFromSupabase(); momentsRebuild(); await sandboxLoadFromSupabase(); sandboxRender(); await quickLinksLoadFromSupabase(); quickLinksRender(); await myDriveLoadFromSupabase(); myDriveRender(); });
+window.addEventListener('load',async ()=>{ initCurrency(); await announceLoadFromSupabase(); announceRender(); await djSchedLoadFromSupabase(); djSchedRender(); await momentsLoadFromSupabase(); momentsRebuild(); await sandboxLoadFromSupabase(); sandboxRender(); await quickLinksLoadFromSupabase(); quickLinksRender(); await myDriveLoadFromSupabase(); myDriveRender(); await sopLoadFromSupabase(); sopRenderDeptList(); });
 
 // ── ANNOUNCEMENTS ──
 const announcements = [

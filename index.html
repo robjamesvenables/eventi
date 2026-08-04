@@ -13901,7 +13901,18 @@ window.nav = function(id, pushState){
   if(typeof _origNavMD==='function') _origNavMD(id, pushState);
   if(id==='mydrive'){ driveActiveFolder=null; setTimeout(myDriveRender, 50); }
   if(id==='faq') setTimeout(faqRenderDepts, 0);
-  if(id==='vendors') setTimeout(()=>{ vendorActiveDept=null; document.getElementById('vendor-detail-view').style.display='none'; document.getElementById('vendor-dept-view').style.display='block'; vendorRenderDepts(); }, 0);
+  if(id==='vendors') setTimeout(()=>{
+    if(pushState){
+      vendorActiveDept=null;
+      document.getElementById('vendor-detail-view').style.display='none';
+      document.getElementById('vendor-dept-view').style.display='block';
+      vendorRenderDepts();
+    } else if(vendorActiveDept){
+      vendorRenderItems();
+    } else {
+      vendorRenderDepts();
+    }
+  }, 0);
   if(id==='sop') setTimeout(sopRenderDeptList, 0);
   if(id==='suggestions') setTimeout(()=>{ suggestionSetTab('submit'); }, 0);
 };

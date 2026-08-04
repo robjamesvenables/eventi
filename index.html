@@ -10751,7 +10751,7 @@ function kitchenDeleteAllergenDish(id){
 }
 // ── INIT ──
 window.addEventListener('keydown',e=>{if(e.key==='Enter'&&document.getElementById('login').style.display!=='none')doLogin();});
-window.addEventListener('load',async ()=>{ initCurrency(); await announceLoadFromSupabase(); announceRender(); await djSchedLoadFromSupabase(); djSchedRender(); await momentsLoadFromSupabase(); momentsRebuild(); await sandboxLoadFromSupabase(); sandboxRender(); });
+window.addEventListener('load',async ()=>{ initCurrency(); await announceLoadFromSupabase(); announceRender(); await djSchedLoadFromSupabase(); djSchedRender(); await momentsLoadFromSupabase(); momentsRebuild(); await sandboxLoadFromSupabase(); sandboxRender(); await quickLinksLoadFromSupabase(); quickLinksRender(); });
 
 // ── ANNOUNCEMENTS ──
 const announcements = [
@@ -12732,6 +12732,34 @@ let quickLinksData = [
   {id:4, name:'Sign Up for First Aid Training', url:'https://docs.google.com/forms/d/example-firstaid', type:'link', by:'Robbie', meta:'Added by Robbie · Today', createdAt: Date.now() - 8*24*60*60*1000},
 ];
 let quickLinksNextId = 10;
+let quickLinksLoading = true;
+
+async function quickLinksLoadFromSupabase(){
+  try{
+    const { data, error } = await sb.from('quick_links').select('*').order('created_at', { ascending: false });
+    if(error || !data) throw error || new Error('no data');
+    quickLinksData.length = 0;
+    data.forEach(row => {
+      const createdAt = new Date(row.created_at).getTime();
+      const isToday = (Date.now() - createdAt) < 24*60*60*1000;
+      const dateLabel = isToday ? 'Today' : new Date(row.created_at).toLocaleDateString('en-GB',{day:'numeric',month:'short'});
+      quickLinksData.push({
+        id: row.id,
+        dbId: row.id,
+        name: row.name,
+        url: row.url,
+        type: quickLinksDetectType(row.url),
+        by: row.by_name,
+        meta: 'Added by ' + row.by_name + ' · ' + dateLabel,
+        createdAt
+      });
+    });
+  } catch(e){
+    console.warn('Quick Links Supabase load failed, using demo data', e);
+  } finally {
+    quickLinksLoading = false;
+  }
+}
 
 function quickLinksAgeLabel(createdAt){
   if(!createdAt) return null;
@@ -12760,6 +12788,11 @@ function quickLinksRender(){
   const badge = document.getElementById('sb-badge-quicklinks');
   if(badge) badge.textContent = quickLinksData.length;
   if(!list) return;
+  if(quickLinksLoading){
+    list.innerHTML = '<div style="text-align:center;padding:30px;color:#94A3B8;font-size:12.5px">Loading…</div>';
+    if(empty) empty.style.display='none';
+    return;
+  }
   if(quickLinksData.length===0){
     list.innerHTML='';
     if(empty) empty.style.display='block';
@@ -12811,27 +12844,46 @@ function quickLinksAdd(){
       {label:'Link name', placeholder:'e.g. Solaris Beach Festival — BEO'},
       {label:'URL', placeholder:'https://...'}
     ],
-    onOk([name, url]){
+    async onOk([name, url]){
       if(!url) return;
       const type = quickLinksDetectType(url);
-      quickLinksData.unshift({
-        id: quickLinksNextId++,
-        name, url, type,
-        by: currentUserFirstName,
-        meta: 'Added by ' + currentUserFirstName + ' · Today',
-        createdAt: Date.now()
-      });
+      const by = currentUserFirstName;
+      try{
+        const { data, error } = await sb.from('quick_links').insert({ name, url, by_name: by }).select().single();
+        if(error) throw error;
+        quickLinksData.unshift({
+          id: data.id,
+          dbId: data.id,
+          name, url, type, by,
+          meta: 'Added by ' + by + ' · Today',
+          createdAt: Date.now()
+        });
+        toast('Quick link added ✓');
+      } catch(e){
+        console.warn('Could not save quick link to Supabase', e);
+        quickLinksData.unshift({
+          id: quickLinksNextId++,
+          name, url, type, by,
+          meta: 'Added by ' + by + ' · Today',
+          createdAt: Date.now()
+        });
+        toast('Added here, but not saved - check your connection');
+      }
       quickLinksRender();
-      toast('Quick link added ✓');
     }
   });
 }
 
 function quickLinksDelete(id){
-  appConfirmShow({title:'Remove Quick Link', msg:'Remove this link for everyone? This cannot be undone.', onOk:()=>{
+  appConfirmShow({title:'Remove Quick Link', msg:'Remove this link for everyone? This cannot be undone.', onOk: async ()=>{
+    const link = quickLinksData.find(f=>f.id===id);
     quickLinksData = quickLinksData.filter(f=>f.id!==id);
     quickLinksRender();
     toast('Removed');
+    if(link && link.dbId){
+      const { error } = await sb.from('quick_links').delete().eq('id', link.dbId);
+      if(error) console.warn('Could not delete quick link from Supabase', error);
+    }
   }});
 }
 

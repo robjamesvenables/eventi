@@ -11160,22 +11160,17 @@ window.announceInsertEmoji = function(id){
   const e = ANNOUNCE_EMOJIS.find(x=>x.id===id);
   if(!e) return;
   const input = document.getElementById('announce-input');
+  // Always append at the end rather than trying to insert at the exact cursor position -
+  // the Range/Selection API approach was more fragile than it needed to be, especially
+  // when editing a post that already has rich content (emoji rendered as images) in the
+  // box, versus composing a brand-new empty post where it happened to always work fine.
+  const node = document.createTextNode(e.char);
+  input.appendChild(node);
   input.focus();
-  const sel = window.getSelection();
-  let range;
-  if(sel.rangeCount > 0 && input.contains(sel.anchorNode)){
-    range = sel.getRangeAt(0);
-    range.deleteContents();
-    const node = document.createTextNode(e.char);
-    range.insertNode(node);
-    range.setStartAfter(node);
-  } else {
-    const node = document.createTextNode(e.char);
-    input.appendChild(node);
-    range = document.createRange();
-    range.setStartAfter(node);
-  }
+  const range = document.createRange();
+  range.setStartAfter(node);
   range.collapse(true);
+  const sel = window.getSelection();
   sel.removeAllRanges();
   sel.addRange(range);
 };

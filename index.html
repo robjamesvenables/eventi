@@ -10751,7 +10751,7 @@ function kitchenDeleteAllergenDish(id){
 }
 // ── INIT ──
 window.addEventListener('keydown',e=>{if(e.key==='Enter'&&document.getElementById('login').style.display!=='none')doLogin();});
-window.addEventListener('load',async ()=>{ initCurrency(); await announceLoadFromSupabase(); announceRender(); await djSchedLoadFromSupabase(); djSchedRender(); await momentsLoadFromSupabase(); momentsRebuild(); });
+window.addEventListener('load',async ()=>{ initCurrency(); await announceLoadFromSupabase(); announceRender(); await djSchedLoadFromSupabase(); djSchedRender(); await momentsLoadFromSupabase(); momentsRebuild(); await sandboxLoadFromSupabase(); sandboxRender(); });
 
 // ── ANNOUNCEMENTS ──
 const announcements = [
@@ -14802,12 +14802,37 @@ function appFileToDataUrl(file){
 }
 
 // ── SANDBOX: personal dump — notes, voice, photos, links, no structure required ──
+// Wired to Supabase as a single shared table for now (demo mode) - no real per-user
+// accounts exist yet, so there's no way to make this genuinely private per person.
+// Revisit once real accounts land.
 let sandboxItems = [];
 let sandboxNextId = 1;
+let sandboxLoading = true;
 let sandboxMediaRecorder = null;
 let sandboxRecordingChunks = [];
 let sandboxRecordStart = null;
 let sandboxRecordTimer = null;
+
+async function sandboxLoadFromSupabase(){
+  try{
+    const { data, error } = await sb.from('sandbox_items').select('*').order('created_at', { ascending: false });
+    if(error || !data) throw error || new Error('no data');
+    sandboxItems.length = 0;
+    data.forEach(row => {
+      sandboxItems.push({
+        id: row.id,
+        dbId: row.id,
+        type: row.type,
+        content: row.content,
+        timestamp: new Date(row.created_at).toLocaleString('en-US',{month:'short', day:'numeric', hour:'numeric', minute:'2-digit'})
+      });
+    });
+  } catch(e){
+    console.warn('Sandbox Supabase load failed', e);
+  } finally {
+    sandboxLoading = false;
+  }
+}
 
 function sandboxTimestamp(){
   return new Date().toLocaleString('en-US',{month:'short', day:'numeric', hour:'numeric', minute:'2-digit'});
@@ -14817,6 +14842,11 @@ function sandboxRender(){
   const feed = document.getElementById('sandbox-feed');
   const empty = document.getElementById('sandbox-empty');
   if(!feed) return;
+  if(sandboxLoading){
+    feed.innerHTML = '<div style="text-align:center;padding:30px;color:#94A3B8;font-size:12.5px">Loading…</div>';
+    if(empty) empty.style.display = 'none';
+    return;
+  }
   if(!sandboxItems.length){
     feed.innerHTML = '';
     if(empty) empty.style.display = 'block';
@@ -14855,16 +14885,30 @@ function sandboxRender(){
   }).join('');
 }
 
-function sandboxAddItem(type, content){
-  sandboxItems.unshift({id: sandboxNextId++, type, content, timestamp: sandboxTimestamp()});
+async function sandboxAddItem(type, content){
+  try{
+    const { data, error } = await sb.from('sandbox_items').insert({ type, content }).select().single();
+    if(error) throw error;
+    sandboxItems.unshift({id: data.id, dbId: data.id, type, content, timestamp: sandboxTimestamp()});
+    toast('Added to Sandbox ✓');
+  } catch(e){
+    console.warn('Could not save to Supabase, keeping locally only', e);
+    sandboxItems.unshift({id: sandboxNextId++, type, content, timestamp: sandboxTimestamp()});
+    toast('Added here, but not saved - check your connection');
+  }
   sandboxRender();
 }
 
 function sandboxDelete(id){
-  appConfirmShow({title:'Delete Item', msg:'Remove this from Sandbox?', onOk:()=>{
+  appConfirmShow({title:'Delete Item', msg:'Remove this from Sandbox?', onOk: async ()=>{
+    const item = sandboxItems.find(x=>x.id===id);
     sandboxItems = sandboxItems.filter(x=>x.id!==id);
     sandboxRender();
     toast('Removed');
+    if(item && item.dbId){
+      const { error } = await sb.from('sandbox_items').delete().eq('id', item.dbId);
+      if(error) console.warn('Could not delete from Supabase', error);
+    }
   }});
 }
 
@@ -14878,10 +14922,9 @@ function sandboxAddNote(){
   appModalShow({
     title:'Add Note',
     fields:[{label:'Note', type:'textarea', rows:6, placeholder:"Whatever's on your mind"}],
-    onOk([content]){
+    async onOk([content]){
       if(!content || !content.trim()) return;
-      sandboxAddItem('note', content);
-      toast('Added to Sandbox ✓');
+      await sandboxAddItem('note', content);
     }
   });
 }
@@ -14890,10 +14933,9 @@ function sandboxAddLink(){
   appModalShow({
     title:'Add Link',
     fields:[{label:'URL', placeholder:'https://...'}],
-    onOk([url]){
+    async onOk([url]){
       if(!url) return;
-      sandboxAddItem('link', url);
-      toast('Added to Sandbox ✓');
+      await sandboxAddItem('link', url);
     }
   });
 }
@@ -14902,8 +14944,7 @@ async function sandboxAddPhoto(evt){
   const file = evt.target.files[0];
   if(!file) return;
   const dataUrl = await appFileToDataUrl(file);
-  sandboxAddItem('photo', dataUrl);
-  toast('Added to Sandbox ✓');
+  await sandboxAddItem('photo', dataUrl);
   evt.target.value = '';
 }
 
@@ -14930,8 +14971,7 @@ async function sandboxToggleVoice(){
         reader.onload = ()=>res(reader.result);
         reader.readAsDataURL(blob);
       });
-      sandboxAddItem('voice', dataUrl);
-      toast('Voice note added ✓');
+      await sandboxAddItem('voice', dataUrl);
     };
     sandboxMediaRecorder.start();
     sandboxRecordStart = Date.now();

@@ -8602,6 +8602,37 @@ let vacanciesData = [
   {id:1, title:'Front of House Supervisor', department:'Front of House', dateNeeded:'2026-08-15', description:'We\'re looking for an experienced Front of House Supervisor to lead our guest-facing team during peak season. You\'ll oversee daily service flow, train new staff, and be the go-to person for guest issues.', requirements:'2+ years hospitality supervisory experience. Fluent English and Bahasa Indonesia. Available for evening and weekend shifts.', applyEmail:'hr@mavis.com', status:'open', filledAt:null},
   {id:2, title:'Commis Chef', department:'Kitchen', dateNeeded:'2026-08-01', description:'Join our kitchen team as a Commis Chef, working across sections and learning directly from our Head Chef. Great opportunity for someone early in their culinary career.', requirements:'Culinary school background or 1+ years kitchen experience. Willing to learn and take direction.', applyEmail:'hr@mavis.com', status:'filled', filledAt:Date.now()-1000*60*60*24*10}
 ];
+let vacanciesLoading = true;
+
+async function vacanciesLoadFromSupabase(){
+  try{
+    let { data, error } = await sb.from('job_vacancies').select('*').order('created_at', { ascending: true });
+    if(error) throw error;
+
+    if(!data || data.length === 0){
+      // First run: seed Supabase with the starter vacancies that ship in the app
+      const seed = vacanciesData.map(v => ({
+        title: v.title, department: v.department, date_needed: v.dateNeeded || null,
+        description: v.description, requirements: v.requirements || '',
+        status: v.status, filled_at: v.filledAt ? new Date(v.filledAt).toISOString() : null
+      }));
+      const { data: inserted, error: seedErr } = await sb.from('job_vacancies').insert(seed).select();
+      if(seedErr) throw seedErr;
+      data = inserted;
+    }
+
+    vacanciesData = (data||[]).map(row => ({
+      id: row.id, dbId: row.id, title: row.title, department: row.department||'',
+      dateNeeded: row.date_needed||'', description: row.description||'', requirements: row.requirements||'',
+      applyEmail: 'hr@mavis.com', status: row.status||'open',
+      filledAt: row.filled_at ? new Date(row.filled_at).getTime() : null
+    }));
+  } catch(e){
+    console.warn('Job Vacancies Supabase load failed, using demo data', e);
+  } finally {
+    vacanciesLoading = false;
+  }
+}
 
 function vacanciesSetTab(tab, el){
   vacanciesActiveTab = tab;
@@ -8620,6 +8651,10 @@ function vacanciesFormatDate(dateStr){
 function vacanciesRender(){
   const container = document.getElementById('vacancies-list');
   if(!container) return;
+  if(vacanciesLoading){
+    container.innerHTML = '<div style="text-align:center;padding:40px;color:#94A3B8;font-size:13px">Loading…</div>';
+    return;
+  }
   const filtered = vacanciesData.filter(v => vacanciesActiveTab==='current' ? v.status==='open' : v.status==='filled');
   if(!filtered.length){
     container.innerHTML = `<div style="text-align:center;padding:40px;color:#94A3B8;font-size:13px">${vacanciesActiveTab==='current' ? 'No open vacancies right now — click + Add Vacancy' : 'No past vacancies yet'}</div>`;
@@ -8653,11 +8688,22 @@ window.vacancyAdd = function(){
       {label:'Description', type:'textarea', rows:6, placeholder:'What the role involves, who they\'d be working with...'},
       {label:'Requirements (optional)', type:'textarea', rows:4, optional:true, placeholder:'Experience, language, availability...'}
     ],
-    onOk([title, department, dateNeeded, description, requirements]){
+    async onOk([title, department, dateNeeded, description, requirements]){
       if(!title) return;
-      vacanciesData.push({id: vacanciesNextId++, title, department, dateNeeded, description, requirements: requirements||'', applyEmail:'hr@mavis.com', status:'open', filledAt:null});
+      const v = {id: vacanciesNextId++, title, department, dateNeeded, description, requirements: requirements||'', applyEmail:'hr@mavis.com', status:'open', filledAt:null};
+      vacanciesData.push(v);
       vacanciesRender();
-      toast('Vacancy added ✓');
+      try{
+        const { data, error } = await sb.from('job_vacancies').insert({
+          title, department, date_needed: dateNeeded || null, description, requirements: requirements||'', status:'open', filled_at:null
+        }).select().single();
+        if(error) throw error;
+        v.dbId = data.id;
+        toast('Vacancy added ✓');
+      } catch(e){
+        console.warn('Could not save vacancy to Supabase', e);
+        toast('Added here, but not saved - check your connection');
+      }
     }
   });
 };
@@ -8674,11 +8720,17 @@ window.vacancyEdit = function(id){
       {label:'Description', type:'textarea', rows:6, value:v.description},
       {label:'Requirements (optional)', type:'textarea', rows:4, value:v.requirements||'', optional:true}
     ],
-    onOk([title, department, dateNeeded, description, requirements]){
+    async onOk([title, department, dateNeeded, description, requirements]){
       v.title=title; v.department=department; v.dateNeeded=dateNeeded; v.description=description; v.requirements=requirements||'';
       vacanciesRender();
       vacancyDetailClose();
       toast('Vacancy updated ✓');
+      if(v.dbId){
+        const { error } = await sb.from('job_vacancies').update({
+          title, department, date_needed: dateNeeded || null, description, requirements: requirements||''
+        }).eq('id', v.dbId);
+        if(error) console.warn('Could not save vacancy update to Supabase', error);
+      }
     }
   });
 };
@@ -8691,6 +8743,11 @@ window.vacancyMarkFilled = function(id){
   vacanciesRender();
   vacancyDetailClose();
   toast('Moved to Past Vacancies ✓');
+  if(v.dbId){
+    sb.from('job_vacancies').update({ status:'filled', filled_at: new Date(v.filledAt).toISOString() }).eq('id', v.dbId).then(({error})=>{
+      if(error) console.warn('Could not save status change to Supabase', error);
+    });
+  }
 };
 
 window.vacancyReopen = function(id){
@@ -8701,16 +8758,25 @@ window.vacancyReopen = function(id){
   vacanciesRender();
   vacancyDetailClose();
   toast('Reopened — back in Current Vacancies ✓');
+  if(v.dbId){
+    sb.from('job_vacancies').update({ status:'open', filled_at:null }).eq('id', v.dbId).then(({error})=>{
+      if(error) console.warn('Could not save status change to Supabase', error);
+    });
+  }
 };
 
 window.vacancyDeletePermanently = function(id){
   const v = vacanciesData.find(x=>x.id===id);
   if(!v) return;
-  appConfirmShow({title:'Delete Permanently', msg:`Delete "${v.title}" permanently? This can't be undone.`, onOk:()=>{
+  appConfirmShow({title:'Delete Permanently', msg:`Delete "${v.title}" permanently? This can't be undone.`, onOk: async ()=>{
     vacanciesData = vacanciesData.filter(x=>x.id!==id);
     vacanciesRender();
     vacancyDetailClose();
     toast('Vacancy deleted permanently');
+    if(v.dbId){
+      const { error } = await sb.from('job_vacancies').delete().eq('id', v.dbId);
+      if(error) console.warn('Could not delete vacancy from Supabase', error);
+    }
   }});
 };
 
@@ -10892,7 +10958,7 @@ function kitchenDeleteAllergenDish(id){
 }
 // ── INIT ──
 window.addEventListener('keydown',e=>{if(e.key==='Enter'&&document.getElementById('login').style.display!=='none')doLogin();});
-window.addEventListener('load',async ()=>{ initCurrency(); await announceLoadFromSupabase(); announceRender(); await djSchedLoadFromSupabase(); djSchedRender(); await momentsLoadFromSupabase(); momentsRebuild(); await sandboxLoadFromSupabase(); sandboxRender(); await quickLinksLoadFromSupabase(); quickLinksRender(); await myDriveLoadFromSupabase(); myDriveRender(); await sopLoadFromSupabase(); sopRenderDeptList(); await suggestionLoadFromSupabase(); suggestionRenderList(); await vendorLoadFromSupabase(); vendorRenderDepts(); await customerLoadFromSupabase(); customerRenderList(); });
+window.addEventListener('load',async ()=>{ initCurrency(); await announceLoadFromSupabase(); announceRender(); await djSchedLoadFromSupabase(); djSchedRender(); await momentsLoadFromSupabase(); momentsRebuild(); await sandboxLoadFromSupabase(); sandboxRender(); await quickLinksLoadFromSupabase(); quickLinksRender(); await myDriveLoadFromSupabase(); myDriveRender(); await sopLoadFromSupabase(); sopRenderDeptList(); await suggestionLoadFromSupabase(); suggestionRenderList(); await vendorLoadFromSupabase(); vendorRenderDepts(); await customerLoadFromSupabase(); customerRenderList(); await vacanciesLoadFromSupabase(); vacanciesRender(); });
 
 // ── ANNOUNCEMENTS ──
 const announcements = [

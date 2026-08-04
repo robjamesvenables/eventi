@@ -2652,24 +2652,6 @@ img.emoji-tw{width:1.15em;height:1.15em;vertical-align:-0.2em;margin:0 1px}
       <!-- My Drive — top row solo -->
 
       <!-- TEAM POLL -->
-      <div class="poll-wrap" id="poll-wrap" style="background:white;border:1.5px solid #87909A;border-radius:14px;box-shadow:0 2px 8px rgba(0,0,0,0.06);overflow:hidden;margin-top:20px;margin-bottom:16px">
-        <div class="mobile-collapse-toggle" onclick="mobileToggleSection('poll-collapsible','poll-chevron')" style="background:#0F1E2E;padding:8px 14px;height:44px;box-sizing:border-box;display:flex;align-items:center;justify-content:space-between;cursor:pointer">
-          <div style="display:flex;align-items:center;gap:8px;color:white;font-weight:800;font-size:13px;text-transform:uppercase;letter-spacing:1px">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
-            Team Poll
-          </div>
-          <div style="display:flex;align-items:center;gap:8px">
-            <button id="poll-edit-btn" onclick="event.stopPropagation();pollEdit()" title="Edit poll" style="display:none;width:28px;height:28px;background:rgba(255,255,255,0.12);border:none;border-radius:7px;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0">
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="white"><circle cx="12" cy="5" r="2.2"/><circle cx="12" cy="12" r="2.2"/><circle cx="12" cy="19" r="2.2"/></svg>
-            </button>
-            <button onclick="event.stopPropagation();pollNew()" style="height:28px;padding:0 14px;background:rgba(255,255,255,0.12);border:none;border-radius:7px;font-family:'Inter',sans-serif;font-size:12px;font-weight:700;color:white;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0">+ New Poll</button>
-            <svg id="poll-chevron" class="mobile-collapse-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
-          </div>
-        </div>
-        <div id="poll-collapsible" class="mobile-collapsible-body">
-          <div id="poll-body" style="padding:20px 20px 22px"></div>
-        </div>
-      </div>
       </div>
 
       <!-- TEAM CHAT (right panel) -->
@@ -4429,7 +4411,7 @@ function nav(id, pushState=true){
   if(id==='notes'){mnGoToday();}
   if(id==='cal'){calRender();}
   if(id==='djsched'){djSchedRender();}
-  if(id==='home'){initHome(); announceRender(); pollRender();}
+  if(id==='home'){initHome(); announceRender();}
   if(id==='quicklinks'){quickLinksRender();}
   if(id==='sandbox'){sandboxRender();}
   if(id==='music'){musicRender();}
@@ -4479,125 +4461,6 @@ function nav(id, pushState=true){
 
 // ── TEAM POLL ──
 const POLL_COLORS = ['#0D9488','#2563EB','#C4973B','#A78BFA','#EF4444'];
-let pollData = null;
-let pollDbId = null;
-let pollMyVote = null;
-
-// ── TEAM POLL (wired to Supabase - clean slate, no info until a poll is added) ──
-async function pollLoadFromSupabase(){
-  try{
-    const { data, error } = await sb.from('team_poll').select('*').order('created_at', { ascending: false }).limit(1);
-    if(error) throw error;
-    if(data && data.length){
-      pollData = { question: data[0].question, options: data[0].options || [] };
-      pollDbId = data[0].id;
-    } else {
-      pollData = null;
-      pollDbId = null;
-    }
-  } catch(e){
-    console.warn('Team Poll Supabase load failed', e);
-  }
-}
-
-function pollTotalVotes(){
-  return pollData.options.reduce((sum,o)=>sum+o.votes.length, 0);
-}
-
-function pollRender(){
-  const body = document.getElementById('poll-body');
-  const wrap = document.getElementById('poll-wrap');
-  const editBtn = document.getElementById('poll-edit-btn');
-  if(!body) return;
-
-  if(editBtn) editBtn.style.display = pollData ? 'flex' : 'none';
-
-  if(!pollData){
-    // Compact empty state - no tall awkward blank card
-    body.style.padding = '18px 20px';
-    body.innerHTML = `<div style="text-align:center;color:#94A3B8;font-size:12.5px">No active poll — tap <strong style="color:#64748B">+ New Poll</strong> to start one</div>`;
-    return;
-  }
-  body.style.padding = '20px 20px 22px';
-
-  const total = pollTotalVotes();
-  const me = currentUserFirstName || 'You';
-
-  // Detect if the current user already has a vote recorded (keeps state correct across re-renders)
-  const votedOpt = pollData.options.find(o => o.votes.includes(me));
-  pollMyVote = votedOpt ? votedOpt.id : null;
-
-  let html = `<div style="font-size:15px;font-weight:800;color:#0F1E2E;margin-bottom:16px;line-height:1.4">${pollData.question}</div>`;
-
-  if(pollMyVote === null){
-    // Voting view - tappable option rows
-    html += pollData.options.map((o,i) => `
-      <button onclick="pollVote(${o.id})" style="display:flex;align-items:center;gap:12px;width:100%;text-align:left;padding:13px 16px;margin-bottom:8px;border:1.5px solid #E2E8F0;border-radius:10px;background:white;cursor:pointer;font-family:'Inter',sans-serif;transition:all 0.15s" onmouseover="this.style.borderColor='${POLL_COLORS[i%POLL_COLORS.length]}';this.style.background='${POLL_COLORS[i%POLL_COLORS.length]}0D'" onmouseout="this.style.borderColor='#E2E8F0';this.style.background='white'">
-        <span style="width:18px;height:18px;border-radius:50%;border:2px solid ${POLL_COLORS[i%POLL_COLORS.length]};flex-shrink:0"></span>
-        <span style="font-size:13.5px;font-weight:600;color:#0F1E2E">${o.label}</span>
-      </button>`).join('');
-  } else {
-    // Results view - coloured bars
-    html += pollData.options.map((o,i) => {
-      const pct = total > 0 ? Math.round((o.votes.length/total)*100) : 0;
-      const isMine = o.id === pollMyVote;
-      const color = POLL_COLORS[i%POLL_COLORS.length];
-      return `
-      <div onclick="pollVote(${o.id})" style="cursor:pointer;margin-bottom:12px" title="Tap to change your vote">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:5px">
-          <span style="font-size:13px;font-weight:700;color:#0F1E2E;display:flex;align-items:center;gap:6px">
-            ${o.label}
-            ${isMine ? `<span style="color:${color};font-size:11px;font-weight:800">✓ Your vote</span>` : ''}
-          </span>
-          <span style="font-size:12px;font-weight:700;color:#64748B">${pct}% · ${o.votes.length}</span>
-        </div>
-        <div style="height:8px;background:#F1F5F9;border-radius:20px;overflow:hidden">
-          <div style="height:100%;width:${pct}%;background:${color};border-radius:20px;transition:width 0.4s ease"></div>
-        </div>
-      </div>`;
-    }).join('');
-    html += `<div style="font-size:11.5px;color:#94A3B8;margin-top:8px">${total} vote${total===1?'':'s'} · tap an option to change your vote</div>`;
-  }
-
-  html += `<div style="text-align:right;margin-top:14px"><span onclick="pollClear()" style="font-size:11.5px;font-weight:600;color:#94A3B8;cursor:pointer">🗑 Clear Poll</span></div>`;
-
-  body.innerHTML = html;
-}
-
-window.pollClear = function(){
-  appConfirmShow({title:'Clear Poll', msg:'Remove this poll and all its votes? This can\'t be undone.', onOk: async ()=>{
-    const idToDelete = pollDbId;
-    pollData = null;
-    pollMyVote = null;
-    pollDbId = null;
-    pollRender();
-    toast('Poll cleared');
-    if(idToDelete){
-      const { error } = await sb.from('team_poll').delete().eq('id', idToDelete);
-      if(error) console.warn('Could not delete poll from Supabase', error);
-    }
-  }});
-};
-
-window.pollVote = function(id){
-  if(!pollData) return;
-  const me = currentUserFirstName || 'You';
-  pollData.options.forEach(o => { o.votes = o.votes.filter(v => v !== me); });
-  if(pollMyVote !== id){
-    const opt = pollData.options.find(o=>o.id===id);
-    if(opt) opt.votes.push(me);
-    pollMyVote = id;
-    toast('Vote counted ✓');
-  } else {
-    pollMyVote = null;
-  }
-  pollRender();
-  if(pollDbId){
-    sb.from('team_poll').update({ options: pollData.options, updated_at: new Date().toISOString() }).eq('id', pollDbId)
-      .then(({error}) => { if(error) console.warn('Could not save vote to Supabase', error); });
-  }
-};
-
 const POLL_MAX_OPTIONS = 12;
 
 function pollOptFieldHtml(n){
@@ -4606,39 +4469,6 @@ function pollOptFieldHtml(n){
     ${n>2 ? `<button onclick="this.closest('.poll-opt-field').remove();pollUpdateAddBtnState()" title="Remove option" style="padding:0 12px;background:none;border:none;color:#EF4444;font-size:18px;cursor:pointer">×</button>` : ''}
   </div>`;
 }
-
-let pollModalMode = 'new';
-
-window.pollNew = function(){
-  pollModalMode = 'new';
-  document.getElementById('pollModalTitle').textContent = 'New Team Poll';
-  document.getElementById('pollModalSubmitBtn').textContent = 'Post Poll';
-  const fields = document.getElementById('pollOptFields');
-  fields.innerHTML = pollOptFieldHtml(1) + pollOptFieldHtml(2);
-  document.getElementById('pollQInput').value = '';
-  pollUpdateAddBtnState();
-  document.getElementById('pollModal').style.display = 'flex';
-  setTimeout(()=>document.getElementById('pollQInput').focus(), 50);
-};
-
-window.pollEdit = function(){
-  if(!pollData) return;
-  pollModalMode = 'edit';
-  document.getElementById('pollModalTitle').textContent = 'Edit Team Poll';
-  document.getElementById('pollModalSubmitBtn').textContent = 'Save Changes';
-  const fields = document.getElementById('pollOptFields');
-  fields.innerHTML = pollData.options.map((o,i) => pollOptFieldHtml(i+1)).join('');
-  document.getElementById('pollQInput').value = pollData.question;
-  const inputs = document.querySelectorAll('.poll-opt-input');
-  pollData.options.forEach((o,i) => { if(inputs[i]) inputs[i].value = o.label; });
-  pollUpdateAddBtnState();
-  document.getElementById('pollModal').style.display = 'flex';
-  setTimeout(()=>document.getElementById('pollQInput').focus(), 50);
-};
-
-window.pollModalClose = function(){
-  document.getElementById('pollModal').style.display = 'none';
-};
 
 window.pollAddOptionField = function(){
   const count = document.querySelectorAll('.poll-opt-field').length;
@@ -4658,48 +4488,35 @@ function pollUpdateAddBtnState(){
   }
 }
 
-window.pollSubmitNew = async function(){
-  const q = document.getElementById('pollQInput').value.trim();
-  if(!q){ toast('Add a question first'); return; }
-  const inputs = Array.from(document.querySelectorAll('.poll-opt-input'));
-  const labels = inputs.map(i=>i.value.trim()).filter(Boolean);
-  if(labels.length < 2){ toast('Add at least 2 options'); return; }
+// ── Team Poll is now a post type inside Team Feed (not a separate widget) ──
+let announceComposeMode = 'post';
 
-  if(pollModalMode === 'edit' && pollData){
-    const oldOptions = pollData.options;
-    const maxOldId = Math.max(0, ...oldOptions.map(o=>o.id));
-    const newOptions = labels.map((label, i) => {
-      const existing = oldOptions[i];
-      return existing ? {...existing, label} : {id: maxOldId + i + 1, label, votes: []};
-    });
-    pollData.question = q;
-    pollData.options = newOptions;
-    pollMyVote = null;
-    pollRender();
-    pollModalClose();
-    toast('Poll updated ✓');
-    if(pollDbId){
-      const { error } = await sb.from('team_poll').update({ question: q, options: newOptions, updated_at: new Date().toISOString() }).eq('id', pollDbId);
-      if(error) console.warn('Could not save poll edit to Supabase', error);
+window.announceSetComposeMode = function(mode){
+  announceComposeMode = mode;
+  const postBtn = document.getElementById('announce-mode-post-btn');
+  const pollBtn = document.getElementById('announce-mode-poll-btn');
+  const postFields = document.getElementById('announce-post-fields');
+  const pollFields = document.getElementById('announce-poll-fields');
+  const submitBtn = document.getElementById('announce-submit-btn');
+  if(mode === 'poll'){
+    postBtn.style.cssText = 'flex:1;padding:9px;border-radius:8px;font-family:\'Inter\',sans-serif;font-size:12.5px;font-weight:700;cursor:pointer;border:1.5px solid #E2E8F0;background:white;color:#64748B';
+    pollBtn.style.cssText = 'flex:1;padding:9px;border-radius:8px;font-family:\'Inter\',sans-serif;font-size:12.5px;font-weight:700;cursor:pointer;border:1.5px solid #0F1E2E;background:#0F1E2E;color:white';
+    postFields.style.display = 'none';
+    pollFields.style.display = 'block';
+    submitBtn.textContent = 'Post Poll';
+    if(!document.querySelectorAll('.poll-opt-field').length){
+      document.getElementById('pollOptFields').innerHTML = pollOptFieldHtml(1) + pollOptFieldHtml(2);
+      pollUpdateAddBtnState();
     }
-    return;
-  }
-
-  const opts = labels.map((label,i)=>({id:i+1, label, votes:[]}));
-  pollData = {question: q, options: opts};
-  pollMyVote = null;
-  pollRender();
-  pollModalClose();
-  toast('New poll posted ✓');
-  try{
-    const { data, error } = await sb.from('team_poll').insert({ question: q, options: opts }).select().single();
-    if(error) throw error;
-    pollDbId = data.id;
-  } catch(e){
-    console.warn('Could not save new poll to Supabase', e);
-    toast('Poll saved locally but not synced - check your connection');
+  } else {
+    postBtn.style.cssText = 'flex:1;padding:9px;border-radius:8px;font-family:\'Inter\',sans-serif;font-size:12.5px;font-weight:700;cursor:pointer;border:1.5px solid #0F1E2E;background:#0F1E2E;color:white';
+    pollBtn.style.cssText = 'flex:1;padding:9px;border-radius:8px;font-family:\'Inter\',sans-serif;font-size:12.5px;font-weight:700;cursor:pointer;border:1.5px solid #E2E8F0;background:white;color:#64748B';
+    postFields.style.display = 'block';
+    pollFields.style.display = 'none';
+    submitBtn.textContent = announceEditId !== null ? 'Save Changes' : 'Post';
   }
 };
+
 
 function initHome(){
   const now = new Date();
@@ -10958,7 +10775,7 @@ function kitchenDeleteAllergenDish(id){
 }
 // ── INIT ──
 window.addEventListener('keydown',e=>{if(e.key==='Enter'&&document.getElementById('login').style.display!=='none')doLogin();});
-window.addEventListener('load',async ()=>{ initCurrency(); await announceLoadFromSupabase(); announceRender(); await djSchedLoadFromSupabase(); djSchedRender(); await momentsLoadFromSupabase(); momentsRebuild(); await pollLoadFromSupabase(); pollRender(); });
+window.addEventListener('load',async ()=>{ initCurrency(); await announceLoadFromSupabase(); announceRender(); await djSchedLoadFromSupabase(); djSchedRender(); await momentsLoadFromSupabase(); momentsRebuild(); });
 
 // ── ANNOUNCEMENTS ──
 const announcements = [
@@ -11068,6 +10885,7 @@ async function announceLoadFromSupabase(){
           ts: new Date(row.created_at).getTime(),
           dbId: row.id,
           replyCount: 0,
+          pollOptions: row.poll_options || null,
           pinnedAt: row.pinned_at ? new Date(row.pinned_at).getTime() : null
         });
       });
@@ -11091,6 +10909,59 @@ async function announceLoadFromSupabase(){
   }
   announceLoadedFromDb = true;
 }
+
+function announcePollHtml(a){
+  const me = currentUserFirstName || 'You';
+  const total = a.pollOptions.reduce((sum,o)=>sum+o.votes.length, 0);
+  const myVote = a.pollOptions.find(o => o.votes.includes(me));
+  let html = `<div style="font-size:15px;font-weight:800;color:#0F1E2E;margin-bottom:14px;line-height:1.4">${announceStyleEmojis(a.text)}</div>`;
+  if(!myVote){
+    html += a.pollOptions.map((o,i) => `
+      <button onclick="event.stopPropagation();announcePollVote(${a.id},${o.id})" style="display:flex;align-items:center;gap:12px;width:100%;text-align:left;padding:12px 15px;margin-bottom:7px;border:1.5px solid #E2E8F0;border-radius:9px;background:white;cursor:pointer;font-family:'Inter',sans-serif">
+        <span style="width:16px;height:16px;border-radius:50%;border:2px solid ${POLL_COLORS[i%POLL_COLORS.length]};flex-shrink:0"></span>
+        <span style="font-size:13px;font-weight:600;color:#0F1E2E">${o.label}</span>
+      </button>`).join('');
+  } else {
+    html += a.pollOptions.map((o,i) => {
+      const pct = total > 0 ? Math.round((o.votes.length/total)*100) : 0;
+      const isMine = o.id === myVote.id;
+      const color = POLL_COLORS[i%POLL_COLORS.length];
+      return `
+      <div onclick="event.stopPropagation();announcePollVote(${a.id},${o.id})" style="cursor:pointer;margin-bottom:10px" title="Tap to change your vote">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
+          <span style="font-size:12.5px;font-weight:700;color:#0F1E2E;display:flex;align-items:center;gap:6px">
+            ${o.label}
+            ${isMine ? `<span style="color:${color};font-size:10.5px;font-weight:800">✓ Your vote</span>` : ''}
+          </span>
+          <span style="font-size:11.5px;font-weight:700;color:#64748B">${pct}% · ${o.votes.length}</span>
+        </div>
+        <div style="height:7px;background:#F1F5F9;border-radius:20px;overflow:hidden">
+          <div style="height:100%;width:${pct}%;background:${color};border-radius:20px;transition:width 0.4s ease"></div>
+        </div>
+      </div>`;
+    }).join('');
+    html += `<div style="font-size:11px;color:#94A3B8;margin-top:6px">${total} vote${total===1?'':'s'} · tap an option to change your vote</div>`;
+  }
+  return html;
+}
+
+window.announcePollVote = function(postId, optionId){
+  const a = announcements.find(a=>a.id===postId);
+  if(!a || !a.pollOptions) return;
+  const me = currentUserFirstName || 'You';
+  const alreadyVoted = a.pollOptions.find(o=>o.id===optionId && o.votes.includes(me));
+  a.pollOptions.forEach(o => { o.votes = o.votes.filter(v => v !== me); });
+  if(!alreadyVoted){
+    const opt = a.pollOptions.find(o=>o.id===optionId);
+    if(opt) opt.votes.push(me);
+    toast('Vote counted ✓');
+  }
+  announceRender();
+  if(a.dbId){
+    sb.from('announcements').update({ poll_options: a.pollOptions }).eq('id', a.dbId)
+      .then(({error}) => { if(error) console.warn('Could not save vote to Supabase', error); });
+  }
+};
 
 function announceReactionBarHtml(id){
   const a = announcements.find(a=>a.id===id);
@@ -11156,6 +11027,7 @@ function announceRender(){
     const initial = a.by ? a.by.charAt(0).toUpperCase() : '?';
     const isExpanded = announceExpandedReplies.has(a.id);
     const repliesHtml = isExpanded ? announceInlineRepliesHtml(a) : '';
+    const bodyHtml = a.pollOptions ? announcePollHtml(a) : `${styledText}${imgHtml ? `<div style="margin:12px -16px 0">${imgHtml}</div>` : ''}`;
     return `
       <div class="announce-card">
         <div class="announce-card-body">
@@ -11167,8 +11039,7 @@ function announceRender(){
               <span class="announce-card-meta">${a.time}</span>
             </div>
           </div>
-          <div class="announce-card-text">${styledText}</div>
-          ${imgHtml ? `<div style="margin:12px -16px 0">${imgHtml}</div>` : ''}
+          <div class="announce-card-text">${bodyHtml}</div>
           <div style="margin-top:12px">${announceReactionBarHtml(a.id)}</div>
           <div style="margin-top:8px;font-size:12.5px;color:#64748B;font-weight:600;cursor:pointer" onclick="announceToggleReplies(${a.id})">
             ${a.replyCount > 0 ? `💬 ${a.replyCount} repl${a.replyCount===1?'y':'ies'}` : 'Reply'}${isExpanded ? ' ▲' : ' ▼'}
@@ -11272,6 +11143,7 @@ function announceOpenModal(title, text, tag, link, photo){
   document.getElementById('announce-modal').style.display = 'flex';
   announceModalOpen = true;
   announceAutoScrollPaused = true;
+  announceSetComposeMode('post');
   announceUpdatePhotoPreview();
   announceRenderTags();
   announceRenderEmojis();
@@ -11360,6 +11232,47 @@ window.announceCloseModal = function(){
 };
 
 window.announceSubmit = async function(){
+  if(announceComposeMode === 'poll'){
+    const q = document.getElementById('pollQInput').value.trim();
+    if(!q){ toast('Add a question first'); return; }
+    const inputs = Array.from(document.querySelectorAll('.poll-opt-input'));
+    const labels = inputs.map(i=>i.value.trim()).filter(Boolean);
+    if(labels.length < 2){ toast('Add at least 2 options'); return; }
+
+    if(announceEditId!==null){
+      const a = announcements.find(a=>a.id===announceEditId);
+      if(a){
+        const oldOptions = a.pollOptions || [];
+        const maxOldId = Math.max(0, ...oldOptions.map(o=>o.id));
+        const newOptions = labels.map((label, i) => {
+          const existing = oldOptions[i];
+          return existing ? {...existing, label} : {id: maxOldId + i + 1, label, votes: []};
+        });
+        a.text = q;
+        a.pollOptions = newOptions;
+        if(a.dbId){
+          const { error } = await sb.from('announcements').update({ text: q, poll_options: newOptions }).eq('id', a.dbId);
+          if(error) console.warn('Supabase poll update failed', error);
+        }
+      }
+      toast('Poll updated ✓');
+    } else {
+      const opts = labels.map((label,i)=>({id:i+1, label, votes:[]}));
+      const now = new Date();
+      const time = 'Today, '+now.getHours()+':'+String(now.getMinutes()).padStart(2,'0');
+      const newPost = {id:announceNextId++, text:q, tag:'Info', link:'', photo:'', pollOptions:opts, color:'#0D9488', tagBg:'#CCFBF1', tagColor:'#065F46', by:'John', time, ts:Date.now()};
+      const insertAt = announcements.findIndex(a => !a.pinned);
+      announcements.splice(insertAt === -1 ? announcements.length : insertAt, 0, newPost);
+      const { data, error } = await sb.from('announcements').insert({ text: q, tag: 'Info', by_name: 'John', poll_options: opts }).select().single();
+      if(error) console.warn('Supabase poll insert failed', error);
+      else { newPost.dbId = data.id; newPost.id = data.id; }
+      toast('Poll posted ✓');
+    }
+    announceCloseModal();
+    announceRender();
+    return;
+  }
+
   const text = announceExtractText();
   if(!text){ toast('Please write something first'); return; }
   const link = document.getElementById('announce-link').value.trim();
@@ -11398,7 +11311,18 @@ window.announceEdit = function(id){
   const a = announcements.find(a=>a.id===id);
   if(!a) return;
   announceEditId = id;
-  announceOpenModal('Edit Announcement', a.text, a.tag, a.link, a.photo);
+  if(a.pollOptions){
+    announceOpenModal('Edit Poll','','Info','','');
+    announceSetComposeMode('poll');
+    document.getElementById('pollQInput').value = a.text;
+    document.getElementById('pollOptFields').innerHTML = a.pollOptions.map((o,i) => pollOptFieldHtml(i+1)).join('');
+    const inputs = document.querySelectorAll('.poll-opt-input');
+    a.pollOptions.forEach((o,i) => { if(inputs[i]) inputs[i].value = o.label; });
+    pollUpdateAddBtnState();
+    document.getElementById('announce-submit-btn').textContent = 'Save Changes';
+  } else {
+    announceOpenModal('Edit Announcement', a.text, a.tag, a.link, a.photo);
+  }
 };
 
 let announceDetailCurrentId = null;
@@ -13574,7 +13498,12 @@ window.nav = function(id, pushState){
   <style>#announce-input:empty:before{content:attr(data-placeholder);color:#94A3B8}</style>
   <div style="background:white;border-radius:16px;padding:32px;width:480px;max-width:90vw;box-shadow:0 24px 64px rgba(0,0,0,0.2)">
     <div style="font-size:17px;font-weight:800;color:#0F1E2E;margin-bottom:6px" id="announce-modal-title">Post Announcement</div>
-    <div style="font-size:13px;color:#94A3B8;margin-bottom:20px">Visible to everyone on the team</div>
+    <div style="font-size:13px;color:#94A3B8;margin-bottom:16px">Visible to everyone on the team</div>
+    <div style="display:flex;gap:8px;margin-bottom:18px" id="announce-mode-toggle">
+      <button id="announce-mode-post-btn" onclick="announceSetComposeMode('post')" style="flex:1;padding:9px;border-radius:8px;font-family:'Inter',sans-serif;font-size:12.5px;font-weight:700;cursor:pointer;border:1.5px solid #0F1E2E;background:#0F1E2E;color:white">📝 Post</button>
+      <button id="announce-mode-poll-btn" onclick="announceSetComposeMode('poll')" style="flex:1;padding:9px;border-radius:8px;font-family:'Inter',sans-serif;font-size:12.5px;font-weight:700;cursor:pointer;border:1.5px solid #E2E8F0;background:white;color:#64748B">📊 Poll</button>
+    </div>
+    <div id="announce-post-fields">
     <div id="announce-input" contenteditable="true" data-placeholder="Write your announcement here..." style="width:100%;min-height:90px;max-height:160px;overflow-y:auto;padding:14px;border:1.5px solid #E2E8F0;border-radius:10px;font-family:'Inter',sans-serif;font-size:14px;color:#0F1E2E;outline:none;line-height:1.6;box-sizing:border-box"></div>
     <div id="announce-emojis" style="display:flex;align-items:center;gap:6px;padding:8px 2px 0"></div>
     <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;color:#94A3B8;margin:16px 0 8px">Photo (optional)</div>
@@ -13592,8 +13521,16 @@ window.nav = function(id, pushState){
     <input id="announce-link" type="text" placeholder="https://..." style="width:100%;padding:11px 14px;border:1.5px solid #E2E8F0;border-radius:9px;font-family:'Inter',sans-serif;font-size:13px;color:#0F1E2E;outline:none;box-sizing:border-box">
     <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;color:#94A3B8;margin:16px 0 10px">Tag</div>
     <div id="announce-tags" style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:24px"></div>
+    </div>
+    <div id="announce-poll-fields" style="display:none">
+      <div style="font-size:11px;font-weight:700;color:#94A3B8;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px">Question</div>
+      <input id="pollQInput" type="text" placeholder="e.g. What's the best time for team lunch?" style="width:100%;padding:11px 14px;border:1.5px solid #E2E8F0;border-radius:9px;font-family:'Inter',sans-serif;font-size:13px;margin-bottom:18px;box-sizing:border-box;outline:none">
+      <div style="font-size:11px;font-weight:700;color:#94A3B8;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px">Options</div>
+      <div id="pollOptFields"></div>
+      <button id="pollAddOptBtn" onclick="pollAddOptionField()" style="width:100%;padding:9px;background:none;border:1.5px dashed #E2E8F0;border-radius:8px;font-family:'Inter',sans-serif;font-size:12px;font-weight:600;color:#64748B;cursor:pointer;margin-top:2px;margin-bottom:24px">+ Add Option</button>
+    </div>
     <div style="display:flex;gap:10px">
-      <button onclick="announceSubmit()" style="flex:1;padding:13px;background:#0F1E2E;border:none;border-radius:9px;font-family:'Inter',sans-serif;font-size:14px;font-weight:700;color:white;cursor:pointer">Post</button>
+      <button id="announce-submit-btn" onclick="announceSubmit()" style="flex:1;padding:13px;background:#0F1E2E;border:none;border-radius:9px;font-family:'Inter',sans-serif;font-size:14px;font-weight:700;color:white;cursor:pointer">Post</button>
       <button onclick="announceCloseModal()" style="padding:13px 20px;background:#F1F5F9;border:none;border-radius:9px;font-family:'Inter',sans-serif;font-size:14px;font-weight:600;color:#64748B;cursor:pointer">Cancel</button>
     </div>
   </div>
@@ -14203,21 +14140,6 @@ document.addEventListener('DOMContentLoaded', initCardColours);
 
 <!-- ── REUSABLE INPUT MODAL ── -->
 <!-- ── NEW POLL MODAL (dynamic options, up to 12) ── -->
-<div id="pollModal" style="display:none;position:fixed;inset:0;background:rgba(15,30,46,0.55);z-index:10000;align-items:center;justify-content:center" onclick="if(event.target===this)pollModalClose()">
-  <div style="background:white;border-radius:16px;padding:28px;width:100%;max-width:420px;margin:0 20px;box-shadow:0 20px 60px rgba(0,0,0,0.2);max-height:90vh;overflow-y:auto">
-    <div id="pollModalTitle" style="font-size:16px;font-weight:800;color:#0F1E2E;margin-bottom:18px">New Team Poll</div>
-    <div style="font-size:11px;font-weight:700;color:#94A3B8;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px">Question</div>
-    <input id="pollQInput" type="text" placeholder="e.g. What's the best time for team lunch?" style="width:100%;padding:11px 14px;border:1.5px solid #E2E8F0;border-radius:9px;font-family:'Inter',sans-serif;font-size:13px;margin-bottom:18px;box-sizing:border-box;outline:none">
-    <div style="font-size:11px;font-weight:700;color:#94A3B8;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px">Options</div>
-    <div id="pollOptFields"></div>
-    <button id="pollAddOptBtn" onclick="pollAddOptionField()" style="width:100%;padding:9px;background:none;border:1.5px dashed #E2E8F0;border-radius:8px;font-family:'Inter',sans-serif;font-size:12px;font-weight:600;color:#64748B;cursor:pointer;margin-top:2px">+ Add Option</button>
-    <div style="display:flex;gap:10px;margin-top:20px">
-      <button id="pollModalSubmitBtn" onclick="pollSubmitNew()" style="flex:1;padding:12px;background:#0F1E2E;border:none;border-radius:9px;font-family:'Inter',sans-serif;font-size:14px;font-weight:700;color:white;cursor:pointer">Post Poll</button>
-      <button onclick="pollModalClose()" style="padding:12px 20px;background:#F1F5F9;border:none;border-radius:9px;font-family:'Inter',sans-serif;font-size:14px;font-weight:600;color:#64748B;cursor:pointer">Cancel</button>
-    </div>
-  </div>
-</div>
-
 <div id="sopEditOverlay" style="display:none;position:fixed;inset:0;background:rgba(15,30,46,0.55);z-index:10000;align-items:center;justify-content:center;padding:20px;box-sizing:border-box" onclick="if(event.target===this)sopEditClose()">
   <div style="background:white;border-radius:16px;padding:24px;width:100%;max-width:640px;box-shadow:0 20px 60px rgba(0,0,0,0.2);max-height:90vh;overflow-y:auto;box-sizing:border-box">
     <div style="font-size:16px;font-weight:800;color:#0F1E2E;margin-bottom:18px">Edit SOP</div>

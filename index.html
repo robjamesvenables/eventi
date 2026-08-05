@@ -12546,9 +12546,12 @@ function chatRenderDashboardList(){
 }
 
 // Keep the dashboard chat widget synced even before the full Chat page is opened.
+// Must load real saved conversations first, or this renders the hardcoded 1-item
+// placeholder until the full Chat page is opened at least once.
 if(document.readyState === 'loading'){
-  document.addEventListener('DOMContentLoaded', chatRenderDashboardList);
+  document.addEventListener('DOMContentLoaded', () => { chatLoadLocal(); chatRenderDashboardList(); });
 } else {
+  chatLoadLocal();
   chatRenderDashboardList();
 }
 

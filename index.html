@@ -14559,7 +14559,10 @@ async function momentsLoadFromSupabase(){
 
     // Legacy rows saved before the thumb column existed have no thumb value, and the
     // lean query above doesn't fetch the full photo either - without this they'd show
-    // as blank circles until individually re-saved. One small extra query patches them.
+    // as blank circles until individually re-saved. One small extra query patches them
+    // for this load, AND permanently backfills a real small thumb in the background so
+    // every future load (any device) is fast for these rows too - one-time, automatic,
+    // no action needed from Robbie.
     const legacyIds = momentsData.filter(m => !m.thumb).map(m => m.dbId);
     if(legacyIds.length){
       const { data: legacyRows } = await sb.from('highlights').select('id, img').in('id', legacyIds);
@@ -14567,6 +14570,17 @@ async function momentsLoadFromSupabase(){
         legacyRows.forEach(row => {
           const m = momentsData.find(x => x.dbId === row.id);
           if(m){ m.thumb = row.img; m.img = row.img; }
+        });
+        // Fire-and-forget: don't block this page load waiting for the backfill.
+        legacyRows.forEach(async row => {
+          try{
+            const smallThumb = await appDataUrlToThumb(row.img);
+            if(smallThumb){
+              await sb.from('highlights').update({ thumb: smallThumb }).eq('id', row.id);
+            }
+          } catch(e){
+            console.warn('Highlight thumb backfill failed for row', row.id, e);
+          }
         });
       }
     }

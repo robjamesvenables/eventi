@@ -15146,13 +15146,22 @@ async function momentsLoadFromSupabase(){
     // for this load, AND permanently backfills a real small thumb in the background so
     // every future load (any device) is fast for these rows too - one-time, automatic,
     // no action needed from Robbie.
+    //
+    // Also catches highlights uploaded before the thumb resolution was increased
+    // (260px -> 480px, fixing the "blurry until you click it" report): old thumbs are
+    // reliably smaller than new ones, so a simple length check finds them without
+    // decoding every image. Once upgraded, the new thumb is long enough that it never
+    // re-triggers - this naturally self-terminates per row.
+    const OLD_THUMB_LEN_THRESHOLD = 40000;
     const legacyIds = momentsData.filter(m => !m.thumb).map(m => m.dbId);
-    if(legacyIds.length){
-      const { data: legacyRows } = await sb.from('highlights').select('id, img').in('id', legacyIds);
+    const staleIds = momentsData.filter(m => m.thumb && m.thumb.length < OLD_THUMB_LEN_THRESHOLD).map(m => m.dbId);
+    const upgradeIds = [...new Set([...legacyIds, ...staleIds])];
+    if(upgradeIds.length){
+      const { data: legacyRows } = await sb.from('highlights').select('id, img').in('id', upgradeIds);
       if(legacyRows){
         legacyRows.forEach(row => {
           const m = momentsData.find(x => x.dbId === row.id);
-          if(m){ m.thumb = row.img; m.img = row.img; }
+          if(m && !m.thumb){ m.thumb = row.img; m.img = row.img; }
         });
         // Fire-and-forget: don't block this page load waiting for the backfill.
         legacyRows.forEach(async row => {
@@ -15160,6 +15169,8 @@ async function momentsLoadFromSupabase(){
             const smallThumb = await appDataUrlToThumb(row.img);
             if(smallThumb){
               await sb.from('highlights').update({ thumb: smallThumb }).eq('id', row.id);
+              const m = momentsData.find(x => x.dbId === row.id);
+              if(m) m.thumb = smallThumb;
             }
           } catch(e){
             console.warn('Highlight thumb backfill failed for row', row.id, e);
@@ -16004,7 +16015,7 @@ function appFileToDataUrls(file){
     reader.readAsDataURL(file);
   });
 }
-function appDataUrlToThumb(dataUrl, maxDim=260, quality=0.65){
+function appDataUrlToThumb(dataUrl, maxDim=480, quality=0.8){
   return new Promise((resolve, reject)=>{
     if(!dataUrl){ resolve(''); return; }
     const img = new Image();

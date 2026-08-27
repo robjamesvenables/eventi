@@ -3010,31 +3010,31 @@ img.emoji-tw{width:1.15em;height:1.15em;vertical-align:-0.2em;margin:0 1px}
 
       <div style="font-size:11.5px;font-weight:800;color:#C4973B;text-transform:uppercase;letter-spacing:0.6px;margin:8px 0 12px">Revenue</div>
 
-      <div style="background:white;border:1px solid var(--line);border-radius:14px;padding:18px 20px;margin-bottom:14px">
+      <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;margin-bottom:14px">
+        <div style="background:white;border:1px solid var(--line);border-radius:14px;padding:16px 18px">
+          <div style="font-size:12px;font-weight:700;color:#64748B;margin-bottom:2px">This Week</div>
+          <div id="an-rev-week-val" style="font-size:20px;font-weight:800;color:#0F1E2E">—</div>
+          <div id="an-rev-week-delta" style="margin-top:4px;min-height:16px"></div>
+        </div>
+        <div style="background:white;border:1px solid var(--line);border-radius:14px;padding:16px 18px">
+          <div style="font-size:12px;font-weight:700;color:#64748B;margin-bottom:2px">This Month</div>
+          <div id="an-rev-month-val" style="font-size:20px;font-weight:800;color:#0F1E2E">—</div>
+          <div id="an-rev-month-delta" style="margin-top:4px;min-height:16px"></div>
+        </div>
+        <div style="background:white;border:1px solid var(--line);border-radius:14px;padding:16px 18px">
+          <div style="font-size:12px;font-weight:700;color:#64748B;margin-bottom:2px">This Year</div>
+          <div id="an-rev-year-val" style="font-size:20px;font-weight:800;color:#0F1E2E">—</div>
+          <div id="an-rev-year-delta" style="margin-top:4px;min-height:16px"></div>
+        </div>
+      </div>
+
+      <div style="background:white;border:1px solid var(--line);border-radius:14px;padding:18px 20px;margin-bottom:36px">
         <div style="font-size:12px;font-weight:700;color:#64748B;margin-bottom:2px">Revenue by month — this year vs last year</div>
         <div style="display:flex;gap:16px;margin:10px 0 6px;font-size:11.5px;color:#64748B">
           <span style="display:flex;align-items:center;gap:5px"><span style="width:9px;height:9px;border-radius:2px;background:#2a78d6"></span>This year</span>
           <span style="display:flex;align-items:center;gap:5px"><span style="width:9px;height:9px;border-radius:2px;background:#c3c2b7"></span>Last year</span>
         </div>
         <div style="position:relative;height:180px"><canvas id="an-rev-yoy"></canvas></div>
-      </div>
-
-      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px;margin-bottom:36px">
-        <div style="background:white;border:1px solid var(--line);border-radius:14px;padding:16px 18px">
-          <div style="font-size:12px;font-weight:700;color:#64748B;margin-bottom:2px">Revenue this month</div>
-          <div id="an-rev-month-val" style="font-size:20px;font-weight:800;color:#0F1E2E">—</div>
-          <div id="an-rev-month-delta" style="margin-top:4px"></div>
-        </div>
-        <div style="background:white;border:1px solid var(--line);border-radius:14px;padding:16px 18px">
-          <div style="font-size:12px;font-weight:700;color:#64748B;margin-bottom:2px">Revenue today</div>
-          <div id="an-rev-today-val" style="font-size:20px;font-weight:800;color:#0F1E2E">—</div>
-          <div id="an-rev-today-delta" style="margin-top:4px"></div>
-        </div>
-        <div style="background:white;border:1px solid var(--line);border-radius:14px;padding:16px 18px">
-          <div style="font-size:12px;font-weight:700;color:#64748B;margin-bottom:2px">Revenue this year</div>
-          <div id="an-rev-year-val" style="font-size:20px;font-weight:800;color:#0F1E2E">—</div>
-          <div style="font-size:11px;color:#94A3B8;margin-top:4px">year to date</div>
-        </div>
       </div>
 
       <div style="font-size:11.5px;font-weight:800;color:#C4973B;text-transform:uppercase;letter-spacing:0.6px;margin:8px 0 12px">Guests & Covers</div>
@@ -3131,7 +3131,8 @@ img.emoji-tw{width:1.15em;height:1.15em;vertical-align:-0.2em;margin:0 1px}
       </div>
 
       <div style="margin-top:36px">
-        <div style="font-size:11.5px;font-weight:800;color:#64748B;text-transform:uppercase;letter-spacing:0.6px;margin-bottom:12px">Recently Added</div>
+        <div style="font-size:11.5px;font-weight:800;color:#64748B;text-transform:uppercase;letter-spacing:0.6px;margin-bottom:2px">Recently Added</div>
+        <div style="font-size:11.5px;color:#94A3B8;margin-bottom:12px">Tap any entry to edit or delete it</div>
         <div id="reporting-recent-list"></div>
       </div>
     </div>
@@ -14247,19 +14248,72 @@ const BM_LABELS = { revenue:'Revenue', covers_served:'Covers Served', dept_spend
 function reportingRenderRecent(){
   const el = document.getElementById('reporting-recent-list');
   if(!el) return;
-  const recent = businessMetrics.slice().sort((a,b)=> (b.created_at||'').localeCompare(a.created_at||'')).slice(0,8);
+  const recent = businessMetrics.slice().sort((a,b)=> (b.created_at||'').localeCompare(a.created_at||'')).slice(0,20);
   if(!recent.length){
     el.innerHTML = '<div style="text-align:center;padding:30px;color:#94A3B8;font-size:12.5px">Nothing logged yet</div>';
     return;
   }
   el.innerHTML = recent.map(r => `
-    <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 14px;background:white;border:1px solid #F1F5F9;border-radius:10px;margin-bottom:8px">
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 14px;background:white;border:1px solid #F1F5F9;border-radius:10px;margin-bottom:8px;cursor:pointer" onclick="bmEditEntry(${r.id})">
       <div>
         <div style="font-size:12.5px;font-weight:700;color:#0F1E2E">${BM_LABELS[r.metric_key]||r.metric_key}${r.department ? ' · '+r.department : ''}</div>
         <div style="font-size:11px;color:#94A3B8">${r.period_date}</div>
       </div>
-      <div style="font-size:13px;font-weight:700;color:#0F1E2E">${r.metric_key==='revenue'||r.metric_key==='dept_spend' ? bmMoney(r.value) : r.value}</div>
+      <div style="display:flex;align-items:center;gap:10px">
+        <div style="font-size:13px;font-weight:700;color:#0F1E2E">${r.metric_key==='revenue'||r.metric_key==='dept_spend' ? bmMoney(r.value) : r.value}</div>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#CBD5E1" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>
+      </div>
     </div>`).join('');
+}
+
+function bmEditEntry(id){
+  const row = businessMetrics.find(m => m.id === id);
+  if(!row) return;
+  const label = (BM_LABELS[row.metric_key]||row.metric_key) + (row.department ? ' · '+row.department : '');
+  appModalShow({
+    title: 'Edit ' + label,
+    fields:[
+      {label:'Date', type:'date', value: row.period_date},
+      {label:'Value', value: String(row.value)}
+    ],
+    async onOk([date, value]){
+      const num = parseFloat(value);
+      if(!date || isNaN(num)) return;
+      const { error } = await sb.from('business_metrics').update({ period_date: date, value: num }).eq('id', row.id);
+      if(error){ toast('Update failed - try again'); console.warn(error); return; }
+      row.period_date = date;
+      row.value = num;
+      toast('Updated ✓');
+      reportingRenderRecent();
+      analyticsRender();
+    }
+  });
+  setTimeout(()=>{
+    const box = document.getElementById('appModalBox');
+    if(!box) return;
+    const del = document.createElement('div');
+    del.style.cssText = 'text-align:center;margin-top:14px';
+    del.innerHTML = '<button onclick="bmDeleteEntry('+id+')" style="background:none;border:none;color:#DC2626;font-family:Inter,sans-serif;font-size:12.5px;font-weight:700;cursor:pointer">Delete this entry</button>';
+    box.appendChild(del);
+  }, 0);
+}
+
+function bmDeleteEntry(id){
+  appConfirmShow({
+    title:'Delete entry',
+    msg:'This figure will be permanently removed from Analytics.',
+    label:'Delete',
+    onOk(){
+      appModalClose();
+      sb.from('business_metrics').delete().eq('id', id).then(({error})=>{
+        if(error){ toast('Delete failed - try again'); console.warn(error); return; }
+        businessMetrics = businessMetrics.filter(m => m.id !== id);
+        toast('Deleted');
+        reportingRenderRecent();
+        analyticsRender();
+      });
+    }
+  });
 }
 
 function reportingRender(){
@@ -14283,7 +14337,7 @@ function bmDelta(curr, prev){
   return pct;
 }
 function bmDeltaHtml(pct, goodIsUp=true){
-  if(pct === null || !isFinite(pct)) return '<span style="font-size:11.5px;color:#94A3B8">no prior data</span>';
+  if(pct === null || !isFinite(pct)) return '';
   const up = pct >= 0;
   const good = up === goodIsUp;
   const color = good ? '#059669' : '#DC2626';
@@ -14309,26 +14363,29 @@ function analyticsRender(){
   const today = new Date();
   const todayStr = bmDateStr(today);
   const weekStart = bmDateStr(bmDaysAgo(6));
+  const prevWeekStart = bmDateStr(bmDaysAgo(13));
+  const prevWeekEnd = bmDateStr(bmDaysAgo(7));
   const monthStart = todayStr.slice(0,8) + '01';
   const prevMonthDate = new Date(today.getFullYear(), today.getMonth()-1, 1);
   const prevMonthStart = bmDateStr(prevMonthDate);
   const prevMonthEnd = bmDateStr(new Date(today.getFullYear(), today.getMonth(), 0));
   const yearStart = todayStr.slice(0,4) + '-01-01';
+  const lastYearStart = (today.getFullYear()-1) + '-01-01';
   const lastYearToday = bmDateStr(new Date(today.getFullYear()-1, today.getMonth(), today.getDate()));
 
-  // Revenue
+  // Revenue - Week / Month / Year, each vs the same period one cycle back
+  const revWeek = bmSum('revenue', weekStart, todayStr);
+  const revPrevWeek = bmSum('revenue', prevWeekStart, prevWeekEnd);
   const revMonth = bmSum('revenue', monthStart, todayStr);
   const revPrevMonth = bmSum('revenue', prevMonthStart, prevMonthEnd);
   const revYear = bmSum('revenue', yearStart, todayStr);
-  const revLastYearSameDay = bmSum('revenue', lastYearToday, lastYearToday);
-  const revToday = bmSum('revenue', todayStr, todayStr);
+  const revLastYearToDate = bmSum('revenue', lastYearStart, lastYearToday);
 
   // Covers
   const coversWeek = bmSum('covers_served', weekStart, todayStr);
-  const coversPrevWeek = bmSum('covers_served', bmDateStr(bmDaysAgo(13)), bmDateStr(bmDaysAgo(7)));
+  const coversPrevWeek = bmSum('covers_served', prevWeekStart, prevWeekEnd);
 
   // Avg spend per guest (this week revenue / this week covers)
-  const revWeek = bmSum('revenue', weekStart, todayStr);
   const avgSpend = coversWeek ? revWeek / coversWeek : null;
 
   // Department spend, this month vs last month
@@ -14350,27 +14407,20 @@ function analyticsRender(){
     // legacy element no longer used - new chart-based layout below
   }
 
-  // Revenue this month/today/year - stat tiles
-  const revMonthValEl = document.getElementById('an-rev-month-val');
-  if(revMonthValEl){
-    revMonthValEl.textContent = bmMoney(revMonth);
-    document.getElementById('an-rev-month-delta').innerHTML = bmDeltaHtml(bmDelta(revMonth, revPrevMonth));
+  // Revenue - This Week / This Month / This Year, each vs the equivalent prior period
+  function setDeltaBox(valEl, deltaEl, value, prior, caption){
+    valEl.textContent = value ? bmMoney(value) : '—';
+    const d = bmDeltaHtml(bmDelta(value, prior));
+    deltaEl.innerHTML = d ? (d + ' <span style="font-size:11px;color:#94A3B8">' + caption + '</span>') : '';
   }
-  const revToday_ = bmSum('revenue', todayStr, todayStr);
-  const revTodayValEl = document.getElementById('an-rev-today-val');
-  if(revTodayValEl){
-    revTodayValEl.textContent = bmMoney(revToday_);
-    document.getElementById('an-rev-today-delta').innerHTML = bmDeltaHtml(bmDelta(revToday_, revLastYearSameDay)) + ' <span style="font-size:11px;color:#94A3B8">vs last year</span>';
-  }
-  const revYearValEl = document.getElementById('an-rev-year-val');
-  if(revYearValEl) revYearValEl.textContent = bmMoney(revYear);
+  setDeltaBox(document.getElementById('an-rev-week-val'), document.getElementById('an-rev-week-delta'), revWeek, revPrevWeek, 'vs last week');
+  setDeltaBox(document.getElementById('an-rev-month-val'), document.getElementById('an-rev-month-delta'), revMonth, revPrevMonth, 'vs last month');
+  setDeltaBox(document.getElementById('an-rev-year-val'), document.getElementById('an-rev-year-delta'), revYear, revLastYearToDate, 'vs last year');
+
   const avgSpendValEl = document.getElementById('an-avgspend-val');
   if(avgSpendValEl) avgSpendValEl.textContent = avgSpend ? bmMoney(avgSpend) : '—';
   const coversWeekValEl = document.getElementById('an-covers-week-val');
-  if(coversWeekValEl){
-    coversWeekValEl.textContent = coversWeek || '—';
-    document.getElementById('an-covers-week-delta').innerHTML = bmDeltaHtml(bmDelta(coversWeek, coversPrevWeek)) + ' <span style="font-size:11px;color:#94A3B8">vs last week</span>';
-  }
+  if(coversWeekValEl) setDeltaBox(coversWeekValEl, document.getElementById('an-covers-week-delta'), coversWeek, coversPrevWeek, 'vs last week');
 
   // Staffing bar
   const staffValEl = document.getElementById('an-staff-val');
@@ -14436,11 +14486,12 @@ function analyticsRender(){
 
   // Guests through the door - this week total + delta
   const guestsWeek = bmSum('guests_arrived', weekStart, todayStr);
-  const guestsPrevWeek = bmSum('guests_arrived', bmDateStr(bmDaysAgo(13)), bmDateStr(bmDaysAgo(7)));
+  const guestsPrevWeek = bmSum('guests_arrived', prevWeekStart, prevWeekEnd);
   const guestsWeekEl = document.getElementById('an-guests-week-val');
   if(guestsWeekEl){
     guestsWeekEl.textContent = guestsWeek || '—';
-    document.getElementById('an-guests-week-delta').innerHTML = bmDeltaHtml(bmDelta(guestsWeek, guestsPrevWeek)) + ' <span style="font-size:11px;color:#94A3B8">vs last week</span>';
+    const gd = bmDeltaHtml(bmDelta(guestsWeek, guestsPrevWeek));
+    document.getElementById('an-guests-week-delta').innerHTML = gd ? (gd + ' <span style="font-size:11px;color:#94A3B8">vs last week</span>') : '';
   }
   const walkInsWeek = bmSum('guests_arrived', weekStart, todayStr, 'Walk-in');
   const walkInsValEl = document.getElementById('an-walkins-week-val');

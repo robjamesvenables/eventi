@@ -9,6 +9,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@twemoji/api@17.0.3/dist/twemoji.min.js" integrity="sha384-Y5xukbGJwykbHHkTbLJykYLcBPFxrwipTbEh0puxhkz9CZ90raTPGe2Ks4vCxsYU" crossorigin="anonymous"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.9.3/html2pdf.bundle.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 <link rel="manifest" href="/manifest.json">
 <meta name="theme-color" content="#0F1E2E">
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
@@ -231,6 +232,12 @@ body{margin:0;padding:0;font-family:'Inter',sans-serif;background:var(--bg);colo
 .sb-link.active::before{content:'';position:absolute;left:0;top:4px;bottom:4px;width:3px;background:#0D9488;border-radius:0 3px 3px 0}
 #n-analytics.active{color:#C4973B!important}
 #n-analytics.active::before{background:#C4973B!important}
+.rep-card{display:flex;flex-direction:column;align-items:flex-start;gap:10px;background:white;border:1px solid #E2E8F0;border-radius:14px;padding:18px;text-align:left;cursor:pointer;font-family:'Inter',sans-serif;transition:border-color 0.15s,transform 0.1s}
+.rep-card:hover{border-color:#0D9488}
+.rep-card:active{transform:scale(0.98)}
+.rep-card-icon{width:40px;height:40px;border-radius:10px;display:flex;align-items:center;justify-content:center}
+.rep-card-title{font-size:14px;font-weight:700;color:#0F1E2E}
+.rep-card-sub{font-size:12px;color:#94A3B8;margin-top:-6px}
 
 .sb-badge{
   display:inline-flex;align-items:center;justify-content:center;
@@ -2995,74 +3002,100 @@ img.emoji-tw{width:1.15em;height:1.15em;vertical-align:-0.2em;margin:0 1px}
     <div class="page" id="p-analytics" style="padding:32px 28px 60px">
       <div class="ph">
         <div class="ph-title">Analytics</div>
-        <button class="btn-navy" onclick="nav('reporting')" style="display:flex;align-items:center;gap:6px">
+        <button class="btn btn-navy" onclick="nav('reporting')" style="gap:6px">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
           Add Figures
         </button>
       </div>
 
       <div style="font-size:11.5px;font-weight:800;color:#C4973B;text-transform:uppercase;letter-spacing:0.6px;margin:8px 0 12px">Business Performance</div>
-      <div id="analytics-finance-grid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px;margin-bottom:36px"></div>
+
+      <div style="background:white;border:1px solid var(--line);border-radius:14px;padding:18px 20px;margin-bottom:14px">
+        <div style="font-size:12px;font-weight:700;color:#64748B;margin-bottom:2px">Revenue this month</div>
+        <div style="display:flex;align-items:baseline;gap:10px;margin-bottom:10px">
+          <div id="an-rev-month-val" style="font-size:26px;font-weight:800;color:#0F1E2E">—</div>
+          <div id="an-rev-month-delta"></div>
+        </div>
+        <div style="position:relative;height:64px"><canvas id="an-rev-spark"></canvas></div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px;margin-bottom:14px">
+        <div style="background:white;border:1px solid var(--line);border-radius:14px;padding:16px 18px">
+          <div style="font-size:12px;font-weight:700;color:#64748B;margin-bottom:2px">Revenue today</div>
+          <div id="an-rev-today-val" style="font-size:20px;font-weight:800;color:#0F1E2E">—</div>
+          <div id="an-rev-today-delta" style="margin-top:4px"></div>
+        </div>
+        <div style="background:white;border:1px solid var(--line);border-radius:14px;padding:16px 18px">
+          <div style="font-size:12px;font-weight:700;color:#64748B;margin-bottom:2px">Revenue this year</div>
+          <div id="an-rev-year-val" style="font-size:20px;font-weight:800;color:#0F1E2E">—</div>
+          <div style="font-size:11px;color:#94A3B8;margin-top:4px">year to date</div>
+        </div>
+        <div style="background:white;border:1px solid var(--line);border-radius:14px;padding:16px 18px">
+          <div style="font-size:12px;font-weight:700;color:#64748B;margin-bottom:2px">Avg spend / guest</div>
+          <div id="an-avgspend-val" style="font-size:20px;font-weight:800;color:#0F1E2E">—</div>
+          <div style="font-size:11px;color:#94A3B8;margin-top:4px">this week</div>
+        </div>
+        <div style="background:white;border:1px solid var(--line);border-radius:14px;padding:16px 18px">
+          <div style="font-size:12px;font-weight:700;color:#64748B;margin-bottom:8px">Staffing</div>
+          <div id="an-staff-val" style="font-size:18px;font-weight:800;color:#0F1E2E;margin-bottom:8px">—</div>
+          <div style="height:8px;border-radius:4px;background:#F1F5F9;overflow:hidden"><div id="an-staff-bar" style="height:100%;width:0%;background:#1baf7a;border-radius:4px;transition:width 0.4s"></div></div>
+          <div id="an-staff-sub" style="font-size:11px;color:#94A3B8;margin-top:6px"></div>
+        </div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px;margin-bottom:36px">
+        <div style="background:white;border:1px solid var(--line);border-radius:14px;padding:16px 18px">
+          <div style="font-size:12px;font-weight:700;color:#64748B;margin-bottom:10px">Department spend this month</div>
+          <div id="an-dept-empty" style="font-size:12px;color:#94A3B8;padding:12px 0">Not yet entered</div>
+          <div style="position:relative;height:0" id="an-dept-chart-wrap"><canvas id="an-dept-chart"></canvas></div>
+        </div>
+        <div style="background:white;border:1px solid var(--line);border-radius:14px;padding:16px 18px">
+          <div style="font-size:12px;font-weight:700;color:#64748B;margin-bottom:10px">Covers served this week</div>
+          <div id="an-covers-empty" style="font-size:12px;color:#94A3B8;padding:12px 0">Not yet entered</div>
+          <div style="position:relative;height:0" id="an-covers-chart-wrap"><canvas id="an-covers-chart"></canvas></div>
+        </div>
+      </div>
 
       <div style="font-size:11.5px;font-weight:800;color:#64748B;text-transform:uppercase;letter-spacing:0.6px;margin:8px 0 12px">Team & Operations</div>
       <div id="analytics-ops-grid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px"></div>
     </div>
 
     <div class="page" id="p-reporting" style="padding:32px 28px 60px">
+      <button onclick="nav('analytics')" style="display:flex;align-items:center;gap:6px;background:none;border:none;cursor:pointer;font-family:'Inter',sans-serif;font-size:12.5px;font-weight:700;color:#64748B;padding:0;margin-bottom:16px">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+        Back to Analytics
+      </button>
       <div class="ph">
         <div class="ph-title">Reporting</div>
       </div>
       <p style="font-size:13px;color:#64748B;margin:-6px 0 24px">Enter business figures here - they'll automatically update the Analytics dashboard.</p>
 
-      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px">
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px">
+        <button onclick="reportingOpenRevenue()" class="rep-card">
+          <div class="rep-card-icon" style="background:rgba(42,120,214,0.1);color:#2a78d6"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></div>
+          <div class="rep-card-title">Revenue</div>
+          <div class="rep-card-sub">Log a day's revenue</div>
+        </button>
+        <button onclick="reportingOpenCovers()" class="rep-card">
+          <div class="rep-card-icon" style="background:rgba(27,175,122,0.1);color:#1baf7a"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div>
+          <div class="rep-card-title">Covers Served</div>
+          <div class="rep-card-sub">Log a day's covers</div>
+        </button>
+        <button onclick="reportingOpenDeptSpend()" class="rep-card">
+          <div class="rep-card-icon" style="background:rgba(196,151,59,0.12);color:#C4973B"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 21H4.6c-.6 0-1.1-.5-1.1-1.1V3"/><rect x="7" y="13" width="3" height="5"/><rect x="12" y="9" width="3" height="9"/><rect x="17" y="5" width="3" height="13"/></svg></div>
+          <div class="rep-card-title">Department Spend</div>
+          <div class="rep-card-sub">Log a month's spend</div>
+        </button>
+        <button onclick="reportingOpenStaff()" class="rep-card">
+          <div class="rep-card-icon" style="background:rgba(15,30,46,0.06);color:#0F1E2E"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div>
+          <div class="rep-card-title">Staffing</div>
+          <div class="rep-card-sub">Log target vs actual</div>
+        </button>
+      </div>
 
-        <div style="background:white;border:1px solid var(--line);border-radius:14px;padding:20px">
-          <div style="font-size:13px;font-weight:800;color:#0F1E2E;margin-bottom:14px">Revenue</div>
-          <label style="font-size:11.5px;font-weight:700;color:#64748B">Date</label>
-          <input type="date" id="rep-rev-date" style="width:100%;padding:9px 10px;border:1px solid #E2E8F0;border-radius:8px;font-family:inherit;font-size:13px;margin:4px 0 10px">
-          <label style="font-size:11.5px;font-weight:700;color:#64748B">Revenue for that day</label>
-          <input type="number" id="rep-rev-value" placeholder="e.g. 18500000" style="width:100%;padding:9px 10px;border:1px solid #E2E8F0;border-radius:8px;font-family:inherit;font-size:13px;margin:4px 0 14px">
-          <button class="btn-navy" onclick="reportingSubmit('revenue')" style="width:100%">Save Revenue</button>
-        </div>
-
-        <div style="background:white;border:1px solid var(--line);border-radius:14px;padding:20px">
-          <div style="font-size:13px;font-weight:800;color:#0F1E2E;margin-bottom:14px">Covers Served</div>
-          <label style="font-size:11.5px;font-weight:700;color:#64748B">Date</label>
-          <input type="date" id="rep-covers-date" style="width:100%;padding:9px 10px;border:1px solid #E2E8F0;border-radius:8px;font-family:inherit;font-size:13px;margin:4px 0 10px">
-          <label style="font-size:11.5px;font-weight:700;color:#64748B">Covers for that day</label>
-          <input type="number" id="rep-covers-value" placeholder="e.g. 145" style="width:100%;padding:9px 10px;border:1px solid #E2E8F0;border-radius:8px;font-family:inherit;font-size:13px;margin:4px 0 14px">
-          <button class="btn-navy" onclick="reportingSubmit('covers_served')" style="width:100%">Save Covers</button>
-        </div>
-
-        <div style="background:white;border:1px solid var(--line);border-radius:14px;padding:20px">
-          <div style="font-size:13px;font-weight:800;color:#0F1E2E;margin-bottom:14px">Department Spend</div>
-          <label style="font-size:11.5px;font-weight:700;color:#64748B">Month</label>
-          <input type="month" id="rep-dept-month" style="width:100%;padding:9px 10px;border:1px solid #E2E8F0;border-radius:8px;font-family:inherit;font-size:13px;margin:4px 0 10px">
-          <label style="font-size:11.5px;font-weight:700;color:#64748B">Department</label>
-          <select id="rep-dept-name" style="width:100%;padding:9px 10px;border:1px solid #E2E8F0;border-radius:8px;font-family:inherit;font-size:13px;margin:4px 0 10px">
-            <option>Operations</option>
-            <option>Marketing</option>
-            <option>Finance</option>
-            <option>Audio Visual</option>
-            <option>Kitchen</option>
-            <option>Front of House</option>
-          </select>
-          <label style="font-size:11.5px;font-weight:700;color:#64748B">Spend for that month</label>
-          <input type="number" id="rep-dept-value" placeholder="e.g. 4200000" style="width:100%;padding:9px 10px;border:1px solid #E2E8F0;border-radius:8px;font-family:inherit;font-size:13px;margin:4px 0 14px">
-          <button class="btn-navy" onclick="reportingSubmit('dept_spend')" style="width:100%">Save Department Spend</button>
-        </div>
-
-        <div style="background:white;border:1px solid var(--line);border-radius:14px;padding:20px">
-          <div style="font-size:13px;font-weight:800;color:#0F1E2E;margin-bottom:14px">Staffing</div>
-          <label style="font-size:11.5px;font-weight:700;color:#64748B">Date</label>
-          <input type="date" id="rep-staff-date" style="width:100%;padding:9px 10px;border:1px solid #E2E8F0;border-radius:8px;font-family:inherit;font-size:13px;margin:4px 0 10px">
-          <label style="font-size:11.5px;font-weight:700;color:#64748B">Target headcount</label>
-          <input type="number" id="rep-staff-target" placeholder="e.g. 100" style="width:100%;padding:9px 10px;border:1px solid #E2E8F0;border-radius:8px;font-family:inherit;font-size:13px;margin:4px 0 10px">
-          <label style="font-size:11.5px;font-weight:700;color:#64748B">Actual headcount</label>
-          <input type="number" id="rep-staff-actual" placeholder="e.g. 98" style="width:100%;padding:9px 10px;border:1px solid #E2E8F0;border-radius:8px;font-family:inherit;font-size:13px;margin:4px 0 14px">
-          <button class="btn-navy" onclick="reportingSubmit('staff')" style="width:100%">Save Staffing</button>
-        </div>
-
+      <div style="margin-top:36px">
+        <div style="font-size:11.5px;font-weight:800;color:#64748B;text-transform:uppercase;letter-spacing:0.6px;margin-bottom:12px">Recently Added</div>
+        <div id="reporting-recent-list"></div>
       </div>
     </div>
 
@@ -14078,39 +14111,105 @@ async function businessMetricsLoadFromSupabase(){
   }
 }
 
-function reportingSubmit(kind){
-  const rows = [];
-  if(kind === 'revenue'){
-    const date = document.getElementById('rep-rev-date').value;
-    const value = parseFloat(document.getElementById('rep-rev-value').value);
-    if(!date || isNaN(value)){ toast('Enter a date and a value first'); return; }
-    rows.push({ metric_key:'revenue', period_date: date, value });
-  } else if(kind === 'covers_served'){
-    const date = document.getElementById('rep-covers-date').value;
-    const value = parseFloat(document.getElementById('rep-covers-value').value);
-    if(!date || isNaN(value)){ toast('Enter a date and a value first'); return; }
-    rows.push({ metric_key:'covers_served', period_date: date, value });
-  } else if(kind === 'dept_spend'){
-    const month = document.getElementById('rep-dept-month').value;
-    const dept = document.getElementById('rep-dept-name').value;
-    const value = parseFloat(document.getElementById('rep-dept-value').value);
-    if(!month || isNaN(value)){ toast('Enter a month and a value first'); return; }
-    rows.push({ metric_key:'dept_spend', period_date: month+'-01', department: dept, value });
-  } else if(kind === 'staff'){
-    const date = document.getElementById('rep-staff-date').value;
-    const target = parseFloat(document.getElementById('rep-staff-target').value);
-    const actual = parseFloat(document.getElementById('rep-staff-actual').value);
-    if(!date || isNaN(target) || isNaN(actual)){ toast('Enter a date, target and actual first'); return; }
-    rows.push({ metric_key:'staff_target', period_date: date, value: target });
-    rows.push({ metric_key:'staff_actual', period_date: date, value: actual });
-  }
-  sb.from('business_metrics').insert(rows).select().then(({data, error})=>{
-    if(error){ toast('Save failed - try again'); console.warn(error); return; }
-    businessMetrics = businessMetrics.concat(data || rows);
-    toast('Saved');
-    analyticsRender();
+function reportingOpenRevenue(){
+  appModalShow({
+    title:'Revenue',
+    sub:'Log a day\'s revenue',
+    fields:[
+      {label:'Date', type:'date', value: bmDateStr(new Date())},
+      {label:'Revenue for that day', placeholder:'e.g. 18500000'}
+    ],
+    async onOk([date, value]){
+      const num = parseFloat(value);
+      if(!date || isNaN(num)) return;
+      await bmInsert([{ metric_key:'revenue', period_date: date, value: num }]);
+    }
   });
 }
+function reportingOpenCovers(){
+  appModalShow({
+    title:'Covers Served',
+    sub:'Log a day\'s covers',
+    fields:[
+      {label:'Date', type:'date', value: bmDateStr(new Date())},
+      {label:'Covers for that day', placeholder:'e.g. 145'}
+    ],
+    async onOk([date, value]){
+      const num = parseFloat(value);
+      if(!date || isNaN(num)) return;
+      await bmInsert([{ metric_key:'covers_served', period_date: date, value: num }]);
+    }
+  });
+}
+function reportingOpenDeptSpend(){
+  const depts = ['Operations','Marketing','Finance','Audio Visual','Kitchen','Front of House'];
+  appModalShow({
+    title:'Department Spend',
+    sub:'Log a month\'s spend',
+    fields:[
+      {label:'Month', type:'date', value: bmDateStr(new Date())},
+      {label:'Department', type:'pillpicker', options: depts.map(d=>({id:d, name:d})), value: depts[0]},
+      {label:'Spend for that month', placeholder:'e.g. 4200000'}
+    ],
+    async onOk([month, dept, value]){
+      const num = parseFloat(value);
+      if(!month || !dept || isNaN(num)) return;
+      const monthStart = month.slice(0,8) + '01';
+      await bmInsert([{ metric_key:'dept_spend', period_date: monthStart, department: dept, value: num }]);
+    }
+  });
+}
+function reportingOpenStaff(){
+  appModalShow({
+    title:'Staffing',
+    sub:'Log target vs actual headcount',
+    fields:[
+      {label:'Date', type:'date', value: bmDateStr(new Date())},
+      {label:'Target headcount', placeholder:'e.g. 100'},
+      {label:'Actual headcount', placeholder:'e.g. 98'}
+    ],
+    async onOk([date, target, actual]){
+      const t = parseFloat(target), a = parseFloat(actual);
+      if(!date || isNaN(t) || isNaN(a)) return;
+      await bmInsert([
+        { metric_key:'staff_target', period_date: date, value: t },
+        { metric_key:'staff_actual', period_date: date, value: a }
+      ]);
+    }
+  });
+}
+
+async function bmInsert(rows){
+  const { data, error } = await sb.from('business_metrics').insert(rows).select();
+  if(error){ toast('Save failed - try again'); console.warn(error); return; }
+  businessMetrics = businessMetrics.concat(data || rows);
+  toast('Saved ✓');
+  reportingRenderRecent();
+}
+
+const BM_LABELS = { revenue:'Revenue', covers_served:'Covers Served', dept_spend:'Department Spend', staff_target:'Staff Target', staff_actual:'Staff Actual' };
+function reportingRenderRecent(){
+  const el = document.getElementById('reporting-recent-list');
+  if(!el) return;
+  const recent = businessMetrics.slice().sort((a,b)=> (b.created_at||'').localeCompare(a.created_at||'')).slice(0,8);
+  if(!recent.length){
+    el.innerHTML = '<div style="text-align:center;padding:30px;color:#94A3B8;font-size:12.5px">Nothing logged yet</div>';
+    return;
+  }
+  el.innerHTML = recent.map(r => `
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 14px;background:white;border:1px solid #F1F5F9;border-radius:10px;margin-bottom:8px">
+      <div>
+        <div style="font-size:12.5px;font-weight:700;color:#0F1E2E">${BM_LABELS[r.metric_key]||r.metric_key}${r.department ? ' · '+r.department : ''}</div>
+        <div style="font-size:11px;color:#94A3B8">${r.period_date}</div>
+      </div>
+      <div style="font-size:13px;font-weight:700;color:#0F1E2E">${r.metric_key==='revenue'||r.metric_key==='dept_spend' ? bmMoney(r.value) : r.value}</div>
+    </div>`).join('');
+}
+
+function reportingRender(){
+  reportingRenderRecent();
+}
+
 
 function bmSum(key, fromDate, toDate, department){
   return businessMetrics
@@ -14192,33 +14291,89 @@ function analyticsRender(){
 
   const financeGrid = document.getElementById('analytics-finance-grid');
   if(financeGrid){
-    let html = '';
-    html += financeTile('Revenue this month', bmMoney(revMonth), bmDeltaHtml(bmDelta(revMonth, revPrevMonth)), 'vs last month');
-    html += financeTile('Revenue today', bmMoney(revToday), bmDeltaHtml(bmDelta(revToday, revLastYearSameDay)), 'vs same day last year');
-    html += financeTile('Revenue this year', bmMoney(revYear), null, 'year to date');
-    html += financeTile('Covers this week', coversWeek || '—', bmDeltaHtml(bmDelta(coversWeek, coversPrevWeek)), 'vs last week');
-    html += financeTile('Avg spend / guest', avgSpend ? bmMoney(avgSpend) : '—', '', 'this week');
+    // legacy element no longer used - new chart-based layout below
+  }
+
+  // Revenue this month - big number + delta + daily sparkline
+  const revMonthValEl = document.getElementById('an-rev-month-val');
+  if(revMonthValEl){
+    revMonthValEl.textContent = bmMoney(revMonth);
+    document.getElementById('an-rev-month-delta').innerHTML = bmDeltaHtml(bmDelta(revMonth, revPrevMonth));
+  }
+  const revToday_ = bmSum('revenue', todayStr, todayStr);
+  const revTodayValEl = document.getElementById('an-rev-today-val');
+  if(revTodayValEl){
+    revTodayValEl.textContent = bmMoney(revToday_);
+    document.getElementById('an-rev-today-delta').innerHTML = bmDeltaHtml(bmDelta(revToday_, revLastYearSameDay)) + ' <span style="font-size:11px;color:#94A3B8">vs last year</span>';
+  }
+  const revYearValEl = document.getElementById('an-rev-year-val');
+  if(revYearValEl) revYearValEl.textContent = bmMoney(revYear);
+  const avgSpendValEl = document.getElementById('an-avgspend-val');
+  if(avgSpendValEl) avgSpendValEl.textContent = avgSpend ? bmMoney(avgSpend) : '—';
+
+  // Staffing bar
+  const staffValEl = document.getElementById('an-staff-val');
+  if(staffValEl){
     if(staffTarget !== null && staffActual !== null){
+      staffValEl.textContent = staffActual + ' / ' + staffTarget;
+      const pct = Math.min(100, (staffActual/staffTarget)*100);
       const short = staffTarget - staffActual;
-      const color = short > 0 ? '#DC2626' : '#059669';
-      const msg = short > 0 ? `looking for ${short} more` : 'fully staffed';
-      html += financeTile('Staffing', `${staffActual} / ${staffTarget}`, `<span style="font-size:11.5px;font-weight:700;color:${color}">${msg}</span>`, '');
+      const bar = document.getElementById('an-staff-bar');
+      bar.style.width = pct + '%';
+      bar.style.background = short > 0 ? '#DC2626' : '#1baf7a';
+      document.getElementById('an-staff-sub').textContent = short > 0 ? `looking for ${short} more` : 'fully staffed';
     } else {
-      html += financeTile('Staffing', '—', '', 'not yet entered');
+      staffValEl.textContent = '—';
+      document.getElementById('an-staff-bar').style.width = '0%';
+      document.getElementById('an-staff-sub').textContent = 'not yet entered';
     }
-    if(deptRows.length){
-      html += `<div style="background:white;border:1px solid var(--line);border-radius:14px;padding:16px 18px;grid-column:1/-1">
-        <div style="font-size:11.5px;font-weight:700;color:#64748B;margin-bottom:10px">Department spend this month</div>
-        ${deptRows.map(r => `<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid #F1F5F9">
-          <span style="font-size:13px;color:#0F1E2E">${r.d}</span>
-          <span style="display:flex;align-items:center;gap:10px">
-            <span style="font-size:13px;font-weight:700;color:#0F1E2E">${bmMoney(r.curr)}</span>
-            ${bmDeltaHtml(bmDelta(r.curr, r.prev), false)}
-          </span>
-        </div>`).join('')}
-      </div>`;
-    }
-    financeGrid.innerHTML = html;
+  }
+
+  // Revenue sparkline - daily entries this month
+  const revDailyRows = businessMetrics.filter(m => m.metric_key==='revenue' && m.period_date >= monthStart && m.period_date <= todayStr).sort((a,b)=>a.period_date.localeCompare(b.period_date));
+  if(window.anRevSparkChart) window.anRevSparkChart.destroy();
+  const sparkCanvas = document.getElementById('an-rev-spark');
+  if(sparkCanvas && revDailyRows.length){
+    window.anRevSparkChart = new Chart(sparkCanvas, {
+      type:'line',
+      data:{ labels: revDailyRows.map(r=>r.period_date.slice(8,10)), datasets:[{ data: revDailyRows.map(r=>Number(r.value)), borderColor:'#2a78d6', borderWidth:2, pointRadius:0, fill:true, backgroundColor:'rgba(42,120,214,0.08)', tension:0.3 }] },
+      options:{ responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}}, scales:{x:{display:false}, y:{display:false}} }
+    });
+  }
+
+  // Department spend - horizontal bar
+  const deptWrap = document.getElementById('an-dept-chart-wrap');
+  const deptEmpty = document.getElementById('an-dept-empty');
+  if(window.anDeptChart) window.anDeptChart.destroy();
+  if(deptRows.length){
+    deptEmpty.style.display = 'none';
+    deptWrap.style.height = Math.max(120, deptRows.length*38) + 'px';
+    window.anDeptChart = new Chart(document.getElementById('an-dept-chart'), {
+      type:'bar',
+      data:{ labels: deptRows.map(r=>r.d), datasets:[{ data: deptRows.map(r=>r.curr), backgroundColor:'#C4973B', borderRadius:4, maxBarThickness:22 }] },
+      options:{ indexAxis:'y', responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}}, scales:{ x:{ grid:{color:'#F1F5F9'}, ticks:{ callback:v=>(v/1000000).toFixed(1)+'M' } }, y:{ grid:{display:false} } } }
+    });
+  } else {
+    deptEmpty.style.display = 'block';
+    deptWrap.style.height = '0px';
+  }
+
+  // Covers served this week - daily bar
+  const coversWrap = document.getElementById('an-covers-chart-wrap');
+  const coversEmpty = document.getElementById('an-covers-empty');
+  if(window.anCoversChart) window.anCoversChart.destroy();
+  const coversDailyRows = businessMetrics.filter(m => m.metric_key==='covers_served' && m.period_date >= weekStart && m.period_date <= todayStr).sort((a,b)=>a.period_date.localeCompare(b.period_date));
+  if(coversDailyRows.length){
+    coversEmpty.style.display = 'none';
+    coversWrap.style.height = '140px';
+    window.anCoversChart = new Chart(document.getElementById('an-covers-chart'), {
+      type:'bar',
+      data:{ labels: coversDailyRows.map(r=>{ const d=new Date(r.period_date); return d.toLocaleDateString('en-GB',{weekday:'short'}); }), datasets:[{ data: coversDailyRows.map(r=>Number(r.value)), backgroundColor:'#1baf7a', borderRadius:4, maxBarThickness:26 }] },
+      options:{ responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}}, scales:{ x:{grid:{display:false}}, y:{display:false} } }
+    });
+  } else {
+    coversEmpty.style.display = 'block';
+    coversWrap.style.height = '0px';
   }
 
   // Operational tiles - all genuinely live data from existing app state
@@ -14247,17 +14402,6 @@ function analyticsRender(){
     html += opsTile('Avg food cost', avgFoodCost ? avgFoodCost.toFixed(1)+'%' : '—', 'across all recipes');
     opsGrid.innerHTML = html;
   }
-}
-
-function reportingRender(){
-  // just ensure default dates are pre-filled for convenience
-  const todayStr = bmDateStr(new Date());
-  ['rep-rev-date','rep-covers-date','rep-staff-date'].forEach(id => {
-    const el = document.getElementById(id);
-    if(el && !el.value) el.value = todayStr;
-  });
-  const monthEl = document.getElementById('rep-dept-month');
-  if(monthEl && !monthEl.value) monthEl.value = todayStr.slice(0,7);
 }
 
 

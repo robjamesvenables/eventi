@@ -3011,20 +3011,17 @@ img.emoji-tw{width:1.15em;height:1.15em;vertical-align:-0.2em;margin:0 1px}
       <div style="font-size:11.5px;font-weight:800;color:#C4973B;text-transform:uppercase;letter-spacing:0.6px;margin:8px 0 12px">Revenue</div>
 
       <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;margin-bottom:14px">
-        <div style="background:white;border:1px solid var(--line);border-radius:14px;padding:16px 18px">
-          <div style="font-size:12px;font-weight:700;color:#64748B;margin-bottom:2px">This Week</div>
-          <div id="an-rev-week-val" style="font-size:20px;font-weight:800;color:#0F1E2E">—</div>
-          <div id="an-rev-week-delta" style="margin-top:4px;min-height:16px"></div>
+        <div style="background:#0F1E2E;border-radius:14px;padding:16px 18px">
+          <div style="font-size:12px;font-weight:700;color:#94A3B8;margin-bottom:2px">Yesterday</div>
+          <div id="an-rev-yesterday-val" style="font-size:24px;font-weight:800;color:white">—</div>
         </div>
         <div style="background:white;border:1px solid var(--line);border-radius:14px;padding:16px 18px">
-          <div style="font-size:12px;font-weight:700;color:#64748B;margin-bottom:2px">This Month</div>
-          <div id="an-rev-month-val" style="font-size:20px;font-weight:800;color:#0F1E2E">—</div>
-          <div id="an-rev-month-delta" style="margin-top:4px;min-height:16px"></div>
+          <div style="font-size:12px;font-weight:700;color:#64748B;margin-bottom:2px">Month to Date</div>
+          <div id="an-rev-mtd-val" style="font-size:20px;font-weight:800;color:#0F1E2E">—</div>
         </div>
         <div style="background:white;border:1px solid var(--line);border-radius:14px;padding:16px 18px">
-          <div style="font-size:12px;font-weight:700;color:#64748B;margin-bottom:2px">This Year</div>
-          <div id="an-rev-year-val" style="font-size:20px;font-weight:800;color:#0F1E2E">—</div>
-          <div id="an-rev-year-delta" style="margin-top:4px;min-height:16px"></div>
+          <div style="font-size:12px;font-weight:700;color:#64748B;margin-bottom:2px">Year to Date</div>
+          <div id="an-rev-ytd-val" style="font-size:20px;font-weight:800;color:#0F1E2E">—</div>
         </div>
       </div>
 
@@ -14150,11 +14147,12 @@ async function businessMetricsLoadFromSupabase(){
 }
 
 function reportingOpenRevenue(){
+  const yest = bmDateStr(bmDaysAgo(1));
   appModalShow({
     title:'Revenue',
     sub:'Log a day\'s revenue',
     fields:[
-      {label:'Date', type:'date', value: bmDateStr(new Date())},
+      {label:'Date', type:'date', value: yest, max: yest, maxHint:'Yesterday or earlier only - today isn\'t closed out yet'},
       {label:'Revenue for that day', placeholder:'e.g. 18500000'}
     ],
     async onOk([date, value]){
@@ -14165,11 +14163,12 @@ function reportingOpenRevenue(){
   });
 }
 function reportingOpenCovers(){
+  const yest = bmDateStr(bmDaysAgo(1));
   appModalShow({
     title:'Covers Served',
     sub:'Log a day\'s covers',
     fields:[
-      {label:'Date', type:'date', value: bmDateStr(new Date())},
+      {label:'Date', type:'date', value: yest, max: yest, maxHint:'Yesterday or earlier only - today isn\'t closed out yet'},
       {label:'Covers for that day', placeholder:'e.g. 145'}
     ],
     async onOk([date, value]){
@@ -14198,11 +14197,12 @@ function reportingOpenDeptSpend(){
   });
 }
 function reportingOpenStaff(){
+  const yest = bmDateStr(bmDaysAgo(1));
   appModalShow({
     title:'Staffing',
     sub:'Log target vs actual headcount',
     fields:[
-      {label:'Date', type:'date', value: bmDateStr(new Date())},
+      {label:'Date', type:'date', value: yest, max: yest, maxHint:'Yesterday or earlier only - today isn\'t closed out yet'},
       {label:'Target headcount', placeholder:'e.g. 100'},
       {label:'Actual headcount', placeholder:'e.g. 98'}
     ],
@@ -14217,11 +14217,12 @@ function reportingOpenStaff(){
   });
 }
 function reportingOpenGuests(){
+  const yest = bmDateStr(bmDaysAgo(1));
   appModalShow({
     title:'Guests Through the Door',
     sub:'Log a day\'s guest count',
     fields:[
-      {label:'Date', type:'date', value: bmDateStr(new Date())},
+      {label:'Date', type:'date', value: yest, max: yest, maxHint:'Yesterday or earlier only - today isn\'t closed out yet'},
       {label:'Walk-in guests', placeholder:'e.g. 60'},
       {label:'Online / reservation guests', placeholder:'e.g. 85'}
     ],
@@ -14270,10 +14271,12 @@ function bmEditEntry(id){
   const row = businessMetrics.find(m => m.id === id);
   if(!row) return;
   const label = (BM_LABELS[row.metric_key]||row.metric_key) + (row.department ? ' · '+row.department : '');
+  const isDaily = row.metric_key !== 'dept_spend';
+  const yest = bmDateStr(bmDaysAgo(1));
   appModalShow({
     title: 'Edit ' + label,
     fields:[
-      {label:'Date', type:'date', value: row.period_date},
+      {label:'Date', type:'date', value: row.period_date, max: isDaily ? yest : undefined, maxHint: isDaily ? 'Yesterday or earlier only' : undefined},
       {label:'Value', value: String(row.value)}
     ],
     async onOk([date, value]){
@@ -14362,6 +14365,7 @@ function opsTile(label, value, sub){
 function analyticsRender(){
   const today = new Date();
   const todayStr = bmDateStr(today);
+  const yesterday = bmDateStr(bmDaysAgo(1));
   const weekStart = bmDateStr(bmDaysAgo(6));
   const prevWeekStart = bmDateStr(bmDaysAgo(13));
   const prevWeekEnd = bmDateStr(bmDaysAgo(7));
@@ -14373,16 +14377,18 @@ function analyticsRender(){
   const lastYearStart = (today.getFullYear()-1) + '-01-01';
   const lastYearToday = bmDateStr(new Date(today.getFullYear()-1, today.getMonth(), today.getDate()));
 
-  // Revenue - Week / Month / Year, each vs the same period one cycle back
-  const revWeek = bmSum('revenue', weekStart, todayStr);
-  const revPrevWeek = bmSum('revenue', prevWeekStart, prevWeekEnd);
-  const revMonth = bmSum('revenue', monthStart, todayStr);
+  // Revenue - Yesterday / Month to Date / Year to Date, all cut off at yesterday (today is never closed out yet)
+  const revYesterday = bmSum('revenue', yesterday, yesterday);
+  const revMTD = bmSum('revenue', monthStart, yesterday);
+  const revYTD = bmSum('revenue', yearStart, yesterday);
+  const revWeek = bmSum('revenue', weekStart, yesterday);
+  const revMonth = revMTD;
   const revPrevMonth = bmSum('revenue', prevMonthStart, prevMonthEnd);
-  const revYear = bmSum('revenue', yearStart, todayStr);
+  const revYear = revYTD;
   const revLastYearToDate = bmSum('revenue', lastYearStart, lastYearToday);
 
   // Covers
-  const coversWeek = bmSum('covers_served', weekStart, todayStr);
+  const coversWeek = bmSum('covers_served', weekStart, yesterday);
   const coversPrevWeek = bmSum('covers_served', prevWeekStart, prevWeekEnd);
 
   // Avg spend per guest (this week revenue / this week covers)
@@ -14402,21 +14408,20 @@ function analyticsRender(){
   const staffTarget = staffTargetRows.length ? Number(staffTargetRows[staffTargetRows.length-1].value) : null;
   const staffActual = staffActualRows.length ? Number(staffActualRows[staffActualRows.length-1].value) : null;
 
-  const financeGrid = document.getElementById('analytics-finance-grid');
-  if(financeGrid){
-    // legacy element no longer used - new chart-based layout below
-  }
+  // Top strip: Yesterday / Month to Date / Year to Date - plain figures, no comparisons yet
+  const revYesterdayEl = document.getElementById('an-rev-yesterday-val');
+  if(revYesterdayEl) revYesterdayEl.textContent = revYesterday ? bmMoney(revYesterday) : '—';
+  const revMtdEl = document.getElementById('an-rev-mtd-val');
+  if(revMtdEl) revMtdEl.textContent = revMTD ? bmMoney(revMTD) : '—';
+  const revYtdEl = document.getElementById('an-rev-ytd-val');
+  if(revYtdEl) revYtdEl.textContent = revYTD ? bmMoney(revYTD) : '—';
 
-  // Revenue - This Week / This Month / This Year, each vs the equivalent prior period
   function setDeltaBox(valEl, deltaEl, value, prior, caption, formatter){
     formatter = formatter || bmMoney;
     valEl.textContent = value ? formatter(value) : '—';
     const d = bmDeltaHtml(bmDelta(value, prior));
     deltaEl.innerHTML = d ? (d + ' <span style="font-size:11px;color:#94A3B8">' + caption + '</span>') : '';
   }
-  setDeltaBox(document.getElementById('an-rev-week-val'), document.getElementById('an-rev-week-delta'), revWeek, revPrevWeek, 'vs last week');
-  setDeltaBox(document.getElementById('an-rev-month-val'), document.getElementById('an-rev-month-delta'), revMonth, revPrevMonth, 'vs last month');
-  setDeltaBox(document.getElementById('an-rev-year-val'), document.getElementById('an-rev-year-delta'), revYear, revLastYearToDate, 'vs last year');
 
   const avgSpendValEl = document.getElementById('an-avgspend-val');
   if(avgSpendValEl) avgSpendValEl.textContent = avgSpend ? bmMoney(avgSpend) : '—';
@@ -15741,9 +15746,10 @@ function appModalShow({title, sub='', fields, onOk}){
       return `
     <div style="margin-bottom:${i<fields.length-1?'14px':'0'}">
       ${f.label?`<div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.7px;color:#94A3B8;margin-bottom:6px">${f.label}</div>`:''}
-      <input id="appModalField_${i}" type="date" value="${f.value||''}"
+      <input id="appModalField_${i}" type="date" value="${f.value||''}" ${f.max?`max="${f.max}"`:''}
         style="width:100%;padding:11px 14px;border:1.5px solid #E2E8F0;border-radius:9px;font-family:'Inter',sans-serif;font-size:14px;color:#0F1E2E;outline:none;box-sizing:border-box"
         onfocus="this.style.borderColor='#0D9488'" onblur="this.style.borderColor='#E2E8F0'">
+      ${f.maxHint?`<div style="font-size:11px;color:#94A3B8;margin-top:5px">${f.maxHint}</div>`:''}
     </div>`;
     }
     if(f.type==='daterange'){
@@ -15893,6 +15899,14 @@ function appModalShow({title, sub='', fields, onOk}){
       } else if(fields[firstEmpty].type!=='color' && fields[firstEmpty].type!=='icon' && fields[firstEmpty].type!=='deptpicker' && fields[firstEmpty].type!=='iconmulti' && fields[firstEmpty].type!=='pillpicker' && fields[firstEmpty].type!=='colordot' && fields[firstEmpty].type!=='daterange'){
         el.focus();
       }
+      return;
+    }
+    const badMaxDate = fields.findIndex((f,i)=> f.type==='date' && f.max && vals[i] && vals[i] > f.max);
+    if(badMaxDate>-1){
+      const el = document.getElementById('appModalField_'+badMaxDate);
+      el.style.borderColor = '#EF4444';
+      el.focus();
+      setTimeout(()=>{ el.style.borderColor = '#E2E8F0'; }, 1200);
       return;
     }
     appModalClose();

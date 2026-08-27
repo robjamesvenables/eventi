@@ -14408,8 +14408,9 @@ function analyticsRender(){
   }
 
   // Revenue - This Week / This Month / This Year, each vs the equivalent prior period
-  function setDeltaBox(valEl, deltaEl, value, prior, caption){
-    valEl.textContent = value ? bmMoney(value) : '—';
+  function setDeltaBox(valEl, deltaEl, value, prior, caption, formatter){
+    formatter = formatter || bmMoney;
+    valEl.textContent = value ? formatter(value) : '—';
     const d = bmDeltaHtml(bmDelta(value, prior));
     deltaEl.innerHTML = d ? (d + ' <span style="font-size:11px;color:#94A3B8">' + caption + '</span>') : '';
   }
@@ -14420,7 +14421,7 @@ function analyticsRender(){
   const avgSpendValEl = document.getElementById('an-avgspend-val');
   if(avgSpendValEl) avgSpendValEl.textContent = avgSpend ? bmMoney(avgSpend) : '—';
   const coversWeekValEl = document.getElementById('an-covers-week-val');
-  if(coversWeekValEl) setDeltaBox(coversWeekValEl, document.getElementById('an-covers-week-delta'), coversWeek, coversPrevWeek, 'vs last week');
+  if(coversWeekValEl) setDeltaBox(coversWeekValEl, document.getElementById('an-covers-week-delta'), coversWeek, coversPrevWeek, 'vs last week', v => Math.round(v).toLocaleString('en-US'));
 
   // Staffing bar
   const staffValEl = document.getElementById('an-staff-val');

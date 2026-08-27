@@ -3056,6 +3056,34 @@ img.emoji-tw{width:1.15em;height:1.15em;vertical-align:-0.2em;margin:0 1px}
         </div>
       </div>
 
+      <div style="font-size:11.5px;font-weight:800;color:#C4973B;text-transform:uppercase;letter-spacing:0.6px;margin:8px 0 12px">Guests Through the Door</div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px;margin-bottom:14px">
+        <div style="background:white;border:1px solid var(--line);border-radius:14px;padding:16px 18px">
+          <div style="font-size:12px;font-weight:700;color:#64748B;margin-bottom:2px">Guests today</div>
+          <div id="an-guests-today-val" style="font-size:20px;font-weight:800;color:#0F1E2E">—</div>
+        </div>
+        <div style="background:white;border:1px solid var(--line);border-radius:14px;padding:16px 18px">
+          <div style="font-size:12px;font-weight:700;color:#64748B;margin-bottom:2px">Guests this week</div>
+          <div id="an-guests-week-val" style="font-size:20px;font-weight:800;color:#0F1E2E">—</div>
+          <div id="an-guests-week-delta" style="margin-top:4px"></div>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px;margin-bottom:36px">
+        <div style="background:white;border:1px solid var(--line);border-radius:14px;padding:16px 18px">
+          <div style="font-size:12px;font-weight:700;color:#64748B;margin-bottom:10px">Daily guests this week</div>
+          <div id="an-guests-empty" style="font-size:12px;color:#94A3B8;padding:12px 0">Not yet entered</div>
+          <div style="position:relative;height:0" id="an-guests-chart-wrap"><canvas id="an-guests-chart"></canvas></div>
+        </div>
+        <div style="background:white;border:1px solid var(--line);border-radius:14px;padding:16px 18px">
+          <div style="font-size:12px;font-weight:700;color:#64748B;margin-bottom:10px">Walk-in vs online, this week</div>
+          <div id="an-guests-split-empty" style="font-size:12px;color:#94A3B8;padding:12px 0">Not yet entered</div>
+          <div style="display:flex;align-items:center;gap:16px">
+            <div style="position:relative;height:0;width:0" id="an-guests-split-wrap"><canvas id="an-guests-split-chart"></canvas></div>
+            <div id="an-guests-split-legend" style="display:flex;flex-direction:column;gap:6px;font-size:12.5px"></div>
+          </div>
+        </div>
+      </div>
+
       <div style="font-size:11.5px;font-weight:800;color:#64748B;text-transform:uppercase;letter-spacing:0.6px;margin:8px 0 12px">Team & Operations</div>
       <div id="analytics-ops-grid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px"></div>
     </div>
@@ -3090,6 +3118,11 @@ img.emoji-tw{width:1.15em;height:1.15em;vertical-align:-0.2em;margin:0 1px}
           <div class="rep-card-icon" style="background:rgba(15,30,46,0.06);color:#0F1E2E"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div>
           <div class="rep-card-title">Staffing</div>
           <div class="rep-card-sub">Log target vs actual</div>
+        </button>
+        <button onclick="reportingOpenGuests()" class="rep-card">
+          <div class="rep-card-icon" style="background:rgba(212,83,126,0.1);color:#d4537e"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="22" y1="11" x2="16" y2="11"/></svg></div>
+          <div class="rep-card-title">Guests Through the Door</div>
+          <div class="rep-card-sub">Log walk-in vs online</div>
         </button>
       </div>
 
@@ -14178,6 +14211,25 @@ function reportingOpenStaff(){
     }
   });
 }
+function reportingOpenGuests(){
+  appModalShow({
+    title:'Guests Through the Door',
+    sub:'Log a day\'s guest count',
+    fields:[
+      {label:'Date', type:'date', value: bmDateStr(new Date())},
+      {label:'Walk-in guests', placeholder:'e.g. 60'},
+      {label:'Online / reservation guests', placeholder:'e.g. 85'}
+    ],
+    async onOk([date, walkIn, online]){
+      const w = parseFloat(walkIn), o = parseFloat(online);
+      if(!date || isNaN(w) || isNaN(o)) return;
+      await bmInsert([
+        { metric_key:'guests_arrived', period_date: date, department:'Walk-in', value: w },
+        { metric_key:'guests_arrived', period_date: date, department:'Online', value: o }
+      ]);
+    }
+  });
+}
 
 async function bmInsert(rows){
   const { data, error } = await sb.from('business_metrics').insert(rows).select();
@@ -14187,7 +14239,7 @@ async function bmInsert(rows){
   reportingRenderRecent();
 }
 
-const BM_LABELS = { revenue:'Revenue', covers_served:'Covers Served', dept_spend:'Department Spend', staff_target:'Staff Target', staff_actual:'Staff Actual' };
+const BM_LABELS = { revenue:'Revenue', covers_served:'Covers Served', dept_spend:'Department Spend', staff_target:'Staff Target', staff_actual:'Staff Actual', guests_arrived:'Guests Arrived' };
 function reportingRenderRecent(){
   const el = document.getElementById('reporting-recent-list');
   if(!el) return;
@@ -14374,6 +14426,71 @@ function analyticsRender(){
   } else {
     coversEmpty.style.display = 'block';
     coversWrap.style.height = '0px';
+  }
+
+  // Guests through the door
+  const guestsToday = bmSum('guests_arrived', todayStr, todayStr);
+  const guestsWeek = bmSum('guests_arrived', weekStart, todayStr);
+  const guestsPrevWeek = bmSum('guests_arrived', bmDateStr(bmDaysAgo(13)), bmDateStr(bmDaysAgo(7)));
+  const guestsTodayEl = document.getElementById('an-guests-today-val');
+  if(guestsTodayEl) guestsTodayEl.textContent = guestsToday || '—';
+  const guestsWeekEl = document.getElementById('an-guests-week-val');
+  if(guestsWeekEl){
+    guestsWeekEl.textContent = guestsWeek || '—';
+    document.getElementById('an-guests-week-delta').innerHTML = bmDeltaHtml(bmDelta(guestsWeek, guestsPrevWeek)) + ' <span style="font-size:11px;color:#94A3B8">vs last week</span>';
+  }
+
+  // Daily guests this week - stacked walk-in/online bar
+  const guestsChartWrap = document.getElementById('an-guests-chart-wrap');
+  const guestsEmpty = document.getElementById('an-guests-empty');
+  if(window.anGuestsChart) window.anGuestsChart.destroy();
+  const guestDates = [...new Set(businessMetrics.filter(m=>m.metric_key==='guests_arrived' && m.period_date >= weekStart && m.period_date <= todayStr).map(m=>m.period_date))].sort();
+  if(guestDates.length){
+    guestsEmpty.style.display = 'none';
+    guestsChartWrap.style.height = '140px';
+    const walkInData = guestDates.map(d => bmSum('guests_arrived', d, d, 'Walk-in'));
+    const onlineData = guestDates.map(d => bmSum('guests_arrived', d, d, 'Online'));
+    window.anGuestsChart = new Chart(document.getElementById('an-guests-chart'), {
+      type:'bar',
+      data:{ labels: guestDates.map(d=>{ const dt=new Date(d); return dt.toLocaleDateString('en-GB',{weekday:'short'}); }),
+        datasets:[
+          { label:'Walk-in', data: walkInData, backgroundColor:'#d4537e', borderRadius:4, maxBarThickness:26 },
+          { label:'Online', data: onlineData, backgroundColor:'#eda100', borderRadius:4, maxBarThickness:26 }
+        ] },
+      options:{ responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}}, scales:{ x:{grid:{display:false},stacked:true}, y:{display:false,stacked:true} } }
+    });
+  } else {
+    guestsEmpty.style.display = 'block';
+    guestsChartWrap.style.height = '0px';
+  }
+
+  // Walk-in vs online split, donut
+  const splitWrap = document.getElementById('an-guests-split-wrap');
+  const splitEmpty = document.getElementById('an-guests-split-empty');
+  const splitLegend = document.getElementById('an-guests-split-legend');
+  if(window.anGuestsSplitChart) window.anGuestsSplitChart.destroy();
+  const walkInWeek = bmSum('guests_arrived', weekStart, todayStr, 'Walk-in');
+  const onlineWeek = bmSum('guests_arrived', weekStart, todayStr, 'Online');
+  if(walkInWeek || onlineWeek){
+    splitEmpty.style.display = 'none';
+    splitWrap.style.height = '120px';
+    splitWrap.style.width = '120px';
+    const total = walkInWeek + onlineWeek;
+    const walkPct = total ? Math.round((walkInWeek/total)*100) : 0;
+    const onlinePct = 100 - walkPct;
+    window.anGuestsSplitChart = new Chart(document.getElementById('an-guests-split-chart'), {
+      type:'doughnut',
+      data:{ labels:['Walk-in','Online'], datasets:[{ data:[walkInWeek, onlineWeek], backgroundColor:['#d4537e','#eda100'], borderColor:'#ffffff', borderWidth:2 }] },
+      options:{ responsive:true, maintainAspectRatio:false, cutout:'65%', plugins:{legend:{display:false}} }
+    });
+    splitLegend.innerHTML = `
+      <span style="display:flex;align-items:center;gap:6px"><span style="width:9px;height:9px;border-radius:2px;background:#d4537e"></span>Walk-in ${walkPct}%</span>
+      <span style="display:flex;align-items:center;gap:6px"><span style="width:9px;height:9px;border-radius:2px;background:#eda100"></span>Online ${onlinePct}%</span>`;
+  } else {
+    splitEmpty.style.display = 'block';
+    splitWrap.style.height = '0px';
+    splitWrap.style.width = '0px';
+    splitLegend.innerHTML = '';
   }
 
   // Operational tiles - all genuinely live data from existing app state

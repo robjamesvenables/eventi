@@ -14159,9 +14159,33 @@ async function businessMetricsLoadFromSupabase(){
     const { data, error } = await sb.from('business_metrics').select('*').order('period_date', { ascending: true });
     if(error) throw error;
     businessMetrics = data || [];
+    businessMetricsDedupe();
   } catch(e){
     console.warn('Business Metrics table not reachable yet (run the SQL if this is the first load)', e);
     businessMetrics = [];
+  }
+}
+
+function bmDupeKey(row){ return row.metric_key + '|' + row.period_date + '|' + (row.department || ''); }
+
+// One-time cleanup: earlier versions let the same day's figure be entered more than once,
+// which silently summed together (e.g. Yesterday's revenue showing the wrong total). Keeps
+// only the most recently saved entry per day+metric and removes the older duplicates.
+function businessMetricsDedupe(){
+  const seen = {};
+  const toDelete = [];
+  businessMetrics.slice().sort((a,b)=> (a.created_at||'').localeCompare(b.created_at||'')).forEach(row => {
+    const key = bmDupeKey(row);
+    if(seen[key]) toDelete.push(seen[key].id);
+    seen[key] = row;
+  });
+  if(toDelete.length){
+    sb.from('business_metrics').delete().in('id', toDelete).then(({error})=>{
+      if(error){ console.warn('Duplicate cleanup failed', error); return; }
+      businessMetrics = businessMetrics.filter(m => !toDelete.includes(m.id));
+      reportingRenderRecent();
+      analyticsRender();
+    });
   }
 }
 
@@ -14257,33 +14281,61 @@ function reportingOpenGuests(){
 }
 
 async function bmInsert(rows){
-  const { data, error } = await sb.from('business_metrics').insert(rows).select();
-  if(error){ toast('Save failed - try again'); console.warn(error); return; }
-  businessMetrics = businessMetrics.concat(data || rows);
+  for(const r of rows){
+    const key = bmDupeKey(r);
+    const existing = businessMetrics.find(m => bmDupeKey(m) === key);
+    if(existing){
+      const { error } = await sb.from('business_metrics').update({ value: r.value }).eq('id', existing.id);
+      if(error){ toast('Save failed - try again'); console.warn(error); return; }
+      existing.value = r.value;
+    } else {
+      const { data, error } = await sb.from('business_metrics').insert([r]).select();
+      if(error){ toast('Save failed - try again'); console.warn(error); return; }
+      businessMetrics = businessMetrics.concat(data || [r]);
+    }
+  }
   toast('Saved ✓');
   reportingRenderRecent();
+  analyticsRender();
 }
 
 const BM_LABELS = { revenue:'Revenue', covers_served:'Covers Served', dept_spend:'Department Spend', staff_target:'Staff Target', staff_actual:'Staff Actual', guests_arrived:'Guests Arrived' };
 function reportingRenderRecent(){
   const el = document.getElementById('reporting-recent-list');
   if(!el) return;
-  const recent = businessMetrics.slice().sort((a,b)=> (b.created_at||'').localeCompare(a.created_at||'')).slice(0,20);
-  if(!recent.length){
+  if(!businessMetrics.length){
     el.innerHTML = '<div style="text-align:center;padding:30px;color:#94A3B8;font-size:12.5px">Nothing logged yet</div>';
     return;
   }
-  el.innerHTML = recent.map(r => `
-    <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 14px;background:white;border:1px solid #F1F5F9;border-radius:10px;margin-bottom:8px;cursor:pointer" onclick="bmEditEntry(${r.id})">
-      <div>
-        <div style="font-size:12.5px;font-weight:700;color:#0F1E2E">${BM_LABELS[r.metric_key]||r.metric_key}${r.department ? ' · '+r.department : ''}</div>
-        <div style="font-size:11px;color:#94A3B8">${r.period_date}</div>
-      </div>
-      <div style="display:flex;align-items:center;gap:10px">
-        <div style="font-size:13px;font-weight:700;color:#0F1E2E">${r.metric_key==='revenue'||r.metric_key==='dept_spend' ? bmMoney(r.value) : r.value}</div>
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#CBD5E1" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>
-      </div>
-    </div>`).join('');
+  const byDate = {};
+  businessMetrics.forEach(m => { (byDate[m.period_date] = byDate[m.period_date] || []).push(m); });
+  const dates = Object.keys(byDate).sort((a,b) => b.localeCompare(a)).slice(0, 10);
+
+  el.innerHTML = dates.map(date => {
+    const rows = byDate[date];
+    const rev = rows.find(r => r.metric_key === 'revenue');
+    const covers = rows.find(r => r.metric_key === 'covers_served');
+    const walkIn = rows.find(r => r.metric_key === 'guests_arrived' && r.department === 'Walk-in');
+    const online = rows.find(r => r.metric_key === 'guests_arrived' && r.department === 'Online');
+    const staffT = rows.find(r => r.metric_key === 'staff_target');
+    const staffA = rows.find(r => r.metric_key === 'staff_actual');
+    const deptRows = rows.filter(r => r.metric_key === 'dept_spend');
+
+    const lines = [];
+    if(rev) lines.push({ label:'Revenue', value: bmMoney(rev.value), id: rev.id });
+    if(covers) lines.push({ label:'Covers', value: covers.value, id: covers.id });
+    if(walkIn || online) lines.push({ label:'Guests', value: `${(walkIn?Number(walkIn.value):0)+(online?Number(online.value):0)} total (Walk-in ${walkIn?walkIn.value:0} / Online ${online?online.value:0})`, id: (walkIn||online).id });
+    if(staffT || staffA) lines.push({ label:'Staffing', value: `${staffA?staffA.value:'—'} / ${staffT?staffT.value:'—'}`, id: (staffA||staffT).id });
+    deptRows.forEach(d => lines.push({ label:'Spend · '+d.department, value: bmMoney(d.value), id: d.id }));
+
+    return `<div style="background:white;border:1px solid #E2E8F0;border-radius:12px;padding:14px 16px;margin-bottom:10px">
+      <div style="font-size:12px;font-weight:800;color:#0F1E2E;margin-bottom:8px">${date}</div>
+      ${lines.map(l => `<div onclick="bmEditEntry(${l.id})" style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-top:1px solid #F8FAFC;cursor:pointer">
+        <span style="font-size:12.5px;color:#64748B">${l.label}</span>
+        <span style="display:flex;align-items:center;gap:6px;font-size:13px;font-weight:700;color:#0F1E2E">${l.value}<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#CBD5E1" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg></span>
+      </div>`).join('')}
+    </div>`;
+  }).join('');
 }
 
 function bmEditEntry(id){

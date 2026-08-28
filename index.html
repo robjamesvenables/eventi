@@ -3044,6 +3044,20 @@ img.emoji-tw{width:1.15em;height:1.15em;vertical-align:-0.2em;margin:0 1px}
         </div>
       </div>
 
+      <div style="font-size:11.5px;font-weight:700;color:#94A3B8;text-transform:uppercase;letter-spacing:0.6px;margin:0 0 12px">vs Last Month</div>
+      <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;margin-bottom:36px">
+        <div style="background:white;border:1px solid var(--line);border-radius:14px;padding:16px 18px">
+          <div style="font-size:12px;font-weight:700;color:#64748B;margin-bottom:6px">Yesterday</div>
+          <div id="an-rev-yest-mom-val" style="font-size:20px;font-weight:800;color:#0F1E2E">—</div>
+          <div id="an-rev-yest-mom-sub" style="font-size:11px;color:#94A3B8;margin-top:4px"></div>
+        </div>
+        <div style="background:white;border:1px solid var(--line);border-radius:14px;padding:16px 18px">
+          <div style="font-size:12px;font-weight:700;color:#64748B;margin-bottom:6px">Month to Date</div>
+          <div id="an-rev-mtd-mom-val" style="font-size:20px;font-weight:800;color:#0F1E2E">—</div>
+          <div id="an-rev-mtd-mom-sub" style="font-size:11px;color:#94A3B8;margin-top:4px">same point last month</div>
+        </div>
+      </div>
+
       <div style="background:white;border:1px solid var(--line);border-radius:14px;padding:18px 20px;margin-bottom:36px">
         <div style="font-size:12px;font-weight:700;color:#64748B;margin-bottom:2px">Revenue by month — this year vs last year</div>
         <div style="display:flex;gap:16px;margin:10px 0 6px;font-size:11.5px;color:#64748B">
@@ -14451,6 +14465,13 @@ function analyticsRender(){
   const lastYearMonthStart = bmDateStr(new Date(yesterdayDate.getFullYear()-1, yesterdayDate.getMonth(), 1));
   const lastYearYearStart = (yesterdayDate.getFullYear()-1) + '-01-01';
 
+  // "Last month" comparisons - same point in the month before, so a fair MTD-vs-MTD comparison
+  const yesterdayDay = yesterdayDate.getDate();
+  const prevMonthLastDay = new Date(yesterdayDate.getFullYear(), yesterdayDate.getMonth(), 0).getDate();
+  const clampedDay = Math.min(yesterdayDay, prevMonthLastDay);
+  const lastMonthSameDay = bmDateStr(new Date(yesterdayDate.getFullYear(), yesterdayDate.getMonth()-1, clampedDay));
+  const lastMonthStart = bmDateStr(new Date(yesterdayDate.getFullYear(), yesterdayDate.getMonth()-1, 1));
+
   // Revenue - Yesterday / Month to Date / Year to Date, all cut off at yesterday (today is never closed out yet)
   const revYesterday = bmSum('revenue', yesterday, yesterday);
   const revMTD = bmSum('revenue', monthStart, yesterday);
@@ -14465,6 +14486,8 @@ function analyticsRender(){
   const revMTDLastYear = bmSum('revenue', lastYearMonthStart, lastYearSameDay);
   const revYTDLastYear = bmSum('revenue', lastYearYearStart, lastYearSameDay);
   const revLastYearToDate = revYTDLastYear;
+  const revYesterdayLastMonth = bmSum('revenue', lastMonthSameDay, lastMonthSameDay);
+  const revMTDLastMonth = bmSum('revenue', lastMonthStart, lastMonthSameDay);
 
   // Covers
   const coversWeek = bmSum('covers_served', weekStart, yesterday);
@@ -14495,8 +14518,9 @@ function analyticsRender(){
   const revYtdEl = document.getElementById('an-rev-ytd-val');
   if(revYtdEl) revYtdEl.textContent = revYTD ? bmMoney(revYTD) : '—';
 
-  // vs Last Year strip - same three periods, each compared one year back. Blank until real prior-year data exists.
-  function setYoyBox(valEl, subEl, curr, prior){
+  // vs Last Year / vs Last Month strips - blank until there's real prior data to compare against.
+  function setYoyBox(valEl, subEl, curr, prior, label){
+    label = label || 'last year';
     const pct = bmDelta(curr, prior);
     if(pct === null || !isFinite(pct)){
       valEl.textContent = '—';
@@ -14507,11 +14531,13 @@ function analyticsRender(){
     const color = up ? '#059669' : '#DC2626';
     const arrow = up ? '↗' : '↘';
     valEl.innerHTML = `<span style="color:${color}">${arrow} ${Math.abs(pct).toFixed(1)}%</span>`;
-    subEl.textContent = bmMoney(curr) + ' vs ' + bmMoney(prior) + ' last year';
+    subEl.textContent = bmMoney(curr) + ' vs ' + bmMoney(prior) + ' ' + label;
   }
   setYoyBox(document.getElementById('an-rev-yest-yoy-val'), document.getElementById('an-rev-yest-yoy-sub'), revYesterday, revYesterdayLastYear);
   setYoyBox(document.getElementById('an-rev-mtd-yoy-val'), document.getElementById('an-rev-mtd-yoy-sub'), revMTD, revMTDLastYear);
   setYoyBox(document.getElementById('an-rev-ytd-yoy-val'), document.getElementById('an-rev-ytd-yoy-sub'), revYTD, revYTDLastYear);
+  setYoyBox(document.getElementById('an-rev-yest-mom-val'), document.getElementById('an-rev-yest-mom-sub'), revYesterday, revYesterdayLastMonth, 'last month');
+  setYoyBox(document.getElementById('an-rev-mtd-mom-val'), document.getElementById('an-rev-mtd-mom-sub'), revMTD, revMTDLastMonth, 'same point last month');
 
   function setDeltaBox(valEl, deltaEl, value, prior, caption, formatter){
     formatter = formatter || bmMoney;

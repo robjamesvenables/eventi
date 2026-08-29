@@ -14432,7 +14432,6 @@ function bmDeleteEntry(id){
     msg:'This figure will be permanently removed from Analytics.',
     label:'Delete',
     onOk(){
-      appModalClose();
       sb.from('business_metrics').delete().eq('id', id).then(({error})=>{
         if(error){ toast('Delete failed - try again'); console.warn(error); return; }
         businessMetrics = businessMetrics.filter(m => m.id !== id);
@@ -14521,7 +14520,6 @@ function stickyRenderBoard(){
     el.style.left = n.x + '%';
     el.style.top = n.y + '%';
     el.style.background = c.bg;
-    el.style.transform = 'rotate(' + (((n.id % 7) - 3) * 1.3) + 'deg)';
     el.innerHTML = `<div class="sticky-note-text" style="color:${c.text}">${(n.note_text||n.text||'').replace(/</g,'&lt;')}</div>
       <div class="sticky-note-del" style="color:${c.del}" onclick="event.stopPropagation();stickyDeleteNote(${n.id})">×</div>`;
     el.addEventListener('pointerdown', stickyDragStart);
@@ -14534,15 +14532,19 @@ function stickyDragStart(e){
   const el = e.currentTarget;
   const board = document.getElementById('sticky-board');
   const boardRect = board.getBoundingClientRect();
-  el.classList.add('dragging');
   el.setPointerCapture(e.pointerId);
-  stickyDragState = { el, boardRect, id: Number(el.dataset.id) };
+  stickyDragState = { el, boardRect, id: Number(el.dataset.id), startX: e.clientX, startY: e.clientY, moved: false };
   el.addEventListener('pointermove', stickyDragMove);
   el.addEventListener('pointerup', stickyDragEnd);
 }
 function stickyDragMove(e){
   if(!stickyDragState) return;
-  const { el, boardRect } = stickyDragState;
+  const { el, boardRect, startX, startY } = stickyDragState;
+  if(!stickyDragState.moved && (Math.abs(e.clientX-startX) > 5 || Math.abs(e.clientY-startY) > 5)){
+    stickyDragState.moved = true;
+    el.classList.add('dragging');
+  }
+  if(!stickyDragState.moved) return;
   let x = ((e.clientX - boardRect.left) / boardRect.width) * 100;
   let y = ((e.clientY - boardRect.top) / boardRect.height) * 100;
   x = Math.max(0, Math.min(80, x));
@@ -14554,11 +14556,11 @@ function stickyDragMove(e){
 }
 function stickyDragEnd(e){
   if(!stickyDragState) return;
-  const { el, id, x, y } = stickyDragState;
+  const { el, id, x, y, moved } = stickyDragState;
   el.classList.remove('dragging');
   el.removeEventListener('pointermove', stickyDragMove);
   el.removeEventListener('pointerup', stickyDragEnd);
-  if(x !== undefined && y !== undefined){
+  if(moved && x !== undefined && y !== undefined){
     if(stickyActiveTab === 'mine'){
       const n = stickyMyNotes.find(n=>n.id===id);
       if(n){ n.x = x; n.y = y; stickySaveMyNotes(); }
@@ -14569,6 +14571,8 @@ function stickyDragEnd(e){
         if(error) console.warn('Sticky note position save failed', error);
       });
     }
+  } else if(!moved){
+    stickyOpenEdit(id);
   }
   stickyDragState = null;
 }
@@ -14577,7 +14581,7 @@ function stickyOpenAdd(){
   appModalShow({
     title:'Add Note',
     fields:[
-      { label:'Color', type:'colordot', options: Object.entries(STICKY_COLORS).map(([id,c])=>({id, label:c.label, bg:c.bg, svg:''})), value:'pink' },
+      { label:'Colour', type:'colordot', options: Object.entries(STICKY_COLORS).map(([id,c])=>({id, label:c.label, bg:c.bg, svg:''})), value:'pink' },
       { label:'Note', type:'textarea', placeholder:'Type your note...' }
     ],
     async onOk([color, text]){
@@ -14598,13 +14602,38 @@ function stickyOpenAdd(){
   });
 }
 
+function stickyOpenEdit(id){
+  const notes = stickyActiveTab === 'mine' ? stickyMyNotes : stickyBrainstormNotes;
+  const n = notes.find(n=>n.id===id);
+  if(!n) return;
+  appModalShow({
+    title:'Edit Note',
+    fields:[
+      { label:'Colour', type:'colordot', options: Object.entries(STICKY_COLORS).map(([cid,c])=>({id:cid, label:c.label, bg:c.bg, svg:''})), value:n.color },
+      { label:'Note', type:'textarea', value: n.note_text || n.text || '', placeholder:'Type your note...' }
+    ],
+    async onOk([color, text]){
+      if(!text) return;
+      if(stickyActiveTab === 'mine'){
+        n.color = color; n.note_text = text;
+        stickySaveMyNotes();
+        stickyRenderBoard();
+      } else {
+        n.color = color; n.note_text = text;
+        stickyRenderBoard();
+        const { error } = await sb.from('sticky_notes').update({ color, note_text: text }).eq('id', id);
+        if(error){ toast('Save failed - try again'); console.warn(error); }
+      }
+    }
+  });
+}
+
 function stickyDeleteNote(id){
   appConfirmShow({
     title:'Delete note',
     msg:'This note will be removed from the board.',
     label:'Delete',
     onOk(){
-      appModalClose();
       if(stickyActiveTab === 'mine'){
         stickyMyNotes = stickyMyNotes.filter(n=>n.id!==id);
         stickySaveMyNotes();

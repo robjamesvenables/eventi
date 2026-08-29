@@ -12663,10 +12663,60 @@ function chatSeedDepartmentGroups(){
       online: false,
       unread: 0,
       messages: [
-        {from:'them', text:`This is the ${dept} group. Everyone tagged ${dept} in Admin Console is automatically a member — no numbers to add, no one to remove when staff change.`, time:'Now'}
+        {from:'them', text:`This is the ${dept} group. Everyone tagged ${dept} in Admin Console is automatically a member — no numbers to add, no one to remove when staff change.`, time:'Now', createdAt: new Date(0).toISOString()}
       ]
     });
   });
+}
+
+let chatGroupRealtimeSubscribed = false;
+
+function chatGroupMessageKey(row){ return 'gdb:' + row.id; }
+
+async function chatLoadGroupMessagesFromDb(){
+  try{
+    const { data, error } = await sb.from('chat_group_messages').select('*').order('created_at', { ascending: true });
+    if(error) throw error;
+    (data || []).forEach(row => chatApplyGroupMessage(row));
+  } catch(e){
+    console.warn('Group chat table not reachable yet (run the SQL if this is the first load)', e);
+  }
+}
+
+function chatApplyGroupMessage(row){
+  const conv = chatConversations.find(c => c.isGroup && c.name === row.department);
+  if(!conv) return;
+  const key = chatGroupMessageKey(row);
+  const seen = new Set(conv.messages.filter(m=>m.dbId).map(m=>'gdb:'+m.dbId));
+  if(seen.has(key)) return;
+  const me = chatCurrentUserName();
+  const mine = row.sender_name === me;
+  conv.messages.push({
+    dbId: row.id,
+    from: mine ? 'me' : 'them',
+    senderName: row.sender_name,
+    text: row.body || '',
+    time: chatFormatTime(row.created_at),
+    createdAt: row.created_at
+  });
+  conv.messages.sort((a,b) => String(a.createdAt||'').localeCompare(String(b.createdAt||'')));
+  if(!mine && conv.id !== chatActiveId) conv.unread = (conv.unread || 0) + 1;
+}
+
+function chatSubscribeGroupRealtime(){
+  if(chatGroupRealtimeSubscribed) return;
+  chatGroupRealtimeSubscribed = true;
+  sb.channel('chat_group_messages_live')
+    .on('postgres_changes', { event:'INSERT', schema:'public', table:'chat_group_messages' }, payload => {
+      chatApplyGroupMessage(payload.new);
+      chatRenderList();
+      chatRenderDashboardList();
+      chatUpdateBadges();
+      if(payload.new.department && chatConversations.find(c=>c.id===chatActiveId)?.name === payload.new.department){
+        chatRenderMessages();
+      }
+    })
+    .subscribe();
 }
 
 function chatSaveLocal(){
@@ -12784,7 +12834,11 @@ async function chatLoadFromDb(){
 function chatRenderDashboardList(){
   const list = document.getElementById('chat-contact-list');
   if(!list) return;
-  const rows = chatConversations;
+  const rows = chatConversations.slice().sort((a,b) => {
+    const ad = a.messages[a.messages.length-1]?.createdAt || '';
+    const bd = b.messages[b.messages.length-1]?.createdAt || '';
+    return String(bd).localeCompare(String(ad));
+  });
   if(!rows.length){
     list.innerHTML = `<div style="padding:28px 18px;text-align:center;color:#94A3B8;font-size:12px;line-height:1.5">No conversations yet.<br>Open Chat to start one.</div>`;
     return;
@@ -12835,8 +12889,13 @@ function chatRenderList(){
   chatSeedDepartmentGroups();
   const q = (document.getElementById('chat-search').value || '').toLowerCase();
   const filtered = chatConversations.filter(c => c.name.toLowerCase().includes(q));
-  const groups = filtered.filter(c => c.isGroup);
-  const directs = filtered.filter(c => !c.isGroup);
+  const byRecency = (a,b) => {
+    const ad = a.messages[a.messages.length-1]?.createdAt || '';
+    const bd = b.messages[b.messages.length-1]?.createdAt || '';
+    return String(bd).localeCompare(String(ad));
+  };
+  const groups = filtered.filter(c => c.isGroup).sort(byRecency);
+  const directs = filtered.filter(c => !c.isGroup).sort(byRecency);
 
   function rowHtml(c){
     const last = c.messages[c.messages.length-1] || {from:'them', text:'Click to start chatting', time:''};
@@ -12948,7 +13007,9 @@ function chatRenderMessages(){
       }
     }
     const textHtml = m.text ? momentsTwemojiParse(m.text) : '';
+    const senderLabel = (c.isGroup && !mine && m.senderName) ? `<div style="font-size:10.5px;font-weight:700;color:#0D9488;margin-bottom:2px">${m.senderName}</div>` : '';
     return `<div style="align-self:${mine?'flex-end':'flex-start'};max-width:70%;position:relative" class="chat-msg-row">
+      ${senderLabel}
       <div style="background:${mine?'#0F1E2E':'#F1F5F9'};color:${mine?'white':'#0F1E2E'};padding:${m.attachment && m.attachmentType==='image' ?'8px':'10px 14px'};border-radius:14px;${mine?'border-bottom-right-radius:4px':'border-bottom-left-radius:4px'};font-size:13.5px;line-height:1.5;user-select:none"
         onmousedown="chatLongPressStart(${i})" onmouseup="chatLongPressEnd()" onmouseleave="chatLongPressEnd()"
         ontouchstart="chatLongPressStart(${i})" ontouchend="chatLongPressEnd()" ontouchcancel="chatLongPressEnd()"
@@ -13127,6 +13188,31 @@ window.chatSendMessage = async function(){
   chatRenderList();
   chatRenderDashboardList();
 
+  if(c.isGroup){
+    try{
+      const me = chatCurrentUserName();
+      const { data, error } = await sb.from('chat_group_messages').insert({
+        department: c.name,
+        sender_name: me,
+        body: text
+      }).select().single();
+      if(error) throw error;
+      pending.dbId = data.id;
+      pending.createdAt = data.created_at;
+      pending.time = chatFormatTime(data.created_at);
+      pending.pending = false;
+      chatRenderMessages();
+      chatRenderList();
+      chatRenderDashboardList();
+    }catch(err){
+      pending.failed = true;
+      pending.pending = false;
+      console.error('Group chat send failed:', err);
+      toast('Message not saved — run the group chat SQL in Supabase');
+    }
+    return;
+  }
+
   try{
     const me = chatCurrentUserName();
     const { data, error } = await sb.from('chat_messages').insert({
@@ -13159,6 +13245,13 @@ function chatInit(){
   chatRenderList();
   chatRenderDashboardList();
   chatLoadFromDb();
+  chatLoadGroupMessagesFromDb().then(()=>{
+    chatRenderList();
+    chatRenderDashboardList();
+    chatUpdateBadges();
+    if(chatActiveId) chatRenderMessages();
+  });
+  chatSubscribeGroupRealtime();
   document.getElementById('chat-search').oninput = chatRenderList;
   chatSizeCard();
   if(!window._chatResizeWired){

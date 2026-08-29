@@ -230,6 +230,15 @@ body{margin:0;padding:0;font-family:'Inter',sans-serif;background:var(--bg);colo
 .sb-link:hover{color:white;background:rgba(255,255,255,0.06)}
 .sb-link.active{color:#2DD4BF;background:rgba(255,255,255,0.1);font-weight:600}
 .sb-link.active::before{content:'';position:absolute;left:0;top:4px;bottom:4px;width:3px;background:#0D9488;border-radius:0 3px 3px 0}
+.sticky-tabs{display:flex;gap:8px;margin-bottom:18px}
+.sticky-tab{padding:8px 16px;border-radius:20px;border:1.5px solid #E2E8F0;background:white;font-family:'Inter',sans-serif;font-size:12.5px;font-weight:700;color:#64748B;cursor:pointer}
+.sticky-tab.active{background:#0F1E2E;border-color:#0F1E2E;color:white}
+.sticky-board{position:relative;background:#F7F5EF;border-radius:14px;border:1px solid #E2E8F0;min-height:420px;overflow:hidden}
+.sticky-note{position:absolute;width:150px;border-radius:4px;padding:12px;box-shadow:0 3px 8px rgba(0,0,0,0.12);cursor:grab;touch-action:none;user-select:none}
+.sticky-note.dragging{cursor:grabbing;z-index:50;box-shadow:0 6px 16px rgba(0,0,0,0.2)}
+.sticky-note-text{font-size:12.5px;font-weight:500;line-height:1.4;word-wrap:break-word;padding-right:14px}
+.sticky-note-del{position:absolute;top:6px;right:8px;font-size:14px;line-height:1;cursor:pointer;opacity:0.6}
+.sticky-note-del:hover{opacity:1}
 #n-analytics.active{color:#C4973B!important}
 #n-analytics.active::before{background:#C4973B!important}
 .rep-card{display:flex;flex-direction:column;align-items:flex-start;gap:10px;background:white;border:1px solid #E2E8F0;border-radius:14px;padding:18px;text-align:left;cursor:pointer;font-family:'Inter',sans-serif;transition:border-color 0.15s,transform 0.1s}
@@ -2406,6 +2415,10 @@ img.emoji-tw{width:1.15em;height:1.15em;vertical-align:-0.2em;margin:0 1px}
       <svg class="sb-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.42 4.58a5.4 5.4 0 0 0-7.65 0l-.77.78-.77-.78a5.4 5.4 0 0 0-7.65 0C1.46 6.7 1.33 10.28 4 13l8 8 8-8c2.67-2.72 2.54-6.3.42-8.42z"/></svg>
       Sandbox
     </button>
+    <button class="sb-link" id="n-stickynotes" onclick="nav('stickynotes')">
+      <svg class="sb-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+      Sticky Notes
+    </button>
     <button class="sb-link" id="n-quicklinks" onclick="nav('quicklinks')">
       <svg class="sb-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
       Quick Links
@@ -3189,6 +3202,32 @@ img.emoji-tw{width:1.15em;height:1.15em;vertical-align:-0.2em;margin:0 1px}
         <div style="margin-bottom:12px"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#CBD5E1" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="margin:0 auto;display:block"><path d="M20.42 4.58a5.4 5.4 0 0 0-7.65 0l-.77.78-.77-.78a5.4 5.4 0 0 0-7.65 0C1.46 6.7 1.33 10.28 4 13l8 8 8-8c2.67-2.72 2.54-6.3.42-8.42z"/></svg></div>
         <div style="font-size:14px;font-weight:600;color:#0F1E2E;margin-bottom:6px">Sandbox is empty</div>
         <div style="font-size:13px">Dump a note, voice memo, photo, or link — sort it out whenever you're ready</div>
+      </div>
+    </div>
+
+    <!-- STICKY NOTES -->
+    <div class="page" id="p-stickynotes" style="padding:32px 28px 60px">
+      <div class="ph">
+        <div class="ph-title">Sticky Notes</div>
+        <button class="btn btn-navy" onclick="stickyOpenAdd()">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          Add Note
+        </button>
+      </div>
+
+      <div class="sticky-tabs">
+        <button class="sticky-tab active" id="sticky-tab-mine" onclick="stickySwitchTab('mine')">My Notes</button>
+        <button class="sticky-tab" id="sticky-tab-brainstorm" onclick="stickySwitchTab('brainstorm')">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right:4px;vertical-align:-2px"><path d="M9.663 17h4.673M12 3a6 6 0 0 0-6 6c0 1.887.454 2.755 1.826 4.5.638.735 1.174 1.5 1.174 2.5m3-13a6 6 0 0 1 6 6c0 1.887-.454 2.755-1.826 4.5-.638.735-1.174 1.5-1.174 2.5"/></svg>
+          Brainstorm
+        </button>
+      </div>
+
+      <div class="sticky-board" id="sticky-board">
+        <div id="sticky-empty" style="display:none;text-align:center;padding:60px 20px;color:#94A3B8">
+          <div style="font-size:14px;font-weight:600;color:#0F1E2E;margin-bottom:6px">No notes yet</div>
+          <div style="font-size:13px">Tap Add Note to drop one on the board</div>
+        </div>
       </div>
     </div>
 
@@ -4603,6 +4642,7 @@ function nav(id, pushState=true){
   if(id==='survey'){surveyRender();}
   if(id==='vacancies'){vacanciesRender();}
   if(id==='analytics'){ analyticsRender(); businessMetricsLoadFromSupabase().then(analyticsRender); }
+  if(id==='stickynotes'){ stickyRenderBoard(); stickyLoadBrainstormFromSupabase().then(()=>{ if(stickyActiveTab==='brainstorm') stickyRenderBoard(); }); }
   if(id==='reporting'){reportingRender();}
 
   // Wait a frame so the page's content/height is fully laid out before positioning scroll
@@ -11175,7 +11215,7 @@ function kitchenDeleteAllergenDish(id){
 }
 // ── INIT ──
 window.addEventListener('keydown',e=>{if(e.key==='Enter'&&document.getElementById('login').style.display!=='none')doLogin();});
-window.addEventListener('load',async ()=>{ initCurrency(); await announceLoadFromSupabase(); announceRender(); await djSchedLoadFromSupabase(); djSchedRender(); await momentsLoadFromSupabase(); momentsRebuild(); await sandboxLoadFromSupabase(); sandboxRender(); await quickLinksLoadFromSupabase(); quickLinksRender(); await myDriveLoadFromSupabase(); myDriveRender(); await sopLoadFromSupabase(); sopRenderDeptList(); await suggestionLoadFromSupabase(); suggestionRenderList(); await vendorLoadFromSupabase(); vendorRenderDepts(); await customerLoadFromSupabase(); customerRenderList(); await vacanciesLoadFromSupabase(); vacanciesRender(); await businessMetricsLoadFromSupabase(); });
+window.addEventListener('load',async ()=>{ initCurrency(); await announceLoadFromSupabase(); announceRender(); await djSchedLoadFromSupabase(); djSchedRender(); await momentsLoadFromSupabase(); momentsRebuild(); await sandboxLoadFromSupabase(); sandboxRender(); await quickLinksLoadFromSupabase(); quickLinksRender(); await myDriveLoadFromSupabase(); myDriveRender(); await sopLoadFromSupabase(); sopRenderDeptList(); await suggestionLoadFromSupabase(); suggestionRenderList(); await vendorLoadFromSupabase(); vendorRenderDepts(); await customerLoadFromSupabase(); customerRenderList(); await vacanciesLoadFromSupabase(); vacanciesRender(); await businessMetricsLoadFromSupabase(); stickyLoadMyNotes(); });
 
 // ── ANNOUNCEMENTS ──
 const announcements = [
@@ -14406,6 +14446,178 @@ function bmDeleteEntry(id){
 
 function reportingRender(){
   reportingRenderRecent();
+}
+
+
+// ── STICKY NOTES ──
+const STICKY_COLORS = {
+  pink:  { bg:'#F4C0D1', text:'#4B1528', del:'#993556', label:'Pink'  },
+  gold:  { bg:'#FAC775', text:'#412402', del:'#854F0B', label:'Gold'  },
+  teal:  { bg:'#9FE1CB', text:'#04342C', del:'#0F6E56', label:'Green' },
+  coral: { bg:'#F0997B', text:'#4A1B0C', del:'#993C1D', label:'Coral' }
+};
+let stickyActiveTab = 'mine';
+let stickyMyNotes = [];
+let stickyBrainstormNotes = [];
+let stickyBrainstormSubscribed = false;
+let stickyDragState = null;
+
+function stickyLoadMyNotes(){
+  try{ stickyMyNotes = JSON.parse(localStorage.getItem('mavis_sticky_my_notes') || '[]'); }
+  catch(e){ stickyMyNotes = []; }
+}
+function stickySaveMyNotes(){
+  localStorage.setItem('mavis_sticky_my_notes', JSON.stringify(stickyMyNotes));
+}
+
+async function stickyLoadBrainstormFromSupabase(){
+  try{
+    const { data, error } = await sb.from('sticky_notes').select('*');
+    if(error) throw error;
+    stickyBrainstormNotes = data || [];
+  } catch(e){
+    console.warn('Sticky Notes brainstorm table not reachable yet (run the SQL if this is the first load)', e);
+    stickyBrainstormNotes = [];
+  }
+}
+
+function stickySubscribeBrainstormRealtime(){
+  if(stickyBrainstormSubscribed) return;
+  stickyBrainstormSubscribed = true;
+  sb.channel('sticky_notes_live')
+    .on('postgres_changes', { event:'*', schema:'public', table:'sticky_notes' }, payload => {
+      if(payload.eventType === 'INSERT'){
+        if(!stickyBrainstormNotes.find(n=>n.id===payload.new.id)) stickyBrainstormNotes.push(payload.new);
+      } else if(payload.eventType === 'UPDATE'){
+        const idx = stickyBrainstormNotes.findIndex(n=>n.id===payload.new.id);
+        if(idx>-1) stickyBrainstormNotes[idx] = payload.new;
+      } else if(payload.eventType === 'DELETE'){
+        stickyBrainstormNotes = stickyBrainstormNotes.filter(n=>n.id!==payload.old.id);
+      }
+      if(stickyActiveTab === 'brainstorm') stickyRenderBoard();
+    })
+    .subscribe();
+}
+
+function stickySwitchTab(tab){
+  stickyActiveTab = tab;
+  document.getElementById('sticky-tab-mine').classList.toggle('active', tab==='mine');
+  document.getElementById('sticky-tab-brainstorm').classList.toggle('active', tab==='brainstorm');
+  if(tab === 'brainstorm') stickySubscribeBrainstormRealtime();
+  stickyRenderBoard();
+}
+
+function stickyRenderBoard(){
+  const board = document.getElementById('sticky-board');
+  if(!board) return;
+  const notes = stickyActiveTab === 'mine' ? stickyMyNotes : stickyBrainstormNotes;
+  board.querySelectorAll('.sticky-note').forEach(el => el.remove());
+  document.getElementById('sticky-empty').style.display = notes.length ? 'none' : 'block';
+  notes.forEach(n => {
+    const c = STICKY_COLORS[n.color] || STICKY_COLORS.pink;
+    const el = document.createElement('div');
+    el.className = 'sticky-note';
+    el.dataset.id = n.id;
+    el.style.left = n.x + '%';
+    el.style.top = n.y + '%';
+    el.style.background = c.bg;
+    el.style.transform = 'rotate(' + (((n.id % 7) - 3) * 1.3) + 'deg)';
+    el.innerHTML = `<div class="sticky-note-text" style="color:${c.text}">${(n.note_text||n.text||'').replace(/</g,'&lt;')}</div>
+      <div class="sticky-note-del" style="color:${c.del}" onclick="event.stopPropagation();stickyDeleteNote(${n.id})">×</div>`;
+    el.addEventListener('pointerdown', stickyDragStart);
+    board.appendChild(el);
+  });
+}
+
+function stickyDragStart(e){
+  if(e.target.classList.contains('sticky-note-del')) return;
+  const el = e.currentTarget;
+  const board = document.getElementById('sticky-board');
+  const boardRect = board.getBoundingClientRect();
+  el.classList.add('dragging');
+  el.setPointerCapture(e.pointerId);
+  stickyDragState = { el, boardRect, id: Number(el.dataset.id) };
+  el.addEventListener('pointermove', stickyDragMove);
+  el.addEventListener('pointerup', stickyDragEnd);
+}
+function stickyDragMove(e){
+  if(!stickyDragState) return;
+  const { el, boardRect } = stickyDragState;
+  let x = ((e.clientX - boardRect.left) / boardRect.width) * 100;
+  let y = ((e.clientY - boardRect.top) / boardRect.height) * 100;
+  x = Math.max(0, Math.min(80, x));
+  y = Math.max(0, Math.min(82, y));
+  el.style.left = x + '%';
+  el.style.top = y + '%';
+  stickyDragState.x = x;
+  stickyDragState.y = y;
+}
+function stickyDragEnd(e){
+  if(!stickyDragState) return;
+  const { el, id, x, y } = stickyDragState;
+  el.classList.remove('dragging');
+  el.removeEventListener('pointermove', stickyDragMove);
+  el.removeEventListener('pointerup', stickyDragEnd);
+  if(x !== undefined && y !== undefined){
+    if(stickyActiveTab === 'mine'){
+      const n = stickyMyNotes.find(n=>n.id===id);
+      if(n){ n.x = x; n.y = y; stickySaveMyNotes(); }
+    } else {
+      const n = stickyBrainstormNotes.find(n=>n.id===id);
+      if(n){ n.x = x; n.y = y; }
+      sb.from('sticky_notes').update({ x, y }).eq('id', id).then(({error})=>{
+        if(error) console.warn('Sticky note position save failed', error);
+      });
+    }
+  }
+  stickyDragState = null;
+}
+
+function stickyOpenAdd(){
+  appModalShow({
+    title:'Add Note',
+    fields:[
+      { label:'Color', type:'colordot', options: Object.entries(STICKY_COLORS).map(([id,c])=>({id, label:c.label, bg:c.bg, svg:''})), value:'pink' },
+      { label:'Note', type:'textarea', placeholder:'Type your note...' }
+    ],
+    async onOk([color, text]){
+      if(!text) return;
+      const x = 8 + Math.random()*50;
+      const y = 8 + Math.random()*40;
+      if(stickyActiveTab === 'mine'){
+        stickyMyNotes.push({ id: Date.now(), x, y, color, note_text: text });
+        stickySaveMyNotes();
+        stickyRenderBoard();
+      } else {
+        const { data, error } = await sb.from('sticky_notes').insert([{ x, y, color, note_text: text }]).select();
+        if(error){ toast('Save failed - try again'); console.warn(error); return; }
+        if(data && data[0] && !stickyBrainstormNotes.find(n=>n.id===data[0].id)) stickyBrainstormNotes.push(data[0]);
+        stickyRenderBoard();
+      }
+    }
+  });
+}
+
+function stickyDeleteNote(id){
+  appConfirmShow({
+    title:'Delete note',
+    msg:'This note will be removed from the board.',
+    label:'Delete',
+    onOk(){
+      appModalClose();
+      if(stickyActiveTab === 'mine'){
+        stickyMyNotes = stickyMyNotes.filter(n=>n.id!==id);
+        stickySaveMyNotes();
+        stickyRenderBoard();
+      } else {
+        stickyBrainstormNotes = stickyBrainstormNotes.filter(n=>n.id!==id);
+        stickyRenderBoard();
+        sb.from('sticky_notes').delete().eq('id', id).then(({error})=>{
+          if(error) console.warn('Sticky note delete failed', error);
+        });
+      }
+    }
+  });
 }
 
 

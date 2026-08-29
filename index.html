@@ -12644,17 +12644,15 @@ let chatConversations = [
 ];
 let chatActiveId = null;
 let chatLoadedFromDb = false;
-let chatGroupsSeeded = false;
 const CHAT_LOCAL_STORAGE_KEY = 'mavis_chat_conversations_v1';
 
 function chatSeedDepartmentGroups(){
-  if(chatGroupsSeeded) return;
-  chatGroupsSeeded = true;
   PEOPLE_DEPARTMENTS.forEach((dept, idx) => {
     const memberIds = PEOPLE.filter(p => p.departments.includes(dept)).map(p => p.id);
     if(!memberIds.length) return;
     const groupId = 90000 + idx;
-    if(chatConversations.find(c => c.id === groupId)) return;
+    const existing = chatConversations.find(c => c.id === groupId);
+    if(existing){ existing.memberIds = memberIds; return; }
     chatConversations.push({
       id: groupId,
       name: dept,

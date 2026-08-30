@@ -14668,20 +14668,24 @@ function businessMetricsDedupe(){
   }
 }
 
+function bmFriendlyDate(dateStr){
+  const d = new Date(dateStr + 'T00:00:00');
+  return d.toLocaleDateString('en-GB', {weekday:'long', day:'numeric', month:'long'});
+}
+
 function reportingOpenRevenue(){
   const yest = bmDateStr(bmDaysAgo(1));
   const existing = businessMetrics.find(x => x.metric_key==='revenue' && x.period_date===yest);
   appModalShow({
-    title:'Revenue',
-    sub: existing ? `Yesterday already has Rp ${Math.round(existing.value).toLocaleString('en-US')} logged - shown below. Save again to correct it.` : 'Log a day\'s revenue',
+    title: 'Revenue — ' + bmFriendlyDate(yest),
+    sub: existing ? `Already has Rp ${Math.round(existing.value).toLocaleString('en-US')} logged - shown below. Save again to correct it.` : 'Log yesterday\'s revenue. To correct an earlier day, tap it in Recently Added below instead.',
     fields:[
-      {label:'Date', type:'date', value: yest, max: yest, maxHint:'Yesterday or earlier only - today isn\'t closed out yet'},
-      {label:'Revenue for that day', type:'money', placeholder:'e.g. 18,500,000', value: existing ? String(existing.value) : ''}
+      {label:'Revenue for yesterday', type:'money', placeholder:'e.g. 18,500,000', value: existing ? String(existing.value) : ''}
     ],
-    async onOk([date, value]){
+    async onOk([value]){
       const num = parseFloat(value);
-      if(!date || isNaN(num)) return;
-      await bmInsert([{ metric_key:'revenue', period_date: date, value: num }]);
+      if(isNaN(num)) return;
+      await bmInsert([{ metric_key:'revenue', period_date: yest, value: num }]);
     }
   });
 }
@@ -14724,16 +14728,15 @@ function reportingOpenCovers(){
   const yest = bmDateStr(bmDaysAgo(1));
   const existing = businessMetrics.find(x => x.metric_key==='covers_served' && x.period_date===yest);
   appModalShow({
-    title:'Covers Served',
-    sub: existing ? `Yesterday already has ${existing.value} covers logged - shown below. Save again to correct it.` : 'Log a day\'s covers',
+    title: 'Covers Served — ' + bmFriendlyDate(yest),
+    sub: existing ? `Already has ${existing.value} covers logged - shown below. Save again to correct it.` : 'Log yesterday\'s covers. To correct an earlier day, tap it in Recently Added below instead.',
     fields:[
-      {label:'Date', type:'date', value: yest, max: yest, maxHint:'Yesterday or earlier only - today isn\'t closed out yet'},
-      {label:'Covers for that day', placeholder:'e.g. 145', value: existing ? String(existing.value) : ''}
+      {label:'Covers for yesterday', placeholder:'e.g. 145', value: existing ? String(existing.value) : ''}
     ],
-    async onOk([date, value]){
+    async onOk([value]){
       const num = parseFloat(value);
-      if(!date || isNaN(num)) return;
-      await bmInsert([{ metric_key:'covers_served', period_date: date, value: num }]);
+      if(isNaN(num)) return;
+      await bmInsert([{ metric_key:'covers_served', period_date: yest, value: num }]);
     }
   });
 }
@@ -14760,19 +14763,18 @@ function reportingOpenStaff(){
   const existingTarget = businessMetrics.find(x => x.metric_key==='staff_target' && x.period_date===yest);
   const existingActual = businessMetrics.find(x => x.metric_key==='staff_actual' && x.period_date===yest);
   appModalShow({
-    title:'Staffing',
-    sub: (existingTarget || existingActual) ? 'Yesterday already has figures logged - shown below. Save again to correct them.' : 'Log target vs actual headcount',
+    title: 'Staffing — ' + bmFriendlyDate(yest),
+    sub: (existingTarget || existingActual) ? 'Already has figures logged - shown below. Save again to correct them.' : 'Log yesterday\'s target vs actual headcount. To correct an earlier day, tap it in Recently Added below instead.',
     fields:[
-      {label:'Date', type:'date', value: yest, max: yest, maxHint:'Yesterday or earlier only - today isn\'t closed out yet'},
       {label:'Target headcount', placeholder:'e.g. 100', value: existingTarget ? String(existingTarget.value) : ''},
       {label:'Actual headcount', placeholder:'e.g. 98', value: existingActual ? String(existingActual.value) : ''}
     ],
-    async onOk([date, target, actual]){
+    async onOk([target, actual]){
       const t = parseFloat(target), a = parseFloat(actual);
-      if(!date || isNaN(t) || isNaN(a)) return;
+      if(isNaN(t) || isNaN(a)) return;
       await bmInsert([
-        { metric_key:'staff_target', period_date: date, value: t },
-        { metric_key:'staff_actual', period_date: date, value: a }
+        { metric_key:'staff_target', period_date: yest, value: t },
+        { metric_key:'staff_actual', period_date: yest, value: a }
       ]);
     }
   });
@@ -14782,19 +14784,18 @@ function reportingOpenGuests(){
   const existingWalkIn = businessMetrics.find(x => x.metric_key==='guests_arrived' && x.period_date===yest && x.department==='Walk-in');
   const existingOnline = businessMetrics.find(x => x.metric_key==='guests_arrived' && x.period_date===yest && x.department==='Online');
   appModalShow({
-    title:'Guests Through the Door',
-    sub: (existingWalkIn || existingOnline) ? 'Yesterday already has figures logged - shown below. Save again to correct them.' : 'Log a day\'s guest count',
+    title: 'Guests Through the Door — ' + bmFriendlyDate(yest),
+    sub: (existingWalkIn || existingOnline) ? 'Already has figures logged - shown below. Save again to correct them.' : 'Log yesterday\'s guest count. To correct an earlier day, tap it in Recently Added below instead.',
     fields:[
-      {label:'Date', type:'date', value: yest, max: yest, maxHint:'Yesterday or earlier only - today isn\'t closed out yet'},
       {label:'Walk-in guests', placeholder:'e.g. 60', value: existingWalkIn ? String(existingWalkIn.value) : ''},
       {label:'Online / reservation guests', placeholder:'e.g. 85', value: existingOnline ? String(existingOnline.value) : ''}
     ],
-    async onOk([date, walkIn, online]){
+    async onOk([walkIn, online]){
       const w = parseFloat(walkIn), o = parseFloat(online);
-      if(!date || isNaN(w) || isNaN(o)) return;
+      if(isNaN(w) || isNaN(o)) return;
       await bmInsert([
-        { metric_key:'guests_arrived', period_date: date, department:'Walk-in', value: w },
-        { metric_key:'guests_arrived', period_date: date, department:'Online', value: o }
+        { metric_key:'guests_arrived', period_date: yest, department:'Walk-in', value: w },
+        { metric_key:'guests_arrived', period_date: yest, department:'Online', value: o }
       ]);
     }
   });

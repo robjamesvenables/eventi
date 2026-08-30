@@ -251,6 +251,8 @@ body{margin:0;padding:0;font-family:'Inter',sans-serif;background:var(--bg);colo
 .sticky-note-del:hover{opacity:1}
 #n-analytics.active{color:#C4973B!important}
 #n-analytics.active::before{background:#C4973B!important}
+.currency-pill{padding:7px 13px;border-radius:20px;border:1.5px solid #E2E8F0;background:white;font-family:'Inter',sans-serif;font-size:12px;font-weight:700;color:#64748B;cursor:pointer}
+.currency-pill.active{background:#0F1E2E;border-color:#0F1E2E;color:white}
 .rep-card{display:flex;flex-direction:column;align-items:flex-start;gap:10px;background:white;border:1px solid #E2E8F0;border-radius:14px;padding:18px;text-align:left;cursor:pointer;font-family:'Inter',sans-serif;transition:border-color 0.15s,transform 0.1s}
 .rep-card:hover{border-color:#0D9488}
 .rep-card:active{transform:scale(0.98)}
@@ -3140,6 +3142,11 @@ img.emoji-tw{width:1.15em;height:1.15em;vertical-align:-0.2em;margin:0 1px}
       </button>
       <div class="ph">
         <div class="ph-title">Reporting</div>
+        <div id="currency-selector" style="display:flex;gap:6px">
+          <button class="currency-pill active" data-cur="IDR" onclick="setCurrency('IDR')">Rp IDR</button>
+          <button class="currency-pill" data-cur="USD" onclick="setCurrency('USD')">$ USD</button>
+          <button class="currency-pill" data-cur="EUR" onclick="setCurrency('EUR')">€ EUR</button>
+        </div>
       </div>
       <p style="font-size:13px;color:#64748B;margin:-6px 0 24px">Enter business figures here - they'll automatically update the Analytics dashboard.</p>
 
@@ -5459,7 +5466,20 @@ const currencyMap = {
   EUR: {symbol: '\u20ac', locale: 'de-DE'}
 };
 let currentCurrency = 'IDR';
-function initCurrency(){}
+function initCurrency(){
+  try{
+    const saved = localStorage.getItem('mavis_currency');
+    if(saved && currencyMap[saved]) currentCurrency = saved;
+  }catch(e){}
+}
+function setCurrency(code){
+  if(!currencyMap[code]) return;
+  currentCurrency = code;
+  try{ localStorage.setItem('mavis_currency', code); }catch(e){}
+  document.querySelectorAll('.currency-pill').forEach(p => p.classList.toggle('active', p.dataset.cur===code));
+  if(typeof analyticsRender === 'function') analyticsRender();
+  if(typeof reportingRenderRecent === 'function') reportingRenderRecent();
+}
 function calcFinTotals(){
   const rows=document.querySelectorAll('#fin-table tbody tr:not(.fsub):not(.ftot)');
   let subtotal=0;
@@ -14618,7 +14638,7 @@ function reportingOpenRevenue(){
     sub:'Log a day\'s revenue',
     fields:[
       {label:'Date', type:'date', value: yest, max: yest, maxHint:'Yesterday or earlier only - today isn\'t closed out yet'},
-      {label:'Revenue for that day', placeholder:'e.g. 18500000'}
+      {label:'Revenue for that day', type:'money', placeholder:'e.g. 18,500,000'}
     ],
     async onOk([date, value]){
       const num = parseFloat(value);
@@ -14639,7 +14659,7 @@ function reportingOpenRevenueBulk(){
     sub:'Backfill past months in one go - one total per month, last 12 complete months. Only use this for months with no daily figures already logged, or the total will be counted twice.',
     fields: months.map(m => {
       const existing = businessMetrics.find(x => x.metric_key==='revenue' && x.period_date===m.periodDate);
-      return { label: m.label, placeholder:'e.g. 620000000', optional:true, value: existing ? String(existing.value) : '' };
+      return { label: m.label, type:'money', placeholder:'e.g. 620,000,000', optional:true, value: existing ? String(existing.value) : '' };
     }),
     async onOk(values){
       const rows = [];
@@ -14676,7 +14696,7 @@ function reportingOpenDeptSpend(){
     fields:[
       {label:'Month', type:'date', value: bmDateStr(new Date())},
       {label:'Department', type:'pillpicker', options: depts.map(d=>({id:d, name:d})), value: depts[0]},
-      {label:'Spend for that month', placeholder:'e.g. 4200000'}
+      {label:'Spend for that month', type:'money', placeholder:'e.g. 4,200,000'}
     ],
     async onOk([month, dept, value]){
       const num = parseFloat(value);
@@ -14790,12 +14810,13 @@ function bmEditEntry(id){
   if(!row) return;
   const label = (BM_LABELS[row.metric_key]||row.metric_key) + (row.department ? ' · '+row.department : '');
   const isDaily = row.metric_key !== 'dept_spend';
+  const isMoney = row.metric_key === 'revenue' || row.metric_key === 'dept_spend';
   const yest = bmDateStr(bmDaysAgo(1));
   appModalShow({
     title: 'Edit ' + label,
     fields:[
       {label:'Date', type:'date', value: row.period_date, max: isDaily ? yest : undefined, maxHint: isDaily ? 'Yesterday or earlier only' : undefined},
-      {label:'Value', value: String(row.value)}
+      {label:'Value', type: isMoney ? 'money' : undefined, value: String(row.value)}
     ],
     async onOk([date, value]){
       const num = parseFloat(value);
@@ -14839,6 +14860,7 @@ function bmDeleteEntry(id){
 
 function reportingRender(){
   reportingRenderRecent();
+  document.querySelectorAll('.currency-pill').forEach(p => p.classList.toggle('active', p.dataset.cur===currentCurrency));
 }
 
 
@@ -15059,7 +15081,11 @@ function bmSum(key, fromDate, toDate, department){
 }
 function bmDateStr(d){ const y=d.getFullYear(), m=String(d.getMonth()+1).padStart(2,'0'), day=String(d.getDate()).padStart(2,'0'); return `${y}-${m}-${day}`; }
 function bmDaysAgo(n){ const d = new Date(); d.setDate(d.getDate()-n); return d; }
-function bmMoney(v){ return v ? 'Rp ' + Math.round(v).toLocaleString('en-US') : '—'; }
+function bmMoney(v){
+  if(!v) return '—';
+  const cur = currencyMap[currentCurrency] || currencyMap['IDR'];
+  return cur.symbol + ' ' + Math.round(v).toLocaleString('en-US');
+}
 function bmDelta(curr, prev){
   if(!prev) return null;
   const pct = ((curr - prev) / prev) * 100;
@@ -16620,6 +16646,17 @@ function appModalShow({title, sub='', fields, onOk}){
         onfocus="this.style.borderColor='#0D9488'" onblur="this.style.borderColor='#E2E8F0'">${f.value||''}</textarea>
     </div>`;
     }
+    if(f.type==='money'){
+      const initial = f.value ? Number(f.value).toLocaleString('en-US') : '';
+      return `
+    <div style="margin-bottom:${i<fields.length-1?'14px':'0'}">
+      ${f.label?`<div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.7px;color:#94A3B8;margin-bottom:6px">${f.label}</div>`:''}
+      <input id="appModalField_${i}" type="text" inputmode="numeric" value="${initial}" placeholder="${f.placeholder||''}"
+        style="width:100%;padding:11px 14px;border:1.5px solid #E2E8F0;border-radius:9px;font-family:'Inter',sans-serif;font-size:14px;color:#0F1E2E;outline:none;box-sizing:border-box"
+        onfocus="this.style.borderColor='#0D9488'" onblur="this.style.borderColor='#E2E8F0'"
+        oninput="appModalFormatMoney(this)">
+    </div>`;
+    }
     return `
     <div style="margin-bottom:${i<fields.length-1?'14px':'0'}">
       ${f.label?`<div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.7px;color:#94A3B8;margin-bottom:6px">${f.label}</div>`:''}
@@ -16652,6 +16689,8 @@ function appModalShow({title, sub='', fields, onOk}){
         const fromEl = document.getElementById('appModalField_'+i+'_from');
         const toEl = document.getElementById('appModalField_'+i+'_to');
         vals.push({from: fromEl ? fromEl.value : '', to: toEl ? toEl.value : ''});
+      } else if(fields[i].type==='money'){
+        vals.push(el.value.replace(/,/g,'').trim());
       } else {
         vals.push(el.value.trim());
       }
@@ -16730,6 +16769,11 @@ function appModalInsertEmoji(i, char){
   el.setSelectionRange(pos, pos);
   appModalUpdateCharCounter(i);
 }
+function appModalFormatMoney(el){
+  const digits = el.value.replace(/[^0-9]/g, '');
+  el.value = digits ? Number(digits).toLocaleString('en-US') : '';
+}
+
 function appModalPickColorDot(i, dotId, el){
   const wrap = document.getElementById('appModalField_'+i);
   wrap.dataset.selected = dotId;

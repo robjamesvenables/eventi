@@ -3149,6 +3149,11 @@ img.emoji-tw{width:1.15em;height:1.15em;vertical-align:-0.2em;margin:0 1px}
           <div class="rep-card-title">Revenue</div>
           <div class="rep-card-sub">Log a day's revenue</div>
         </button>
+        <button onclick="reportingOpenRevenueBulk()" class="rep-card">
+          <div class="rep-card-icon" style="background:rgba(42,120,214,0.1);color:#2a78d6"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="8" y1="3" x2="8" y2="21"/><line x1="3" y1="9" x2="21" y2="9"/></svg></div>
+          <div class="rep-card-title">Monthly Revenue</div>
+          <div class="rep-card-sub">Backfill last 12 months at once</div>
+        </button>
         <button onclick="reportingOpenCovers()" class="rep-card">
           <div class="rep-card-icon" style="background:rgba(27,175,122,0.1);color:#1baf7a"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div>
           <div class="rep-card-title">Covers Served</div>
@@ -14619,6 +14624,31 @@ function reportingOpenRevenue(){
       const num = parseFloat(value);
       if(!date || isNaN(num)) return;
       await bmInsert([{ metric_key:'revenue', period_date: date, value: num }]);
+    }
+  });
+}
+function reportingOpenRevenueBulk(){
+  const today = new Date();
+  const months = [];
+  for(let i=12; i>=1; i--){
+    const d = new Date(today.getFullYear(), today.getMonth()-i, 1);
+    months.push({ label: d.toLocaleDateString('en-GB',{month:'long', year:'numeric'}), periodDate: bmDateStr(d) });
+  }
+  appModalShow({
+    title:'Add Monthly Revenue',
+    sub:'Backfill past months in one go - one total per month, last 12 complete months. Only use this for months with no daily figures already logged, or the total will be counted twice.',
+    fields: months.map(m => {
+      const existing = businessMetrics.find(x => x.metric_key==='revenue' && x.period_date===m.periodDate);
+      return { label: m.label, placeholder:'e.g. 620000000', optional:true, value: existing ? String(existing.value) : '' };
+    }),
+    async onOk(values){
+      const rows = [];
+      values.forEach((v, i) => {
+        const num = parseFloat(v);
+        if(v && !isNaN(num)) rows.push({ metric_key:'revenue', period_date: months[i].periodDate, value: num });
+      });
+      if(!rows.length) return;
+      await bmInsert(rows);
     }
   });
 }

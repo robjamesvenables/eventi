@@ -17000,6 +17000,7 @@ async function sandboxLoadFromSupabase(){
         dbId: row.id,
         type: row.type,
         content: row.content,
+        title: row.title || '',
         timestamp: new Date(row.created_at).toLocaleString('en-US',{month:'short', day:'numeric', hour:'numeric', minute:'2-digit'})
       });
     });
@@ -17054,25 +17055,27 @@ function sandboxRender(){
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
           <div style="font-size:11px;color:#94A3B8;font-weight:600">${icons[item.type]} ${item.timestamp}</div>
           <div style="display:flex;align-items:center;gap:10px">
-            ${(item.type==='note' || item.type==='link') ? `<button onclick="sandboxEditItem(${item.id})" style="opacity:0.5;cursor:pointer;font-size:12px;color:#64748B;background:none;border:none;font-family:'Inter',sans-serif;font-weight:700" title="Edit">Edit</button>` : ''}
+            <button onclick="sandboxEditItem(${item.id})" style="opacity:0.5;cursor:pointer;font-size:12px;color:#64748B;background:none;border:none;font-family:'Inter',sans-serif;font-weight:700" title="Edit">Edit</button>
             <button onclick="sandboxDelete(${item.id})" style="opacity:0.5;cursor:pointer;font-size:15px;color:#EF4444;background:none;border:none" title="Delete">×</button>
           </div>
         </div>
+        ${item.title ? `<div style="font-size:14.5px;font-weight:800;color:#0F1E2E;margin-bottom:6px">${item.title.replace(/</g,'&lt;')}</div>` : ''}
         ${bodyHtml}
         <div style="display:flex;gap:8px;margin-top:12px">${downloadBtn}</div>
       </div>`;
   }).join('');
 }
 
-async function sandboxAddItem(type, content){
+async function sandboxAddItem(type, content, title){
+  title = (title || '').trim();
   try{
-    const { data, error } = await sb.from('sandbox_items').insert({ type, content }).select().single();
+    const { data, error } = await sb.from('sandbox_items').insert({ type, content, title }).select().single();
     if(error) throw error;
-    sandboxItems.unshift({id: data.id, dbId: data.id, type, content, timestamp: sandboxTimestamp()});
+    sandboxItems.unshift({id: data.id, dbId: data.id, type, content, title, timestamp: sandboxTimestamp()});
     toast('Added to Sandbox ✓');
   } catch(e){
     console.warn('Could not save to Supabase, keeping locally only', e);
-    sandboxItems.unshift({id: sandboxNextId++, type, content, timestamp: sandboxTimestamp()});
+    sandboxItems.unshift({id: sandboxNextId++, type, content, title, timestamp: sandboxTimestamp()});
     toast('Added here, but not saved - check your connection');
   }
   sandboxRender();
@@ -17082,17 +17085,27 @@ function sandboxEditItem(id){
   const item = sandboxItems.find(x=>x.id===id);
   if(!item) return;
   const isNote = item.type === 'note';
+  const isLink = item.type === 'link';
+  const isTextType = isNote || isLink;
   appModalShow({
-    title: isNote ? 'Edit Note' : 'Edit Link',
-    fields: isNote
-      ? [{label:'Note', type:'textarea', rows:6, value: item.content}]
-      : [{label:'URL', value: item.content}],
-    async onOk([content]){
-      if(!content || !content.trim()) return;
+    title: 'Edit ' + (item.type==='note'?'Note':item.type==='link'?'Link':item.type==='photo'?'Photo':'Voice Note'),
+    fields: isTextType
+      ? [
+          {label:'Title', placeholder:'Optional', optional:true, value: item.title||''},
+          {label: isNote?'Note':'URL', type: isNote?'textarea':undefined, rows: isNote?6:undefined, value: item.content}
+        ]
+      : [{label:'Title', placeholder:'Optional', optional:true, value: item.title||''}],
+    async onOk(vals){
+      const title = (vals[0]||'').trim();
+      const content = isTextType ? vals[1] : item.content;
+      if(isTextType && (!content || !content.trim())) return;
+      item.title = title;
       item.content = content;
       sandboxRender();
       if(item.dbId){
-        const { error } = await sb.from('sandbox_items').update({ content }).eq('id', item.dbId);
+        const update = { title };
+        if(isTextType) update.content = content;
+        const { error } = await sb.from('sandbox_items').update(update).eq('id', item.dbId);
         if(error){ toast('Save failed - try again'); console.warn(error); return; }
       }
       toast('Updated ✓');
@@ -17122,10 +17135,13 @@ function sandboxCopy(id){
 function sandboxAddNote(){
   appModalShow({
     title:'Add Note',
-    fields:[{label:'Note', type:'textarea', rows:6, placeholder:"Whatever's on your mind"}],
-    async onOk([content]){
+    fields:[
+      {label:'Title', placeholder:'Optional', optional:true},
+      {label:'Note', type:'textarea', rows:6, placeholder:"Whatever's on your mind"}
+    ],
+    async onOk([title, content]){
       if(!content || !content.trim()) return;
-      await sandboxAddItem('note', content);
+      await sandboxAddItem('note', content, title);
     }
   });
 }
@@ -17133,10 +17149,13 @@ function sandboxAddNote(){
 function sandboxAddLink(){
   appModalShow({
     title:'Add Link',
-    fields:[{label:'URL', placeholder:'https://...'}],
-    async onOk([url]){
+    fields:[
+      {label:'Title', placeholder:'Optional', optional:true},
+      {label:'URL', placeholder:'https://...'}
+    ],
+    async onOk([title, url]){
       if(!url) return;
-      await sandboxAddItem('link', url);
+      await sandboxAddItem('link', url, title);
     }
   });
 }

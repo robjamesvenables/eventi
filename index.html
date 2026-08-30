@@ -15506,8 +15506,12 @@ function anTargetOpenDay(dateStr){
   const existing = businessMetrics.find(m => m.metric_key==='revenue' && m.period_date===dateStr);
   appModalShow({
     title: 'Revenue — ' + friendly,
-    fields:[{label:'Revenue for that day', type:'money', placeholder:'e.g. 18,500,000', value: existing ? String(existing.value) : ''}],
+    fields:[{label:'Revenue for that day', type:'money', placeholder:'e.g. 18,500,000', value: existing ? String(existing.value) : '', optional:true}],
     async onOk([value]){
+      if(!value || !value.trim()){
+        if(existing){ await anTargetDeleteDayDirect(existing.id); }
+        return;
+      }
       const num = parseFloat(value);
       if(isNaN(num)) return;
       await bmInsert([{ metric_key:'revenue', period_date: dateStr, value: num }]);
@@ -15525,6 +15529,14 @@ function anTargetOpenDay(dateStr){
       box.appendChild(del);
     }, 0);
   }
+}
+
+async function anTargetDeleteDayDirect(id){
+  const { error } = await sb.from('business_metrics').delete().eq('id', id);
+  if(error){ toast('Delete failed - try again'); console.warn(error); return; }
+  businessMetrics = businessMetrics.filter(m => m.id !== id);
+  toast('Deleted');
+  analyticsRender();
 }
 
 function anTargetDeleteDay(id){

@@ -3068,10 +3068,10 @@ img.emoji-tw{width:1.15em;height:1.15em;vertical-align:-0.2em;margin:0 1px}
 
         <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;background:#F8FAFC;border-radius:10px;padding:12px 16px;margin-bottom:16px">
           <div>
-            <div style="font-size:11px;font-weight:700;color:#94A3B8;margin-bottom:2px">Daily Target for <span id="an-target-month-label2"></span></div>
+            <div style="font-size:11px;font-weight:700;color:#94A3B8;margin-bottom:2px">Guide Target for <span id="an-target-month-label2"></span></div>
             <div id="an-target-current-val" style="font-size:18px;font-weight:800;color:#0F1E2E">—</div>
           </div>
-          <button onclick="anOpenSetTarget()" class="btn btn-navy">Set / Change Target</button>
+          <button onclick="anOpenSetTarget()" class="btn btn-navy">Set / Change Guide</button>
         </div>
 
         <div id="an-target-sub" style="font-size:11px;color:#94A3B8;margin:0 0 14px"></div>
@@ -15489,14 +15489,9 @@ function anRenderTargetGrid(){
   if(label2) label2.textContent = monthLabel;
 
   const key = anTargetMonthKey(anTargetViewDate);
-  const target = anDailyTargets[key] || null;
-  if(currentVal) currentVal.textContent = target ? bmMoney(target) : 'Not set for this month';
-
-  if(!target){
-    sub.textContent = 'No target set for ' + monthLabel + ' yet - tap "Set / Change Target" above.';
-  } else {
-    sub.textContent = `Green = hit or beat Rp ${Math.round(target).toLocaleString('en-US')} for the day. Red = missed it.`;
-  }
+  const guideTarget = anDailyTargets[key] || null;
+  if(currentVal) currentVal.textContent = guideTarget ? bmMoney(guideTarget) + ' (guide)' : 'Not set for this month';
+  sub.textContent = 'This is just a reference guide, suggested when entering a day\'s figures. Each day below uses its own target, entered alongside that day\'s revenue.';
 
   const year = anTargetViewDate.getFullYear();
   const month = anTargetViewDate.getMonth();
@@ -15515,18 +15510,20 @@ function anRenderTargetGrid(){
     const clickAttr = isFuture ? '' : `onclick="anTargetOpenDay('${dateStr}')"`;
     const cursorStyle = isFuture ? 'cursor:default' : 'cursor:pointer';
 
-    if(isFuture || !target){
+    if(isFuture){
       html += `<div class="an-target-box no-data" style="${cursorStyle}" ${clickAttr}><div class="an-target-box-day">${day}</div></div>`;
       continue;
     }
-    const entry = businessMetrics.find(m => m.metric_key==='revenue' && m.period_date===dateStr);
-    if(!entry){
+    const revEntry = businessMetrics.find(m => m.metric_key==='revenue' && m.period_date===dateStr);
+    const targetEntry = businessMetrics.find(m => m.metric_key==='daily_target' && m.period_date===dateStr);
+    if(!revEntry || !targetEntry){
       html += `<div class="an-target-box no-data" style="${cursorStyle}" ${clickAttr}><div class="an-target-box-day">${day}</div></div>`;
       continue;
     }
-    const rev = Number(entry.value);
-    const pct = ((rev - target) / target) * 100;
-    const hit = rev >= target;
+    const rev = Number(revEntry.value);
+    const dayTarget = Number(targetEntry.value);
+    const pct = dayTarget ? ((rev - dayTarget) / dayTarget) * 100 : 0;
+    const hit = rev >= dayTarget;
     html += `<div class="an-target-box ${hit?'hit':'miss'}" style="cursor:pointer" ${clickAttr}>
       <div class="an-target-box-day">${day}</div>
       <div class="an-target-box-pct">${pct>=0?'+':''}${pct.toFixed(0)}%</div>
@@ -15537,32 +15534,43 @@ function anRenderTargetGrid(){
 
 function anTargetOpenDay(dateStr){
   const friendly = bmFriendlyDate(dateStr);
-  const existing = businessMetrics.find(m => m.metric_key==='revenue' && m.period_date===dateStr);
+  const existingRev = businessMetrics.find(m => m.metric_key==='revenue' && m.period_date===dateStr);
+  const existingTarget = businessMetrics.find(m => m.metric_key==='daily_target' && m.period_date===dateStr);
   const key = anTargetMonthKey(anTargetViewDate);
-  const target = anDailyTargets[key];
+  const guideTarget = anDailyTargets[key];
   appModalShow({
     title: 'Revenue — ' + friendly,
-    sub: target ? `Target for this day: Rp ${Math.round(target).toLocaleString('en-US')}` : undefined,
-    fields:[{label:'Revenue for that day', type:'money', placeholder:'e.g. 18,500,000', value: existing ? String(existing.value) : '', optional:true}],
-    async onOk([value]){
-      if(!value || !value.trim()){
-        if(existing){ await anTargetDeleteDayDirect(existing.id); }
+    sub: 'Enter both the actual revenue and the target for this specific day.',
+    fields:[
+      {label:'Revenue for that day', type:'money', placeholder:'e.g. 18,500,000', value: existingRev ? String(existingRev.value) : '', optional:true},
+      {label:'Target for that day', type:'money', placeholder:'e.g. 5,000,000', value: existingTarget ? String(existingTarget.value) : (guideTarget ? String(guideTarget) : ''), optional:true}
+    ],
+    async onOk([revValue, targetValue]){
+      if(!revValue || !revValue.trim()){
+        if(existingRev){ await anTargetDeleteDayDirect(existingRev.id); }
+        if(existingTarget){ await sb.from('business_metrics').delete().eq('id', existingTarget.id); businessMetrics = businessMetrics.filter(m => m.id !== existingTarget.id); }
+        analyticsRender();
         return;
       }
-      const num = parseFloat(value);
-      if(isNaN(num)) return;
-      await bmInsert([{ metric_key:'revenue', period_date: dateStr, value: num }]);
+      const revNum = parseFloat(revValue);
+      if(isNaN(revNum)) return;
+      const rows = [{ metric_key:'revenue', period_date: dateStr, value: revNum }];
+      if(targetValue && targetValue.trim()){
+        const targetNum = parseFloat(targetValue);
+        if(!isNaN(targetNum)) rows.push({ metric_key:'daily_target', period_date: dateStr, value: targetNum });
+      }
+      await bmInsert(rows);
       analyticsRender();
     }
   });
-  if(existing){
+  if(existingRev){
     setTimeout(()=>{
       const box = document.getElementById('appModalBox');
       if(!box) return;
       const del = document.createElement('div');
       del.className = 'appModalExtra';
       del.style.cssText = 'text-align:center;margin-top:14px';
-      del.innerHTML = '<button onclick="anTargetDeleteDay('+existing.id+')" style="background:none;border:none;color:#DC2626;font-family:Inter,sans-serif;font-size:12.5px;font-weight:700;cursor:pointer">Delete this entry</button>';
+      del.innerHTML = '<button onclick="anTargetDeleteDay('+existingRev.id+')" style="background:none;border:none;color:#DC2626;font-family:Inter,sans-serif;font-size:12.5px;font-weight:700;cursor:pointer">Delete this entry</button>';
       box.appendChild(del);
     }, 0);
   }
@@ -15579,12 +15587,16 @@ async function anTargetDeleteDayDirect(id){
 function anTargetDeleteDay(id){
   appConfirmShow({
     title:'Delete entry',
-    msg:'This day\'s revenue figure will be removed entirely, going back to no data.',
+    msg:'This day\'s revenue and target figures will both be removed entirely, going back to no data.',
     label:'Delete',
     onOk(){
-      sb.from('business_metrics').delete().eq('id', id).then(({error})=>{
+      const revRow = businessMetrics.find(m => m.id === id);
+      const targetRow = revRow ? businessMetrics.find(m => m.metric_key==='daily_target' && m.period_date===revRow.period_date) : null;
+      const ids = [id];
+      if(targetRow) ids.push(targetRow.id);
+      sb.from('business_metrics').delete().in('id', ids).then(({error})=>{
         if(error){ toast('Delete failed - try again'); console.warn(error); return; }
-        businessMetrics = businessMetrics.filter(m => m.id !== id);
+        businessMetrics = businessMetrics.filter(m => !ids.includes(m.id));
         toast('Deleted');
         analyticsRender();
       });

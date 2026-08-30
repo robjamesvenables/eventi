@@ -3210,6 +3210,11 @@ img.emoji-tw{width:1.15em;height:1.15em;vertical-align:-0.2em;margin:0 1px}
       <div style="margin-top:36px">
         <div style="font-size:11.5px;font-weight:800;color:#64748B;text-transform:uppercase;letter-spacing:0.6px;margin-bottom:2px">Recently Added</div>
         <div style="font-size:11.5px;color:#94A3B8;margin-bottom:12px">Tap any entry to edit or delete it</div>
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;flex-wrap:wrap">
+          <label style="font-size:12px;font-weight:700;color:#64748B">Jump to a specific day</label>
+          <input type="date" id="reporting-jump-date" onchange="reportingJumpToDate()" max="${new Date().toISOString().slice(0,10)}" style="padding:8px 12px;border:1.5px solid #E2E8F0;border-radius:8px;font-family:'Inter',sans-serif;font-size:16px;color:#0F1E2E">
+          <button id="reporting-jump-clear" onclick="reportingClearJump()" style="display:none;padding:8px 14px;background:#F1F5F9;border:none;border-radius:8px;font-family:'Inter',sans-serif;font-size:12px;font-weight:700;color:#64748B;cursor:pointer">Show recent instead</button>
+        </div>
         <div id="reporting-recent-list"></div>
       </div>
     </div>
@@ -14821,42 +14826,65 @@ async function bmInsert(rows){
 }
 
 const BM_LABELS = { revenue:'Revenue', covers_served:'Covers Served', dept_spend:'Department Spend', staff_target:'Staff Target', staff_actual:'Staff Actual', guests_arrived:'Guests Arrived' };
+let reportingJumpDate = null;
+
+function reportingDayCardHtml(date, rows){
+  const rev = rows.find(r => r.metric_key === 'revenue');
+  const covers = rows.find(r => r.metric_key === 'covers_served');
+  const walkIn = rows.find(r => r.metric_key === 'guests_arrived' && r.department === 'Walk-in');
+  const online = rows.find(r => r.metric_key === 'guests_arrived' && r.department === 'Online');
+  const staffT = rows.find(r => r.metric_key === 'staff_target');
+  const staffA = rows.find(r => r.metric_key === 'staff_actual');
+  const deptRows = rows.filter(r => r.metric_key === 'dept_spend');
+
+  const lines = [];
+  if(rev) lines.push({ label:'Revenue', value: bmMoney(rev.value), id: rev.id });
+  if(covers) lines.push({ label:'Covers', value: covers.value, id: covers.id });
+  if(walkIn || online) lines.push({ label:'Guests', value: `${(walkIn?Number(walkIn.value):0)+(online?Number(online.value):0)} total (Walk-in ${walkIn?walkIn.value:0} / Online ${online?online.value:0})`, id: (walkIn||online).id });
+  if(staffT || staffA) lines.push({ label:'Staffing', value: `${staffA?staffA.value:'—'} / ${staffT?staffT.value:'—'}`, id: (staffA||staffT).id });
+  deptRows.forEach(d => lines.push({ label:'Spend · '+d.department, value: bmMoney(d.value), id: d.id }));
+
+  return `<div style="background:white;border:1px solid #E2E8F0;border-radius:12px;padding:14px 16px;margin-bottom:10px">
+    <div style="font-size:12px;font-weight:800;color:#0F1E2E;margin-bottom:8px">${date}</div>
+    ${lines.length ? lines.map(l => `<div onclick="bmEditEntry(${l.id})" style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-top:1px solid #F8FAFC;cursor:pointer">
+      <span style="font-size:12.5px;color:#64748B">${l.label}</span>
+      <span style="display:flex;align-items:center;gap:6px;font-size:13px;font-weight:700;color:#0F1E2E">${l.value}<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#CBD5E1" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg></span>
+    </div>`).join('') : '<div style="padding:8px 0;font-size:12.5px;color:#94A3B8">Nothing logged for this day</div>'}
+  </div>`;
+}
+
+function reportingJumpToDate(){
+  const val = document.getElementById('reporting-jump-date').value;
+  reportingJumpDate = val || null;
+  document.getElementById('reporting-jump-clear').style.display = reportingJumpDate ? 'inline-block' : 'none';
+  reportingRenderRecent();
+}
+
+function reportingClearJump(){
+  reportingJumpDate = null;
+  document.getElementById('reporting-jump-date').value = '';
+  document.getElementById('reporting-jump-clear').style.display = 'none';
+  reportingRenderRecent();
+}
+
 function reportingRenderRecent(){
   const el = document.getElementById('reporting-recent-list');
   if(!el) return;
+
+  if(reportingJumpDate){
+    const rows = businessMetrics.filter(m => m.period_date === reportingJumpDate);
+    el.innerHTML = reportingDayCardHtml(reportingJumpDate, rows);
+    return;
+  }
+
   if(!businessMetrics.length){
     el.innerHTML = '<div style="text-align:center;padding:30px;color:#94A3B8;font-size:12.5px">Nothing logged yet</div>';
     return;
   }
   const byDate = {};
   businessMetrics.forEach(m => { (byDate[m.period_date] = byDate[m.period_date] || []).push(m); });
-  const dates = Object.keys(byDate).sort((a,b) => b.localeCompare(a)).slice(0, 10);
-
-  el.innerHTML = dates.map(date => {
-    const rows = byDate[date];
-    const rev = rows.find(r => r.metric_key === 'revenue');
-    const covers = rows.find(r => r.metric_key === 'covers_served');
-    const walkIn = rows.find(r => r.metric_key === 'guests_arrived' && r.department === 'Walk-in');
-    const online = rows.find(r => r.metric_key === 'guests_arrived' && r.department === 'Online');
-    const staffT = rows.find(r => r.metric_key === 'staff_target');
-    const staffA = rows.find(r => r.metric_key === 'staff_actual');
-    const deptRows = rows.filter(r => r.metric_key === 'dept_spend');
-
-    const lines = [];
-    if(rev) lines.push({ label:'Revenue', value: bmMoney(rev.value), id: rev.id });
-    if(covers) lines.push({ label:'Covers', value: covers.value, id: covers.id });
-    if(walkIn || online) lines.push({ label:'Guests', value: `${(walkIn?Number(walkIn.value):0)+(online?Number(online.value):0)} total (Walk-in ${walkIn?walkIn.value:0} / Online ${online?online.value:0})`, id: (walkIn||online).id });
-    if(staffT || staffA) lines.push({ label:'Staffing', value: `${staffA?staffA.value:'—'} / ${staffT?staffT.value:'—'}`, id: (staffA||staffT).id });
-    deptRows.forEach(d => lines.push({ label:'Spend · '+d.department, value: bmMoney(d.value), id: d.id }));
-
-    return `<div style="background:white;border:1px solid #E2E8F0;border-radius:12px;padding:14px 16px;margin-bottom:10px">
-      <div style="font-size:12px;font-weight:800;color:#0F1E2E;margin-bottom:8px">${date}</div>
-      ${lines.map(l => `<div onclick="bmEditEntry(${l.id})" style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-top:1px solid #F8FAFC;cursor:pointer">
-        <span style="font-size:12.5px;color:#64748B">${l.label}</span>
-        <span style="display:flex;align-items:center;gap:6px;font-size:13px;font-weight:700;color:#0F1E2E">${l.value}<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#CBD5E1" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg></span>
-      </div>`).join('')}
-    </div>`;
-  }).join('');
+  const dates = Object.keys(byDate).sort((a,b) => b.localeCompare(a)).slice(0, 30);
+  el.innerHTML = dates.map(date => reportingDayCardHtml(date, byDate[date])).join('');
 }
 
 function bmEditEntry(id){

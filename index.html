@@ -272,6 +272,18 @@ body{margin:0;padding:0;font-family:'Inter',sans-serif;background:var(--bg);colo
   .an-top-val-hero{font-size:24px}
   .an-compare-strip{grid-template-columns:1fr!important;gap:10px!important}
 }
+.repcal-pill{padding:8px 14px;border-radius:20px;border:1.5px solid #E2E8F0;background:white;font-family:'Inter',sans-serif;font-size:12.5px;font-weight:700;color:#64748B;cursor:pointer}
+.repcal-pill.active{background:#0F1E2E;border-color:#0F1E2E;color:white}
+.repcal-grid{display:grid;grid-template-columns:repeat(7,minmax(90px,1fr));gap:6px;min-width:640px}
+.repcal-dow{font-size:10.5px;font-weight:800;color:#94A3B8;text-align:center;padding:4px 0;text-transform:uppercase}
+.repcal-cell{border-radius:10px;padding:8px 6px;min-height:64px;cursor:pointer;border:1.5px solid #F1F5F9;background:#FAFBFC}
+.repcal-cell:hover{border-color:#0D9488}
+.repcal-cell.has-value{background:white;border-color:#E2E8F0}
+.repcal-cell.future{cursor:default;opacity:0.4;background:#F8FAFC}
+.repcal-cell.future:hover{border-color:#F1F5F9}
+.repcal-cell.empty-slot{visibility:hidden}
+.repcal-daynum{font-size:11px;font-weight:700;color:#94A3B8;margin-bottom:6px}
+.repcal-value{font-size:13px;font-weight:800;color:#0F1E2E;word-break:break-word}
 .rep-card{display:flex;flex-direction:column;align-items:flex-start;gap:10px;background:white;border:1px solid #E2E8F0;border-radius:14px;padding:18px;text-align:left;cursor:pointer;font-family:'Inter',sans-serif;transition:border-color 0.15s,transform 0.1s}
 .rep-card:hover{border-color:#0D9488}
 .rep-card:active{transform:scale(0.98)}
@@ -3205,6 +3217,11 @@ img.emoji-tw{width:1.15em;height:1.15em;vertical-align:-0.2em;margin:0 1px}
           <div class="rep-card-title">Guests Through the Door</div>
           <div class="rep-card-sub">Log walk-in vs online</div>
         </button>
+        <button onclick="nav('reporting-calendar')" class="rep-card">
+          <div class="rep-card-icon" style="background:rgba(196,151,59,0.14);color:#C4973B"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></div>
+          <div class="rep-card-title">Calendar View</div>
+          <div class="rep-card-sub">See a whole month at a glance</div>
+        </button>
       </div>
 
       <div style="margin-top:36px">
@@ -3217,6 +3234,28 @@ img.emoji-tw{width:1.15em;height:1.15em;vertical-align:-0.2em;margin:0 1px}
         </div>
         <div id="reporting-recent-list"></div>
       </div>
+    </div>
+
+    <div class="page" id="p-reporting-calendar" style="padding:32px 28px 60px">
+      <button onclick="nav('reporting')" style="display:flex;align-items:center;gap:6px;background:none;border:none;cursor:pointer;font-family:'Inter',sans-serif;font-size:12.5px;font-weight:700;color:#64748B;padding:0;margin-bottom:16px">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+        Back to Reporting
+      </button>
+      <div class="ph">
+        <div class="ph-title">Calendar View</div>
+      </div>
+      <p style="font-size:13px;color:#64748B;margin:-6px 0 20px">Tap any day to add or edit that figure.</p>
+
+      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:14px;margin-bottom:18px">
+        <div id="repcal-metric-pills" style="display:flex;gap:8px;flex-wrap:wrap"></div>
+        <div style="display:flex;align-items:center;gap:12px">
+          <button onclick="repcalChangeMonth(-1)" style="width:34px;height:34px;border-radius:50%;border:1.5px solid #E2E8F0;background:white;cursor:pointer;display:flex;align-items:center;justify-content:center"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#0F1E2E" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg></button>
+          <div id="repcal-month-label" style="font-size:14px;font-weight:800;color:#0F1E2E;min-width:140px;text-align:center"></div>
+          <button onclick="repcalChangeMonth(1)" style="width:34px;height:34px;border-radius:50%;border:1.5px solid #E2E8F0;background:white;cursor:pointer;display:flex;align-items:center;justify-content:center"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#0F1E2E" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></button>
+        </div>
+      </div>
+
+      <div id="repcal-grid" style="background:white;border:1px solid var(--line);border-radius:14px;padding:16px;overflow-x:auto"></div>
     </div>
 
     <div class="page" id="p-sandbox" style="padding:32px 28px 60px">
@@ -4734,6 +4773,7 @@ function nav(id, pushState=true){
   if(id==='analytics'){ analyticsRender(); businessMetricsLoadFromSupabase().then(analyticsRender); }
   if(id==='stickynotes'){ /* root chooser - no board to render */ }
   if(id==='reporting'){reportingRender();}
+  if(id==='reporting-calendar'){repcalRender();}
 
   // Wait a frame so the page's content/height is fully laid out before positioning scroll
   requestAnimationFrame(() => {
@@ -14885,6 +14925,162 @@ function reportingRenderRecent(){
   businessMetrics.forEach(m => { (byDate[m.period_date] = byDate[m.period_date] || []).push(m); });
   const dates = Object.keys(byDate).sort((a,b) => b.localeCompare(a)).slice(0, 30);
   el.innerHTML = dates.map(date => reportingDayCardHtml(date, byDate[date])).join('');
+}
+
+// ── CALENDAR VIEW ──
+const REPCAL_METRICS = [
+  {key:'revenue', label:'Revenue', isMoney:true},
+  {key:'covers_served', label:'Covers'},
+  {key:'guests_arrived', label:'Guests'},
+  {key:'staffing', label:'Staffing'}
+];
+let repcalMetric = 'revenue';
+let repcalDate = new Date();
+
+function repcalValueForDay(metric, dateStr){
+  if(metric === 'guests_arrived'){
+    const w = businessMetrics.find(m => m.metric_key==='guests_arrived' && m.period_date===dateStr && m.department==='Walk-in');
+    const o = businessMetrics.find(m => m.metric_key==='guests_arrived' && m.period_date===dateStr && m.department==='Online');
+    if(!w && !o) return null;
+    return (w?Number(w.value):0) + (o?Number(o.value):0);
+  }
+  if(metric === 'staffing'){
+    const t = businessMetrics.find(m => m.metric_key==='staff_target' && m.period_date===dateStr);
+    const a = businessMetrics.find(m => m.metric_key==='staff_actual' && m.period_date===dateStr);
+    if(!t && !a) return null;
+    return (a?a.value:'—') + ' / ' + (t?t.value:'—');
+  }
+  const row = businessMetrics.find(m => m.metric_key===metric && m.period_date===dateStr);
+  return row ? row.value : null;
+}
+
+function repcalFormatValue(metric, val){
+  if(val === null || val === undefined) return '—';
+  if(metric === 'revenue') return bmMoney(Number(val));
+  return String(val);
+}
+
+function repcalRenderPills(){
+  const wrap = document.getElementById('repcal-metric-pills');
+  if(!wrap) return;
+  wrap.innerHTML = REPCAL_METRICS.map(m =>
+    `<button class="repcal-pill${m.key===repcalMetric?' active':''}" onclick="repcalSetMetric('${m.key}')">${m.label}</button>`
+  ).join('');
+}
+
+function repcalSetMetric(key){
+  repcalMetric = key;
+  repcalRenderPills();
+  repcalRenderGrid();
+}
+
+function repcalChangeMonth(delta){
+  repcalDate = new Date(repcalDate.getFullYear(), repcalDate.getMonth()+delta, 1);
+  repcalRenderGrid();
+}
+
+function repcalRender(){
+  repcalRenderPills();
+  repcalRenderGrid();
+}
+
+function repcalRenderGrid(){
+  const grid = document.getElementById('repcal-grid');
+  const label = document.getElementById('repcal-month-label');
+  if(!grid || !label) return;
+
+  const year = repcalDate.getFullYear();
+  const month = repcalDate.getMonth();
+  label.textContent = repcalDate.toLocaleDateString('en-GB', {month:'long', year:'numeric'});
+
+  const firstOfMonth = new Date(year, month, 1);
+  const daysInMonth = new Date(year, month+1, 0).getDate();
+  const leadingBlanks = (firstOfMonth.getDay() + 6) % 7; // Monday-start week
+  const todayStr = bmDateStr(new Date());
+  const metricDef = REPCAL_METRICS.find(m => m.key === repcalMetric);
+
+  let html = '<div class="repcal-grid">';
+  ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'].forEach(d => { html += `<div class="repcal-dow">${d}</div>`; });
+  for(let i=0; i<leadingBlanks; i++){ html += '<div class="repcal-cell empty-slot"></div>'; }
+  for(let day=1; day<=daysInMonth; day++){
+    const dateStr = bmDateStr(new Date(year, month, day));
+    const isFuture = dateStr >= todayStr;
+    const val = isFuture ? null : repcalValueForDay(repcalMetric, dateStr);
+    const hasValue = val !== null && val !== undefined;
+    html += `<div class="repcal-cell${hasValue?' has-value':''}${isFuture?' future':''}" ${isFuture?'':`onclick="repcalOpenDay('${dateStr}')"`}>
+      <div class="repcal-daynum">${day}</div>
+      <div class="repcal-value">${isFuture ? '' : repcalFormatValue(repcalMetric, val)}</div>
+    </div>`;
+  }
+  html += '</div>';
+  grid.innerHTML = html;
+}
+
+function repcalOpenDay(dateStr){
+  const friendly = bmFriendlyDate(dateStr);
+  if(repcalMetric === 'revenue'){
+    const existing = businessMetrics.find(m => m.metric_key==='revenue' && m.period_date===dateStr);
+    appModalShow({
+      title: 'Revenue — ' + friendly,
+      fields:[{label:'Revenue for that day', type:'money', placeholder:'e.g. 18,500,000', value: existing?String(existing.value):''}],
+      async onOk([value]){
+        const num = parseFloat(value);
+        if(isNaN(num)) return;
+        await bmInsert([{ metric_key:'revenue', period_date: dateStr, value: num }]);
+        repcalRenderGrid();
+      }
+    });
+  } else if(repcalMetric === 'covers_served'){
+    const existing = businessMetrics.find(m => m.metric_key==='covers_served' && m.period_date===dateStr);
+    appModalShow({
+      title: 'Covers Served — ' + friendly,
+      fields:[{label:'Covers for that day', placeholder:'e.g. 145', value: existing?String(existing.value):''}],
+      async onOk([value]){
+        const num = parseFloat(value);
+        if(isNaN(num)) return;
+        await bmInsert([{ metric_key:'covers_served', period_date: dateStr, value: num }]);
+        repcalRenderGrid();
+      }
+    });
+  } else if(repcalMetric === 'guests_arrived'){
+    const w = businessMetrics.find(m => m.metric_key==='guests_arrived' && m.period_date===dateStr && m.department==='Walk-in');
+    const o = businessMetrics.find(m => m.metric_key==='guests_arrived' && m.period_date===dateStr && m.department==='Online');
+    appModalShow({
+      title: 'Guests — ' + friendly,
+      fields:[
+        {label:'Walk-in guests', placeholder:'e.g. 60', value: w?String(w.value):''},
+        {label:'Online / reservation guests', placeholder:'e.g. 85', value: o?String(o.value):''}
+      ],
+      async onOk([walkIn, online]){
+        const wv = parseFloat(walkIn), ov = parseFloat(online);
+        if(isNaN(wv) || isNaN(ov)) return;
+        await bmInsert([
+          { metric_key:'guests_arrived', period_date: dateStr, department:'Walk-in', value: wv },
+          { metric_key:'guests_arrived', period_date: dateStr, department:'Online', value: ov }
+        ]);
+        repcalRenderGrid();
+      }
+    });
+  } else if(repcalMetric === 'staffing'){
+    const t = businessMetrics.find(m => m.metric_key==='staff_target' && m.period_date===dateStr);
+    const a = businessMetrics.find(m => m.metric_key==='staff_actual' && m.period_date===dateStr);
+    appModalShow({
+      title: 'Staffing — ' + friendly,
+      fields:[
+        {label:'Target headcount', placeholder:'e.g. 100', value: t?String(t.value):''},
+        {label:'Actual headcount', placeholder:'e.g. 98', value: a?String(a.value):''}
+      ],
+      async onOk([target, actual]){
+        const tv = parseFloat(target), av = parseFloat(actual);
+        if(isNaN(tv) || isNaN(av)) return;
+        await bmInsert([
+          { metric_key:'staff_target', period_date: dateStr, value: tv },
+          { metric_key:'staff_actual', period_date: dateStr, value: av }
+        ]);
+        repcalRenderGrid();
+      }
+    });
+  }
 }
 
 function bmEditEntry(id){

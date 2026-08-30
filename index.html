@@ -17053,7 +17053,10 @@ function sandboxRender(){
       <div style="background:white;border:1px solid var(--line);border-radius:12px;padding:16px 18px;margin-bottom:12px">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
           <div style="font-size:11px;color:#94A3B8;font-weight:600">${icons[item.type]} ${item.timestamp}</div>
-          <button onclick="sandboxDelete(${item.id})" style="opacity:0.5;cursor:pointer;font-size:15px;color:#EF4444;background:none;border:none" title="Delete">×</button>
+          <div style="display:flex;align-items:center;gap:10px">
+            ${(item.type==='note' || item.type==='link') ? `<button onclick="sandboxEditItem(${item.id})" style="opacity:0.5;cursor:pointer;font-size:12px;color:#64748B;background:none;border:none;font-family:'Inter',sans-serif;font-weight:700" title="Edit">Edit</button>` : ''}
+            <button onclick="sandboxDelete(${item.id})" style="opacity:0.5;cursor:pointer;font-size:15px;color:#EF4444;background:none;border:none" title="Delete">×</button>
+          </div>
         </div>
         ${bodyHtml}
         <div style="display:flex;gap:8px;margin-top:12px">${downloadBtn}</div>
@@ -17073,6 +17076,28 @@ async function sandboxAddItem(type, content){
     toast('Added here, but not saved - check your connection');
   }
   sandboxRender();
+}
+
+function sandboxEditItem(id){
+  const item = sandboxItems.find(x=>x.id===id);
+  if(!item) return;
+  const isNote = item.type === 'note';
+  appModalShow({
+    title: isNote ? 'Edit Note' : 'Edit Link',
+    fields: isNote
+      ? [{label:'Note', type:'textarea', rows:6, value: item.content}]
+      : [{label:'URL', value: item.content}],
+    async onOk([content]){
+      if(!content || !content.trim()) return;
+      item.content = content;
+      sandboxRender();
+      if(item.dbId){
+        const { error } = await sb.from('sandbox_items').update({ content }).eq('id', item.dbId);
+        if(error){ toast('Save failed - try again'); console.warn(error); return; }
+      }
+      toast('Updated ✓');
+    }
+  });
 }
 
 function sandboxDelete(id){

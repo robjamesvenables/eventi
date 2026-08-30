@@ -15267,14 +15267,40 @@ function analyticsRender(){
   if(window.anRevYoyChart) window.anRevYoyChart.destroy();
   const yoyCanvas = document.getElementById('an-rev-yoy');
   if(yoyCanvas){
+    const pctLabelPlugin = {
+      id: 'pctLabels',
+      afterDatasetsDraw(chart){
+        const { ctx } = chart;
+        const meta0 = chart.getDatasetMeta(0);
+        const meta1 = chart.getDatasetMeta(1);
+        for(let i=0;i<12;i++){
+          const cur = revThisYearMonthly[i];
+          const prev = revLastYearMonthly[i];
+          if(!cur || !prev) continue;
+          const bar0 = meta0.data[i];
+          const bar1 = meta1.data[i];
+          if(!bar0 || !bar1) continue;
+          const pct = ((cur-prev)/prev)*100;
+          const topY = Math.min(bar0.y, bar1.y) - 6;
+          const centerX = (bar0.x + bar1.x)/2;
+          ctx.save();
+          ctx.font = '700 10px Inter, sans-serif';
+          ctx.fillStyle = pct >= 0 ? '#059669' : '#DC2626';
+          ctx.textAlign = 'center';
+          ctx.fillText((pct>=0?'+':'') + pct.toFixed(0) + '%', centerX, topY);
+          ctx.restore();
+        }
+      }
+    };
     window.anRevYoyChart = new Chart(yoyCanvas, {
       type:'bar',
       data:{ labels:['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'],
         datasets:[
-          { label:'This year', data: revThisYearMonthly, backgroundColor:'#2a78d6', borderRadius:4, maxBarThickness:16 },
-          { label:'Last year', data: revLastYearMonthly, backgroundColor:'#c3c2b7', borderRadius:4, maxBarThickness:16 }
+          { label:'This year', data: revThisYearMonthly, backgroundColor:'#2a78d6', borderRadius:4, maxBarThickness:16, categoryPercentage:0.85, barPercentage:0.95 },
+          { label:'Last year', data: revLastYearMonthly, backgroundColor:'#c3c2b7', borderRadius:4, maxBarThickness:16, categoryPercentage:0.85, barPercentage:0.95 }
         ] },
-      options:{ responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}}, scales:{ x:{grid:{display:false}}, y:{ ticks:{ callback:v=>(v/1000000).toFixed(0)+'M' }, grid:{color:'#F1F5F9'} } } }
+      options:{ responsive:true, maintainAspectRatio:false, layout:{ padding:{ top:20 } }, plugins:{legend:{display:false}}, scales:{ x:{grid:{display:false}}, y:{ ticks:{ callback:v=>(v/1000000).toFixed(0)+'M' }, grid:{color:'#F1F5F9'} } } },
+      plugins:[pctLabelPlugin]
     });
   }
 

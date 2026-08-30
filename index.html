@@ -3206,17 +3206,31 @@ img.emoji-tw{width:1.15em;height:1.15em;vertical-align:-0.2em;margin:0 1px}
     <div class="page" id="p-stickynotes" style="padding:32px 28px 60px">
       <div class="ph">
         <div class="ph-title">Sticky Notes</div>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px;max-width:640px">
+        <button onclick="stickyOpenBoard('mine')" class="tb-root-tile" style="background:white">
+          <div class="tb-root-tile-icon" style="background:rgba(13,148,136,0.1);color:#0D9488"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></div>
+          <div class="tb-root-tile-title">My Notes</div>
+          <div class="tb-root-tile-sub">Your own notes - only you can see these</div>
+        </button>
+        <button onclick="stickyOpenBoard('brainstorm')" class="tb-root-tile" style="background:#0F1E2E">
+          <div class="tb-root-tile-icon" style="background:rgba(196,151,59,0.18);color:#C4973B"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9.663 17h4.673M12 3a6 6 0 0 0-6 6c0 1.887.454 2.755 1.826 4.5.638.735 1.174 1.5 1.174 2.5m3-13a6 6 0 0 1 6 6c0 1.887-.454 2.755-1.826 4.5-.638.735-1.174 1.5-1.174 2.5"/></svg></div>
+          <div class="tb-root-tile-title" style="color:white">Brainstorm</div>
+          <div class="tb-root-tile-sub" style="color:rgba(255,255,255,0.6)">Shared with your team - live for everyone</div>
+        </button>
+      </div>
+    </div>
+
+    <div class="page" id="p-stickynotes-board" style="padding:32px 28px 60px">
+      <button onclick="nav('stickynotes')" style="display:flex;align-items:center;gap:6px;background:none;border:none;cursor:pointer;font-family:'Inter',sans-serif;font-size:12.5px;font-weight:700;color:#64748B;padding:0;margin-bottom:16px">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+        Back to Sticky Notes
+      </button>
+      <div class="ph">
+        <div class="ph-title" id="sticky-board-title">My Notes</div>
         <button class="btn btn-navy" onclick="stickyOpenAdd()">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
           Add Note
-        </button>
-      </div>
-
-      <div class="sticky-tabs">
-        <button class="sticky-tab active" id="sticky-tab-mine" onclick="stickySwitchTab('mine')">My Notes</button>
-        <button class="sticky-tab" id="sticky-tab-brainstorm" onclick="stickySwitchTab('brainstorm')">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right:4px;vertical-align:-2px"><path d="M9.663 17h4.673M12 3a6 6 0 0 0-6 6c0 1.887.454 2.755 1.826 4.5.638.735 1.174 1.5 1.174 2.5m3-13a6 6 0 0 1 6 6c0 1.887-.454 2.755-1.826 4.5-.638.735-1.174 1.5-1.174 2.5"/></svg>
-          Brainstorm
         </button>
       </div>
 
@@ -4647,7 +4661,9 @@ function nav(id, pushState=true){
   const page=document.getElementById('p-'+id);
   if(!page)return;
   page.classList.add('on');
-  const sidebarId = (id==='taskboard' || id==='taskboard-personal' || id==='taskboard-team' || id==='kb') ? 'kb' : id;
+  const sidebarId = (id==='taskboard' || id==='taskboard-personal' || id==='taskboard-team' || id==='kb') ? 'kb'
+    : (id==='stickynotes-board') ? 'stickynotes'
+    : id;
   const nb=document.getElementById('n-'+sidebarId);
   if(nb)nb.classList.add('active');
   if(id==='notes'){mnGoToday();}
@@ -4674,7 +4690,7 @@ function nav(id, pushState=true){
   if(id==='survey'){surveyRender();}
   if(id==='vacancies'){vacanciesRender();}
   if(id==='analytics'){ analyticsRender(); businessMetricsLoadFromSupabase().then(analyticsRender); }
-  if(id==='stickynotes'){ stickyRenderBoard(); stickyLoadBrainstormFromSupabase().then(()=>{ if(stickyActiveTab==='brainstorm') stickyRenderBoard(); }); }
+  if(id==='stickynotes'){ /* root chooser - no board to render */ }
   if(id==='reporting'){reportingRender();}
 
   // Wait a frame so the page's content/height is fully laid out before positioning scroll
@@ -14844,12 +14860,15 @@ function stickySubscribeBrainstormRealtime(){
     .subscribe();
 }
 
-function stickySwitchTab(tab){
+function stickyOpenBoard(tab){
   stickyActiveTab = tab;
-  document.getElementById('sticky-tab-mine').classList.toggle('active', tab==='mine');
-  document.getElementById('sticky-tab-brainstorm').classList.toggle('active', tab==='brainstorm');
+  document.getElementById('sticky-board-title').textContent = tab === 'brainstorm' ? 'Brainstorm' : 'My Notes';
   if(tab === 'brainstorm') stickySubscribeBrainstormRealtime();
+  nav('stickynotes-board');
   stickyRenderBoard();
+  if(tab === 'brainstorm'){
+    stickyLoadBrainstormFromSupabase().then(()=>{ if(stickyActiveTab==='brainstorm') stickyRenderBoard(); });
+  }
 }
 
 function stickyRenderBoard(){

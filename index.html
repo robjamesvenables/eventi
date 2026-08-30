@@ -276,6 +276,14 @@ body{margin:0;padding:0;font-family:'Inter',sans-serif;background:var(--bg);colo
 .repcal-pill.active{background:#0F1E2E;border-color:#0F1E2E;color:white}
 .repcal-grid{display:grid;grid-template-columns:repeat(7,minmax(90px,1fr));gap:6px;min-width:640px}
 .repcal-dow{font-size:10.5px;font-weight:800;color:#94A3B8;text-align:center;padding:4px 0;text-transform:uppercase}
+.an-target-box{border-radius:9px;padding:8px 4px;min-height:56px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px}
+.an-target-box.no-data{background:#F8FAFC;border:1.5px solid #F1F5F9}
+.an-target-box.hit{background:#0D9488}
+.an-target-box.miss{background:#DC2626}
+.an-target-box-day{font-size:10px;font-weight:700}
+.an-target-box.no-data .an-target-box-day{color:#94A3B8}
+.an-target-box.hit .an-target-box-day,.an-target-box.miss .an-target-box-day{color:rgba(255,255,255,0.75)}
+.an-target-box-pct{font-size:11.5px;font-weight:800;color:white}
 .repcal-cell{border-radius:10px;padding:8px 6px;min-height:64px;cursor:pointer;border:1.5px solid #F1F5F9;background:#FAFBFC}
 .repcal-cell:hover{border-color:#0D9488}
 .repcal-cell.has-value{background:white;border-color:#E2E8F0}
@@ -3104,6 +3112,15 @@ img.emoji-tw{width:1.15em;height:1.15em;vertical-align:-0.2em;margin:0 1px}
           <span style="display:flex;align-items:center;gap:5px"><span style="width:9px;height:9px;border-radius:2px;background:#C4973B"></span>Last year</span>
         </div>
         <div class="an-yoy-scroll"><div class="an-yoy-inner"><canvas id="an-rev-yoy"></canvas></div></div>
+      </div>
+
+      <div style="background:white;border:1px solid var(--line);border-radius:14px;padding:18px 20px;margin-bottom:36px">
+        <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:2px">
+          <div style="font-size:12px;font-weight:700;color:#64748B">Daily revenue vs target — <span id="an-target-month-label"></span></div>
+          <button onclick="anOpenSetTarget()" style="background:none;border:none;cursor:pointer;font-family:'Inter',sans-serif;font-size:11.5px;font-weight:700;color:#0D9488;padding:0">Set Daily Target</button>
+        </div>
+        <div id="an-target-sub" style="font-size:11px;color:#94A3B8;margin:6px 0 14px"></div>
+        <div id="an-target-grid" style="display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:6px"></div>
       </div>
 
       <div style="font-size:11.5px;font-weight:800;color:#C4973B;text-transform:uppercase;letter-spacing:0.6px;margin:8px 0 12px">Guests & Covers</div>
@@ -15411,7 +15428,68 @@ function anFitTextToBox(el){
   }
 }
 
+let anDailyTarget = null;
+function anLoadTarget(){
+  try{
+    const saved = localStorage.getItem('mavis_daily_revenue_target');
+    anDailyTarget = saved ? Number(saved) : null;
+  }catch(e){ anDailyTarget = null; }
+}
+function anOpenSetTarget(){
+  appModalShow({
+    title:'Set Daily Revenue Target',
+    sub:'Every day this month will be compared against this figure.',
+    fields:[{label:'Daily target', type:'money', placeholder:'e.g. 5,000,000', value: anDailyTarget ? String(anDailyTarget) : ''}],
+    onOk([value]){
+      const num = parseFloat(value);
+      if(isNaN(num)) return;
+      anDailyTarget = num;
+      try{ localStorage.setItem('mavis_daily_revenue_target', String(num)); }catch(e){}
+      anRenderTargetGrid();
+      toast('Target saved ✓');
+    }
+  });
+}
+function anRenderTargetGrid(){
+  const grid = document.getElementById('an-target-grid');
+  const label = document.getElementById('an-target-month-label');
+  const sub = document.getElementById('an-target-sub');
+  if(!grid) return;
+  const today = new Date();
+  if(label) label.textContent = today.toLocaleDateString('en-GB',{month:'long', year:'numeric'});
+  if(!anDailyTarget){
+    if(sub) sub.textContent = 'No daily target set yet - tap "Set Daily Target" above to turn this on.';
+    grid.innerHTML = '';
+    return;
+  }
+  if(sub) sub.textContent = `Green = hit or beat Rp ${Math.round(anDailyTarget).toLocaleString('en-US')} for the day. Red = missed it.`;
+  const daysInMonth = new Date(today.getFullYear(), today.getMonth()+1, 0).getDate();
+  const todayStr = bmDateStr(today);
+  let html = '';
+  for(let day=1; day<=daysInMonth; day++){
+    const dateStr = bmDateStr(new Date(today.getFullYear(), today.getMonth(), day));
+    if(dateStr >= todayStr){
+      html += `<div class="an-target-box no-data"><div class="an-target-box-day">${day}</div></div>`;
+      continue;
+    }
+    const rev = bmSum('revenue', dateStr, dateStr);
+    if(!rev){
+      html += `<div class="an-target-box no-data"><div class="an-target-box-day">${day}</div></div>`;
+      continue;
+    }
+    const pct = ((rev - anDailyTarget) / anDailyTarget) * 100;
+    const hit = rev >= anDailyTarget;
+    html += `<div class="an-target-box ${hit?'hit':'miss'}">
+      <div class="an-target-box-day">${day}</div>
+      <div class="an-target-box-pct">${pct>=0?'+':''}${pct.toFixed(0)}%</div>
+    </div>`;
+  }
+  grid.innerHTML = html;
+}
+
 function analyticsRender(){
+  anLoadTarget();
+  anRenderTargetGrid();
   const today = new Date();
   const todayStr = bmDateStr(today);
   const yesterdayDate = bmDaysAgo(1);

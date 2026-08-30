@@ -8605,6 +8605,10 @@ function deptRename(index){
   PEOPLE_DEPARTMENTS[index] = newName;
   // Cascade the rename to every person currently carrying the old department name
   PEOPLE.forEach(p => { p.departments = p.departments.map(d => d === oldName ? newName : d); });
+  if(typeof chatConversations !== 'undefined'){
+    const grp = chatConversations.find(c => c.isGroup && c.name === oldName);
+    if(grp) grp.name = newName;
+  }
   deptManagerRender();
   deptRefreshCheckboxes();
   peopleRender();
@@ -8615,6 +8619,9 @@ function deptDelete(index){
   if(!confirm('Delete "'+name+'"? This removes it from anyone currently tagged with it.')) return;
   PEOPLE_DEPARTMENTS.splice(index, 1);
   PEOPLE.forEach(p => { p.departments = p.departments.filter(d => d !== name); });
+  if(typeof chatConversations !== 'undefined'){
+    chatConversations = chatConversations.filter(c => !(c.isGroup && c.name === name));
+  }
   deptManagerRender();
   deptRefreshCheckboxes();
   peopleRender();

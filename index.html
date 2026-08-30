@@ -15485,11 +15485,12 @@ function anRenderTargetGrid(){
       html += `<div class="an-target-box no-data" style="${cursorStyle}" ${clickAttr}><div class="an-target-box-day">${day}</div></div>`;
       continue;
     }
-    const rev = bmSum('revenue', dateStr, dateStr);
-    if(!rev){
+    const entry = businessMetrics.find(m => m.metric_key==='revenue' && m.period_date===dateStr);
+    if(!entry){
       html += `<div class="an-target-box no-data" style="${cursorStyle}" ${clickAttr}><div class="an-target-box-day">${day}</div></div>`;
       continue;
     }
+    const rev = Number(entry.value);
     const pct = ((rev - anDailyTarget) / anDailyTarget) * 100;
     const hit = rev >= anDailyTarget;
     html += `<div class="an-target-box ${hit?'hit':'miss'}" style="cursor:pointer" ${clickAttr}>
@@ -15511,6 +15512,33 @@ function anTargetOpenDay(dateStr){
       if(isNaN(num)) return;
       await bmInsert([{ metric_key:'revenue', period_date: dateStr, value: num }]);
       analyticsRender();
+    }
+  });
+  if(existing){
+    setTimeout(()=>{
+      const box = document.getElementById('appModalBox');
+      if(!box) return;
+      const del = document.createElement('div');
+      del.className = 'appModalExtra';
+      del.style.cssText = 'text-align:center;margin-top:14px';
+      del.innerHTML = '<button onclick="anTargetDeleteDay('+existing.id+')" style="background:none;border:none;color:#DC2626;font-family:Inter,sans-serif;font-size:12.5px;font-weight:700;cursor:pointer">Delete this entry</button>';
+      box.appendChild(del);
+    }, 0);
+  }
+}
+
+function anTargetDeleteDay(id){
+  appConfirmShow({
+    title:'Delete entry',
+    msg:'This day\'s revenue figure will be removed entirely, going back to no data.',
+    label:'Delete',
+    onOk(){
+      sb.from('business_metrics').delete().eq('id', id).then(({error})=>{
+        if(error){ toast('Delete failed - try again'); console.warn(error); return; }
+        businessMetrics = businessMetrics.filter(m => m.id !== id);
+        toast('Deleted');
+        analyticsRender();
+      });
     }
   });
 }

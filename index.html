@@ -14670,12 +14670,13 @@ function businessMetricsDedupe(){
 
 function reportingOpenRevenue(){
   const yest = bmDateStr(bmDaysAgo(1));
+  const existing = businessMetrics.find(x => x.metric_key==='revenue' && x.period_date===yest);
   appModalShow({
     title:'Revenue',
-    sub:'Log a day\'s revenue',
+    sub: existing ? `Yesterday already has Rp ${Math.round(existing.value).toLocaleString('en-US')} logged - shown below. Save again to correct it.` : 'Log a day\'s revenue',
     fields:[
       {label:'Date', type:'date', value: yest, max: yest, maxHint:'Yesterday or earlier only - today isn\'t closed out yet'},
-      {label:'Revenue for that day', type:'money', placeholder:'e.g. 18,500,000'}
+      {label:'Revenue for that day', type:'money', placeholder:'e.g. 18,500,000', value: existing ? String(existing.value) : ''}
     ],
     async onOk([date, value]){
       const num = parseFloat(value);
@@ -14721,12 +14722,13 @@ function reportingOpenRevenueBulk(yearOffset){
 }
 function reportingOpenCovers(){
   const yest = bmDateStr(bmDaysAgo(1));
+  const existing = businessMetrics.find(x => x.metric_key==='covers_served' && x.period_date===yest);
   appModalShow({
     title:'Covers Served',
-    sub:'Log a day\'s covers',
+    sub: existing ? `Yesterday already has ${existing.value} covers logged - shown below. Save again to correct it.` : 'Log a day\'s covers',
     fields:[
       {label:'Date', type:'date', value: yest, max: yest, maxHint:'Yesterday or earlier only - today isn\'t closed out yet'},
-      {label:'Covers for that day', placeholder:'e.g. 145'}
+      {label:'Covers for that day', placeholder:'e.g. 145', value: existing ? String(existing.value) : ''}
     ],
     async onOk([date, value]){
       const num = parseFloat(value);
@@ -14755,13 +14757,15 @@ function reportingOpenDeptSpend(){
 }
 function reportingOpenStaff(){
   const yest = bmDateStr(bmDaysAgo(1));
+  const existingTarget = businessMetrics.find(x => x.metric_key==='staff_target' && x.period_date===yest);
+  const existingActual = businessMetrics.find(x => x.metric_key==='staff_actual' && x.period_date===yest);
   appModalShow({
     title:'Staffing',
-    sub:'Log target vs actual headcount',
+    sub: (existingTarget || existingActual) ? 'Yesterday already has figures logged - shown below. Save again to correct them.' : 'Log target vs actual headcount',
     fields:[
       {label:'Date', type:'date', value: yest, max: yest, maxHint:'Yesterday or earlier only - today isn\'t closed out yet'},
-      {label:'Target headcount', placeholder:'e.g. 100'},
-      {label:'Actual headcount', placeholder:'e.g. 98'}
+      {label:'Target headcount', placeholder:'e.g. 100', value: existingTarget ? String(existingTarget.value) : ''},
+      {label:'Actual headcount', placeholder:'e.g. 98', value: existingActual ? String(existingActual.value) : ''}
     ],
     async onOk([date, target, actual]){
       const t = parseFloat(target), a = parseFloat(actual);
@@ -14775,13 +14779,15 @@ function reportingOpenStaff(){
 }
 function reportingOpenGuests(){
   const yest = bmDateStr(bmDaysAgo(1));
+  const existingWalkIn = businessMetrics.find(x => x.metric_key==='guests_arrived' && x.period_date===yest && x.department==='Walk-in');
+  const existingOnline = businessMetrics.find(x => x.metric_key==='guests_arrived' && x.period_date===yest && x.department==='Online');
   appModalShow({
     title:'Guests Through the Door',
-    sub:'Log a day\'s guest count',
+    sub: (existingWalkIn || existingOnline) ? 'Yesterday already has figures logged - shown below. Save again to correct them.' : 'Log a day\'s guest count',
     fields:[
       {label:'Date', type:'date', value: yest, max: yest, maxHint:'Yesterday or earlier only - today isn\'t closed out yet'},
-      {label:'Walk-in guests', placeholder:'e.g. 60'},
-      {label:'Online / reservation guests', placeholder:'e.g. 85'}
+      {label:'Walk-in guests', placeholder:'e.g. 60', value: existingWalkIn ? String(existingWalkIn.value) : ''},
+      {label:'Online / reservation guests', placeholder:'e.g. 85', value: existingOnline ? String(existingOnline.value) : ''}
     ],
     async onOk([date, walkIn, online]){
       const w = parseFloat(walkIn), o = parseFloat(online);

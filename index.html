@@ -277,6 +277,7 @@ body{margin:0;padding:0;font-family:'Inter',sans-serif;background:var(--bg);colo
 .repcal-grid{display:grid;grid-template-columns:repeat(7,minmax(90px,1fr));gap:6px;min-width:640px}
 .repcal-dow{font-size:10.5px;font-weight:800;color:#94A3B8;text-align:center;padding:4px 0;text-transform:uppercase}
 .an-target-box{border-radius:9px;padding:8px 4px;min-height:56px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px}
+.an-target-box[onclick]:hover{outline:2px solid #0D9488;outline-offset:-2px}
 .an-target-box.no-data{background:#F8FAFC;border:1.5px solid #F1F5F9}
 .an-target-box.hit{background:#0D9488}
 .an-target-box.miss{background:#DC2626}
@@ -15476,23 +15477,42 @@ function anRenderTargetGrid(){
 
   for(let day=1; day<=daysInMonth; day++){
     const dateStr = bmDateStr(new Date(year, month, day));
-    if(!anDailyTarget || dateStr >= todayStr){
-      html += `<div class="an-target-box no-data"><div class="an-target-box-day">${day}</div></div>`;
+    const isFuture = dateStr >= todayStr;
+    const clickAttr = isFuture ? '' : `onclick="anTargetOpenDay('${dateStr}')"`;
+    const cursorStyle = isFuture ? 'cursor:default' : 'cursor:pointer';
+
+    if(isFuture || !anDailyTarget){
+      html += `<div class="an-target-box no-data" style="${cursorStyle}" ${clickAttr}><div class="an-target-box-day">${day}</div></div>`;
       continue;
     }
     const rev = bmSum('revenue', dateStr, dateStr);
     if(!rev){
-      html += `<div class="an-target-box no-data"><div class="an-target-box-day">${day}</div></div>`;
+      html += `<div class="an-target-box no-data" style="${cursorStyle}" ${clickAttr}><div class="an-target-box-day">${day}</div></div>`;
       continue;
     }
     const pct = ((rev - anDailyTarget) / anDailyTarget) * 100;
     const hit = rev >= anDailyTarget;
-    html += `<div class="an-target-box ${hit?'hit':'miss'}">
+    html += `<div class="an-target-box ${hit?'hit':'miss'}" style="cursor:pointer" ${clickAttr}>
       <div class="an-target-box-day">${day}</div>
       <div class="an-target-box-pct">${pct>=0?'+':''}${pct.toFixed(0)}%</div>
     </div>`;
   }
   grid.innerHTML = html;
+}
+
+function anTargetOpenDay(dateStr){
+  const friendly = bmFriendlyDate(dateStr);
+  const existing = businessMetrics.find(m => m.metric_key==='revenue' && m.period_date===dateStr);
+  appModalShow({
+    title: 'Revenue — ' + friendly,
+    fields:[{label:'Revenue for that day', type:'money', placeholder:'e.g. 18,500,000', value: existing ? String(existing.value) : ''}],
+    async onOk([value]){
+      const num = parseFloat(value);
+      if(isNaN(num)) return;
+      await bmInsert([{ metric_key:'revenue', period_date: dateStr, value: num }]);
+      analyticsRender();
+    }
+  });
 }
 
 function analyticsRender(){

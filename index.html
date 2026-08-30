@@ -7548,7 +7548,7 @@ function taskboardApplyTeamCard(row){
   });
   if(row.deleted) return;
   const targetCol = board[row.col] ? row.col : 'todo';
-  board[targetCol].push({ dbId: row.id, id: row.id, title: row.title, description: row.description || '', assignee: row.assignee || 'Unassigned', photos: [], createdAt: new Date(row.created_at).getTime() });
+  board[targetCol].push({ dbId: row.id, id: row.id, title: row.title, description: row.description || '', assignee: row.assignee || 'Unassigned', photos: row.photos || [], createdAt: new Date(row.created_at).getTime() });
   board[targetCol].sort((a,b) => (a.createdAt||0) - (b.createdAt||0));
 }
 
@@ -7641,7 +7641,7 @@ function kbRender(){
       div.innerHTML = `
         <div class="kanban-card-title" style="pointer-events:none">${card.title}</div>
         ${card.description ? `<div style="font-size:12px;color:#64748B;line-height:1.4;margin-top:4px;pointer-events:none;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden">${card.description.replace(/</g,'&lt;')}</div>` : ''}
-        ${photoThumbStrip(card.photos, ()=>card.photos, kbRender)}
+        ${photoThumbStrip(card.photos, ()=>card.photos, ()=>kbCardPhotosChanged(card))}
         <div class="kanban-card-meta" style="margin-top:10px;display:flex;align-items:center;gap:6px;flex-wrap:wrap">
           <span class="kanban-card-assignee" style="pointer-events:none">${card.assignee}</span>
           <div style="margin-left:auto;display:flex;gap:4px" onmousedown="event.stopPropagation()">
@@ -16923,8 +16923,21 @@ window.maintAddPhotoClick = function(ticketId){
 window.kbAddPhotoClick = function(cardId, colId){
   const card = (kbBoards[kbActiveProjectId][colId]||[]).find(c=>c.id===cardId);
   if(!card) return;
-  openPhotoPicker(()=>{ if(!card.photos) card.photos=[]; return card.photos; }, kbRender);
+  openPhotoPicker(()=>{ if(!card.photos) card.photos=[]; return card.photos; }, ()=>kbCardPhotosChanged(card));
 };
+
+function kbCardPhotosChanged(card){
+  kbRender();
+  if(kbActiveIsTeam){
+    if(card.dbId){
+      sb.from('task_cards').update({ photos: card.photos }).eq('id', card.dbId).then(({error})=>{
+        if(error) console.warn('Task card photo save failed', error);
+      });
+    }
+  } else {
+    taskboardSavePersonal();
+  }
+}
 
 window.maintEditTicket = function(ticketId){
   const t = maintTickets.find(x=>x.id===ticketId);

@@ -3055,6 +3055,15 @@ img.emoji-tw{width:1.15em;height:1.15em;vertical-align:-0.2em;margin:0 1px}
         </button>
       </div>
 
+      <div style="background:white;border:1px solid var(--line);border-radius:14px;padding:18px 20px;margin-bottom:32px">
+        <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:2px">
+          <div style="font-size:13px;font-weight:800;color:#0F1E2E">Daily Revenue vs Target — <span id="an-target-month-label"></span></div>
+          <button onclick="anOpenSetTarget()" style="background:none;border:none;cursor:pointer;font-family:'Inter',sans-serif;font-size:11.5px;font-weight:700;color:#0D9488;padding:0">Set Daily Target</button>
+        </div>
+        <div id="an-target-sub" style="font-size:11px;color:#94A3B8;margin:6px 0 14px"></div>
+        <div style="overflow-x:auto"><div id="an-target-grid" class="repcal-grid"></div></div>
+      </div>
+
       <div style="font-size:11.5px;font-weight:800;color:#C4973B;text-transform:uppercase;letter-spacing:0.6px;margin:8px 0 12px">Revenue</div>
 
       <div class="an-top-strip">
@@ -3112,15 +3121,6 @@ img.emoji-tw{width:1.15em;height:1.15em;vertical-align:-0.2em;margin:0 1px}
           <span style="display:flex;align-items:center;gap:5px"><span style="width:9px;height:9px;border-radius:2px;background:#C4973B"></span>Last year</span>
         </div>
         <div class="an-yoy-scroll"><div class="an-yoy-inner"><canvas id="an-rev-yoy"></canvas></div></div>
-      </div>
-
-      <div style="background:white;border:1px solid var(--line);border-radius:14px;padding:18px 20px;margin-bottom:36px">
-        <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:2px">
-          <div style="font-size:12px;font-weight:700;color:#64748B">Daily revenue vs target — <span id="an-target-month-label"></span></div>
-          <button onclick="anOpenSetTarget()" style="background:none;border:none;cursor:pointer;font-family:'Inter',sans-serif;font-size:11.5px;font-weight:700;color:#0D9488;padding:0">Set Daily Target</button>
-        </div>
-        <div id="an-target-sub" style="font-size:11px;color:#94A3B8;margin:6px 0 14px"></div>
-        <div id="an-target-grid" style="display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:6px"></div>
       </div>
 
       <div style="font-size:11.5px;font-weight:800;color:#C4973B;text-transform:uppercase;letter-spacing:0.6px;margin:8px 0 12px">Guests & Covers</div>
@@ -15458,17 +15458,25 @@ function anRenderTargetGrid(){
   const today = new Date();
   if(label) label.textContent = today.toLocaleDateString('en-GB',{month:'long', year:'numeric'});
   if(!anDailyTarget){
-    if(sub) sub.textContent = 'No daily target set yet - tap "Set Daily Target" above to turn this on.';
-    grid.innerHTML = '';
-    return;
+    sub.textContent = 'No daily target set yet - tap "Set Daily Target" above, then every day below will show green or red once you start entering revenue.';
+  } else {
+    sub.textContent = `Green = hit or beat Rp ${Math.round(anDailyTarget).toLocaleString('en-US')} for the day. Red = missed it.`;
   }
-  if(sub) sub.textContent = `Green = hit or beat Rp ${Math.round(anDailyTarget).toLocaleString('en-US')} for the day. Red = missed it.`;
-  const daysInMonth = new Date(today.getFullYear(), today.getMonth()+1, 0).getDate();
+
+  const year = today.getFullYear();
+  const month = today.getMonth();
+  const daysInMonth = new Date(year, month+1, 0).getDate();
+  const firstOfMonth = new Date(year, month, 1);
+  const leadingBlanks = (firstOfMonth.getDay() + 6) % 7; // Monday-start week
   const todayStr = bmDateStr(today);
+
   let html = '';
+  ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'].forEach(d => { html += `<div class="repcal-dow">${d}</div>`; });
+  for(let i=0; i<leadingBlanks; i++){ html += '<div class="an-target-box" style="visibility:hidden"></div>'; }
+
   for(let day=1; day<=daysInMonth; day++){
-    const dateStr = bmDateStr(new Date(today.getFullYear(), today.getMonth(), day));
-    if(dateStr >= todayStr){
+    const dateStr = bmDateStr(new Date(year, month, day));
+    if(!anDailyTarget || dateStr >= todayStr){
       html += `<div class="an-target-box no-data"><div class="an-target-box-day">${day}</div></div>`;
       continue;
     }

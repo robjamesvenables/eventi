@@ -3057,11 +3057,24 @@ img.emoji-tw{width:1.15em;height:1.15em;vertical-align:-0.2em;margin:0 1px}
       </div>
 
       <div style="background:white;border:1px solid var(--line);border-radius:14px;padding:18px 20px;margin-bottom:32px">
-        <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:2px">
-          <div style="font-size:13px;font-weight:800;color:#0F1E2E">Daily Revenue vs Target — <span id="an-target-month-label"></span></div>
-          <button onclick="anOpenSetTarget()" style="background:none;border:none;cursor:pointer;font-family:'Inter',sans-serif;font-size:11.5px;font-weight:700;color:#0D9488;padding:0">Set Daily Target</button>
+        <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;margin-bottom:16px">
+          <div style="font-size:13px;font-weight:800;color:#0F1E2E">Daily Revenue vs Target</div>
+          <div style="display:flex;align-items:center;gap:10px">
+            <button onclick="anTargetChangeMonth(-1)" style="width:30px;height:30px;border-radius:50%;border:1.5px solid #E2E8F0;background:white;cursor:pointer;display:flex;align-items:center;justify-content:center"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#0F1E2E" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg></button>
+            <div id="an-target-month-label" style="font-size:13px;font-weight:800;color:#0F1E2E;min-width:120px;text-align:center"></div>
+            <button onclick="anTargetChangeMonth(1)" style="width:30px;height:30px;border-radius:50%;border:1.5px solid #E2E8F0;background:white;cursor:pointer;display:flex;align-items:center;justify-content:center"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#0F1E2E" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></button>
+          </div>
         </div>
-        <div id="an-target-sub" style="font-size:11px;color:#94A3B8;margin:6px 0 14px"></div>
+
+        <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;background:#F8FAFC;border-radius:10px;padding:12px 16px;margin-bottom:16px">
+          <div>
+            <div style="font-size:11px;font-weight:700;color:#94A3B8;margin-bottom:2px">Daily Target for <span id="an-target-month-label2"></span></div>
+            <div id="an-target-current-val" style="font-size:18px;font-weight:800;color:#0F1E2E">—</div>
+          </div>
+          <button onclick="anOpenSetTarget()" class="btn btn-navy">Set / Change Target</button>
+        </div>
+
+        <div id="an-target-sub" style="font-size:11px;color:#94A3B8;margin:0 0 14px"></div>
         <div style="overflow-x:auto"><div id="an-target-grid" class="repcal-grid"></div></div>
       </div>
 
@@ -15429,23 +15442,35 @@ function anFitTextToBox(el){
   }
 }
 
-let anDailyTarget = null;
+let anDailyTargets = {}; // { 'YYYY-MM': value }
+let anTargetViewDate = new Date();
+
 function anLoadTarget(){
   try{
-    const saved = localStorage.getItem('mavis_daily_revenue_target');
-    anDailyTarget = saved ? Number(saved) : null;
-  }catch(e){ anDailyTarget = null; }
+    const saved = localStorage.getItem('mavis_daily_revenue_targets');
+    anDailyTargets = saved ? JSON.parse(saved) : {};
+  }catch(e){ anDailyTargets = {}; }
+}
+function anTargetMonthKey(d){
+  return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0');
+}
+function anTargetChangeMonth(delta){
+  anTargetViewDate = new Date(anTargetViewDate.getFullYear(), anTargetViewDate.getMonth()+delta, 1);
+  anRenderTargetGrid();
 }
 function anOpenSetTarget(){
+  const key = anTargetMonthKey(anTargetViewDate);
+  const current = anDailyTargets[key];
+  const monthLabel = anTargetViewDate.toLocaleDateString('en-GB',{month:'long', year:'numeric'});
   appModalShow({
-    title:'Set Daily Revenue Target',
-    sub:'Every day this month will be compared against this figure.',
-    fields:[{label:'Daily target', type:'money', placeholder:'e.g. 5,000,000', value: anDailyTarget ? String(anDailyTarget) : ''}],
+    title: 'Daily Target — ' + monthLabel,
+    sub: 'This applies to every day in ' + monthLabel + ' only - other months keep their own target.',
+    fields:[{label:'Daily target', type:'money', placeholder:'e.g. 5,000,000', value: current ? String(current) : ''}],
     onOk([value]){
       const num = parseFloat(value);
       if(isNaN(num)) return;
-      anDailyTarget = num;
-      try{ localStorage.setItem('mavis_daily_revenue_target', String(num)); }catch(e){}
+      anDailyTargets[key] = num;
+      try{ localStorage.setItem('mavis_daily_revenue_targets', JSON.stringify(anDailyTargets)); }catch(e){}
       anRenderTargetGrid();
       toast('Target saved ✓');
     }
@@ -15454,22 +15479,31 @@ function anOpenSetTarget(){
 function anRenderTargetGrid(){
   const grid = document.getElementById('an-target-grid');
   const label = document.getElementById('an-target-month-label');
+  const label2 = document.getElementById('an-target-month-label2');
+  const currentVal = document.getElementById('an-target-current-val');
   const sub = document.getElementById('an-target-sub');
   if(!grid) return;
-  const today = new Date();
-  if(label) label.textContent = today.toLocaleDateString('en-GB',{month:'long', year:'numeric'});
-  if(!anDailyTarget){
-    sub.textContent = 'No daily target set yet - tap "Set Daily Target" above, then every day below will show green or red once you start entering revenue.';
+
+  const monthLabel = anTargetViewDate.toLocaleDateString('en-GB',{month:'long', year:'numeric'});
+  if(label) label.textContent = monthLabel;
+  if(label2) label2.textContent = monthLabel;
+
+  const key = anTargetMonthKey(anTargetViewDate);
+  const target = anDailyTargets[key] || null;
+  if(currentVal) currentVal.textContent = target ? bmMoney(target) : 'Not set for this month';
+
+  if(!target){
+    sub.textContent = 'No target set for ' + monthLabel + ' yet - tap "Set / Change Target" above.';
   } else {
-    sub.textContent = `Green = hit or beat Rp ${Math.round(anDailyTarget).toLocaleString('en-US')} for the day. Red = missed it.`;
+    sub.textContent = `Green = hit or beat Rp ${Math.round(target).toLocaleString('en-US')} for the day. Red = missed it.`;
   }
 
-  const year = today.getFullYear();
-  const month = today.getMonth();
+  const year = anTargetViewDate.getFullYear();
+  const month = anTargetViewDate.getMonth();
   const daysInMonth = new Date(year, month+1, 0).getDate();
   const firstOfMonth = new Date(year, month, 1);
   const leadingBlanks = (firstOfMonth.getDay() + 6) % 7; // Monday-start week
-  const todayStr = bmDateStr(today);
+  const todayStr = bmDateStr(new Date());
 
   let html = '';
   ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'].forEach(d => { html += `<div class="repcal-dow">${d}</div>`; });
@@ -15481,7 +15515,7 @@ function anRenderTargetGrid(){
     const clickAttr = isFuture ? '' : `onclick="anTargetOpenDay('${dateStr}')"`;
     const cursorStyle = isFuture ? 'cursor:default' : 'cursor:pointer';
 
-    if(isFuture || !anDailyTarget){
+    if(isFuture || !target){
       html += `<div class="an-target-box no-data" style="${cursorStyle}" ${clickAttr}><div class="an-target-box-day">${day}</div></div>`;
       continue;
     }
@@ -15491,8 +15525,8 @@ function anRenderTargetGrid(){
       continue;
     }
     const rev = Number(entry.value);
-    const pct = ((rev - anDailyTarget) / anDailyTarget) * 100;
-    const hit = rev >= anDailyTarget;
+    const pct = ((rev - target) / target) * 100;
+    const hit = rev >= target;
     html += `<div class="an-target-box ${hit?'hit':'miss'}" style="cursor:pointer" ${clickAttr}>
       <div class="an-target-box-day">${day}</div>
       <div class="an-target-box-pct">${pct>=0?'+':''}${pct.toFixed(0)}%</div>
@@ -15504,8 +15538,11 @@ function anRenderTargetGrid(){
 function anTargetOpenDay(dateStr){
   const friendly = bmFriendlyDate(dateStr);
   const existing = businessMetrics.find(m => m.metric_key==='revenue' && m.period_date===dateStr);
+  const key = anTargetMonthKey(anTargetViewDate);
+  const target = anDailyTargets[key];
   appModalShow({
     title: 'Revenue — ' + friendly,
+    sub: target ? `Target for this day: Rp ${Math.round(target).toLocaleString('en-US')}` : undefined,
     fields:[{label:'Revenue for that day', type:'money', placeholder:'e.g. 18,500,000', value: existing ? String(existing.value) : '', optional:true}],
     async onOk([value]){
       if(!value || !value.trim()){

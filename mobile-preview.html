@@ -107,5 +107,17 @@
     <div class="hint">This is the <b>real, live app</b> running exactly as it would on a phone.</div>
     <button class="reload-btn" onclick="document.getElementById('previewFrame').src = document.getElementById('previewFrame').src">Reload</button>
   </div>
+  <script>
+    // The app inside the phone manages its own browser history for its internal
+    // navigation. Running inside an iframe, that can end up blending into this
+    // outer page's own back/forward history, and pressing the device/browser back
+    // button a few taps in can land somewhere the app doesn't expect and error.
+    // Trap this page's own back navigation so it just stays put - all real
+    // navigation happens by tapping inside the phone itself, exactly as intended.
+    history.pushState({mavisPreview:true}, '', location.href);
+    window.addEventListener('popstate', function(){
+      history.pushState({mavisPreview:true}, '', location.href);
+    });
+  </script>
 </body>
 </html>

@@ -15807,7 +15807,7 @@ window.momentToggleReaction = function(idx, emojiId){
   }
 };
 
-function openMoment(idx){
+function momentDisplayIdx(idx){
   const m = momentsData[idx];
   if(!m) return;
   momentsCurrentIdx = idx;
@@ -15819,8 +15819,6 @@ function openMoment(idx){
   document.getElementById('moment-lb-download').href = m.img || m.thumb;
   const lbBar = document.getElementById('moment-lb-reactions');
   if(lbBar) lbBar.innerHTML = momentsReactionBarHtml(idx, false);
-  document.getElementById('moment-lightbox').classList.add('open');
-  history.pushState({page:'home', momentOpen:true}, '', '#highlight');
 
   if(!m.img && m.dbId){
     sb.from('highlights').select('img').eq('id', m.dbId).single().then(({data, error})=>{
@@ -15832,10 +15830,21 @@ function openMoment(idx){
   }
 }
 
+function openMoment(idx){
+  if(!momentsData[idx]) return;
+  momentDisplayIdx(idx);
+  document.getElementById('moment-lightbox').classList.add('open');
+  history.pushState({page:'home', momentOpen:true}, '', '#highlight');
+}
+
 function momentStoryNav(dir){
   if(!momentsData.length) return;
   const next = ((momentsCurrentIdx + dir) % momentsData.length + momentsData.length) % momentsData.length;
-  openMoment(next);
+  // Swiping/tapping between stories stays inside the same lightbox "screen" - only the
+  // photo changes, so this must NOT push a new history entry each time. Only the very
+  // first open (openMoment) does that. Otherwise every swipe stacks up another back-press
+  // needed before the phone's back button actually closes anything.
+  momentDisplayIdx(next);
 }
 
 // Tap left half of the photo = previous, tap right half = next (Instagram/Facebook style)

@@ -4758,7 +4758,65 @@ let scrollPositions = {};
 let isBackNavigation = false;
 let navPrevPage = null;
 
+let analyticsPinBypassNext = false;
+let appSettings = {};
+
+async function loadAppSettings(){
+  try{
+    const { data, error } = await sb.from('app_settings').select('*');
+    if(error) throw error;
+    appSettings = {};
+    (data||[]).forEach(row => { appSettings[row.key] = row.value; });
+  } catch(e){
+    console.warn('Could not load app settings', e);
+  }
+}
+
+function analyticsPinGate(pushState){
+  if(!appSettings.analytics_pin){
+    appModalShow({
+      title:'Create Analytics PIN',
+      sub:'Set a PIN to protect Analytics - everyone will need to enter it, every time, on any device.',
+      fields:[
+        {label:'New PIN (4+ digits)', placeholder:'e.g. 1234'},
+        {label:'Confirm PIN', placeholder:'e.g. 1234'}
+      ],
+      async onOk([pin, confirm]){
+        if(!pin || pin.trim().length < 4){ toast('PIN must be at least 4 digits'); return; }
+        if(pin.trim() !== confirm.trim()){ toast('PINs did not match - try again'); return; }
+        const { error } = await sb.from('app_settings').upsert({ key:'analytics_pin', value: pin.trim() });
+        if(error){ toast('Could not save PIN - try again'); console.warn(error); return; }
+        appSettings.analytics_pin = pin.trim();
+        toast('PIN set ✓');
+        analyticsPinBypassNext = true;
+        nav('analytics', pushState);
+      }
+    });
+    return;
+  }
+  appModalShow({
+    title:'Enter Analytics PIN',
+    fields:[{label:'PIN', placeholder:'Enter PIN'}],
+    onOk([pin]){
+      if(!pin || pin.trim() !== appSettings.analytics_pin){
+        toast('Incorrect PIN');
+        return;
+      }
+      analyticsPinBypassNext = true;
+      nav('analytics', pushState);
+    }
+  });
+}
+
 function nav(id, pushState=true){
+  if(id === 'analytics'){
+    if(analyticsPinBypassNext){
+      analyticsPinBypassNext = false;
+    } else {
+      analyticsPinGate(pushState);
+      return;
+    }
+  }
   toggleSidebar(false);
 
   // Remember where we were on the page we're leaving, so a later "back" can return to it
@@ -11578,7 +11636,7 @@ function kitchenDeleteAllergenDish(id){
 }
 // ── INIT ──
 window.addEventListener('keydown',e=>{if(e.key==='Enter'&&document.getElementById('login').style.display!=='none')doLogin();});
-window.addEventListener('load',async ()=>{ initCurrency(); await announceLoadFromSupabase(); announceRender(); await djSchedLoadFromSupabase(); djSchedRender(); await momentsLoadFromSupabase(); momentsRebuild(); await sandboxLoadFromSupabase(); sandboxRender(); await quickLinksLoadFromSupabase(); quickLinksRender(); await myDriveLoadFromSupabase(); myDriveRender(); await sopLoadFromSupabase(); sopRenderDeptList(); await suggestionLoadFromSupabase(); suggestionRenderList(); await vendorLoadFromSupabase(); vendorRenderDepts(); await customerLoadFromSupabase(); customerRenderList(); await vacanciesLoadFromSupabase(); vacanciesRender(); await businessMetricsLoadFromSupabase(); stickyLoadMyNotes(); });
+window.addEventListener('load',async ()=>{ initCurrency(); await loadAppSettings(); await announceLoadFromSupabase(); announceRender(); await djSchedLoadFromSupabase(); djSchedRender(); await momentsLoadFromSupabase(); momentsRebuild(); await sandboxLoadFromSupabase(); sandboxRender(); await quickLinksLoadFromSupabase(); quickLinksRender(); await myDriveLoadFromSupabase(); myDriveRender(); await sopLoadFromSupabase(); sopRenderDeptList(); await suggestionLoadFromSupabase(); suggestionRenderList(); await vendorLoadFromSupabase(); vendorRenderDepts(); await customerLoadFromSupabase(); customerRenderList(); await vacanciesLoadFromSupabase(); vacanciesRender(); await businessMetricsLoadFromSupabase(); stickyLoadMyNotes(); });
 
 // ── ANNOUNCEMENTS ──
 const announcements = [

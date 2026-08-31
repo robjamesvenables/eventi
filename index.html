@@ -4676,7 +4676,7 @@ img.emoji-tw{width:1.15em;height:1.15em;vertical-align:-0.2em;margin:0 1px}
           <div style="font-size:13px;font-weight:800;color:#0F1E2E;margin-bottom:2px">Analytics PIN</div>
           <div style="font-size:12px;color:#94A3B8">Required every time anyone opens Analytics, on any device</div>
         </div>
-        <button onclick="adminChangeAnalyticsPin()" class="btn btn-navy">Change PIN</button>
+        <button onclick="adminChangeAnalyticsPin()" class="btn btn-navy">Change / Forgot PIN</button>
       </div>
 
       <!-- TABS -->
@@ -4817,19 +4817,14 @@ function analyticsPinGate(pushState){
 }
 
 function adminChangeAnalyticsPin(){
-  const hasPin = !!appSettings.analytics_pin;
   appModalShow({
-    title: hasPin ? 'Change Analytics PIN' : 'Set Analytics PIN',
-    fields: (hasPin ? [{label:'Current PIN', placeholder:'Enter current PIN'}] : []).concat([
+    title: 'Change / Forgot PIN',
+    sub: 'Setting a new PIN here doesn\'t require knowing the old one.',
+    fields: [
       {label:'New PIN (4+ digits)', placeholder:'e.g. 1234'},
       {label:'Confirm New PIN', placeholder:'e.g. 1234'}
-    ]),
-    async onOk(vals){
-      const [current, pin, confirm] = hasPin ? vals : [null, vals[0], vals[1]];
-      if(hasPin && (!current || current.trim() !== appSettings.analytics_pin)){
-        toast('Current PIN is incorrect');
-        return;
-      }
+    ],
+    async onOk([pin, confirm]){
       if(!pin || pin.trim().length < 4){ toast('New PIN must be at least 4 digits'); return; }
       if(pin.trim() !== confirm.trim()){ toast('New PINs did not match - try again'); return; }
       const { error } = await sb.from('app_settings').upsert({ key:'analytics_pin', value: pin.trim() });

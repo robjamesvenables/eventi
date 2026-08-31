@@ -15438,37 +15438,32 @@ function anFitTextToBox(el){
   }
 }
 
-let anDailyTargets = {}; // { 'YYYY-MM': value }
 let anTargetViewDate = new Date();
 
-function anLoadTarget(){
-  try{
-    const saved = localStorage.getItem('mavis_daily_revenue_targets');
-    anDailyTargets = saved ? JSON.parse(saved) : {};
-  }catch(e){ anDailyTargets = {}; }
+function anMonthStartStr(d){
+  return bmDateStr(new Date(d.getFullYear(), d.getMonth(), 1));
 }
-function anTargetMonthKey(d){
-  return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0');
+function anGetGuideTarget(d){
+  const row = businessMetrics.find(m => m.metric_key==='guide_target' && m.period_date===anMonthStartStr(d));
+  return row ? Number(row.value) : null;
 }
 function anTargetChangeMonth(delta){
   anTargetViewDate = new Date(anTargetViewDate.getFullYear(), anTargetViewDate.getMonth()+delta, 1);
   anRenderTargetGrid();
 }
 function anOpenSetTarget(){
-  const key = anTargetMonthKey(anTargetViewDate);
-  const current = anDailyTargets[key];
+  const monthStart = anMonthStartStr(anTargetViewDate);
+  const current = anGetGuideTarget(anTargetViewDate);
   const monthLabel = anTargetViewDate.toLocaleDateString('en-GB',{month:'long', year:'numeric'});
   appModalShow({
     title: 'Daily Target — ' + monthLabel,
-    sub: 'This applies to every day in ' + monthLabel + ' only - other months keep their own target.',
+    sub: 'This applies to every day in ' + monthLabel + ' only - other months keep their own target. Shared with everyone using the app, on any device.',
     fields:[{label:'Daily target', type:'money', placeholder:'e.g. 5,000,000', value: current ? String(current) : ''}],
-    onOk([value]){
+    async onOk([value]){
       const num = parseFloat(value);
       if(isNaN(num)) return;
-      anDailyTargets[key] = num;
-      try{ localStorage.setItem('mavis_daily_revenue_targets', JSON.stringify(anDailyTargets)); }catch(e){}
+      await bmInsert([{ metric_key:'guide_target', period_date: monthStart, value: num }]);
       anRenderTargetGrid();
-      toast('Target saved ✓');
     }
   });
 }
@@ -15484,8 +15479,7 @@ function anRenderTargetGrid(){
   if(label) label.textContent = monthLabel;
   if(label2) label2.textContent = monthLabel;
 
-  const key = anTargetMonthKey(anTargetViewDate);
-  const guideTarget = anDailyTargets[key] || null;
+  const guideTarget = anGetGuideTarget(anTargetViewDate);
   if(currentVal) currentVal.textContent = guideTarget ? bmMoney(guideTarget) + ' (guide)' : 'Not set for this month';
   sub.textContent = 'This is just a reference guide, suggested when entering a day\'s figures. Each day below uses its own target, entered alongside that day\'s revenue.';
 
@@ -15532,8 +15526,7 @@ function anTargetOpenDay(dateStr){
   const friendly = bmFriendlyDate(dateStr);
   const existingRev = businessMetrics.find(m => m.metric_key==='revenue' && m.period_date===dateStr);
   const existingTarget = businessMetrics.find(m => m.metric_key==='daily_target' && m.period_date===dateStr);
-  const key = anTargetMonthKey(anTargetViewDate);
-  const guideTarget = anDailyTargets[key];
+  const guideTarget = anGetGuideTarget(anTargetViewDate);
   appModalShow({
     title: 'Revenue — ' + friendly,
     sub: 'Enter both the actual revenue and the target for this specific day.',
@@ -15601,7 +15594,6 @@ function anTargetDeleteDay(id){
 }
 
 function analyticsRender(){
-  anLoadTarget();
   anRenderTargetGrid();
   const today = new Date();
   const todayStr = bmDateStr(today);

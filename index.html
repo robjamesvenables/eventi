@@ -17054,6 +17054,11 @@ function appModalShow({title, sub='', fields, onOk}){
   const fc = document.getElementById('appModalFields');
   const hasTextarea = fields.some(f=>f.type==='textarea' || f.type==='deptpicker' || f.type==='iconmulti' || f.type==='pillpicker' || f.type==='colordot' || f.type==='captionEmoji' || f.type==='daterange');
   document.getElementById('appModalBox').style.maxWidth = hasTextarea ? '640px' : '400px';
+  // Fixed in pixels, captured now (before any keyboard could be open) rather than relying on
+  // a live vh calculation - Android tablets have a known bug where the keyboard opening
+  // shrinks the live viewport height and it can get stuck that way even after the keyboard
+  // closes, making everything inside this box look tiny until a full page refresh.
+  document.getElementById('appModalBox').style.maxHeight = Math.round(window.innerHeight * 0.88) + 'px';
   fc.innerHTML = fields.map((f,i)=>{
     if(f.type==='file'){
       const hasExisting = !!f.value;

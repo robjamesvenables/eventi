@@ -4803,8 +4803,10 @@ function analyticsPinGate(pushState){
         if(error){ toast('Save failed: ' + (error.message || JSON.stringify(error))); console.warn(error); return; }
         appSettings.analytics_pin = pin.trim();
         toast('PIN set ✓');
-        analyticsPinBypassNext = true;
-        nav('analytics', pushState);
+        // The modal's own close behaviour triggers a delayed "back" navigation that fires
+        // a moment after this code runs - waiting here lets that settle first, so our
+        // correct navigation to Analytics happens last and isn't overridden by it.
+        setTimeout(()=>{ analyticsPinBypassNext = true; nav('analytics', pushState); }, 80);
       }
     });
     return;
@@ -4817,8 +4819,7 @@ function analyticsPinGate(pushState){
         toast('Incorrect PIN');
         return;
       }
-      analyticsPinBypassNext = true;
-      nav('analytics', pushState);
+      setTimeout(()=>{ analyticsPinBypassNext = true; nav('analytics', pushState); }, 80);
     }
   });
 }

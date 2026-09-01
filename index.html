@@ -4780,6 +4780,18 @@ async function loadAppSettings(){
   }
 }
 
+const ANALYTICS_PIN_GRACE_MS = 10 * 60 * 1000; // 10 minutes
+
+function analyticsPinRecentlyVerified(){
+  try{
+    const at = Number(localStorage.getItem('mavis_analytics_unlocked_at') || 0);
+    return (Date.now() - at) < ANALYTICS_PIN_GRACE_MS;
+  }catch(e){ return false; }
+}
+function analyticsPinMarkVerified(){
+  try{ localStorage.setItem('mavis_analytics_unlocked_at', String(Date.now())); }catch(e){}
+}
+
 function analyticsPinGate(pushState){
   // Point the browser's history state safely at Dashboard before the PIN prompt opens.
   // Without this, tapping Cancel (which triggers a "back" navigation) can land right back
@@ -4791,7 +4803,7 @@ function analyticsPinGate(pushState){
   if(!appSettings.analytics_pin){
     appModalShow({
       title:'Create Analytics PIN',
-      sub:'Set a PIN to protect Analytics - everyone will need to enter it, every time, on any device.',
+      sub:'Set a PIN to protect Analytics - everyone will need to enter it on any device. Once entered, it stays unlocked on that device for 10 minutes.',
       fields:[
         {label:'New PIN (4+ digits)', placeholder:'e.g. 1234'},
         {label:'Confirm PIN', placeholder:'e.g. 1234'}
@@ -4803,6 +4815,7 @@ function analyticsPinGate(pushState){
         if(error){ toast('Save failed: ' + (error.message || JSON.stringify(error))); console.warn(error); return; }
         appSettings.analytics_pin = pin.trim();
         toast('PIN set ✓');
+        analyticsPinMarkVerified();
         // The modal's own close behaviour triggers a delayed "back" navigation that fires
         // a moment after this code runs - waiting here lets that settle first, so our
         // correct navigation to Analytics happens last and isn't overridden by it.
@@ -4819,6 +4832,7 @@ function analyticsPinGate(pushState){
         toast('Incorrect PIN');
         return;
       }
+      analyticsPinMarkVerified();
       setTimeout(()=>{ analyticsPinBypassNext = true; nav('analytics', pushState); }, 80);
     }
   });
@@ -4847,6 +4861,8 @@ function nav(id, pushState=true){
   if(id === 'analytics'){
     if(analyticsPinBypassNext){
       analyticsPinBypassNext = false;
+    } else if(analyticsPinRecentlyVerified()){
+      // Unlocked on this device within the last 10 minutes - skip the prompt
     } else {
       analyticsPinGate(pushState);
       return;

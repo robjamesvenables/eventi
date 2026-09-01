@@ -121,8 +121,8 @@
     text-align: center;
     padding: 3px 2px;
   }
-  .vacant .slot-inner { background: #ECFDF5; border: 1.5px dashed #86EFAC; color: #16A34A; opacity: 0.65; }
-  .vacant:hover .slot-inner, .vacant.drag-over .slot-inner { opacity: 1; background: #DCFCE7; }
+  .vacant .slot-inner { background: #F1F5F9; border: 1.5px dashed #CBD5E1; color: #94A3B8; opacity: 0.75; }
+  .vacant:hover .slot-inner, .vacant.drag-over .slot-inner { opacity: 1; background: #E2E8F0; }
   .hold .slot-inner { background: #F59E0B; color: white; cursor: grab; }
   .booked .slot-inner { background: #EF4444; color: white; cursor: grab; }
   .slot-client { font-size: 10px; font-weight: 800; line-height: 1.15; word-break: break-word; }
@@ -160,6 +160,31 @@
   .confirm-btn-danger { background: #EF4444; color: white; }
   .confirm-btn-wait { background: #F59E0B; color: white; }
   .confirm-btn-cancel { background: #F1F5F9; color: #64748B; }
+
+  .skill-item { display: flex; align-items: center; gap: 10px; padding: 9px 0; border-bottom: 1px solid #F1F5F9; font-size: 13px; font-weight: 600; color: #0F1E2E; }
+  .skill-item:last-child { border-bottom: none; }
+  .skill-check { width: 20px; height: 20px; border-radius: 50%; background: #0D9488; color: white; display: flex; align-items: center; justify-content: center; font-size: 12px; flex-shrink: 0; }
+
+  .building-panel {
+    position: fixed;
+    top: 0;
+    right: 0;
+    width: 270px;
+    height: 100vh;
+    background: white;
+    border-left: 1px solid #E2E8F0;
+    box-shadow: -4px 0 20px rgba(0,0,0,0.06);
+    overflow-y: auto;
+    padding: 18px;
+    z-index: 150;
+  }
+  .building-panel-title { font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; color: #0F1E2E; margin-bottom: 4px; }
+  .building-panel-sub { font-size: 11px; color: #94A3B8; margin-bottom: 16px; line-height: 1.4; }
+  .building-card { background: #F8FAFC; border: 1.5px solid #E2E8F0; border-radius: 10px; padding: 12px; margin-bottom: 10px; cursor: pointer; }
+  .building-card:hover { border-color: #0D9488; }
+  .building-card-name { font-size: 13px; font-weight: 800; color: #0F1E2E; margin-bottom: 3px; }
+  .building-card-detail { font-size: 11px; color: #64748B; }
+  .building-empty { font-size: 12px; color: #94A3B8; text-align: center; padding: 30px 10px; line-height: 1.5; }
 </style>
 </head>
 <body>
@@ -171,7 +196,7 @@
       <div class="topbar-date" id="today-label"></div>
     </div>
     <div class="legend">
-      <div class="legend-item"><span class="legend-dot" style="background:#16A34A"></span>Vacant</div>
+      <div class="legend-item"><span class="legend-dot" style="background:#94A3B8"></span>Vacant</div>
       <div class="legend-item"><span class="legend-dot" style="background:#F59E0B"></span>On Hold (15 min)</div>
       <div class="legend-item"><span class="legend-dot" style="background:#EF4444"></span>Booked</div>
     </div>
@@ -217,6 +242,39 @@
     <div class="confirm-box" id="confirmBox"></div>
   </div>
 
+  <div class="modal-bg" id="therapistInfoBg">
+    <div class="modal-box">
+      <div class="modal-title" id="tiName"></div>
+      <div class="modal-sub" id="tiSub"></div>
+      <div class="modal-label">Services offered</div>
+      <div id="tiSkills" style="margin-bottom:18px"></div>
+      <button class="modal-btn modal-btn-cancel" style="width:100%" onclick="closeTherapistInfo()">Close</button>
+    </div>
+  </div>
+
+  <div class="building-panel">
+    <div class="building-panel-title">Currently In The Building</div>
+    <div class="building-panel-sub">Clients whose treatment is happening right now. Tap a name for their details.</div>
+    <div id="buildingList"></div>
+  </div>
+
+  <div class="modal-bg" id="visitBg">
+    <div class="modal-box">
+      <div class="modal-title" id="visitName"></div>
+      <div class="modal-sub" id="visitSub"></div>
+      <div class="modal-label">Phone</div>
+      <div id="visitPhone" style="margin-bottom:16px;font-size:14px;font-weight:700;color:#0F1E2E"></div>
+      <div class="modal-label">Requirements on file</div>
+      <div id="visitReqs" style="margin-bottom:16px;font-size:13px;color:#64748B;line-height:1.4"></div>
+      <div class="modal-label">Visit Notes</div>
+      <textarea class="modal-input" id="visitTodayNotes" placeholder="e.g. Thanked her on the way out, mentioned her treatment, said she'd be back next month"></textarea>
+      <div class="modal-actions">
+        <button class="modal-btn modal-btn-cancel" onclick="closeVisitModal()">Close</button>
+        <button class="modal-btn modal-btn-save" onclick="saveVisitNotes()">Save Note</button>
+      </div>
+    </div>
+  </div>
+
 <script>
   const THERAPISTS = [
     {name:'Made 1', gender:'M'}, {name:'Kadek', gender:'F'}, {name:'Wayan', gender:'M'},
@@ -254,10 +312,29 @@
   function renderTherapistChips(){
     const wrap = document.getElementById('therapistChips');
     wrap.innerHTML = THERAPISTS.map(function(t){
-      return '<div class="therapist-chip" draggable="true" ondragstart="therapistDragStart(event,\'' + t.name + '\')" ondragend="therapistDragEnd(event)">' +
+      return '<div class="therapist-chip" draggable="true" onclick="openTherapistInfo(\'' + t.name + '\')" ondragstart="therapistDragStart(event,\'' + t.name + '\')" ondragend="therapistDragEnd(event)">' +
         '<span class="gender-badge ' + t.gender + '">' + t.gender + '</span>' + t.name + '</div>';
     }).join('');
   }
+
+  const SKILLS_DEMO = ['Foot Massage', 'Full Body Massage', 'Manicure', 'Pedicure'];
+
+  function openTherapistInfo(name){
+    const t = THERAPISTS.find(function(x){ return x.name === name; });
+    if(!t) return;
+    document.getElementById('tiName').textContent = t.name;
+    document.getElementById('tiSub').textContent = (t.gender === 'M' ? 'Male' : 'Female') + ' therapist';
+    document.getElementById('tiSkills').innerHTML = SKILLS_DEMO.map(function(s){
+      return '<div class="skill-item"><span class="skill-check">✓</span>' + s + '</div>';
+    }).join('');
+    document.getElementById('therapistInfoBg').classList.add('show');
+  }
+  function closeTherapistInfo(){
+    document.getElementById('therapistInfoBg').classList.remove('show');
+  }
+  document.getElementById('therapistInfoBg').addEventListener('click', function(e){
+    if(e.target === this) closeTherapistInfo();
+  });
 
   function therapistIndexByName(name){
     return THERAPISTS.findIndex(function(t){ return t.name === name; });
@@ -293,6 +370,7 @@
     });
 
     grid.innerHTML = html;
+    if(typeof refreshBuildingPanel === 'function') refreshBuildingPanel();
   }
 
   // ── Two drag sources: an unassigned therapist chip, or an existing booking being moved ──
@@ -498,12 +576,71 @@
   }
   setInterval(checkHolds, 20000);
 
+  // ── Currently In The Building panel ──
+  function refreshBuildingPanel(){
+    const list = document.getElementById('buildingList');
+    if(!list) return;
+    const nowHour = new Date().getHours();
+    const present = [];
+    for(const key in bookings){
+      const b = bookings[key];
+      if(b.status === 'booked'){
+        const parts = key.split('-');
+        const hour = Number(parts[1]);
+        if(hour === nowHour){
+          present.push({ key: key, therapistIdx: Number(parts[0]), hour: hour, booking: b });
+        }
+      }
+    }
+    if(!present.length){
+      list.innerHTML = '<div class="building-empty">Nobody currently in for treatment.<br>They will appear here automatically during their booked hour.</div>';
+      return;
+    }
+    list.innerHTML = present.map(function(p){
+      const t = THERAPISTS[p.therapistIdx];
+      return '<div class="building-card" onclick="openVisitModal(\'' + p.key + '\')">' +
+        '<div class="building-card-name">' + p.booking.client + '</div>' +
+        '<div class="building-card-detail">With ' + t.name + ' — ' + fmtHour(p.hour) + '</div>' +
+      '</div>';
+    }).join('');
+  }
+  setInterval(refreshBuildingPanel, 30000);
+
+  function openVisitModal(key){
+    const b = bookings[key];
+    if(!b) return;
+    window._visitKey = key;
+    const parts = key.split('-');
+    const t = THERAPISTS[Number(parts[0])];
+    document.getElementById('visitName').textContent = b.client;
+    document.getElementById('visitSub').textContent = 'With ' + t.name + ' — ' + fmtHour(Number(parts[1]));
+    document.getElementById('visitPhone').textContent = b.phone || 'No phone number on file';
+    document.getElementById('visitReqs').textContent = b.notes || 'Nothing noted';
+    document.getElementById('visitTodayNotes').value = b.todayNotes || '';
+    document.getElementById('visitBg').classList.add('show');
+  }
+  function closeVisitModal(){
+    document.getElementById('visitBg').classList.remove('show');
+    window._visitKey = null;
+  }
+  function saveVisitNotes(){
+    const key = window._visitKey;
+    if(!key || !bookings[key]) return;
+    bookings[key].todayNotes = document.getElementById('visitTodayNotes').value.trim();
+    saveBookings();
+    closeVisitModal();
+  }
+  document.getElementById('visitBg').addEventListener('click', function(e){
+    if(e.target === this) closeVisitModal();
+  });
+
   document.getElementById('today-label').textContent = new Date().toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
   document.documentElement.style.setProperty('--n-therapists', THERAPISTS.length);
 
   loadBookings();
   renderTherapistChips();
   renderGrid();
+  refreshBuildingPanel();
 </script>
 
 </body>

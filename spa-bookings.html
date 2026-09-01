@@ -47,9 +47,19 @@
     font-weight: 700;
     cursor: grab;
     user-select: none;
+    display: flex;
+    align-items: center;
+    gap: 6px;
   }
   .therapist-chip:active { cursor: grabbing; }
   .therapist-chip.dragging { opacity: 0.4; }
+  .gender-badge {
+    width: 16px; height: 16px; border-radius: 50%;
+    display: inline-flex; align-items: center; justify-content: center;
+    font-size: 9px; font-weight: 800; color: white; flex-shrink: 0;
+  }
+  .gender-badge.M { background: #2a78d6; }
+  .gender-badge.F { background: #d4537e; }
 
   .wrap { padding: 22px; overflow-x: auto; }
   .grid-outer { min-width: 1180px; background: white; border: 1px solid #E2E8F0; border-radius: 14px; overflow: hidden; box-shadow: 0 2px 10px rgba(0,0,0,0.04); }
@@ -110,17 +120,19 @@
   .slot-client { font-size: 11px; font-weight: 800; line-height: 1.2; word-break: break-word; }
   .slot-therapist { font-size: 9.5px; font-weight: 700; opacity: 0.9; line-height: 1.15; }
   .slot-status { font-size: 8px; font-weight: 700; opacity: 0.8; text-transform: uppercase; letter-spacing: 0.3px; }
+  .slot-flag { font-size: 8px; opacity: 0.85; }
   .slot.drag-over .slot-inner { outline: 3px solid #0D9488; outline-offset: -3px; }
 
   /* Modal */
-  .modal-bg { display: none; position: fixed; inset: 0; background: rgba(15,30,46,0.55); align-items: center; justify-content: center; z-index: 200; }
+  .modal-bg { display: none; position: fixed; inset: 0; background: rgba(15,30,46,0.55); align-items: center; justify-content: center; z-index: 200; padding: 20px; }
   .modal-bg.show { display: flex; }
-  .modal-box { background: white; border-radius: 16px; padding: 26px; width: 100%; max-width: 380px; margin: 20px; box-shadow: 0 20px 60px rgba(0,0,0,0.2); }
+  .modal-box { background: white; border-radius: 16px; padding: 26px; width: 100%; max-width: 400px; box-shadow: 0 20px 60px rgba(0,0,0,0.2); max-height: 88vh; overflow-y: auto; }
   .modal-title { font-size: 16px; font-weight: 800; color: #0F1E2E; margin-bottom: 4px; }
   .modal-sub { font-size: 12.5px; color: #64748B; margin-bottom: 18px; }
   .modal-label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: #94A3B8; margin-bottom: 6px; }
   .modal-input { width: 100%; padding: 11px 14px; border: 1.5px solid #E2E8F0; border-radius: 9px; font-family: inherit; font-size: 16px; color: #0F1E2E; outline: none; margin-bottom: 16px; box-sizing: border-box; }
   .modal-input:focus { border-color: #0D9488; }
+  textarea.modal-input { resize: vertical; min-height: 70px; }
   select.modal-input { -webkit-appearance: none; appearance: none; background: white; }
   .status-pills { display: flex; gap: 8px; margin-bottom: 22px; }
   .status-pill { flex: 1; padding: 10px; border-radius: 9px; border: 1.5px solid #E2E8F0; background: white; font-family: inherit; font-size: 12.5px; font-weight: 700; cursor: pointer; text-align: center; color: #64748B; }
@@ -131,6 +143,17 @@
   .modal-btn-save { background: #0F1E2E; color: white; }
   .modal-btn-cancel { background: #F1F5F9; color: #64748B; }
   .modal-btn-clear { background: none; color: #DC2626; }
+
+  /* Small confirm popup (therapist swap, hold release) */
+  .confirm-box { background: white; border-radius: 16px; padding: 24px; width: 100%; max-width: 360px; box-shadow: 0 20px 60px rgba(0,0,0,0.2); text-align: center; }
+  .confirm-title { font-size: 15.5px; font-weight: 800; color: #0F1E2E; margin-bottom: 8px; }
+  .confirm-msg { font-size: 13px; color: #64748B; margin-bottom: 6px; line-height: 1.5; }
+  .confirm-phone { font-size: 15px; font-weight: 800; color: #0D9488; margin-bottom: 18px; }
+  .confirm-actions { display: flex; flex-direction: column; gap: 8px; }
+  .confirm-btn { padding: 12px; border-radius: 9px; border: none; font-family: inherit; font-size: 13.5px; font-weight: 700; cursor: pointer; }
+  .confirm-btn-danger { background: #EF4444; color: white; }
+  .confirm-btn-wait { background: #F59E0B; color: white; }
+  .confirm-btn-cancel { background: #F1F5F9; color: #64748B; }
 </style>
 </head>
 <body>
@@ -149,7 +172,7 @@
   </div>
 
   <div class="therapist-strip">
-    <div class="therapist-strip-label">Drag a therapist onto a room/time slot to assign them</div>
+    <div class="therapist-strip-label">Drag a therapist onto a room/time slot to assign them — drag onto an existing booking to change therapist</div>
     <div class="therapist-chips" id="therapistChips"></div>
   </div>
 
@@ -165,6 +188,10 @@
       <select class="modal-input" id="modalTherapistSelect"></select>
       <div class="modal-label">Client Name</div>
       <input type="text" class="modal-input" id="modalClientInput" placeholder="e.g. Sarah Johnson">
+      <div class="modal-label">Client Phone Number</div>
+      <input type="tel" class="modal-input" id="modalPhoneInput" placeholder="e.g. +62 812 3456 7890">
+      <div class="modal-label">Requirements — oils, towels, allergies, areas to avoid</div>
+      <textarea class="modal-input" id="modalNotesInput" placeholder="e.g. Lavender oil, extra towel, allergic to nuts, avoid lower back"></textarea>
       <div class="modal-label">Status</div>
       <div class="status-pills">
         <button class="status-pill" id="pillHold" onclick="setModalStatus('hold')">On Hold</button>
@@ -180,24 +207,33 @@
     </div>
   </div>
 
+  <div class="modal-bg" id="confirmBg">
+    <div class="confirm-box" id="confirmBox"></div>
+  </div>
+
 <script>
   const ROOMS = Array.from({length: 12}, (_, i) => 'Room ' + (i + 1));
   const THERAPISTS = [
-    'Made Sutrisna','Kadek Ayu','Wayan Surya','Putu Dewi','Ketut Ariawan',
-    'Nyoman Sari','Gede Wirawan','Luh Kartika','Komang Yudi','Ni Putu Diva',
-    'I Gede Bagus','Ayu Lestari','Dewa Putra','Sri Wahyuni','Agus Setiawan',
-    'Rina Puspita','Bayu Pratama','Maria Santos','Kevin Tan','Sophie Laurent'
+    {name:'Made Sutrisna', gender:'M'}, {name:'Kadek Ayu', gender:'F'}, {name:'Wayan Surya', gender:'M'},
+    {name:'Putu Dewi', gender:'F'}, {name:'Ketut Ariawan', gender:'M'}, {name:'Nyoman Sari', gender:'F'},
+    {name:'Gede Wirawan', gender:'M'}, {name:'Luh Kartika', gender:'F'}, {name:'Komang Yudi', gender:'M'},
+    {name:'Ni Putu Diva', gender:'F'}, {name:'I Gede Bagus', gender:'M'}, {name:'Ayu Lestari', gender:'F'},
+    {name:'Dewa Putra', gender:'M'}, {name:'Sri Wahyuni', gender:'F'}, {name:'Agus Setiawan', gender:'M'},
+    {name:'Rina Puspita', gender:'F'}, {name:'Bayu Pratama', gender:'M'}, {name:'Maria Santos', gender:'F'},
+    {name:'Kevin Tan', gender:'M'}, {name:'Sophie Laurent', gender:'F'}
   ];
   const HOURS = [9,10,11,12,13,14,15,16,17,18,19,20,21];
+  const HOLD_MINUTES = 15;
 
+  function therapistByName(name){ return THERAPISTS.find(t => t.name === name); }
   function fmtHour(h){
     const period = h < 12 ? 'AM' : 'PM';
     const hr = h > 12 ? h - 12 : h;
     return hr + ' ' + period;
   }
 
-  const STORAGE_KEY = 'mavis_spa_bookings_demo_v2';
-  let bookings = {}; // key: "roomIdx-hour" -> {therapist, client, status}
+  const STORAGE_KEY = 'mavis_spa_bookings_demo_v3';
+  let bookings = {}; // key -> {therapist, client, phone, notes, status, holdStartedAt, holdPrompted}
 
   function loadBookings(){
     try{
@@ -213,11 +249,10 @@
 
   function renderTherapistChips(){
     const wrap = document.getElementById('therapistChips');
-    wrap.innerHTML = THERAPISTS.map(name =>
-      `<div class="therapist-chip" draggable="true"
-         ondragstart="therapistDragStart(event,'${name}')"
-         ondragend="therapistDragEnd(event)">${name}</div>`
-    ).join('');
+    wrap.innerHTML = THERAPISTS.map(function(t){
+      return '<div class="therapist-chip" draggable="true" ondragstart="therapistDragStart(event,\'' + t.name + '\')" ondragend="therapistDragEnd(event)">' +
+        '<span class="gender-badge ' + t.gender + '">' + t.gender + '</span>' + t.name + '</div>';
+    }).join('');
   }
 
   function renderGrid(){
@@ -225,27 +260,33 @@
     let html = '';
 
     html += '<div class="grid-row"><div class="hd-name">Room</div>';
-    HOURS.forEach(h => { html += `<div class="hd-cell">${fmtHour(h)}</div>`; });
+    HOURS.forEach(function(h){ html += '<div class="hd-cell">' + fmtHour(h) + '</div>'; });
     html += '</div>';
 
-    ROOMS.forEach((room, ri) => {
-      html += `<div class="grid-row"><div class="room-cell">${room}</div>`;
-      HOURS.forEach(h => {
+    ROOMS.forEach(function(room, ri){
+      html += '<div class="grid-row"><div class="room-cell">' + room + '</div>';
+      HOURS.forEach(function(h){
         const key = slotKey(ri, h);
         const b = bookings[key];
         const statusClass = b ? b.status : 'vacant';
-        const content = b
-          ? `<div class="slot-client">${b.client}</div><div class="slot-therapist">${b.therapist}</div><div class="slot-status">${b.status === 'hold' ? 'Hold' : 'Booked'}</div>`
-          : `<div class="slot-status">Vacant</div>`;
-        html += `<div class="slot ${statusClass}" data-key="${key}"
-            onclick="openSlot('${key}')"
-            ondragover="dragOver(event)"
-            ondragleave="dragLeave(event)"
-            ondrop="drop(event,'${key}')">
-          <div class="slot-inner" draggable="${b ? 'true' : 'false'}" ondragstart="bookingDragStart(event,'${key}')">
-            ${content}
-          </div>
-        </div>`;
+        let content;
+        if(b){
+          const t = therapistByName(b.therapist);
+          const gBadge = t ? ' (' + t.gender + ')' : '';
+          const flag = b.notes ? '<div class="slot-flag">⚠ notes</div>' : '';
+          content = '<div class="slot-client">' + b.client + '</div>' +
+                    '<div class="slot-therapist">' + b.therapist + gBadge + '</div>' +
+                    '<div class="slot-status">' + (b.status === 'hold' ? 'Hold' : 'Booked') + '</div>' + flag;
+        } else {
+          content = '<div class="slot-status">Vacant</div>';
+        }
+        html += '<div class="slot ' + statusClass + '" data-key="' + key + '" ' +
+            'onclick="openSlot(\'' + key + '\')" ' +
+            'ondragover="dragOver(event)" ondragleave="dragLeave(event)" ondrop="drop(event,\'' + key + '\')">' +
+          '<div class="slot-inner" draggable="' + (b ? 'true' : 'false') + '" ondragstart="bookingDragStart(event,\'' + key + '\')">' +
+            content +
+          '</div>' +
+        '</div>';
       });
       html += '</div>';
     });
@@ -285,7 +326,24 @@
     if(draggedTherapist){
       const therapist = draggedTherapist;
       draggedTherapist = null;
-      openSlot(targetKey, therapist);
+      const existing = bookings[targetKey];
+      if(existing){
+        if(existing.therapist === therapist) return;
+        showConfirm({
+          title: 'Change Therapist?',
+          msg: 'Move ' + ROOMS[targetKey.split('-')[0]] + ' at ' + fmtHour(Number(targetKey.split('-')[1])) + ' from ' + existing.therapist + ' to ' + therapist + '?',
+          buttons: [
+            { label: 'Change Therapist', cls: 'confirm-btn-danger', onClick: function(){
+              existing.therapist = therapist;
+              saveBookings();
+              renderGrid();
+            }},
+            { label: 'Cancel', cls: 'confirm-btn-cancel', onClick: function(){} }
+          ]
+        });
+      } else {
+        openSlot(targetKey, therapist);
+      }
       return;
     }
 
@@ -304,7 +362,7 @@
     }
   }
 
-  // ── Modal ──
+  // ── Booking Modal ──
   let modalKey = null;
   let modalStatus = 'hold';
 
@@ -319,10 +377,12 @@
     document.getElementById('modalSub').textContent = room + ' — ' + fmtHour(Number(h));
 
     const select = document.getElementById('modalTherapistSelect');
-    select.innerHTML = THERAPISTS.map(t => `<option value="${t}">${t}</option>`).join('');
-    select.value = existing ? existing.therapist : (prefillTherapist || THERAPISTS[0]);
+    select.innerHTML = THERAPISTS.map(function(t){ return '<option value="' + t.name + '">' + t.name + ' (' + t.gender + ')</option>'; }).join('');
+    select.value = existing ? existing.therapist : (prefillTherapist || THERAPISTS[0].name);
 
     document.getElementById('modalClientInput').value = existing ? existing.client : '';
+    document.getElementById('modalPhoneInput').value = existing ? (existing.phone || '') : '';
+    document.getElementById('modalNotesInput').value = existing ? (existing.notes || '') : '';
     setModalStatus(existing ? existing.status : 'hold');
     document.getElementById('clearWrap').style.display = existing ? 'block' : 'none';
     document.getElementById('modalBg').classList.add('show');
@@ -339,9 +399,18 @@
   }
   function saveModal(){
     const client = document.getElementById('modalClientInput').value.trim();
+    const phone = document.getElementById('modalPhoneInput').value.trim();
+    const notes = document.getElementById('modalNotesInput').value.trim();
     const therapist = document.getElementById('modalTherapistSelect').value;
     if(!client){ alert('Enter a client name first.'); return; }
-    bookings[modalKey] = { therapist: therapist, client: client, status: modalStatus };
+    const existing = bookings[modalKey];
+    const holdStartedAt = (modalStatus === 'hold')
+      ? (existing && existing.status === 'hold' ? existing.holdStartedAt : Date.now())
+      : null;
+    bookings[modalKey] = {
+      therapist: therapist, client: client, phone: phone, notes: notes,
+      status: modalStatus, holdStartedAt: holdStartedAt, holdPrompted: false
+    };
     saveBookings();
     renderGrid();
     closeModal();
@@ -356,6 +425,70 @@
   document.getElementById('modalBg').addEventListener('click', function(e){
     if(e.target === this) closeModal();
   });
+
+  // ── Small confirm popup helper (therapist swap, hold release/wait) ──
+  function showConfirm(opts){
+    const box = document.getElementById('confirmBox');
+    let html = '<div class="confirm-title">' + opts.title + '</div>';
+    html += '<div class="confirm-msg">' + opts.msg + '</div>';
+    if(opts.phone){ html += '<div class="confirm-phone">' + opts.phone + '</div>'; }
+    html += '<div class="confirm-actions">';
+    opts.buttons.forEach(function(b, i){
+      html += '<button class="confirm-btn ' + b.cls + '" onclick="confirmClick(' + i + ')">' + b.label + '</button>';
+    });
+    html += '</div>';
+    box.innerHTML = html;
+    window._confirmButtons = opts.buttons;
+    document.getElementById('confirmBg').classList.add('show');
+  }
+  function confirmClick(i){
+    const btn = window._confirmButtons[i];
+    document.getElementById('confirmBg').classList.remove('show');
+    if(btn.onClick) btn.onClick();
+  }
+  document.getElementById('confirmBg').addEventListener('click', function(e){
+    if(e.target === this) this.classList.remove('show');
+  });
+
+  // ── 15-minute hold check ──
+  function checkHolds(){
+    const anyModalOpen = document.getElementById('modalBg').classList.contains('show') ||
+                          document.getElementById('confirmBg').classList.contains('show');
+    if(anyModalOpen) return;
+    for(const key in bookings){
+      const b = bookings[key];
+      if(b.status === 'hold' && b.holdStartedAt && !b.holdPrompted){
+        const elapsed = Date.now() - b.holdStartedAt;
+        if(elapsed >= HOLD_MINUTES * 60 * 1000){
+          b.holdPrompted = true;
+          saveBookings();
+          const parts = key.split('-');
+          const room = ROOMS[parts[0]];
+          const hour = fmtHour(Number(parts[1]));
+          showConfirm({
+            title: 'Release Booking?',
+            msg: b.client + ' has been on hold for ' + HOLD_MINUTES + ' minutes in ' + room + ' (' + hour + '). Release the slot, or give them more time?',
+            phone: b.phone || 'No phone number on file',
+            buttons: [
+              { label: 'Release Booking', cls: 'confirm-btn-danger', onClick: function(){
+                delete bookings[key];
+                saveBookings();
+                renderGrid();
+              }},
+              { label: 'Wait ' + HOLD_MINUTES + ' More Minutes', cls: 'confirm-btn-wait', onClick: function(){
+                b.holdStartedAt = Date.now();
+                b.holdPrompted = false;
+                saveBookings();
+              }},
+              { label: 'Dismiss', cls: 'confirm-btn-cancel', onClick: function(){} }
+            ]
+          });
+          break; // one prompt at a time
+        }
+      }
+    }
+  }
+  setInterval(checkHolds, 20000);
 
   document.getElementById('today-label').textContent = new Date().toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
 

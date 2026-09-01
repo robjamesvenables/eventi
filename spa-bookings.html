@@ -30,10 +30,31 @@
   .legend-item { display: flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600; color: rgba(255,255,255,0.85); }
   .legend-dot { width: 10px; height: 10px; border-radius: 3px; }
 
+  .therapist-strip {
+    background: white;
+    border-bottom: 1px solid #E2E8F0;
+    padding: 14px 22px;
+  }
+  .therapist-strip-label { font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; color: #94A3B8; margin-bottom: 10px; }
+  .therapist-chips { display: flex; gap: 8px; flex-wrap: wrap; }
+  .therapist-chip {
+    background: #F0FDFA;
+    border: 1.5px solid #99F0E4;
+    color: #0D6E63;
+    padding: 7px 14px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 700;
+    cursor: grab;
+    user-select: none;
+  }
+  .therapist-chip:active { cursor: grabbing; }
+  .therapist-chip.dragging { opacity: 0.4; }
+
   .wrap { padding: 22px; overflow-x: auto; }
   .grid-outer { min-width: 1180px; background: white; border: 1px solid #E2E8F0; border-radius: 14px; overflow: hidden; box-shadow: 0 2px 10px rgba(0,0,0,0.04); }
 
-  .grid-row { display: grid; grid-template-columns: 160px repeat(13, 1fr); }
+  .grid-row { display: grid; grid-template-columns: 130px repeat(13, 1fr); }
   .grid-row + .grid-row { border-top: 1px solid #F1F5F9; }
 
   .hd-cell {
@@ -47,10 +68,10 @@
   }
   .hd-name { background: #0F1E2E; color: white; padding: 12px 14px; font-size: 12.5px; font-weight: 700; }
 
-  .staff-cell {
+  .room-cell {
     padding: 10px 14px;
-    font-size: 12.5px;
-    font-weight: 700;
+    font-size: 13px;
+    font-weight: 800;
     color: #0F1E2E;
     background: #FAFBFC;
     display: flex;
@@ -59,7 +80,7 @@
 
   .slot {
     border-left: 1px solid #F1F5F9;
-    min-height: 52px;
+    min-height: 56px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -70,25 +91,26 @@
   .slot-inner {
     width: 100%;
     height: 100%;
-    min-height: 44px;
+    min-height: 48px;
     border-radius: 8px;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
     gap: 2px;
-    font-size: 11px;
+    font-size: 10.5px;
     font-weight: 700;
     text-align: center;
-    padding: 4px 2px;
+    padding: 4px 3px;
   }
-  .vacant .slot-inner { background: #ECFDF5; border: 1.5px dashed #86EFAC; color: #16A34A; opacity: 0.75; }
-  .vacant:hover .slot-inner { opacity: 1; background: #DCFCE7; }
+  .vacant .slot-inner { background: #ECFDF5; border: 1.5px dashed #86EFAC; color: #16A34A; opacity: 0.7; }
+  .vacant:hover .slot-inner, .vacant.drag-over .slot-inner { opacity: 1; background: #DCFCE7; }
   .hold .slot-inner { background: #F59E0B; color: white; cursor: grab; }
   .booked .slot-inner { background: #EF4444; color: white; cursor: grab; }
   .slot-client { font-size: 11px; font-weight: 800; line-height: 1.2; word-break: break-word; }
-  .slot-status { font-size: 8.5px; font-weight: 700; opacity: 0.85; text-transform: uppercase; letter-spacing: 0.3px; }
-  .drag-over .slot-inner { outline: 3px solid #0D9488; outline-offset: -3px; }
+  .slot-therapist { font-size: 9.5px; font-weight: 700; opacity: 0.9; line-height: 1.15; }
+  .slot-status { font-size: 8px; font-weight: 700; opacity: 0.8; text-transform: uppercase; letter-spacing: 0.3px; }
+  .slot.drag-over .slot-inner { outline: 3px solid #0D9488; outline-offset: -3px; }
 
   /* Modal */
   .modal-bg { display: none; position: fixed; inset: 0; background: rgba(15,30,46,0.55); align-items: center; justify-content: center; z-index: 200; }
@@ -99,6 +121,7 @@
   .modal-label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: #94A3B8; margin-bottom: 6px; }
   .modal-input { width: 100%; padding: 11px 14px; border: 1.5px solid #E2E8F0; border-radius: 9px; font-family: inherit; font-size: 16px; color: #0F1E2E; outline: none; margin-bottom: 16px; box-sizing: border-box; }
   .modal-input:focus { border-color: #0D9488; }
+  select.modal-input { -webkit-appearance: none; appearance: none; background: white; }
   .status-pills { display: flex; gap: 8px; margin-bottom: 22px; }
   .status-pill { flex: 1; padding: 10px; border-radius: 9px; border: 1.5px solid #E2E8F0; background: white; font-family: inherit; font-size: 12.5px; font-weight: 700; cursor: pointer; text-align: center; color: #64748B; }
   .status-pill.active-hold { background: #F59E0B; border-color: #F59E0B; color: white; }
@@ -125,6 +148,11 @@
     </div>
   </div>
 
+  <div class="therapist-strip">
+    <div class="therapist-strip-label">Drag a therapist onto a room/time slot to assign them</div>
+    <div class="therapist-chips" id="therapistChips"></div>
+  </div>
+
   <div class="wrap">
     <div class="grid-outer" id="grid"></div>
   </div>
@@ -133,6 +161,8 @@
     <div class="modal-box">
       <div class="modal-title" id="modalTitle">Add Booking</div>
       <div class="modal-sub" id="modalSub"></div>
+      <div class="modal-label">Therapist</div>
+      <select class="modal-input" id="modalTherapistSelect"></select>
       <div class="modal-label">Client Name</div>
       <input type="text" class="modal-input" id="modalClientInput" placeholder="e.g. Sarah Johnson">
       <div class="modal-label">Status</div>
@@ -151,6 +181,7 @@
   </div>
 
 <script>
+  const ROOMS = Array.from({length: 12}, (_, i) => 'Room ' + (i + 1));
   const THERAPISTS = [
     'Made Sutrisna','Kadek Ayu','Wayan Surya','Putu Dewi','Ketut Ariawan',
     'Nyoman Sari','Gede Wirawan','Luh Kartika','Komang Yudi','Ni Putu Diva',
@@ -165,8 +196,8 @@
     return hr + ' ' + period;
   }
 
-  const STORAGE_KEY = 'mavis_spa_bookings_demo_v1';
-  let bookings = {}; // key: "therapistIdx-hour" -> {client, status}
+  const STORAGE_KEY = 'mavis_spa_bookings_demo_v2';
+  let bookings = {}; // key: "roomIdx-hour" -> {therapist, client, status}
 
   function loadBookings(){
     try{
@@ -178,28 +209,40 @@
     try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(bookings)); }catch(e){}
   }
 
-  function slotKey(t, h){ return t + '-' + h; }
+  function slotKey(r, h){ return r + '-' + h; }
+
+  function renderTherapistChips(){
+    const wrap = document.getElementById('therapistChips');
+    wrap.innerHTML = THERAPISTS.map(name =>
+      `<div class="therapist-chip" draggable="true"
+         ondragstart="therapistDragStart(event,'${name}')"
+         ondragend="therapistDragEnd(event)">${name}</div>`
+    ).join('');
+  }
 
   function renderGrid(){
     const grid = document.getElementById('grid');
     let html = '';
 
-    // header row
-    html += '<div class="grid-row"><div class="hd-name">Therapist</div>';
+    html += '<div class="grid-row"><div class="hd-name">Room</div>';
     HOURS.forEach(h => { html += `<div class="hd-cell">${fmtHour(h)}</div>`; });
     html += '</div>';
 
-    THERAPISTS.forEach((name, ti) => {
-      html += `<div class="grid-row"><div class="staff-cell">${name}</div>`;
+    ROOMS.forEach((room, ri) => {
+      html += `<div class="grid-row"><div class="room-cell">${room}</div>`;
       HOURS.forEach(h => {
-        const key = slotKey(ti, h);
+        const key = slotKey(ri, h);
         const b = bookings[key];
         const statusClass = b ? b.status : 'vacant';
         const content = b
-          ? `<div class="slot-client">${b.client}</div><div class="slot-status">${b.status === 'hold' ? 'Hold' : 'Booked'}</div>`
+          ? `<div class="slot-client">${b.client}</div><div class="slot-therapist">${b.therapist}</div><div class="slot-status">${b.status === 'hold' ? 'Hold' : 'Booked'}</div>`
           : `<div class="slot-status">Vacant</div>`;
-        html += `<div class="slot ${statusClass}" data-key="${key}" onclick="openSlot('${key}')">
-          <div class="slot-inner" draggable="${b ? 'true' : 'false'}" ondragstart="dragStart(event,'${key}')" ondragover="dragOver(event)" ondrop="drop(event,'${key}')" ondragleave="dragLeave(event)">
+        html += `<div class="slot ${statusClass}" data-key="${key}"
+            onclick="openSlot('${key}')"
+            ondragover="dragOver(event)"
+            ondragleave="dragLeave(event)"
+            ondrop="drop(event,'${key}')">
+          <div class="slot-inner" draggable="${b ? 'true' : 'false'}" ondragstart="bookingDragStart(event,'${key}')">
             ${content}
           </div>
         </div>`;
@@ -210,51 +253,80 @@
     grid.innerHTML = html;
   }
 
-  // ── Drag and drop (move a booking to a different slot) ──
-  let draggedKey = null;
-  function dragStart(e, key){
-    draggedKey = key;
+  // ── Drag sources: either an unassigned therapist chip, or an existing booking being moved ──
+  let draggedTherapist = null;
+  let draggedBookingKey = null;
+
+  function therapistDragStart(e, name){
+    draggedTherapist = name;
+    draggedBookingKey = null;
+    e.dataTransfer.effectAllowed = 'copy';
+    e.currentTarget.classList.add('dragging');
+  }
+  function therapistDragEnd(e){
+    e.currentTarget.classList.remove('dragging');
+  }
+  function bookingDragStart(e, key){
+    draggedBookingKey = key;
+    draggedTherapist = null;
     e.dataTransfer.effectAllowed = 'move';
   }
   function dragOver(e){
     e.preventDefault();
-    e.currentTarget.closest('.slot').classList.add('drag-over');
+    e.currentTarget.classList.add('drag-over');
   }
   function dragLeave(e){
-    e.currentTarget.closest('.slot').classList.remove('drag-over');
+    e.currentTarget.classList.remove('drag-over');
   }
   function drop(e, targetKey){
     e.preventDefault();
-    e.currentTarget.closest('.slot').classList.remove('drag-over');
-    if(!draggedKey || draggedKey === targetKey) return;
-    if(bookings[targetKey]){
-      alert('That slot already has a booking — clear it first, or drop on an empty slot.');
-      draggedKey = null;
+    e.currentTarget.classList.remove('drag-over');
+
+    if(draggedTherapist){
+      const therapist = draggedTherapist;
+      draggedTherapist = null;
+      openSlot(targetKey, therapist);
       return;
     }
-    bookings[targetKey] = bookings[draggedKey];
-    delete bookings[draggedKey];
-    draggedKey = null;
-    saveBookings();
-    renderGrid();
+
+    if(draggedBookingKey){
+      if(draggedBookingKey === targetKey){ draggedBookingKey = null; return; }
+      if(bookings[targetKey]){
+        alert('That slot already has a booking — clear it first, or drop on an empty slot.');
+        draggedBookingKey = null;
+        return;
+      }
+      bookings[targetKey] = bookings[draggedBookingKey];
+      delete bookings[draggedBookingKey];
+      draggedBookingKey = null;
+      saveBookings();
+      renderGrid();
+    }
   }
 
   // ── Modal ──
   let modalKey = null;
   let modalStatus = 'hold';
 
-  function openSlot(key){
+  function openSlot(key, prefillTherapist){
     modalKey = key;
-    const [ti, h] = key.split('-');
-    const name = THERAPISTS[ti];
+    const parts = key.split('-');
+    const ri = parts[0], h = parts[1];
+    const room = ROOMS[ri];
     const existing = bookings[key];
+
     document.getElementById('modalTitle').textContent = existing ? 'Edit Booking' : 'Add Booking';
-    document.getElementById('modalSub').textContent = name + ' — ' + fmtHour(Number(h));
+    document.getElementById('modalSub').textContent = room + ' — ' + fmtHour(Number(h));
+
+    const select = document.getElementById('modalTherapistSelect');
+    select.innerHTML = THERAPISTS.map(t => `<option value="${t}">${t}</option>`).join('');
+    select.value = existing ? existing.therapist : (prefillTherapist || THERAPISTS[0]);
+
     document.getElementById('modalClientInput').value = existing ? existing.client : '';
     setModalStatus(existing ? existing.status : 'hold');
     document.getElementById('clearWrap').style.display = existing ? 'block' : 'none';
     document.getElementById('modalBg').classList.add('show');
-    setTimeout(()=> document.getElementById('modalClientInput').focus(), 50);
+    setTimeout(function(){ document.getElementById('modalClientInput').focus(); }, 50);
   }
   function setModalStatus(status){
     modalStatus = status;
@@ -267,8 +339,9 @@
   }
   function saveModal(){
     const client = document.getElementById('modalClientInput').value.trim();
+    const therapist = document.getElementById('modalTherapistSelect').value;
     if(!client){ alert('Enter a client name first.'); return; }
-    bookings[modalKey] = { client, status: modalStatus };
+    bookings[modalKey] = { therapist: therapist, client: client, status: modalStatus };
     saveBookings();
     renderGrid();
     closeModal();
@@ -287,6 +360,7 @@
   document.getElementById('today-label').textContent = new Date().toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
 
   loadBookings();
+  renderTherapistChips();
   renderGrid();
 </script>
 

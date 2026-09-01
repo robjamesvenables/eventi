@@ -35,6 +35,30 @@
 
   .subnote { background: white; border-bottom: 1px solid #E2E8F0; padding: 12px 22px; font-size: 12px; color: #94A3B8; font-weight: 600; }
 
+  .therapist-strip {
+    background: white;
+    border-bottom: 1px solid #E2E8F0;
+    padding: 14px 22px;
+  }
+  .therapist-strip-label { font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; color: #94A3B8; margin-bottom: 10px; }
+  .therapist-chips { display: flex; gap: 8px; flex-wrap: wrap; }
+  .therapist-chip {
+    background: #F0FDFA;
+    border: 1.5px solid #99F0E4;
+    color: #0D6E63;
+    padding: 7px 14px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 700;
+    cursor: grab;
+    user-select: none;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .therapist-chip:active { cursor: grabbing; }
+  .therapist-chip.dragging { opacity: 0.4; }
+
   .wrap { padding: 22px; overflow-x: auto; }
   .grid-outer { min-width: 1600px; background: white; border: 1px solid #E2E8F0; border-radius: 14px; overflow: hidden; box-shadow: 0 2px 10px rgba(0,0,0,0.04); }
 
@@ -153,7 +177,12 @@
     </div>
   </div>
 
-  <div class="subnote">Tap any slot to book. Drag a booked slot onto another therapist or time to move it.</div>
+  <div class="subnote">Tap any slot to book. Drag a booked slot onto another therapist or time to move it — or drag a therapist below onto a booking to swap who's doing it.</div>
+
+  <div class="therapist-strip">
+    <div class="therapist-strip-label">Drag a therapist onto an existing booking to change who's assigned</div>
+    <div class="therapist-chips" id="therapistChips"></div>
+  </div>
 
   <div class="wrap">
     <div class="grid-outer" id="grid"></div>
@@ -222,6 +251,18 @@
 
   function slotKey(t, h){ return t + '-' + h; }
 
+  function renderTherapistChips(){
+    const wrap = document.getElementById('therapistChips');
+    wrap.innerHTML = THERAPISTS.map(function(t){
+      return '<div class="therapist-chip" draggable="true" ondragstart="therapistDragStart(event,\'' + t.name + '\')" ondragend="therapistDragEnd(event)">' +
+        '<span class="gender-badge ' + t.gender + '">' + t.gender + '</span>' + t.name + '</div>';
+    }).join('');
+  }
+
+  function therapistIndexByName(name){
+    return THERAPISTS.findIndex(function(t){ return t.name === name; });
+  }
+
   function renderGrid(){
     const grid = document.getElementById('grid');
     let html = '';
@@ -260,11 +301,22 @@
     grid.innerHTML = html;
   }
 
-  // ── Drag an existing booking onto another slot (different therapist and/or time) ──
+  // ── Two drag sources: an unassigned therapist chip, or an existing booking being moved ──
+  let draggedTherapist = null;
   let draggedBookingKey = null;
 
+  function therapistDragStart(e, name){
+    draggedTherapist = name;
+    draggedBookingKey = null;
+    e.dataTransfer.effectAllowed = 'copy';
+    e.currentTarget.classList.add('dragging');
+  }
+  function therapistDragEnd(e){
+    e.currentTarget.classList.remove('dragging');
+  }
   function bookingDragStart(e, key){
     draggedBookingKey = key;
+    draggedTherapist = null;
     e.dataTransfer.effectAllowed = 'move';
   }
   function dragOver(e){
@@ -277,18 +329,56 @@
   function drop(e, targetKey){
     e.preventDefault();
     e.currentTarget.classList.remove('drag-over');
-    if(!draggedBookingKey) return;
-    if(draggedBookingKey === targetKey){ draggedBookingKey = null; return; }
-    if(bookings[targetKey]){
-      alert('That slot already has a booking — clear it first, or drop on an empty slot.');
-      draggedBookingKey = null;
+
+    if(draggedTherapist){
+      const therapistName = draggedTherapist;
+      draggedTherapist = null;
+      const parts = targetKey.split('-');
+      const hour = parts[1];
+      const newTi = therapistIndexByName(therapistName);
+      const newKey = slotKey(newTi, hour);
+      const existingAtTarget = bookings[targetKey];
+
+      if(existingAtTarget){
+        // Swap which therapist is assigned to this exact booking, same time, same client
+        if(newKey === targetKey) return; // dropped on their own column, nothing to do
+        if(bookings[newKey]){
+          alert(therapistName + ' already has a booking at that time — clear it first.');
+          return;
+        }
+        showConfirm({
+          title: 'Change Therapist?',
+          msg: 'Move ' + existingAtTarget.client + ' at ' + fmtHour(Number(hour)) + ' to ' + therapistName + '?',
+          buttons: [
+            { label: 'Change Therapist', cls: 'confirm-btn-danger', onClick: function(){
+              bookings[newKey] = existingAtTarget;
+              delete bookings[targetKey];
+              saveBookings();
+              renderGrid();
+            }},
+            { label: 'Cancel', cls: 'confirm-btn-cancel', onClick: function(){} }
+          ]
+        });
+      } else {
+        // Empty slot - open a fresh booking for that therapist at that time
+        openSlot(newKey);
+      }
       return;
     }
-    bookings[targetKey] = bookings[draggedBookingKey];
-    delete bookings[draggedBookingKey];
-    draggedBookingKey = null;
-    saveBookings();
-    renderGrid();
+
+    if(draggedBookingKey){
+      if(draggedBookingKey === targetKey){ draggedBookingKey = null; return; }
+      if(bookings[targetKey]){
+        alert('That slot already has a booking — clear it first, or drop on an empty slot.');
+        draggedBookingKey = null;
+        return;
+      }
+      bookings[targetKey] = bookings[draggedBookingKey];
+      delete bookings[draggedBookingKey];
+      draggedBookingKey = null;
+      saveBookings();
+      renderGrid();
+    }
   }
 
   // ── Booking Modal ──
@@ -417,6 +507,7 @@
   document.getElementById('today-label').textContent = new Date().toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
 
   loadBookings();
+  renderTherapistChips();
   renderGrid();
 </script>
 

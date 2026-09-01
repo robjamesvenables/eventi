@@ -319,7 +319,7 @@
     return hr + ' ' + period;
   }
 
-  const STORAGE_KEY = 'mavis_spa_bookings_demo_v5';
+  const STORAGE_KEY = 'mavis_spa_bookings_demo_v6';
   let bookings = {}; // key "therapistIdx-hour" -> {client, phone, notes, status, holdStartedAt, holdPrompted}
 
   function loadBookings(){
@@ -332,19 +332,47 @@
     try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(bookings)); }catch(e){}
   }
 
-  function seedDemoBookingsIfEmpty(){
-    if(Object.keys(bookings).length > 0) return; // never overwrite real data
-    const nowHour = new Date().getHours();
-    const hour = (nowHour >= 9 && nowHour <= 21) ? nowHour : 12; // fall back to a sensible hour if outside spa hours
-    const demo = [
-      { ti: 0,  client: 'Sarah Mitchell',  phone: '+62 812 1111 2222', notes: 'Allergic to nuts, avoid lower back' },
-      { ti: 3,  client: 'James Wilson',    phone: '+62 813 2222 3333', notes: 'Extra towel please' },
-      { ti: 6,  client: 'Elena Rodriguez', phone: '+62 811 3333 4444', notes: 'Lavender oil preferred' },
-      { ti: 9,  client: 'David Chen',      phone: '+62 878 4444 5555', notes: '' },
-      { ti: 12, client: 'Priya Patel',     phone: '+62 819 5555 6666', notes: 'Pregnant, avoid stomach area' }
-    ];
-    demo.forEach(function(d){
-      bookings[slotKey(d.ti, hour)] = { client: d.client, phone: d.phone, notes: d.notes, status: 'booked', holdStartedAt: null, holdPrompted: false };
+  const DEMO_CLIENT_NAMES = [
+    'Sarah Mitchell', 'James Wilson', 'Elena Rodriguez', 'David Chen', 'Priya Patel',
+    'Michael Brown', 'Laura Thompson', 'Andrew Kim', 'Jessica Lee', 'Robert Garcia',
+    'Amanda White', 'Christopher Davis', 'Natasha Petrova', 'Daniel Martinez', 'Emily Clark',
+    'Thomas Anderson', 'Olivia Turner', 'William Scott', 'Sophia Nguyen', 'Benjamin Hall',
+    'Isabella Moore', 'Lucas Baker', 'Chloe Adams', 'Ryan Mitchell', 'Grace Foster',
+    'Nathan Reed', 'Victoria Cole', 'Samuel Price', 'Hannah Bennett', 'Ethan Murphy',
+    'Zoe Richardson', 'Jack Cooper', 'Mia Bailey', 'Henry Ward', 'Lily Simmons',
+    'Owen Fisher', 'Ava Coleman', 'Leo Sanders', 'Ella Perry', 'Max Powell'
+  ];
+
+  function randomPhone(){
+    const prefixes = ['+62 812', '+62 813', '+62 811', '+62 878', '+62 819', '+62 852'];
+    const p = prefixes[Math.floor(Math.random() * prefixes.length)];
+    const a = Math.floor(1000 + Math.random() * 9000);
+    const b = Math.floor(1000 + Math.random() * 9000);
+    return p + ' ' + a + ' ' + b;
+  }
+
+  function fillGridForDemo(){
+    if(Object.keys(bookings).length > 0) return; // one-time fill only - never overwrites your own edits after this first run
+    const usedNames = DEMO_CLIENT_NAMES.slice();
+    let nameIdx = 0;
+    function nextName(){
+      if(nameIdx >= usedNames.length) nameIdx = 0; // wrap around and reuse, fine for a demo
+      return usedNames[nameIdx++];
+    }
+    THERAPISTS.forEach(function(t, ti){
+      HOURS.forEach(function(h){
+        if(Math.random() > 0.8) return; // leave roughly 20% genuinely vacant
+        const key = slotKey(ti, h);
+        const status = Math.random() < 0.5 ? 'hold' : 'booked';
+        bookings[key] = {
+          client: nextName(),
+          phone: randomPhone(),
+          notes: '',
+          status: status,
+          holdStartedAt: null, // demo fill is visual only - no live 15-minute timer running on these
+          holdPrompted: false
+        };
+      });
     });
     saveBookings();
   }
@@ -684,7 +712,7 @@
   document.documentElement.style.setProperty('--n-therapists', THERAPISTS.length);
 
   loadBookings();
-  seedDemoBookingsIfEmpty();
+  fillGridForDemo();
   renderTherapistChips();
   renderGrid();
   refreshBuildingPanel();

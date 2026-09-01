@@ -4781,6 +4781,13 @@ async function loadAppSettings(){
 }
 
 function analyticsPinGate(pushState){
+  // Point the browser's history state safely at Dashboard before the PIN prompt opens.
+  // Without this, tapping Cancel (which triggers a "back" navigation) can land right back
+  // on an 'analytics' history state, which re-triggers this same gate immediately - looking
+  // exactly like Cancel (and even OK) do nothing at all, when it's actually looping.
+  history.replaceState({page:'home'}, '', '#home');
+  navPrevPage = 'home';
+
   if(!appSettings.analytics_pin){
     appModalShow({
       title:'Create Analytics PIN',

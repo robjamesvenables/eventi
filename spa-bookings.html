@@ -140,6 +140,7 @@
   .modal-input { width: 100%; padding: 11px 14px; border: 1.5px solid #E2E8F0; border-radius: 9px; font-family: inherit; font-size: 16px; color: #0F1E2E; outline: none; margin-bottom: 16px; box-sizing: border-box; }
   .modal-input:focus { border-color: #0D9488; }
   textarea.modal-input { resize: vertical; min-height: 70px; }
+  select.modal-input { -webkit-appearance: none; appearance: none; background: white; cursor: pointer; }
   .status-pills { display: flex; gap: 8px; margin-bottom: 22px; }
   .status-pill { flex: 1; padding: 10px; border-radius: 9px; border: 1.5px solid #E2E8F0; background: white; font-family: inherit; font-size: 12.5px; font-weight: 700; cursor: pointer; text-align: center; color: #64748B; }
   .status-pill.active-hold { background: #F59E0B; border-color: #F59E0B; color: white; }
@@ -236,6 +237,8 @@
     <div class="modal-box">
       <div class="modal-title" id="modalTitle">Add Booking</div>
       <div class="modal-sub" id="modalSub"></div>
+      <div class="modal-label">Therapist</div>
+      <select class="modal-input" id="modalTherapistSelect"></select>
       <div class="modal-label">Client Name</div>
       <input type="text" class="modal-input" id="modalClientInput" placeholder="e.g. Sarah Johnson">
       <div class="modal-label">Client Phone Number</div>
@@ -535,7 +538,11 @@
     const existing = bookings[key];
 
     document.getElementById('modalTitle').textContent = existing ? 'Edit Booking' : 'Add Booking';
-    document.getElementById('modalSub').textContent = therapist.name + ' (' + therapist.gender + ') — ' + fmtHour(Number(h));
+    document.getElementById('modalSub').textContent = fmtHour(Number(h));
+
+    const select = document.getElementById('modalTherapistSelect');
+    select.innerHTML = THERAPISTS.map(function(t){ return '<option value="' + t.name + '">' + t.name + ' (' + t.gender + ')</option>'; }).join('');
+    select.value = therapist.name;
 
     document.getElementById('modalClientInput').value = existing ? existing.client : '';
     document.getElementById('modalPhoneInput').value = existing ? (existing.phone || '') : '';
@@ -558,12 +565,26 @@
     const client = document.getElementById('modalClientInput').value.trim();
     const phone = document.getElementById('modalPhoneInput').value.trim();
     const notes = document.getElementById('modalNotesInput').value.trim();
+    const chosenTherapist = document.getElementById('modalTherapistSelect').value;
     if(!client){ alert('Enter a client name first.'); return; }
+
+    const oldParts = modalKey.split('-');
+    const hour = oldParts[1];
+    const newTi = therapistIndexByName(chosenTherapist);
+    const newKey = slotKey(newTi, hour);
+
+    if(newKey !== modalKey && bookings[newKey]){
+      alert(chosenTherapist + ' already has a booking at ' + fmtHour(Number(hour)) + ' — pick a different therapist or time.');
+      return;
+    }
+
     const existing = bookings[modalKey];
     const holdStartedAt = (modalStatus === 'hold')
       ? (existing && existing.status === 'hold' ? existing.holdStartedAt : Date.now())
       : null;
-    bookings[modalKey] = {
+
+    if(newKey !== modalKey) delete bookings[modalKey];
+    bookings[newKey] = {
       client: client, phone: phone, notes: notes,
       status: modalStatus, holdStartedAt: holdStartedAt, holdPrompted: false
     };

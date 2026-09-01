@@ -4792,8 +4792,8 @@ function analyticsPinGate(pushState){
       async onOk([pin, confirm]){
         if(!pin || pin.trim().length < 4){ toast('PIN must be at least 4 digits'); return; }
         if(pin.trim() !== confirm.trim()){ toast('PINs did not match - try again'); return; }
-        const { error } = await sb.from('app_settings').upsert({ key:'analytics_pin', value: pin.trim() });
-        if(error){ toast('Could not save PIN - try again'); console.warn(error); return; }
+        const { error } = await sb.from('app_settings').upsert({ key:'analytics_pin', value: pin.trim() }, { onConflict: 'key' });
+        if(error){ toast('Save failed: ' + (error.message || JSON.stringify(error))); console.warn(error); return; }
         appSettings.analytics_pin = pin.trim();
         toast('PIN set ✓');
         analyticsPinBypassNext = true;
@@ -4827,8 +4827,8 @@ function adminChangeAnalyticsPin(){
     async onOk([pin, confirm]){
       if(!pin || pin.trim().length < 4){ toast('New PIN must be at least 4 digits'); return; }
       if(pin.trim() !== confirm.trim()){ toast('New PINs did not match - try again'); return; }
-      const { error } = await sb.from('app_settings').upsert({ key:'analytics_pin', value: pin.trim() });
-      if(error){ toast('Could not save PIN - try again'); console.warn(error); return; }
+      const { error } = await sb.from('app_settings').upsert({ key:'analytics_pin', value: pin.trim() }, { onConflict: 'key' });
+      if(error){ toast('Save failed: ' + (error.message || JSON.stringify(error))); console.warn(error); return; }
       appSettings.analytics_pin = pin.trim();
       toast('PIN updated ✓');
     }
@@ -5215,7 +5215,9 @@ function toast(msg, anchorEl){
     t.style.left = '';
   }
   t.classList.add('show');
-  setTimeout(()=>{ t.classList.remove('show'); t.style.top=''; t.style.left=''; },2800);
+  const duration = msg.length > 40 ? 8000 : 2800;
+  clearTimeout(window._toastTimer);
+  window._toastTimer = setTimeout(()=>{ t.classList.remove('show'); t.style.top=''; t.style.left=''; }, duration);
 }
 
 function copyLink(){

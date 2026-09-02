@@ -57,9 +57,10 @@
     position: absolute; top: 12px; right: 12px; width: 26px; height: 26px; border-radius: 7px;
     background: #F0FDFA; display: flex; align-items: center; justify-content: center; color: #0D9488;
   }
-  .queue-confirm-btn {
-    width: auto; margin-top: 8px; background: #0F1E2E; color: white; border: none; border-radius: 8px;
-    padding: 8px 20px; font-family: inherit; font-size: 12px; font-weight: 700; cursor: pointer;
+  .queue-type-btns { display: flex; gap: 6px; margin-top: 8px; }
+  .queue-type-btn {
+    flex: 1; border: none; border-radius: 7px; color: white; font-family: inherit;
+    font-size: 10.5px; font-weight: 800; letter-spacing: 0.3px; padding: 8px 4px; cursor: pointer;
   }
   .queue-empty { font-size: 12.5px; color: #94A3B8; text-align: center; padding: 30px 14px; }
 
@@ -301,7 +302,7 @@
     {name:'Putu 2', gender:'F'}, {name:'Gede 2', gender:'M'}, {name:'Ayu', gender:'F'},
     {name:'Dewa', gender:'M'}, {name:'Sri', gender:'F'}, {name:'Agus', gender:'M'},
     {name:'Rina', gender:'F'}, {name:'Bayu', gender:'M'}, {name:'Maria', gender:'F'},
-    {name:'Kevin', gender:'M'}, {name:'Sophie', gender:'F'}, {name:'Made 2', gender:'F'}
+    {name:'Kevin', gender:'M'}, {name:'Sophie', gender:'F'}
   ];
 
   // Real service list, from the actual booking site - durations vary, so grid boxes will too.
@@ -374,7 +375,7 @@
   // Represents bookings that have come in (for now: online) but haven't been assigned
   // a therapist/room yet. Three intake sources were mentioned (online being one) - the
   // other two are still being confirmed with the client, so only "online" is wired up here.
-  const QUEUE_STORAGE_KEY = 'mavis_spa_queue_demo_v2';
+  const QUEUE_STORAGE_KEY = 'mavis_spa_queue_demo_v3';
   let pendingQueue = [];
 
   function loadQueue(){
@@ -389,19 +390,19 @@
   function seedQueueForDemo(){
     if(pendingQueue.length > 0) return; // one-time seed only
     const demo = [
-      { client: 'Rebecca Hughes',   phone: randomPhone(), email: 'rebecca.hughes@gmail.com', returning: true,  serviceCode: 'DRM90',   requestedH: 6,  source: 'online' },
-      { client: 'Marcus Webb',      phone: randomPhone(), email: 'marcus.webb@outlook.com',  returning: false, serviceCode: 'HLSM90',  requestedH: 10, source: 'whatsapp' },
-      { client: 'Fiona Campbell',   phone: '',                                 email: '',    returning: null,  serviceCode: 'FR60',    requestedH: 4,  source: 'walkin' },
-      { client: 'Alex Novak',       phone: randomPhone(), email: 'alex.novak@yahoo.com',     returning: true,  serviceCode: 'TBM120',  requestedH: 14, source: 'online' },
-      { client: 'Grace Lin',        phone: randomPhone(), email: 'grace.lin88@gmail.com',    returning: false, serviceCode: 'SBM',     requestedH: 8,  source: 'whatsapp' },
-      { client: 'Tomasz Wojcik',    phone: '',                                 email: '',    returning: null,  serviceCode: 'DMHM',    requestedH: 16, source: 'walkin' }
+      { client: 'Rebecca Hughes',   phone: randomPhone(), email: 'rebecca.hughes@gmail.com', returning: true,  serviceCode: 'DRM90',   requestedH: 6  },
+      { client: 'Marcus Webb',      phone: randomPhone(), email: 'marcus.webb@outlook.com',  returning: false, serviceCode: 'HLSM90',  requestedH: 10 },
+      { client: 'Fiona Campbell',   phone: '',             email: '',                        returning: null,  serviceCode: 'FR60',    requestedH: 4  },
+      { client: 'Alex Novak',       phone: randomPhone(), email: 'alex.novak@yahoo.com',     returning: true,  serviceCode: 'TBM120',  requestedH: 14 },
+      { client: 'Grace Lin',        phone: randomPhone(), email: 'grace.lin88@gmail.com',    returning: false, serviceCode: 'SBM',     requestedH: 8  },
+      { client: 'Tomasz Wojcik',    phone: '',             email: '',                        returning: null,  serviceCode: 'DMHM',    requestedH: 16 }
     ];
-    demo.forEach(function(d){ d.id = 'q' + Date.now() + Math.floor(Math.random()*10000); d.confirmed = false; pendingQueue.push(d); });
+    demo.forEach(function(d){ d.id = 'q' + Date.now() + Math.floor(Math.random()*10000); d.bookingType = null; pendingQueue.push(d); });
     saveQueue();
   }
 
-  const SOURCE_LABELS = { online: 'Online', whatsapp: 'WhatsApp', walkin: 'Walk-in' };
-  const SOURCE_COLORS = { online: '#2a78d6', whatsapp: '#16A34A', walkin: '#C4973B' };
+  const BOOKING_TYPE_LABELS = { paid: 'PAID', walkin: 'WALK IN', wa: 'WA' };
+  const BOOKING_TYPE_COLORS = { paid: '#16A34A', walkin: '#C4973B', wa: '#2a78d6' };
 
   function renderQueue(){
     const list = document.getElementById('queueList');
@@ -411,33 +412,35 @@
 
     if(!pendingQueue.length){
       list.innerHTML = '<div class="queue-empty">Nobody waiting to be allocated right now.</div>';
-      list.style.animation = 'none';
       return;
     }
 
     function cardHtml(item){
       const svc = serviceByCode(item.serviceCode);
-      const sourceLabel = SOURCE_LABELS[item.source] || item.source;
-      const sourceColor = SOURCE_COLORS[item.source] || '#94A3B8';
-      const sourceBadge = '<span style="font-size:9px;font-weight:800;color:white;background:' + sourceColor + ';padding:3px 8px;border-radius:8px;text-transform:uppercase;letter-spacing:0.3px">' + sourceLabel + '</span>';
       const serviceLine = (svc ? svc.name + ' (' + svc.code + ')' : '') + ' — ' + fmtTimeSlot(TIME_SLOTS[item.requestedH]);
       const nameHtml = '<span class="queue-card-name" style="text-decoration:underline;text-decoration-color:#CBD5E1;cursor:pointer" onclick="event.stopPropagation();openClientProfile(\'' + item.id + '\')">' + item.client + '</span>';
 
-      if(!item.confirmed){
-        return '<div class="queue-card">' +
+      if(!item.bookingType){
+        return '<div class="queue-card" onclick="openBookingInfo(\'' + item.id + '\')">' +
           '<div class="queue-card-toprow">' + nameHtml + '</div>' +
-          '<div class="queue-card-tags">' + sourceBadge + '</div>' +
           '<div class="queue-card-service">' + serviceLine + '</div>' +
-          '<button class="queue-confirm-btn" onclick="confirmQueueItem(\'' + item.id + '\')">Confirm</button>' +
+          '<div class="queue-type-btns" onclick="event.stopPropagation()">' +
+            '<button class="queue-type-btn" style="background:#16A34A" onclick="setBookingType(\'' + item.id + '\',\'paid\')">PAID</button>' +
+            '<button class="queue-type-btn" style="background:#C4973B" onclick="setBookingType(\'' + item.id + '\',\'walkin\')">WALK IN</button>' +
+            '<button class="queue-type-btn" style="background:#2a78d6" onclick="setBookingType(\'' + item.id + '\',\'wa\')">WA</button>' +
+          '</div>' +
         '</div>';
       }
 
-      return '<div class="queue-card" draggable="true" ondragstart="queueDragStart(event,\'' + item.id + '\')" ondragend="queueDragEnd(event)" style="cursor:grab">' +
+      const typeColor = BOOKING_TYPE_COLORS[item.bookingType] || '#94A3B8';
+      const typeBadge = '<span style="font-size:9px;font-weight:800;color:white;background:' + typeColor + ';padding:3px 8px;border-radius:8px;letter-spacing:0.3px">' + BOOKING_TYPE_LABELS[item.bookingType] + '</span>';
+
+      return '<div class="queue-card" draggable="true" ondragstart="queueDragStart(event,\'' + item.id + '\')" ondragend="queueDragEnd(event)" onclick="openBookingInfo(\'' + item.id + '\')" style="cursor:grab">' +
         '<div class="queue-drag-handle" title="Drag onto the grid">' +
           '<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><circle cx="9" cy="6" r="1.6"/><circle cx="15" cy="6" r="1.6"/><circle cx="9" cy="12" r="1.6"/><circle cx="15" cy="12" r="1.6"/><circle cx="9" cy="18" r="1.6"/><circle cx="15" cy="18" r="1.6"/></svg>' +
         '</div>' +
         '<div class="queue-card-toprow" style="padding-right:34px">' + nameHtml + '</div>' +
-        '<div class="queue-card-tags">' + sourceBadge + '<span style="font-size:9px;font-weight:800;color:#16A34A">\u2713 CONFIRMED</span></div>' +
+        '<div class="queue-card-tags">' + typeBadge + '</div>' +
         '<div class="queue-card-service">' + serviceLine + '</div>' +
       '</div>';
     }
@@ -445,12 +448,33 @@
     list.innerHTML = pendingQueue.map(cardHtml).join('');
   }
 
-  function confirmQueueItem(id){
+  function setBookingType(id, type){
     const item = pendingQueue.find(function(q){ return q.id === id; });
     if(!item) return;
-    item.confirmed = true;
+    item.bookingType = type;
     saveQueue();
     renderQueue();
+  }
+
+  // ── Booking Info - full details of the request itself, mirroring what a calendar
+  // booking box shows once it's placed - treatment, time, length, everything about the
+  // booking rather than about the person ──
+  function openBookingInfo(id){
+    const item = pendingQueue.find(function(q){ return q.id === id; });
+    if(!item) return;
+    const svc = serviceByCode(item.serviceCode);
+    showConfirm({
+      title: item.client,
+      msg: '<div style="text-align:left">' +
+        (svc ? svc.name + ' (' + svc.code + ')' : 'No treatment set') +
+        '<br>Requested time: ' + fmtTimeSlot(TIME_SLOTS[item.requestedH]) +
+        '<br>Length: ' + (svc ? svc.duration + ' minutes' : '\u2014') +
+        '<br>Type: ' + (item.bookingType ? BOOKING_TYPE_LABELS[item.bookingType] : 'Not yet set') +
+        '<br>Phone: ' + (item.phone || 'Not on file') +
+        (item.clientNotes ? '<br>Notes: ' + item.clientNotes : '') +
+        '</div>',
+      buttons: [{ label: 'Close', cls: 'confirm-btn-cancel', onClick: function(){} }]
+    });
   }
 
   // ── Client profile - a mini record of who this person is, not just this one booking ──
@@ -462,7 +486,7 @@
     window._cpId = id;
     const svc = serviceByCode(item.serviceCode);
     document.getElementById('cpName').textContent = item.client;
-    document.getElementById('cpSub').textContent = 'Wants: ' + (svc ? svc.name : '') + ' — via ' + (SOURCE_LABELS[item.source] || item.source);
+    document.getElementById('cpSub').textContent = 'Wants: ' + (svc ? svc.name : '');
     document.getElementById('cpPhone').value = item.phone || '';
     document.getElementById('cpEmail').value = item.email || '';
     document.getElementById('cpNotes').value = item.clientNotes || '';

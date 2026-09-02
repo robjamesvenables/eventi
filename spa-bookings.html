@@ -9,7 +9,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
   * { box-sizing: border-box; }
-  body { margin: 0 320px 0 0; }
+  body { margin: 0; }
   html, body {
     background: #F7F5EF;
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
@@ -110,8 +110,8 @@
     align-items: center; justify-content: center; gap: 0; font-size: 9.5px; font-weight: 700;
     text-align: center; padding: 2px 3px; overflow: hidden;
   }
-  .vacant .slot-inner { background: #C9F2DA; border: 1.5px solid #7FDBA0; color: #0F7A3D; opacity: 0.9; }
-  .vacant:hover .slot-inner, .vacant.drag-over .slot-inner { opacity: 1; background: #A9EAC2; }
+  .vacant .slot-inner { background: #F1F5F9; border: 1.5px solid #E2E8F0; color: #94A3B8; opacity: 0.9; }
+  .vacant:hover .slot-inner, .vacant.drag-over .slot-inner { opacity: 1; background: #E2E8F0; }
   .hold .slot-inner { background: #D9A441; color: white; cursor: grab; }
   .booked .slot-inner { background: #D97757; color: white; cursor: grab; }
   .slot-code { font-size: 12px; font-weight: 900; letter-spacing: 0.4px; line-height: 1.1; }
@@ -171,30 +171,6 @@
   .skill-item { display: flex; align-items: center; gap: 10px; padding: 9px 0; border-bottom: 1px solid #F1F5F9; font-size: 13px; font-weight: 600; color: #0F1E2E; }
   .skill-item:last-child { border-bottom: none; }
   .skill-check { width: 20px; height: 20px; border-radius: 50%; background: #0D9488; color: white; display: flex; align-items: center; justify-content: center; font-size: 12px; flex-shrink: 0; }
-
-  .building-panel {
-    position: fixed; top: 20px; right: 20px; width: 280px; height: calc(100vh - 40px);
-    background: #E9EDF3; border: 1.5px solid #DCE2EB; border-radius: 14px;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.06); overflow: hidden; z-index: 150;
-    display: flex; flex-direction: column;
-  }
-  .building-panel-header { background: #0F1E2E; padding: 8px 14px; display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
-  .building-panel-ico { width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
-  .building-panel-title { font-size: 13px; font-weight: 700; color: white; text-transform: uppercase; letter-spacing: 1px; }
-  .building-live-dot { width: 7px; height: 7px; border-radius: 50%; background: #4ADE80; box-shadow: 0 0 0 3px rgba(74,222,128,0.25); margin-left: 2px; }
-  .building-panel-sub { font-size: 11px; color: #64748B; line-height: 1.5; padding: 12px 16px 4px; }
-  .building-panel-body { padding: 10px 16px 16px; overflow-y: auto; flex: 1; }
-  .building-card { background: white; border: 1.5px solid #E2E8F0; border-radius: 12px; padding: 13px; margin-bottom: 10px; cursor: pointer; display: flex; align-items: center; gap: 12px; box-shadow: 0 1px 4px rgba(0,0,0,0.03); transition: border-color 0.15s; }
-  .building-card:hover { border-color: #0D9488; }
-  .building-avatar { width: 38px; height: 38px; border-radius: 50%; background: #0D9488; color: white; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 800; flex-shrink: 0; }
-  .building-card-name { font-size: 13.5px; font-weight: 800; color: #0F1E2E; margin-bottom: 3px; }
-  .building-card-detail { font-size: 11px; color: #64748B; }
-  .building-empty { font-size: 12.5px; color: #94A3B8; text-align: center; padding: 40px 14px; line-height: 1.6; }
-
-  @media (max-width: 900px) {
-    body { margin-right: 0; }
-    .building-panel { position: static; width: 100%; height: auto; box-shadow: none; margin: 20px 22px; }
-  }
 </style>
 </head>
 <body>
@@ -209,7 +185,7 @@
       <div class="topbar-date" id="today-label"></div>
     </div>
     <div class="legend">
-      <div class="legend-item"><span class="legend-dot" style="background:#16A34A"></span>Vacant</div>
+      <div class="legend-item"><span class="legend-dot" style="background:#94A3B8"></span>Vacant</div>
       <div class="legend-item"><span class="legend-dot" style="background:#D9A441"></span>On Hold (15 min)</div>
       <div class="legend-item"><span class="legend-dot" style="background:#D97757"></span>Booked</div>
     </div>
@@ -317,35 +293,6 @@
     </div>
   </div>
 
-  <div class="building-panel">
-    <div class="building-panel-header">
-      <div class="building-panel-ico">
-        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#0D9488" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-      </div>
-      <div class="building-panel-title">In The Building</div>
-      <div class="building-live-dot"></div>
-    </div>
-    <div class="building-panel-sub">Clients whose treatment is happening right now. Tap a name for their details.</div>
-    <div class="building-panel-body" id="buildingList"></div>
-  </div>
-
-  <div class="modal-bg" id="visitBg">
-    <div class="modal-box">
-      <div class="modal-title" id="visitName"></div>
-      <div class="modal-sub" id="visitSub"></div>
-      <div class="modal-label">Phone</div>
-      <div id="visitPhone" style="margin-bottom:16px;font-size:14px;font-weight:700;color:#0F1E2E"></div>
-      <div class="modal-label">Requirements on file</div>
-      <div id="visitReqs" style="margin-bottom:16px;font-size:13px;color:#64748B;line-height:1.4"></div>
-      <div class="modal-label">Visit Notes</div>
-      <textarea class="modal-input" id="visitTodayNotes" placeholder="e.g. Thanked her on the way out, mentioned her treatment, said she'd be back next month"></textarea>
-      <div class="modal-actions">
-        <button class="modal-btn modal-btn-cancel" onclick="closeVisitModal()">Close</button>
-        <button class="modal-btn modal-btn-save" onclick="saveVisitNotes()">Save Note</button>
-      </div>
-    </div>
-  </div>
-
 <script>
   const THERAPISTS = [
     {name:'Made 1', gender:'M'}, {name:'Kadek', gender:'F'}, {name:'Wayan', gender:'M'},
@@ -374,27 +321,26 @@
     {code:'SBM',     name:'SUNDARI Bamboo Massage',                duration:90,  price:44}
   ];
 
-  // Half-hour slots, 9:00am to 9:30pm - the smallest addressable unit on the grid now.
-  const HALF_HOURS = [];
+  // 15-minute slots, 9:00am to 9:45pm - the smallest addressable unit on the grid now.
+  const TIME_SLOTS = [];
   for(let h = 9; h <= 21; h++){
-    HALF_HOURS.push(h + ':00');
-    if(h < 21) HALF_HOURS.push(h + ':30');
+    ['00', '15', '30', '45'].forEach(function(m){ TIME_SLOTS.push(h + ':' + m); });
   }
-  const ROWS_PER_SLOT = 2; // each half-hour = 2 grid rows of 15px = 30px tall
+  const ROWS_PER_SLOT = 1; // each 15-minute slot = 1 grid row of 15px tall
 
-  function fmtHalfHour(hh){
+  function fmtTimeSlot(hh){
     const parts = hh.split(':');
     const h = Number(parts[0]);
     const period = h < 12 ? 'AM' : 'PM';
     const hr = h > 12 ? h - 12 : h;
-    return hr + (parts[1] === '00' ? '' : ':30') + ' ' + period;
+    return hr + (parts[1] === '00' ? '' : ':' + parts[1]) + ' ' + period;
   }
   function serviceByCode(code){ return SERVICES.find(function(s){ return s.code === code; }); }
   function therapistIndexByName(name){ return THERAPISTS.findIndex(function(t){ return t.name === name; }); }
   function slotKey(t, h){ return t + '-' + h; }
 
-  const STORAGE_KEY = 'mavis_spa_bookings_demo_v8';
-  let bookings = {}; // key "therapistIdx-halfHourIndex" -> {serviceCode, client, phone, notes, status, holdStartedAt, holdPrompted}
+  const STORAGE_KEY = 'mavis_spa_bookings_demo_v10';
+  let bookings = {}; // key "therapistIdx-timeSlotIndex" -> {serviceCode, client, phone, notes, status, holdStartedAt, holdPrompted}
 
   function loadBookings(){
     try{
@@ -417,29 +363,11 @@
     const p = prefixes[Math.floor(Math.random() * prefixes.length)];
     return p + ' ' + Math.floor(1000 + Math.random()*9000) + ' ' + Math.floor(1000 + Math.random()*9000);
   }
-  function slotsForDuration(dur){ return dur / 30; }
+  function slotsForDuration(dur){ return dur / 15; }
 
   function fillGridForDemo(){
-    if(Object.keys(bookings).length > 0) return; // one-time fill, never overwrites real edits
-    let nameIdx = 0;
-    THERAPISTS.forEach(function(t, ti){
-      let hIdx = 0;
-      while(hIdx < HALF_HOURS.length){
-        // Target overall mix: 50% booked, 25% on hold, 25% left vacant.
-        if(Math.random() < 0.25){ hIdx++; continue; } // 25% stays vacant
-        const svc = SERVICES[Math.floor(Math.random() * SERVICES.length)];
-        const span = slotsForDuration(svc.duration);
-        if(hIdx + span > HALF_HOURS.length){ hIdx++; continue; }
-        const status = Math.random() < (2/3) ? 'booked' : 'hold'; // 50%/25% of the whole, since this only runs for the 75% that isn't vacant
-        bookings[slotKey(ti, hIdx)] = {
-          serviceCode: svc.code, client: DEMO_CLIENT_NAMES[nameIdx % DEMO_CLIENT_NAMES.length],
-          phone: randomPhone(), notes: '', status: status, holdStartedAt: null, holdPrompted: false
-        };
-        nameIdx++;
-        hIdx += span;
-      }
-    });
-    saveBookings();
+    // Deliberately empty for now - starting with a completely blank calendar, no demo
+    // bookings, while the flow and UI get sorted out first.
   }
 
   // ── Waiting To Be Allocated queue ──
@@ -492,7 +420,7 @@
       const sourceLabel = SOURCE_LABELS[item.source] || item.source;
       const sourceColor = SOURCE_COLORS[item.source] || '#94A3B8';
       const sourceBadge = '<span style="font-size:9px;font-weight:800;color:white;background:' + sourceColor + ';padding:3px 8px;border-radius:8px;text-transform:uppercase;letter-spacing:0.3px">' + sourceLabel + '</span>';
-      const serviceLine = (svc ? svc.name + ' (' + svc.code + ')' : '') + ' — ' + fmtHalfHour(HALF_HOURS[item.requestedH]);
+      const serviceLine = (svc ? svc.name + ' (' + svc.code + ')' : '') + ' — ' + fmtTimeSlot(TIME_SLOTS[item.requestedH]);
       const nameHtml = '<span class="queue-card-name" style="text-decoration:underline;text-decoration-color:#CBD5E1;cursor:pointer" onclick="event.stopPropagation();openClientProfile(\'' + item.id + '\')">' + item.client + '</span>';
 
       if(!item.confirmed){
@@ -588,16 +516,16 @@
 
   function renderGrid(){
     const grid = document.getElementById('grid');
-    const totalRows = HALF_HOURS.length * ROWS_PER_SLOT;
+    const totalRows = TIME_SLOTS.length * ROWS_PER_SLOT;
     let html = '';
 
     // Time labels down the left - full hours prominent, half-hours smaller and lighter
-    HALF_HOURS.forEach(function(hh, hIdx){
+    TIME_SLOTS.forEach(function(hh, hIdx){
       const rowStart = 1 + hIdx * ROWS_PER_SLOT;
       if(hh.endsWith(':00')){
-        html += '<div class="time-label" style="grid-row:' + rowStart + ' / span ' + ROWS_PER_SLOT + '">' + fmtHalfHour(hh) + '</div>';
+        html += '<div class="time-label" style="grid-row:' + rowStart + ' / span ' + ROWS_PER_SLOT + '">' + fmtTimeSlot(hh) + '</div>';
       } else {
-        html += '<div class="time-label time-label-half" style="grid-row:' + rowStart + ' / span ' + ROWS_PER_SLOT + '">' + fmtHalfHour(hh) + '</div>';
+        html += '<div class="time-label time-label-half" style="grid-row:' + rowStart + ' / span ' + ROWS_PER_SLOT + '">' + fmtTimeSlot(hh) + '</div>';
       }
     });
 
@@ -605,7 +533,7 @@
     THERAPISTS.forEach(function(t, ti){
       const covered = coveredSlots(ti);
       const col = ti + 2;
-      HALF_HOURS.forEach(function(hh, hIdx){
+      TIME_SLOTS.forEach(function(hh, hIdx){
         const rowStart = 1 + hIdx * ROWS_PER_SLOT;
         const key = slotKey(ti, hIdx);
         const b = bookings[key];
@@ -614,7 +542,7 @@
           const svc = serviceByCode(b.serviceCode);
           const span = (svc ? slotsForDuration(svc.duration) : 1) * ROWS_PER_SLOT;
           html += '<div class="slot ' + b.status + '" style="grid-column:' + col + ';grid-row:' + rowStart + ' / span ' + span + '" ' +
-              'onclick="openSlot(\'' + key + '\')" ondragover="dragOver(event)" ondragleave="dragLeave(event)" ondrop="drop(event,\'' + key + '\')">' +
+              'onclick="openSlot(\'' + key + '\')" ondragover="dragOver(event,\'' + key + '\')" ondragleave="dragLeave(event)" ondrop="drop(event,\'' + key + '\')">' +
             '<div class="slot-inner" draggable="true" ondragstart="bookingDragStart(event,\'' + key + '\')">' +
               '<div class="slot-code">' + b.serviceCode + '</div>' +
               '<div class="slot-client">' + b.client + '</div>' +
@@ -626,7 +554,7 @@
         if(covered[hIdx] !== undefined) return; // covered by an earlier-starting booking, skip
 
         html += '<div class="slot vacant" style="grid-column:' + col + ';grid-row:' + rowStart + ' / span ' + ROWS_PER_SLOT + '" ' +
-            'onclick="openSlot(\'' + key + '\')" ondragover="dragOver(event)" ondragleave="dragLeave(event)" ondrop="drop(event,\'' + key + '\')">' +
+            'onclick="openSlot(\'' + key + '\')" ondragover="dragOver(event,\'' + key + '\')" ondragleave="dragLeave(event)" ondrop="drop(event,\'' + key + '\')">' +
           '<div class="slot-inner"></div>' +
         '</div>';
       });
@@ -635,7 +563,6 @@
     grid.style.setProperty('--n-therapists', THERAPISTS.length);
     grid.style.gridTemplateRows = 'repeat(' + totalRows + ', 15px)';
     grid.innerHTML = html;
-    if(typeof refreshBuildingPanel === 'function') refreshBuildingPanel();
   }
 
   // ── Three drag sources: an unassigned therapist, an existing booking being moved, or a
@@ -660,8 +587,32 @@
     e.currentTarget.classList.add('dragging');
   }
   function queueDragEnd(e){ e.currentTarget.classList.remove('dragging'); }
-  function dragOver(e){ e.preventDefault(); e.currentTarget.classList.add('drag-over'); }
-  function dragLeave(e){ e.currentTarget.classList.remove('drag-over'); }
+  function currentDraggedSpan(){
+    // Figures out how many half-hour slots whatever's being dragged right now actually needs,
+    // so we can check ahead of time if a hovered slot has enough consecutive room for it.
+    if(draggedQueueId){
+      const item = pendingQueue.find(function(q){ return q.id === draggedQueueId; });
+      const svc = item ? serviceByCode(item.serviceCode) : null;
+      return { span: svc ? slotsForDuration(svc.duration) : 1, ignoreKey: null };
+    }
+    if(draggedBookingKey){
+      const b = bookings[draggedBookingKey];
+      const svc = b ? serviceByCode(b.serviceCode) : null;
+      return { span: svc ? slotsForDuration(svc.duration) : 1, ignoreKey: draggedBookingKey };
+    }
+    return { span: 1, ignoreKey: null }; // dragging a therapist onto an existing booking - that one's own span applies, checked in drop()
+  }
+
+  function dragOver(e, targetKey){
+    e.preventDefault();
+    const parts = targetKey.split('-');
+    const ti = Number(parts[0]), h = Number(parts[1]);
+    const info = currentDraggedSpan();
+    const fits = (h + info.span <= TIME_SLOTS.length) && spanFree(ti, h, info.span, info.ignoreKey);
+    e.currentTarget.classList.toggle('drag-over', fits);
+    e.currentTarget.classList.toggle('drag-invalid', !fits);
+  }
+  function dragLeave(e){ e.currentTarget.classList.remove('drag-over', 'drag-invalid'); }
 
   function spanFree(ti, startH, span, ignoreKey){
     for(let i = 0; i < span; i++){
@@ -745,7 +696,7 @@
       if(!item) return;
       const svc = serviceByCode(item.serviceCode);
       const span = svc ? slotsForDuration(svc.duration) : 1;
-      if(targetH + span > HALF_HOURS.length){
+      if(targetH + span > TIME_SLOTS.length){
         appAlert('That treatment runs past closing time from here — try an earlier slot.');
         return;
       }
@@ -826,7 +777,7 @@
     const existing = bookings[key];
 
     document.getElementById('modalTitle').textContent = existing ? 'Edit Booking' : 'Add Booking';
-    document.getElementById('modalSub').textContent = fmtHalfHour(HALF_HOURS[hIdx]);
+    document.getElementById('modalSub').textContent = fmtTimeSlot(TIME_SLOTS[hIdx]);
 
     setTherapistLabel(therapist.name);
     setServiceLabel(existing ? existing.serviceCode : SERVICES[0].code);
@@ -860,7 +811,7 @@
     const span = svc ? slotsForDuration(svc.duration) : 1;
     const newKey = slotKey(newTi, oldStartH);
 
-    if(oldStartH + span > HALF_HOURS.length){
+    if(oldStartH + span > TIME_SLOTS.length){
       appAlert('That treatment runs past closing time from this start slot — pick an earlier time.');
       return;
     }
@@ -964,66 +915,6 @@
     }
   }
   setInterval(checkHolds, 20000);
-
-  // ── Currently In The Building panel ──
-  function refreshBuildingPanel(){
-    const list = document.getElementById('buildingList');
-    if(!list) return;
-    const now = new Date();
-    const nowLabel = now.getHours() + ':' + (now.getMinutes() < 30 ? '00' : '30');
-    const nowHalfIdx = HALF_HOURS.indexOf(nowLabel);
-    const present = [];
-    for(const key in bookings){
-      const b = bookings[key];
-      if(b.status !== 'booked') continue;
-      const parts = key.split('-');
-      const startH = Number(parts[1]);
-      const svc = serviceByCode(b.serviceCode);
-      const span = svc ? slotsForDuration(svc.duration) : 1;
-      if(nowHalfIdx >= startH && nowHalfIdx < startH + span){
-        present.push({ key: key, therapistIdx: Number(parts[0]), booking: b, svc: svc });
-      }
-    }
-    if(!present.length){
-      list.innerHTML = '<div class="building-empty">Nobody currently in for treatment.<br>They will appear here automatically during their booked hour.</div>';
-      return;
-    }
-    list.innerHTML = present.map(function(p){
-      const t = THERAPISTS[p.therapistIdx];
-      const initial = p.booking.client.trim().charAt(0).toUpperCase();
-      return '<div class="building-card" onclick="openVisitModal(\'' + p.key + '\')">' +
-        '<div class="building-avatar">' + initial + '</div>' +
-        '<div>' +
-          '<div class="building-card-name">' + p.booking.client + '</div>' +
-          '<div class="building-card-detail">' + (p.svc ? p.svc.name : '') + ' — with ' + t.name + '</div>' +
-        '</div>' +
-      '</div>';
-    }).join('');
-  }
-  setInterval(refreshBuildingPanel, 30000);
-
-  function openVisitModal(key){
-    const b = bookings[key];
-    if(!b) return;
-    window._visitKey = key;
-    const parts = key.split('-');
-    const t = THERAPISTS[Number(parts[0])];
-    const svc = serviceByCode(b.serviceCode);
-    document.getElementById('visitName').textContent = b.client;
-    document.getElementById('visitSub').textContent = (svc ? svc.name : '') + ' — with ' + t.name;
-    document.getElementById('visitPhone').textContent = b.phone || 'No phone number on file';
-    document.getElementById('visitReqs').textContent = b.notes || 'Nothing noted';
-    document.getElementById('visitTodayNotes').value = b.todayNotes || '';
-    document.getElementById('visitBg').classList.add('show');
-  }
-  function closeVisitModal(){ document.getElementById('visitBg').classList.remove('show'); window._visitKey = null; }
-  function saveVisitNotes(){
-    const key = window._visitKey;
-    if(!key || !bookings[key]) return;
-    bookings[key].todayNotes = document.getElementById('visitTodayNotes').value.trim();
-    saveBookings(); closeVisitModal();
-  }
-  document.getElementById('visitBg').addEventListener('click', function(e){ if(e.target === this) closeVisitModal(); });
 
   document.getElementById('today-label').textContent = new Date().toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
 

@@ -148,6 +148,7 @@
   .slot-client { font-size: 9px; font-weight: 700; opacity: 0.95; line-height: 1.1; word-break: break-word; }
   .slot-therapist { font-size: 7.5px; font-weight: 600; opacity: 0.85; line-height: 1.1; }
   .slot.drag-over .slot-inner { outline: 3px solid #0D9488; outline-offset: -3px; }
+  .shift-frame { border: 2.5px solid #0F1E2E; border-radius: 4px; pointer-events: none; }
 
   /* Modal */
   .modal-bg { display: none; position: fixed; inset: 0; background: rgba(15,30,46,0.55); align-items: center; justify-content: center; z-index: 200; padding: 20px; }
@@ -723,6 +724,18 @@
           '<div class="slot-inner"></div>' +
         '</div>';
       });
+    });
+
+    // One continuous frame around each working therapist's whole shift block - a single
+    // border from their start time to their end time, like a merged border in Excel, so it's
+    // obvious at a glance who's actually in today without having to compare shade-of-grey.
+    THERAPISTS.forEach(function(t, ti){
+      const s = therapistShifts[t.name];
+      if(!s || s.type !== 'custom') return;
+      const col = ti + 2;
+      const frameRowStart = 5 + s.startIdx * ROWS_PER_SLOT;
+      const frameSpan = (s.endIdx - s.startIdx) * ROWS_PER_SLOT;
+      html += '<div class="shift-frame" style="grid-column:' + col + ';grid-row:' + frameRowStart + ' / span ' + frameSpan + '"></div>';
     });
 
     grid.style.setProperty('--n-therapists', THERAPISTS.length);

@@ -342,8 +342,29 @@
     <div class="modal-box">
       <div class="modal-title" id="tiName"></div>
       <div class="modal-sub" id="tiSub"></div>
-      <div class="modal-label">Today's Shift</div>
-      <div id="tiShiftBtns" class="shift-btns"></div>
+
+      <div class="modal-label">Today's Working Hours</div>
+      <div class="field-picker" onclick="openShiftTimePicker('start')">
+        <span id="shiftStartLabel">Set start time</span>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#94A3B8" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+      </div>
+      <div class="field-picker" onclick="openShiftTimePicker('end')">
+        <span id="shiftEndLabel">Set end time</span>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#94A3B8" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+      </div>
+
+      <div class="modal-label">Lunch Hour (1 hour)</div>
+      <div class="field-picker" onclick="openShiftTimePicker('lunch')">
+        <span id="shiftLunchLabel">No lunch set</span>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#94A3B8" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+      </div>
+      <button onclick="clearLunch()" style="background:none;border:none;color:#94A3B8;font-family:inherit;font-size:11px;font-weight:700;cursor:pointer;margin:-10px 0 12px;padding:0">Clear lunch</button>
+
+      <button class="modal-btn modal-btn-save" style="width:100%;margin-bottom:16px" onclick="saveTherapistCustomShift(window._tiName)">Save Working Hours</button>
+
+      <div class="modal-label">Or mark the whole day as</div>
+      <div id="tiDayStatusBtns" class="shift-btns"></div>
+
       <div class="modal-label" style="margin-top:16px">Services offered</div>
       <div id="tiSkills" style="margin-bottom:18px"></div>
       <button class="modal-btn modal-btn-cancel" style="width:100%" onclick="closeTherapistInfo()">Close</button>
@@ -1004,19 +1025,18 @@
   document.getElementById('modalBg').addEventListener('click', function(e){ if(e.target === this) closeModal(); });
 
   // ── Therapist info popup ──
-  // ── Therapist shifts - defines which hours each column is "working" (white) vs "off"
-  // (grey), or a whole-day status like holiday/sick/emergency leave (its own pastel colour).
-  const SHIFTS = {
-    morning:   { label: 'Morning<br>9am \u2013 5pm',  startIdx: 0,  endIdx: 32 },
-    night:     { label: 'Night<br>1pm \u2013 10pm',   startIdx: 16, endIdx: 52 }
-  };
+  // ── Therapist shifts - now real hour-to-hour input (start time, end time, lunch hour)
+  // instead of fixed presets, plus the whole-day statuses (holiday/sick/emergency).
   const DAY_STATUSES = {
     holiday:   { label: 'Holiday' },
     sick:      { label: 'Sick' },
     emergency: { label: 'Emergency<br>Leave' }
   };
-  const SHIFT_STORAGE_KEY = 'mavis_spa_shifts_demo_v1';
-  let therapistShifts = {}; // { [therapistName]: 'morning' | 'night' | 'holiday' | 'sick' | 'emergency' }
+  const SHIFT_STORAGE_KEY = 'mavis_spa_shifts_demo_v2';
+  // { [therapistName]: { type:'custom', startIdx, endIdx, lunchIdx } | { type:'holiday'|'sick'|'emergency' } }
+  let therapistShifts = {};
+  // Working state for whichever therapist's shift editor is currently open, before Save is pressed.
+  let shiftDraft = { startIdx: null, endIdx: null, lunchIdx: null };
 
   function loadShifts(){
     try{
@@ -1027,43 +1047,90 @@
   function saveShifts(){
     try{ localStorage.setItem(SHIFT_STORAGE_KEY, JSON.stringify(therapistShifts)); }catch(e){}
   }
-  function setTherapistShift(name, key){
-    therapistShifts[name] = key;
+  function setTherapistDayStatus(name, key){
+    therapistShifts[name] = { type: key };
     saveShifts();
     renderGrid();
     openTherapistInfo(name); // refresh the modal in place so the active button updates
   }
+  function saveTherapistCustomShift(name){
+    if(shiftDraft.startIdx === null || shiftDraft.endIdx === null){
+      appAlert('Set both a start time and an end time first.');
+      return;
+    }
+    if(shiftDraft.endIdx <= shiftDraft.startIdx){
+      appAlert('End time needs to be after the start time.');
+      return;
+    }
+    therapistShifts[name] = { type: 'custom', startIdx: shiftDraft.startIdx, endIdx: shiftDraft.endIdx, lunchIdx: shiftDraft.lunchIdx };
+    saveShifts();
+    renderGrid();
+    openTherapistInfo(name);
+  }
   // For a given therapist + time slot index, works out which class the vacant box should
-  // get: on-shift (white), off-shift (grey), or one of the day-long statuses.
+  // get: on-shift (white), off-shift (grey - includes the lunch hour), or one of the
+  // whole-day statuses.
   function shiftClassFor(name, hIdx){
-    const status = therapistShifts[name];
-    if(!status) return ''; // no shift set yet - leave as the normal neutral vacant look
-    if(DAY_STATUSES[status]) return 'day-' + status;
-    const shift = SHIFTS[status];
-    if(!shift) return '';
-    return (hIdx >= shift.startIdx && hIdx < shift.endIdx) ? 'on-shift' : 'off-shift';
+    const s = therapistShifts[name];
+    if(!s) return ''; // no shift set yet - leave as the normal neutral vacant look
+    if(s.type !== 'custom') return 'day-' + s.type;
+    if(hIdx < s.startIdx || hIdx >= s.endIdx) return 'off-shift';
+    if(s.lunchIdx !== null && s.lunchIdx !== undefined && hIdx >= s.lunchIdx && hIdx < s.lunchIdx + 4) return 'off-shift'; // lunch is 1 hour = 4 slots
+    return 'on-shift';
   }
 
   const SKILLS_DEMO = ['Foot Massage', 'Full Body Massage', 'Manicure', 'Pedicure'];
   function openTherapistInfo(name){
     const t = THERAPISTS.find(function(x){ return x.name === name; });
     if(!t) return;
+    window._tiName = name;
     document.getElementById('tiName').textContent = t.name;
     document.getElementById('tiSub').textContent = (t.gender === 'M' ? 'Male' : 'Female') + ' therapist';
 
     const current = therapistShifts[name] || null;
-    const allOptions = Object.assign({}, SHIFTS, DAY_STATUSES);
-    const colorFor = { morning: '#0D9488', night: '#0F1E2E', holiday: '#C4973B', sick: '#D9808C', emergency: '#6366F1' };
-    document.getElementById('tiShiftBtns').innerHTML = Object.keys(allOptions).map(function(key){
-      const isActive = current === key;
-      const style = isActive ? 'style="background:' + colorFor[key] + '"' : '';
-      return '<button class="shift-btn' + (isActive ? ' active' : '') + '" ' + style + ' onclick="setTherapistShift(\'' + name + '\',\'' + key + '\')">' + allOptions[key].label + '</button>';
+    // Start the draft from whatever's already saved for this person, or blank if none yet.
+    if(current && current.type === 'custom'){
+      shiftDraft = { startIdx: current.startIdx, endIdx: current.endIdx, lunchIdx: (current.lunchIdx !== undefined ? current.lunchIdx : null) };
+    } else {
+      shiftDraft = { startIdx: null, endIdx: null, lunchIdx: null };
+    }
+    renderShiftFields();
+
+    const dayColorFor = { holiday: '#C4973B', sick: '#D9808C', emergency: '#6366F1' };
+    document.getElementById('tiDayStatusBtns').innerHTML = Object.keys(DAY_STATUSES).map(function(key){
+      const isActive = current && current.type === key;
+      const style = isActive ? 'style="background:' + dayColorFor[key] + '"' : '';
+      return '<button class="shift-btn' + (isActive ? ' active' : '') + '" ' + style + ' onclick="setTherapistDayStatus(\'' + name + '\',\'' + key + '\')">' + DAY_STATUSES[key].label + '</button>';
     }).join('');
 
     document.getElementById('tiSkills').innerHTML = SKILLS_DEMO.map(function(s){
       return '<div class="skill-item"><span class="skill-check">\u2713</span>' + s + '</div>';
     }).join('');
     document.getElementById('therapistInfoBg').classList.add('show');
+  }
+  function renderShiftFields(){
+    document.getElementById('shiftStartLabel').textContent = shiftDraft.startIdx !== null ? fmtTimeSlot(TIME_SLOTS[shiftDraft.startIdx]) : 'Set start time';
+    document.getElementById('shiftEndLabel').textContent = shiftDraft.endIdx !== null ? fmtTimeSlot(TIME_SLOTS[shiftDraft.endIdx]) : 'Set end time';
+    document.getElementById('shiftLunchLabel').textContent = (shiftDraft.lunchIdx !== null && shiftDraft.lunchIdx !== undefined) ? (fmtTimeSlot(TIME_SLOTS[shiftDraft.lunchIdx]) + ' (1 hour)') : 'No lunch set';
+  }
+  function openShiftTimePicker(field){
+    const list = document.getElementById('pickerList');
+    document.getElementById('pickerTitle').textContent = field === 'start' ? 'Start Time' : (field === 'end' ? 'End Time' : 'Lunch Time');
+    list.innerHTML = TIME_SLOTS.map(function(hh, idx){
+      return '<div class="picker-option" onclick="pickShiftTime(\'' + field + '\',' + idx + ')">' + fmtTimeSlot(hh) + '</div>';
+    }).join('');
+    document.getElementById('pickerBg').classList.add('show');
+  }
+  function pickShiftTime(field, idx){
+    if(field === 'start') shiftDraft.startIdx = idx;
+    else if(field === 'end') shiftDraft.endIdx = idx;
+    else shiftDraft.lunchIdx = idx;
+    renderShiftFields();
+    closePicker();
+  }
+  function clearLunch(){
+    shiftDraft.lunchIdx = null;
+    renderShiftFields();
   }
   function closeTherapistInfo(){ document.getElementById('therapistInfoBg').classList.remove('show'); }
   document.getElementById('therapistInfoBg').addEventListener('click', function(e){ if(e.target === this) closeTherapistInfo(); });

@@ -323,6 +323,37 @@
     </div>
   </div>
 
+  <div class="modal-bg" id="queueEditBg">
+    <div class="modal-box">
+      <div class="modal-title" id="qeName"></div>
+      <div class="modal-sub">Edit this booking request</div>
+
+      <div class="modal-label">Treatment</div>
+      <div class="field-picker" id="qeServicePickerBtn" onclick="openQeServicePicker()">
+        <span id="qeServicePickerLabel">Select treatment</span>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#94A3B8" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+      </div>
+
+      <div class="modal-label">Requested Time</div>
+      <div class="field-picker" id="qeTimePickerBtn" onclick="openQeTimePicker()">
+        <span id="qeTimePickerLabel">Select time</span>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#94A3B8" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+      </div>
+
+      <div class="modal-label">Phone Number</div>
+      <input type="tel" class="modal-input" id="qePhone" placeholder="e.g. +62 812 3456 7890">
+      <div class="modal-label">Email Address</div>
+      <input type="email" class="modal-input" id="qeEmail" placeholder="e.g. sarah@email.com">
+      <div class="modal-label">Notes</div>
+      <textarea class="modal-input" id="qeNotes" placeholder="Any requirements or notes"></textarea>
+
+      <div class="modal-actions">
+        <button class="modal-btn modal-btn-cancel" onclick="closeQueueEdit()">Cancel</button>
+        <button class="modal-btn modal-btn-save" onclick="saveQueueEdit()">Save Changes</button>
+      </div>
+    </div>
+  </div>
+
   <div class="modal-bg" id="confirmBg" style="z-index:220">
     <div class="confirm-box" id="confirmBox"></div>
   </div>
@@ -803,23 +834,77 @@
   // ── Booking Info - full details of the request itself, mirroring what a calendar
   // booking box shows once it's placed - treatment, time, length, everything about the
   // booking rather than about the person ──
+  let qeItemId = null;
+  let qeServiceCode = null;
+  let qeTimeIdx = null;
+
   function openBookingInfo(id){
     const item = pendingQueue.find(function(q){ return q.id === id; });
     if(!item) return;
+    qeItemId = id;
+    qeServiceCode = item.serviceCode;
+    qeTimeIdx = item.requestedH;
+
+    document.getElementById('qeName').textContent = item.client;
     const svc = serviceByCode(item.serviceCode);
-    showConfirm({
-      title: item.client,
-      msg: '<div style="text-align:left">' +
-        (svc ? svc.name + ' (' + svc.code + ')' : 'No treatment set') +
-        '<br>Requested time: ' + fmtTimeSlot(TIME_SLOTS[item.requestedH]) +
-        '<br>Length: ' + (svc ? svc.duration + ' minutes' : '\u2014') +
-        '<br>Type: ' + (item.bookingType ? BOOKING_TYPE_LABELS[item.bookingType] : 'Not yet set') +
-        '<br>Phone: ' + (item.phone || 'Not on file') +
-        (item.clientNotes ? '<br>Notes: ' + item.clientNotes : '') +
-        '</div>',
-      buttons: [{ label: 'Close', cls: 'confirm-btn-cancel', onClick: function(){} }]
-    });
+    document.getElementById('qeServicePickerLabel').textContent = svc ? (svc.name + ' — ' + svc.duration + ' min (USD$' + svc.price + ')') : 'Select treatment';
+    document.getElementById('qeServicePickerBtn').classList.toggle('placeholder', !svc);
+    document.getElementById('qeTimePickerLabel').textContent = fmtTimeSlot(TIME_SLOTS[item.requestedH]);
+    document.getElementById('qeTimePickerBtn').classList.remove('placeholder');
+    document.getElementById('qePhone').value = item.phone || '';
+    document.getElementById('qeEmail').value = item.email || '';
+    document.getElementById('qeNotes').value = item.clientNotes || '';
+
+    document.getElementById('queueEditBg').classList.add('show');
   }
+  function closeQueueEdit(){
+    document.getElementById('queueEditBg').classList.remove('show');
+    qeItemId = null;
+  }
+  function openQeServicePicker(){
+    const list = document.getElementById('pickerList');
+    document.getElementById('pickerTitle').textContent = 'Choose Treatment';
+    list.innerHTML = SERVICES.map(function(s){
+      return '<div class="picker-option" onclick="pickQeService(\'' + s.code + '\')">' +
+        '<div><div>' + s.name + '</div><div class="picker-option-sub">' + s.duration + ' min — USD$' + s.price + '</div></div>' +
+      '</div>';
+    }).join('');
+    document.getElementById('pickerBg').classList.add('show');
+  }
+  function pickQeService(code){
+    qeServiceCode = code;
+    const svc = serviceByCode(code);
+    document.getElementById('qeServicePickerLabel').textContent = svc.name + ' — ' + svc.duration + ' min (USD$' + svc.price + ')';
+    document.getElementById('qeServicePickerBtn').classList.remove('placeholder');
+    closePicker();
+  }
+  function openQeTimePicker(){
+    const list = document.getElementById('pickerList');
+    document.getElementById('pickerTitle').textContent = 'Choose Time';
+    list.innerHTML = TIME_SLOTS.map(function(hh, idx){
+      return '<div class="picker-option" onclick="pickQeTime(' + idx + ')">' + fmtTimeSlot(hh) + '</div>';
+    }).join('');
+    document.getElementById('pickerBg').classList.add('show');
+  }
+  function pickQeTime(idx){
+    qeTimeIdx = idx;
+    document.getElementById('qeTimePickerLabel').textContent = fmtTimeSlot(TIME_SLOTS[idx]);
+    closePicker();
+  }
+  function saveQueueEdit(){
+    const item = pendingQueue.find(function(q){ return q.id === qeItemId; });
+    if(!item) return;
+    if(!qeServiceCode){ appAlert('Choose a treatment first.'); return; }
+    item.serviceCode = qeServiceCode;
+    item.requestedH = qeTimeIdx;
+    item.phone = document.getElementById('qePhone').value.trim();
+    item.email = document.getElementById('qeEmail').value.trim();
+    item.clientNotes = document.getElementById('qeNotes').value.trim();
+    saveQueue();
+    renderQueue();
+    closeQueueEdit();
+  }
+  document.getElementById('queueEditBg').addEventListener('click', function(e){ if(e.target === this) closeQueueEdit(); });
 
   // ── Client profile - a mini record of who this person is, not just this one booking ──
   let cpReturningValue = null;

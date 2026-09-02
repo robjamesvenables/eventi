@@ -151,6 +151,7 @@
   .vacant.day-holiday .slot-inner { background: #FEF3C7; border: 1.5px solid #FDE68A; color: #92400E; opacity: 1; }
   .vacant.day-sick .slot-inner { background: #FBD5DA; border: 1.5px solid #F5A9B3; color: #9F1239; opacity: 1; }
   .vacant.day-emergency .slot-inner { background: #E0E4FB; border: 1.5px solid #C3C9F5; color: #3730A3; opacity: 1; }
+  .slot-day-letter { font-size: 11px; font-weight: 900; }
   .hold .slot-inner { background: #D9A441; color: white; cursor: grab; }
   .booked .slot-inner { background: #D97757; color: white; cursor: grab; }
   .slot-code { font-size: 12px; font-weight: 900; letter-spacing: 0.4px; line-height: 1.1; }
@@ -800,10 +801,11 @@
         const shiftHoverAttrs = shiftTip
           ? 'onmouseenter="showAppTooltip(event,\'' + shiftTip + '\')" onmousemove="positionAppTooltip(event)" onmouseleave="hideAppTooltip()" '
           : '';
+        const dayLetter = DAY_STATUS_LETTERS[shiftClass] || '';
         html += '<div class="slot vacant' + (shiftClass ? ' ' + shiftClass : '') + '" style="grid-column:' + col + ';grid-row:' + rowStart + ' / span ' + ROWS_PER_SLOT + '" ' +
             shiftHoverAttrs +
             'onclick="openSlot(\'' + key + '\')" ondragover="dragOver(event,\'' + key + '\')" ondragleave="dragLeave(event)" ondrop="drop(event,\'' + key + '\')">' +
-          '<div class="slot-inner"></div>' +
+          '<div class="slot-inner">' + (dayLetter ? '<span class="slot-day-letter">' + dayLetter + '</span>' : '') + '</div>' +
         '</div>';
       });
     });
@@ -1276,6 +1278,13 @@
     'day-holiday': 'Holiday',
     'day-sick': 'Sick',
     'day-emergency': 'Emergency Leave'
+  };
+  // Bold letter shown centred in every box for a whole-day status, on top of the colour and
+  // the hover tooltip, so it's readable at a glance even without hovering.
+  const DAY_STATUS_LETTERS = {
+    'day-holiday': 'H',
+    'day-sick': 'S',
+    'day-emergency': 'EL'
   };
 
   const SKILLS_DEMO = ['Foot Massage', 'Full Body Massage', 'Manicure', 'Pedicure'];

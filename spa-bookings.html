@@ -33,7 +33,8 @@
   .legend-item { display: flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600; color: rgba(255,255,255,0.85); }
   .legend-dot { width: 10px; height: 10px; border-radius: 3px; }
 
-  .queue-panel { background: #E9EDF3; border: 1.5px solid #DCE2EB; border-radius: 14px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); margin: 20px 22px; overflow: hidden; }
+  .top-boxes { display: flex; gap: 18px; margin: 20px 22px; align-items: flex-start; flex-wrap: wrap; }
+  .queue-panel { background: #E9EDF3; border: 1.5px solid #DCE2EB; border-radius: 14px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); overflow: hidden; flex: 1.3; min-width: 320px; }
   .queue-header { background: #0F1E2E; padding: 8px 22px; display: flex; align-items: center; gap: 10px; border-radius: 12px 12px 0 0; }
   .queue-ico { width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
   .queue-title { font-size: 13px; font-weight: 700; color: white; text-transform: uppercase; letter-spacing: 1px; }
@@ -63,6 +64,27 @@
     font-size: 10.5px; font-weight: 800; letter-spacing: 0.3px; padding: 8px 4px; cursor: pointer;
   }
   .queue-empty { font-size: 12.5px; color: #94A3B8; text-align: center; padding: 30px 14px; }
+
+  .rooms-panel { background: #E9EDF3; border: 1.5px solid #DCE2EB; border-radius: 14px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); overflow: hidden; flex: 1; min-width: 300px; }
+  .rooms-header { background: #0F1E2E; padding: 8px 14px; display: flex; align-items: center; gap: 10px; }
+  .rooms-ico { width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .rooms-title { font-size: 13px; font-weight: 700; color: white; text-transform: uppercase; letter-spacing: 1px; }
+  .rooms-legend { margin-left: auto; display: flex; gap: 8px; }
+  .rooms-legend-item { display: flex; align-items: center; gap: 3px; font-size: 9.5px; font-weight: 700; color: rgba(255,255,255,0.7); }
+  .rooms-legend-dot { width: 7px; height: 7px; border-radius: 2px; }
+  .rooms-body { padding: 12px 14px; max-height: 260px; overflow-y: auto; }
+  .room-row { display: flex; align-items: center; gap: 8px; margin-bottom: 7px; }
+  .room-row-name { font-size: 10.5px; font-weight: 800; color: #0F1E2E; width: 50px; flex-shrink: 0; }
+  .room-bar { flex: 1; height: 16px; border-radius: 4px; background: #DCE2EB; display: flex; overflow: hidden; }
+  .room-bar-seg { height: 100%; }
+  .room-timer {
+    width: 26px; height: 26px; border-radius: 50%; flex-shrink: 0; position: relative;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 8.5px; font-weight: 800; background: #F1F5F9; color: #64748B;
+  }
+  .room-timer.buffer { background: #FDE68A; color: #92400E; }
+  .room-timer.buffer.soon { animation: timerFlash 1.4s ease-in-out infinite; }
+  @keyframes timerFlash { 0%, 100% { opacity: 1; } 50% { opacity: 0.35; } }
 
   .gender-badge {
     width: 15px; height: 15px; border-radius: 50%;
@@ -206,17 +228,34 @@
     </div>
   </div>
 
-  <div class="queue-panel">
-    <div class="queue-header">
-      <div class="queue-ico">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#C4973B" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+  <div class="top-boxes">
+    <div class="queue-panel">
+      <div class="queue-header">
+        <div class="queue-ico">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#C4973B" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+        </div>
+        <div class="queue-title">Waiting To Be Allocated</div>
+        <div class="queue-live-dot"></div>
+        <div class="queue-count" id="queueCount"></div>
       </div>
-      <div class="queue-title">Waiting To Be Allocated</div>
-      <div class="queue-live-dot"></div>
-      <div class="queue-count" id="queueCount"></div>
+      <div class="queue-scroll-outer">
+        <div class="queue-scroll-inner" id="queueList"></div>
+      </div>
     </div>
-    <div class="queue-scroll-outer">
-      <div class="queue-scroll-inner" id="queueList"></div>
+
+    <div class="rooms-panel">
+      <div class="rooms-header">
+        <div class="rooms-ico">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#0D9488" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18M5 21V7l8-4v18M13 21V11l6 4v6"/></svg>
+        </div>
+        <div class="rooms-title">Rooms</div>
+        <div class="rooms-legend">
+          <div class="rooms-legend-item"><span class="rooms-legend-dot" style="background:#22C55E"></span>Free</div>
+          <div class="rooms-legend-item"><span class="rooms-legend-dot" style="background:#FBBF24"></span>Buffer</div>
+          <div class="rooms-legend-item"><span class="rooms-legend-dot" style="background:#D97757"></span>Taken</div>
+        </div>
+      </div>
+      <div class="rooms-body" id="roomsList"></div>
     </div>
   </div>
 
@@ -239,6 +278,11 @@
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#94A3B8" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
       </div>
       <div class="service-hint" id="serviceHint"></div>
+      <div class="modal-label">Room</div>
+      <div class="field-picker" id="roomPickerBtn" onclick="openRoomPicker()">
+        <span id="roomPickerLabel">Select room</span>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#94A3B8" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+      </div>
       <div class="modal-label">Client Name</div>
       <input type="text" class="modal-input" id="modalClientInput" placeholder="e.g. Sarah Johnson">
       <div class="modal-label">Client Phone Number</div>
@@ -316,6 +360,13 @@
     {name:'Rina', gender:'F'}, {name:'Bayu', gender:'M'}, {name:'Maria', gender:'F'},
     {name:'Kevin', gender:'M'}, {name:'Sophie', gender:'F'}
   ];
+
+  // 16 rooms, example count for now.
+  const ROOMS = [];
+  for(let i = 1; i <= 16; i++){ ROOMS.push({ id: i, name: 'Room ' + i }); }
+  const ROOM_BUFFER_MIN = 30; // clean-up time after a treatment ends before the room is free again
+
+  function roomById(id){ return ROOMS.find(function(r){ return r.id === id; }); }
 
   // Real service list, from the actual booking site - durations vary, so grid boxes will too.
   // Codes are a placeholder guess - the spa has their own codes already, to be swapped in later.
@@ -415,6 +466,63 @@
 
   const BOOKING_TYPE_LABELS = { paid: 'PAID', walkin: 'WALK IN', wa: 'WA' };
   const BOOKING_TYPE_COLORS = { paid: '#16A34A', walkin: '#C4973B', wa: '#2a78d6' };
+
+  // ── Rooms panel: a quick snapshot of what's free, in cleanup buffer, or taken ──
+  function slotStartMinutes(hIdx){ return 9 * 60 + hIdx * 15; } // grid starts at 9:00am, 15-min steps
+
+  function roomStatusAt(roomId, minutesOfDay){
+    let status = 'free';
+    let minutesLeftInBuffer = null;
+    for(const key in bookings){
+      const b = bookings[key];
+      if(b.roomId !== roomId) continue;
+      const svc = serviceByCode(b.serviceCode);
+      if(!svc) continue;
+      const parts = key.split('-');
+      const startMin = slotStartMinutes(Number(parts[1]));
+      const endMin = startMin + svc.duration;
+      const bufferEndMin = endMin + ROOM_BUFFER_MIN;
+      if(minutesOfDay >= startMin && minutesOfDay < endMin){
+        return { status: 'taken', minutesLeftInBuffer: null }; // in treatment wins outright
+      }
+      if(minutesOfDay >= endMin && minutesOfDay < bufferEndMin){
+        status = 'buffer';
+        minutesLeftInBuffer = bufferEndMin - minutesOfDay;
+      }
+    }
+    return { status: status, minutesLeftInBuffer: minutesLeftInBuffer };
+  }
+
+  function renderRoomsPanel(){
+    const list = document.getElementById('roomsList');
+    if(!list) return;
+    const colorMap = { free: '#22C55E', buffer: '#FBBF24', taken: '#D97757' };
+    const now = new Date();
+    const nowMinutes = now.getHours() * 60 + now.getMinutes();
+
+    list.innerHTML = ROOMS.map(function(room){
+      let barHtml = '';
+      const segWidth = (100 / TIME_SLOTS.length).toFixed(3);
+      TIME_SLOTS.forEach(function(hh, hIdx){
+        const s = roomStatusAt(room.id, slotStartMinutes(hIdx));
+        barHtml += '<div class="room-bar-seg" style="width:' + segWidth + '%;background:' + colorMap[s.status] + '"></div>';
+      });
+
+      const live = roomStatusAt(room.id, nowMinutes);
+      let timerHtml;
+      if(live.status === 'buffer'){
+        const soon = live.minutesLeftInBuffer <= 5;
+        timerHtml = '<div class="room-timer buffer' + (soon ? ' soon' : '') + '" title="Free in ' + live.minutesLeftInBuffer + ' min">' + live.minutesLeftInBuffer + '</div>';
+      } else if(live.status === 'taken'){
+        timerHtml = '<div class="room-timer" style="background:#F3D9D2;color:#9C4A32" title="In treatment">\u2014</div>';
+      } else {
+        timerHtml = '<div class="room-timer" title="Free">\u2014</div>';
+      }
+
+      return '<div class="room-row"><div class="room-row-name">' + room.name + '</div><div class="room-bar">' + barHtml + '</div>' + timerHtml + '</div>';
+    }).join('');
+  }
+  setInterval(renderRoomsPanel, 30000); // live countdown - refresh every 30s
 
   function renderQueue(){
     const list = document.getElementById('queueList');
@@ -599,6 +707,7 @@
     grid.style.setProperty('--n-therapists', THERAPISTS.length);
     grid.style.gridTemplateRows = 'repeat(' + (totalRows + 4) + ', 15px)';
     grid.innerHTML = html;
+    if(typeof renderRoomsPanel === 'function') renderRoomsPanel();
   }
 
   // ── Three drag sources: an unassigned therapist, an existing booking being moved, or a
@@ -757,6 +866,7 @@
   // Selected values live in plain state now, not a native <select> - set via the in-app picker.
   let selectedTherapistName = null;
   let selectedServiceCode = null;
+  let selectedRoomId = null;
 
   function setTherapistLabel(name){
     selectedTherapistName = name;
@@ -772,6 +882,12 @@
     label.textContent = svc ? (svc.name + ' — ' + svc.duration + ' min (USD$' + svc.price + ')') : 'Select treatment';
     document.getElementById('servicePickerBtn').classList.toggle('placeholder', !svc);
     document.getElementById('serviceHint').textContent = svc ? ('Code shown on the grid: ' + svc.code + ' — ' + svc.duration + ' minutes') : '';
+  }
+  function setRoomLabel(roomId){
+    selectedRoomId = roomId;
+    const room = roomId ? roomById(roomId) : null;
+    document.getElementById('roomPickerLabel').textContent = room ? room.name : 'Select room';
+    document.getElementById('roomPickerBtn').classList.toggle('placeholder', !room);
   }
 
   function openTherapistPicker(){
@@ -802,6 +918,18 @@
     setServiceLabel(code);
     closePicker();
   }
+  function openRoomPicker(){
+    const list = document.getElementById('pickerList');
+    document.getElementById('pickerTitle').textContent = 'Choose Room';
+    list.innerHTML = ROOMS.map(function(r){
+      return '<div class="picker-option" onclick="pickRoom(' + r.id + ')">' + r.name + '</div>';
+    }).join('');
+    document.getElementById('pickerBg').classList.add('show');
+  }
+  function pickRoom(id){
+    setRoomLabel(id);
+    closePicker();
+  }
   function closePicker(){ document.getElementById('pickerBg').classList.remove('show'); }
   document.getElementById('pickerBg').addEventListener('click', function(e){ if(e.target === this) closePicker(); });
 
@@ -817,6 +945,7 @@
 
     setTherapistLabel(therapist.name);
     setServiceLabel(existing ? existing.serviceCode : SERVICES[0].code);
+    setRoomLabel(existing ? (existing.roomId || null) : null);
     document.getElementById('modalClientInput').value = existing ? existing.client : '';
     document.getElementById('modalPhoneInput').value = existing ? (existing.phone || '') : '';
     document.getElementById('modalNotesInput').value = existing ? (existing.notes || '') : '';
@@ -863,7 +992,7 @@
 
     if(newKey !== modalKey) delete bookings[modalKey];
     bookings[newKey] = {
-      serviceCode: serviceCode, client: client, phone: phone, notes: notes,
+      serviceCode: serviceCode, client: client, phone: phone, notes: notes, roomId: selectedRoomId,
       status: modalStatus, holdStartedAt: holdStartedAt, holdPrompted: false
     };
     saveBookings(); renderGrid(); closeModal();

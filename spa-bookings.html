@@ -110,6 +110,7 @@
     overflow: hidden;
     box-shadow: 0 2px 10px rgba(0,0,0,0.04);
     display: grid;
+    position: relative;
     grid-template-columns: 60px repeat(var(--n-therapists), 1fr);
     grid-auto-rows: 15px;
   }
@@ -157,6 +158,7 @@
   .slot-therapist { font-size: 7.5px; font-weight: 600; opacity: 0.85; line-height: 1.1; }
   .slot.drag-over .slot-inner { outline: 3px solid #0D9488; outline-offset: -3px; }
   .shift-frame { outline: 2.5px solid #0F1E2E; outline-offset: -1.5px; border-radius: 4px; pointer-events: none; z-index: 3; }
+  .grid-now-line { position: absolute; left: 0; right: 0; height: 0; border-top: 2.5px dashed #0F1E2E; z-index: 6; pointer-events: none; }
 
   /* Modal */
   .modal-bg { display: none; position: fixed; inset: 0; background: rgba(15,30,46,0.55); align-items: center; justify-content: center; z-index: 200; padding: 20px; }
@@ -812,11 +814,23 @@
       html += '<div class="shift-frame" style="grid-column:' + col + ';grid-row:' + frameRowStart + ' / span ' + frameSpan + '"></div>';
     });
 
+    // A live horizontal line marking the current time, spanning across every therapist
+    // column - the header is 4 rows (60px) tall, and every minute after 9am is exactly 1px
+    // further down (15px per 15-minute slot), so the offset is a simple, exact calculation.
+    const nowDate = new Date();
+    const nowMinutesOfDay = nowDate.getHours() * 60 + nowDate.getMinutes();
+    const dayStartMin = 9 * 60, dayEndMin = 22 * 60;
+    if(nowMinutesOfDay >= dayStartMin && nowMinutesOfDay <= dayEndMin){
+      const topPx = 60 + (nowMinutesOfDay - dayStartMin);
+      html += '<div class="grid-now-line" style="top:' + topPx + 'px"></div>';
+    }
+
     grid.style.setProperty('--n-therapists', THERAPISTS.length);
     grid.style.gridTemplateRows = 'repeat(' + (totalRows + 4) + ', 15px)';
     grid.innerHTML = html;
     if(typeof renderRoomsPanel === 'function') renderRoomsPanel();
   }
+  setInterval(renderGrid, 60000); // keep the now-line current even with no other changes
 
   // ── Three drag sources: an unassigned therapist, an existing booking being moved, or a
   // confirmed queue item being dragged straight onto a free slot to allocate it there ──

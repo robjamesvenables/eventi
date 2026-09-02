@@ -878,8 +878,13 @@
     const fits = (h + info.span <= TIME_SLOTS.length) && spanFree(ti, h, info.span, info.ignoreKey);
     e.currentTarget.classList.toggle('drag-over', fits);
     e.currentTarget.classList.toggle('drag-invalid', !fits);
+    const t = THERAPISTS[ti];
+    showAppTooltip(e, (t ? t.name + ' — ' : '') + fmtTimeSlot(TIME_SLOTS[h]));
   }
-  function dragLeave(e){ e.currentTarget.classList.remove('drag-over', 'drag-invalid'); }
+  function dragLeave(e){
+    e.currentTarget.classList.remove('drag-over', 'drag-invalid');
+    hideAppTooltip();
+  }
 
   function spanFree(ti, startH, span, ignoreKey){
     for(let i = 0; i < span; i++){
@@ -921,6 +926,7 @@
   function drop(e, targetKey){
     e.preventDefault();
     e.currentTarget.classList.remove('drag-over');
+    hideAppTooltip();
     const parts = targetKey.split('-');
     const targetTi = Number(parts[0]), targetH = Number(parts[1]);
 

@@ -885,6 +885,25 @@
     return true;
   }
 
+  // Same idea as spanFree, but for the chosen Room instead of the therapist - a room can only
+  // be used by one booking at a time regardless of which therapist or column it's on, so this
+  // checks across ALL bookings, not just one therapist's column.
+  function roomSpanFree(roomId, startH, span, ignoreKey){
+    if(!roomId) return true; // nothing chosen yet, nothing to conflict with
+    for(const key in bookings){
+      if(key === ignoreKey) continue;
+      const b = bookings[key];
+      if(b.roomId !== roomId) continue;
+      const parts = key.split('-');
+      const bStart = Number(parts[1]);
+      const svc = serviceByCode(b.serviceCode);
+      const bSpan = svc ? slotsForDuration(svc.duration) : 1;
+      const overlaps = startH < bStart + bSpan && startH + span > bStart;
+      if(overlaps) return false;
+    }
+    return true;
+  }
+
   function drop(e, targetKey){
     e.preventDefault();
     e.currentTarget.classList.remove('drag-over');
@@ -934,6 +953,10 @@
       const span = svc ? slotsForDuration(svc.duration) : 1;
       if(!spanFree(targetTi, targetH, span, key)){
         appAlert('That time is already taken — clear it first, or drop somewhere free.');
+        return;
+      }
+      if(!roomSpanFree(b.roomId, targetH, span, key)){
+        appAlert('That room is already booked for part of that time — this booking can\u2019t move there.');
         return;
       }
       delete bookings[key];
@@ -1098,6 +1121,10 @@
     }
     if(!spanFree(newTi, oldStartH, span, modalKey)){
       appAlert('That therapist already has something booked during part of that time.');
+      return;
+    }
+    if(!roomSpanFree(selectedRoomId, oldStartH, span, modalKey)){
+      appAlert('That room is already booked for part of that time — pick a different room or time.');
       return;
     }
 

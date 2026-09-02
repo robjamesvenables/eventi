@@ -73,6 +73,11 @@
   .rooms-legend-item { display: flex; align-items: center; gap: 3px; font-size: 9.5px; font-weight: 700; color: rgba(255,255,255,0.7); }
   .rooms-legend-dot { width: 7px; height: 7px; border-radius: 2px; }
   .rooms-body { padding: 12px 14px; max-height: 260px; overflow-y: auto; }
+  .room-hours-row { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; position: sticky; top: -12px; background: #E9EDF3; z-index: 2; padding-top: 2px; }
+  .room-hours-spacer { width: 50px; flex-shrink: 0; }
+  .room-hours-labels { flex: 1; display: flex; }
+  .room-hours-labels span { flex: 1; font-size: 8px; font-weight: 700; color: #64748B; text-align: left; }
+  .room-hours-timer-spacer { width: 26px; flex-shrink: 0; }
   .room-row { display: flex; align-items: center; gap: 8px; margin-bottom: 7px; }
   .room-row-name { font-size: 10.5px; font-weight: 800; color: #0F1E2E; width: 50px; flex-shrink: 0; }
   .room-bar { flex: 1; height: 16px; border-radius: 4px; background: #DCE2EB; display: flex; overflow: hidden; }
@@ -523,7 +528,15 @@
     const now = new Date();
     const nowMinutes = now.getHours() * 60 + now.getMinutes();
 
-    list.innerHTML = ROOMS.map(function(room){
+    // Hour labels across the top, aligned to the bars beneath - one per hour, 9am to 9pm.
+    let hoursHtml = '<div class="room-hours-row"><div class="room-hours-spacer"></div><div class="room-hours-labels">';
+    for(let h = 9; h <= 21; h++){
+      const label = h === 12 ? '12' : (h > 12 ? h - 12 : h);
+      hoursHtml += '<span>' + label + '</span>';
+    }
+    hoursHtml += '</div><div class="room-hours-timer-spacer"></div></div>';
+
+    const roomsHtml = ROOMS.map(function(room){
       let barHtml = '';
       const segWidth = (100 / TIME_SLOTS.length).toFixed(3);
       TIME_SLOTS.forEach(function(hh, hIdx){
@@ -544,6 +557,8 @@
 
       return '<div class="room-row"><div class="room-row-name">' + room.name + '</div><div class="room-bar">' + barHtml + '</div>' + timerHtml + '</div>';
     }).join('');
+
+    list.innerHTML = hoursHtml + roomsHtml;
   }
   setInterval(renderRoomsPanel, 30000); // live countdown - refresh every 30s
 

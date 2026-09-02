@@ -114,6 +114,12 @@
   }
   .vacant .slot-inner { background: #F1F5F9; border: 1.5px solid #E2E8F0; color: #94A3B8; opacity: 0.9; }
   .vacant:hover .slot-inner, .vacant.drag-over .slot-inner { opacity: 1; background: #E2E8F0; }
+  .vacant.on-shift .slot-inner { background: white; border: 1.5px solid #E8EBEF; opacity: 1; }
+  .vacant.on-shift:hover .slot-inner, .vacant.on-shift.drag-over .slot-inner { background: #F8FAFC; }
+  .vacant.off-shift .slot-inner { background: #E2E8F0; border: 1.5px solid #CBD5E1; opacity: 0.65; }
+  .vacant.day-holiday .slot-inner { background: #FEF3C7; border: 1.5px solid #FDE68A; color: #92400E; opacity: 1; }
+  .vacant.day-sick .slot-inner { background: #FBD5DA; border: 1.5px solid #F5A9B3; color: #9F1239; opacity: 1; }
+  .vacant.day-emergency .slot-inner { background: #E0E4FB; border: 1.5px solid #C3C9F5; color: #3730A3; opacity: 1; }
   .hold .slot-inner { background: #D9A441; color: white; cursor: grab; }
   .booked .slot-inner { background: #D97757; color: white; cursor: grab; }
   .slot-code { font-size: 12px; font-weight: 900; letter-spacing: 0.4px; line-height: 1.1; }
@@ -170,6 +176,13 @@
   .confirm-btn-wait { background: #F59E0B; color: white; }
   .confirm-btn-cancel { background: #F1F5F9; color: #64748B; }
 
+  .shift-btns { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 4px; }
+  .shift-btn {
+    border: 1.5px solid #E2E8F0; border-radius: 9px; background: white; color: #0F1E2E;
+    font-family: inherit; font-size: 12px; font-weight: 700; padding: 10px 8px; cursor: pointer;
+    text-align: center; line-height: 1.3;
+  }
+  .shift-btn.active { border-color: transparent; color: white; }
   .skill-item { display: flex; align-items: center; gap: 10px; padding: 9px 0; border-bottom: 1px solid #F1F5F9; font-size: 13px; font-weight: 600; color: #0F1E2E; }
   .skill-item:last-child { border-bottom: none; }
   .skill-check { width: 20px; height: 20px; border-radius: 50%; background: #0D9488; color: white; display: flex; align-items: center; justify-content: center; font-size: 12px; flex-shrink: 0; }
@@ -285,7 +298,9 @@
     <div class="modal-box">
       <div class="modal-title" id="tiName"></div>
       <div class="modal-sub" id="tiSub"></div>
-      <div class="modal-label">Services offered</div>
+      <div class="modal-label">Today's Shift</div>
+      <div id="tiShiftBtns" class="shift-btns"></div>
+      <div class="modal-label" style="margin-top:16px">Services offered</div>
       <div id="tiSkills" style="margin-bottom:18px"></div>
       <button class="modal-btn modal-btn-cancel" style="width:100%" onclick="closeTherapistInfo()">Close</button>
     </div>
@@ -573,7 +588,8 @@
         }
         if(covered[hIdx] !== undefined) return; // covered by an earlier-starting booking, skip
 
-        html += '<div class="slot vacant" style="grid-column:' + col + ';grid-row:' + rowStart + ' / span ' + ROWS_PER_SLOT + '" ' +
+        const shiftClass = shiftClassFor(t.name, hIdx);
+        html += '<div class="slot vacant' + (shiftClass ? ' ' + shiftClass : '') + '" style="grid-column:' + col + ';grid-row:' + rowStart + ' / span ' + ROWS_PER_SLOT + '" ' +
             'onclick="openSlot(\'' + key + '\')" ondragover="dragOver(event,\'' + key + '\')" ondragleave="dragLeave(event)" ondrop="drop(event,\'' + key + '\')">' +
           '<div class="slot-inner"></div>' +
         '</div>';
@@ -859,12 +875,62 @@
   document.getElementById('modalBg').addEventListener('click', function(e){ if(e.target === this) closeModal(); });
 
   // ── Therapist info popup ──
+  // ── Therapist shifts - defines which hours each column is "working" (white) vs "off"
+  // (grey), or a whole-day status like holiday/sick/emergency leave (its own pastel colour).
+  const SHIFTS = {
+    morning:   { label: 'Morning<br>9am \u2013 5pm',  startIdx: 0,  endIdx: 32 },
+    night:     { label: 'Night<br>1pm \u2013 10pm',   startIdx: 16, endIdx: 52 }
+  };
+  const DAY_STATUSES = {
+    holiday:   { label: 'Holiday' },
+    sick:      { label: 'Sick' },
+    emergency: { label: 'Emergency<br>Leave' }
+  };
+  const SHIFT_STORAGE_KEY = 'mavis_spa_shifts_demo_v1';
+  let therapistShifts = {}; // { [therapistName]: 'morning' | 'night' | 'holiday' | 'sick' | 'emergency' }
+
+  function loadShifts(){
+    try{
+      const saved = localStorage.getItem(SHIFT_STORAGE_KEY);
+      therapistShifts = saved ? JSON.parse(saved) : {};
+    }catch(e){ therapistShifts = {}; }
+  }
+  function saveShifts(){
+    try{ localStorage.setItem(SHIFT_STORAGE_KEY, JSON.stringify(therapistShifts)); }catch(e){}
+  }
+  function setTherapistShift(name, key){
+    therapistShifts[name] = key;
+    saveShifts();
+    renderGrid();
+    openTherapistInfo(name); // refresh the modal in place so the active button updates
+  }
+  // For a given therapist + time slot index, works out which class the vacant box should
+  // get: on-shift (white), off-shift (grey), or one of the day-long statuses.
+  function shiftClassFor(name, hIdx){
+    const status = therapistShifts[name];
+    if(!status) return ''; // no shift set yet - leave as the normal neutral vacant look
+    if(DAY_STATUSES[status]) return 'day-' + status;
+    const shift = SHIFTS[status];
+    if(!shift) return '';
+    return (hIdx >= shift.startIdx && hIdx < shift.endIdx) ? 'on-shift' : 'off-shift';
+  }
+
   const SKILLS_DEMO = ['Foot Massage', 'Full Body Massage', 'Manicure', 'Pedicure'];
   function openTherapistInfo(name){
     const t = THERAPISTS.find(function(x){ return x.name === name; });
     if(!t) return;
     document.getElementById('tiName').textContent = t.name;
     document.getElementById('tiSub').textContent = (t.gender === 'M' ? 'Male' : 'Female') + ' therapist';
+
+    const current = therapistShifts[name] || null;
+    const allOptions = Object.assign({}, SHIFTS, DAY_STATUSES);
+    const colorFor = { morning: '#0D9488', night: '#0F1E2E', holiday: '#C4973B', sick: '#D9808C', emergency: '#6366F1' };
+    document.getElementById('tiShiftBtns').innerHTML = Object.keys(allOptions).map(function(key){
+      const isActive = current === key;
+      const style = isActive ? 'style="background:' + colorFor[key] + '"' : '';
+      return '<button class="shift-btn' + (isActive ? ' active' : '') + '" ' + style + ' onclick="setTherapistShift(\'' + name + '\',\'' + key + '\')">' + allOptions[key].label + '</button>';
+    }).join('');
+
     document.getElementById('tiSkills').innerHTML = SKILLS_DEMO.map(function(s){
       return '<div class="skill-item"><span class="skill-check">\u2713</span>' + s + '</div>';
     }).join('');
@@ -942,6 +1008,7 @@
   fillGridForDemo();
   loadQueue();
   seedQueueForDemo();
+  loadShifts();
   renderGrid();
   renderQueue();
 </script>

@@ -33,8 +33,8 @@
   .legend-item { display: flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600; color: rgba(255,255,255,0.85); }
   .legend-dot { width: 10px; height: 10px; border-radius: 3px; }
 
-  .queue-panel { background: #E9EDF3; border-bottom: 1px solid #DCE2EB; }
-  .queue-header { background: #0F1E2E; padding: 8px 22px; display: flex; align-items: center; gap: 10px; }
+  .queue-panel { background: #E9EDF3; border: 1.5px solid #DCE2EB; border-radius: 14px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); margin: 20px 22px; overflow: hidden; }
+  .queue-header { background: #0F1E2E; padding: 8px 22px; display: flex; align-items: center; gap: 10px; border-radius: 12px 12px 0 0; }
   .queue-ico { width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
   .queue-title { font-size: 13px; font-weight: 700; color: white; text-transform: uppercase; letter-spacing: 1px; }
   .queue-live-dot { width: 7px; height: 7px; border-radius: 50%; background: #4ADE80; box-shadow: 0 0 0 3px rgba(74,222,128,0.25); }
@@ -479,17 +479,13 @@
     });
 
     const optionsEl = document.getElementById('allocateOptions');
-    if(!available.length){
-      optionsEl.innerHTML = '<div class="allocate-none">No therapist is free for this treatment at ' + fmtHalfHour(HALF_HOURS[item.requestedH]) + '. Try a different time, or check back once a slot frees up.</div>';
-    } else {
-      optionsEl.innerHTML = available.map(function(t){
-        const ti = therapistIndexByName(t.name);
-        return '<div class="allocate-option" onclick="allocateTo(' + ti + ')">' +
-          '<div class="allocate-option-name"><span class="gender-badge ' + t.gender + '">' + t.gender + '</span>' + t.name + '</div>' +
-          '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#0D9488" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>' +
-        '</div>';
-      }).join('');
-    }
+    optionsEl.innerHTML = available.map(function(t){
+      const ti = therapistIndexByName(t.name);
+      return '<div class="allocate-option" onclick="allocateTo(' + ti + ')">' +
+        '<div class="allocate-option-name"><span class="gender-badge ' + t.gender + '">' + t.gender + '</span>' + t.name + '</div>' +
+        '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#0D9488" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>' +
+      '</div>';
+    }).join('');
     document.getElementById('allocateBg').classList.add('show');
   }
   function closeAllocateModal(){
@@ -905,6 +901,18 @@
   renderTherapistChips();
   renderGrid();
   renderQueue();
+
+  // Pause the auto-scroll while hovering or touching, same as the Highlights carousel does.
+  const queueOuter = document.querySelector('.queue-scroll-outer');
+  const queueInner = document.getElementById('queueList');
+  if(queueOuter && queueInner){
+    ['mouseenter', 'touchstart'].forEach(function(evt){
+      queueOuter.addEventListener(evt, function(){ queueInner.classList.add('paused'); }, {passive:true});
+    });
+    ['mouseleave', 'touchend'].forEach(function(evt){
+      queueOuter.addEventListener(evt, function(){ queueInner.classList.remove('paused'); }, {passive:true});
+    });
+  }
 </script>
 
 </body>

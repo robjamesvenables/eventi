@@ -1644,33 +1644,43 @@
   // Nudges reception once a waiting-list item has gone unallocated too long - fires once when
   // it first crosses 15 minutes, and again once when it crosses 30, using the same "prompted"
   // flag pattern as the hold-release check above so it never repeats itself every cycle.
+  // On top of that, a global 5-minute cooldown across ALL items means at most one popup shows
+  // in any 5-minute stretch, even if several different clients cross their threshold around
+  // the same time - otherwise a handful of people going amber together felt like it kept
+  // interrupting, even though technically each one only ever prompts once.
+  let lastQueueUrgencyPopupAt = 0;
   function checkQueueUrgency(){
     const anyModalOpen = document.getElementById('modalBg').classList.contains('show') ||
                           document.getElementById('confirmBg').classList.contains('show') ||
                           document.getElementById('queueEditBg').classList.contains('show');
-    if(anyModalOpen) return;
-    for(let i = 0; i < pendingQueue.length; i++){
-      const item = pendingQueue[i];
-      const ageMin = (Date.now() - (item.createdAt || Date.now())) / 60000;
-      if(ageMin >= 30 && !item.redPrompted){
-        item.redPrompted = true;
-        saveQueue();
-        showConfirm({
-          title: 'Still Waiting',
-          msg: item.client + ' has been waiting over 30 minutes with no therapist or room allocated yet - they may be arriving soon.',
-          buttons: [{ label: 'Understood', cls: 'confirm-btn-danger', onClick: function(){} }]
-        });
-        break;
-      }
-      if(ageMin >= 15 && !item.amberPrompted){
-        item.amberPrompted = true;
-        saveQueue();
-        showConfirm({
-          title: 'Needs Allocating',
-          msg: item.client + '\u2019s booking has been waiting 15 minutes - worth allocating a therapist and room soon.',
-          buttons: [{ label: 'Understood', cls: 'confirm-btn-cancel', onClick: function(){} }]
-        });
-        break;
+    if(anyModalOpen){ return; }
+    const inCooldown = (Date.now() - lastQueueUrgencyPopupAt) < 5 * 60 * 1000;
+    if(!inCooldown){
+      for(let i = 0; i < pendingQueue.length; i++){
+        const item = pendingQueue[i];
+        const ageMin = (Date.now() - (item.createdAt || Date.now())) / 60000;
+        if(ageMin >= 30 && !item.redPrompted){
+          item.redPrompted = true;
+          lastQueueUrgencyPopupAt = Date.now();
+          saveQueue();
+          showConfirm({
+            title: 'Still Waiting',
+            msg: item.client + ' has been waiting over 30 minutes with no therapist or room allocated yet - they may be arriving soon.',
+            buttons: [{ label: 'Understood', cls: 'confirm-btn-danger', onClick: function(){} }]
+          });
+          break;
+        }
+        if(ageMin >= 15 && !item.amberPrompted){
+          item.amberPrompted = true;
+          lastQueueUrgencyPopupAt = Date.now();
+          saveQueue();
+          showConfirm({
+            title: 'Needs Allocating',
+            msg: item.client + '\u2019s booking has been waiting 15 minutes - worth allocating a therapist and room soon.',
+            buttons: [{ label: 'Understood', cls: 'confirm-btn-cancel', onClick: function(){} }]
+          });
+          break;
+        }
       }
     }
     renderQueue(); // badges are time-based, so refresh even if nothing crossed a threshold

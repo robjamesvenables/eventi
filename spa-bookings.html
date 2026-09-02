@@ -53,14 +53,22 @@
   }
   @keyframes queueScroll { from { transform: translateY(0); } to { transform: translateY(-50%); } }
   .queue-card {
-    background: white; border: 1.5px solid #E2E8F0; border-radius: 10px; padding: 10px 14px;
-    cursor: pointer; display: flex; align-items: center; justify-content: space-between; gap: 10px;
-    transition: border-color 0.15s; flex-shrink: 0;
+    background: white; border: 1.5px solid #E2E8F0; border-radius: 10px; padding: 12px 14px;
+    cursor: pointer; position: relative; transition: border-color 0.15s; flex-shrink: 0;
   }
   .queue-card:hover { border-color: #0D9488; }
-  .queue-card-name { font-size: 13px; font-weight: 800; color: #0F1E2E; }
-  .queue-card-service { font-size: 11px; color: #64748B; margin-top: 1px; }
-  .queue-card-time { font-size: 11px; font-weight: 700; color: #C4973B; white-space: nowrap; }
+  .queue-card-toprow { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; flex-wrap: wrap; }
+  .queue-card-name { font-size: 14px; font-weight: 800; color: #0F1E2E; }
+  .queue-card-tags { display: flex; align-items: center; gap: 6px; margin-bottom: 6px; flex-wrap: wrap; }
+  .queue-card-service { font-size: 11.5px; color: #64748B; }
+  .queue-drag-handle {
+    position: absolute; top: 12px; right: 12px; width: 26px; height: 26px; border-radius: 7px;
+    background: #F0FDFA; display: flex; align-items: center; justify-content: center; color: #0D9488;
+  }
+  .queue-confirm-btn {
+    width: 100%; margin-top: 8px; background: #0F1E2E; color: white; border: none; border-radius: 8px;
+    padding: 9px; font-family: inherit; font-size: 12px; font-weight: 700; cursor: pointer;
+  }
   .queue-empty { font-size: 12.5px; color: #94A3B8; text-align: center; padding: 30px 14px; }
 
   .therapist-strip { background: white; border-bottom: 1px solid #E2E8F0; padding: 14px 22px; }
@@ -489,25 +497,26 @@
       const svc = serviceByCode(item.serviceCode);
       const sourceLabel = SOURCE_LABELS[item.source] || item.source;
       const sourceColor = SOURCE_COLORS[item.source] || '#94A3B8';
-      const sourceBadge = '<span style="font-size:9px;font-weight:800;color:white;background:' + sourceColor + ';padding:2px 7px;border-radius:8px;text-transform:uppercase;letter-spacing:0.3px">' + sourceLabel + '</span>';
-      const nameLink = '<span class="queue-card-name" style="text-decoration:underline;text-decoration-color:#CBD5E1;cursor:pointer" onclick="event.stopPropagation();openClientProfile(\'' + item.id + '\')">' + item.client + '</span>';
+      const sourceBadge = '<span style="font-size:9px;font-weight:800;color:white;background:' + sourceColor + ';padding:3px 8px;border-radius:8px;text-transform:uppercase;letter-spacing:0.3px">' + sourceLabel + '</span>';
+      const serviceLine = (svc ? svc.name + ' (' + svc.code + ')' : '') + ' — ' + fmtHalfHour(HALF_HOURS[item.requestedH]);
+      const nameHtml = '<span class="queue-card-name" style="text-decoration:underline;text-decoration-color:#CBD5E1;cursor:pointer" onclick="event.stopPropagation();openClientProfile(\'' + item.id + '\')">' + item.client + '</span>';
 
       if(!item.confirmed){
         return '<div class="queue-card">' +
-          '<div>' +
-            '<div style="display:flex;align-items:center;gap:8px;margin-bottom:3px">' + nameLink + sourceBadge + '</div>' +
-            '<div class="queue-card-service">' + (svc ? svc.name + ' (' + svc.code + ')' : '') + ' — ' + fmtHalfHour(HALF_HOURS[item.requestedH]) + '</div>' +
-          '</div>' +
-          '<button onclick="confirmQueueItem(\'' + item.id + '\')" style="background:#0F1E2E;color:white;border:none;border-radius:8px;padding:8px 14px;font-family:inherit;font-size:11.5px;font-weight:700;cursor:pointer;flex-shrink:0">Confirm</button>' +
+          '<div class="queue-card-toprow">' + nameHtml + '</div>' +
+          '<div class="queue-card-tags">' + sourceBadge + '</div>' +
+          '<div class="queue-card-service">' + serviceLine + '</div>' +
+          '<button class="queue-confirm-btn" onclick="confirmQueueItem(\'' + item.id + '\')">Confirm</button>' +
         '</div>';
       }
 
       return '<div class="queue-card" draggable="true" ondragstart="queueDragStart(event,\'' + item.id + '\')" ondragend="queueDragEnd(event)" style="cursor:grab">' +
-        '<div>' +
-          '<div style="display:flex;align-items:center;gap:8px;margin-bottom:3px">' + nameLink + sourceBadge + '<span style="font-size:9px;font-weight:800;color:#16A34A">\u2713 CONFIRMED</span></div>' +
-          '<div class="queue-card-service">' + (svc ? svc.name + ' (' + svc.code + ')' : '') + ' — ' + fmtHalfHour(HALF_HOURS[item.requestedH]) + '</div>' +
+        '<div class="queue-drag-handle" title="Drag onto the grid">' +
+          '<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><circle cx="9" cy="6" r="1.6"/><circle cx="15" cy="6" r="1.6"/><circle cx="9" cy="12" r="1.6"/><circle cx="15" cy="12" r="1.6"/><circle cx="9" cy="18" r="1.6"/><circle cx="15" cy="18" r="1.6"/></svg>' +
         '</div>' +
-        '<div class="queue-card-time" style="color:#0D9488">Drag onto grid →</div>' +
+        '<div class="queue-card-toprow" style="padding-right:34px">' + nameHtml + '</div>' +
+        '<div class="queue-card-tags">' + sourceBadge + '<span style="font-size:9px;font-weight:800;color:#16A34A">\u2713 CONFIRMED</span></div>' +
+        '<div class="queue-card-service">' + serviceLine + '</div>' +
       '</div>';
     }
 

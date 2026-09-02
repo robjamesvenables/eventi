@@ -73,6 +73,9 @@
   .rooms-legend-item { display: flex; align-items: center; gap: 3px; font-size: 9.5px; font-weight: 700; color: rgba(255,255,255,0.7); }
   .rooms-legend-dot { width: 7px; height: 7px; border-radius: 2px; }
   .rooms-body { padding: 12px 14px; max-height: 260px; overflow-y: auto; }
+  #roomsList { position: relative; }
+  .rooms-now-line { position: absolute; top: 0; height: 100%; width: 2px; background: #EF4444; z-index: 4; pointer-events: none; }
+  .rooms-now-dot { position: absolute; top: -3px; left: -3px; width: 8px; height: 8px; border-radius: 50%; background: #EF4444; }
   .room-hours-row { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; position: sticky; top: -12px; background: #E9EDF3; z-index: 2; padding-top: 2px; }
   .room-hours-spacer { width: 50px; flex-shrink: 0; }
   .room-hours-labels { flex: 1; display: flex; }
@@ -558,7 +561,17 @@
       return '<div class="room-row"><div class="room-row-name">' + room.name + '</div><div class="room-bar">' + barHtml + '</div>' + timerHtml + '</div>';
     }).join('');
 
-    list.innerHTML = hoursHtml + roomsHtml;
+    // A live vertical line marking the current time, aligned across the bars - same fixed
+    // left/right offsets as the hour labels above (50px name column + 8px gap on the left,
+    // 8px gap + 26px timer column on the right), so it lines up exactly with the bars.
+    const dayStartMin = 9 * 60, dayEndMin = 22 * 60;
+    const nowFraction = Math.max(0, Math.min(1, (nowMinutes - dayStartMin) / (dayEndMin - dayStartMin)));
+    const nowLeft = 'calc(50px + 8px + ' + nowFraction + ' * (100% - 50px - 8px - 8px - 26px))';
+    const nowLineHtml = (nowMinutes >= dayStartMin && nowMinutes <= dayEndMin)
+      ? '<div class="rooms-now-line" style="left:' + nowLeft + '"><div class="rooms-now-dot"></div></div>'
+      : '';
+
+    list.innerHTML = nowLineHtml + hoursHtml + roomsHtml;
   }
   setInterval(renderRoomsPanel, 30000); // live countdown - refresh every 30s
 

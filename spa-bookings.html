@@ -131,6 +131,21 @@
   .modal-input:focus { border-color: #0D9488; }
   textarea.modal-input { resize: vertical; min-height: 60px; }
   select.modal-input { -webkit-appearance: none; appearance: none; background: white; cursor: pointer; }
+  .field-picker {
+    width: 100%; padding: 11px 14px; border: 1.5px solid #E2E8F0; border-radius: 9px;
+    font-family: inherit; font-size: 14.5px; color: #0F1E2E; margin-bottom: 16px;
+    box-sizing: border-box; cursor: pointer; background: white;
+    display: flex; align-items: center; justify-content: space-between; gap: 8px;
+  }
+  .field-picker:hover { border-color: #0D9488; }
+  .field-picker.placeholder { color: #94A3B8; }
+  .picker-option {
+    padding: 12px 14px; border: 1.5px solid #E2E8F0; border-radius: 10px; margin-bottom: 8px;
+    cursor: pointer; display: flex; align-items: center; justify-content: space-between; gap: 10px;
+    font-size: 13.5px; font-weight: 700; color: #0F1E2E;
+  }
+  .picker-option:hover { border-color: #0D9488; background: #F0FDFA; }
+  .picker-option-sub { font-size: 11px; font-weight: 600; color: #94A3B8; margin-top: 2px; }
   .service-hint { font-size: 11px; color: #94A3B8; margin: -10px 0 16px; }
   .status-pills { display: flex; gap: 8px; margin-bottom: 22px; }
   .status-pill { flex: 1; padding: 10px; border-radius: 9px; border: 1.5px solid #E2E8F0; background: white; font-family: inherit; font-size: 12.5px; font-weight: 700; cursor: pointer; text-align: center; color: #64748B; }
@@ -226,9 +241,15 @@
       <div class="modal-title" id="modalTitle">Add Booking</div>
       <div class="modal-sub" id="modalSub"></div>
       <div class="modal-label">Therapist</div>
-      <select class="modal-input" id="modalTherapistSelect"></select>
+      <div class="field-picker" id="therapistPickerBtn" onclick="openTherapistPicker()">
+        <span id="therapistPickerLabel">Select therapist</span>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#94A3B8" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+      </div>
       <div class="modal-label">Treatment</div>
-      <select class="modal-input" id="modalServiceSelect" onchange="onServiceChange()"></select>
+      <div class="field-picker" id="servicePickerBtn" onclick="openServicePicker()">
+        <span id="servicePickerLabel">Select treatment</span>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#94A3B8" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+      </div>
       <div class="service-hint" id="serviceHint"></div>
       <div class="modal-label">Client Name</div>
       <input type="text" class="modal-input" id="modalClientInput" placeholder="e.g. Sarah Johnson">
@@ -248,6 +269,14 @@
       <div style="text-align:center;margin-top:14px" id="clearWrap">
         <button class="modal-btn-clear" style="background:none;border:none;font-family:inherit;font-size:12.5px;font-weight:700;cursor:pointer" onclick="clearModal()">Clear this slot</button>
       </div>
+    </div>
+  </div>
+
+  <div class="modal-bg" id="pickerBg">
+    <div class="modal-box">
+      <div class="modal-title" id="pickerTitle">Choose</div>
+      <div id="pickerList"></div>
+      <button class="modal-btn modal-btn-cancel" style="width:100%;margin-top:6px" onclick="closePicker()">Cancel</button>
     </div>
   </div>
 
@@ -679,18 +708,56 @@
   let modalKey = null;
   let modalStatus = 'hold';
 
-  function populateServiceSelect(selectedCode){
-    const sel = document.getElementById('modalServiceSelect');
-    sel.innerHTML = SERVICES.map(function(s){
-      return '<option value="' + s.code + '">' + s.name + ' — ' + s.duration + ' min (USD$' + s.price + ')</option>';
-    }).join('');
-    sel.value = selectedCode || SERVICES[0].code;
-    onServiceChange();
+  // Selected values live in plain state now, not a native <select> - set via the in-app picker.
+  let selectedTherapistName = null;
+  let selectedServiceCode = null;
+
+  function setTherapistLabel(name){
+    selectedTherapistName = name;
+    const label = document.getElementById('therapistPickerLabel');
+    const t = THERAPISTS.find(function(x){ return x.name === name; });
+    label.textContent = t ? (t.name + ' (' + t.gender + ')') : 'Select therapist';
+    document.getElementById('therapistPickerBtn').classList.toggle('placeholder', !t);
   }
-  function onServiceChange(){
-    const svc = serviceByCode(document.getElementById('modalServiceSelect').value);
+  function setServiceLabel(code){
+    selectedServiceCode = code;
+    const svc = serviceByCode(code);
+    const label = document.getElementById('servicePickerLabel');
+    label.textContent = svc ? (svc.name + ' — ' + svc.duration + ' min (USD$' + svc.price + ')') : 'Select treatment';
+    document.getElementById('servicePickerBtn').classList.toggle('placeholder', !svc);
     document.getElementById('serviceHint').textContent = svc ? ('Code shown on the grid: ' + svc.code + ' — ' + svc.duration + ' minutes') : '';
   }
+
+  function openTherapistPicker(){
+    const list = document.getElementById('pickerList');
+    document.getElementById('pickerTitle').textContent = 'Choose Therapist';
+    list.innerHTML = THERAPISTS.map(function(t){
+      return '<div class="picker-option" onclick="pickTherapist(\'' + t.name + '\')">' +
+        '<span style="display:flex;align-items:center;gap:8px"><span class="gender-badge ' + t.gender + '">' + t.gender + '</span>' + t.name + '</span>' +
+      '</div>';
+    }).join('');
+    document.getElementById('pickerBg').classList.add('show');
+  }
+  function pickTherapist(name){
+    setTherapistLabel(name);
+    closePicker();
+  }
+  function openServicePicker(){
+    const list = document.getElementById('pickerList');
+    document.getElementById('pickerTitle').textContent = 'Choose Treatment';
+    list.innerHTML = SERVICES.map(function(s){
+      return '<div class="picker-option" onclick="pickService(\'' + s.code + '\')">' +
+        '<div><div>' + s.name + '</div><div class="picker-option-sub">' + s.duration + ' min — USD$' + s.price + '</div></div>' +
+      '</div>';
+    }).join('');
+    document.getElementById('pickerBg').classList.add('show');
+  }
+  function pickService(code){
+    setServiceLabel(code);
+    closePicker();
+  }
+  function closePicker(){ document.getElementById('pickerBg').classList.remove('show'); }
+  document.getElementById('pickerBg').addEventListener('click', function(e){ if(e.target === this) closePicker(); });
 
   function openSlot(key){
     modalKey = key;
@@ -702,11 +769,8 @@
     document.getElementById('modalTitle').textContent = existing ? 'Edit Booking' : 'Add Booking';
     document.getElementById('modalSub').textContent = fmtHalfHour(HALF_HOURS[hIdx]);
 
-    const select = document.getElementById('modalTherapistSelect');
-    select.innerHTML = THERAPISTS.map(function(t){ return '<option value="' + t.name + '">' + t.name + ' (' + t.gender + ')</option>'; }).join('');
-    select.value = therapist.name;
-
-    populateServiceSelect(existing ? existing.serviceCode : null);
+    setTherapistLabel(therapist.name);
+    setServiceLabel(existing ? existing.serviceCode : SERVICES[0].code);
     document.getElementById('modalClientInput').value = existing ? existing.client : '';
     document.getElementById('modalPhoneInput').value = existing ? (existing.phone || '') : '';
     document.getElementById('modalNotesInput').value = existing ? (existing.notes || '') : '';
@@ -726,8 +790,8 @@
     const client = document.getElementById('modalClientInput').value.trim();
     const phone = document.getElementById('modalPhoneInput').value.trim();
     const notes = document.getElementById('modalNotesInput').value.trim();
-    const chosenTherapist = document.getElementById('modalTherapistSelect').value;
-    const serviceCode = document.getElementById('modalServiceSelect').value;
+    const chosenTherapist = selectedTherapistName;
+    const serviceCode = selectedServiceCode;
     if(!client){ appAlert('Enter a client name first.'); return; }
 
     const oldParts = modalKey.split('-');

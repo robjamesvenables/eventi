@@ -1062,14 +1062,23 @@
     queueOuter.addEventListener('mouseleave', function(){ queueInner.style.animationPlayState = 'running'; });
 
     let resumeTimer = null;
+    function scheduleResume(delayMs){
+      clearTimeout(resumeTimer);
+      resumeTimer = setTimeout(function(){ queueInner.style.animationPlayState = 'running'; }, delayMs);
+    }
     queueOuter.addEventListener('touchstart', function(){
       queueInner.style.animationPlayState = 'paused';
-      clearTimeout(resumeTimer);
+      // Safety net: resume automatically 6s after the touch starts no matter what, even if
+      // touchend/touchcancel never fire for some reason - so it can never get stuck paused.
+      scheduleResume(6000);
     }, {passive:true});
-    queueOuter.addEventListener('touchend', function(){
-      clearTimeout(resumeTimer);
-      resumeTimer = setTimeout(function(){ queueInner.style.animationPlayState = 'running'; }, 4000);
-    }, {passive:true});
+    // Both touchend (normal lift-off) and touchcancel (the browser interrupted the touch,
+    // e.g. treating it as a scroll gesture) should resume it a moment after - covering
+    // whichever one actually fires, since relying on just one left it stuck when the other
+    // fired instead.
+    ['touchend', 'touchcancel'].forEach(function(evt){
+      queueOuter.addEventListener(evt, function(){ scheduleResume(1500); }, {passive:true});
+    });
   }
 </script>
 

@@ -345,7 +345,7 @@
     </div>
   </div>
 
-  <div class="modal-bg" id="confirmBg">
+  <div class="modal-bg" id="confirmBg" style="z-index:220">
     <div class="confirm-box" id="confirmBox"></div>
   </div>
 
@@ -1206,6 +1206,30 @@
     saveShifts();
     renderGrid();
     openTherapistInfo(name); // refresh the modal in place so the active button updates
+    warnIfTherapistHasBookings(name, key);
+  }
+  function warnIfTherapistHasBookings(name, statusKey){
+    const ti = therapistIndexByName(name);
+    const affected = [];
+    for(const bkey in bookings){
+      const parts = bkey.split('-');
+      if(Number(parts[0]) !== ti) continue;
+      affected.push({ hIdx: Number(parts[1]), booking: bookings[bkey] });
+    }
+    if(!affected.length) return;
+    affected.sort(function(a, b){ return a.hIdx - b.hIdx; });
+    const listText = affected.map(function(a){
+      return a.booking.client + ' at ' + fmtTimeSlot(TIME_SLOTS[a.hIdx]);
+    }).join('<br>');
+    const statusLabel = (DAY_STATUSES[statusKey] || {}).label || statusKey;
+    showConfirm({
+      title: 'Bookings Need Reallocating',
+      msg: '<div style="text-align:left">' + name + ' is now marked ' + statusLabel.replace('<br>', ' ') +
+        ', but still has ' + affected.length + ' booking' + (affected.length === 1 ? '' : 's') +
+        ' today under their name:<br><br>' + listText +
+        '<br><br>These need to be moved to another therapist.</div>',
+      buttons: [{ label: 'Understood', cls: 'confirm-btn-danger', onClick: function(){} }]
+    });
   }
   function clearTherapistDayStatus(name){
     delete therapistShifts[name];

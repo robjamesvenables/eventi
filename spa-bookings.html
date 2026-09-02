@@ -957,13 +957,16 @@
         appAlert('That slot isn\u2019t free for the whole treatment — try a different time or therapist.');
         return;
       }
-      bookings[targetKey] = {
-        serviceCode: item.serviceCode, client: item.client, phone: item.phone, notes: item.clientNotes || '',
-        status: 'booked', holdStartedAt: null, holdPrompted: false
-      };
-      pendingQueue = pendingQueue.filter(function(q){ return q.id !== id; });
-      saveBookings(); saveQueue();
-      renderGrid(); renderQueue();
+      // Open the booking form pre-filled from the queue item, rather than saving directly -
+      // this makes sure Room (and everything else required) actually gets set before it
+      // becomes a real booking, instead of drag-and-drop skipping the form entirely.
+      openSlot(targetKey);
+      document.getElementById('modalClientInput').value = item.client;
+      document.getElementById('modalPhoneInput').value = item.phone || '';
+      document.getElementById('modalNotesInput').value = item.clientNotes || '';
+      setServiceLabel(item.serviceCode);
+      setModalStatus('booked');
+      window._pendingQueueRemoval = id;
     }
   }
 
@@ -1067,7 +1070,11 @@
     document.getElementById('pillHold').classList.toggle('active-hold', status==='hold');
     document.getElementById('pillBooked').classList.toggle('active-booked', status==='booked');
   }
-  function closeModal(){ document.getElementById('modalBg').classList.remove('show'); modalKey = null; }
+  function closeModal(){
+    document.getElementById('modalBg').classList.remove('show');
+    modalKey = null;
+    window._pendingQueueRemoval = null; // cancelling doesn't remove them from the queue
+  }
 
   function saveModal(){
     const client = document.getElementById('modalClientInput').value.trim();
@@ -1104,7 +1111,18 @@
       serviceCode: serviceCode, client: client, phone: phone, notes: notes, roomId: selectedRoomId,
       status: modalStatus, holdStartedAt: holdStartedAt, holdPrompted: false
     };
-    saveBookings(); renderGrid(); closeModal();
+    saveBookings();
+
+    // If this booking came from dragging a queue item, remove it from the queue now that
+    // it's actually been saved (not before - cancelling shouldn't remove them).
+    if(window._pendingQueueRemoval){
+      pendingQueue = pendingQueue.filter(function(q){ return q.id !== window._pendingQueueRemoval; });
+      saveQueue();
+      renderQueue();
+      window._pendingQueueRemoval = null;
+    }
+
+    renderGrid(); closeModal();
   }
   function clearModal(){
     delete bookings[modalKey];

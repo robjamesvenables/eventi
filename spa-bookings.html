@@ -39,13 +39,11 @@
   .queue-title { font-size: 13px; font-weight: 700; color: white; text-transform: uppercase; letter-spacing: 1px; }
   .queue-live-dot { width: 7px; height: 7px; border-radius: 50%; background: #4ADE80; box-shadow: 0 0 0 3px rgba(74,222,128,0.25); }
   .queue-count { margin-left: auto; font-size: 11px; font-weight: 700; color: rgba(255,255,255,0.6); }
-  .queue-scroll-outer { height: 108px; overflow: hidden; position: relative; padding: 0 22px; }
+  .queue-scroll-outer { height: 108px; overflow-y: auto; overflow-x: hidden; position: relative; padding: 0 22px; -webkit-overflow-scrolling: touch; }
   .queue-scroll-outer::before, .queue-scroll-outer::after { content: ''; position: absolute; left: 0; right: 0; height: 14px; z-index: 2; pointer-events: none; }
   .queue-scroll-outer::before { top: 0; background: linear-gradient(#E9EDF3, transparent); }
   .queue-scroll-outer::after { bottom: 0; background: linear-gradient(transparent, #E9EDF3); }
-  .queue-scroll-inner { display: flex; flex-direction: column; gap: 8px; padding: 12px 0; animation: queueScroll linear infinite; }
-  .queue-scroll-inner.paused { animation-play-state: paused; }
-  @keyframes queueScroll { from { transform: translateY(0); } to { transform: translateY(-50%); } }
+  .queue-scroll-inner { display: flex; flex-direction: column; gap: 8px; padding: 12px 0; }
   .queue-card {
     background: white; border: 1.5px solid #E2E8F0; border-radius: 10px; padding: 12px 14px;
     cursor: pointer; position: relative; transition: border-color 0.15s; flex-shrink: 0;
@@ -516,15 +514,10 @@
     }
 
     const cardsHtml = pendingQueue.map(cardHtml).join('');
-    // Duplicate the list once so the scroll animation can loop seamlessly at -50%.
+    // Duplicate the list once so the auto-scroll can loop seamlessly (see startQueueAutoScroll).
     const needsScroll = pendingQueue.length > 2;
     list.innerHTML = cardsHtml + (needsScroll ? cardsHtml : '');
-    if(needsScroll){
-      const duration = pendingQueue.length * 4; // slow, roughly 4s per card
-      list.style.animation = 'queueScroll ' + duration + 's linear infinite';
-    } else {
-      list.style.animation = 'none';
-    }
+    if(typeof restartQueueAutoScroll === 'function') restartQueueAutoScroll();
   }
 
   function confirmQueueItem(id){
@@ -1045,41 +1038,44 @@
   renderGrid();
   renderQueue();
 
-  // Pause the auto-scroll while interacting with it. Desktop: pauses on mouse hover, resumes
-  // when the mouse leaves - clean and immediate since a mouse can genuinely "hover". Touch:
-  // a finger can't hover, and a simple tap ends too fast for hold-based pausing to feel
-  // reliable - so any touch pauses it, and it auto-resumes a few seconds after the last touch,
-  // giving enough time to read, tap Confirm, or start a drag without fighting the animation.
-  // NOTE: pausing is done via el.style.animationPlayState directly, not a CSS class - because
-  // renderQueue() sets the animation itself as an inline style (needed to vary its duration
-  // with the queue length), and an inline style always wins over a class-based CSS rule trying
-  // to override just one part of it. Setting animationPlayState inline is the only way a pause
-  // actually takes effect here.
-  const queueOuter = document.querySelector('.queue-scroll-outer');
-  const queueInner = document.getElementById('queueList');
-  if(queueOuter && queueInner){
-    queueOuter.addEventListener('mouseenter', function(){ queueInner.style.animationPlayState = 'paused'; });
-    queueOuter.addEventListener('mouseleave', function(){ queueInner.style.animationPlayState = 'running'; });
-
-    let resumeTimer = null;
-    function scheduleResume(delayMs){
-      clearTimeout(resumeTimer);
-      resumeTimer = setTimeout(function(){ queueInner.style.animationPlayState = 'running'; }, delayMs);
-    }
-    queueOuter.addEventListener('touchstart', function(){
-      queueInner.style.animationPlayState = 'paused';
-      // Safety net: resume automatically 6s after the touch starts no matter what, even if
-      // touchend/touchcancel never fire for some reason - so it can never get stuck paused.
-      scheduleResume(6000);
-    }, {passive:true});
-    // Both touchend (normal lift-off) and touchcancel (the browser interrupted the touch,
-    // e.g. treating it as a scroll gesture) should resume it a moment after - covering
-    // whichever one actually fires, since relying on just one left it stuck when the other
-    // fired instead.
-    ['touchend', 'touchcancel'].forEach(function(evt){
-      queueOuter.addEventListener(evt, function(){ scheduleResume(1500); }, {passive:true});
-    });
+  // Auto-scroll the queue like a real ticker, but as an actual scrollable list nudged forward
+  // by JS - not a CSS transform animation. This is what makes both things work naturally:
+  // pausing on touch/hover just stops the JS nudging (immediate, no fighting a running
+  // animation), and manually scrolling with a finger or mouse wheel works for free, since
+  // it's a genuine overflow:auto element the browser already knows how to scroll.
+  let queueAutoScrollTimer = null;
+  function startQueueAutoScroll(){
+    stopQueueAutoScroll();
+    const outer = document.querySelector('.queue-scroll-outer');
+    if(!outer) return;
+    queueAutoScrollTimer = setInterval(function(){
+      if(outer.scrollHeight <= outer.clientHeight + 2) return; // not enough content to scroll
+      outer.scrollTop += 0.6;
+      const halfway = outer.scrollHeight / 2;
+      if(outer.scrollTop >= halfway){
+        outer.scrollTop -= halfway; // list is duplicated once, so this loops seamlessly
+      }
+    }, 40);
   }
+  function stopQueueAutoScroll(){
+    clearInterval(queueAutoScrollTimer);
+    queueAutoScrollTimer = null;
+  }
+  function restartQueueAutoScroll(){
+    // Called after every re-render, since the content (and whether it needs to scroll at
+    // all) may have changed.
+    startQueueAutoScroll();
+  }
+
+  const queueOuter = document.querySelector('.queue-scroll-outer');
+  if(queueOuter){
+    queueOuter.addEventListener('mouseenter', stopQueueAutoScroll);
+    queueOuter.addEventListener('mouseleave', startQueueAutoScroll);
+    queueOuter.addEventListener('touchstart', stopQueueAutoScroll, {passive:true});
+    queueOuter.addEventListener('touchend', startQueueAutoScroll, {passive:true});
+    queueOuter.addEventListener('touchcancel', startQueueAutoScroll, {passive:true});
+  }
+  startQueueAutoScroll();
 </script>
 
 </body>

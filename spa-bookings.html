@@ -600,17 +600,24 @@
       return '<div class="room-row"><div class="room-row-name">' + room.name + '</div><div class="room-bar">' + barHtml + '</div>' + timerHtml + '</div>';
     }).join('');
 
-    // A live vertical line marking the current time, aligned across the bars - same fixed
-    // left/right offsets as the hour labels above (50px name column + 8px gap on the left,
-    // 8px gap + 26px timer column on the right), so it lines up exactly with the bars.
+    // Render the hours header + room rows first, then measure the real rendered height and
+    // set the now-line's height explicitly in pixels - CSS percentage/auto-height resolution
+    // on an absolutely positioned element wasn't reliably stretching to match, so measuring
+    // directly after layout is the robust way to guarantee it reaches the last room.
+    list.innerHTML = hoursHtml + roomsHtml;
+    const fullHeight = list.scrollHeight;
+
     const dayStartMin = 9 * 60, dayEndMin = 22 * 60;
     const nowFraction = Math.max(0, Math.min(1, (nowMinutes - dayStartMin) / (dayEndMin - dayStartMin)));
     const nowLeft = 'calc(50px + 8px + ' + nowFraction + ' * (100% - 50px - 8px - 8px - 26px))';
-    const nowLineHtml = (nowMinutes >= dayStartMin && nowMinutes <= dayEndMin)
-      ? '<div class="rooms-now-line" style="left:' + nowLeft + '"><div class="rooms-now-dot"></div></div>'
-      : '';
-
-    list.innerHTML = nowLineHtml + hoursHtml + roomsHtml;
+    if(nowMinutes >= dayStartMin && nowMinutes <= dayEndMin){
+      const line = document.createElement('div');
+      line.className = 'rooms-now-line';
+      line.style.left = nowLeft;
+      line.style.height = fullHeight + 'px';
+      line.innerHTML = '<div class="rooms-now-dot"></div>';
+      list.appendChild(line);
+    }
   }
   setInterval(renderRoomsPanel, 30000); // live countdown - refresh every 30s
 

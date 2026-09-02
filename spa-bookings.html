@@ -45,12 +45,6 @@
   .queue-scroll-outer::after { bottom: 0; background: linear-gradient(transparent, #E9EDF3); }
   .queue-scroll-inner { display: flex; flex-direction: column; gap: 8px; padding: 12px 0; animation: queueScroll linear infinite; }
   .queue-scroll-inner.paused { animation-play-state: paused; }
-  @media (hover: none) {
-    /* Touch devices: an auto-scrolling ticker fights against tapping to interact with it.
-       Just make it a normal finger-scrollable list instead - no animation to pause at all. */
-    .queue-scroll-outer { overflow-y: auto; }
-    .queue-scroll-inner { animation: none !important; }
-  }
   @keyframes queueScroll { from { transform: translateY(0); } to { transform: translateY(-50%); } }
   .queue-card {
     background: white; border: 1.5px solid #E2E8F0; border-radius: 10px; padding: 12px 14px;
@@ -522,11 +516,8 @@
     }
 
     const cardsHtml = pendingQueue.map(cardHtml).join('');
-    // Touch devices don't use the auto-scroll animation at all (see the (hover:none) media
-    // query) - they get a normal finger-scrollable list, so no need to duplicate the cards
-    // for a seamless loop there.
-    const isTouchDevice = window.matchMedia && window.matchMedia('(hover: none)').matches;
-    const needsScroll = !isTouchDevice && pendingQueue.length > 2;
+    // Duplicate the list once so the scroll animation can loop seamlessly at -50%.
+    const needsScroll = pendingQueue.length > 2;
     list.innerHTML = cardsHtml + (needsScroll ? cardsHtml : '');
     if(needsScroll){
       const duration = pendingQueue.length * 4; // slow, roughly 4s per card
@@ -1054,13 +1045,26 @@
   renderGrid();
   renderQueue();
 
-  // Pause the auto-scroll on mouse hover (desktop only - touch devices don't animate at all,
-  // they get a normal finger-scrollable list instead, see the (hover:none) CSS above).
+  // Pause the auto-scroll while interacting with it. Desktop: pauses on mouse hover, resumes
+  // when the mouse leaves - clean and immediate since a mouse can genuinely "hover". Touch:
+  // a finger can't hover, and a simple tap ends too fast for hold-based pausing to feel
+  // reliable - so any touch pauses it, and it auto-resumes a few seconds after the last touch,
+  // giving enough time to read, tap Confirm, or start a drag without fighting the animation.
   const queueOuter = document.querySelector('.queue-scroll-outer');
   const queueInner = document.getElementById('queueList');
   if(queueOuter && queueInner){
     queueOuter.addEventListener('mouseenter', function(){ queueInner.classList.add('paused'); });
     queueOuter.addEventListener('mouseleave', function(){ queueInner.classList.remove('paused'); });
+
+    let resumeTimer = null;
+    queueOuter.addEventListener('touchstart', function(){
+      queueInner.classList.add('paused');
+      clearTimeout(resumeTimer);
+    }, {passive:true});
+    queueOuter.addEventListener('touchend', function(){
+      clearTimeout(resumeTimer);
+      resumeTimer = setTimeout(function(){ queueInner.classList.remove('paused'); }, 4000);
+    }, {passive:true});
   }
 </script>
 

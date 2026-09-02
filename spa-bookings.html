@@ -9,7 +9,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
   * { box-sizing: border-box; }
-  body { margin: 0 320px 0 0; } /* reserve space on the right for the fixed Currently In The Building panel, plus a clean gap */
+  body { margin: 0 320px 0 0; }
   html, body {
     background: #F7F5EF;
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
@@ -27,56 +27,21 @@
   .logo { font-size: 18px; font-weight: 700; color: white; }
   .logo b { color: #0D9488; }
   .logo span { color: #C4973B; }
-  .topbar-title { color: white; font-size: 13px; font-weight: 700; opacity: 0.9; }
+  .topbar-title { color: white; font-size: 13px; font-weight: 700; opacity: 0.9; display: flex; align-items: center; gap: 8px; }
   .topbar-date { color: rgba(255,255,255,0.55); font-size: 12px; margin-top: 2px; }
   .legend { display: flex; gap: 16px; flex-wrap: wrap; }
   .legend-item { display: flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600; color: rgba(255,255,255,0.85); }
   .legend-dot { width: 10px; height: 10px; border-radius: 3px; }
 
-  .subnote { background: white; border-bottom: 1px solid #E2E8F0; padding: 12px 22px; font-size: 12px; color: #94A3B8; font-weight: 600; }
-
-  .therapist-strip {
-    background: white;
-    border-bottom: 1px solid #E2E8F0;
-    padding: 14px 22px;
-  }
-  .therapist-strip-label { font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; color: #94A3B8; margin-bottom: 10px; }
+  .therapist-strip { background: white; border-bottom: 1px solid #E2E8F0; padding: 14px 22px; }
   .therapist-chips { display: flex; gap: 8px; flex-wrap: wrap; }
   .therapist-chip {
-    background: #F0FDFA;
-    border: 1.5px solid #99F0E4;
-    color: #0D6E63;
-    padding: 7px 14px;
-    border-radius: 20px;
-    font-size: 12px;
-    font-weight: 700;
-    cursor: grab;
-    user-select: none;
-    display: flex;
-    align-items: center;
-    gap: 6px;
+    background: #F0FDFA; border: 1.5px solid #99F0E4; color: #0D6E63;
+    padding: 7px 14px; border-radius: 20px; font-size: 12px; font-weight: 700;
+    cursor: grab; user-select: none; display: flex; align-items: center; gap: 6px;
   }
   .therapist-chip:active { cursor: grabbing; }
   .therapist-chip.dragging { opacity: 0.4; }
-
-  .wrap { padding: 22px; overflow-x: auto; }
-  .grid-outer { min-width: 1680px; background: white; border: 1px solid #E2E8F0; border-radius: 14px; overflow: hidden; box-shadow: 0 2px 10px rgba(0,0,0,0.04); }
-
-  .grid-row { display: grid; grid-template-columns: 80px repeat(var(--n-therapists), 1fr); }
-  .grid-row + .grid-row { border-top: 1px solid #F1F5F9; }
-
-  .hd-time { background: #0F1E2E; color: white; padding: 12px 10px; font-size: 11.5px; font-weight: 700; text-align: center; }
-  .hd-cell {
-    padding: 8px 4px;
-    text-align: center;
-    background: #FAFBFC;
-    border-left: 1px solid #F1F5F9;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 3px;
-  }
-  .hd-cell-name { font-size: 10.5px; font-weight: 800; color: #0F1E2E; line-height: 1.15; }
   .gender-badge {
     width: 15px; height: 15px; border-radius: 50%;
     display: inline-flex; align-items: center; justify-content: center;
@@ -85,49 +50,53 @@
   .gender-badge.M { background: #2a78d6; }
   .gender-badge.F { background: #d4537e; }
 
-  .time-cell {
-    padding: 10px 8px;
-    font-size: 12px;
-    font-weight: 800;
-    color: #64748B;
-    background: #FAFBFC;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+  .wrap { padding: 22px; overflow-x: auto; }
+  .grid-outer {
+    min-width: 1680px;
+    background: white;
+    border: 1px solid #E2E8F0;
+    border-radius: 14px;
+    overflow: hidden;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.04);
+    display: grid;
+    grid-template-columns: 60px repeat(var(--n-therapists), 1fr);
+    grid-auto-rows: 15px;
   }
 
+  .hd-time { background: #0F1E2E; grid-column: 1; grid-row: 1 / span 4; }
+  .hd-cell {
+    grid-row: 1 / span 4;
+    background: #FAFBFC; border-left: 1px solid #F1F5F9;
+    padding: 8px 4px; text-align: center; display: flex; flex-direction: column;
+    align-items: center; gap: 3px; cursor: grab;
+  }
+  .hd-cell:active { cursor: grabbing; }
+  .hd-cell.dragging { opacity: 0.4; }
+  .hd-cell-name { font-size: 10.5px; font-weight: 800; color: #0F1E2E; line-height: 1.15; }
+
+  .time-label {
+    grid-column: 1; background: #FAFBFC; border-top: 1px solid #F1F5F9;
+    font-size: 10px; font-weight: 800; color: #64748B; padding: 2px 6px 0 0;
+    text-align: right; line-height: 1;
+  }
+  .row-line { border-top: 1px solid #F8FAFC; grid-column: 2 / -1; }
+
   .slot {
-    border-left: 1px solid #F1F5F9;
-    min-height: 58px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 3px;
-    cursor: pointer;
-    position: relative;
+    border-left: 1px solid #F1F5F9; border-top: 1px solid #F1F5F9;
+    padding: 2px; cursor: pointer; position: relative;
   }
   .slot-inner {
-    width: 100%;
-    height: 100%;
-    min-height: 50px;
-    border-radius: 7px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 1px;
-    font-size: 9.5px;
-    font-weight: 700;
-    text-align: center;
-    padding: 3px 2px;
+    width: 100%; height: 100%; border-radius: 6px; display: flex; flex-direction: column;
+    align-items: center; justify-content: center; gap: 0; font-size: 9.5px; font-weight: 700;
+    text-align: center; padding: 2px 3px; overflow: hidden;
   }
-  .vacant .slot-inner { background: #ECFDF5; border: 1.5px dashed #86EFAC; color: #16A34A; opacity: 0.75; }
+  .vacant .slot-inner { background: #ECFDF5; border: 1.5px dashed #86EFAC; color: #16A34A; opacity: 0.55; }
   .vacant:hover .slot-inner, .vacant.drag-over .slot-inner { opacity: 1; background: #DCFCE7; }
   .hold .slot-inner { background: #F59E0B; color: white; cursor: grab; }
   .booked .slot-inner { background: #EF4444; color: white; cursor: grab; }
-  .slot-client { font-size: 10px; font-weight: 800; line-height: 1.15; word-break: break-word; }
-  .slot-therapist { font-size: 8.5px; font-weight: 700; opacity: 0.9; line-height: 1.15; word-break: break-word; }
-  .slot-status { font-size: 7.5px; font-weight: 700; opacity: 0.85; text-transform: uppercase; letter-spacing: 0.3px; }
+  .slot-code { font-size: 12px; font-weight: 900; letter-spacing: 0.4px; line-height: 1.1; }
+  .slot-client { font-size: 9px; font-weight: 700; opacity: 0.95; line-height: 1.1; word-break: break-word; }
+  .slot-therapist { font-size: 7.5px; font-weight: 600; opacity: 0.85; line-height: 1.1; }
   .slot.drag-over .slot-inner { outline: 3px solid #0D9488; outline-offset: -3px; }
 
   /* Modal */
@@ -139,8 +108,9 @@
   .modal-label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: #94A3B8; margin-bottom: 6px; }
   .modal-input { width: 100%; padding: 11px 14px; border: 1.5px solid #E2E8F0; border-radius: 9px; font-family: inherit; font-size: 16px; color: #0F1E2E; outline: none; margin-bottom: 16px; box-sizing: border-box; }
   .modal-input:focus { border-color: #0D9488; }
-  textarea.modal-input { resize: vertical; min-height: 70px; }
+  textarea.modal-input { resize: vertical; min-height: 60px; }
   select.modal-input { -webkit-appearance: none; appearance: none; background: white; cursor: pointer; }
+  .service-hint { font-size: 11px; color: #94A3B8; margin: -10px 0 16px; }
   .status-pills { display: flex; gap: 8px; margin-bottom: 22px; }
   .status-pill { flex: 1; padding: 10px; border-radius: 9px; border: 1.5px solid #E2E8F0; background: white; font-family: inherit; font-size: 12.5px; font-weight: 700; cursor: pointer; text-align: center; color: #64748B; }
   .status-pill.active-hold { background: #F59E0B; border-color: #F59E0B; color: white; }
@@ -151,7 +121,6 @@
   .modal-btn-cancel { background: #F1F5F9; color: #64748B; }
   .modal-btn-clear { background: none; color: #DC2626; }
 
-  /* Small confirm popup (hold release) */
   .confirm-box { background: white; border-radius: 16px; padding: 24px; width: 100%; max-width: 360px; box-shadow: 0 20px 60px rgba(0,0,0,0.2); text-align: center; }
   .confirm-title { font-size: 15.5px; font-weight: 800; color: #0F1E2E; margin-bottom: 8px; }
   .confirm-msg { font-size: 13px; color: #64748B; margin-bottom: 6px; line-height: 1.5; }
@@ -167,28 +136,12 @@
   .skill-check { width: 20px; height: 20px; border-radius: 50%; background: #0D9488; color: white; display: flex; align-items: center; justify-content: center; font-size: 12px; flex-shrink: 0; }
 
   .building-panel {
-    position: fixed;
-    top: 20px;
-    right: 20px;
-    width: 280px;
-    height: calc(100vh - 40px);
-    background: #E9EDF3;
-    border: 1.5px solid #DCE2EB;
-    border-radius: 14px;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
-    overflow: hidden;
-    z-index: 150;
-    display: flex;
-    flex-direction: column;
+    position: fixed; top: 20px; right: 20px; width: 280px; height: calc(100vh - 40px);
+    background: #E9EDF3; border: 1.5px solid #DCE2EB; border-radius: 14px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.06); overflow: hidden; z-index: 150;
+    display: flex; flex-direction: column;
   }
-  .building-panel-header {
-    background: #0F1E2E;
-    padding: 8px 14px;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    flex-shrink: 0;
-  }
+  .building-panel-header { background: #0F1E2E; padding: 8px 14px; display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
   .building-panel-ico { width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
   .building-panel-title { font-size: 13px; font-weight: 700; color: white; text-transform: uppercase; letter-spacing: 1px; }
   .building-live-dot { width: 7px; height: 7px; border-radius: 50%; background: #4ADE80; box-shadow: 0 0 0 3px rgba(74,222,128,0.25); margin-left: 2px; }
@@ -198,7 +151,7 @@
   .building-card:hover { border-color: #0D9488; }
   .building-avatar { width: 38px; height: 38px; border-radius: 50%; background: #0D9488; color: white; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 800; flex-shrink: 0; }
   .building-card-name { font-size: 13.5px; font-weight: 800; color: #0F1E2E; margin-bottom: 3px; }
-  .building-card-detail { font-size: 11px; color: #64748B; display: flex; align-items: center; gap: 5px; }
+  .building-card-detail { font-size: 11px; color: #64748B; }
   .building-empty { font-size: 12.5px; color: #94A3B8; text-align: center; padding: 40px 14px; line-height: 1.6; }
 
   @media (max-width: 900px) {
@@ -212,7 +165,7 @@
   <div class="topbar">
     <div>
       <div class="logo"><b>M</b>avis<span>.</span></div>
-      <div class="topbar-title" style="margin-top:8px;display:flex;align-items:center;gap:8px">
+      <div class="topbar-title" style="margin-top:8px">
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#C4973B" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
         Therapist Bookings
       </div>
@@ -239,6 +192,9 @@
       <div class="modal-sub" id="modalSub"></div>
       <div class="modal-label">Therapist</div>
       <select class="modal-input" id="modalTherapistSelect"></select>
+      <div class="modal-label">Treatment</div>
+      <select class="modal-input" id="modalServiceSelect" onchange="onServiceChange()"></select>
+      <div class="service-hint" id="serviceHint"></div>
       <div class="modal-label">Client Name</div>
       <input type="text" class="modal-input" id="modalClientInput" placeholder="e.g. Sarah Johnson">
       <div class="modal-label">Client Phone Number</div>
@@ -313,17 +269,45 @@
     {name:'Rina', gender:'F'}, {name:'Bayu', gender:'M'}, {name:'Maria', gender:'F'},
     {name:'Kevin', gender:'M'}, {name:'Sophie', gender:'F'}, {name:'Made 2', gender:'F'}
   ];
-  const HOURS = [9,10,11,12,13,14,15,16,17,18,19,20,21];
-  const HOLD_MINUTES = 15;
 
-  function fmtHour(h){
+  // Real service list, from the actual booking site - durations vary, so grid boxes will too.
+  // Codes are a placeholder guess - the spa has their own codes already, to be swapped in later.
+  const SERVICES = [
+    {code:'TRT',     name:'Tension Relief Therapy',                duration:90,  price:41},
+    {code:'DFM',     name:'Detox Flow Massage',                    duration:90,  price:50},
+    {code:'DRM60',   name:'Dry Recovery Massage (face down only)', duration:60,  price:32},
+    {code:'DRM90',   name:'Dry Recovery Massage (full body)',      duration:90,  price:41},
+    {code:'DMHM',    name:'Deep Muscle Healing Massage',           duration:90,  price:38},
+    {code:'HLSM90',  name:'Hot Lava Stone Massage',                duration:90,  price:47},
+    {code:'HLSM120', name:'Hot Lava Stone Massage',                duration:120, price:56},
+    {code:'FR60',    name:'Foot Reflexology',                      duration:60,  price:21},
+    {code:'FR90',    name:'Foot Reflexology',                      duration:90,  price:29},
+    {code:'TBM90',   name:'Traditional Balinese Massage',          duration:90,  price:38},
+    {code:'TBM120',  name:'Traditional Balinese Massage',          duration:120, price:47},
+    {code:'SBM',     name:'SUNDARI Bamboo Massage',                duration:90,  price:44}
+  ];
+
+  // Half-hour slots, 9:00am to 9:30pm - the smallest addressable unit on the grid now.
+  const HALF_HOURS = [];
+  for(let h = 9; h <= 21; h++){
+    HALF_HOURS.push(h + ':00');
+    if(h < 21) HALF_HOURS.push(h + ':30');
+  }
+  const ROWS_PER_SLOT = 2; // each half-hour = 2 grid rows of 15px = 30px tall
+
+  function fmtHalfHour(hh){
+    const parts = hh.split(':');
+    const h = Number(parts[0]);
     const period = h < 12 ? 'AM' : 'PM';
     const hr = h > 12 ? h - 12 : h;
-    return hr + ' ' + period;
+    return hr + (parts[1] === '00' ? '' : ':30') + ' ' + period;
   }
+  function serviceByCode(code){ return SERVICES.find(function(s){ return s.code === code; }); }
+  function therapistIndexByName(name){ return THERAPISTS.findIndex(function(t){ return t.name === name; }); }
+  function slotKey(t, h){ return t + '-' + h; }
 
-  const STORAGE_KEY = 'mavis_spa_bookings_demo_v6';
-  let bookings = {}; // key "therapistIdx-hour" -> {client, phone, notes, status, holdStartedAt, holdPrompted}
+  const STORAGE_KEY = 'mavis_spa_bookings_demo_v7';
+  let bookings = {}; // key "therapistIdx-halfHourIndex" -> {serviceCode, client, phone, notes, status, holdStartedAt, holdPrompted}
 
   function loadBookings(){
     try{
@@ -339,48 +323,51 @@
     'Sarah Mitchell', 'James Wilson', 'Elena Rodriguez', 'David Chen', 'Priya Patel',
     'Michael Brown', 'Laura Thompson', 'Andrew Kim', 'Jessica Lee', 'Robert Garcia',
     'Amanda White', 'Christopher Davis', 'Natasha Petrova', 'Daniel Martinez', 'Emily Clark',
-    'Thomas Anderson', 'Olivia Turner', 'William Scott', 'Sophia Nguyen', 'Benjamin Hall',
-    'Isabella Moore', 'Lucas Baker', 'Chloe Adams', 'Ryan Mitchell', 'Grace Foster',
-    'Nathan Reed', 'Victoria Cole', 'Samuel Price', 'Hannah Bennett', 'Ethan Murphy',
-    'Zoe Richardson', 'Jack Cooper', 'Mia Bailey', 'Henry Ward', 'Lily Simmons',
-    'Owen Fisher', 'Ava Coleman', 'Leo Sanders', 'Ella Perry', 'Max Powell'
+    'Thomas Anderson', 'Olivia Turner', 'William Scott', 'Sophia Nguyen', 'Benjamin Hall'
   ];
-
   function randomPhone(){
-    const prefixes = ['+62 812', '+62 813', '+62 811', '+62 878', '+62 819', '+62 852'];
+    const prefixes = ['+62 812', '+62 813', '+62 811', '+62 878', '+62 819'];
     const p = prefixes[Math.floor(Math.random() * prefixes.length)];
-    const a = Math.floor(1000 + Math.random() * 9000);
-    const b = Math.floor(1000 + Math.random() * 9000);
-    return p + ' ' + a + ' ' + b;
+    return p + ' ' + Math.floor(1000 + Math.random()*9000) + ' ' + Math.floor(1000 + Math.random()*9000);
   }
+  function slotsForDuration(dur){ return dur / 30; }
 
   function fillGridForDemo(){
-    if(Object.keys(bookings).length > 0) return; // one-time fill only - never overwrites your own edits after this first run
-    const usedNames = DEMO_CLIENT_NAMES.slice();
+    if(Object.keys(bookings).length > 0) return; // one-time fill, never overwrites real edits
     let nameIdx = 0;
-    function nextName(){
-      if(nameIdx >= usedNames.length) nameIdx = 0; // wrap around and reuse, fine for a demo
-      return usedNames[nameIdx++];
-    }
     THERAPISTS.forEach(function(t, ti){
-      HOURS.forEach(function(h){
-        if(Math.random() > 0.8) return; // leave roughly 20% genuinely vacant
-        const key = slotKey(ti, h);
+      let hIdx = 0;
+      while(hIdx < HALF_HOURS.length){
+        if(Math.random() > 0.75){ hIdx++; continue; } // leave gaps
+        const svc = SERVICES[Math.floor(Math.random() * SERVICES.length)];
+        const span = slotsForDuration(svc.duration);
+        if(hIdx + span > HALF_HOURS.length){ hIdx++; continue; }
         const status = Math.random() < 0.5 ? 'hold' : 'booked';
-        bookings[key] = {
-          client: nextName(),
-          phone: randomPhone(),
-          notes: '',
-          status: status,
-          holdStartedAt: null, // demo fill is visual only - no live 15-minute timer running on these
-          holdPrompted: false
+        bookings[slotKey(ti, hIdx)] = {
+          serviceCode: svc.code, client: DEMO_CLIENT_NAMES[nameIdx % DEMO_CLIENT_NAMES.length],
+          phone: randomPhone(), notes: '', status: status, holdStartedAt: null, holdPrompted: false
         };
-      });
+        nameIdx++;
+        hIdx += span;
+      }
     });
     saveBookings();
   }
 
-  function slotKey(t, h){ return t + '-' + h; }
+  // Figure out, for a given therapist, which half-hour indices are covered by a booking
+  // that started earlier (so we know to skip rendering an empty box there).
+  function coveredSlots(ti){
+    const covered = {}; // hIdx -> the key of the booking covering it
+    for(const key in bookings){
+      const parts = key.split('-');
+      if(Number(parts[0]) !== ti) continue;
+      const startH = Number(parts[1]);
+      const svc = serviceByCode(bookings[key].serviceCode);
+      const span = svc ? slotsForDuration(svc.duration) : 1;
+      for(let i = 0; i < span; i++){ covered[startH + i] = key; }
+    }
+    return covered;
+  }
 
   function renderTherapistChips(){
     const wrap = document.getElementById('therapistChips');
@@ -390,139 +377,154 @@
     }).join('');
   }
 
-  const SKILLS_DEMO = ['Foot Massage', 'Full Body Massage', 'Manicure', 'Pedicure'];
-
-  function openTherapistInfo(name){
-    const t = THERAPISTS.find(function(x){ return x.name === name; });
-    if(!t) return;
-    document.getElementById('tiName').textContent = t.name;
-    document.getElementById('tiSub').textContent = (t.gender === 'M' ? 'Male' : 'Female') + ' therapist';
-    document.getElementById('tiSkills').innerHTML = SKILLS_DEMO.map(function(s){
-      return '<div class="skill-item"><span class="skill-check">✓</span>' + s + '</div>';
-    }).join('');
-    document.getElementById('therapistInfoBg').classList.add('show');
-  }
-  function closeTherapistInfo(){
-    document.getElementById('therapistInfoBg').classList.remove('show');
-  }
-  document.getElementById('therapistInfoBg').addEventListener('click', function(e){
-    if(e.target === this) closeTherapistInfo();
-  });
-
-  function therapistIndexByName(name){
-    return THERAPISTS.findIndex(function(t){ return t.name === name; });
-  }
-
   function renderGrid(){
     const grid = document.getElementById('grid');
+    const totalRows = HALF_HOURS.length * ROWS_PER_SLOT;
     let html = '';
 
-    HOURS.forEach(function(h){
-      html += '<div class="grid-row"><div class="time-cell">' + fmtHour(h) + '</div>';
-      THERAPISTS.forEach(function(t, ti){
-        const key = slotKey(ti, h);
-        const b = bookings[key];
-        const statusClass = b ? b.status : 'vacant';
-        let content;
-        if(b){
-          content = '<div class="slot-client">' + b.client + '</div>' +
-                    '<div class="slot-therapist">' + t.name + '</div>' +
-                    '<div class="slot-status">' + (b.status === 'hold' ? 'Hold' : 'Booked') + '</div>';
-        } else {
-          content = '<div class="slot-status">—</div>';
-        }
-        html += '<div class="slot ' + statusClass + '" data-key="' + key + '" ' +
-            'onclick="openSlot(\'' + key + '\')" ' +
-            'ondragover="dragOver(event)" ondragleave="dragLeave(event)" ondrop="drop(event,\'' + key + '\')">' +
-          '<div class="slot-inner" draggable="' + (b ? 'true' : 'false') + '" ondragstart="bookingDragStart(event,\'' + key + '\')">' +
-            content +
-          '</div>' +
-        '</div>';
-      });
-      html += '</div>';
+    // Header row (therapist columns)
+    html += '<div class="hd-time"></div>';
+    THERAPISTS.forEach(function(t, ti){
+      html += '<div class="hd-cell" style="grid-column:' + (ti+2) + '" draggable="true" onclick="openTherapistInfo(\'' + t.name + '\')" ondragstart="therapistDragStart(event,\'' + t.name + '\')" ondragend="therapistDragEnd(event)">' +
+        '<span class="gender-badge ' + t.gender + '">' + t.gender + '</span><div class="hd-cell-name">' + t.name + '</div></div>';
     });
 
+    // Time labels down the left, one per hour (on the :00 row)
+    HALF_HOURS.forEach(function(hh, hIdx){
+      const rowStart = 5 + hIdx * ROWS_PER_SLOT; // header now occupies rows 1-4
+      if(hh.endsWith(':00')){
+        html += '<div class="time-label" style="grid-row:' + rowStart + ' / span ' + ROWS_PER_SLOT + '">' + fmtHalfHour(hh) + '</div>';
+      } else {
+        html += '<div class="time-label" style="grid-row:' + rowStart + ' / span ' + ROWS_PER_SLOT + '"></div>';
+      }
+    });
+
+    // Booking / vacant cells
+    THERAPISTS.forEach(function(t, ti){
+      const covered = coveredSlots(ti);
+      const col = ti + 2;
+      HALF_HOURS.forEach(function(hh, hIdx){
+        const rowStart = 5 + hIdx * ROWS_PER_SLOT;
+        const key = slotKey(ti, hIdx);
+        const b = bookings[key];
+
+        if(b){
+          const svc = serviceByCode(b.serviceCode);
+          const span = (svc ? slotsForDuration(svc.duration) : 1) * ROWS_PER_SLOT;
+          html += '<div class="slot ' + b.status + '" style="grid-column:' + col + ';grid-row:' + rowStart + ' / span ' + span + '" ' +
+              'onclick="openSlot(\'' + key + '\')" ondragover="dragOver(event)" ondragleave="dragLeave(event)" ondrop="drop(event,\'' + key + '\')">' +
+            '<div class="slot-inner" draggable="true" ondragstart="bookingDragStart(event,\'' + key + '\')">' +
+              '<div class="slot-code">' + b.serviceCode + '</div>' +
+              '<div class="slot-client">' + b.client + '</div>' +
+              '<div class="slot-therapist">' + t.name + '</div>' +
+            '</div>' +
+          '</div>';
+          return;
+        }
+        if(covered[hIdx] !== undefined) return; // covered by an earlier-starting booking, skip
+
+        html += '<div class="slot vacant" style="grid-column:' + col + ';grid-row:' + rowStart + ' / span ' + ROWS_PER_SLOT + '" ' +
+            'onclick="openSlot(\'' + key + '\')" ondragover="dragOver(event)" ondragleave="dragLeave(event)" ondrop="drop(event,\'' + key + '\')">' +
+          '<div class="slot-inner"></div>' +
+        '</div>';
+      });
+    });
+
+    grid.style.setProperty('--n-therapists', THERAPISTS.length);
+    grid.style.gridTemplateRows = 'repeat(' + (totalRows + 4) + ', 15px)';
     grid.innerHTML = html;
     if(typeof refreshBuildingPanel === 'function') refreshBuildingPanel();
   }
 
-  // ── Two drag sources: an unassigned therapist chip, or an existing booking being moved ──
+  // ── Two drag sources: an unassigned therapist, or an existing booking being moved ──
   let draggedTherapist = null;
   let draggedBookingKey = null;
 
   function therapistDragStart(e, name){
-    draggedTherapist = name;
-    draggedBookingKey = null;
+    draggedTherapist = name; draggedBookingKey = null;
     e.dataTransfer.effectAllowed = 'copy';
     e.currentTarget.classList.add('dragging');
   }
-  function therapistDragEnd(e){
-    e.currentTarget.classList.remove('dragging');
-  }
+  function therapistDragEnd(e){ e.currentTarget.classList.remove('dragging'); }
   function bookingDragStart(e, key){
-    draggedBookingKey = key;
-    draggedTherapist = null;
+    draggedBookingKey = key; draggedTherapist = null;
     e.dataTransfer.effectAllowed = 'move';
   }
-  function dragOver(e){
-    e.preventDefault();
-    e.currentTarget.classList.add('drag-over');
+  function dragOver(e){ e.preventDefault(); e.currentTarget.classList.add('drag-over'); }
+  function dragLeave(e){ e.currentTarget.classList.remove('drag-over'); }
+
+  function spanFree(ti, startH, span, ignoreKey){
+    for(let i = 0; i < span; i++){
+      const k = slotKey(ti, startH + i);
+      if(bookings[k] && k !== ignoreKey) return false;
+      // also check it's not covered by a booking that started earlier
+      for(const key in bookings){
+        if(key === ignoreKey) continue;
+        const parts = key.split('-');
+        if(Number(parts[0]) !== ti) continue;
+        const bStart = Number(parts[1]);
+        const svc = serviceByCode(bookings[key].serviceCode);
+        const bSpan = svc ? slotsForDuration(svc.duration) : 1;
+        if(startH + i >= bStart && startH + i < bStart + bSpan) return false;
+      }
+    }
+    return true;
   }
-  function dragLeave(e){
-    e.currentTarget.classList.remove('drag-over');
-  }
+
   function drop(e, targetKey){
     e.preventDefault();
     e.currentTarget.classList.remove('drag-over');
+    const parts = targetKey.split('-');
+    const targetTi = Number(parts[0]), targetH = Number(parts[1]);
 
     if(draggedTherapist){
       const therapistName = draggedTherapist;
       draggedTherapist = null;
-      const parts = targetKey.split('-');
-      const hour = parts[1];
       const newTi = therapistIndexByName(therapistName);
-      const newKey = slotKey(newTi, hour);
       const existingAtTarget = bookings[targetKey];
 
       if(existingAtTarget){
-        // Swap which therapist is assigned to this exact booking, same time, same client
-        if(newKey === targetKey) return; // dropped on their own column, nothing to do
-        if(bookings[newKey]){
-          alert(therapistName + ' already has a booking at that time — clear it first.');
+        if(newTi === targetTi) return;
+        const svc = serviceByCode(existingAtTarget.serviceCode);
+        const span = svc ? slotsForDuration(svc.duration) : 1;
+        const newKey = slotKey(newTi, targetH);
+        if(!spanFree(newTi, targetH, span, targetKey)){
+          alert(therapistName + ' already has something booked over that time.');
           return;
         }
         showConfirm({
           title: 'Change Therapist?',
-          msg: 'Move ' + existingAtTarget.client + ' at ' + fmtHour(Number(hour)) + ' to ' + therapistName + '?',
+          msg: 'Move ' + existingAtTarget.client + '\u2019s booking to ' + therapistName + '?',
           buttons: [
             { label: 'Change Therapist', cls: 'confirm-btn-danger', onClick: function(){
               bookings[newKey] = existingAtTarget;
               delete bookings[targetKey];
-              saveBookings();
-              renderGrid();
+              saveBookings(); renderGrid();
             }},
             { label: 'Cancel', cls: 'confirm-btn-cancel', onClick: function(){} }
           ]
         });
       } else {
-        // Empty slot - open a fresh booking for that therapist at that time
-        openSlot(newKey);
+        openSlot(slotKey(newTi, targetH));
       }
       return;
     }
 
     if(draggedBookingKey){
-      if(draggedBookingKey === targetKey){ draggedBookingKey = null; return; }
-      if(bookings[targetKey]){
-        alert('That slot already has a booking — clear it first, or drop on an empty slot.');
-        draggedBookingKey = null;
+      const key = draggedBookingKey;
+      draggedBookingKey = null;
+      if(key === targetKey) return;
+      const b = bookings[key];
+      if(!b) return;
+      const svc = serviceByCode(b.serviceCode);
+      const span = svc ? slotsForDuration(svc.duration) : 1;
+      if(!spanFree(targetTi, targetH, span, key)){
+        alert('That time is already taken — clear it first, or drop somewhere free.');
         return;
       }
-      bookings[targetKey] = bookings[draggedBookingKey];
-      delete bookings[draggedBookingKey];
-      draggedBookingKey = null;
-      saveBookings();
-      renderGrid();
+      delete bookings[key];
+      bookings[targetKey] = b;
+      saveBookings(); renderGrid();
     }
   }
 
@@ -530,20 +532,34 @@
   let modalKey = null;
   let modalStatus = 'hold';
 
+  function populateServiceSelect(selectedCode){
+    const sel = document.getElementById('modalServiceSelect');
+    sel.innerHTML = SERVICES.map(function(s){
+      return '<option value="' + s.code + '">' + s.name + ' — ' + s.duration + ' min (USD$' + s.price + ')</option>';
+    }).join('');
+    sel.value = selectedCode || SERVICES[0].code;
+    onServiceChange();
+  }
+  function onServiceChange(){
+    const svc = serviceByCode(document.getElementById('modalServiceSelect').value);
+    document.getElementById('serviceHint').textContent = svc ? ('Code shown on the grid: ' + svc.code + ' — ' + svc.duration + ' minutes') : '';
+  }
+
   function openSlot(key){
     modalKey = key;
     const parts = key.split('-');
-    const ti = parts[0], h = parts[1];
+    const ti = parts[0], hIdx = Number(parts[1]);
     const therapist = THERAPISTS[ti];
     const existing = bookings[key];
 
     document.getElementById('modalTitle').textContent = existing ? 'Edit Booking' : 'Add Booking';
-    document.getElementById('modalSub').textContent = fmtHour(Number(h));
+    document.getElementById('modalSub').textContent = fmtHalfHour(HALF_HOURS[hIdx]);
 
     const select = document.getElementById('modalTherapistSelect');
     select.innerHTML = THERAPISTS.map(function(t){ return '<option value="' + t.name + '">' + t.name + ' (' + t.gender + ')</option>'; }).join('');
     select.value = therapist.name;
 
+    populateServiceSelect(existing ? existing.serviceCode : null);
     document.getElementById('modalClientInput').value = existing ? existing.client : '';
     document.getElementById('modalPhoneInput').value = existing ? (existing.phone || '') : '';
     document.getElementById('modalNotesInput').value = existing ? (existing.notes || '') : '';
@@ -557,24 +573,29 @@
     document.getElementById('pillHold').classList.toggle('active-hold', status==='hold');
     document.getElementById('pillBooked').classList.toggle('active-booked', status==='booked');
   }
-  function closeModal(){
-    document.getElementById('modalBg').classList.remove('show');
-    modalKey = null;
-  }
+  function closeModal(){ document.getElementById('modalBg').classList.remove('show'); modalKey = null; }
+
   function saveModal(){
     const client = document.getElementById('modalClientInput').value.trim();
     const phone = document.getElementById('modalPhoneInput').value.trim();
     const notes = document.getElementById('modalNotesInput').value.trim();
     const chosenTherapist = document.getElementById('modalTherapistSelect').value;
+    const serviceCode = document.getElementById('modalServiceSelect').value;
     if(!client){ alert('Enter a client name first.'); return; }
 
     const oldParts = modalKey.split('-');
-    const hour = oldParts[1];
+    const oldStartH = Number(oldParts[1]);
     const newTi = therapistIndexByName(chosenTherapist);
-    const newKey = slotKey(newTi, hour);
+    const svc = serviceByCode(serviceCode);
+    const span = svc ? slotsForDuration(svc.duration) : 1;
+    const newKey = slotKey(newTi, oldStartH);
 
-    if(newKey !== modalKey && bookings[newKey]){
-      alert(chosenTherapist + ' already has a booking at ' + fmtHour(Number(hour)) + ' — pick a different therapist or time.');
+    if(oldStartH + span > HALF_HOURS.length){
+      alert('That treatment runs past closing time from this start slot — pick an earlier time.');
+      return;
+    }
+    if(!spanFree(newTi, oldStartH, span, modalKey)){
+      alert('That therapist already has something booked during part of that time.');
       return;
     }
 
@@ -585,25 +606,33 @@
 
     if(newKey !== modalKey) delete bookings[modalKey];
     bookings[newKey] = {
-      client: client, phone: phone, notes: notes,
+      serviceCode: serviceCode, client: client, phone: phone, notes: notes,
       status: modalStatus, holdStartedAt: holdStartedAt, holdPrompted: false
     };
-    saveBookings();
-    renderGrid();
-    closeModal();
+    saveBookings(); renderGrid(); closeModal();
   }
   function clearModal(){
     delete bookings[modalKey];
-    saveBookings();
-    renderGrid();
-    closeModal();
+    saveBookings(); renderGrid(); closeModal();
   }
+  document.getElementById('modalBg').addEventListener('click', function(e){ if(e.target === this) closeModal(); });
 
-  document.getElementById('modalBg').addEventListener('click', function(e){
-    if(e.target === this) closeModal();
-  });
+  // ── Therapist info popup ──
+  const SKILLS_DEMO = ['Foot Massage', 'Full Body Massage', 'Manicure', 'Pedicure'];
+  function openTherapistInfo(name){
+    const t = THERAPISTS.find(function(x){ return x.name === name; });
+    if(!t) return;
+    document.getElementById('tiName').textContent = t.name;
+    document.getElementById('tiSub').textContent = (t.gender === 'M' ? 'Male' : 'Female') + ' therapist';
+    document.getElementById('tiSkills').innerHTML = SKILLS_DEMO.map(function(s){
+      return '<div class="skill-item"><span class="skill-check">\u2713</span>' + s + '</div>';
+    }).join('');
+    document.getElementById('therapistInfoBg').classList.add('show');
+  }
+  function closeTherapistInfo(){ document.getElementById('therapistInfoBg').classList.remove('show'); }
+  document.getElementById('therapistInfoBg').addEventListener('click', function(e){ if(e.target === this) closeTherapistInfo(); });
 
-  // ── Small confirm popup helper (hold release/wait) ──
+  // ── Small confirm popup helper ──
   function showConfirm(opts){
     const box = document.getElementById('confirmBox');
     let html = '<div class="confirm-title">' + opts.title + '</div>';
@@ -623,9 +652,7 @@
     document.getElementById('confirmBg').classList.remove('show');
     if(btn.onClick) btn.onClick();
   }
-  document.getElementById('confirmBg').addEventListener('click', function(e){
-    if(e.target === this) this.classList.remove('show');
-  });
+  document.getElementById('confirmBg').addEventListener('click', function(e){ if(e.target === this) this.classList.remove('show'); });
 
   // ── 15-minute hold check ──
   function checkHolds(){
@@ -636,27 +663,18 @@
       const b = bookings[key];
       if(b.status === 'hold' && b.holdStartedAt && !b.holdPrompted){
         const elapsed = Date.now() - b.holdStartedAt;
-        if(elapsed >= HOLD_MINUTES * 60 * 1000){
+        if(elapsed >= 15 * 60 * 1000){
           b.holdPrompted = true;
           saveBookings();
           const parts = key.split('-');
-          const therapist = THERAPISTS[parts[0]];
-          const hour = fmtHour(Number(parts[1]));
+          const t = THERAPISTS[Number(parts[0])];
           showConfirm({
             title: 'Release Booking?',
-            msg: b.client + ' has been on hold for ' + HOLD_MINUTES + ' minutes with ' + therapist.name + ' (' + hour + '). Release the slot, or give them more time?',
+            msg: b.client + ' has been on hold for 15 minutes with ' + t.name + '. Release the slot, or give them more time?',
             phone: b.phone || 'No phone number on file',
             buttons: [
-              { label: 'Release Booking', cls: 'confirm-btn-danger', onClick: function(){
-                delete bookings[key];
-                saveBookings();
-                renderGrid();
-              }},
-              { label: 'Wait ' + HOLD_MINUTES + ' More Minutes', cls: 'confirm-btn-wait', onClick: function(){
-                b.holdStartedAt = Date.now();
-                b.holdPrompted = false;
-                saveBookings();
-              }},
+              { label: 'Release Booking', cls: 'confirm-btn-danger', onClick: function(){ delete bookings[key]; saveBookings(); renderGrid(); }},
+              { label: 'Wait 15 More Minutes', cls: 'confirm-btn-wait', onClick: function(){ b.holdStartedAt = Date.now(); b.holdPrompted = false; saveBookings(); }},
               { label: 'Dismiss', cls: 'confirm-btn-cancel', onClick: function(){} }
             ]
           });
@@ -671,16 +689,19 @@
   function refreshBuildingPanel(){
     const list = document.getElementById('buildingList');
     if(!list) return;
-    const nowHour = new Date().getHours();
+    const now = new Date();
+    const nowLabel = now.getHours() + ':' + (now.getMinutes() < 30 ? '00' : '30');
+    const nowHalfIdx = HALF_HOURS.indexOf(nowLabel);
     const present = [];
     for(const key in bookings){
       const b = bookings[key];
-      if(b.status === 'booked'){
-        const parts = key.split('-');
-        const hour = Number(parts[1]);
-        if(hour === nowHour){
-          present.push({ key: key, therapistIdx: Number(parts[0]), hour: hour, booking: b });
-        }
+      if(b.status !== 'booked') continue;
+      const parts = key.split('-');
+      const startH = Number(parts[1]);
+      const svc = serviceByCode(b.serviceCode);
+      const span = svc ? slotsForDuration(svc.duration) : 1;
+      if(nowHalfIdx >= startH && nowHalfIdx < startH + span){
+        present.push({ key: key, therapistIdx: Number(parts[0]), booking: b, svc: svc });
       }
     }
     if(!present.length){
@@ -694,7 +715,7 @@
         '<div class="building-avatar">' + initial + '</div>' +
         '<div>' +
           '<div class="building-card-name">' + p.booking.client + '</div>' +
-          '<div class="building-card-detail">With ' + t.name + ' — ' + fmtHour(p.hour) + '</div>' +
+          '<div class="building-card-detail">' + (p.svc ? p.svc.name : '') + ' — with ' + t.name + '</div>' +
         '</div>' +
       '</div>';
     }).join('');
@@ -707,36 +728,29 @@
     window._visitKey = key;
     const parts = key.split('-');
     const t = THERAPISTS[Number(parts[0])];
+    const svc = serviceByCode(b.serviceCode);
     document.getElementById('visitName').textContent = b.client;
-    document.getElementById('visitSub').textContent = 'With ' + t.name + ' — ' + fmtHour(Number(parts[1]));
+    document.getElementById('visitSub').textContent = (svc ? svc.name : '') + ' — with ' + t.name;
     document.getElementById('visitPhone').textContent = b.phone || 'No phone number on file';
     document.getElementById('visitReqs').textContent = b.notes || 'Nothing noted';
     document.getElementById('visitTodayNotes').value = b.todayNotes || '';
     document.getElementById('visitBg').classList.add('show');
   }
-  function closeVisitModal(){
-    document.getElementById('visitBg').classList.remove('show');
-    window._visitKey = null;
-  }
+  function closeVisitModal(){ document.getElementById('visitBg').classList.remove('show'); window._visitKey = null; }
   function saveVisitNotes(){
     const key = window._visitKey;
     if(!key || !bookings[key]) return;
     bookings[key].todayNotes = document.getElementById('visitTodayNotes').value.trim();
-    saveBookings();
-    closeVisitModal();
+    saveBookings(); closeVisitModal();
   }
-  document.getElementById('visitBg').addEventListener('click', function(e){
-    if(e.target === this) closeVisitModal();
-  });
+  document.getElementById('visitBg').addEventListener('click', function(e){ if(e.target === this) closeVisitModal(); });
 
   document.getElementById('today-label').textContent = new Date().toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
-  document.documentElement.style.setProperty('--n-therapists', THERAPISTS.length);
 
   loadBookings();
   fillGridForDemo();
   renderTherapistChips();
   renderGrid();
-  refreshBuildingPanel();
 </script>
 
 </body>

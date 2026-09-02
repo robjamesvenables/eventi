@@ -45,6 +45,12 @@
   .queue-scroll-outer::after { bottom: 0; background: linear-gradient(transparent, #E9EDF3); }
   .queue-scroll-inner { display: flex; flex-direction: column; gap: 8px; padding: 12px 0; animation: queueScroll linear infinite; }
   .queue-scroll-inner.paused { animation-play-state: paused; }
+  @media (hover: none) {
+    /* Touch devices: an auto-scrolling ticker fights against tapping to interact with it.
+       Just make it a normal finger-scrollable list instead - no animation to pause at all. */
+    .queue-scroll-outer { overflow-y: auto; }
+    .queue-scroll-inner { animation: none !important; }
+  }
   @keyframes queueScroll { from { transform: translateY(0); } to { transform: translateY(-50%); } }
   .queue-card {
     background: white; border: 1.5px solid #E2E8F0; border-radius: 10px; padding: 10px 14px;
@@ -151,6 +157,8 @@
   .status-pill { flex: 1; padding: 10px; border-radius: 9px; border: 1.5px solid #E2E8F0; background: white; font-family: inherit; font-size: 12.5px; font-weight: 700; cursor: pointer; text-align: center; color: #64748B; }
   .status-pill.active-hold { background: #F59E0B; border-color: #F59E0B; color: white; }
   .status-pill.active-booked { background: #EF4444; border-color: #EF4444; color: white; }
+  .status-pill.active-returning { background: #0D9488; border-color: #0D9488; color: white; }
+  .status-pill.active-firstvisit { background: #C4973B; border-color: #C4973B; color: white; }
   .modal-actions { display: flex; gap: 10px; }
   .modal-btn { flex: 1; padding: 12px; border-radius: 9px; border: none; font-family: inherit; font-size: 13.5px; font-weight: 700; cursor: pointer; }
   .modal-btn-save { background: #0F1E2E; color: white; }
@@ -277,6 +285,28 @@
       <div class="modal-title" id="pickerTitle">Choose</div>
       <div id="pickerList"></div>
       <button class="modal-btn modal-btn-cancel" style="width:100%;margin-top:6px" onclick="closePicker()">Cancel</button>
+    </div>
+  </div>
+
+  <div class="modal-bg" id="clientProfileBg">
+    <div class="modal-box">
+      <div class="modal-title" id="cpName"></div>
+      <div class="modal-sub" id="cpSub"></div>
+      <div class="modal-label">Phone Number</div>
+      <input type="tel" class="modal-input" id="cpPhone" placeholder="e.g. +62 812 3456 7890">
+      <div class="modal-label">Email Address</div>
+      <input type="email" class="modal-input" id="cpEmail" placeholder="e.g. sarah@email.com">
+      <div class="modal-label">Returning Customer?</div>
+      <div class="status-pills">
+        <button class="status-pill" id="cpReturningYes" onclick="setReturning(true)">Yes, been before</button>
+        <button class="status-pill" id="cpReturningNo" onclick="setReturning(false)">First visit</button>
+      </div>
+      <div class="modal-label">Notes about this client</div>
+      <textarea class="modal-input" id="cpNotes" placeholder="e.g. Prefers a quiet room, allergic to lavender, regular every month"></textarea>
+      <div class="modal-actions">
+        <button class="modal-btn modal-btn-cancel" onclick="closeClientProfile()">Close</button>
+        <button class="modal-btn modal-btn-save" onclick="saveClientProfile()">Save</button>
+      </div>
     </div>
   </div>
 
@@ -432,7 +462,7 @@
   // Represents bookings that have come in (for now: online) but haven't been assigned
   // a therapist/room yet. Three intake sources were mentioned (online being one) - the
   // other two are still being confirmed with the client, so only "online" is wired up here.
-  const QUEUE_STORAGE_KEY = 'mavis_spa_queue_demo_v1';
+  const QUEUE_STORAGE_KEY = 'mavis_spa_queue_demo_v2';
   let pendingQueue = [];
 
   function loadQueue(){
@@ -447,12 +477,12 @@
   function seedQueueForDemo(){
     if(pendingQueue.length > 0) return; // one-time seed only
     const demo = [
-      { client: 'Rebecca Hughes',   phone: randomPhone(), serviceCode: 'DRM90',   requestedH: 6,  source: 'online' },
-      { client: 'Marcus Webb',      phone: randomPhone(), serviceCode: 'HLSM90',  requestedH: 10, source: 'whatsapp' },
-      { client: 'Fiona Campbell',   phone: randomPhone(), serviceCode: 'FR60',    requestedH: 4,  source: 'walkin' },
-      { client: 'Alex Novak',       phone: randomPhone(), serviceCode: 'TBM120',  requestedH: 14, source: 'online' },
-      { client: 'Grace Lin',        phone: randomPhone(), serviceCode: 'SBM',     requestedH: 8,  source: 'whatsapp' },
-      { client: 'Tomasz Wojcik',    phone: randomPhone(), serviceCode: 'DMHM',    requestedH: 16, source: 'walkin' }
+      { client: 'Rebecca Hughes',   phone: randomPhone(), email: 'rebecca.hughes@gmail.com', returning: true,  serviceCode: 'DRM90',   requestedH: 6,  source: 'online' },
+      { client: 'Marcus Webb',      phone: randomPhone(), email: 'marcus.webb@outlook.com',  returning: false, serviceCode: 'HLSM90',  requestedH: 10, source: 'whatsapp' },
+      { client: 'Fiona Campbell',   phone: '',                                 email: '',    returning: null,  serviceCode: 'FR60',    requestedH: 4,  source: 'walkin' },
+      { client: 'Alex Novak',       phone: randomPhone(), email: 'alex.novak@yahoo.com',     returning: true,  serviceCode: 'TBM120',  requestedH: 14, source: 'online' },
+      { client: 'Grace Lin',        phone: randomPhone(), email: 'grace.lin88@gmail.com',    returning: false, serviceCode: 'SBM',     requestedH: 8,  source: 'whatsapp' },
+      { client: 'Tomasz Wojcik',    phone: '',                                 email: '',    returning: null,  serviceCode: 'DMHM',    requestedH: 16, source: 'walkin' }
     ];
     demo.forEach(function(d){ d.id = 'q' + Date.now() + Math.floor(Math.random()*10000); d.confirmed = false; pendingQueue.push(d); });
     saveQueue();
@@ -478,11 +508,12 @@
       const sourceLabel = SOURCE_LABELS[item.source] || item.source;
       const sourceColor = SOURCE_COLORS[item.source] || '#94A3B8';
       const sourceBadge = '<span style="font-size:9px;font-weight:800;color:white;background:' + sourceColor + ';padding:2px 7px;border-radius:8px;text-transform:uppercase;letter-spacing:0.3px">' + sourceLabel + '</span>';
+      const nameLink = '<span class="queue-card-name" style="text-decoration:underline;text-decoration-color:#CBD5E1;cursor:pointer" onclick="event.stopPropagation();openClientProfile(\'' + item.id + '\')">' + item.client + '</span>';
 
       if(!item.confirmed){
         return '<div class="queue-card">' +
           '<div>' +
-            '<div style="display:flex;align-items:center;gap:8px;margin-bottom:3px"><span class="queue-card-name">' + item.client + '</span>' + sourceBadge + '</div>' +
+            '<div style="display:flex;align-items:center;gap:8px;margin-bottom:3px">' + nameLink + sourceBadge + '</div>' +
             '<div class="queue-card-service">' + (svc ? svc.name + ' (' + svc.code + ')' : '') + ' — ' + fmtHalfHour(HALF_HOURS[item.requestedH]) + '</div>' +
           '</div>' +
           '<button onclick="confirmQueueItem(\'' + item.id + '\')" style="background:#0F1E2E;color:white;border:none;border-radius:8px;padding:8px 14px;font-family:inherit;font-size:11.5px;font-weight:700;cursor:pointer;flex-shrink:0">Confirm</button>' +
@@ -491,7 +522,7 @@
 
       return '<div class="queue-card" onclick="openAllocateModal(\'' + item.id + '\')">' +
         '<div>' +
-          '<div style="display:flex;align-items:center;gap:8px;margin-bottom:3px"><span class="queue-card-name">' + item.client + '</span>' + sourceBadge + '<span style="font-size:9px;font-weight:800;color:#16A34A">\u2713 CONFIRMED</span></div>' +
+          '<div style="display:flex;align-items:center;gap:8px;margin-bottom:3px">' + nameLink + sourceBadge + '<span style="font-size:9px;font-weight:800;color:#16A34A">\u2713 CONFIRMED</span></div>' +
           '<div class="queue-card-service">' + (svc ? svc.name + ' (' + svc.code + ')' : '') + ' — ' + fmtHalfHour(HALF_HOURS[item.requestedH]) + '</div>' +
         '</div>' +
         '<div class="queue-card-time" style="color:#0D9488">Allocate →</div>' +
@@ -499,8 +530,11 @@
     }
 
     const cardsHtml = pendingQueue.map(cardHtml).join('');
-    // Duplicate the list once so the scroll animation can loop seamlessly at -50%.
-    const needsScroll = pendingQueue.length > 2;
+    // Touch devices don't use the auto-scroll animation at all (see the (hover:none) media
+    // query) - they get a normal finger-scrollable list, so no need to duplicate the cards
+    // for a seamless loop there.
+    const isTouchDevice = window.matchMedia && window.matchMedia('(hover: none)').matches;
+    const needsScroll = !isTouchDevice && pendingQueue.length > 2;
     list.innerHTML = cardsHtml + (needsScroll ? cardsHtml : '');
     if(needsScroll){
       const duration = pendingQueue.length * 4; // slow, roughly 4s per card
@@ -517,6 +551,44 @@
     saveQueue();
     renderQueue();
   }
+
+  // ── Client profile - a mini record of who this person is, not just this one booking ──
+  let cpReturningValue = null;
+
+  function openClientProfile(id){
+    const item = pendingQueue.find(function(q){ return q.id === id; });
+    if(!item) return;
+    window._cpId = id;
+    const svc = serviceByCode(item.serviceCode);
+    document.getElementById('cpName').textContent = item.client;
+    document.getElementById('cpSub').textContent = 'Wants: ' + (svc ? svc.name : '') + ' — via ' + (SOURCE_LABELS[item.source] || item.source);
+    document.getElementById('cpPhone').value = item.phone || '';
+    document.getElementById('cpEmail').value = item.email || '';
+    document.getElementById('cpNotes').value = item.clientNotes || '';
+    setReturning(item.returning === true ? true : (item.returning === false ? false : null));
+    document.getElementById('clientProfileBg').classList.add('show');
+  }
+  function setReturning(val){
+    cpReturningValue = val;
+    document.getElementById('cpReturningYes').classList.toggle('active-returning', val === true);
+    document.getElementById('cpReturningNo').classList.toggle('active-firstvisit', val === false);
+  }
+  function closeClientProfile(){
+    document.getElementById('clientProfileBg').classList.remove('show');
+    window._cpId = null;
+  }
+  function saveClientProfile(){
+    const item = pendingQueue.find(function(q){ return q.id === window._cpId; });
+    if(!item) return;
+    item.phone = document.getElementById('cpPhone').value.trim();
+    item.email = document.getElementById('cpEmail').value.trim();
+    item.clientNotes = document.getElementById('cpNotes').value.trim();
+    item.returning = cpReturningValue;
+    saveQueue();
+    renderQueue();
+    closeClientProfile();
+  }
+  document.getElementById('clientProfileBg').addEventListener('click', function(e){ if(e.target === this) closeClientProfile(); });
 
   function openAllocateModal(id){
     const item = pendingQueue.find(function(q){ return q.id === id; });
@@ -1001,16 +1073,13 @@
   renderGrid();
   renderQueue();
 
-  // Pause the auto-scroll while hovering or touching, same as the Highlights carousel does.
+  // Pause the auto-scroll on mouse hover (desktop only - touch devices don't animate at all,
+  // they get a normal finger-scrollable list instead, see the (hover:none) CSS above).
   const queueOuter = document.querySelector('.queue-scroll-outer');
   const queueInner = document.getElementById('queueList');
   if(queueOuter && queueInner){
-    ['mouseenter', 'touchstart'].forEach(function(evt){
-      queueOuter.addEventListener(evt, function(){ queueInner.classList.add('paused'); }, {passive:true});
-    });
-    ['mouseleave', 'touchend'].forEach(function(evt){
-      queueOuter.addEventListener(evt, function(){ queueInner.classList.remove('paused'); }, {passive:true});
-    });
+    queueOuter.addEventListener('mouseenter', function(){ queueInner.classList.add('paused'); });
+    queueOuter.addEventListener('mouseleave', function(){ queueInner.classList.remove('paused'); });
   }
 </script>
 

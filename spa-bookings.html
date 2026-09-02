@@ -796,7 +796,12 @@
         if(covered[hIdx] !== undefined) return; // covered by an earlier-starting booking, skip
 
         const shiftClass = shiftClassFor(t.name, hIdx);
+        const shiftTip = SHIFT_TOOLTIP_LABELS[shiftClass] || '';
+        const shiftHoverAttrs = shiftTip
+          ? 'onmouseenter="showAppTooltip(event,\'' + shiftTip + '\')" onmousemove="positionAppTooltip(event)" onmouseleave="hideAppTooltip()" '
+          : '';
         html += '<div class="slot vacant' + (shiftClass ? ' ' + shiftClass : '') + '" style="grid-column:' + col + ';grid-row:' + rowStart + ' / span ' + ROWS_PER_SLOT + '" ' +
+            shiftHoverAttrs +
             'onclick="openSlot(\'' + key + '\')" ondragover="dragOver(event,\'' + key + '\')" ondragleave="dragLeave(event)" ondrop="drop(event,\'' + key + '\')">' +
           '<div class="slot-inner"></div>' +
         '</div>';
@@ -1262,6 +1267,16 @@
     if(s.lunchIdx !== null && s.lunchIdx !== undefined && hIdx >= s.lunchIdx && hIdx < s.lunchIdx + 4) return 'on-lunch'; // lunch is 1 hour = 4 slots
     return 'on-shift';
   }
+  // Hover labels for every shift-status colour shown on the grid, so hovering any of them
+  // (working, off, lunch, or a whole-day status) explains what it is.
+  const SHIFT_TOOLTIP_LABELS = {
+    'on-shift': 'Working',
+    'off-shift': 'Off shift',
+    'on-lunch': 'Lunch',
+    'day-holiday': 'Holiday',
+    'day-sick': 'Sick',
+    'day-emergency': 'Emergency Leave'
+  };
 
   const SKILLS_DEMO = ['Foot Massage', 'Full Body Massage', 'Manicure', 'Pedicure'];
   function openTherapistInfo(name){

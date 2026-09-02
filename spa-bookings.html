@@ -62,6 +62,10 @@
   }
   .queue-card:hover { border-color: #0D9488; }
   .queue-card-toprow { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; flex-wrap: wrap; }
+  .urgency-badge { font-size: 8.5px; font-weight: 800; padding: 2px 7px; border-radius: 7px; letter-spacing: 0.3px; color: white; }
+  .urgency-new { background: #7BC895; }
+  .urgency-amber { background: #F0A94D; }
+  .urgency-red { background: #E56B6F; }
   .queue-card-name { font-size: 14px; font-weight: 800; color: #0F1E2E; }
   .queue-card-tags { display: flex; align-items: center; gap: 6px; margin-bottom: 6px; flex-wrap: wrap; }
   .queue-card-service { font-size: 11.5px; color: #64748B; }
@@ -534,7 +538,7 @@
   // Represents bookings that have come in (for now: online) but haven't been assigned
   // a therapist/room yet. Three intake sources were mentioned (online being one) - the
   // other two are still being confirmed with the client, so only "online" is wired up here.
-  const QUEUE_STORAGE_KEY = 'mavis_spa_queue_demo_v3';
+  const QUEUE_STORAGE_KEY = 'mavis_spa_queue_demo_v4';
   let pendingQueue = [];
 
   function loadQueue(){
@@ -542,6 +546,13 @@
       const saved = localStorage.getItem(QUEUE_STORAGE_KEY);
       pendingQueue = saved ? JSON.parse(saved) : [];
     }catch(e){ pendingQueue = []; }
+    // Backfill createdAt for anything saved before this existed, so age-based badges have
+    // a baseline instead of crashing or showing as infinitely old.
+    let needsSave = false;
+    pendingQueue.forEach(function(item){
+      if(!item.createdAt){ item.createdAt = Date.now(); needsSave = true; }
+    });
+    if(needsSave) saveQueue();
   }
   function saveQueue(){
     try{ localStorage.setItem(QUEUE_STORAGE_KEY, JSON.stringify(pendingQueue)); }catch(e){}
@@ -640,15 +651,16 @@
 
   function seedQueueForDemo(){
     if(pendingQueue.length > 0) return; // one-time seed only
+    const now = Date.now();
     const demo = [
-      { client: 'Rebecca Hughes',   phone: randomPhone(), email: 'rebecca.hughes@gmail.com', returning: true,  serviceCode: 'DRM90',   requestedH: 6  },
-      { client: 'Marcus Webb',      phone: randomPhone(), email: 'marcus.webb@outlook.com',  returning: false, serviceCode: 'HLSM90',  requestedH: 10 },
-      { client: 'Fiona Campbell',   phone: '',             email: '',                        returning: null,  serviceCode: 'FR60',    requestedH: 4  },
-      { client: 'Alex Novak',       phone: randomPhone(), email: 'alex.novak@yahoo.com',     returning: true,  serviceCode: 'TBM120',  requestedH: 14 },
-      { client: 'Grace Lin',        phone: randomPhone(), email: 'grace.lin88@gmail.com',    returning: false, serviceCode: 'SBM',     requestedH: 8  },
-      { client: 'Tomasz Wojcik',    phone: '',             email: '',                        returning: null,  serviceCode: 'DMHM',    requestedH: 16 }
+      { client: 'Rebecca Hughes',   phone: randomPhone(), email: 'rebecca.hughes@gmail.com', returning: true,  serviceCode: 'DRM90',   requestedH: 6,  createdAt: now },
+      { client: 'Marcus Webb',      phone: randomPhone(), email: 'marcus.webb@outlook.com',  returning: false, serviceCode: 'HLSM90',  requestedH: 10, createdAt: now - 2*60000 },
+      { client: 'Fiona Campbell',   phone: '',             email: '',                        returning: null,  serviceCode: 'FR60',    requestedH: 4,  createdAt: now - 8*60000 },
+      { client: 'Alex Novak',       phone: randomPhone(), email: 'alex.novak@yahoo.com',     returning: true,  serviceCode: 'TBM120',  requestedH: 14, createdAt: now - 18*60000 },
+      { client: 'Grace Lin',        phone: randomPhone(), email: 'grace.lin88@gmail.com',    returning: false, serviceCode: 'SBM',     requestedH: 8,  createdAt: now - 35*60000 },
+      { client: 'Tomasz Wojcik',    phone: '',             email: '',                        returning: null,  serviceCode: 'DMHM',    requestedH: 16, createdAt: now }
     ];
-    demo.forEach(function(d){ d.id = 'q' + Date.now() + Math.floor(Math.random()*10000); d.bookingType = null; pendingQueue.push(d); });
+    demo.forEach(function(d){ d.id = 'q' + Date.now() + Math.floor(Math.random()*10000); d.bookingType = null; d.amberPrompted = false; d.redPrompted = false; pendingQueue.push(d); });
     saveQueue();
   }
 
@@ -789,14 +801,23 @@
       return;
     }
 
+    function urgencyBadgeFor(item){
+      const ageMin = (Date.now() - (item.createdAt || Date.now())) / 60000;
+      if(ageMin >= 30) return '<span class="urgency-badge urgency-red">30+ MIN</span>';
+      if(ageMin >= 15) return '<span class="urgency-badge urgency-amber">15+ MIN</span>';
+      if(ageMin < 5) return '<span class="urgency-badge urgency-new">NEW</span>';
+      return '';
+    }
+
     function cardHtml(item){
       const svc = serviceByCode(item.serviceCode);
       const serviceLine = (svc ? svc.name + ' (' + svc.code + ')' : '') + ' — ' + fmtTimeSlot(TIME_SLOTS[item.requestedH]);
       const nameHtml = '<span class="queue-card-name" style="text-decoration:underline;text-decoration-color:#CBD5E1;cursor:pointer" onclick="event.stopPropagation();openClientProfile(\'' + item.id + '\')">' + item.client + '</span>';
+      const urgency = urgencyBadgeFor(item);
 
       if(!item.bookingType){
         return '<div class="queue-card" onclick="openBookingInfo(\'' + item.id + '\')">' +
-          '<div class="queue-card-toprow">' + nameHtml + '</div>' +
+          '<div class="queue-card-toprow">' + nameHtml + urgency + '</div>' +
           '<div class="queue-card-service">' + serviceLine + '</div>' +
           '<div class="queue-type-btns" onclick="event.stopPropagation()">' +
             '<button class="queue-type-btn" style="background:#6FA8D9" onclick="setBookingType(\'' + item.id + '\',\'paid\')">PAID</button>' +
@@ -814,7 +835,7 @@
         '<div class="queue-drag-handle" title="Drag onto the grid">' +
           '<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><circle cx="9" cy="6" r="1.6"/><circle cx="15" cy="6" r="1.6"/><circle cx="9" cy="12" r="1.6"/><circle cx="15" cy="12" r="1.6"/><circle cx="9" cy="18" r="1.6"/><circle cx="15" cy="18" r="1.6"/></svg>' +
         '</div>' +
-        '<div class="queue-card-toprow" style="padding-right:34px">' + nameHtml + '</div>' +
+        '<div class="queue-card-toprow" style="padding-right:34px">' + nameHtml + urgency + '</div>' +
         '<div class="queue-card-tags">' + typeBadge + '</div>' +
         '<div class="queue-card-service">' + serviceLine + '</div>' +
       '</div>';
@@ -1620,6 +1641,42 @@
   }
   setInterval(checkHolds, 20000);
 
+  // Nudges reception once a waiting-list item has gone unallocated too long - fires once when
+  // it first crosses 15 minutes, and again once when it crosses 30, using the same "prompted"
+  // flag pattern as the hold-release check above so it never repeats itself every cycle.
+  function checkQueueUrgency(){
+    const anyModalOpen = document.getElementById('modalBg').classList.contains('show') ||
+                          document.getElementById('confirmBg').classList.contains('show') ||
+                          document.getElementById('queueEditBg').classList.contains('show');
+    if(anyModalOpen) return;
+    for(let i = 0; i < pendingQueue.length; i++){
+      const item = pendingQueue[i];
+      const ageMin = (Date.now() - (item.createdAt || Date.now())) / 60000;
+      if(ageMin >= 30 && !item.redPrompted){
+        item.redPrompted = true;
+        saveQueue();
+        showConfirm({
+          title: 'Still Waiting',
+          msg: item.client + ' has been waiting over 30 minutes with no therapist or room allocated yet - they may be arriving soon.',
+          buttons: [{ label: 'Understood', cls: 'confirm-btn-danger', onClick: function(){} }]
+        });
+        break;
+      }
+      if(ageMin >= 15 && !item.amberPrompted){
+        item.amberPrompted = true;
+        saveQueue();
+        showConfirm({
+          title: 'Needs Allocating',
+          msg: item.client + '\u2019s booking has been waiting 15 minutes - worth allocating a therapist and room soon.',
+          buttons: [{ label: 'Understood', cls: 'confirm-btn-cancel', onClick: function(){} }]
+        });
+        break;
+      }
+    }
+    renderQueue(); // badges are time-based, so refresh even if nothing crossed a threshold
+  }
+  setInterval(checkQueueUrgency, 20000);
+
   document.getElementById('today-label').textContent = new Date().toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
 
   loadBookings();
@@ -1799,7 +1856,7 @@
       id: 'q' + Date.now() + Math.floor(Math.random()*10000),
       client: client, phone: phone, email: email, returning: null,
       serviceCode: fdServiceCode, requestedH: fdTimeIdx, bookingType: null,
-      genderPref: fdGenderPref
+      genderPref: fdGenderPref, createdAt: Date.now(), amberPrompted: false, redPrompted: false
     });
     saveQueue();
     renderQueue();

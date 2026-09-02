@@ -636,7 +636,7 @@
         const span = svc ? slotsForDuration(svc.duration) : 1;
         const newKey = slotKey(newTi, targetH);
         if(!spanFree(newTi, targetH, span, targetKey)){
-          alert(therapistName + ' already has something booked over that time.');
+          appAlert(therapistName + ' already has something booked over that time.');
           return;
         }
         showConfirm({
@@ -666,7 +666,7 @@
       const svc = serviceByCode(b.serviceCode);
       const span = svc ? slotsForDuration(svc.duration) : 1;
       if(!spanFree(targetTi, targetH, span, key)){
-        alert('That time is already taken — clear it first, or drop somewhere free.');
+        appAlert('That time is already taken — clear it first, or drop somewhere free.');
         return;
       }
       delete bookings[key];
@@ -728,7 +728,7 @@
     const notes = document.getElementById('modalNotesInput').value.trim();
     const chosenTherapist = document.getElementById('modalTherapistSelect').value;
     const serviceCode = document.getElementById('modalServiceSelect').value;
-    if(!client){ alert('Enter a client name first.'); return; }
+    if(!client){ appAlert('Enter a client name first.'); return; }
 
     const oldParts = modalKey.split('-');
     const oldStartH = Number(oldParts[1]);
@@ -738,11 +738,11 @@
     const newKey = slotKey(newTi, oldStartH);
 
     if(oldStartH + span > HALF_HOURS.length){
-      alert('That treatment runs past closing time from this start slot — pick an earlier time.');
+      appAlert('That treatment runs past closing time from this start slot — pick an earlier time.');
       return;
     }
     if(!spanFree(newTi, oldStartH, span, modalKey)){
-      alert('That therapist already has something booked during part of that time.');
+      appAlert('That therapist already has something booked during part of that time.');
       return;
     }
 
@@ -800,6 +800,16 @@
     if(btn.onClick) btn.onClick();
   }
   document.getElementById('confirmBg').addEventListener('click', function(e){ if(e.target === this) this.classList.remove('show'); });
+
+  // A single-button, in-app-styled message - replaces the browser's native alert() everywhere
+  // on this page, so every popup matches Mavis instead of looking like a plain system dialog.
+  function appAlert(message, title){
+    showConfirm({
+      title: title || 'Just a heads up',
+      msg: message,
+      buttons: [{ label: 'OK', cls: 'confirm-btn-cancel', onClick: function(){} }]
+    });
+  }
 
   // ── 15-minute hold check ──
   function checkHolds(){

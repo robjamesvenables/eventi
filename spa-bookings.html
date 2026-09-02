@@ -584,18 +584,18 @@
         const segMin = slotStartMinutes(hIdx);
         const s = roomStatusAt(room.id, segMin);
         const tip = roomTooltipFor(room.id, segMin, s.status);
-        barHtml += '<div class="room-bar-seg" title="' + tip + '" style="width:' + segWidth + '%;background:' + colorMap[s.status] + '"></div>';
+        barHtml += '<div class="room-bar-seg" onmouseenter="showAppTooltip(event,\'' + tip + '\')" onmousemove="positionAppTooltip(event)" onmouseleave="hideAppTooltip()" style="width:' + segWidth + '%;background:' + colorMap[s.status] + '"></div>';
       });
 
       const live = roomStatusAt(room.id, nowMinutes);
       let timerHtml;
       if(live.status === 'buffer'){
         const soon = live.minutesLeftInBuffer <= 5;
-        timerHtml = '<div class="room-timer buffer' + (soon ? ' soon' : '') + '" title="Free in ' + live.minutesLeftInBuffer + ' min">' + live.minutesLeftInBuffer + '</div>';
+        timerHtml = '<div class="room-timer buffer' + (soon ? ' soon' : '') + '" onmouseenter="showAppTooltip(event,\'Free in ' + live.minutesLeftInBuffer + ' min\')" onmousemove="positionAppTooltip(event)" onmouseleave="hideAppTooltip()">' + live.minutesLeftInBuffer + '</div>';
       } else if(live.status === 'taken'){
-        timerHtml = '<div class="room-timer" style="background:#F3D9D2;color:#9C4A32" title="In treatment">\u2014</div>';
+        timerHtml = '<div class="room-timer" style="background:#F3D9D2;color:#9C4A32" onmouseenter="showAppTooltip(event,\'In treatment\')" onmousemove="positionAppTooltip(event)" onmouseleave="hideAppTooltip()">\u2014</div>';
       } else {
-        timerHtml = '<div class="room-timer" title="Free">\u2014</div>';
+        timerHtml = '<div class="room-timer" onmouseenter="showAppTooltip(event,\'Free\')" onmousemove="positionAppTooltip(event)" onmouseleave="hideAppTooltip()">\u2014</div>';
       }
 
       return '<div class="room-row"><div class="room-row-name">' + room.name + '</div><div class="room-bar">' + barHtml + '</div>' + timerHtml + '</div>';
@@ -1354,6 +1354,28 @@
   loadShifts();
   renderGrid();
   renderQueue();
+</script>
+
+<div id="appTooltip" style="display:none;position:fixed;background:#0F1E2E;color:white;font-family:'Inter',sans-serif;font-size:11.5px;font-weight:700;padding:6px 10px;border-radius:7px;z-index:999;pointer-events:none;white-space:nowrap;box-shadow:0 4px 12px rgba(0,0,0,0.2)"></div>
+<script>
+  // A small in-app styled tooltip, replacing the browser's native title attribute (which
+  // can't be styled at all and looks like a plain OS popup, not part of the app).
+  function showAppTooltip(e, text){
+    const tip = document.getElementById('appTooltip');
+    tip.textContent = text;
+    tip.style.display = 'block';
+    positionAppTooltip(e);
+  }
+  function positionAppTooltip(e){
+    const tip = document.getElementById('appTooltip');
+    if(tip.style.display === 'none') return;
+    const x = e.clientX, y = e.clientY;
+    tip.style.left = Math.min(x + 14, window.innerWidth - tip.offsetWidth - 10) + 'px';
+    tip.style.top = (y - 34) + 'px';
+  }
+  function hideAppTooltip(){
+    document.getElementById('appTooltip').style.display = 'none';
+  }
 </script>
 
 </body>

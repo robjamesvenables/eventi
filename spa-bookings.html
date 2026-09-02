@@ -63,14 +63,6 @@
   .queue-card-time { font-size: 11px; font-weight: 700; color: #C4973B; white-space: nowrap; }
   .queue-empty { font-size: 12.5px; color: #94A3B8; text-align: center; padding: 30px 14px; }
 
-  .allocate-option {
-    background: #F0FDFA; border: 1.5px solid #99F0E4; border-radius: 10px; padding: 12px 14px;
-    margin-bottom: 8px; cursor: pointer; display: flex; align-items: center; justify-content: space-between; gap: 10px;
-  }
-  .allocate-option:hover { border-color: #0D9488; background: #DCFCE7; }
-  .allocate-option-name { font-size: 13.5px; font-weight: 800; color: #0F1E2E; display: flex; align-items: center; gap: 8px; }
-  .allocate-none { font-size: 13px; color: #94A3B8; text-align: center; padding: 20px 10px; line-height: 1.5; }
-
   .therapist-strip { background: white; border-bottom: 1px solid #E2E8F0; padding: 14px 22px; }
   .therapist-chips { display: flex; gap: 8px; flex-wrap: wrap; }
   .therapist-chip {
@@ -353,16 +345,6 @@
     </div>
   </div>
 
-  <div class="modal-bg" id="allocateBg">
-    <div class="modal-box">
-      <div class="modal-title">Allocate Therapist</div>
-      <div class="modal-sub" id="allocateSub"></div>
-      <div class="modal-label">Available Therapists</div>
-      <div id="allocateOptions"></div>
-      <button class="modal-btn modal-btn-cancel" style="width:100%;margin-top:6px" onclick="closeAllocateModal()">Cancel</button>
-    </div>
-  </div>
-
 <script>
   const THERAPISTS = [
     {name:'Made 1', gender:'M'}, {name:'Kadek', gender:'F'}, {name:'Wayan', gender:'M'},
@@ -520,12 +502,12 @@
         '</div>';
       }
 
-      return '<div class="queue-card" onclick="openAllocateModal(\'' + item.id + '\')">' +
+      return '<div class="queue-card" draggable="true" ondragstart="queueDragStart(event,\'' + item.id + '\')" ondragend="queueDragEnd(event)" style="cursor:grab">' +
         '<div>' +
           '<div style="display:flex;align-items:center;gap:8px;margin-bottom:3px">' + nameLink + sourceBadge + '<span style="font-size:9px;font-weight:800;color:#16A34A">\u2713 CONFIRMED</span></div>' +
           '<div class="queue-card-service">' + (svc ? svc.name + ' (' + svc.code + ')' : '') + ' — ' + fmtHalfHour(HALF_HOURS[item.requestedH]) + '</div>' +
         '</div>' +
-        '<div class="queue-card-time" style="color:#0D9488">Allocate →</div>' +
+        '<div class="queue-card-time" style="color:#0D9488">Drag onto grid →</div>' +
       '</div>';
     }
 
@@ -589,50 +571,6 @@
     closeClientProfile();
   }
   document.getElementById('clientProfileBg').addEventListener('click', function(e){ if(e.target === this) closeClientProfile(); });
-
-  function openAllocateModal(id){
-    const item = pendingQueue.find(function(q){ return q.id === id; });
-    if(!item || !item.confirmed) return; // must be confirmed as read before it can be allocated
-    window._allocatingId = id;
-    const svc = serviceByCode(item.serviceCode);
-    document.getElementById('allocateSub').textContent =
-      item.client + ' — ' + (svc ? svc.name : '') + ' — requested ' + fmtHalfHour(HALF_HOURS[item.requestedH]);
-
-    const span = svc ? slotsForDuration(svc.duration) : 1;
-    const available = THERAPISTS.filter(function(t, ti){
-      if(item.requestedH + span > HALF_HOURS.length) return false;
-      return spanFree(ti, item.requestedH, span);
-    });
-
-    const optionsEl = document.getElementById('allocateOptions');
-    optionsEl.innerHTML = available.map(function(t){
-      const ti = therapistIndexByName(t.name);
-      return '<div class="allocate-option" onclick="allocateTo(' + ti + ')">' +
-        '<div class="allocate-option-name"><span class="gender-badge ' + t.gender + '">' + t.gender + '</span>' + t.name + '</div>' +
-        '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#0D9488" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>' +
-      '</div>';
-    }).join('');
-    document.getElementById('allocateBg').classList.add('show');
-  }
-  function closeAllocateModal(){
-    document.getElementById('allocateBg').classList.remove('show');
-    window._allocatingId = null;
-  }
-  function allocateTo(ti){
-    const item = pendingQueue.find(function(q){ return q.id === window._allocatingId; });
-    if(!item) return;
-    const key = slotKey(ti, item.requestedH);
-    bookings[key] = {
-      serviceCode: item.serviceCode, client: item.client, phone: item.phone, notes: '',
-      status: 'booked', holdStartedAt: null, holdPrompted: false
-    };
-    pendingQueue = pendingQueue.filter(function(q){ return q.id !== item.id; });
-    saveBookings(); saveQueue();
-    renderGrid(); renderQueue();
-    closeAllocateModal();
-  }
-  document.getElementById('allocateBg').addEventListener('click', function(e){ if(e.target === this) closeAllocateModal(); });
-
 
   // Figure out, for a given therapist, which half-hour indices are covered by a booking
   // that started earlier (so we know to skip rendering an empty box there).
@@ -709,20 +647,28 @@
     if(typeof refreshBuildingPanel === 'function') refreshBuildingPanel();
   }
 
-  // ── Two drag sources: an unassigned therapist, or an existing booking being moved ──
+  // ── Three drag sources: an unassigned therapist, an existing booking being moved, or a
+  // confirmed queue item being dragged straight onto a free slot to allocate it there ──
   let draggedTherapist = null;
   let draggedBookingKey = null;
+  let draggedQueueId = null;
 
   function therapistDragStart(e, name){
-    draggedTherapist = name; draggedBookingKey = null;
+    draggedTherapist = name; draggedBookingKey = null; draggedQueueId = null;
     e.dataTransfer.effectAllowed = 'copy';
     e.currentTarget.classList.add('dragging');
   }
   function therapistDragEnd(e){ e.currentTarget.classList.remove('dragging'); }
   function bookingDragStart(e, key){
-    draggedBookingKey = key; draggedTherapist = null;
+    draggedBookingKey = key; draggedTherapist = null; draggedQueueId = null;
     e.dataTransfer.effectAllowed = 'move';
   }
+  function queueDragStart(e, id){
+    draggedQueueId = id; draggedTherapist = null; draggedBookingKey = null;
+    e.dataTransfer.effectAllowed = 'move';
+    e.currentTarget.classList.add('dragging');
+  }
+  function queueDragEnd(e){ e.currentTarget.classList.remove('dragging'); }
   function dragOver(e){ e.preventDefault(); e.currentTarget.classList.add('drag-over'); }
   function dragLeave(e){ e.currentTarget.classList.remove('drag-over'); }
 
@@ -798,6 +744,31 @@
       delete bookings[key];
       bookings[targetKey] = b;
       saveBookings(); renderGrid();
+      return;
+    }
+
+    if(draggedQueueId){
+      const id = draggedQueueId;
+      draggedQueueId = null;
+      const item = pendingQueue.find(function(q){ return q.id === id; });
+      if(!item) return;
+      const svc = serviceByCode(item.serviceCode);
+      const span = svc ? slotsForDuration(svc.duration) : 1;
+      if(targetH + span > HALF_HOURS.length){
+        appAlert('That treatment runs past closing time from here — try an earlier slot.');
+        return;
+      }
+      if(!spanFree(targetTi, targetH, span)){
+        appAlert('That slot isn\u2019t free for the whole treatment — try a different time or therapist.');
+        return;
+      }
+      bookings[targetKey] = {
+        serviceCode: item.serviceCode, client: item.client, phone: item.phone, notes: item.clientNotes || '',
+        status: 'booked', holdStartedAt: null, holdPrompted: false
+      };
+      pendingQueue = pendingQueue.filter(function(q){ return q.id !== id; });
+      saveBookings(); saveQueue();
+      renderGrid(); renderQueue();
     }
   }
 

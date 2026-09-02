@@ -63,17 +63,6 @@
     grid-auto-rows: 15px;
   }
 
-  .hd-time { background: #0F1E2E; grid-column: 1; grid-row: 1 / span 4; }
-  .hd-cell {
-    grid-row: 1 / span 4;
-    background: #FAFBFC; border-left: 1px solid #F1F5F9;
-    padding: 8px 4px; text-align: center; display: flex; flex-direction: column;
-    align-items: center; gap: 3px; cursor: grab;
-  }
-  .hd-cell:active { cursor: grabbing; }
-  .hd-cell.dragging { opacity: 0.4; }
-  .hd-cell-name { font-size: 10.5px; font-weight: 800; color: #0F1E2E; line-height: 1.15; }
-
   .time-label {
     grid-column: 1; background: #FAFBFC; border-top: 1px solid #F1F5F9;
     font-size: 10px; font-weight: 800; color: #64748B; padding: 2px 6px 0 0;
@@ -382,16 +371,9 @@
     const totalRows = HALF_HOURS.length * ROWS_PER_SLOT;
     let html = '';
 
-    // Header row (therapist columns)
-    html += '<div class="hd-time"></div>';
-    THERAPISTS.forEach(function(t, ti){
-      html += '<div class="hd-cell" style="grid-column:' + (ti+2) + '" draggable="true" onclick="openTherapistInfo(\'' + t.name + '\')" ondragstart="therapistDragStart(event,\'' + t.name + '\')" ondragend="therapistDragEnd(event)">' +
-        '<span class="gender-badge ' + t.gender + '">' + t.gender + '</span><div class="hd-cell-name">' + t.name + '</div></div>';
-    });
-
     // Time labels down the left, one per hour (on the :00 row)
     HALF_HOURS.forEach(function(hh, hIdx){
-      const rowStart = 5 + hIdx * ROWS_PER_SLOT; // header now occupies rows 1-4
+      const rowStart = 1 + hIdx * ROWS_PER_SLOT;
       if(hh.endsWith(':00')){
         html += '<div class="time-label" style="grid-row:' + rowStart + ' / span ' + ROWS_PER_SLOT + '">' + fmtHalfHour(hh) + '</div>';
       } else {
@@ -404,7 +386,7 @@
       const covered = coveredSlots(ti);
       const col = ti + 2;
       HALF_HOURS.forEach(function(hh, hIdx){
-        const rowStart = 5 + hIdx * ROWS_PER_SLOT;
+        const rowStart = 1 + hIdx * ROWS_PER_SLOT;
         const key = slotKey(ti, hIdx);
         const b = bookings[key];
 
@@ -431,7 +413,7 @@
     });
 
     grid.style.setProperty('--n-therapists', THERAPISTS.length);
-    grid.style.gridTemplateRows = 'repeat(' + (totalRows + 4) + ', 15px)';
+    grid.style.gridTemplateRows = 'repeat(' + totalRows + ', 15px)';
     grid.innerHTML = html;
     if(typeof refreshBuildingPanel === 'function') refreshBuildingPanel();
   }

@@ -375,6 +375,7 @@
 
       <div class="modal-label">Or mark the whole day as</div>
       <div id="tiDayStatusBtns" class="shift-btns"></div>
+      <button id="tiClearStatusBtn" onclick="clearTherapistDayStatus(window._tiName)" style="width:100%;margin-top:8px;background:none;border:1.5px dashed #E2E8F0;border-radius:9px;color:#94A3B8;font-family:inherit;font-size:11.5px;font-weight:700;padding:9px;cursor:pointer;display:none">Clear Holiday / Sick / Emergency</button>
 
       <div class="modal-label" style="margin-top:16px">Services offered</div>
       <div id="tiSkills" style="margin-bottom:18px"></div>
@@ -1206,6 +1207,12 @@
     renderGrid();
     openTherapistInfo(name); // refresh the modal in place so the active button updates
   }
+  function clearTherapistDayStatus(name){
+    delete therapistShifts[name];
+    saveShifts();
+    renderGrid();
+    openTherapistInfo(name);
+  }
   function saveTherapistCustomShift(name){
     if(shiftDraft.startIdx === null || shiftDraft.endIdx === null){
       appAlert('Set both a start time and an end time first.');
@@ -1255,6 +1262,7 @@
       const style = isActive ? 'style="background:' + dayColorFor[key] + '"' : '';
       return '<button class="shift-btn' + (isActive ? ' active' : '') + '" ' + style + ' onclick="setTherapistDayStatus(\'' + name + '\',\'' + key + '\')">' + DAY_STATUSES[key].label + '</button>';
     }).join('');
+    document.getElementById('tiClearStatusBtn').style.display = (current && DAY_STATUSES[current.type]) ? 'block' : 'none';
 
     document.getElementById('tiSkills').innerHTML = SKILLS_DEMO.map(function(s){
       return '<div class="skill-item"><span class="skill-check">\u2713</span>' + s + '</div>';

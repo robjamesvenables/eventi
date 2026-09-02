@@ -58,8 +58,8 @@
     background: #F0FDFA; display: flex; align-items: center; justify-content: center; color: #0D9488;
   }
   .queue-confirm-btn {
-    width: 100%; margin-top: 8px; background: #0F1E2E; color: white; border: none; border-radius: 8px;
-    padding: 9px; font-family: inherit; font-size: 12px; font-weight: 700; cursor: pointer;
+    width: auto; margin-top: 8px; background: #0F1E2E; color: white; border: none; border-radius: 8px;
+    padding: 8px 20px; font-family: inherit; font-size: 12px; font-weight: 700; cursor: pointer;
   }
   .queue-empty { font-size: 12.5px; color: #94A3B8; text-align: center; padding: 30px 14px; }
 
@@ -110,8 +110,8 @@
     align-items: center; justify-content: center; gap: 0; font-size: 9.5px; font-weight: 700;
     text-align: center; padding: 2px 3px; overflow: hidden;
   }
-  .vacant .slot-inner { background: #ECFDF5; border: 1.5px dashed #86EFAC; color: #16A34A; opacity: 0.55; }
-  .vacant:hover .slot-inner, .vacant.drag-over .slot-inner { opacity: 1; background: #DCFCE7; }
+  .vacant .slot-inner { background: #C9F2DA; border: 1.5px solid #7FDBA0; color: #0F7A3D; opacity: 0.9; }
+  .vacant:hover .slot-inner, .vacant.drag-over .slot-inner { opacity: 1; background: #A9EAC2; }
   .hold .slot-inner { background: #D9A441; color: white; cursor: grab; }
   .booked .slot-inner { background: #D97757; color: white; cursor: grab; }
   .slot-code { font-size: 12px; font-weight: 900; letter-spacing: 0.4px; line-height: 1.1; }
@@ -393,7 +393,7 @@
   function therapistIndexByName(name){ return THERAPISTS.findIndex(function(t){ return t.name === name; }); }
   function slotKey(t, h){ return t + '-' + h; }
 
-  const STORAGE_KEY = 'mavis_spa_bookings_demo_v7';
+  const STORAGE_KEY = 'mavis_spa_bookings_demo_v8';
   let bookings = {}; // key "therapistIdx-halfHourIndex" -> {serviceCode, client, phone, notes, status, holdStartedAt, holdPrompted}
 
   function loadBookings(){
@@ -425,11 +425,12 @@
     THERAPISTS.forEach(function(t, ti){
       let hIdx = 0;
       while(hIdx < HALF_HOURS.length){
-        if(Math.random() > 0.75){ hIdx++; continue; } // leave gaps
+        // Target overall mix: 50% booked, 25% on hold, 25% left vacant.
+        if(Math.random() < 0.25){ hIdx++; continue; } // 25% stays vacant
         const svc = SERVICES[Math.floor(Math.random() * SERVICES.length)];
         const span = slotsForDuration(svc.duration);
         if(hIdx + span > HALF_HOURS.length){ hIdx++; continue; }
-        const status = Math.random() < 0.5 ? 'hold' : 'booked';
+        const status = Math.random() < (2/3) ? 'booked' : 'hold'; // 50%/25% of the whole, since this only runs for the 75% that isn't vacant
         bookings[slotKey(ti, hIdx)] = {
           serviceCode: svc.code, client: DEMO_CLIENT_NAMES[nameIdx % DEMO_CLIENT_NAMES.length],
           phone: randomPhone(), notes: '', status: status, holdStartedAt: null, holdPrompted: false
@@ -513,11 +514,7 @@
       '</div>';
     }
 
-    const cardsHtml = pendingQueue.map(cardHtml).join('');
-    // Duplicate the list once so the auto-scroll can loop seamlessly (see startQueueAutoScroll).
-    const needsScroll = pendingQueue.length > 2;
-    list.innerHTML = cardsHtml + (needsScroll ? cardsHtml : '');
-    if(typeof restartQueueAutoScroll === 'function') restartQueueAutoScroll();
+    list.innerHTML = pendingQueue.map(cardHtml).join('');
   }
 
   function confirmQueueItem(id){
@@ -1037,45 +1034,6 @@
   renderTherapistChips();
   renderGrid();
   renderQueue();
-
-  // Auto-scroll the queue like a real ticker, but as an actual scrollable list nudged forward
-  // by JS - not a CSS transform animation. This is what makes both things work naturally:
-  // pausing on touch/hover just stops the JS nudging (immediate, no fighting a running
-  // animation), and manually scrolling with a finger or mouse wheel works for free, since
-  // it's a genuine overflow:auto element the browser already knows how to scroll.
-  let queueAutoScrollTimer = null;
-  function startQueueAutoScroll(){
-    stopQueueAutoScroll();
-    const outer = document.querySelector('.queue-scroll-outer');
-    if(!outer) return;
-    queueAutoScrollTimer = setInterval(function(){
-      if(outer.scrollHeight <= outer.clientHeight + 2) return; // not enough content to scroll
-      outer.scrollTop += 0.6;
-      const halfway = outer.scrollHeight / 2;
-      if(outer.scrollTop >= halfway){
-        outer.scrollTop -= halfway; // list is duplicated once, so this loops seamlessly
-      }
-    }, 40);
-  }
-  function stopQueueAutoScroll(){
-    clearInterval(queueAutoScrollTimer);
-    queueAutoScrollTimer = null;
-  }
-  function restartQueueAutoScroll(){
-    // Called after every re-render, since the content (and whether it needs to scroll at
-    // all) may have changed.
-    startQueueAutoScroll();
-  }
-
-  const queueOuter = document.querySelector('.queue-scroll-outer');
-  if(queueOuter){
-    queueOuter.addEventListener('mouseenter', stopQueueAutoScroll);
-    queueOuter.addEventListener('mouseleave', startQueueAutoScroll);
-    queueOuter.addEventListener('touchstart', stopQueueAutoScroll, {passive:true});
-    queueOuter.addEventListener('touchend', startQueueAutoScroll, {passive:true});
-    queueOuter.addEventListener('touchcancel', startQueueAutoScroll, {passive:true});
-  }
-  startQueueAutoScroll();
 </script>
 
 </body>

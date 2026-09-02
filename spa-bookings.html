@@ -33,6 +33,38 @@
   .legend-item { display: flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600; color: rgba(255,255,255,0.85); }
   .legend-dot { width: 10px; height: 10px; border-radius: 3px; }
 
+  .queue-panel { background: #E9EDF3; border-bottom: 1px solid #DCE2EB; }
+  .queue-header { background: #0F1E2E; padding: 8px 22px; display: flex; align-items: center; gap: 10px; }
+  .queue-ico { width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .queue-title { font-size: 13px; font-weight: 700; color: white; text-transform: uppercase; letter-spacing: 1px; }
+  .queue-live-dot { width: 7px; height: 7px; border-radius: 50%; background: #4ADE80; box-shadow: 0 0 0 3px rgba(74,222,128,0.25); }
+  .queue-count { margin-left: auto; font-size: 11px; font-weight: 700; color: rgba(255,255,255,0.6); }
+  .queue-scroll-outer { height: 108px; overflow: hidden; position: relative; padding: 0 22px; }
+  .queue-scroll-outer::before, .queue-scroll-outer::after { content: ''; position: absolute; left: 0; right: 0; height: 14px; z-index: 2; pointer-events: none; }
+  .queue-scroll-outer::before { top: 0; background: linear-gradient(#E9EDF3, transparent); }
+  .queue-scroll-outer::after { bottom: 0; background: linear-gradient(transparent, #E9EDF3); }
+  .queue-scroll-inner { display: flex; flex-direction: column; gap: 8px; padding: 12px 0; animation: queueScroll linear infinite; }
+  .queue-scroll-inner.paused { animation-play-state: paused; }
+  @keyframes queueScroll { from { transform: translateY(0); } to { transform: translateY(-50%); } }
+  .queue-card {
+    background: white; border: 1.5px solid #E2E8F0; border-radius: 10px; padding: 10px 14px;
+    cursor: pointer; display: flex; align-items: center; justify-content: space-between; gap: 10px;
+    transition: border-color 0.15s; flex-shrink: 0;
+  }
+  .queue-card:hover { border-color: #0D9488; }
+  .queue-card-name { font-size: 13px; font-weight: 800; color: #0F1E2E; }
+  .queue-card-service { font-size: 11px; color: #64748B; margin-top: 1px; }
+  .queue-card-time { font-size: 11px; font-weight: 700; color: #C4973B; white-space: nowrap; }
+  .queue-empty { font-size: 12.5px; color: #94A3B8; text-align: center; padding: 30px 14px; }
+
+  .allocate-option {
+    background: #F0FDFA; border: 1.5px solid #99F0E4; border-radius: 10px; padding: 12px 14px;
+    margin-bottom: 8px; cursor: pointer; display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  }
+  .allocate-option:hover { border-color: #0D9488; background: #DCFCE7; }
+  .allocate-option-name { font-size: 13.5px; font-weight: 800; color: #0F1E2E; display: flex; align-items: center; gap: 8px; }
+  .allocate-none { font-size: 13px; color: #94A3B8; text-align: center; padding: 20px 10px; line-height: 1.5; }
+
   .therapist-strip { background: white; border-bottom: 1px solid #E2E8F0; padding: 14px 22px; }
   .therapist-chips { display: flex; gap: 8px; flex-wrap: wrap; }
   .therapist-chip {
@@ -167,6 +199,20 @@
     </div>
   </div>
 
+  <div class="queue-panel">
+    <div class="queue-header">
+      <div class="queue-ico">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#C4973B" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+      </div>
+      <div class="queue-title">Waiting To Be Allocated</div>
+      <div class="queue-live-dot"></div>
+      <div class="queue-count" id="queueCount"></div>
+    </div>
+    <div class="queue-scroll-outer">
+      <div class="queue-scroll-inner" id="queueList"></div>
+    </div>
+  </div>
+
   <div class="therapist-strip">
     <div class="therapist-chips" id="therapistChips"></div>
   </div>
@@ -245,6 +291,16 @@
         <button class="modal-btn modal-btn-cancel" onclick="closeVisitModal()">Close</button>
         <button class="modal-btn modal-btn-save" onclick="saveVisitNotes()">Save Note</button>
       </div>
+    </div>
+  </div>
+
+  <div class="modal-bg" id="allocateBg">
+    <div class="modal-box">
+      <div class="modal-title">Allocate Therapist</div>
+      <div class="modal-sub" id="allocateSub"></div>
+      <div class="modal-label">Available Therapists</div>
+      <div id="allocateOptions"></div>
+      <button class="modal-btn modal-btn-cancel" style="width:100%;margin-top:6px" onclick="closeAllocateModal()">Cancel</button>
     </div>
   </div>
 
@@ -342,6 +398,119 @@
     });
     saveBookings();
   }
+
+  // ── Waiting To Be Allocated queue ──
+  // Represents bookings that have come in (for now: online) but haven't been assigned
+  // a therapist/room yet. Three intake sources were mentioned (online being one) - the
+  // other two are still being confirmed with the client, so only "online" is wired up here.
+  const QUEUE_STORAGE_KEY = 'mavis_spa_queue_demo_v1';
+  let pendingQueue = [];
+
+  function loadQueue(){
+    try{
+      const saved = localStorage.getItem(QUEUE_STORAGE_KEY);
+      pendingQueue = saved ? JSON.parse(saved) : [];
+    }catch(e){ pendingQueue = []; }
+  }
+  function saveQueue(){
+    try{ localStorage.setItem(QUEUE_STORAGE_KEY, JSON.stringify(pendingQueue)); }catch(e){}
+  }
+  function seedQueueForDemo(){
+    if(pendingQueue.length > 0) return; // one-time seed only
+    const demo = [
+      { client: 'Rebecca Hughes',   phone: randomPhone(), serviceCode: 'DRM90',   requestedH: 6,  source: 'online' },
+      { client: 'Marcus Webb',      phone: randomPhone(), serviceCode: 'HLSM90',  requestedH: 10, source: 'online' },
+      { client: 'Fiona Campbell',   phone: randomPhone(), serviceCode: 'FR60',    requestedH: 4,  source: 'online' },
+      { client: 'Alex Novak',       phone: randomPhone(), serviceCode: 'TBM120',  requestedH: 14, source: 'online' },
+      { client: 'Grace Lin',        phone: randomPhone(), serviceCode: 'SBM',     requestedH: 8,  source: 'online' },
+      { client: 'Tomasz Wojcik',    phone: randomPhone(), serviceCode: 'DMHM',    requestedH: 16, source: 'online' }
+    ];
+    demo.forEach(function(d){ d.id = 'q' + Date.now() + Math.floor(Math.random()*10000); pendingQueue.push(d); });
+    saveQueue();
+  }
+
+  function renderQueue(){
+    const list = document.getElementById('queueList');
+    const count = document.getElementById('queueCount');
+    if(!list) return;
+    count.textContent = pendingQueue.length + (pendingQueue.length === 1 ? ' waiting' : ' waiting');
+
+    if(!pendingQueue.length){
+      list.innerHTML = '<div class="queue-empty">Nobody waiting to be allocated right now.</div>';
+      list.style.animation = 'none';
+      return;
+    }
+
+    function cardHtml(item){
+      const svc = serviceByCode(item.serviceCode);
+      return '<div class="queue-card" onclick="openAllocateModal(\'' + item.id + '\')">' +
+        '<div>' +
+          '<div class="queue-card-name">' + item.client + '</div>' +
+          '<div class="queue-card-service">' + (svc ? svc.name + ' (' + svc.code + ')' : '') + '</div>' +
+        '</div>' +
+        '<div class="queue-card-time">' + fmtHalfHour(HALF_HOURS[item.requestedH]) + '</div>' +
+      '</div>';
+    }
+
+    const cardsHtml = pendingQueue.map(cardHtml).join('');
+    // Duplicate the list once so the scroll animation can loop seamlessly at -50%.
+    const needsScroll = pendingQueue.length > 2;
+    list.innerHTML = cardsHtml + (needsScroll ? cardsHtml : '');
+    if(needsScroll){
+      const duration = pendingQueue.length * 4; // slow, roughly 4s per card
+      list.style.animation = 'queueScroll ' + duration + 's linear infinite';
+    } else {
+      list.style.animation = 'none';
+    }
+  }
+
+  function openAllocateModal(id){
+    const item = pendingQueue.find(function(q){ return q.id === id; });
+    if(!item) return;
+    window._allocatingId = id;
+    const svc = serviceByCode(item.serviceCode);
+    document.getElementById('allocateSub').textContent =
+      item.client + ' — ' + (svc ? svc.name : '') + ' — requested ' + fmtHalfHour(HALF_HOURS[item.requestedH]);
+
+    const span = svc ? slotsForDuration(svc.duration) : 1;
+    const available = THERAPISTS.filter(function(t, ti){
+      if(item.requestedH + span > HALF_HOURS.length) return false;
+      return spanFree(ti, item.requestedH, span);
+    });
+
+    const optionsEl = document.getElementById('allocateOptions');
+    if(!available.length){
+      optionsEl.innerHTML = '<div class="allocate-none">No therapist is free for this treatment at ' + fmtHalfHour(HALF_HOURS[item.requestedH]) + '. Try a different time, or check back once a slot frees up.</div>';
+    } else {
+      optionsEl.innerHTML = available.map(function(t){
+        const ti = therapistIndexByName(t.name);
+        return '<div class="allocate-option" onclick="allocateTo(' + ti + ')">' +
+          '<div class="allocate-option-name"><span class="gender-badge ' + t.gender + '">' + t.gender + '</span>' + t.name + '</div>' +
+          '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#0D9488" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>' +
+        '</div>';
+      }).join('');
+    }
+    document.getElementById('allocateBg').classList.add('show');
+  }
+  function closeAllocateModal(){
+    document.getElementById('allocateBg').classList.remove('show');
+    window._allocatingId = null;
+  }
+  function allocateTo(ti){
+    const item = pendingQueue.find(function(q){ return q.id === window._allocatingId; });
+    if(!item) return;
+    const key = slotKey(ti, item.requestedH);
+    bookings[key] = {
+      serviceCode: item.serviceCode, client: item.client, phone: item.phone, notes: '',
+      status: 'booked', holdStartedAt: null, holdPrompted: false
+    };
+    pendingQueue = pendingQueue.filter(function(q){ return q.id !== item.id; });
+    saveBookings(); saveQueue();
+    renderGrid(); renderQueue();
+    closeAllocateModal();
+  }
+  document.getElementById('allocateBg').addEventListener('click', function(e){ if(e.target === this) closeAllocateModal(); });
+
 
   // Figure out, for a given therapist, which half-hour indices are covered by a booking
   // that started earlier (so we know to skip rendering an empty box there).
@@ -731,8 +900,11 @@
 
   loadBookings();
   fillGridForDemo();
+  loadQueue();
+  seedQueueForDemo();
   renderTherapistChips();
   renderGrid();
+  renderQueue();
 </script>
 
 </body>

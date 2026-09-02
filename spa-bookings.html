@@ -85,6 +85,8 @@
     flex: 1; border: none; border-radius: 7px; color: white; font-family: inherit;
     font-size: 10.5px; font-weight: 800; letter-spacing: 0.3px; padding: 8px 4px; cursor: pointer;
   }
+  .queue-type-btn.fd-type-option { opacity: 0.55; }
+  .queue-type-btn.fd-selected { opacity: 1; outline: 2.5px solid #0F1E2E; outline-offset: 2px; }
   .queue-empty { font-size: 12.5px; color: #94A3B8; text-align: center; padding: 30px 14px; }
 
   .rooms-panel { background: #E9EDF3; border: 1.5px solid #DCE2EB; border-radius: 14px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); overflow: hidden; flex: 1; min-width: 300px; }
@@ -1749,6 +1751,14 @@
           <button class="status-pill" id="fdPrefF" onclick="setFdGenderPref('F')">Female</button>
         </div>
 
+        <div class="modal-label">How Is This Coming In? <span style="color:#D97757">*</span></div>
+        <div class="queue-type-btns" style="margin-bottom:20px">
+          <button class="queue-type-btn fd-type-option" id="fdTypePaid" style="background:#6FA8D9" onclick="setFdBookingType('paid')">PAID</button>
+          <button class="queue-type-btn fd-type-option" id="fdTypeWalkin" style="background:#D9BC7D" onclick="setFdBookingType('walkin')">WALK IN</button>
+          <button class="queue-type-btn fd-type-option" id="fdTypeWa" style="background:#7BC895" onclick="setFdBookingType('wa')">WA</button>
+          <button class="queue-type-btn fd-type-option" id="fdTypeReferral" style="background:#B39DDB" onclick="setFdBookingType('referral')">REFERRAL</button>
+        </div>
+
         <button class="modal-btn modal-btn-save" style="width:100%" onclick="submitFrontDeskBooking()">Add to Waiting List</button>
       </div>
     </div>
@@ -1810,6 +1820,7 @@
   let fdServiceCode = null;
   let fdTimeIdx = null;
   let fdGenderPref = null;
+  let fdBookingType = null;
 
   function openFdServicePicker(){
     const list = document.getElementById('pickerList');
@@ -1848,6 +1859,16 @@
     document.getElementById('fdPrefM').classList.toggle('active-returning', pref === 'M');
     document.getElementById('fdPrefF').classList.toggle('active-returning', pref === 'F');
   }
+  // Set right on the Front Desk form, since whoever's filling it in already knows how this
+  // booking is coming in - e.g. a walk-in standing right there - so there's no reason to make
+  // them classify it again a second time once it lands in the queue.
+  function setFdBookingType(type){
+    fdBookingType = type;
+    ['Paid', 'Walkin', 'Wa', 'Referral'].forEach(function(suffix){
+      const key = suffix.toLowerCase();
+      document.getElementById('fdType' + suffix).classList.toggle('fd-selected', fdBookingType === key);
+    });
+  }
   function resetFrontDeskForm(){
     document.getElementById('fdClientInput').value = '';
     document.getElementById('fdPhoneInput').value = '';
@@ -1859,6 +1880,7 @@
     document.getElementById('fdTimePickerLabel').textContent = 'Select time';
     document.getElementById('fdTimePickerBtn').classList.add('placeholder');
     setFdGenderPref(null);
+    setFdBookingType(null);
   }
   function submitFrontDeskBooking(){
     const client = document.getElementById('fdClientInput').value.trim();
@@ -1867,11 +1889,12 @@
     if(!client){ appAlert('Enter a client name first.'); return; }
     if(!fdServiceCode){ appAlert('Choose a treatment first.'); return; }
     if(fdTimeIdx === null){ appAlert('Choose a desired time first.'); return; }
+    if(!fdBookingType){ appAlert('Choose how this booking is coming in first.'); return; }
 
     pendingQueue.push({
       id: 'q' + Date.now() + Math.floor(Math.random()*10000),
       client: client, phone: phone, email: email, returning: null,
-      serviceCode: fdServiceCode, requestedH: fdTimeIdx, bookingType: null,
+      serviceCode: fdServiceCode, requestedH: fdTimeIdx, bookingType: fdBookingType,
       genderPref: fdGenderPref, createdAt: Date.now(), amberPrompted: false, redPrompted: false
     });
     saveQueue();

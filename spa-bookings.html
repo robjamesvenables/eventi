@@ -64,15 +64,6 @@
   }
   .queue-empty { font-size: 12.5px; color: #94A3B8; text-align: center; padding: 30px 14px; }
 
-  .therapist-strip { background: white; border-bottom: 1px solid #E2E8F0; padding: 14px 22px; }
-  .therapist-chips { display: flex; gap: 8px; flex-wrap: wrap; }
-  .therapist-chip {
-    background: #F0FDFA; border: 1.5px solid #99F0E4; color: #0D6E63;
-    padding: 7px 14px; border-radius: 20px; font-size: 12px; font-weight: 700;
-    cursor: grab; user-select: none; display: flex; align-items: center; gap: 6px;
-  }
-  .therapist-chip:active { cursor: grabbing; }
-  .therapist-chip.dragging { opacity: 0.4; }
   .gender-badge {
     width: 15px; height: 15px; border-radius: 50%;
     display: inline-flex; align-items: center; justify-content: center;
@@ -93,6 +84,16 @@
     grid-template-columns: 60px repeat(var(--n-therapists), 1fr);
     grid-auto-rows: 15px;
   }
+
+  .hd-time { background: #0F1E2E; grid-column: 1; grid-row: 1 / span 4; }
+  .hd-cell {
+    grid-row: 1 / span 4; background: #FAFBFC; border-left: 1px solid #F1F5F9;
+    padding: 8px 4px; text-align: center; display: flex; flex-direction: column;
+    align-items: center; gap: 3px; cursor: grab;
+  }
+  .hd-cell:active { cursor: grabbing; }
+  .hd-cell.dragging { opacity: 0.4; }
+  .hd-cell-name { font-size: 10.5px; font-weight: 800; color: #0F1E2E; line-height: 1.15; }
 
   .time-label {
     grid-column: 1; background: #FAFBFC; border-top: 1px solid #F1F5F9;
@@ -204,10 +205,6 @@
     <div class="queue-scroll-outer">
       <div class="queue-scroll-inner" id="queueList"></div>
     </div>
-  </div>
-
-  <div class="therapist-strip">
-    <div class="therapist-chips" id="therapistChips"></div>
   </div>
 
   <div class="wrap">
@@ -530,22 +527,21 @@
     return covered;
   }
 
-  function renderTherapistChips(){
-    const wrap = document.getElementById('therapistChips');
-    wrap.innerHTML = THERAPISTS.map(function(t){
-      return '<div class="therapist-chip" draggable="true" onclick="openTherapistInfo(\'' + t.name + '\')" ondragstart="therapistDragStart(event,\'' + t.name + '\')" ondragend="therapistDragEnd(event)">' +
-        '<span class="gender-badge ' + t.gender + '">' + t.gender + '</span>' + t.name + '</div>';
-    }).join('');
-  }
-
   function renderGrid(){
     const grid = document.getElementById('grid');
     const totalRows = TIME_SLOTS.length * ROWS_PER_SLOT;
     let html = '';
 
+    // Header row - therapist names as real column headers, part of the grid itself
+    html += '<div class="hd-time"></div>';
+    THERAPISTS.forEach(function(t, ti){
+      html += '<div class="hd-cell" style="grid-column:' + (ti+2) + '" draggable="true" onclick="openTherapistInfo(\'' + t.name + '\')" ondragstart="therapistDragStart(event,\'' + t.name + '\')" ondragend="therapistDragEnd(event)">' +
+        '<span class="gender-badge ' + t.gender + '">' + t.gender + '</span><div class="hd-cell-name">' + t.name + '</div></div>';
+    });
+
     // Time labels down the left - full hours prominent, half-hours smaller and lighter
     TIME_SLOTS.forEach(function(hh, hIdx){
-      const rowStart = 1 + hIdx * ROWS_PER_SLOT;
+      const rowStart = 5 + hIdx * ROWS_PER_SLOT; // rows 1-4 are the header
       if(hh.endsWith(':00')){
         html += '<div class="time-label" style="grid-row:' + rowStart + ' / span ' + ROWS_PER_SLOT + '">' + fmtTimeSlot(hh) + '</div>';
       } else {
@@ -558,7 +554,7 @@
       const covered = coveredSlots(ti);
       const col = ti + 2;
       TIME_SLOTS.forEach(function(hh, hIdx){
-        const rowStart = 1 + hIdx * ROWS_PER_SLOT;
+        const rowStart = 5 + hIdx * ROWS_PER_SLOT;
         const key = slotKey(ti, hIdx);
         const b = bookings[key];
 
@@ -585,7 +581,7 @@
     });
 
     grid.style.setProperty('--n-therapists', THERAPISTS.length);
-    grid.style.gridTemplateRows = 'repeat(' + totalRows + ', 15px)';
+    grid.style.gridTemplateRows = 'repeat(' + (totalRows + 4) + ', 15px)';
     grid.innerHTML = html;
   }
 
@@ -946,7 +942,6 @@
   fillGridForDemo();
   loadQueue();
   seedQueueForDemo();
-  renderTherapistChips();
   renderGrid();
   renderQueue();
 </script>

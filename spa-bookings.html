@@ -139,6 +139,7 @@
   .vacant.on-shift .slot-inner { background: white; border: 1.5px solid #E8EBEF; opacity: 1; }
   .vacant.on-shift:hover .slot-inner, .vacant.on-shift.drag-over .slot-inner { background: #F8FAFC; }
   .vacant.off-shift .slot-inner { background: #F1F5F9; border: 1.5px solid #E2E8F0; opacity: 0.9; }
+  .vacant.on-lunch .slot-inner { background: #0F1E2E; border: 1.5px solid #0F1E2E; color: white; opacity: 1; }
   .vacant.day-holiday .slot-inner { background: #FEF3C7; border: 1.5px solid #FDE68A; color: #92400E; opacity: 1; }
   .vacant.day-sick .slot-inner { background: #FBD5DA; border: 1.5px solid #F5A9B3; color: #9F1239; opacity: 1; }
   .vacant.day-emergency .slot-inner { background: #E0E4FB; border: 1.5px solid #C3C9F5; color: #3730A3; opacity: 1; }
@@ -1081,14 +1082,14 @@
     openTherapistInfo(name);
   }
   // For a given therapist + time slot index, works out which class the vacant box should
-  // get: on-shift (white), off-shift (grey - includes the lunch hour), or one of the
-  // whole-day statuses.
+  // get: on-shift (white), off-shift (grey), on-lunch (dark navy, same as the banners), or
+  // one of the whole-day statuses.
   function shiftClassFor(name, hIdx){
     const s = therapistShifts[name];
     if(!s) return ''; // no shift set yet - leave as the normal neutral vacant look
     if(s.type !== 'custom') return 'day-' + s.type;
     if(hIdx < s.startIdx || hIdx >= s.endIdx) return 'off-shift';
-    if(s.lunchIdx !== null && s.lunchIdx !== undefined && hIdx >= s.lunchIdx && hIdx < s.lunchIdx + 4) return 'off-shift'; // lunch is 1 hour = 4 slots
+    if(s.lunchIdx !== null && s.lunchIdx !== undefined && hIdx >= s.lunchIdx && hIdx < s.lunchIdx + 4) return 'on-lunch'; // lunch is 1 hour = 4 slots
     return 'on-shift';
   }
 

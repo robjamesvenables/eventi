@@ -250,6 +250,116 @@
     </button>
   </div>
 
+<!-- Shared modals - live outside both views so they work regardless of which tab is active -->
+  <div class="modal-bg" id="modalBg">
+    <div class="modal-box">
+      <div class="modal-title" id="modalTitle">Add Booking</div>
+      <div class="modal-sub" id="modalSub"></div>
+      <div class="modal-label">Therapist</div>
+      <div class="field-picker" id="therapistPickerBtn" onclick="openTherapistPicker()">
+        <span id="therapistPickerLabel">Select therapist</span>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#94A3B8" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+      </div>
+      <div class="modal-label">Treatment</div>
+      <div class="field-picker" id="servicePickerBtn" onclick="openServicePicker()">
+        <span id="servicePickerLabel">Select treatment</span>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#94A3B8" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+      </div>
+      <div class="service-hint" id="serviceHint"></div>
+      <div class="modal-label">Room <span style="color:#D97757">*</span></div>
+      <div class="field-picker" id="roomPickerBtn" onclick="openRoomPicker()">
+        <span id="roomPickerLabel">Select room</span>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#94A3B8" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+      </div>
+      <div class="modal-label">Client Name</div>
+      <input type="text" class="modal-input" id="modalClientInput" placeholder="e.g. Sarah Johnson">
+      <div class="modal-label">Client Phone Number</div>
+      <input type="tel" class="modal-input" id="modalPhoneInput" placeholder="e.g. +62 812 3456 7890">
+      <div class="modal-label">Requirements — oils, towels, allergies, areas to avoid</div>
+      <textarea class="modal-input" id="modalNotesInput" placeholder="e.g. Lavender oil, extra towel, allergic to nuts, avoid lower back"></textarea>
+      <div class="modal-label">Status</div>
+      <div class="status-pills">
+        <button class="status-pill" id="pillHold" onclick="setModalStatus('hold')">On Hold</button>
+        <button class="status-pill" id="pillBooked" onclick="setModalStatus('booked')">Booked</button>
+      </div>
+      <div class="modal-actions">
+        <button class="modal-btn modal-btn-cancel" onclick="closeModal()">Cancel</button>
+        <button class="modal-btn modal-btn-save" onclick="saveModal()">Save</button>
+      </div>
+      <div style="text-align:center;margin-top:14px" id="clearWrap">
+        <button class="modal-btn-clear" style="background:none;border:none;font-family:inherit;font-size:12.5px;font-weight:700;cursor:pointer" onclick="clearModal()">Clear this slot</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-bg" id="pickerBg" style="z-index:210">
+    <div class="modal-box">
+      <div class="modal-title" id="pickerTitle">Choose</div>
+      <div id="pickerList"></div>
+      <button class="modal-btn modal-btn-cancel" style="width:100%;margin-top:6px" onclick="closePicker()">Cancel</button>
+    </div>
+  </div>
+
+  <div class="modal-bg" id="clientProfileBg">
+    <div class="modal-box">
+      <div class="modal-title" id="cpName"></div>
+      <div class="modal-sub" id="cpSub"></div>
+      <div class="modal-label">Phone Number</div>
+      <input type="tel" class="modal-input" id="cpPhone" placeholder="e.g. +62 812 3456 7890">
+      <div class="modal-label">Email Address</div>
+      <input type="email" class="modal-input" id="cpEmail" placeholder="e.g. sarah@email.com">
+      <div class="modal-label">Returning Customer?</div>
+      <div class="status-pills">
+        <button class="status-pill" id="cpReturningYes" onclick="setReturning(true)">Yes, been before</button>
+        <button class="status-pill" id="cpReturningNo" onclick="setReturning(false)">First visit</button>
+      </div>
+      <div class="modal-label">Notes about this client</div>
+      <textarea class="modal-input" id="cpNotes" placeholder="e.g. Prefers a quiet room, allergic to lavender, regular every month"></textarea>
+      <div class="modal-actions">
+        <button class="modal-btn modal-btn-cancel" onclick="closeClientProfile()">Close</button>
+        <button class="modal-btn modal-btn-save" onclick="saveClientProfile()">Save</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-bg" id="confirmBg" style="z-index:220">
+    <div class="confirm-box" id="confirmBox"></div>
+  </div>
+
+  <div class="modal-bg" id="therapistInfoBg">
+    <div class="modal-box">
+      <div class="modal-title" id="tiName"></div>
+      <div class="modal-sub" id="tiSub"></div>
+
+      <div class="modal-label">Today's Working Hours</div>
+      <div class="field-picker" onclick="openShiftTimePicker('start')">
+        <span id="shiftStartLabel">Set start time</span>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#94A3B8" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+      </div>
+      <div class="field-picker" onclick="openShiftTimePicker('end')">
+        <span id="shiftEndLabel">Set end time</span>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#94A3B8" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+      </div>
+
+      <div class="modal-label">Lunch Hour (1 hour)</div>
+      <div class="field-picker" onclick="openShiftTimePicker('lunch')">
+        <span id="shiftLunchLabel">No lunch set</span>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#94A3B8" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+      </div>
+      <button onclick="clearLunch()" style="background:none;border:none;color:#94A3B8;font-family:inherit;font-size:11px;font-weight:700;cursor:pointer;margin:-10px 0 12px;padding:0">Clear lunch</button>
+
+      <button class="modal-btn modal-btn-save" style="width:100%;margin-bottom:16px" onclick="saveTherapistCustomShift(window._tiName)">Save Working Hours</button>
+
+      <div class="modal-label">Or mark the whole day as</div>
+      <div id="tiDayStatusBtns" class="shift-btns"></div>
+      <button id="tiClearStatusBtn" onclick="clearTherapistDayStatus(window._tiName)" style="width:100%;margin-top:8px;background:none;border:1.5px dashed #E2E8F0;border-radius:9px;color:#94A3B8;font-family:inherit;font-size:11.5px;font-weight:700;padding:9px;cursor:pointer;display:none">Clear Holiday / Sick / Emergency</button>
+
+      <div class="modal-label" style="margin-top:16px">Services offered</div>
+      <div id="tiSkills" style="margin-bottom:18px"></div>
+      <button class="modal-btn modal-btn-cancel" style="width:100%" onclick="closeTherapistInfo()">Close</button>
+    </div>
+  </div>
+
   <div id="view-therapist-bookings">
 
   <div class="topbar">
@@ -1387,115 +1497,6 @@
     </div>
   </div>
 
-<!-- Shared modals - live outside both views so they work regardless of which tab is active -->
-  <div class="modal-bg" id="modalBg">
-    <div class="modal-box">
-      <div class="modal-title" id="modalTitle">Add Booking</div>
-      <div class="modal-sub" id="modalSub"></div>
-      <div class="modal-label">Therapist</div>
-      <div class="field-picker" id="therapistPickerBtn" onclick="openTherapistPicker()">
-        <span id="therapistPickerLabel">Select therapist</span>
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#94A3B8" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
-      </div>
-      <div class="modal-label">Treatment</div>
-      <div class="field-picker" id="servicePickerBtn" onclick="openServicePicker()">
-        <span id="servicePickerLabel">Select treatment</span>
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#94A3B8" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
-      </div>
-      <div class="service-hint" id="serviceHint"></div>
-      <div class="modal-label">Room <span style="color:#D97757">*</span></div>
-      <div class="field-picker" id="roomPickerBtn" onclick="openRoomPicker()">
-        <span id="roomPickerLabel">Select room</span>
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#94A3B8" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
-      </div>
-      <div class="modal-label">Client Name</div>
-      <input type="text" class="modal-input" id="modalClientInput" placeholder="e.g. Sarah Johnson">
-      <div class="modal-label">Client Phone Number</div>
-      <input type="tel" class="modal-input" id="modalPhoneInput" placeholder="e.g. +62 812 3456 7890">
-      <div class="modal-label">Requirements — oils, towels, allergies, areas to avoid</div>
-      <textarea class="modal-input" id="modalNotesInput" placeholder="e.g. Lavender oil, extra towel, allergic to nuts, avoid lower back"></textarea>
-      <div class="modal-label">Status</div>
-      <div class="status-pills">
-        <button class="status-pill" id="pillHold" onclick="setModalStatus('hold')">On Hold</button>
-        <button class="status-pill" id="pillBooked" onclick="setModalStatus('booked')">Booked</button>
-      </div>
-      <div class="modal-actions">
-        <button class="modal-btn modal-btn-cancel" onclick="closeModal()">Cancel</button>
-        <button class="modal-btn modal-btn-save" onclick="saveModal()">Save</button>
-      </div>
-      <div style="text-align:center;margin-top:14px" id="clearWrap">
-        <button class="modal-btn-clear" style="background:none;border:none;font-family:inherit;font-size:12.5px;font-weight:700;cursor:pointer" onclick="clearModal()">Clear this slot</button>
-      </div>
-    </div>
-  </div>
-
-  <div class="modal-bg" id="pickerBg" style="z-index:210">
-    <div class="modal-box">
-      <div class="modal-title" id="pickerTitle">Choose</div>
-      <div id="pickerList"></div>
-      <button class="modal-btn modal-btn-cancel" style="width:100%;margin-top:6px" onclick="closePicker()">Cancel</button>
-    </div>
-  </div>
-
-  <div class="modal-bg" id="clientProfileBg">
-    <div class="modal-box">
-      <div class="modal-title" id="cpName"></div>
-      <div class="modal-sub" id="cpSub"></div>
-      <div class="modal-label">Phone Number</div>
-      <input type="tel" class="modal-input" id="cpPhone" placeholder="e.g. +62 812 3456 7890">
-      <div class="modal-label">Email Address</div>
-      <input type="email" class="modal-input" id="cpEmail" placeholder="e.g. sarah@email.com">
-      <div class="modal-label">Returning Customer?</div>
-      <div class="status-pills">
-        <button class="status-pill" id="cpReturningYes" onclick="setReturning(true)">Yes, been before</button>
-        <button class="status-pill" id="cpReturningNo" onclick="setReturning(false)">First visit</button>
-      </div>
-      <div class="modal-label">Notes about this client</div>
-      <textarea class="modal-input" id="cpNotes" placeholder="e.g. Prefers a quiet room, allergic to lavender, regular every month"></textarea>
-      <div class="modal-actions">
-        <button class="modal-btn modal-btn-cancel" onclick="closeClientProfile()">Close</button>
-        <button class="modal-btn modal-btn-save" onclick="saveClientProfile()">Save</button>
-      </div>
-    </div>
-  </div>
-
-  <div class="modal-bg" id="confirmBg" style="z-index:220">
-    <div class="confirm-box" id="confirmBox"></div>
-  </div>
-
-  <div class="modal-bg" id="therapistInfoBg">
-    <div class="modal-box">
-      <div class="modal-title" id="tiName"></div>
-      <div class="modal-sub" id="tiSub"></div>
-
-      <div class="modal-label">Today's Working Hours</div>
-      <div class="field-picker" onclick="openShiftTimePicker('start')">
-        <span id="shiftStartLabel">Set start time</span>
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#94A3B8" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
-      </div>
-      <div class="field-picker" onclick="openShiftTimePicker('end')">
-        <span id="shiftEndLabel">Set end time</span>
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#94A3B8" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
-      </div>
-
-      <div class="modal-label">Lunch Hour (1 hour)</div>
-      <div class="field-picker" onclick="openShiftTimePicker('lunch')">
-        <span id="shiftLunchLabel">No lunch set</span>
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#94A3B8" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
-      </div>
-      <button onclick="clearLunch()" style="background:none;border:none;color:#94A3B8;font-family:inherit;font-size:11px;font-weight:700;cursor:pointer;margin:-10px 0 12px;padding:0">Clear lunch</button>
-
-      <button class="modal-btn modal-btn-save" style="width:100%;margin-bottom:16px" onclick="saveTherapistCustomShift(window._tiName)">Save Working Hours</button>
-
-      <div class="modal-label">Or mark the whole day as</div>
-      <div id="tiDayStatusBtns" class="shift-btns"></div>
-      <button id="tiClearStatusBtn" onclick="clearTherapistDayStatus(window._tiName)" style="width:100%;margin-top:8px;background:none;border:1.5px dashed #E2E8F0;border-radius:9px;color:#94A3B8;font-family:inherit;font-size:11.5px;font-weight:700;padding:9px;cursor:pointer;display:none">Clear Holiday / Sick / Emergency</button>
-
-      <div class="modal-label" style="margin-top:16px">Services offered</div>
-      <div id="tiSkills" style="margin-bottom:18px"></div>
-      <button class="modal-btn modal-btn-cancel" style="width:100%" onclick="closeTherapistInfo()">Close</button>
-    </div>
-  </div>
 
 <script>
   function switchView(view){

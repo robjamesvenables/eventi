@@ -34,7 +34,7 @@
   .legend-dot { width: 10px; height: 10px; border-radius: 3px; }
 
   .top-boxes { display: flex; gap: 18px; margin: 20px 22px; align-items: flex-start; flex-wrap: wrap; }
-  .queue-panel { background: #E9EDF3; border: 1.5px solid #DCE2EB; border-radius: 14px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); overflow: hidden; flex: 1.3; min-width: 320px; }
+  .queue-panel { background: #E9EDF3; border: 1.5px solid #DCE2EB; border-radius: 14px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); overflow: hidden; flex: 1; min-width: 320px; }
   .queue-header { background: #0F1E2E; padding: 8px 22px; display: flex; align-items: center; gap: 10px; border-radius: 12px 12px 0 0; }
   .queue-ico { width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
   .queue-title { font-size: 13px; font-weight: 700; color: white; text-transform: uppercase; letter-spacing: 1px; }
@@ -74,12 +74,12 @@
   .rooms-legend-dot { width: 7px; height: 7px; border-radius: 2px; }
   .rooms-body { padding: 12px 14px; max-height: 260px; overflow-y: auto; }
   #roomsList { position: relative; }
-  .rooms-now-line { position: absolute; top: 0; height: 100%; width: 2px; background: #EF4444; z-index: 4; pointer-events: none; }
-  .rooms-now-dot { position: absolute; top: -3px; left: -3px; width: 8px; height: 8px; border-radius: 50%; background: #EF4444; }
+  .rooms-now-line { position: absolute; top: 0; height: 100%; width: 2px; background: #0F1E2E; z-index: 4; pointer-events: none; }
+  .rooms-now-dot { position: absolute; top: -3px; left: -3px; width: 8px; height: 8px; border-radius: 50%; background: #0F1E2E; }
   .room-hours-row { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; position: sticky; top: -12px; background: #E9EDF3; z-index: 2; padding-top: 2px; }
   .room-hours-spacer { width: 50px; flex-shrink: 0; }
   .room-hours-labels { flex: 1; display: flex; }
-  .room-hours-labels span { flex: 1; font-size: 8px; font-weight: 700; color: #64748B; text-align: left; }
+  .room-hours-labels span { flex: 1; font-size: 8px; font-weight: 800; color: #475569; text-align: left; }
   .room-hours-timer-spacer { width: 26px; flex-shrink: 0; }
   .room-row { display: flex; align-items: center; gap: 8px; margin-bottom: 7px; }
   .room-row-name { font-size: 10.5px; font-weight: 800; color: #0F1E2E; width: 50px; flex-shrink: 0; }
@@ -524,6 +524,42 @@
     return { status: status, minutesLeftInBuffer: minutesLeftInBuffer };
   }
 
+  function fmtMinutesAsTime(totalMin){
+    const h = Math.floor(totalMin / 60);
+    const m = totalMin % 60;
+    const period = h < 12 ? 'AM' : 'PM';
+    const hr = h > 12 ? h - 12 : (h === 0 ? 12 : h);
+    return hr + (m === 0 ? '' : ':' + (m < 10 ? '0' : '') + m) + ' ' + period;
+  }
+
+  // Builds the hover text for a specific bar segment - depends on which booking (if any) is
+  // relevant at that exact point in time, not just the current status colour.
+  function roomTooltipFor(roomId, minutesOfDay, status){
+    const roomBookings = [];
+    for(const key in bookings){
+      const b = bookings[key];
+      if(b.roomId !== roomId) continue;
+      const svc = serviceByCode(b.serviceCode);
+      if(!svc) continue;
+      const parts = key.split('-');
+      const startMin = slotStartMinutes(Number(parts[1]));
+      const endMin = startMin + svc.duration;
+      roomBookings.push({ startMin: startMin, endMin: endMin, bufferEndMin: endMin + ROOM_BUFFER_MIN });
+    }
+    roomBookings.sort(function(a, b){ return a.startMin - b.startMin; });
+
+    if(status === 'taken'){
+      const active = roomBookings.find(function(bk){ return minutesOfDay >= bk.startMin && minutesOfDay < bk.endMin; });
+      return active ? ('Taken until ' + fmtMinutesAsTime(active.endMin)) : 'Taken';
+    }
+    if(status === 'buffer'){
+      const active = roomBookings.find(function(bk){ return minutesOfDay >= bk.endMin && minutesOfDay < bk.bufferEndMin; });
+      return active ? ('Free at ' + fmtMinutesAsTime(active.bufferEndMin)) : 'Cleaning';
+    }
+    const next = roomBookings.find(function(bk){ return bk.startMin > minutesOfDay; });
+    return next ? ('Free until ' + fmtMinutesAsTime(next.startMin)) : 'Free for the rest of the day';
+  }
+
   function renderRoomsPanel(){
     const list = document.getElementById('roomsList');
     if(!list) return;
@@ -534,8 +570,9 @@
     // Hour labels across the top, aligned to the bars beneath - one per hour, 9am to 9pm.
     let hoursHtml = '<div class="room-hours-row"><div class="room-hours-spacer"></div><div class="room-hours-labels">';
     for(let h = 9; h <= 21; h++){
-      const label = h === 12 ? '12' : (h > 12 ? h - 12 : h);
-      hoursHtml += '<span>' + label + '</span>';
+      const hr = h === 12 ? '12' : (h > 12 ? h - 12 : h);
+      const period = h < 12 ? 'AM' : 'PM';
+      hoursHtml += '<span>' + hr + ' ' + period + '</span>';
     }
     hoursHtml += '</div><div class="room-hours-timer-spacer"></div></div>';
 
@@ -543,8 +580,10 @@
       let barHtml = '';
       const segWidth = (100 / TIME_SLOTS.length).toFixed(3);
       TIME_SLOTS.forEach(function(hh, hIdx){
-        const s = roomStatusAt(room.id, slotStartMinutes(hIdx));
-        barHtml += '<div class="room-bar-seg" style="width:' + segWidth + '%;background:' + colorMap[s.status] + '"></div>';
+        const segMin = slotStartMinutes(hIdx);
+        const s = roomStatusAt(room.id, segMin);
+        const tip = roomTooltipFor(room.id, segMin, s.status);
+        barHtml += '<div class="room-bar-seg" title="' + tip + '" style="width:' + segWidth + '%;background:' + colorMap[s.status] + '"></div>';
       });
 
       const live = roomStatusAt(room.id, nowMinutes);

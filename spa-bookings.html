@@ -173,6 +173,7 @@
   .vacant.day-holiday .slot-inner { background: #FEF3C7; border: 1.5px solid #FDE68A; color: #92400E; opacity: 1; }
   .vacant.day-sick .slot-inner { background: #FBD5DA; border: 1.5px solid #F5A9B3; color: #9F1239; opacity: 1; }
   .vacant.day-emergency .slot-inner { background: #E0E4FB; border: 1.5px solid #C3C9F5; color: #3730A3; opacity: 1; }
+  .vacant.day-training .slot-inner { background: #EFE6D8; border: 1.5px solid #DCC9AE; color: #6B5637; opacity: 1; }
   .slot-day-letter { font-size: 8px; font-weight: 900; color: #000; }
   .hold .slot-inner { background: #D9A441; color: white; cursor: grab; }
   .booked .slot-inner { background: #D97757; color: white; cursor: grab; }
@@ -1427,10 +1428,11 @@
   const DAY_STATUSES = {
     holiday:   { label: 'Holiday' },
     sick:      { label: 'Sick' },
-    emergency: { label: 'Emergency<br>Leave' }
+    emergency: { label: 'Emergency<br>Leave' },
+    training:  { label: 'Training' }
   };
   const SHIFT_STORAGE_KEY = 'mavis_spa_shifts_demo_v2';
-  // { [therapistName]: { type:'custom', startIdx, endIdx, lunchIdx } | { type:'holiday'|'sick'|'emergency' } }
+  // { [therapistName]: { type:'custom', startIdx, endIdx, lunchIdx } | { type:'holiday'|'sick'|'emergency'|'training' } }
   let therapistShifts = {};
   // Working state for whichever therapist's shift editor is currently open, before Save is pressed.
   let shiftDraft = { startIdx: null, endIdx: null, lunchIdx: null };
@@ -1513,14 +1515,16 @@
     'on-lunch': 'Lunch',
     'day-holiday': 'Holiday',
     'day-sick': 'Sick',
-    'day-emergency': 'Emergency Leave'
+    'day-emergency': 'Emergency Leave',
+    'day-training': 'Training'
   };
   // Bold letter shown centred in every box for a whole-day status, on top of the colour and
   // the hover tooltip, so it's readable at a glance even without hovering.
   const DAY_STATUS_LETTERS = {
     'day-holiday': 'H',
     'day-sick': 'S',
-    'day-emergency': 'EL'
+    'day-emergency': 'EL',
+    'day-training': 'T'
   };
 
   const SKILLS_DEMO = ['Foot Massage', 'Full Body Massage', 'Manicure', 'Pedicure'];
@@ -1540,7 +1544,7 @@
     }
     renderShiftFields();
 
-    const dayColorFor = { holiday: '#C4973B', sick: '#D9808C', emergency: '#6366F1' };
+    const dayColorFor = { holiday: '#C4973B', sick: '#D9808C', emergency: '#6366F1', training: '#B09A7C' };
     document.getElementById('tiDayStatusBtns').innerHTML = Object.keys(DAY_STATUSES).map(function(key){
       const isActive = current && current.type === key;
       const style = isActive ? 'style="background:' + dayColorFor[key] + '"' : '';

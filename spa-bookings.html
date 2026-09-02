@@ -1050,20 +1050,25 @@
   // a finger can't hover, and a simple tap ends too fast for hold-based pausing to feel
   // reliable - so any touch pauses it, and it auto-resumes a few seconds after the last touch,
   // giving enough time to read, tap Confirm, or start a drag without fighting the animation.
+  // NOTE: pausing is done via el.style.animationPlayState directly, not a CSS class - because
+  // renderQueue() sets the animation itself as an inline style (needed to vary its duration
+  // with the queue length), and an inline style always wins over a class-based CSS rule trying
+  // to override just one part of it. Setting animationPlayState inline is the only way a pause
+  // actually takes effect here.
   const queueOuter = document.querySelector('.queue-scroll-outer');
   const queueInner = document.getElementById('queueList');
   if(queueOuter && queueInner){
-    queueOuter.addEventListener('mouseenter', function(){ queueInner.classList.add('paused'); });
-    queueOuter.addEventListener('mouseleave', function(){ queueInner.classList.remove('paused'); });
+    queueOuter.addEventListener('mouseenter', function(){ queueInner.style.animationPlayState = 'paused'; });
+    queueOuter.addEventListener('mouseleave', function(){ queueInner.style.animationPlayState = 'running'; });
 
     let resumeTimer = null;
     queueOuter.addEventListener('touchstart', function(){
-      queueInner.classList.add('paused');
+      queueInner.style.animationPlayState = 'paused';
       clearTimeout(resumeTimer);
     }, {passive:true});
     queueOuter.addEventListener('touchend', function(){
       clearTimeout(resumeTimer);
-      resumeTimer = setTimeout(function(){ queueInner.classList.remove('paused'); }, 4000);
+      resumeTimer = setTimeout(function(){ queueInner.style.animationPlayState = 'running'; }, 4000);
     }, {passive:true});
   }
 </script>

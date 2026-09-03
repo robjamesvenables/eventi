@@ -298,6 +298,13 @@
       <input type="text" class="modal-input" id="modalClientInput" placeholder="e.g. Sarah Johnson">
       <div class="modal-label">Client Phone Number</div>
       <input type="tel" class="modal-input" id="modalPhoneInput" placeholder="e.g. +62 812 3456 7890">
+      <div class="modal-label">Number Of People</div>
+      <div class="status-pills" style="margin-bottom:16px">
+        <button class="status-pill" id="modalPeople1" onclick="setModalPeople(1)">1</button>
+        <button class="status-pill" id="modalPeople2" onclick="setModalPeople(2)">2</button>
+        <button class="status-pill" id="modalPeople3" onclick="setModalPeople(3)">3</button>
+        <button class="status-pill" id="modalPeople4" onclick="setModalPeople(4)">4</button>
+      </div>
       <div class="modal-label">Requirements — oils, towels, allergies, areas to avoid</div>
       <textarea class="modal-input" id="modalNotesInput" placeholder="e.g. Lavender oil, extra towel, allergic to nuts, avoid lower back"></textarea>
       <div class="modal-label">Status</div>
@@ -1045,7 +1052,7 @@
               'onclick="openSlot(\'' + key + '\')" ondragover="dragOver(event,\'' + key + '\')" ondragleave="dragLeave(event)" ondrop="drop(event,\'' + key + '\')">' +
             '<div class="slot-inner" draggable="true" ondragstart="bookingDragStart(event,\'' + key + '\')">' +
               statusBadge +
-              '<div class="slot-code">' + b.serviceCode + '</div>' +
+              '<div class="slot-code">' + b.serviceCode + (b.people && b.people > 1 ? ' \u00d7' + b.people : '') + '</div>' +
               '<div class="slot-client">' + b.client + '</div>' +
               '<div class="slot-therapist">' + t.name + '</div>' +
             '</div>' +
@@ -1272,6 +1279,7 @@
       document.getElementById('modalNotesInput').value = item.clientNotes || '';
       setServiceLabel(item.serviceCode);
       setModalStatus('booked');
+      setModalPeople(item.people || 1);
       window._pendingQueueRemoval = id;
     }
   }
@@ -1279,6 +1287,13 @@
   // ── Booking Modal ──
   let modalKey = null;
   let modalStatus = 'hold';
+  let modalPeople = 1;
+  function setModalPeople(n){
+    modalPeople = n;
+    [1,2,3,4].forEach(function(i){
+      document.getElementById('modalPeople' + i).classList.toggle('active-returning', i === n);
+    });
+  }
 
   // Selected values live in plain state now, not a native <select> - set via the in-app picker.
   let selectedTherapistName = null;
@@ -1367,6 +1382,7 @@
     document.getElementById('modalPhoneInput').value = existing ? (existing.phone || '') : '';
     document.getElementById('modalNotesInput').value = existing ? (existing.notes || '') : '';
     setModalStatus(existing ? existing.status : 'hold');
+    setModalPeople(existing ? (existing.people || 1) : 1);
     document.getElementById('clearWrap').style.display = existing ? 'block' : 'none';
 
     // Arrived only makes sense for an actual confirmed booking, not a provisional hold or a
@@ -1443,7 +1459,7 @@
     if(newKey !== modalKey) delete bookings[modalKey];
     bookings[newKey] = {
       serviceCode: serviceCode, client: client, phone: phone, notes: notes, roomId: selectedRoomId,
-      status: modalStatus, holdStartedAt: holdStartedAt, holdPrompted: false,
+      status: modalStatus, holdStartedAt: holdStartedAt, holdPrompted: false, people: modalPeople,
       arrived: existing ? (existing.arrived || false) : false,
       arrivedAt: existing ? (existing.arrivedAt || null) : null
     };
@@ -1758,6 +1774,14 @@
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#94A3B8" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
         </div>
 
+        <div class="modal-label">Number Of People</div>
+        <div class="status-pills" style="margin-bottom:20px">
+          <button class="status-pill" id="fdPeople1" onclick="setFdPeople(1)">1</button>
+          <button class="status-pill" id="fdPeople2" onclick="setFdPeople(2)">2</button>
+          <button class="status-pill" id="fdPeople3" onclick="setFdPeople(3)">3</button>
+          <button class="status-pill" id="fdPeople4" onclick="setFdPeople(4)">4</button>
+        </div>
+
         <div class="modal-label">Therapist Preference</div>
         <div class="status-pills" style="margin-bottom:20px">
           <button class="status-pill" id="fdPrefAny" onclick="setFdGenderPref(null)">No preference</button>
@@ -1835,6 +1859,7 @@
   let fdTimeIdx = null;
   let fdGenderPref = null;
   let fdBookingType = null;
+  let fdPeople = 1;
 
   function openFdServicePicker(){
     const list = document.getElementById('pickerList');
@@ -1873,6 +1898,12 @@
     document.getElementById('fdPrefM').classList.toggle('active-returning', pref === 'M');
     document.getElementById('fdPrefF').classList.toggle('active-returning', pref === 'F');
   }
+  function setFdPeople(n){
+    fdPeople = n;
+    [1,2,3,4].forEach(function(i){
+      document.getElementById('fdPeople' + i).classList.toggle('active-returning', i === n);
+    });
+  }
   // Set right on the Front Desk form, since whoever's filling it in already knows how this
   // booking is coming in - e.g. a walk-in standing right there - so there's no reason to make
   // them classify it again a second time once it lands in the queue.
@@ -1895,6 +1926,7 @@
     document.getElementById('fdTimePickerBtn').classList.add('placeholder');
     setFdGenderPref(null);
     setFdBookingType(null);
+    setFdPeople(1);
   }
   function submitFrontDeskBooking(){
     const client = document.getElementById('fdClientInput').value.trim();
@@ -1909,7 +1941,7 @@
       id: 'q' + Date.now() + Math.floor(Math.random()*10000),
       client: client, phone: phone, email: email, returning: null,
       serviceCode: fdServiceCode, requestedH: fdTimeIdx, bookingType: fdBookingType,
-      genderPref: fdGenderPref, createdAt: Date.now()
+      genderPref: fdGenderPref, people: fdPeople, createdAt: Date.now()
     });
     saveQueue();
     renderQueue();
@@ -1917,6 +1949,7 @@
     switchView('therapist-bookings');
   }
   document.getElementById('fdPrefAny').classList.add('active-returning');
+  document.getElementById('fdPeople1').classList.add('active-returning');
 </script>
 
 <div id="appTooltip" style="display:none;position:fixed;background:#0F1E2E;color:white;font-family:'Inter',sans-serif;font-size:11.5px;font-weight:700;padding:6px 10px;border-radius:7px;z-index:999;pointer-events:none;white-space:nowrap;box-shadow:0 4px 12px rgba(0,0,0,0.2)"></div>

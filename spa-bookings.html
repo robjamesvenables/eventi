@@ -1216,6 +1216,8 @@
   // checks across ALL bookings, not just one therapist's column.
   function roomSpanFree(roomId, startH, span, ignoreKey){
     if(!roomId) return true; // nothing chosen yet, nothing to conflict with
+    const bufferSlots = ROOM_BUFFER_MIN / 15; // 30 min buffer = 2 slots, needed after every booking for cleaning
+    const newEndWithBuffer = startH + span + bufferSlots; // this booking also needs its own buffer before whatever comes next
     for(const key in bookings){
       if(key === ignoreKey) continue;
       const b = bookings[key];
@@ -1224,7 +1226,8 @@
       const bStart = Number(parts[1]);
       const svc = serviceByCode(b.serviceCode);
       const bSpan = svc ? slotsForDuration(svc.duration) : 1;
-      const overlaps = startH < bStart + bSpan && startH + span > bStart;
+      const bEndWithBuffer = bStart + bSpan + bufferSlots;
+      const overlaps = startH < bEndWithBuffer && newEndWithBuffer > bStart;
       if(overlaps) return false;
     }
     return true;

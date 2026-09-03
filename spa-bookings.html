@@ -674,7 +674,7 @@
       { client: 'Grace Lin',        phone: randomPhone(), email: 'grace.lin88@gmail.com',    returning: false, serviceCode: 'SBM',     requestedH: 8,  createdAt: now - 35*60000 },
       { client: 'Tomasz Wojcik',    phone: '',             email: '',                        returning: null,  serviceCode: 'DMHM',    requestedH: 16, createdAt: now }
     ];
-    demo.forEach(function(d){ d.id = 'q' + Date.now() + Math.floor(Math.random()*10000); d.bookingType = null; d.amberPrompted = false; d.redPrompted = false; pendingQueue.push(d); });
+    demo.forEach(function(d){ d.id = 'q' + Date.now() + Math.floor(Math.random()*10000); d.bookingType = null; pendingQueue.push(d); });
     saveQueue();
   }
 
@@ -1693,51 +1693,10 @@
   }
   setInterval(checkHolds, 20000);
 
-  // Nudges reception once a waiting-list item has gone unallocated too long - fires once when
-  // it first crosses 15 minutes, and again once when it crosses 30, using the same "prompted"
-  // flag pattern as the hold-release check above so it never repeats itself every cycle.
-  // On top of that, a global 5-minute cooldown across ALL items means at most one popup shows
-  // in any 5-minute stretch, even if several different clients cross their threshold around
-  // the same time - otherwise a handful of people going amber together felt like it kept
-  // interrupting, even though technically each one only ever prompts once.
-  let lastQueueUrgencyPopupAt = 0;
-  function checkQueueUrgency(){
-    const anyModalOpen = document.getElementById('modalBg').classList.contains('show') ||
-                          document.getElementById('confirmBg').classList.contains('show') ||
-                          document.getElementById('queueEditBg').classList.contains('show');
-    if(anyModalOpen){ return; }
-    const inCooldown = (Date.now() - lastQueueUrgencyPopupAt) < 5 * 60 * 1000;
-    if(!inCooldown){
-      for(let i = 0; i < pendingQueue.length; i++){
-        const item = pendingQueue[i];
-        const ageMin = (Date.now() - (item.createdAt || Date.now())) / 60000;
-        if(ageMin >= 30 && !item.redPrompted){
-          item.redPrompted = true;
-          lastQueueUrgencyPopupAt = Date.now();
-          saveQueue();
-          showConfirm({
-            title: 'Still Waiting',
-            msg: item.client + ' has been waiting over 30 minutes with no therapist or room allocated yet - they may be arriving soon.',
-            buttons: [{ label: 'Understood', cls: 'confirm-btn-danger', onClick: function(){} }]
-          });
-          break;
-        }
-        if(ageMin >= 15 && !item.amberPrompted){
-          item.amberPrompted = true;
-          lastQueueUrgencyPopupAt = Date.now();
-          saveQueue();
-          showConfirm({
-            title: 'Needs Allocating',
-            msg: item.client + '\u2019s booking has been waiting 15 minutes - worth allocating a therapist and room soon.',
-            buttons: [{ label: 'Understood', cls: 'confirm-btn-cancel', onClick: function(){} }]
-          });
-          break;
-        }
-      }
-    }
-    renderQueue(); // badges are time-based, so refresh even if nothing crossed a threshold
-  }
-  setInterval(checkQueueUrgency, 20000);
+  // The badges (NEW/amber/red) still update live based on how long something's been
+  // waiting - this just keeps them current. The popup nudges that used to accompany them
+  // were removed, since they were interrupting too often.
+  setInterval(renderQueue, 20000);
 
   document.getElementById('today-label').textContent = new Date().toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
 
@@ -1939,7 +1898,7 @@
       id: 'q' + Date.now() + Math.floor(Math.random()*10000),
       client: client, phone: phone, email: email, returning: null,
       serviceCode: fdServiceCode, requestedH: fdTimeIdx, bookingType: fdBookingType,
-      genderPref: fdGenderPref, createdAt: Date.now(), amberPrompted: false, redPrompted: false
+      genderPref: fdGenderPref, createdAt: Date.now()
     });
     saveQueue();
     renderQueue();

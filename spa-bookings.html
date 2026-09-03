@@ -1839,6 +1839,37 @@
   loadCustomers();
   renderGrid();
   renderQueue();
+
+  // Auto-scroll the page while dragging anything near the top or bottom edge of the screen -
+  // native browser drag-and-drop doesn't do this on its own, so without it there's no way to
+  // reach a time slot that's currently scrolled out of view while mid-drag. Global listeners
+  // (dragstart/dragend both bubble) catch every draggable thing on the page - queue cards,
+  // existing bookings, therapist headers - without needing to touch each one individually.
+  let dragAutoScrollTimer = null;
+  let lastDragClientY = null;
+  const DRAG_SCROLL_EDGE = 90;
+  const DRAG_SCROLL_SPEED = 14;
+
+  document.addEventListener('dragover', function(e){
+    lastDragClientY = e.clientY;
+  });
+  document.addEventListener('dragstart', function(){
+    if(dragAutoScrollTimer) return;
+    dragAutoScrollTimer = setInterval(function(){
+      if(lastDragClientY === null) return;
+      const vh = window.innerHeight;
+      if(lastDragClientY < DRAG_SCROLL_EDGE){
+        window.scrollBy(0, -DRAG_SCROLL_SPEED);
+      } else if(lastDragClientY > vh - DRAG_SCROLL_EDGE){
+        window.scrollBy(0, DRAG_SCROLL_SPEED);
+      }
+    }, 20);
+  });
+  document.addEventListener('dragend', function(){
+    clearInterval(dragAutoScrollTimer);
+    dragAutoScrollTimer = null;
+    lastDragClientY = null;
+  });
 </script>
 
   </div>

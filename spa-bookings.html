@@ -213,6 +213,23 @@
   }
   .field-picker:hover { border-color: #0D9488; }
   .field-picker.placeholder { color: #94A3B8; }
+  .room-chooser-btn {
+    width: 100%; display: flex; align-items: center; justify-content: center; gap: 8px;
+    padding: 13px; border-radius: 10px; border: 2px solid #0D9488; background: #F0FDFA;
+    color: #0D9488; font-family: inherit; font-size: 14px; font-weight: 800; cursor: pointer;
+    margin-bottom: 16px;
+  }
+  .room-chooser-btn.room-chosen { background: #0D9488; color: white; }
+  .rc-section-label { font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.4px; color: #94A3B8; margin: 14px 0 8px; }
+  .rc-room-card { border: 1.5px solid #86D9A0; background: #F0FDF6; border-radius: 10px; padding: 9px 12px; margin-bottom: 8px; cursor: pointer; }
+  .rc-room-card:hover { border-color: #0D9488; }
+  .rc-room-card.rc-unavailable { border-color: #E2E8F0; background: #F8FAFC; opacity: 0.65; cursor: default; }
+  .rc-room-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; }
+  .rc-room-name { font-size: 13px; font-weight: 800; color: #0F1E2E; }
+  .rc-unavailable .rc-room-name { color: #64748B; }
+  .rc-room-status { font-size: 9px; font-weight: 800; padding: 2px 8px; border-radius: 6px; background: white; }
+  .rc-room-bar { display: flex; gap: 1px; height: 8px; border-radius: 3px; overflow: hidden; }
+  .rc-room-bar div { height: 100%; }
   .picker-option {
     padding: 12px 14px; border: 1.5px solid #E2E8F0; border-radius: 10px; margin-bottom: 8px;
     cursor: pointer; display: flex; align-items: center; justify-content: space-between; gap: 10px;
@@ -290,10 +307,10 @@
       </div>
       <div class="service-hint" id="serviceHint"></div>
       <div class="modal-label">Room <span style="color:#D97757">*</span></div>
-      <div class="field-picker" id="roomPickerBtn" onclick="openRoomPicker()">
-        <span id="roomPickerLabel">Select room</span>
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#94A3B8" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
-      </div>
+      <button class="room-chooser-btn" id="roomPickerBtn" onclick="openRoomChooser()">
+        <span id="roomPickerLabel">Choose Room</span>
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18M5 21V7l8-4v18M13 21V11l6 4v6"/></svg>
+      </button>
       <div class="modal-label">Client Name</div>
       <input type="text" class="modal-input" id="modalClientInput" placeholder="e.g. Sarah Johnson">
       <div class="modal-label">Client Phone Number</div>
@@ -331,6 +348,22 @@
       <div class="modal-title" id="pickerTitle">Choose</div>
       <div id="pickerList"></div>
       <button class="modal-btn modal-btn-cancel" style="width:100%;margin-top:6px" onclick="closePicker()">Cancel</button>
+    </div>
+  </div>
+
+  <div class="modal-bg" id="roomChooserBg" style="z-index:215">
+    <div class="modal-box" style="max-width:440px">
+      <div class="modal-title">Choose Room</div>
+      <div class="modal-sub" id="rcContext"></div>
+      <div id="rcAvailableSection">
+        <div class="rc-section-label">Available Now</div>
+        <div id="rcAvailableList"></div>
+      </div>
+      <div id="rcUnavailableSection">
+        <div class="rc-section-label">Not Free At This Time</div>
+        <div id="rcUnavailableList"></div>
+      </div>
+      <button class="modal-btn modal-btn-cancel" style="width:100%;margin-top:6px" onclick="closeRoomChooser()">Cancel</button>
     </div>
   </div>
 
@@ -1318,8 +1351,8 @@
   function setRoomLabel(roomId){
     selectedRoomId = roomId;
     const room = roomId ? roomById(roomId) : null;
-    document.getElementById('roomPickerLabel').textContent = room ? room.name : 'Select room';
-    document.getElementById('roomPickerBtn').classList.toggle('placeholder', !room);
+    document.getElementById('roomPickerLabel').textContent = room ? ('Room: ' + room.name + ' (change)') : 'Choose Room';
+    document.getElementById('roomPickerBtn').classList.toggle('room-chosen', !!room);
   }
 
   function openTherapistPicker(){
@@ -1350,18 +1383,65 @@
     setServiceLabel(code);
     closePicker();
   }
-  function openRoomPicker(){
-    const list = document.getElementById('pickerList');
-    document.getElementById('pickerTitle').textContent = 'Choose Room';
-    list.innerHTML = ROOMS.map(function(r){
-      return '<div class="picker-option" onclick="pickRoom(' + r.id + ')">' + r.name + '</div>';
-    }).join('');
-    document.getElementById('pickerBg').classList.add('show');
+  function openRoomChooser(){
+    if(!selectedServiceCode){
+      appAlert('Choose the treatment first, so we know how long the room is needed for.');
+      return;
+    }
+    const svc = serviceByCode(selectedServiceCode);
+    const span = slotsForDuration(svc.duration);
+    const parts = modalKey.split('-');
+    const startH = Number(parts[1]);
+
+    document.getElementById('rcContext').textContent =
+      (document.getElementById('modalClientInput').value.trim() || 'This booking') + ' — ' +
+      svc.name + ' (' + svc.duration + ' min) — ' + fmtTimeSlot(TIME_SLOTS[startH]);
+
+    const available = [];
+    const unavailable = [];
+    ROOMS.forEach(function(room){
+      const free = roomSpanFree(room.id, startH, span, modalKey);
+      (free ? available : unavailable).push(room);
+    });
+
+    function roomCardHtml(room, isAvailable){
+      let barHtml = '';
+      const colorMap = { free: '#7BC895', buffer: '#FBBF24', taken: '#D97757' };
+      const segWidth = (100 / TIME_SLOTS.length).toFixed(3);
+      TIME_SLOTS.forEach(function(hh, hIdx){
+        const s = roomStatusAt(room.id, slotStartMinutes(hIdx));
+        barHtml += '<div style="width:' + segWidth + '%;background:' + colorMap[s.status] + '"></div>';
+      });
+      const clickAttr = isAvailable ? ' onclick="pickRoomFromChooser(' + room.id + ')"' : '';
+      const statusHtml = isAvailable
+        ? '<span class="rc-room-status" style="color:#2F7D4F">FREE</span>'
+        : '<span class="rc-room-status" style="color:#9C4A32">TAKEN</span>';
+      return '<div class="rc-room-card' + (isAvailable ? '' : ' rc-unavailable') + '"' + clickAttr + '>' +
+        '<div class="rc-room-top"><span class="rc-room-name">' + room.name + '</span>' + statusHtml + '</div>' +
+        '<div class="rc-room-bar">' + barHtml + '</div>' +
+      '</div>';
+    }
+
+    document.getElementById('rcAvailableList').innerHTML = available.length
+      ? available.map(function(r){ return roomCardHtml(r, true); }).join('')
+      : '<div style="font-size:12.5px;color:#94A3B8;padding:8px 0">No rooms free for the whole treatment at this time.</div>';
+    document.getElementById('rcAvailableSection').style.display = 'block';
+
+    document.getElementById('rcUnavailableList').innerHTML = unavailable.map(function(r){ return roomCardHtml(r, false); }).join('');
+    document.getElementById('rcUnavailableSection').style.display = unavailable.length ? 'block' : 'none';
+
+    document.getElementById('roomChooserBg').classList.add('show');
   }
-  function pickRoom(id){
+  function pickRoomFromChooser(id){
     setRoomLabel(id);
-    closePicker();
+    closeRoomChooser();
   }
+  function closeRoomChooser(){ document.getElementById('roomChooserBg').classList.remove('show'); }
+  document.getElementById('roomChooserBg').addEventListener('click', function(e){ if(e.target === this) closeRoomChooser(); });
+
+  // Shared by every other in-app picker (Therapist, Treatment, shift times, Front Desk,
+  // queue edit) - Room now has its own dedicated chooser above, but this one is still used
+  // by all the rest, so it stays.
   function closePicker(){ document.getElementById('pickerBg').classList.remove('show'); }
   document.getElementById('pickerBg').addEventListener('click', function(e){ if(e.target === this) closePicker(); });
 

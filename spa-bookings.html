@@ -1252,6 +1252,10 @@
           appAlert(therapistName + ' already has something booked over that time.');
           return;
         }
+        if(!isTherapistWorkingForSpan(therapistName, targetH, span)){
+          appAlert(therapistName + ' isn\u2019t working at that time \u2014 this booking can\u2019t be moved to them.');
+          return;
+        }
         showConfirm({
           title: 'Change Therapist?',
           msg: 'Move ' + existingAtTarget.client + '\u2019s booking to ' + therapistName + '?',
@@ -1282,6 +1286,11 @@
         appAlert('That time is already taken — clear it first, or drop somewhere free.');
         return;
       }
+      const targetTherapistName = THERAPISTS[targetTi].name;
+      if(!isTherapistWorkingForSpan(targetTherapistName, targetH, span)){
+        appAlert(targetTherapistName + ' isn\u2019t working at that time \u2014 this booking can\u2019t be moved there.');
+        return;
+      }
       if(!roomSpanFree(b.roomId, targetH, span, key)){
         appAlert('That room is already booked for part of that time — this booking can\u2019t move there.');
         return;
@@ -1305,6 +1314,11 @@
       }
       if(!spanFree(targetTi, targetH, span)){
         appAlert('That slot isn\u2019t free for the whole treatment — try a different time or therapist.');
+        return;
+      }
+      const targetTherapistName = THERAPISTS[targetTi].name;
+      if(!isTherapistWorkingForSpan(targetTherapistName, targetH, span)){
+        appAlert(targetTherapistName + ' isn\u2019t working at that time \u2014 try a different therapist or time.');
         return;
       }
       // Open the booking form pre-filled from the queue item, rather than saving directly -
@@ -1550,6 +1564,11 @@
       appAlert('That therapist already has something booked during part of that time.');
       return;
     }
+    let therapistWorkingThroughout = isTherapistWorkingForSpan(chosenTherapist, oldStartH, span);
+    if(!therapistWorkingThroughout){
+      appAlert(chosenTherapist + ' isn\u2019t working at that time \u2014 this booking can\u2019t be made with them.');
+      return;
+    }
     if(!roomSpanFree(selectedRoomId, oldStartH, span, modalKey)){
       appAlert('That room is already booked for part of that time — pick a different room or time.');
       return;
@@ -1683,6 +1702,19 @@
     if(hIdx < s.startIdx || hIdx >= s.endIdx) return 'off-shift';
     if(s.lunchIdx !== null && s.lunchIdx !== undefined && hIdx >= s.lunchIdx && hIdx < s.lunchIdx + 4) return 'on-lunch'; // lunch is 1 hour = 4 slots
     return 'on-shift';
+  }
+  // The rule: a border around a stretch of a therapist's column means they're working then -
+  // no border (whether nothing's been scheduled for them at all, they're off-shift, on
+  // lunch, or marked Holiday/Sick/Emergency/Training) means they're not in, and nothing
+  // should be bookable against them for that time.
+  function isTherapistWorkingAt(name, hIdx){
+    return shiftClassFor(name, hIdx) === 'on-shift';
+  }
+  function isTherapistWorkingForSpan(name, startH, span){
+    for(let i = 0; i < span; i++){
+      if(!isTherapistWorkingAt(name, startH + i)) return false;
+    }
+    return true;
   }
   // Hover labels for every shift-status colour shown on the grid, so hovering any of them
   // (working, off, lunch, or a whole-day status) explains what it is.

@@ -355,6 +355,10 @@
     <div class="modal-box" style="max-width:440px">
       <div class="modal-title">Choose Room</div>
       <div class="modal-sub" id="rcContext"></div>
+      <div id="rcCurrentSection" style="display:none">
+        <div class="rc-section-label">Currently Assigned</div>
+        <div id="rcCurrentList"></div>
+      </div>
       <div id="rcAvailableSection">
         <div class="rc-section-label">Available Now</div>
         <div id="rcAvailableList"></div>
@@ -1392,6 +1396,7 @@
     const span = slotsForDuration(svc.duration);
     const parts = modalKey.split('-');
     const startH = Number(parts[1]);
+    const currentRoomId = selectedRoomId; // whatever room this booking is already in, if any
 
     document.getElementById('rcContext').textContent =
       (document.getElementById('modalClientInput').value.trim() || 'This booking') + ' — ' +
@@ -1400,11 +1405,12 @@
     const available = [];
     const unavailable = [];
     ROOMS.forEach(function(room){
+      if(room.id === currentRoomId) return; // shown separately below, not as a normal pickable option
       const free = roomSpanFree(room.id, startH, span, modalKey);
       (free ? available : unavailable).push(room);
     });
 
-    function roomCardHtml(room, isAvailable){
+    function roomBarHtml(room){
       let barHtml = '';
       const colorMap = { free: '#7BC895', buffer: '#FBBF24', taken: '#D97757' };
       const segWidth = (100 / TIME_SLOTS.length).toFixed(3);
@@ -1412,19 +1418,37 @@
         const s = roomStatusAt(room.id, slotStartMinutes(hIdx));
         barHtml += '<div style="width:' + segWidth + '%;background:' + colorMap[s.status] + '"></div>';
       });
+      return barHtml;
+    }
+    function roomCardHtml(room, isAvailable){
       const clickAttr = isAvailable ? ' onclick="pickRoomFromChooser(' + room.id + ')"' : '';
       const statusHtml = isAvailable
         ? '<span class="rc-room-status" style="color:#2F7D4F">FREE</span>'
         : '<span class="rc-room-status" style="color:#9C4A32">TAKEN</span>';
       return '<div class="rc-room-card' + (isAvailable ? '' : ' rc-unavailable') + '"' + clickAttr + '>' +
         '<div class="rc-room-top"><span class="rc-room-name">' + room.name + '</span>' + statusHtml + '</div>' +
-        '<div class="rc-room-bar">' + barHtml + '</div>' +
+        '<div class="rc-room-bar">' + roomBarHtml(room) + '</div>' +
       '</div>';
+    }
+
+    // The room this booking is already in, if any - shown once, greyed and non-clickable,
+    // clearly marked as current rather than looking like just another selectable option.
+    const currentSection = document.getElementById('rcCurrentSection');
+    if(currentRoomId){
+      const currentRoom = roomById(currentRoomId);
+      document.getElementById('rcCurrentList').innerHTML =
+        '<div class="rc-room-card rc-unavailable">' +
+          '<div class="rc-room-top"><span class="rc-room-name">' + currentRoom.name + '</span><span class="rc-room-status" style="color:#0D9488">CURRENT</span></div>' +
+          '<div class="rc-room-bar">' + roomBarHtml(currentRoom) + '</div>' +
+        '</div>';
+      currentSection.style.display = 'block';
+    } else {
+      currentSection.style.display = 'none';
     }
 
     document.getElementById('rcAvailableList').innerHTML = available.length
       ? available.map(function(r){ return roomCardHtml(r, true); }).join('')
-      : '<div style="font-size:12.5px;color:#94A3B8;padding:8px 0">No rooms free for the whole treatment at this time.</div>';
+      : '<div style="font-size:12.5px;color:#94A3B8;padding:8px 0">No other rooms free for the whole treatment at this time.</div>';
     document.getElementById('rcAvailableSection').style.display = 'block';
 
     document.getElementById('rcUnavailableList').innerHTML = unavailable.map(function(r){ return roomCardHtml(r, false); }).join('');

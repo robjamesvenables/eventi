@@ -164,8 +164,14 @@
   .slot-inner {
     width: 100%; height: 100%; border-radius: 6px; display: flex; flex-direction: column;
     align-items: center; justify-content: center; gap: 0; font-size: 9.5px; font-weight: 700;
-    text-align: center; padding: 2px 3px; overflow: hidden;
+    text-align: center; padding: 2px 3px; overflow: hidden; position: relative;
   }
+  .slot-arrived-badge, .slot-late-badge {
+    position: absolute; top: 2px; right: 2px; width: 13px; height: 13px; border-radius: 50%;
+    color: white; font-size: 8.5px; font-weight: 900; display: flex; align-items: center; justify-content: center;
+  }
+  .slot-arrived-badge { background: #2F7D4F; }
+  .slot-late-badge { background: #B91C1C; animation: timerFlash 1.4s ease-in-out infinite; }
   .vacant .slot-inner { background: #F1F5F9; border: 1.5px solid #E2E8F0; color: #94A3B8; opacity: 0.9; }
   .vacant:hover .slot-inner, .vacant.drag-over .slot-inner { opacity: 1; background: #E2E8F0; }
   .vacant.on-shift .slot-inner { background: white; border: 1.5px solid #E8EBEF; opacity: 1; }
@@ -295,6 +301,10 @@
       <div class="status-pills">
         <button class="status-pill" id="pillHold" onclick="setModalStatus('hold')">On Hold</button>
         <button class="status-pill" id="pillBooked" onclick="setModalStatus('booked')">Booked</button>
+      </div>
+      <div id="arrivedWrap" style="display:none;margin-bottom:18px">
+        <button class="modal-btn" id="arrivedBtn" style="width:100%;background:#7BC895;color:white" onclick="markArrived()">Mark Arrived</button>
+        <div id="arrivedNote" style="display:none;text-align:center;font-size:11.5px;font-weight:700;color:#4C9A6A;margin-top:8px"></div>
       </div>
       <div class="modal-actions">
         <button class="modal-btn modal-btn-cancel" onclick="closeModal()">Cancel</button>
@@ -988,6 +998,8 @@
     const grid = document.getElementById('grid');
     const totalRows = TIME_SLOTS.length * ROWS_PER_SLOT;
     let html = '';
+    const now = new Date();
+    const nowMinForGrid = now.getHours() * 60 + now.getMinutes();
 
     // Header row - therapist names as real column headers, part of the grid itself
     html += '<div class="hd-time"></div>';
@@ -1018,9 +1030,18 @@
         if(b){
           const svc = serviceByCode(b.serviceCode);
           const span = (svc ? slotsForDuration(svc.duration) : 1) * ROWS_PER_SLOT;
+          let statusBadge = '';
+          if(b.status === 'booked'){
+            if(b.arrived){
+              statusBadge = '<div class="slot-arrived-badge" title="Arrived">\u2713</div>';
+            } else if(slotStartMinutes(hIdx) < nowMinForGrid){
+              statusBadge = '<div class="slot-late-badge" title="Booking time has passed - not checked in yet">!</div>';
+            }
+          }
           html += '<div class="slot ' + b.status + '" style="grid-column:' + col + ';grid-row:' + rowStart + ' / span ' + span + '" ' +
               'onclick="openSlot(\'' + key + '\')" ondragover="dragOver(event,\'' + key + '\')" ondragleave="dragLeave(event)" ondrop="drop(event,\'' + key + '\')">' +
             '<div class="slot-inner" draggable="true" ondragstart="bookingDragStart(event,\'' + key + '\')">' +
+              statusBadge +
               '<div class="slot-code">' + b.serviceCode + '</div>' +
               '<div class="slot-client">' + b.client + '</div>' +
               '<div class="slot-therapist">' + t.name + '</div>' +
@@ -1336,6 +1357,30 @@
     document.getElementById('modalNotesInput').value = existing ? (existing.notes || '') : '';
     setModalStatus(existing ? existing.status : 'hold');
     document.getElementById('clearWrap').style.display = existing ? 'block' : 'none';
+
+    // Arrived only makes sense for an actual confirmed booking, not a provisional hold or a
+    // brand new slot that hasn't been saved yet.
+    const arrivedWrap = document.getElementById('arrivedWrap');
+    if(existing && existing.status === 'booked'){
+      arrivedWrap.style.display = 'block';
+      const btn = document.getElementById('arrivedBtn');
+      const note = document.getElementById('arrivedNote');
+      if(existing.arrived){
+        btn.textContent = 'Arrived \u2713';
+        btn.disabled = true;
+        btn.style.opacity = '0.7';
+        note.style.display = 'block';
+        note.textContent = 'Checked in at ' + new Date(existing.arrivedAt).toLocaleTimeString('en-GB', { hour: 'numeric', minute: '2-digit' });
+      } else {
+        btn.textContent = 'Mark Arrived';
+        btn.disabled = false;
+        btn.style.opacity = '1';
+        note.style.display = 'none';
+      }
+    } else {
+      arrivedWrap.style.display = 'none';
+    }
+
     document.getElementById('modalBg').classList.add('show');
     setTimeout(function(){ document.getElementById('modalClientInput').focus(); }, 50);
   }
@@ -1409,6 +1454,15 @@
   function clearModal(){
     delete bookings[modalKey];
     saveBookings(); renderGrid(); closeModal();
+  }
+  function markArrived(){
+    const b = bookings[modalKey];
+    if(!b) return;
+    b.arrived = true;
+    b.arrivedAt = Date.now();
+    saveBookings();
+    renderGrid();
+    openSlot(modalKey); // refresh the modal in place so the button updates to the checked-in state
   }
   document.getElementById('modalBg').addEventListener('click', function(e){ if(e.target === this) closeModal(); });
 

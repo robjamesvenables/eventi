@@ -298,7 +298,7 @@
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
       <span class="sidebar-tab-label">Customer Database</span>
     </button>
-    <button class="sidebar-tab" id="tabAnalytics" onclick="switchView('analytics')">
+    <button class="sidebar-tab" id="tabAnalytics" onclick="openAnalyticsPinGate()">
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
       <span class="sidebar-tab-label">Analytics</span>
     </button>
@@ -394,6 +394,26 @@
       <div class="modal-sub" style="margin-bottom:16px">A live snapshot of today, computed from what's actually on the calendar right now.</div>
       <div id="dashContent"></div>
       <button class="modal-btn modal-btn-cancel" style="width:100%;margin-top:14px" onclick="closeDashboard()">Close</button>
+    </div>
+  </div>
+
+  <div class="modal-bg" id="analyticsPinBg" style="z-index:217">
+    <div class="modal-box" style="max-width:340px;text-align:center">
+      <div style="width:48px;height:48px;border-radius:50%;background:#F0FDFA;color:#0D9488;display:flex;align-items:center;justify-content:center;margin:0 auto 14px">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+      </div>
+      <div class="modal-title" id="pinModalTitle" style="text-align:center">Enter PIN</div>
+      <div class="modal-sub" id="pinModalSub" style="text-align:center">Analytics is PIN-protected</div>
+      <input type="password" inputmode="numeric" pattern="[0-9]*" maxlength="4" class="modal-input" id="pinInput" placeholder="\u2022 \u2022 \u2022 \u2022" style="text-align:center;font-size:24px;letter-spacing:10px;padding:14px" autocomplete="off" onkeydown="if(event.key==='Enter')submitAnalyticsPin()">
+      <div id="pinConfirmWrap" style="display:none">
+        <input type="password" inputmode="numeric" pattern="[0-9]*" maxlength="4" class="modal-input" id="pinConfirmInput" placeholder="\u2022 \u2022 \u2022 \u2022" style="text-align:center;font-size:24px;letter-spacing:10px;padding:14px" autocomplete="off" onkeydown="if(event.key==='Enter')submitAnalyticsPin()">
+      </div>
+      <div id="pinError" style="display:none;color:#DC2626;font-size:12px;font-weight:700;margin:-10px 0 14px">Incorrect PIN, try again</div>
+      <button class="modal-btn modal-btn-save" style="width:100%;margin-bottom:8px" id="pinSubmitBtn" onclick="submitAnalyticsPin()">Continue</button>
+      <button class="modal-btn modal-btn-cancel" style="width:100%" onclick="closeAnalyticsPinGate()">Cancel</button>
+      <div style="margin-top:14px">
+        <button onclick="startResetAnalyticsPin()" style="background:none;border:none;color:#94A3B8;font-family:inherit;font-size:11px;font-weight:700;cursor:pointer">Forgot / reset PIN</button>
+      </div>
     </div>
   </div>
 
@@ -1739,6 +1759,113 @@
   }
   function closeDashboard(){ document.getElementById('dashboardBg').classList.remove('show'); }
   document.getElementById('dashboardBg').addEventListener('click', function(e){ if(e.target === this) closeDashboard(); });
+
+  // ── Analytics PIN gate - same pattern as Mavis's own Analytics PIN: create-then-confirm on
+  // first use, PIN required on later visits, a short grace period so it doesn't ask every
+  // single time, and a no-old-PIN-needed reset if it's forgotten. Stored in this app's own
+  // local storage rather than a shared Supabase table, matching how everything else here
+  // persists - this can move to something admin-console-driven and properly shared later.
+  const ANALYTICS_PIN_KEY = 'mavis_spa_analytics_pin';
+  const ANALYTICS_PIN_VERIFIED_KEY = 'mavis_spa_analytics_pin_verified_at';
+  const ANALYTICS_PIN_GRACE_MS = 10 * 60 * 1000; // 10 minutes, same as Mavis
+  let pinMode = 'enter'; // 'create' | 'confirm' | 'enter'
+  let pinFirstEntry = null;
+
+  function analyticsPinRecentlyVerified(){
+    const verifiedAt = Number(localStorage.getItem(ANALYTICS_PIN_VERIFIED_KEY) || 0);
+    return (Date.now() - verifiedAt) < ANALYTICS_PIN_GRACE_MS;
+  }
+  function openAnalyticsPinGate(){
+    const existingPin = localStorage.getItem(ANALYTICS_PIN_KEY);
+    if(existingPin && analyticsPinRecentlyVerified()){
+      switchView('analytics');
+      return;
+    }
+    document.getElementById('pinInput').value = '';
+    document.getElementById('pinConfirmInput').value = '';
+    document.getElementById('pinError').style.display = 'none';
+    document.getElementById('pinConfirmWrap').style.display = 'none';
+    if(existingPin){
+      pinMode = 'enter';
+      document.getElementById('pinModalTitle').textContent = 'Enter PIN';
+      document.getElementById('pinModalSub').textContent = 'Analytics is PIN-protected';
+      document.getElementById('pinSubmitBtn').textContent = 'Continue';
+    } else {
+      pinMode = 'create';
+      pinFirstEntry = null;
+      document.getElementById('pinModalTitle').textContent = 'Create a PIN';
+      document.getElementById('pinModalSub').textContent = 'Set a 4-digit PIN to protect Analytics';
+      document.getElementById('pinSubmitBtn').textContent = 'Set PIN';
+    }
+    document.getElementById('analyticsPinBg').classList.add('show');
+    setTimeout(function(){ document.getElementById('pinInput').focus(); }, 50);
+  }
+  function closeAnalyticsPinGate(){
+    document.getElementById('analyticsPinBg').classList.remove('show');
+  }
+  function submitAnalyticsPin(){
+    const errorEl = document.getElementById('pinError');
+    errorEl.style.display = 'none';
+
+    if(pinMode === 'enter'){
+      const entered = document.getElementById('pinInput').value.trim();
+      const stored = localStorage.getItem(ANALYTICS_PIN_KEY);
+      if(entered.length < 4){ errorEl.textContent = 'Enter your 4-digit PIN'; errorEl.style.display = 'block'; return; }
+      if(entered !== stored){
+        errorEl.textContent = 'Incorrect PIN, try again';
+        errorEl.style.display = 'block';
+        document.getElementById('pinInput').value = '';
+        document.getElementById('pinInput').focus();
+        return;
+      }
+      localStorage.setItem(ANALYTICS_PIN_VERIFIED_KEY, String(Date.now()));
+      closeAnalyticsPinGate();
+      switchView('analytics');
+      return;
+    }
+
+    if(pinMode === 'create'){
+      const first = document.getElementById('pinInput').value.trim();
+      if(first.length < 4){ errorEl.textContent = 'PIN needs to be at least 4 digits'; errorEl.style.display = 'block'; return; }
+      pinFirstEntry = first;
+      pinMode = 'confirm';
+      document.getElementById('pinModalTitle').textContent = 'Confirm PIN';
+      document.getElementById('pinModalSub').textContent = 'Enter the same PIN again to confirm';
+      document.getElementById('pinConfirmWrap').style.display = 'block';
+      document.getElementById('pinSubmitBtn').textContent = 'Confirm PIN';
+      setTimeout(function(){ document.getElementById('pinConfirmInput').focus(); }, 50);
+      return;
+    }
+
+    if(pinMode === 'confirm'){
+      const confirmVal = document.getElementById('pinConfirmInput').value.trim();
+      if(confirmVal !== pinFirstEntry){
+        errorEl.textContent = 'PINs don\u2019t match \u2014 try again';
+        errorEl.style.display = 'block';
+        document.getElementById('pinConfirmInput').value = '';
+        document.getElementById('pinConfirmInput').focus();
+        return;
+      }
+      localStorage.setItem(ANALYTICS_PIN_KEY, pinFirstEntry);
+      localStorage.setItem(ANALYTICS_PIN_VERIFIED_KEY, String(Date.now()));
+      closeAnalyticsPinGate();
+      switchView('analytics');
+    }
+  }
+  function startResetAnalyticsPin(){
+    // No old PIN needed, same as Mavis - just set a fresh one straight away.
+    document.getElementById('pinInput').value = '';
+    document.getElementById('pinConfirmInput').value = '';
+    document.getElementById('pinError').style.display = 'none';
+    document.getElementById('pinConfirmWrap').style.display = 'none';
+    pinMode = 'create';
+    pinFirstEntry = null;
+    document.getElementById('pinModalTitle').textContent = 'Create a New PIN';
+    document.getElementById('pinModalSub').textContent = 'Set a new 4-digit PIN for Analytics';
+    document.getElementById('pinSubmitBtn').textContent = 'Set PIN';
+    document.getElementById('pinInput').focus();
+  }
+  document.getElementById('analyticsPinBg').addEventListener('click', function(e){ if(e.target === this) closeAnalyticsPinGate(); });
 
   // Shared by every other in-app picker (Therapist, Treatment, shift times, Front Desk,
   // queue edit) - Room now has its own dedicated chooser above, but this one is still used

@@ -1020,7 +1020,13 @@
       '</div>';
     }
 
-    list.innerHTML = pendingQueue.map(cardHtml).join('');
+    // Longest waiting at the top, newest last - sorted explicitly by when each one actually
+    // entered the queue, rather than relying on array order (which could drift once items
+    // get edited or re-saved).
+    const sortedQueue = pendingQueue.slice().sort(function(a, b){
+      return (a.createdAt || 0) - (b.createdAt || 0);
+    });
+    list.innerHTML = sortedQueue.map(cardHtml).join('');
   }
 
   // ── Booking Info - full details of the request itself, mirroring what a calendar

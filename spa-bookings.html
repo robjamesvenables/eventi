@@ -1428,11 +1428,23 @@
     const parts = targetKey.split('-');
     const ti = Number(parts[0]), h = Number(parts[1]);
     const info = currentDraggedSpan();
-    const fits = (h + info.span <= TIME_SLOTS.length) && spanFree(ti, h, info.span, info.ignoreKey);
+    let fits = (h + info.span <= TIME_SLOTS.length) && spanFree(ti, h, info.span, info.ignoreKey);
+    let roomBlocked = false;
+    // If we're dragging an existing booking, it already has a room assigned - so we can also
+    // check that room's buffer live while dragging, not just the therapist's own time. A
+    // fresh queue item doesn't have a room yet (that's chosen afterward in Choose Room), so
+    // this only applies to moving something that's already been allocated.
+    if(fits && draggedBookingKey){
+      const draggedBooking = bookings[draggedBookingKey];
+      if(draggedBooking && draggedBooking.roomId && !roomSpanFree(draggedBooking.roomId, h, info.span, draggedBookingKey)){
+        fits = false;
+        roomBlocked = true;
+      }
+    }
     e.currentTarget.classList.toggle('drag-over', fits);
     e.currentTarget.classList.toggle('drag-invalid', !fits);
     const t = THERAPISTS[ti];
-    showAppTooltip(e, (t ? t.name + ' — ' : '') + fmtTimeSlot(TIME_SLOTS[h]));
+    showAppTooltip(e, (t ? t.name + ' — ' : '') + fmtTimeSlot(TIME_SLOTS[h]) + (roomBlocked ? ' \u2014 room needs its buffer' : ''));
   }
   function dragLeave(e){
     e.currentTarget.classList.remove('drag-over', 'drag-invalid');

@@ -420,6 +420,22 @@
     </div>
   </div>
 
+  <div class="modal-bg" id="renameRoomBg" style="z-index:218">
+    <div class="modal-box" style="max-width:340px">
+      <div class="modal-title">Rename Room</div>
+      <div class="modal-sub" id="renameRoomSub"></div>
+      <div class="modal-label">Room Name</div>
+      <input type="text" class="modal-input" id="renameRoomInput" placeholder="e.g. Ocean View" onkeydown="if(event.key==='Enter')saveRoomRename()">
+      <div class="modal-actions">
+        <button class="modal-btn modal-btn-cancel" onclick="closeRenameRoom()">Cancel</button>
+        <button class="modal-btn modal-btn-save" onclick="saveRoomRename()">Save</button>
+      </div>
+      <div style="text-align:center;margin-top:14px">
+        <button class="modal-btn-clear" style="background:none;border:none;font-family:inherit;font-size:12.5px;font-weight:700;cursor:pointer" onclick="resetRoomRename()">Reset to default code</button>
+      </div>
+    </div>
+  </div>
+
   <div class="modal-bg" id="analyticsPinBg" style="z-index:217">
     <div class="modal-box" style="max-width:340px;text-align:center">
       <div style="width:48px;height:48px;border-radius:50%;background:#F0FDFA;color:#0D9488;display:flex;align-items:center;justify-content:center;margin:0 auto 14px">
@@ -609,10 +625,51 @@
     {name:'Kevin', gender:'M'}, {name:'Sophie', gender:'F'}
   ];
 
-  // 16 rooms, example count for now.
+  // The spa's actual room/chair layout, as given by the client - short codes so there's
+  // room for them in the tight Rooms snapshot, with a full plain-English description shown
+  // on hover everywhere a code appears.
+  const ROOM_CATEGORIES = [
+    { prefix: 'SGL-SH', count: 10, description: 'Single Room with Shower' },
+    { prefix: 'SGL-NS', count: 4,  description: 'Single Room, No Shower' },
+    { prefix: 'DBL-SH', count: 5,  description: 'Double Room with Shower' },
+    { prefix: 'DBL-BT', count: 3,  description: 'Double Room with Bath Tub' },
+    { prefix: 'BT',     count: 2,  description: 'Bath Tub Only (no bed)' },
+    { prefix: 'REC',    count: 1,  description: 'Recovery Room (Sauna & Ice Bath)' },
+    { prefix: 'RFLX',   count: 5,  description: 'Reflexology Chair' },
+    { prefix: 'M/P',    count: 4,  description: 'Manicure & Pedicure Chair' }
+  ];
   const ROOMS = [];
-  for(let i = 1; i <= 16; i++){ ROOMS.push({ id: i, name: 'Room ' + i }); }
+  (function(){
+    let id = 1;
+    ROOM_CATEGORIES.forEach(function(cat){
+      for(let i = 1; i <= cat.count; i++){
+        const name = cat.count > 1 ? cat.prefix + '-' + i : cat.prefix;
+        ROOMS.push({ id: id, name: name, defaultName: name, description: cat.description });
+        id++;
+      }
+    });
+  })();
   const ROOM_BUFFER_MIN = 30; // clean-up time after a treatment ends before the room is free again
+
+  // Custom room names, if the client renames one - kept separate from the default so a room
+  // can always be reset back to its original code-based name.
+  const ROOM_NAMES_KEY = 'mavis_spa_room_names_v1';
+  function loadRoomNameOverrides(){
+    try{
+      const saved = JSON.parse(localStorage.getItem(ROOM_NAMES_KEY) || '{}');
+      ROOMS.forEach(function(r){ if(saved[r.id]) r.name = saved[r.id]; });
+    }catch(e){}
+  }
+  function renameRoom(id, newName){
+    const room = roomById(id);
+    if(!room) return;
+    room.name = newName && newName.trim() ? newName.trim() : room.defaultName;
+    try{
+      const saved = JSON.parse(localStorage.getItem(ROOM_NAMES_KEY) || '{}');
+      if(room.name === room.defaultName){ delete saved[id]; } else { saved[id] = room.name; }
+      localStorage.setItem(ROOM_NAMES_KEY, JSON.stringify(saved));
+    }catch(e){}
+  }
 
   function roomById(id){ return ROOMS.find(function(r){ return r.id === id; }); }
 
@@ -1017,7 +1074,7 @@
         timerHtml = '<div class="room-timer" onmouseenter="showAppTooltip(event,\'Free\')" onmousemove="positionAppTooltip(event)" onmouseleave="hideAppTooltip()">\u2014</div>';
       }
 
-      return '<div class="room-row"><div class="room-row-name">' + room.name + '</div><div class="room-bar">' + barHtml + '</div>' + timerHtml + '</div>';
+      return '<div class="room-row"><div class="room-row-name" style="cursor:pointer" onclick="openRenameRoom(' + room.id + ')" onmouseenter="showAppTooltip(event,\'' + room.description + ' \u2014 tap to rename\')" onmousemove="positionAppTooltip(event)" onmouseleave="hideAppTooltip()">' + room.name + '</div><div class="room-bar">' + barHtml + '</div>' + timerHtml + '</div>';
     }).join('');
 
     // Render the hours header + room rows first, then measure the real rendered height and
@@ -1328,7 +1385,7 @@
               '<div class="slot-code">' + b.serviceCode + (b.people && b.people > 1 ? ' \u00d7' + b.people : '') + '</div>' +
               '<div class="slot-client">' + b.client + '</div>' +
               '<div class="slot-therapist">' + t.name + '</div>' +
-              (b.roomId ? '<div class="slot-room">' + roomById(b.roomId).name + '</div>' : '') +
+              (b.roomId ? '<div class="slot-room" title="' + roomById(b.roomId).description + '">' + roomById(b.roomId).name + '</div>' : '') +
             '</div>' +
           '</div>';
           return;
@@ -1715,7 +1772,7 @@
         ? '<span class="rc-room-status" style="color:#2F7D4F">FREE</span>'
         : '<span class="rc-room-status" style="color:#9C4A32">TAKEN</span>';
       return '<div class="rc-room-card' + (isAvailable ? '' : ' rc-unavailable') + '"' + clickAttr + '>' +
-        '<div class="rc-room-top"><span class="rc-room-name">' + room.name + '</span>' + statusHtml + '</div>' +
+        '<div class="rc-room-top"><span class="rc-room-name" title="' + room.description + '">' + room.name + '</span>' + statusHtml + '</div>' +
         '<div class="rc-room-bar">' + roomBarHtml(room) + '</div>' +
       '</div>';
     }
@@ -1727,7 +1784,7 @@
       const currentRoom = roomById(currentRoomId);
       document.getElementById('rcCurrentList').innerHTML =
         '<div class="rc-room-card rc-unavailable">' +
-          '<div class="rc-room-top"><span class="rc-room-name">' + currentRoom.name + '</span><span class="rc-room-status" style="color:#0D9488">CURRENT</span></div>' +
+          '<div class="rc-room-top"><span class="rc-room-name" title="' + currentRoom.description + '">' + currentRoom.name + '</span><span class="rc-room-status" style="color:#0D9488">CURRENT</span></div>' +
           '<div class="rc-room-bar">' + roomBarHtml(currentRoom) + '</div>' +
         '</div>';
       currentSection.style.display = 'block';
@@ -1947,6 +2004,37 @@
   }
   function closeDashboard(){ document.getElementById('dashboardBg').classList.remove('show'); }
   document.getElementById('dashboardBg').addEventListener('click', function(e){ if(e.target === this) closeDashboard(); });
+
+  // ── Rename Room - lets the client swap a room's default code (e.g. SGL-SH-1) for their
+  // own name (e.g. "Ocean View"), persisted separately so it can always be reset back.
+  let renameRoomId = null;
+  function openRenameRoom(id){
+    const room = roomById(id);
+    if(!room) return;
+    renameRoomId = id;
+    document.getElementById('renameRoomSub').textContent = room.description + ' (default: ' + room.defaultName + ')';
+    document.getElementById('renameRoomInput').value = room.name === room.defaultName ? '' : room.name;
+    document.getElementById('renameRoomBg').classList.add('show');
+    setTimeout(function(){ document.getElementById('renameRoomInput').focus(); }, 50);
+  }
+  function closeRenameRoom(){
+    document.getElementById('renameRoomBg').classList.remove('show');
+    renameRoomId = null;
+  }
+  function saveRoomRename(){
+    if(renameRoomId === null) return;
+    const newName = document.getElementById('renameRoomInput').value;
+    renameRoom(renameRoomId, newName);
+    renderRoomsPanel();
+    closeRenameRoom();
+  }
+  function resetRoomRename(){
+    if(renameRoomId === null) return;
+    renameRoom(renameRoomId, null);
+    renderRoomsPanel();
+    closeRenameRoom();
+  }
+  document.getElementById('renameRoomBg').addEventListener('click', function(e){ if(e.target === this) closeRenameRoom(); });
 
   // ── Analytics PIN gate - same pattern as Mavis's own Analytics PIN: create-then-confirm on
   // first use, PIN required on later visits, a short grace period so it doesn't ask every
@@ -2461,6 +2549,7 @@
   seedQueueForDemo();
   loadShifts();
   loadCustomers();
+  loadRoomNameOverrides();
   renderGrid();
   renderQueue();
 

@@ -217,6 +217,18 @@
     margin-bottom: 16px;
   }
   .room-chooser-btn.room-chosen { background: #0D9488; color: white; }
+  .dashboard-open-btn {
+    display: inline-flex; align-items: center; gap: 8px; padding: 9px 16px; border-radius: 9px;
+    border: 1.5px solid #0F1E2E; background: #0F1E2E; color: white; font-family: inherit;
+    font-size: 12.5px; font-weight: 700; cursor: pointer;
+  }
+  .dashboard-open-btn:hover { background: #1A2E45; }
+  .dash-section-label { font-size: 10.5px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.4px; color: #94A3B8; margin: 16px 0 8px; }
+  .dash-section-label:first-child { margin-top: 0; }
+  .dash-stat-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+  .dash-stat { background: #F8FAFC; border: 1.5px solid #E2E8F0; border-radius: 10px; padding: 10px 12px; }
+  .dash-stat-value { font-size: 19px; font-weight: 800; color: #0F1E2E; line-height: 1.1; }
+  .dash-stat-label { font-size: 10.5px; font-weight: 700; color: #64748B; margin-top: 3px; line-height: 1.3; }
   .rc-section-label { font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.4px; color: #94A3B8; margin: 14px 0 8px; }
   .rc-room-card { border: 1.5px solid #86D9A0; background: #F0FDF6; border-radius: 10px; padding: 9px 12px; margin-bottom: 8px; cursor: pointer; }
   .rc-room-card:hover { border-color: #0D9488; }
@@ -368,6 +380,18 @@
     </div>
   </div>
 
+  <div class="modal-bg" id="dashboardBg" style="z-index:216">
+    <div class="modal-box" style="max-width:640px;max-height:88vh">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
+        <div class="modal-title" style="margin-bottom:0">Dashboard</div>
+        <div class="modal-sub" id="dashDate" style="margin-bottom:0"></div>
+      </div>
+      <div class="modal-sub" style="margin-bottom:16px">A live snapshot of today, computed from what's actually on the calendar right now.</div>
+      <div id="dashContent"></div>
+      <button class="modal-btn modal-btn-cancel" style="width:100%;margin-top:14px" onclick="closeDashboard()">Close</button>
+    </div>
+  </div>
+
   <div class="modal-bg" id="clientProfileBg">
     <div class="modal-box">
       <div class="modal-title" id="cpName"></div>
@@ -501,6 +525,13 @@
       </div>
       <div class="rooms-body" id="roomsList"></div>
     </div>
+  </div>
+
+  <div style="padding:0 22px;margin-top:-6px;margin-bottom:10px">
+    <button class="dashboard-open-btn" onclick="openDashboard()">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9"/><rect x="14" y="3" width="7" height="5"/><rect x="14" y="12" width="7" height="9"/><rect x="3" y="16" width="7" height="5"/></svg>
+      Dashboard
+    </button>
   </div>
 
   <div class="wrap">
@@ -671,7 +702,7 @@
     } else {
       customers.push({
         firstName: firstName, lastName: lastName, email: email || '', phone: phone || '',
-        lastTreatment: treatmentName, visits: 1
+        lastTreatment: treatmentName, visits: 1, firstSeenAt: Date.now()
       });
     }
     saveCustomers();
@@ -1347,6 +1378,7 @@
       setModalStatus('booked');
       setModalPeople(item.people || 1);
       window._pendingQueueRemoval = id;
+      window._pendingBookingType = item.bookingType; // carried through to the saved booking, so the Dashboard can report on it later
     }
   }
 
@@ -1492,6 +1524,170 @@
   function closeRoomChooser(){ document.getElementById('roomChooserBg').classList.remove('show'); }
   document.getElementById('roomChooserBg').addEventListener('click', function(e){ if(e.target === this) closeRoomChooser(); });
 
+  // ── Dashboard - a live snapshot computed fresh from bookings/queue/shifts/rooms/customers
+  // every time it's opened, not stored anywhere separately. Since this app has no real
+  // concept of "days" yet (flagged honestly earlier), everything here reflects the calendar
+  // exactly as it stands right now, which in this single-day model is "today" by definition.
+  function openDashboard(){
+    document.getElementById('dashDate').textContent = new Date().toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' });
+
+    const now = new Date();
+    const nowMin = now.getHours() * 60 + now.getMinutes();
+
+    // Bookings & status
+    const allKeys = Object.keys(bookings);
+    let onHoldCount = 0, confirmedCount = 0, inTreatmentNow = 0, completedToday = 0, notCheckedInLate = 0;
+    let revenueTotal = 0, peopleServedTotal = 0;
+    const treatmentTally = {};
+    const bookingTypeTally = { paid: 0, walkin: 0, wa: 0, referral: 0, unclassified: 0 };
+
+    allKeys.forEach(function(key){
+      const b = bookings[key];
+      const parts = key.split('-');
+      const startH = Number(parts[1]);
+      const svc = serviceByCode(b.serviceCode);
+      const startMin = slotStartMinutes(startH);
+      const endMin = startMin + (svc ? svc.duration : 15);
+
+      if(b.status === 'hold') onHoldCount++;
+      if(b.status === 'booked') confirmedCount++;
+
+      if(b.status === 'booked'){
+        if(nowMin >= startMin && nowMin < endMin) inTreatmentNow++;
+        if(b.arrived && nowMin >= endMin) completedToday++;
+        if(!b.arrived && nowMin >= startMin) notCheckedInLate++;
+        revenueTotal += svc ? svc.price : 0;
+        peopleServedTotal += b.people || 1;
+        treatmentTally[b.serviceCode] = (treatmentTally[b.serviceCode] || 0) + 1;
+        const btKey = b.bookingType || 'unclassified';
+        bookingTypeTally[btKey] = (bookingTypeTally[btKey] || 0) + 1;
+      }
+    });
+
+    let mostBookedCode = null, mostBookedCount = 0;
+    for(const code in treatmentTally){
+      if(treatmentTally[code] > mostBookedCount){ mostBookedCount = treatmentTally[code]; mostBookedCode = code; }
+    }
+    const mostBookedSvc = mostBookedCode ? serviceByCode(mostBookedCode) : null;
+    const mostBookedName = mostBookedSvc ? mostBookedSvc.name : '\u2014';
+
+    // Staff
+    let workingCount = 0, maleWorking = 0, femaleWorking = 0;
+    let holidayCount = 0, sickCount = 0, emergencyCount = 0, trainingCount = 0, unscheduledCount = 0;
+    THERAPISTS.forEach(function(t){
+      const s = therapistShifts[t.name];
+      if(s && s.type === 'custom'){
+        workingCount++;
+        if(t.gender === 'M') maleWorking++; else femaleWorking++;
+      } else if(s && s.type === 'holiday'){ holidayCount++; }
+      else if(s && s.type === 'sick'){ sickCount++; }
+      else if(s && s.type === 'emergency'){ emergencyCount++; }
+      else if(s && s.type === 'training'){ trainingCount++; }
+      else { unscheduledCount++; }
+    });
+
+    // Rooms
+    let roomsFreeNow = 0, roomsTakenNow = 0;
+    const roomBookingTally = {};
+    let totalBookedMinutes = 0;
+    ROOMS.forEach(function(room){
+      const live = roomStatusAt(room.id, nowMin);
+      if(live.status === 'taken') roomsTakenNow++; else roomsFreeNow++;
+    });
+    allKeys.forEach(function(key){
+      const b = bookings[key];
+      if(!b.roomId) return;
+      roomBookingTally[b.roomId] = (roomBookingTally[b.roomId] || 0) + 1;
+      const svc = serviceByCode(b.serviceCode);
+      if(svc) totalBookedMinutes += svc.duration;
+    });
+    let busiestRoomId = null, busiestRoomBookings = 0;
+    for(const rid in roomBookingTally){
+      if(roomBookingTally[rid] > busiestRoomBookings){ busiestRoomBookings = roomBookingTally[rid]; busiestRoomId = Number(rid); }
+    }
+    const busiestRoomName = busiestRoomId ? roomById(busiestRoomId).name : '\u2014';
+    const totalCapacityMinutes = ROOMS.length * 13 * 60; // 9am-10pm per room
+    const utilizationPct = totalCapacityMinutes > 0 ? Math.round((totalBookedMinutes / totalCapacityMinutes) * 100) : 0;
+
+    // Waiting list
+    let waitingNew = 0, waitingAmber = 0, waitingRed = 0;
+    pendingQueue.forEach(function(item){
+      const ageMin = (Date.now() - (item.createdAt || Date.now())) / 60000;
+      if(ageMin >= 30) waitingRed++;
+      else if(ageMin >= 15) waitingAmber++;
+      else if(ageMin < 5) waitingNew++;
+    });
+
+    // Customers - "new" vs "returning" based on whether this was their first-ever match or
+    // not (visits>1 means an existing record was found and updated) - the app has no
+    // multi-day date tracking yet, so within this single-day model that's the honest signal.
+    let newCustomers = 0, returningCustomers = 0;
+    customers.forEach(function(c){
+      if((c.visits || 1) > 1) returningCustomers++; else newCustomers++;
+    });
+
+    function stat(value, label){
+      return '<div class="dash-stat"><div class="dash-stat-value">' + value + '</div><div class="dash-stat-label">' + label + '</div></div>';
+    }
+
+    let html = '';
+    html += '<div class="dash-section-label">Bookings & Status</div><div class="dash-stat-grid">' +
+      stat(allKeys.length, 'Total bookings') +
+      stat(confirmedCount, 'Confirmed') +
+      stat(onHoldCount, 'On hold') +
+      stat(inTreatmentNow, 'In treatment now') +
+      stat(completedToday, 'Completed / left') +
+      stat(notCheckedInLate, 'Not checked in (late)') +
+      stat('$' + revenueTotal, 'Revenue (confirmed)') +
+      stat(peopleServedTotal, 'People served') +
+      stat(mostBookedName, 'Most-booked treatment') +
+    '</div>';
+
+    html += '<div class="dash-section-label">How Bookings Came In</div><div class="dash-stat-grid">' +
+      stat(bookingTypeTally.paid, 'Paid') +
+      stat(bookingTypeTally.walkin, 'Walk in') +
+      stat(bookingTypeTally.wa, 'WhatsApp') +
+      stat(bookingTypeTally.referral, 'Referral') +
+      stat(bookingTypeTally.unclassified, 'Unclassified') +
+    '</div>';
+
+    html += '<div class="dash-section-label">Staff Today</div><div class="dash-stat-grid">' +
+      stat(workingCount, 'Working today') +
+      stat(maleWorking, 'Male working') +
+      stat(femaleWorking, 'Female working') +
+      stat(holidayCount, 'Holiday') +
+      stat(sickCount, 'Sick') +
+      stat(emergencyCount, 'Emergency leave') +
+      stat(trainingCount, 'Training') +
+      stat(unscheduledCount, 'Not yet scheduled') +
+    '</div>';
+
+    html += '<div class="dash-section-label">Rooms</div><div class="dash-stat-grid">' +
+      stat(roomsFreeNow, 'Free right now') +
+      stat(roomsTakenNow, 'Occupied right now') +
+      stat(busiestRoomName, 'Busiest room today') +
+      stat(utilizationPct + '%', 'Utilisation today') +
+    '</div>';
+
+    html += '<div class="dash-section-label">Waiting List</div><div class="dash-stat-grid">' +
+      stat(pendingQueue.length, 'Currently waiting') +
+      stat(waitingNew, 'New (under 5 min)') +
+      stat(waitingAmber, 'Amber (15+ min)') +
+      stat(waitingRed, 'Red (30+ min)') +
+    '</div>';
+
+    html += '<div class="dash-section-label">Customer Database</div><div class="dash-stat-grid">' +
+      stat(customers.length, 'Total customers') +
+      stat(newCustomers, 'New') +
+      stat(returningCustomers, 'Returning') +
+    '</div>';
+
+    document.getElementById('dashContent').innerHTML = html;
+    document.getElementById('dashboardBg').classList.add('show');
+  }
+  function closeDashboard(){ document.getElementById('dashboardBg').classList.remove('show'); }
+  document.getElementById('dashboardBg').addEventListener('click', function(e){ if(e.target === this) closeDashboard(); });
+
   // Shared by every other in-app picker (Therapist, Treatment, shift times, Front Desk,
   // queue edit) - Room now has its own dedicated chooser above, but this one is still used
   // by all the rest, so it stays.
@@ -1599,8 +1795,10 @@
       serviceCode: serviceCode, client: client, phone: phone, notes: notes, roomId: selectedRoomId,
       status: modalStatus, holdStartedAt: holdStartedAt, holdPrompted: false, people: modalPeople,
       arrived: existing ? (existing.arrived || false) : false,
-      arrivedAt: existing ? (existing.arrivedAt || null) : null
+      arrivedAt: existing ? (existing.arrivedAt || null) : null,
+      bookingType: window._pendingBookingType || (existing ? existing.bookingType : null) || null
     };
+    window._pendingBookingType = null;
     saveBookings();
 
     // If this booking came from dragging a queue item, remove it from the queue now that

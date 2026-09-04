@@ -483,6 +483,9 @@
         <button class="modal-btn modal-btn-cancel" onclick="closeQueueEdit()">Cancel</button>
         <button class="modal-btn modal-btn-save" onclick="saveQueueEdit()">Save Changes</button>
       </div>
+      <div style="text-align:center;margin-top:14px">
+        <button class="modal-btn-clear" style="background:none;border:none;font-family:inherit;font-size:12.5px;font-weight:700;cursor:pointer" onclick="deleteQueueItem()">Cancel this booking</button>
+      </div>
     </div>
   </div>
 
@@ -1111,6 +1114,23 @@
     saveQueue();
     renderQueue();
     closeQueueEdit();
+  }
+  function deleteQueueItem(){
+    const item = pendingQueue.find(function(q){ return q.id === qeItemId; });
+    if(!item) return;
+    showConfirm({
+      title: 'Cancel This Booking?',
+      msg: 'Remove ' + item.client + '\u2019s request from the waiting list. This can\u2019t be undone.',
+      buttons: [
+        { label: 'Keep It', cls: 'confirm-btn-cancel', onClick: function(){} },
+        { label: 'Cancel Booking', cls: 'confirm-btn-danger', onClick: function(){
+          pendingQueue = pendingQueue.filter(function(q){ return q.id !== qeItemId; });
+          saveQueue();
+          renderQueue();
+          closeQueueEdit();
+        } }
+      ]
+    });
   }
   document.getElementById('queueEditBg').addEventListener('click', function(e){ if(e.target === this) closeQueueEdit(); });
 
@@ -2035,8 +2055,19 @@
     renderGrid(); closeModal();
   }
   function clearModal(){
-    delete bookings[modalKey];
-    saveBookings(); renderGrid(); closeModal();
+    const b = bookings[modalKey];
+    const clientName = b ? b.client : 'this booking';
+    showConfirm({
+      title: 'Clear This Slot?',
+      msg: 'Remove ' + clientName + '\u2019s booking from the calendar. This can\u2019t be undone.',
+      buttons: [
+        { label: 'Keep It', cls: 'confirm-btn-cancel', onClick: function(){} },
+        { label: 'Clear Slot', cls: 'confirm-btn-danger', onClick: function(){
+          delete bookings[modalKey];
+          saveBookings(); renderGrid(); closeModal();
+        } }
+      ]
+    });
   }
   function markArrived(){
     const b = bookings[modalKey];

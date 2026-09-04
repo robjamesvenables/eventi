@@ -193,10 +193,6 @@
   .hold .slot-inner { background: #D9A441; color: white; cursor: grab; }
   .booked .slot-inner { background: #D97757; color: white; cursor: grab; }
   .booked.arrived .slot-inner { background: #5C9C79; color: white; cursor: grab; }
-  .room-buffer-strip .slot-inner {
-    background: repeating-linear-gradient(45deg, #FBBF24, #FBBF24 6px, #FDE68A 6px, #FDE68A 12px);
-    cursor: pointer; border: 1.5px solid #F0B429; opacity: 1;
-  }
   .slot-code { font-size: 12px; font-weight: 900; letter-spacing: 0.4px; line-height: 1.1; }
   .slot-client { font-size: 9px; font-weight: 700; opacity: 0.95; line-height: 1.1; word-break: break-word; }
   .slot-therapist { font-size: 7.5px; font-weight: 600; opacity: 0.85; line-height: 1.1; }
@@ -1253,29 +1249,6 @@
     return covered;
   }
 
-  // The room's 30-minute cleaning buffer after a booking ends, shown on the therapist's own
-  // column right after their booking - the therapist themselves doesn't need this time off
-  // (they could take someone else immediately), but the room they were just in does, and
-  // this is what makes that visible directly on the calendar rather than only in the Rooms
-  // panel. Only marked where the therapist's column is actually free - never overwrites a
-  // real booking they might have booked back-to-back with a different room.
-  function roomBufferSlots(ti, covered){
-    const buffer = {};
-    const bufferSlotCount = ROOM_BUFFER_MIN / 15;
-    for(const key in bookings){
-      const parts = key.split('-');
-      if(Number(parts[0]) !== ti) continue;
-      const startH = Number(parts[1]);
-      const svc = serviceByCode(bookings[key].serviceCode);
-      const span = svc ? slotsForDuration(svc.duration) : 1;
-      for(let i = 0; i < bufferSlotCount; i++){
-        const idx = startH + span + i;
-        if(covered[idx] === undefined) buffer[idx] = true;
-      }
-    }
-    return buffer;
-  }
-
   function renderGrid(){
     const grid = document.getElementById('grid');
     const totalRows = TIME_SLOTS.length * ROWS_PER_SLOT;
@@ -1303,7 +1276,6 @@
     // Booking / vacant cells
     THERAPISTS.forEach(function(t, ti){
       const covered = coveredSlots(ti);
-      const buffer = roomBufferSlots(ti, covered);
       const col = ti + 2;
       TIME_SLOTS.forEach(function(hh, hIdx){
         const rowStart = 5 + hIdx * ROWS_PER_SLOT;
@@ -1334,15 +1306,6 @@
           return;
         }
         if(covered[hIdx] !== undefined) return; // covered by an earlier-starting booking, skip
-
-        if(buffer[hIdx]){
-          html += '<div class="slot room-buffer-strip" style="grid-column:' + col + ';grid-row:' + rowStart + ' / span ' + ROWS_PER_SLOT + '" ' +
-              'onmouseenter="showAppTooltip(event,\'Room cleaning buffer\')" onmousemove="positionAppTooltip(event)" onmouseleave="hideAppTooltip()" ' +
-              'onclick="openSlot(\'' + key + '\')" ondragover="dragOver(event,\'' + key + '\')" ondragleave="dragLeave(event)" ondrop="drop(event,\'' + key + '\')">' +
-            '<div class="slot-inner"></div>' +
-          '</div>';
-          return;
-        }
 
         const shiftClass = shiftClassFor(t.name, hIdx);
         const shiftTip = SHIFT_TOOLTIP_LABELS[shiftClass] || '';

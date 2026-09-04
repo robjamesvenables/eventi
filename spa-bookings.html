@@ -104,16 +104,18 @@
   .room-hours-spacer { width: 50px; flex-shrink: 0; }
   .room-hours-labels { flex: 1; display: flex; }
   .room-hours-labels span { flex: 1; font-size: 8px; font-weight: 800; color: #475569; text-align: left; }
-  .room-hours-timer-spacer { width: 26px; flex-shrink: 0; }
+  .room-hours-timer-spacer { width: 30px; flex-shrink: 0; }
   .room-row { display: flex; align-items: center; gap: 8px; margin-bottom: 7px; }
   .room-row-name { font-size: 10.5px; font-weight: 800; color: #0F1E2E; width: 50px; flex-shrink: 0; }
   .room-bar { flex: 1; height: 16px; border-radius: 4px; background: #DCE2EB; display: flex; overflow: hidden; }
   .room-bar-seg { height: 100%; }
   .room-timer {
-    width: 26px; height: 26px; border-radius: 50%; flex-shrink: 0; position: relative;
-    display: flex; align-items: center; justify-content: center;
-    font-size: 8.5px; font-weight: 800; background: #F1F5F9; color: #64748B;
+    width: 30px; height: 30px; border-radius: 50%; flex-shrink: 0; position: relative;
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0;
+    background: #F1F5F9; color: #64748B;
   }
+  .room-timer-num { font-size: 9.5px; font-weight: 800; line-height: 1; }
+  .room-timer-unit { font-size: 5.5px; font-weight: 700; line-height: 1; letter-spacing: 0.2px; opacity: 0.85; }
   .room-timer.buffer { background: #FDE68A; color: #92400E; }
   .room-timer.buffer.soon { animation: timerFlash 1.4s ease-in-out infinite; }
   @keyframes timerFlash { 0%, 100% { opacity: 1; } 50% { opacity: 0.35; } }
@@ -944,7 +946,9 @@
       let timerHtml;
       if(live.status === 'buffer'){
         const soon = live.minutesLeftInBuffer <= 5;
-        timerHtml = '<div class="room-timer buffer' + (soon ? ' soon' : '') + '" onmouseenter="showAppTooltip(event,\'Free in ' + live.minutesLeftInBuffer + ' min\')" onmousemove="positionAppTooltip(event)" onmouseleave="hideAppTooltip()">' + live.minutesLeftInBuffer + '</div>';
+        timerHtml = '<div class="room-timer buffer' + (soon ? ' soon' : '') + '" onmouseenter="showAppTooltip(event,\'Cleaning \u2014 free in ' + live.minutesLeftInBuffer + ' min\')" onmousemove="positionAppTooltip(event)" onmouseleave="hideAppTooltip()">' +
+          '<div class="room-timer-num">' + live.minutesLeftInBuffer + '</div><div class="room-timer-unit">MIN LEFT</div>' +
+        '</div>';
       } else if(live.status === 'taken'){
         timerHtml = '<div class="room-timer" style="background:#F3D9D2;color:#9C4A32" onmouseenter="showAppTooltip(event,\'In treatment\')" onmousemove="positionAppTooltip(event)" onmouseleave="hideAppTooltip()">\u2014</div>';
       } else {
@@ -963,7 +967,7 @@
 
     const dayStartMin = 9 * 60, dayEndMin = 22 * 60;
     const nowFraction = Math.max(0, Math.min(1, (nowMinutes - dayStartMin) / (dayEndMin - dayStartMin)));
-    const nowLeft = 'calc(50px + 8px + ' + nowFraction + ' * (100% - 50px - 8px - 8px - 26px))';
+    const nowLeft = 'calc(50px + 8px + ' + nowFraction + ' * (100% - 50px - 8px - 8px - 30px))';
     if(nowMinutes >= dayStartMin && nowMinutes <= dayEndMin){
       const line = document.createElement('div');
       line.className = 'rooms-now-line';

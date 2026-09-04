@@ -2091,6 +2091,30 @@
     }
 
     const existing = bookings[modalKey];
+    const bookingTypeForThis = window._pendingBookingType || (existing ? existing.bookingType : null) || null;
+    const isFreshAllocationFromQueue = !!window._pendingQueueRemoval;
+
+    // Client confirmed payment isn't always in place before allocation happens - rather than
+    // blocking it outright, flag it and let reception make the call in the moment, so nobody
+    // allocates a room/therapist for an unpaid booking without realising.
+    if(isFreshAllocationFromQueue && bookingTypeForThis !== 'paid'){
+      showConfirm({
+        title: 'Payment Not Confirmed',
+        msg: 'This booking isn\u2019t marked as Paid \u2014 allocate it to the calendar anyway?',
+        buttons: [
+          { label: 'Cancel', cls: 'confirm-btn-cancel', onClick: function(){} },
+          { label: 'Allocate Anyway', cls: 'confirm-btn-danger', onClick: function(){
+            finalizeSaveModal(client, phone, notes, serviceCode, newKey);
+          } }
+        ]
+      });
+      return;
+    }
+
+    finalizeSaveModal(client, phone, notes, serviceCode, newKey);
+  }
+  function finalizeSaveModal(client, phone, notes, serviceCode, newKey){
+    const existing = bookings[modalKey];
     const holdStartedAt = (modalStatus === 'hold')
       ? (existing && existing.status === 'hold' ? existing.holdStartedAt : Date.now())
       : null;

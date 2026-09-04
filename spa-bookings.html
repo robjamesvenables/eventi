@@ -117,6 +117,7 @@
   .room-timer-num { font-size: 9.5px; font-weight: 800; line-height: 1; }
   .room-timer-unit { font-size: 5.5px; font-weight: 700; line-height: 1; letter-spacing: 0.2px; opacity: 0.85; }
   .room-timer.buffer { background: #FDE68A; color: #92400E; }
+  .room-timer.taken { background: #F3D9D2; color: #9C4A32; }
   .room-timer.buffer.soon { animation: timerFlash 1.4s ease-in-out infinite; }
   @keyframes timerFlash { 0%, 100% { opacity: 1; } 50% { opacity: 0.35; } }
 
@@ -870,14 +871,17 @@
       const endMin = startMin + svc.duration;
       const bufferEndMin = endMin + ROOM_BUFFER_MIN;
       if(minutesOfDay >= startMin && minutesOfDay < endMin){
-        return { status: 'taken', minutesLeftInBuffer: null }; // in treatment wins outright
+        // In treatment now - still return how many minutes until this session itself ends,
+        // not just a bare dash, so there's something actually useful to look at rather than
+        // just knowing "it's occupied" with no sense of when it'll free up.
+        return { status: 'taken', minutesLeftInBuffer: null, minutesLeftInTreatment: endMin - minutesOfDay };
       }
       if(minutesOfDay >= endMin && minutesOfDay < bufferEndMin){
         status = 'buffer';
         minutesLeftInBuffer = bufferEndMin - minutesOfDay;
       }
     }
-    return { status: status, minutesLeftInBuffer: minutesLeftInBuffer };
+    return { status: status, minutesLeftInBuffer: minutesLeftInBuffer, minutesLeftInTreatment: null };
   }
 
   function fmtMinutesAsTime(totalMin){
@@ -950,7 +954,9 @@
           '<div class="room-timer-num">' + live.minutesLeftInBuffer + '</div><div class="room-timer-unit">MIN LEFT</div>' +
         '</div>';
       } else if(live.status === 'taken'){
-        timerHtml = '<div class="room-timer" style="background:#F3D9D2;color:#9C4A32" onmouseenter="showAppTooltip(event,\'In treatment\')" onmousemove="positionAppTooltip(event)" onmouseleave="hideAppTooltip()">\u2014</div>';
+        timerHtml = '<div class="room-timer taken" onmouseenter="showAppTooltip(event,\'In treatment \u2014 ' + live.minutesLeftInTreatment + ' min left\')" onmousemove="positionAppTooltip(event)" onmouseleave="hideAppTooltip()">' +
+          '<div class="room-timer-num">' + live.minutesLeftInTreatment + '</div><div class="room-timer-unit">MIN LEFT</div>' +
+        '</div>';
       } else {
         timerHtml = '<div class="room-timer" onmouseenter="showAppTooltip(event,\'Free\')" onmousemove="positionAppTooltip(event)" onmouseleave="hideAppTooltip()">\u2014</div>';
       }

@@ -202,6 +202,8 @@
   .slot-therapist { font-size: 7.5px; font-weight: 600; opacity: 0.85; line-height: 1.1; }
   .slot-room { font-size: 7.5px; font-weight: 800; opacity: 0.95; line-height: 1.1; margin-top: 1px; }
   .slot.drag-over .slot-inner { outline: 3px solid #0D9488; outline-offset: -3px; }
+  .slot.drag-invalid .slot-inner { outline: 3px solid #DC2626; outline-offset: -3px; background: #FCA5A5; }
+  .slot.drag-over-buffer .slot-inner { outline: 3px dashed #F0B429; outline-offset: -3px; background: repeating-linear-gradient(45deg, #FBBF24, #FBBF24 6px, #FDE68A 6px, #FDE68A 12px); }
   .shift-frame { outline: 2.5px solid #0F1E2E; outline-offset: -1.5px; border-radius: 4px; pointer-events: none; z-index: 3; }
   .grid-now-line { position: absolute; left: 0; right: 0; height: 0; border-top: 2.5px solid #3B82F6; z-index: 6; pointer-events: none; animation: nowLinePulse 2.8s ease-in-out infinite; }
   @keyframes nowLinePulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.2; } }
@@ -1319,7 +1321,7 @@
               statusBadge = '<div class="slot-late-badge" title="Booking time has passed - not checked in yet">!</div>';
             }
           }
-          html += '<div class="slot ' + b.status + (b.arrived ? ' arrived' : '') + '" style="grid-column:' + col + ';grid-row:' + rowStart + ' / span ' + span + '" ' +
+          html += '<div class="slot ' + b.status + (b.arrived ? ' arrived' : '') + '" data-key="' + key + '" style="grid-column:' + col + ';grid-row:' + rowStart + ' / span ' + span + '" ' +
               'onclick="openSlot(\'' + key + '\')" ondragover="dragOver(event,\'' + key + '\')" ondragleave="dragLeave(event)" ondrop="drop(event,\'' + key + '\')">' +
             '<div class="slot-inner" draggable="true" ondragstart="bookingDragStart(event,\'' + key + '\')">' +
               statusBadge +
@@ -1340,7 +1342,7 @@
           ? 'onmouseenter="showAppTooltip(event,\'' + shiftTip + '\')" onmousemove="positionAppTooltip(event)" onmouseleave="hideAppTooltip()" '
           : '';
         const dayLetter = DAY_STATUS_LETTERS[shiftClass] || '';
-        html += '<div class="slot vacant' + (shiftClass ? ' ' + shiftClass : '') + (isBuffer ? ' room-buffer' : '') + '" style="grid-column:' + col + ';grid-row:' + rowStart + ' / span ' + ROWS_PER_SLOT + '" ' +
+        html += '<div class="slot vacant' + (shiftClass ? ' ' + shiftClass : '') + (isBuffer ? ' room-buffer' : '') + '" data-key="' + key + '" style="grid-column:' + col + ';grid-row:' + rowStart + ' / span ' + ROWS_PER_SLOT + '" ' +
             shiftHoverAttrs +
             'onclick="openSlot(\'' + key + '\')" ondragover="dragOver(event,\'' + key + '\')" ondragleave="dragLeave(event)" ondrop="drop(event,\'' + key + '\')">' +
           '<div class="slot-inner">' + (dayLetter ? '<span class="slot-day-letter">' + dayLetter + '</span>' : '') + '</div>' +
@@ -1413,19 +1415,52 @@
     return { span: 1, ignoreKey: null }; // dragging a therapist onto an existing booking - that one's own span applies, checked in drop()
   }
 
+  let dragHighlightedKeys = [];
+  function clearDragHighlight(){
+    dragHighlightedKeys.forEach(function(k){
+      const el = document.querySelector('[data-key="' + k + '"]');
+      if(el) el.classList.remove('drag-over', 'drag-invalid', 'drag-over-buffer');
+    });
+    dragHighlightedKeys = [];
+  }
   function dragOver(e, targetKey){
     e.preventDefault();
     const parts = targetKey.split('-');
     const ti = Number(parts[0]), h = Number(parts[1]);
     const info = currentDraggedSpan();
     const fits = (h + info.span <= TIME_SLOTS.length) && spanFree(ti, h, info.span, info.ignoreKey);
-    e.currentTarget.classList.toggle('drag-over', fits);
-    e.currentTarget.classList.toggle('drag-invalid', !fits);
+
+    clearDragHighlight();
+
+    // Highlight every slot the treatment itself would actually occupy, not just the one
+    // slot under the cursor - so it's clear at a glance how much room the whole booking
+    // needs, not just where it starts.
+    for(let i = 0; i < info.span; i++){
+      const k = slotKey(ti, h + i);
+      const el = document.querySelector('[data-key="' + k + '"]');
+      if(el){
+        el.classList.add(fits ? 'drag-over' : 'drag-invalid');
+        dragHighlightedKeys.push(k);
+      }
+    }
+    // And the 30-minute room buffer right after it too, in amber - only a preview hint
+    // when everything fits, since an invalid drop doesn't have a real buffer to show yet.
+    if(fits){
+      const bufferSlotCount = ROOM_BUFFER_MIN / 15;
+      for(let i = 0; i < bufferSlotCount; i++){
+        const k = slotKey(ti, h + info.span + i);
+        const el = document.querySelector('[data-key="' + k + '"]');
+        if(el && !el.classList.contains('drag-over')){
+          el.classList.add('drag-over-buffer');
+          dragHighlightedKeys.push(k);
+        }
+      }
+    }
+
     const t = THERAPISTS[ti];
     showAppTooltip(e, (t ? t.name + ' — ' : '') + fmtTimeSlot(TIME_SLOTS[h]));
   }
   function dragLeave(e){
-    e.currentTarget.classList.remove('drag-over', 'drag-invalid');
     hideAppTooltip();
   }
 
@@ -2458,6 +2493,7 @@
     clearInterval(dragAutoScrollTimer);
     dragAutoScrollTimer = null;
     lastDragClientY = null;
+    clearDragHighlight();
   });
 </script>
 

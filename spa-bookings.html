@@ -230,6 +230,9 @@
   .dash-stat { background: #F8FAFC; border: 1.5px solid #E2E8F0; border-radius: 10px; padding: 10px 12px; border-top: 3px solid #E2E8F0; }
   .dash-stat-value { font-size: 19px; font-weight: 800; color: #0F1E2E; line-height: 1.1; }
   .dash-stat-label { font-size: 10.5px; font-weight: 700; color: #64748B; margin-top: 3px; line-height: 1.3; }
+  .dash-stat-big { background: #0F1E2E; border-color: #0F1E2E; grid-column: span 3; padding: 14px 16px; }
+  .dash-stat-big .dash-stat-value { color: white; font-size: 28px; }
+  .dash-stat-big .dash-stat-label { color: rgba(255,255,255,0.65); font-size: 11.5px; }
   .rc-section-label { font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.4px; color: #94A3B8; margin: 14px 0 8px; }
   .rc-room-card { border: 1.5px solid #86D9A0; background: #F0FDF6; border-radius: 10px; padding: 9px 12px; margin-bottom: 8px; cursor: pointer; }
   .rc-room-card:hover { border-color: #0D9488; }
@@ -1691,6 +1694,19 @@
       const cardStyle = color ? ' style="border-top-color:' + color + '"' : '';
       return '<div class="dash-stat"' + cardStyle + '><div class="dash-stat-value"' + valStyle + '>' + value + '</div><div class="dash-stat-label">' + label + '</div></div>';
     }
+    // The single headline number for a section - the one thing someone would look for first,
+    // as described - bold dark navy card, standing well apart from the quieter stats around it.
+    function statBig(value, label){
+      return '<div class="dash-stat dash-stat-big"><div class="dash-stat-value">' + value + '</div><div class="dash-stat-label">' + label + '</div></div>';
+    }
+    function barChart(items){
+      const max = Math.max(1, Math.max.apply(null, items.map(function(i){ return i.value; })));
+      return '<div class="dash-stat" style="grid-column:1 / -1">' + items.map(function(i){
+        const pct = Math.round((i.value / max) * 100);
+        return '<div style="margin-bottom:10px"><div style="display:flex;justify-content:space-between;font-size:11.5px;font-weight:700;color:#0F1E2E;margin-bottom:4px"><span>' + i.label + '</span><span>' + i.value + '</span></div>' +
+          '<div style="background:#F1F5F9;border-radius:6px;height:11px;overflow:hidden"><div style="width:' + pct + '%;height:100%;background:' + i.color + ';border-radius:6px"></div></div></div>';
+      }).join('') + '</div>';
+    }
     function sectionLabel(iconSvg, text){
       return '<div class="dash-section-label"><span class="dash-section-ico">' + iconSvg + '</span>' + text + '</div>';
     }
@@ -1705,7 +1721,7 @@
 
     let html = '';
     html += sectionLabel(ICO.bookings, 'Bookings & Status') + '<div class="dash-stat-grid">' +
-      stat(allKeys.length, 'Total bookings') +
+      statBig(allKeys.length, 'Total bookings') +
       stat(confirmedCount, 'Confirmed', '#D97757') +
       stat(onHoldCount, 'On hold', '#D9A441') +
       stat(inTreatmentNow, 'In treatment now', '#0D9488') +
@@ -1716,15 +1732,17 @@
     '</div>';
 
     html += sectionLabel(ICO.inbox, 'How Bookings Came In') + '<div class="dash-stat-grid">' +
-      stat(bookingTypeTally.paid, 'Paid', '#6FA8D9') +
-      stat(bookingTypeTally.walkin, 'Walk in', '#D9BC7D') +
-      stat(bookingTypeTally.wa, 'WhatsApp', '#7BC895') +
-      stat(bookingTypeTally.referral, 'Referral', '#B39DDB') +
-      stat(bookingTypeTally.unclassified, 'Unclassified') +
+      barChart([
+        { label: 'Paid', value: bookingTypeTally.paid, color: '#6FA8D9' },
+        { label: 'Walk In', value: bookingTypeTally.walkin, color: '#D9BC7D' },
+        { label: 'WhatsApp', value: bookingTypeTally.wa, color: '#7BC895' },
+        { label: 'Referral', value: bookingTypeTally.referral, color: '#B39DDB' },
+        { label: 'Unclassified', value: bookingTypeTally.unclassified, color: '#CBD5E1' }
+      ]) +
     '</div>';
 
     html += sectionLabel(ICO.staff, 'Staff Today') + '<div class="dash-stat-grid">' +
-      stat(workingCount, 'Working today', '#0D9488') +
+      statBig(workingCount, 'Working today') +
       stat(maleWorking, 'Male working', '#2a78d6') +
       stat(femaleWorking, 'Female working', '#d4537e') +
       stat(holidayCount, 'Holiday', '#C4973B') +
@@ -1735,21 +1753,21 @@
     '</div>';
 
     html += sectionLabel(ICO.rooms, 'Rooms') + '<div class="dash-stat-grid">' +
-      stat(roomsFreeNow, 'Free right now', '#7BC895') +
+      statBig(roomsFreeNow, 'Free right now') +
       stat(roomsTakenNow, 'Occupied right now', '#D97757') +
       stat(busiestRoomName, 'Busiest room today') +
       stat(utilizationPct + '%', 'Utilisation today') +
     '</div>';
 
     html += sectionLabel(ICO.waiting, 'Waiting List') + '<div class="dash-stat-grid">' +
-      stat(pendingQueue.length, 'Currently waiting') +
+      statBig(pendingQueue.length, 'Currently waiting') +
       stat(waitingNew, 'New (under 5 min)', '#16A34A') +
       stat(waitingAmber, 'Amber (15+ min)', '#F0A94D') +
       stat(waitingRed, 'Red (30+ min)', '#DC2626') +
     '</div>';
 
     html += sectionLabel(ICO.customers, 'Customer Database') + '<div class="dash-stat-grid">' +
-      stat(customers.length, 'Total customers') +
+      statBig(customers.length, 'Total customers') +
       stat(newCustomers, 'New', '#16A34A') +
       stat(returningCustomers, 'Returning', '#0D9488') +
     '</div>';

@@ -779,18 +779,29 @@
   }
 
   // ── Analytics ── Today is computed live from real bookings, same as the Dashboard.
-  // Yesterday/MTD/YTD are static placeholder figures for this demo only, clearly labelled as
-  // such in the UI - sized roughly to a busy 16-room day (~$40 average spend), not pulled
-  // from anywhere real. These become real once this app has an actual database keeping
-  // daily history, same limitation already flagged for the "will today's data still be here
-  // tomorrow" question earlier.
+  // Yesterday/MTD/YTD/Last Month/Week are static placeholder figures for this demo only,
+  // clearly labelled as such in the UI - sized roughly to a busy 16-room day (~$40 average
+  // spend), not pulled from anywhere real. These become real once this app has an actual
+  // database keeping daily history, same limitation already flagged for the "will today's
+  // data still be here tomorrow" question earlier.
   const ANALYTICS_PLACEHOLDERS = {
     yesterday: { revenue: 2180, bookings: 53 },
     mtd:       { revenue: 37400, bookings: 912 },
-    ytd:       { revenue: 301600, bookings: 7340 }
+    ytd:       { revenue: 301600, bookings: 7340 },
+    lastMonth: { revenue: 41200, bookings: 1005 },
+    // A full placeholder week (Mon-Sun) for the weekly chart - today's own bar is swapped
+    // out for the real live figure at render time, everything else here stays placeholder.
+    week: [2050, 1890, 2240, 1760, 2430, 3120, 2680]
+  };
+  const ICO_ANALYTICS = {
+    chart: '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>',
+    rooms: '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18M5 21V7l8-4v18M13 21V11l6 4v6"/></svg>',
+    week: '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>'
   };
   function renderAnalytics(){
     let revenueToday = 0, bookingsToday = 0;
+    const treatmentRevenue = {};
+    const roomRevenue = {};
     for(const key in bookings){
       const b = bookings[key];
       if(b.status !== 'booked') continue;
@@ -798,6 +809,11 @@
       if(!svc) continue;
       revenueToday += svc.price;
       bookingsToday++;
+      treatmentRevenue[svc.name] = (treatmentRevenue[svc.name] || 0) + svc.price;
+      if(b.roomId){
+        const room = roomById(b.roomId);
+        if(room) roomRevenue[room.name] = (roomRevenue[room.name] || 0) + svc.price;
+      }
     }
     const avgSpend = bookingsToday > 0 ? Math.round(revenueToday / bookingsToday) : 0;
 
@@ -811,6 +827,41 @@
     document.getElementById('anMtdBookings').textContent = ANALYTICS_PLACEHOLDERS.mtd.bookings + ' bookings';
     document.getElementById('anYtdRevenue').textContent = '$' + ANALYTICS_PLACEHOLDERS.ytd.revenue.toLocaleString();
     document.getElementById('anYtdBookings').textContent = ANALYTICS_PLACEHOLDERS.ytd.bookings + ' bookings';
+    document.getElementById('anLastMonthRevenue').textContent = '$' + ANALYTICS_PLACEHOLDERS.lastMonth.revenue.toLocaleString();
+    document.getElementById('anLastMonthBookings').textContent = ANALYTICS_PLACEHOLDERS.lastMonth.bookings + ' bookings';
+
+    // Revenue by treatment / by room - genuinely real, computed from today's actual bookings.
+    const treatColors = ['#0D9488', '#6FA8D9', '#D9BC7D', '#7BC895', '#B39DDB', '#D97757', '#6366F1', '#C4973B'];
+    const treatItems = Object.keys(treatmentRevenue).map(function(name, i){
+      return { label: name, value: treatmentRevenue[name], color: treatColors[i % treatColors.length] };
+    }).sort(function(a, b){ return b.value - a.value; });
+    const roomItems = Object.keys(roomRevenue).map(function(name, i){
+      return { label: name, value: roomRevenue[name], color: treatColors[i % treatColors.length] };
+    }).sort(function(a, b){ return b.value - a.value; }).slice(0, 8);
+
+    let html = '';
+    html += dashSectionLabel(ICO_ANALYTICS.chart, 'Revenue By Treatment (Today, Real)') + '<div class="dash-stat-grid">' +
+      (treatItems.length ? dashBarChart(treatItems) : '<div style="grid-column:1/-1;color:#94A3B8;font-size:12.5px;padding:8px 0">No confirmed bookings yet today.</div>') +
+    '</div>';
+
+    html += dashSectionLabel(ICO_ANALYTICS.rooms, 'Revenue By Room (Today, Real)') + '<div class="dash-stat-grid">' +
+      (roomItems.length ? dashBarChart(roomItems) : '<div style="grid-column:1/-1;color:#94A3B8;font-size:12.5px;padding:8px 0">No confirmed bookings with a room assigned yet today.</div>') +
+    '</div>';
+
+    // Weekly chart - today's bar is the real live figure, the rest of the week is
+    // placeholder, labelled clearly so it's never mistaken for real history.
+    const dayNames = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+    const jsDay = new Date().getDay(); // 0=Sun
+    const todayIdx = jsDay === 0 ? 6 : jsDay - 1;
+    const weekItems = dayNames.map(function(name, i){
+      const isToday = i === todayIdx;
+      return { label: name + (isToday ? ' (Today, Real)' : ' (Placeholder)'), value: isToday ? revenueToday : ANALYTICS_PLACEHOLDERS.week[i], color: isToday ? '#0D9488' : '#CBD5E1' };
+    });
+    html += dashSectionLabel(ICO_ANALYTICS.week, 'This Week\u2019s Revenue') + '<div class="dash-stat-grid">' +
+      dashBarChart(weekItems) +
+    '</div>';
+
+    document.getElementById('anMoreContent').innerHTML = html;
   }
 
   function downloadCustomersCsv(){
@@ -1644,6 +1695,28 @@
   // every time it's opened, not stored anywhere separately. Since this app has no real
   // concept of "days" yet (flagged honestly earlier), everything here reflects the calendar
   // exactly as it stands right now, which in this single-day model is "today" by definition.
+  // Shared display helpers - used by both the Dashboard and Analytics, so they live here
+  // rather than nested inside one function.
+  function dashStat(value, label, color){
+    const valStyle = color ? ' style="color:' + color + '"' : '';
+    const cardStyle = color ? ' style="border-top-color:' + color + '"' : '';
+    return '<div class="dash-stat"' + cardStyle + '><div class="dash-stat-value"' + valStyle + '>' + value + '</div><div class="dash-stat-label">' + label + '</div></div>';
+  }
+  function dashStatBig(value, label){
+    return '<div class="dash-stat dash-stat-big"><div class="dash-stat-value">' + value + '</div><div class="dash-stat-label">' + label + '</div></div>';
+  }
+  function dashBarChart(items){
+    const max = Math.max(1, Math.max.apply(null, items.map(function(i){ return i.value; })));
+    return '<div class="dash-stat" style="grid-column:1 / -1">' + items.map(function(i){
+      const pct = Math.round((i.value / max) * 100);
+      return '<div style="margin-bottom:10px"><div style="display:flex;justify-content:space-between;font-size:11.5px;font-weight:700;color:#0F1E2E;margin-bottom:4px"><span>' + i.label + '</span><span>' + i.value + '</span></div>' +
+        '<div style="background:#F1F5F9;border-radius:6px;height:11px;overflow:hidden"><div style="width:' + pct + '%;height:100%;background:' + i.color + ';border-radius:6px"></div></div></div>';
+    }).join('') + '</div>';
+  }
+  function dashSectionLabel(iconSvg, text){
+    return '<div class="dash-section-label"><span class="dash-section-ico">' + iconSvg + '</span>' + text + '</div>';
+  }
+
   function openDashboard(){
     document.getElementById('dashDate').textContent = new Date().toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' });
 
@@ -1742,27 +1815,10 @@
       if((c.visits || 1) > 1) returningCustomers++; else newCustomers++;
     });
 
-    function stat(value, label, color){
-      const valStyle = color ? ' style="color:' + color + '"' : '';
-      const cardStyle = color ? ' style="border-top-color:' + color + '"' : '';
-      return '<div class="dash-stat"' + cardStyle + '><div class="dash-stat-value"' + valStyle + '>' + value + '</div><div class="dash-stat-label">' + label + '</div></div>';
-    }
-    // The single headline number for a section - the one thing someone would look for first,
-    // as described - bold dark navy card, standing well apart from the quieter stats around it.
-    function statBig(value, label){
-      return '<div class="dash-stat dash-stat-big"><div class="dash-stat-value">' + value + '</div><div class="dash-stat-label">' + label + '</div></div>';
-    }
-    function barChart(items){
-      const max = Math.max(1, Math.max.apply(null, items.map(function(i){ return i.value; })));
-      return '<div class="dash-stat" style="grid-column:1 / -1">' + items.map(function(i){
-        const pct = Math.round((i.value / max) * 100);
-        return '<div style="margin-bottom:10px"><div style="display:flex;justify-content:space-between;font-size:11.5px;font-weight:700;color:#0F1E2E;margin-bottom:4px"><span>' + i.label + '</span><span>' + i.value + '</span></div>' +
-          '<div style="background:#F1F5F9;border-radius:6px;height:11px;overflow:hidden"><div style="width:' + pct + '%;height:100%;background:' + i.color + ';border-radius:6px"></div></div></div>';
-      }).join('') + '</div>';
-    }
-    function sectionLabel(iconSvg, text){
-      return '<div class="dash-section-label"><span class="dash-section-ico">' + iconSvg + '</span>' + text + '</div>';
-    }
+    function stat(value, label, color){ return dashStat(value, label, color); }
+    function statBig(value, label){ return dashStatBig(value, label); }
+    function barChart(items){ return dashBarChart(items); }
+    function sectionLabel(iconSvg, text){ return dashSectionLabel(iconSvg, text); }
     const ICO = {
       bookings: '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/><path d="M9 15l2 2 4-4"/></svg>',
       inbox: '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-6l-2 3h-4l-2-3H2"/><path d="M5.45 5.11L2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/></svg>',
@@ -2512,7 +2568,7 @@
         Yesterday, Month to Date, and Year to Date below are placeholder reference figures for this demo \u2014 only Today is computed live from real bookings. These will become real once this app is connected to a proper database that keeps daily history.
       </div>
 
-      <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:14px;">
+      <div style="display:grid; grid-template-columns:1fr 1fr 1fr 1fr; gap:14px;">
         <div style="background:white; border:1.5px solid #E2E8F0; border-radius:14px; padding:18px;">
           <div style="font-size:10px; font-weight:800; text-transform:uppercase; letter-spacing:0.4px; color:#94A3B8; margin-bottom:8px;">Yesterday</div>
           <div style="font-size:24px; font-weight:800; color:#0F1E2E;" id="anYesterdayRevenue"></div>
@@ -2528,7 +2584,14 @@
           <div style="font-size:24px; font-weight:800; color:#0F1E2E;" id="anYtdRevenue"></div>
           <div style="font-size:11px; color:#64748B; margin-top:2px;" id="anYtdBookings"></div>
         </div>
+        <div style="background:white; border:1.5px solid #E2E8F0; border-radius:14px; padding:18px;">
+          <div style="font-size:10px; font-weight:800; text-transform:uppercase; letter-spacing:0.4px; color:#94A3B8; margin-bottom:8px;">Last Month</div>
+          <div style="font-size:24px; font-weight:800; color:#0F1E2E;" id="anLastMonthRevenue"></div>
+          <div style="font-size:11px; color:#64748B; margin-top:2px;" id="anLastMonthBookings"></div>
+        </div>
       </div>
+
+      <div id="anMoreContent"></div>
 
     </div>
   </div>

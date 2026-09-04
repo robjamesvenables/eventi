@@ -197,11 +197,6 @@
     background: repeating-linear-gradient(45deg, #FBBF24, #FBBF24 6px, #FDE68A 6px, #FDE68A 12px);
     cursor: pointer; border: 1.5px solid #F0B429; opacity: 1;
   }
-  .dragging-active .room-buffer-strip .slot-inner {
-    border-width: 3px; border-color: #B45309;
-    box-shadow: 0 0 0 2px rgba(180,83,9,0.25);
-    animation: timerFlash 1.1s ease-in-out infinite;
-  }
   .slot-code { font-size: 12px; font-weight: 900; letter-spacing: 0.4px; line-height: 1.1; }
   .slot-client { font-size: 9px; font-weight: 700; opacity: 0.95; line-height: 1.1; word-break: break-word; }
   .slot-therapist { font-size: 7.5px; font-weight: 600; opacity: 0.85; line-height: 1.1; }
@@ -1433,23 +1428,11 @@
     const parts = targetKey.split('-');
     const ti = Number(parts[0]), h = Number(parts[1]);
     const info = currentDraggedSpan();
-    let fits = (h + info.span <= TIME_SLOTS.length) && spanFree(ti, h, info.span, info.ignoreKey);
-    let roomBlocked = false;
-    // If we're dragging an existing booking, it already has a room assigned - so we can also
-    // check that room's buffer live while dragging, not just the therapist's own time. A
-    // fresh queue item doesn't have a room yet (that's chosen afterward in Choose Room), so
-    // this only applies to moving something that's already been allocated.
-    if(fits && draggedBookingKey){
-      const draggedBooking = bookings[draggedBookingKey];
-      if(draggedBooking && draggedBooking.roomId && !roomSpanFree(draggedBooking.roomId, h, info.span, draggedBookingKey)){
-        fits = false;
-        roomBlocked = true;
-      }
-    }
+    const fits = (h + info.span <= TIME_SLOTS.length) && spanFree(ti, h, info.span, info.ignoreKey);
     e.currentTarget.classList.toggle('drag-over', fits);
     e.currentTarget.classList.toggle('drag-invalid', !fits);
     const t = THERAPISTS[ti];
-    showAppTooltip(e, (t ? t.name + ' — ' : '') + fmtTimeSlot(TIME_SLOTS[h]) + (roomBlocked ? ' \u2014 room needs its buffer' : ''));
+    showAppTooltip(e, (t ? t.name + ' — ' : '') + fmtTimeSlot(TIME_SLOTS[h]));
   }
   function dragLeave(e){
     e.currentTarget.classList.remove('drag-over', 'drag-invalid');
@@ -2470,7 +2453,6 @@
     lastDragClientY = e.clientY;
   });
   document.addEventListener('dragstart', function(){
-    document.getElementById('grid').classList.add('dragging-active');
     if(dragAutoScrollTimer) return;
     dragAutoScrollTimer = setInterval(function(){
       if(lastDragClientY === null) return;
@@ -2483,7 +2465,6 @@
     }, 20);
   });
   document.addEventListener('dragend', function(){
-    document.getElementById('grid').classList.remove('dragging-active');
     clearInterval(dragAutoScrollTimer);
     dragAutoScrollTimer = null;
     lastDragClientY = null;

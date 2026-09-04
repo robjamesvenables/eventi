@@ -271,6 +271,8 @@
   .modal-actions { display: flex; gap: 10px; }
   .modal-btn { flex: 1; padding: 12px; border-radius: 9px; border: none; font-family: inherit; font-size: 13.5px; font-weight: 700; cursor: pointer; }
   .modal-btn-save { background: #0F1E2E; color: white; }
+  .modal-btn-save.fd-ready { background: #DC2626; animation: fdReadyPulse 1.6s ease-in-out infinite; }
+  @keyframes fdReadyPulse { 0%, 100% { box-shadow: 0 0 0 0 rgba(220,38,38,0.5); } 50% { box-shadow: 0 0 0 8px rgba(220,38,38,0); } }
   .modal-btn-cancel { background: #F1F5F9; color: #64748B; }
   .modal-btn-clear { background: none; color: #DC2626; }
 
@@ -2450,7 +2452,7 @@
         <div style="font-size:12.5px;color:#64748B;margin-bottom:20px">Enter the client's details as they come in - this goes straight into Waiting To Be Allocated.</div>
 
         <div class="modal-label">Client Name</div>
-        <input type="text" class="modal-input" id="fdClientInput" placeholder="e.g. Sarah Johnson">
+        <input type="text" class="modal-input" id="fdClientInput" placeholder="e.g. Sarah Johnson" oninput="checkFdFormReady()">
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
           <div>
             <div class="modal-label">Phone Number</div>
@@ -2497,7 +2499,7 @@
           <button class="queue-type-btn fd-type-option" id="fdTypeReferral" style="background:#8B5CF6" onclick="setFdBookingType('referral')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="12" r="3"/><circle cx="18" cy="6" r="3"/><circle cx="18" cy="18" r="3"/><path d="M8.5 10.5l7-4M8.5 13.5l7 4"/></svg>REFERRAL</button>
         </div>
 
-        <button class="modal-btn modal-btn-save" style="width:100%" onclick="submitFrontDeskBooking()">Add to Waiting List</button>
+        <button class="modal-btn modal-btn-save" style="width:100%" id="fdSubmitBtn" onclick="submitFrontDeskBooking()">Add to Waiting List</button>
       </div>
     </div>
   </div>
@@ -2628,6 +2630,7 @@
     document.getElementById('fdServicePickerLabel').textContent = svc.name + ' — ' + svc.duration + ' min (USD$' + svc.price + ')';
     document.getElementById('fdServicePickerBtn').classList.remove('placeholder');
     closePicker();
+    checkFdFormReady();
   }
   function openFdTimePicker(){
     const list = document.getElementById('pickerList');
@@ -2642,6 +2645,7 @@
     document.getElementById('fdTimePickerLabel').textContent = fmtTimeSlot(TIME_SLOTS[idx]);
     document.getElementById('fdTimePickerBtn').classList.remove('placeholder');
     closePicker();
+    checkFdFormReady();
   }
   function setFdGenderPref(pref){
     fdGenderPref = pref;
@@ -2664,6 +2668,15 @@
       const key = suffix.toLowerCase();
       document.getElementById('fdType' + suffix).classList.toggle('fd-selected', fdBookingType === key);
     });
+    checkFdFormReady();
+  }
+  // Flags the submit button once every required field is actually filled in, so it's obvious
+  // at a glance the form is complete and ready to go, rather than looking identical whether
+  // it's half-empty or done.
+  function checkFdFormReady(){
+    const client = document.getElementById('fdClientInput').value.trim();
+    const ready = !!client && !!fdServiceCode && fdTimeIdx !== null && !!fdBookingType;
+    document.getElementById('fdSubmitBtn').classList.toggle('fd-ready', ready);
   }
   function resetFrontDeskForm(){
     document.getElementById('fdClientInput').value = '';
@@ -2678,6 +2691,7 @@
     setFdGenderPref(null);
     setFdBookingType(null);
     setFdPeople(1);
+    checkFdFormReady();
   }
   function submitFrontDeskBooking(){
     const client = document.getElementById('fdClientInput').value.trim();

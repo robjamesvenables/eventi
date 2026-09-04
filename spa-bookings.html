@@ -466,6 +466,14 @@
       <div class="modal-label">Notes</div>
       <textarea class="modal-input" id="qeNotes" placeholder="Any requirements or notes"></textarea>
 
+      <div class="modal-label">How Is This Coming In?</div>
+      <div class="queue-type-btns" style="margin-bottom:18px">
+        <button class="queue-type-btn fd-type-option" id="qeTypePaid" style="background:#6FA8D9" onclick="setQeBookingType('paid')">PAID</button>
+        <button class="queue-type-btn fd-type-option" id="qeTypeWalkin" style="background:#D9BC7D" onclick="setQeBookingType('walkin')">WALK IN</button>
+        <button class="queue-type-btn fd-type-option" id="qeTypeWa" style="background:#7BC895" onclick="setQeBookingType('wa')">WA</button>
+        <button class="queue-type-btn fd-type-option" id="qeTypeReferral" style="background:#B39DDB" onclick="setQeBookingType('referral')">REFERRAL</button>
+      </div>
+
       <div class="modal-actions">
         <button class="modal-btn modal-btn-cancel" onclick="closeQueueEdit()">Cancel</button>
         <button class="modal-btn modal-btn-save" onclick="saveQueueEdit()">Save Changes</button>
@@ -987,13 +995,8 @@
       if(!item.bookingType){
         return '<div class="queue-card" onclick="openBookingInfo(\'' + item.id + '\')">' +
           '<div class="queue-card-toprow">' + nameHtml + urgency + '</div>' +
+          '<div class="queue-card-tags"><span style="font-size:9px;font-weight:800;color:#94A3B8;background:#F1F5F9;padding:3px 8px;border-radius:8px;letter-spacing:0.3px">TAP TO CLASSIFY</span></div>' +
           '<div class="queue-card-service">' + serviceLine + '</div>' +
-          '<div class="queue-type-btns" onclick="event.stopPropagation()">' +
-            '<button class="queue-type-btn" style="background:#6FA8D9" onclick="setBookingType(\'' + item.id + '\',\'paid\')">PAID</button>' +
-            '<button class="queue-type-btn" style="background:#D9BC7D" onclick="setBookingType(\'' + item.id + '\',\'walkin\')">WALK IN</button>' +
-            '<button class="queue-type-btn" style="background:#7BC895" onclick="setBookingType(\'' + item.id + '\',\'wa\')">WA</button>' +
-            '<button class="queue-type-btn" style="background:#B39DDB" onclick="setBookingType(\'' + item.id + '\',\'referral\')">REFERRAL</button>' +
-          '</div>' +
         '</div>';
       }
 
@@ -1010,20 +1013,13 @@
     list.innerHTML = pendingQueue.map(cardHtml).join('');
   }
 
-  function setBookingType(id, type){
-    const item = pendingQueue.find(function(q){ return q.id === id; });
-    if(!item) return;
-    item.bookingType = type;
-    saveQueue();
-    renderQueue();
-  }
-
   // ── Booking Info - full details of the request itself, mirroring what a calendar
   // booking box shows once it's placed - treatment, time, length, everything about the
   // booking rather than about the person ──
   let qeItemId = null;
   let qeServiceCode = null;
   let qeTimeIdx = null;
+  let qeBookingType = null;
 
   function openBookingInfo(id){
     const item = pendingQueue.find(function(q){ return q.id === id; });
@@ -1041,8 +1037,16 @@
     document.getElementById('qePhone').value = item.phone || '';
     document.getElementById('qeEmail').value = item.email || '';
     document.getElementById('qeNotes').value = item.clientNotes || '';
+    setQeBookingType(item.bookingType || null);
 
     document.getElementById('queueEditBg').classList.add('show');
+  }
+  function setQeBookingType(type){
+    qeBookingType = type;
+    ['Paid', 'Walkin', 'Wa', 'Referral'].forEach(function(suffix){
+      const key = suffix.toLowerCase();
+      document.getElementById('qeType' + suffix).classList.toggle('fd-selected', qeBookingType === key);
+    });
   }
   function closeQueueEdit(){
     document.getElementById('queueEditBg').classList.remove('show');
@@ -1087,6 +1091,7 @@
     item.phone = document.getElementById('qePhone').value.trim();
     item.email = document.getElementById('qeEmail').value.trim();
     item.clientNotes = document.getElementById('qeNotes').value.trim();
+    item.bookingType = qeBookingType;
     saveQueue();
     renderQueue();
     closeQueueEdit();

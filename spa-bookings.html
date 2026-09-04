@@ -298,6 +298,10 @@
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
       <span class="sidebar-tab-label">Customer Database</span>
     </button>
+    <button class="sidebar-tab" id="tabAnalytics" onclick="switchView('analytics')">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+      <span class="sidebar-tab-label">Analytics</span>
+    </button>
   </div>
 
 <!-- Shared modals - live outside both views so they work regardless of which tab is active -->
@@ -730,6 +734,41 @@
         '<td style="padding:11px 16px;color:#64748B">' + c.visits + '</td>' +
       '</tr>';
     }).join('');
+  }
+
+  // ── Analytics ── Today is computed live from real bookings, same as the Dashboard.
+  // Yesterday/MTD/YTD are static placeholder figures for this demo only, clearly labelled as
+  // such in the UI - sized roughly to a busy 16-room day (~$40 average spend), not pulled
+  // from anywhere real. These become real once this app has an actual database keeping
+  // daily history, same limitation already flagged for the "will today's data still be here
+  // tomorrow" question earlier.
+  const ANALYTICS_PLACEHOLDERS = {
+    yesterday: { revenue: 2180, bookings: 53 },
+    mtd:       { revenue: 37400, bookings: 912 },
+    ytd:       { revenue: 301600, bookings: 7340 }
+  };
+  function renderAnalytics(){
+    let revenueToday = 0, bookingsToday = 0;
+    for(const key in bookings){
+      const b = bookings[key];
+      if(b.status !== 'booked') continue;
+      const svc = serviceByCode(b.serviceCode);
+      if(!svc) continue;
+      revenueToday += svc.price;
+      bookingsToday++;
+    }
+    const avgSpend = bookingsToday > 0 ? Math.round(revenueToday / bookingsToday) : 0;
+
+    document.getElementById('anTodayRevenue').textContent = '$' + revenueToday.toLocaleString();
+    document.getElementById('anTodayBookings').textContent = bookingsToday;
+    document.getElementById('anTodayAvg').textContent = '$' + avgSpend;
+
+    document.getElementById('anYesterdayRevenue').textContent = '$' + ANALYTICS_PLACEHOLDERS.yesterday.revenue.toLocaleString();
+    document.getElementById('anYesterdayBookings').textContent = ANALYTICS_PLACEHOLDERS.yesterday.bookings + ' bookings';
+    document.getElementById('anMtdRevenue').textContent = '$' + ANALYTICS_PLACEHOLDERS.mtd.revenue.toLocaleString();
+    document.getElementById('anMtdBookings').textContent = ANALYTICS_PLACEHOLDERS.mtd.bookings + ' bookings';
+    document.getElementById('anYtdRevenue').textContent = '$' + ANALYTICS_PLACEHOLDERS.ytd.revenue.toLocaleString();
+    document.getElementById('anYtdBookings').textContent = ANALYTICS_PLACEHOLDERS.ytd.bookings + ' bookings';
   }
 
   function downloadCustomersCsv(){
@@ -1652,7 +1691,6 @@
       stat(inTreatmentNow, 'In treatment now', '#0D9488') +
       stat(completedToday, 'Completed / left', '#5C9C79') +
       stat(notCheckedInLate, 'Not checked in (late)', '#DC2626') +
-      stat('$' + revenueTotal, 'Revenue (confirmed)') +
       stat(peopleServedTotal, 'People served') +
       stat(mostBookedName, 'Most-booked treatment') +
     '</div>';
@@ -2230,21 +2268,83 @@
     </div>
   </div>
 
+  <div id="view-analytics" style="display:none">
+    <div class="topbar">
+      <div>
+        <div class="logo"><b>M</b>avis<span>.</span></div>
+        <div class="topbar-title" style="margin-top:8px">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#C4973B" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+          Analytics
+        </div>
+        <div class="topbar-date" id="today-label-an"></div>
+      </div>
+    </div>
+    <div style="padding:22px;max-width:900px">
+
+      <div style="background:#0F1E2E; border-radius:16px; padding:24px; margin-bottom:18px; color:white;">
+        <div style="font-size:11px; font-weight:800; text-transform:uppercase; letter-spacing:0.5px; color:rgba(255,255,255,0.55); margin-bottom:14px;">Today \u2014 Live</div>
+        <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:20px;">
+          <div>
+            <div style="font-size:34px; font-weight:800; line-height:1;" id="anTodayRevenue"></div>
+            <div style="font-size:11.5px; color:rgba(255,255,255,0.6); margin-top:6px;">Revenue today (confirmed)</div>
+          </div>
+          <div>
+            <div style="font-size:34px; font-weight:800; line-height:1;" id="anTodayBookings"></div>
+            <div style="font-size:11.5px; color:rgba(255,255,255,0.6); margin-top:6px;">Confirmed bookings</div>
+          </div>
+          <div>
+            <div style="font-size:34px; font-weight:800; line-height:1;" id="anTodayAvg"></div>
+            <div style="font-size:11.5px; color:rgba(255,255,255,0.6); margin-top:6px;">Average spend / booking</div>
+          </div>
+        </div>
+      </div>
+
+      <div style="font-size:11px; font-weight:700; color:#94A3B8; margin-bottom:10px;">
+        Yesterday, Month to Date, and Year to Date below are placeholder reference figures for this demo \u2014 only Today is computed live from real bookings. These will become real once this app is connected to a proper database that keeps daily history.
+      </div>
+
+      <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:14px;">
+        <div style="background:white; border:1.5px solid #E2E8F0; border-radius:14px; padding:18px;">
+          <div style="font-size:10px; font-weight:800; text-transform:uppercase; letter-spacing:0.4px; color:#94A3B8; margin-bottom:8px;">Yesterday</div>
+          <div style="font-size:24px; font-weight:800; color:#0F1E2E;" id="anYesterdayRevenue"></div>
+          <div style="font-size:11px; color:#64748B; margin-top:2px;" id="anYesterdayBookings"></div>
+        </div>
+        <div style="background:white; border:1.5px solid #E2E8F0; border-radius:14px; padding:18px;">
+          <div style="font-size:10px; font-weight:800; text-transform:uppercase; letter-spacing:0.4px; color:#94A3B8; margin-bottom:8px;">Month To Date</div>
+          <div style="font-size:24px; font-weight:800; color:#0F1E2E;" id="anMtdRevenue"></div>
+          <div style="font-size:11px; color:#64748B; margin-top:2px;" id="anMtdBookings"></div>
+        </div>
+        <div style="background:white; border:1.5px solid #E2E8F0; border-radius:14px; padding:18px;">
+          <div style="font-size:10px; font-weight:800; text-transform:uppercase; letter-spacing:0.4px; color:#94A3B8; margin-bottom:8px;">Year To Date</div>
+          <div style="font-size:24px; font-weight:800; color:#0F1E2E;" id="anYtdRevenue"></div>
+          <div style="font-size:11px; color:#64748B; margin-top:2px;" id="anYtdBookings"></div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
 
 <script>
   function switchView(view){
     document.getElementById('view-therapist-bookings').style.display = view === 'therapist-bookings' ? '' : 'none';
     document.getElementById('view-front-desk').style.display = view === 'front-desk' ? '' : 'none';
     document.getElementById('view-customer-db').style.display = view === 'customer-db' ? '' : 'none';
+    document.getElementById('view-analytics').style.display = view === 'analytics' ? '' : 'none';
     document.getElementById('tabTherapistBookings').classList.toggle('active', view === 'therapist-bookings');
     document.getElementById('tabFrontDesk').classList.toggle('active', view === 'front-desk');
     document.getElementById('tabCustomerDb').classList.toggle('active', view === 'customer-db');
+    document.getElementById('tabAnalytics').classList.toggle('active', view === 'analytics');
     if(view === 'front-desk'){
       document.getElementById('today-label-fd').textContent = new Date().toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
     }
     if(view === 'customer-db'){
       document.getElementById('today-label-cd').textContent = new Date().toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
       renderCustomerDb();
+    }
+    if(view === 'analytics'){
+      document.getElementById('today-label-an').textContent = new Date().toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+      renderAnalytics();
     }
   }
 

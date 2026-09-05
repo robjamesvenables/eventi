@@ -178,6 +178,12 @@
   }
   .slot-arrived-badge { background: white; color: #2F7D4F; }
   .slot-late-badge { background: #B91C1C; animation: timerFlash 1.4s ease-in-out infinite; }
+  .slot-payment-badge {
+    position: absolute; top: 2px; left: 2px; width: 13px; height: 13px; border-radius: 50%;
+    color: white; font-size: 9px; font-weight: 900; display: flex; align-items: center; justify-content: center;
+  }
+  .slot-payment-badge.paid { background: #16A34A; }
+  .slot-payment-badge.unpaid { background: #DC2626; }
   .vacant .slot-inner { background: #F1F5F9; border: 1.5px solid #E2E8F0; color: #94A3B8; opacity: 0.9; }
   .vacant:hover .slot-inner, .vacant.drag-over .slot-inner { opacity: 1; background: #E2E8F0; }
   .vacant.on-shift .slot-inner { background: white; border: 1.5px solid #E8EBEF; opacity: 1; }
@@ -291,6 +297,7 @@
   .confirm-btn { padding: 12px; border-radius: 9px; border: none; font-family: inherit; font-size: 13.5px; font-weight: 700; cursor: pointer; }
   .confirm-btn-danger { background: #EF4444; color: white; }
   .confirm-btn-wait { background: #F59E0B; color: white; }
+  .confirm-btn-success { background: #16A34A; color: white; }
   .confirm-btn-cancel { background: #F1F5F9; color: #64748B; }
 
   .shift-btns { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 4px; }
@@ -371,6 +378,11 @@
       <div class="status-pills" style="margin-bottom:12px">
         <button class="status-pill" id="pillHold" onclick="setModalStatus('hold')">On Hold</button>
         <button class="status-pill" id="pillBooked" onclick="setModalStatus('booked')">Booked</button>
+      </div>
+      <div class="modal-label">Payment Status</div>
+      <div class="status-pills" style="margin-bottom:12px">
+        <button class="status-pill" id="modalPayPaid" onclick="setModalPaymentStatus('paid')">Paid</button>
+        <button class="status-pill" id="modalPayUnpaid" onclick="setModalPaymentStatus('unpaid')">Unpaid</button>
       </div>
       <div id="arrivedWrap" style="display:none;margin-bottom:12px">
         <button class="modal-btn" id="arrivedBtn" style="width:100%;background:#7BC895;color:white" onclick="markArrived()">Mark Arrived</button>
@@ -514,6 +526,12 @@
         <button class="queue-type-btn fd-type-option" id="qeTypeWalkin" style="background:#F59E0B" onclick="setQeBookingType('walkin')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="4" r="2"/><path d="M12 7v5l-3 8M12 12l4 3 2 5M9 12l-3 2"/></svg>WALK IN</button>
         <button class="queue-type-btn fd-type-option" id="qeTypeWa" style="background:#22C55E" onclick="setQeBookingType('wa')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>WA</button>
         <button class="queue-type-btn fd-type-option" id="qeTypeReferral" style="background:#3B82F6" onclick="setQeBookingType('referral')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="12" r="3"/><circle cx="18" cy="6" r="3"/><circle cx="18" cy="18" r="3"/><path d="M8.5 10.5l7-4M8.5 13.5l7 4"/></svg>REFERRAL</button>
+      </div>
+
+      <div class="modal-label">Payment Status</div>
+      <div class="status-pills" style="margin-bottom:18px">
+        <button class="status-pill" id="qePayPaid" onclick="setQePaymentStatus('paid')">Paid</button>
+        <button class="status-pill" id="qePayUnpaid" onclick="setQePaymentStatus('unpaid')">Unpaid</button>
       </div>
 
       <div class="modal-actions">
@@ -1170,6 +1188,7 @@
   let qeServiceCode = null;
   let qeTimeIdx = null;
   let qeBookingType = null;
+  let qePaymentStatus = null;
 
   function openBookingInfo(id){
     const item = pendingQueue.find(function(q){ return q.id === id; });
@@ -1188,6 +1207,7 @@
     document.getElementById('qeEmail').value = item.email || '';
     document.getElementById('qeNotes').value = item.clientNotes || '';
     setQeBookingType(item.bookingType || null);
+    setQePaymentStatus(item.paymentStatus || 'unpaid');
 
     document.getElementById('queueEditBg').classList.add('show');
   }
@@ -1197,6 +1217,11 @@
       const key = suffix.toLowerCase();
       document.getElementById('qeType' + suffix).classList.toggle('fd-selected', qeBookingType === key);
     });
+  }
+  function setQePaymentStatus(status){
+    qePaymentStatus = status;
+    document.getElementById('qePayPaid').classList.toggle('active-returning', status === 'paid');
+    document.getElementById('qePayUnpaid').classList.toggle('active-returning', status === 'unpaid');
   }
   function closeQueueEdit(){
     document.getElementById('queueEditBg').classList.remove('show');
@@ -1242,6 +1267,7 @@
     item.email = document.getElementById('qeEmail').value.trim();
     item.clientNotes = document.getElementById('qeNotes').value.trim();
     item.bookingType = qeBookingType;
+    item.paymentStatus = qePaymentStatus;
     saveQueue();
     renderQueue();
     closeQueueEdit();
@@ -1384,10 +1410,17 @@
               statusBadge = '<div class="slot-late-badge" title="Booking time has passed - not checked in yet">!</div>';
             }
           }
+          let paymentBadge = '';
+          if(b.status === 'booked'){
+            paymentBadge = b.paymentStatus === 'paid'
+              ? '<div class="slot-payment-badge paid" title="Paid">$</div>'
+              : '<div class="slot-payment-badge unpaid" title="Not paid yet">$</div>';
+          }
           html += '<div class="slot ' + b.status + (b.arrived ? ' arrived' : '') + '" data-key="' + key + '" style="grid-column:' + col + ';grid-row:' + rowStart + ' / span ' + span + '" ' +
               'onclick="openSlot(\'' + key + '\')" ondragover="dragOver(event,\'' + key + '\')" ondragleave="dragLeave(event)" ondrop="drop(event,\'' + key + '\')">' +
             '<div class="slot-inner" draggable="true" ondragstart="bookingDragStart(event,\'' + key + '\')">' +
               statusBadge +
+              paymentBadge +
               '<div class="slot-code">' + b.serviceCode + (b.people && b.people > 1 ? ' \u00d7' + b.people : '') + '</div>' +
               '<div class="slot-client">' + b.client + '</div>' +
               '<div class="slot-therapist">' + t.name + '</div>' +
@@ -1670,6 +1703,7 @@
         setServiceLabel(item.serviceCode);
         setModalStatus('booked');
         setModalPeople(item.people || 1);
+        setModalPaymentStatus(item.paymentStatus || 'unpaid');
         window._pendingQueueRemoval = id;
         window._pendingBookingType = item.bookingType; // carried through to the saved booking, so the Dashboard can report on it later
       }
@@ -1699,11 +1733,17 @@
   let modalKey = null;
   let modalStatus = 'hold';
   let modalPeople = 1;
+  let modalPaymentStatus = 'unpaid';
   function setModalPeople(n){
     modalPeople = n;
     [1,2,3,4].forEach(function(i){
       document.getElementById('modalPeople' + i).classList.toggle('active-returning', i === n);
     });
+  }
+  function setModalPaymentStatus(status){
+    modalPaymentStatus = status;
+    document.getElementById('modalPayPaid').classList.toggle('active-returning', status === 'paid');
+    document.getElementById('modalPayUnpaid').classList.toggle('active-returning', status === 'unpaid');
   }
 
   // Selected values live in plain state now, not a native <select> - set via the in-app picker.
@@ -2195,6 +2235,7 @@
     document.getElementById('modalNotesInput').value = existing ? (existing.notes || '') : '';
     setModalStatus(existing ? existing.status : 'hold');
     setModalPeople(existing ? (existing.people || 1) : 1);
+    setModalPaymentStatus(existing ? (existing.paymentStatus || 'unpaid') : 'unpaid');
     document.getElementById('clearWrap').style.display = existing ? 'block' : 'none';
 
     // Arrived only makes sense for an actual confirmed booking, not a provisional hold or a
@@ -2279,7 +2320,8 @@
       status: modalStatus, holdStartedAt: holdStartedAt, holdPrompted: false, people: modalPeople,
       arrived: existing ? (existing.arrived || false) : false,
       arrivedAt: existing ? (existing.arrivedAt || null) : null,
-      bookingType: window._pendingBookingType || (existing ? existing.bookingType : null) || null
+      bookingType: window._pendingBookingType || (existing ? existing.bookingType : null) || null,
+      paymentStatus: modalPaymentStatus
     };
     window._pendingBookingType = null;
     saveBookings();
@@ -2883,16 +2925,31 @@
     if(fdTimeIdx === null){ appAlert('Choose a desired time first.'); return; }
     if(!fdBookingType){ appAlert('Choose how this booking is coming in first.'); return; }
 
-    pendingQueue.push({
-      id: 'q' + Date.now() + Math.floor(Math.random()*10000),
-      client: client, phone: phone, email: email, returning: null,
-      serviceCode: fdServiceCode, requestedH: fdTimeIdx, bookingType: fdBookingType,
-      genderPref: fdGenderPref, people: fdPeople, createdAt: Date.now()
+    function finishSubmission(paymentStatus){
+      pendingQueue.push({
+        id: 'q' + Date.now() + Math.floor(Math.random()*10000),
+        client: client, phone: phone, email: email, returning: null,
+        serviceCode: fdServiceCode, requestedH: fdTimeIdx, bookingType: fdBookingType,
+        genderPref: fdGenderPref, people: fdPeople, createdAt: Date.now(),
+        paymentStatus: paymentStatus
+      });
+      saveQueue();
+      renderQueue();
+      resetFrontDeskForm();
+      switchView('therapist-bookings');
+    }
+
+    // Mandatory, not skippable - money matters enough to force the choice right here rather
+    // than letting it slide through unset. Stays editable later (queue edit, booking form)
+    // in case it changes, like a partner paying while the other's still in treatment.
+    showConfirm({
+      title: 'Has Payment Been Made?',
+      msg: 'This needs to be confirmed before ' + client + '\u2019s request goes to the waiting list.',
+      buttons: [
+        { label: 'Unpaid', cls: 'confirm-btn-cancel', onClick: function(){ finishSubmission('unpaid'); } },
+        { label: 'Paid', cls: 'confirm-btn-success', onClick: function(){ finishSubmission('paid'); } }
+      ]
     });
-    saveQueue();
-    renderQueue();
-    resetFrontDeskForm();
-    switchView('therapist-bookings');
   }
   document.getElementById('fdPrefAny').classList.add('active-returning');
   document.getElementById('fdPeople1').classList.add('active-returning');

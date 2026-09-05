@@ -394,6 +394,7 @@
           </div>
         </div>
       </div>
+      <div id="modalPaymentNote" style="display:none;font-size:11.5px;font-weight:700;color:#16A34A;background:#F0FDF6;border:1px solid #BBF0CE;border-radius:8px;padding:6px 10px;margin:-6px 0 12px"></div>
       <div id="arrivedWrap" style="display:none;margin-bottom:12px">
         <button class="modal-btn" id="arrivedBtn" style="width:100%;background:#7BC895;color:white" onclick="markArrived()">Mark Arrived</button>
         <div id="arrivedNote" style="display:none;text-align:center;font-size:11.5px;font-weight:700;color:#4C9A6A;margin-top:8px"></div>
@@ -583,10 +584,11 @@
       </div>
 
       <div class="modal-label">Payment Status</div>
-      <div class="status-pills" style="margin-bottom:18px">
+      <div class="status-pills" style="margin-bottom:8px">
         <button class="status-pill" id="qePayPaid" onclick="qeMarkPaidClicked()">Paid</button>
         <button class="status-pill" id="qePayUnpaid" onclick="setQePaymentStatus('unpaid')">Unpaid</button>
       </div>
+      <div id="qePaymentNote" style="display:none;font-size:11.5px;font-weight:700;color:#16A34A;background:#F0FDF6;border:1px solid #BBF0CE;border-radius:8px;padding:6px 10px;margin-bottom:14px"></div>
 
       <div class="modal-actions">
         <button class="modal-btn modal-btn-cancel" onclick="closeQueueEdit()">Cancel</button>
@@ -786,6 +788,15 @@
     document.getElementById('promoPickerLabel').textContent = 'No promo code';
     updatePaymentDetailsDisplay();
     document.getElementById('paymentDetailsBg').classList.add('show');
+  }
+  // Shared confirmation text for the small note shown under Payment Status once something's
+  // marked Paid - the actual amount charged and which promo code (if any) got it there,
+  // rather than just a bare "Paid" pill with no record of what that actually meant.
+  function paymentNoteText(fullPrice, promoCode, discountPct){
+    if(!promoCode || !discountPct) return 'Paid \u2014 $' + fullPrice;
+    const discountAmount = Math.round(fullPrice * discountPct / 100);
+    const finalPrice = fullPrice - discountAmount;
+    return 'Paid \u2014 $' + finalPrice + ' (' + promoCode + ', ' + discountPct + '% off $' + fullPrice + ')';
   }
   function updatePaymentDetailsDisplay(){
     const promo = paymentDetailsPromoCode ? promoByCode(paymentDetailsPromoCode) : null;
@@ -1346,6 +1357,13 @@
     setQePaymentStatus(item.paymentStatus || 'unpaid');
     qePromoCode = item.promoCode || null;
     qeDiscountPct = item.discountPct || 0;
+    const qeNote = document.getElementById('qePaymentNote');
+    if(item.paymentStatus === 'paid' && svc){
+      qeNote.textContent = paymentNoteText(svc.price, item.promoCode, item.discountPct);
+      qeNote.style.display = 'block';
+    } else {
+      qeNote.style.display = 'none';
+    }
 
     document.getElementById('queueEditBg').classList.add('show');
   }
@@ -1360,13 +1378,18 @@
     qePaymentStatus = status;
     document.getElementById('qePayPaid').classList.toggle('active-returning', status === 'paid');
     document.getElementById('qePayUnpaid').classList.toggle('active-returning', status === 'unpaid');
+    if(status === 'unpaid') document.getElementById('qePaymentNote').style.display = 'none';
   }
   function qeMarkPaidClicked(){
     const svc = serviceByCode(qeServiceCode);
-    openPaymentDetails(svc ? svc.price : 0, function(promoCode, discountPct){
+    const fullPrice = svc ? svc.price : 0;
+    openPaymentDetails(fullPrice, function(promoCode, discountPct){
       qePromoCode = promoCode;
       qeDiscountPct = discountPct;
       setQePaymentStatus('paid');
+      const note = document.getElementById('qePaymentNote');
+      note.textContent = paymentNoteText(fullPrice, promoCode, discountPct);
+      note.style.display = 'block';
     });
   }
   function closeQueueEdit(){
@@ -1894,13 +1917,18 @@
     modalPaymentStatus = status;
     document.getElementById('modalPayPaid').classList.toggle('active-returning', status === 'paid');
     document.getElementById('modalPayUnpaid').classList.toggle('active-returning', status === 'unpaid');
+    if(status === 'unpaid') document.getElementById('modalPaymentNote').style.display = 'none';
   }
   function modalMarkPaidClicked(){
     const svc = serviceByCode(selectedServiceCode);
-    openPaymentDetails(svc ? svc.price : 0, function(promoCode, discountPct){
+    const fullPrice = svc ? svc.price : 0;
+    openPaymentDetails(fullPrice, function(promoCode, discountPct){
       modalPromoCode = promoCode;
       modalDiscountPct = discountPct;
       setModalPaymentStatus('paid');
+      const note = document.getElementById('modalPaymentNote');
+      note.textContent = paymentNoteText(fullPrice, promoCode, discountPct);
+      note.style.display = 'block';
     });
   }
 
@@ -2470,6 +2498,14 @@
     setModalPaymentStatus(existing ? (existing.paymentStatus || 'unpaid') : 'unpaid');
     modalPromoCode = existing ? (existing.promoCode || null) : null;
     modalDiscountPct = existing ? (existing.discountPct || 0) : 0;
+    const modalNote = document.getElementById('modalPaymentNote');
+    const currentSvc = serviceByCode(selectedServiceCode);
+    if(existing && existing.paymentStatus === 'paid' && currentSvc){
+      modalNote.textContent = paymentNoteText(currentSvc.price, existing.promoCode, existing.discountPct);
+      modalNote.style.display = 'block';
+    } else {
+      modalNote.style.display = 'none';
+    }
     document.getElementById('clearWrap').style.display = existing ? 'block' : 'none';
 
     // Arrived only makes sense for an actual confirmed booking, not a provisional hold or a

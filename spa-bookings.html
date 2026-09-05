@@ -2582,35 +2582,9 @@
   }
 
   // ── 15-minute hold check ──
-  function checkHolds(){
-    const anyModalOpen = document.getElementById('modalBg').classList.contains('show') ||
-                          document.getElementById('confirmBg').classList.contains('show');
-    if(anyModalOpen) return;
-    for(const key in bookings){
-      const b = bookings[key];
-      if(b.status === 'hold' && b.holdStartedAt && !b.holdPrompted){
-        const elapsed = Date.now() - b.holdStartedAt;
-        if(elapsed >= 15 * 60 * 1000){
-          b.holdPrompted = true;
-          saveBookings();
-          const parts = key.split('-');
-          const t = THERAPISTS[Number(parts[0])];
-          showConfirm({
-            title: 'Release Booking?',
-            msg: b.client + ' has been on hold for 15 minutes with ' + t.name + '. Release the slot, or give them more time?',
-            phone: b.phone || 'No phone number on file',
-            buttons: [
-              { label: 'Release Booking', cls: 'confirm-btn-danger', onClick: function(){ delete bookings[key]; saveBookings(); renderGrid(); }},
-              { label: 'Wait 15 More Minutes', cls: 'confirm-btn-wait', onClick: function(){ b.holdStartedAt = Date.now(); b.holdPrompted = false; saveBookings(); }},
-              { label: 'Dismiss', cls: 'confirm-btn-cancel', onClick: function(){} }
-            ]
-          });
-          break;
-        }
-      }
-    }
-  }
-  setInterval(checkHolds, 20000);
+  // The 15-minute hold-expiry reminder popup (Release Booking?) has been removed - holds no
+  // longer trigger an automatic nag. The hold status itself, and its colour on the calendar,
+  // are unaffected.
 
   // The badges (NEW/amber/red) still update live based on how long something's been
   // waiting - this just keeps them current. The popup nudges that used to accompany them

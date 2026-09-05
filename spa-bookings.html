@@ -332,6 +332,10 @@
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
       <span class="sidebar-tab-label">Analytics</span>
     </button>
+    <button class="sidebar-tab" id="tabAdmin" onclick="switchView('admin')">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l8 4v6c0 5-3.5 8.5-8 10-4.5-1.5-8-5-8-10V6l8-4z"/><path d="M9 12l2 2 4-4"/></svg>
+      <span class="sidebar-tab-label">Admin Console</span>
+    </button>
   </div>
 
 <!-- Shared modals - live outside both views so they work regardless of which tab is active -->
@@ -385,7 +389,7 @@
         <div>
           <div class="modal-label">Payment Status</div>
           <div class="status-pills" style="margin-bottom:12px">
-            <button class="status-pill" id="modalPayPaid" onclick="setModalPaymentStatus('paid')">Paid</button>
+            <button class="status-pill" id="modalPayPaid" onclick="modalMarkPaidClicked()">Paid</button>
             <button class="status-pill" id="modalPayUnpaid" onclick="setModalPaymentStatus('unpaid')">Unpaid</button>
           </div>
         </div>
@@ -456,6 +460,50 @@
       </div>
       <div style="text-align:center;margin-top:14px">
         <button class="modal-btn-clear" style="background:none;border:none;font-family:inherit;font-size:12.5px;font-weight:700;cursor:pointer" onclick="resetRoomRename()">Reset to default code</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-bg" id="promoCodeEditBg" style="z-index:219">
+    <div class="modal-box" style="max-width:340px">
+      <div class="modal-title" id="promoCodeEditTitle">Add Promo Code</div>
+      <div class="modal-label">Code</div>
+      <input type="text" class="modal-input" id="promoCodeInput" placeholder="e.g. SUMMER10" style="text-transform:uppercase">
+      <div class="modal-label">Discount (%)</div>
+      <input type="number" class="modal-input" id="promoDiscountInput" placeholder="e.g. 10" min="1" max="100">
+      <div class="modal-actions">
+        <button class="modal-btn modal-btn-cancel" onclick="closePromoCodeEdit()">Cancel</button>
+        <button class="modal-btn modal-btn-save" onclick="savePromoCodeEdit()">Save</button>
+      </div>
+      <div style="text-align:center;margin-top:14px" id="deletePromoWrap">
+        <button class="modal-btn-clear" style="background:none;border:none;font-family:inherit;font-size:12.5px;font-weight:700;cursor:pointer" onclick="deletePromoCode()">Delete this code</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-bg" id="paymentDetailsBg" style="z-index:219">
+    <div class="modal-box" style="max-width:340px">
+      <div class="modal-title">Payment Details</div>
+      <div class="modal-sub" id="paymentDetailsSub"></div>
+      <div class="modal-label">Promo Code (Optional)</div>
+      <div class="field-picker" id="promoPickerBtn" onclick="openPromoPickerForPayment()">
+        <span id="promoPickerLabel">No promo code</span>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#94A3B8" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+      </div>
+      <div style="border-top:1px solid #E2E8F0;margin-top:10px;padding-top:10px">
+        <div style="display:flex;justify-content:space-between;font-size:13px;color:#64748B;padding:4px 0">
+          <span>Full price</span><span id="paymentFullPrice"></span>
+        </div>
+        <div style="display:flex;justify-content:space-between;font-size:13px;color:#16A34A;padding:4px 0" id="paymentDiscountRow">
+          <span id="paymentDiscountLabel">Discount</span><span id="paymentDiscountAmount"></span>
+        </div>
+        <div style="display:flex;justify-content:space-between;font-size:17px;font-weight:800;color:#0F1E2E;padding:8px 0 0;border-top:1.5px solid #0F1E2E;margin-top:6px">
+          <span>Total</span><span id="paymentFinalPrice"></span>
+        </div>
+      </div>
+      <div class="modal-actions" style="margin-top:16px">
+        <button class="modal-btn modal-btn-cancel" onclick="closePaymentDetails()">Back</button>
+        <button class="modal-btn modal-btn-save" onclick="confirmPaymentDetails()">Confirm Paid</button>
       </div>
     </div>
   </div>
@@ -536,7 +584,7 @@
 
       <div class="modal-label">Payment Status</div>
       <div class="status-pills" style="margin-bottom:18px">
-        <button class="status-pill" id="qePayPaid" onclick="setQePaymentStatus('paid')">Paid</button>
+        <button class="status-pill" id="qePayPaid" onclick="qeMarkPaidClicked()">Paid</button>
         <button class="status-pill" id="qePayUnpaid" onclick="setQePaymentStatus('unpaid')">Unpaid</button>
       </div>
 
@@ -702,6 +750,86 @@
   }
 
   function roomById(id){ return ROOMS.find(function(r){ return r.id === id; }); }
+
+  // ── Promo codes - managed from the Admin Console, applied at the point of payment.
+  // Seeded with the four the client described - percentage-off, editable/addable/removable
+  // from the console, persisted so they survive a refresh.
+  const PROMO_CODES_KEY = 'mavis_spa_promo_codes_v1';
+  let promoCodes = [
+    { id: 1, code: 'SUMMER10', discountPct: 5 },
+    { id: 2, code: 'SUMMER11', discountPct: 10 },
+    { id: 3, code: 'SUMMER12', discountPct: 15 },
+    { id: 4, code: 'VIP', discountPct: 40 }
+  ];
+  function loadPromoCodes(){
+    try{
+      const saved = localStorage.getItem(PROMO_CODES_KEY);
+      if(saved) promoCodes = JSON.parse(saved);
+    }catch(e){}
+  }
+  function savePromoCodes(){
+    try{ localStorage.setItem(PROMO_CODES_KEY, JSON.stringify(promoCodes)); }catch(e){}
+  }
+  function promoByCode(code){ return promoCodes.find(function(p){ return p.code === code; }); }
+
+  // ── Payment Details - shown when a booking is marked Paid, so a promo code can optionally
+  // be applied and the final amount is clear before confirming. Generic and reusable: any
+  // caller passes the full price and a callback, and gets back the chosen code + discount.
+  let paymentDetailsFullPrice = 0;
+  let paymentDetailsPromoCode = null;
+  let paymentDetailsCallback = null;
+  function openPaymentDetails(fullPrice, onConfirm){
+    paymentDetailsFullPrice = fullPrice;
+    paymentDetailsPromoCode = null;
+    paymentDetailsCallback = onConfirm;
+    document.getElementById('paymentDetailsSub').textContent = 'Add a promo code if one applies, or leave it as full price.';
+    document.getElementById('promoPickerLabel').textContent = 'No promo code';
+    updatePaymentDetailsDisplay();
+    document.getElementById('paymentDetailsBg').classList.add('show');
+  }
+  function updatePaymentDetailsDisplay(){
+    const promo = paymentDetailsPromoCode ? promoByCode(paymentDetailsPromoCode) : null;
+    const discountAmount = promo ? Math.round(paymentDetailsFullPrice * promo.discountPct / 100) : 0;
+    const finalPrice = paymentDetailsFullPrice - discountAmount;
+    document.getElementById('paymentFullPrice').textContent = '$' + paymentDetailsFullPrice;
+    document.getElementById('paymentDiscountRow').style.display = promo ? 'flex' : 'none';
+    if(promo){
+      document.getElementById('paymentDiscountLabel').textContent = promo.code + ' (' + promo.discountPct + '%)';
+      document.getElementById('paymentDiscountAmount').textContent = '\u2212$' + discountAmount;
+    }
+    document.getElementById('paymentFinalPrice').textContent = '$' + finalPrice;
+  }
+  function openPromoPickerForPayment(){
+    const list = document.getElementById('pickerList');
+    document.getElementById('pickerTitle').textContent = 'Choose Promo Code';
+    let html = '<div class="picker-option" onclick="pickPromoForPayment(null)">No promo code</div>';
+    html += promoCodes.map(function(p){
+      return '<div class="picker-option" onclick="pickPromoForPayment(\'' + p.code + '\')">' +
+        '<div><div>' + p.code + '</div><div class="picker-option-sub">' + p.discountPct + '% off</div></div>' +
+      '</div>';
+    }).join('');
+    list.innerHTML = html;
+    document.getElementById('pickerBg').classList.add('show');
+  }
+  function pickPromoForPayment(code){
+    paymentDetailsPromoCode = code;
+    document.getElementById('promoPickerLabel').textContent = code ? (code + ' applied') : 'No promo code';
+    updatePaymentDetailsDisplay();
+    closePicker();
+  }
+  function closePaymentDetails(){
+    document.getElementById('paymentDetailsBg').classList.remove('show');
+    paymentDetailsCallback = null;
+  }
+  function confirmPaymentDetails(){
+    const promo = paymentDetailsPromoCode ? promoByCode(paymentDetailsPromoCode) : null;
+    const callback = paymentDetailsCallback;
+    document.getElementById('paymentDetailsBg').classList.remove('show');
+    paymentDetailsCallback = null;
+    if(callback) callback(paymentDetailsPromoCode, promo ? promo.discountPct : 0);
+  }
+  document.getElementById('paymentDetailsBg').addEventListener('click', function(e){ if(e.target === this) closePaymentDetails(); });
+
 
   // Real service list, from the actual booking site - durations vary, so grid boxes will too.
   // Codes are a placeholder guess - the spa has their own codes already, to be swapped in later.
@@ -1194,6 +1322,8 @@
   let qeServiceCode = null;
   let qeTimeIdx = null;
   let qeBookingType = null;
+  let qePromoCode = null;
+  let qeDiscountPct = 0;
   let qePaymentStatus = null;
 
   function openBookingInfo(id){
@@ -1214,6 +1344,8 @@
     document.getElementById('qeNotes').value = item.clientNotes || '';
     setQeBookingType(item.bookingType || null);
     setQePaymentStatus(item.paymentStatus || 'unpaid');
+    qePromoCode = item.promoCode || null;
+    qeDiscountPct = item.discountPct || 0;
 
     document.getElementById('queueEditBg').classList.add('show');
   }
@@ -1228,6 +1360,14 @@
     qePaymentStatus = status;
     document.getElementById('qePayPaid').classList.toggle('active-returning', status === 'paid');
     document.getElementById('qePayUnpaid').classList.toggle('active-returning', status === 'unpaid');
+  }
+  function qeMarkPaidClicked(){
+    const svc = serviceByCode(qeServiceCode);
+    openPaymentDetails(svc ? svc.price : 0, function(promoCode, discountPct){
+      qePromoCode = promoCode;
+      qeDiscountPct = discountPct;
+      setQePaymentStatus('paid');
+    });
   }
   function closeQueueEdit(){
     document.getElementById('queueEditBg').classList.remove('show');
@@ -1274,6 +1414,8 @@
     item.clientNotes = document.getElementById('qeNotes').value.trim();
     item.bookingType = qeBookingType;
     item.paymentStatus = qePaymentStatus;
+    item.promoCode = qePromoCode;
+    item.discountPct = qeDiscountPct;
     saveQueue();
     renderQueue();
     closeQueueEdit();
@@ -1740,6 +1882,8 @@
   let modalStatus = 'hold';
   let modalPeople = 1;
   let modalPaymentStatus = 'unpaid';
+  let modalPromoCode = null;
+  let modalDiscountPct = 0;
   function setModalPeople(n){
     modalPeople = n;
     [1,2,3,4].forEach(function(i){
@@ -1750,6 +1894,14 @@
     modalPaymentStatus = status;
     document.getElementById('modalPayPaid').classList.toggle('active-returning', status === 'paid');
     document.getElementById('modalPayUnpaid').classList.toggle('active-returning', status === 'unpaid');
+  }
+  function modalMarkPaidClicked(){
+    const svc = serviceByCode(selectedServiceCode);
+    openPaymentDetails(svc ? svc.price : 0, function(promoCode, discountPct){
+      modalPromoCode = promoCode;
+      modalDiscountPct = discountPct;
+      setModalPaymentStatus('paid');
+    });
   }
 
   // Selected values live in plain state now, not a native <select> - set via the in-app picker.
@@ -2100,15 +2252,89 @@
     const newName = document.getElementById('renameRoomInput').value;
     renameRoom(renameRoomId, newName);
     renderRoomsPanel();
+    if(document.getElementById('view-admin').style.display !== 'none') renderAdminConsole();
     closeRenameRoom();
   }
   function resetRoomRename(){
     if(renameRoomId === null) return;
     renameRoom(renameRoomId, null);
     renderRoomsPanel();
+    if(document.getElementById('view-admin').style.display !== 'none') renderAdminConsole();
     closeRenameRoom();
   }
   document.getElementById('renameRoomBg').addEventListener('click', function(e){ if(e.target === this) closeRenameRoom(); });
+
+  // ── Admin Console - manager-level settings: promo codes, the Analytics PIN, and room
+  // names all in one place. A first pass to show the shape of it; a real version would
+  // likely need its own separate login rather than sitting behind a normal sidebar tab.
+  function renderAdminConsole(){
+    document.getElementById('adminPromoTableBody').innerHTML = promoCodes.map(function(p, i){
+      const rowBg = i % 2 === 0 ? 'white' : '#FAFBFC';
+      return '<tr style="background:' + rowBg + ';border-top:1px solid #F1F5F9">' +
+        '<td style="padding:10px 14px;font-weight:800;color:#0F1E2E">' + p.code + '</td>' +
+        '<td style="padding:10px 14px;color:#64748B">' + p.discountPct + '%</td>' +
+        '<td style="padding:10px 14px;text-align:right"><button onclick="openEditPromoCode(' + p.id + ')" style="background:none;border:none;color:#0D9488;font-family:inherit;font-size:12px;font-weight:700;cursor:pointer">Edit</button></td>' +
+      '</tr>';
+    }).join('');
+
+    document.getElementById('adminRoomsTableBody').innerHTML = ROOMS.map(function(r, i){
+      const rowBg = i % 2 === 0 ? 'white' : '#FAFBFC';
+      return '<tr style="background:' + rowBg + ';border-top:1px solid #F1F5F9">' +
+        '<td style="padding:9px 14px;color:#64748B">' + r.defaultName + '</td>' +
+        '<td style="padding:9px 14px;font-weight:800;color:#0F1E2E">' + r.name + '</td>' +
+        '<td style="padding:9px 14px;text-align:right"><button onclick="openRenameRoom(' + r.id + ')" style="background:none;border:none;color:#0D9488;font-family:inherit;font-size:12px;font-weight:700;cursor:pointer">Rename</button></td>' +
+      '</tr>';
+    }).join('');
+  }
+
+  let editingPromoId = null;
+  function openAddPromoCode(){
+    editingPromoId = null;
+    document.getElementById('promoCodeEditTitle').textContent = 'Add Promo Code';
+    document.getElementById('promoCodeInput').value = '';
+    document.getElementById('promoDiscountInput').value = '';
+    document.getElementById('deletePromoWrap').style.display = 'none';
+    document.getElementById('promoCodeEditBg').classList.add('show');
+  }
+  function openEditPromoCode(id){
+    const promo = promoCodes.find(function(p){ return p.id === id; });
+    if(!promo) return;
+    editingPromoId = id;
+    document.getElementById('promoCodeEditTitle').textContent = 'Edit Promo Code';
+    document.getElementById('promoCodeInput').value = promo.code;
+    document.getElementById('promoDiscountInput').value = promo.discountPct;
+    document.getElementById('deletePromoWrap').style.display = 'block';
+    document.getElementById('promoCodeEditBg').classList.add('show');
+  }
+  function closePromoCodeEdit(){
+    document.getElementById('promoCodeEditBg').classList.remove('show');
+    editingPromoId = null;
+  }
+  function savePromoCodeEdit(){
+    const code = document.getElementById('promoCodeInput').value.trim().toUpperCase();
+    const pct = Number(document.getElementById('promoDiscountInput').value);
+    if(!code){ appAlert('Enter a code first.'); return; }
+    if(!pct || pct <= 0 || pct > 100){ appAlert('Enter a discount percentage between 1 and 100.'); return; }
+    if(editingPromoId === null){
+      const newId = promoCodes.length ? Math.max.apply(null, promoCodes.map(function(p){ return p.id; })) + 1 : 1;
+      promoCodes.push({ id: newId, code: code, discountPct: pct });
+    } else {
+      const promo = promoCodes.find(function(p){ return p.id === editingPromoId; });
+      if(promo){ promo.code = code; promo.discountPct = pct; }
+    }
+    savePromoCodes();
+    renderAdminConsole();
+    closePromoCodeEdit();
+  }
+  function deletePromoCode(){
+    if(editingPromoId === null) return;
+    promoCodes = promoCodes.filter(function(p){ return p.id !== editingPromoId; });
+    savePromoCodes();
+    renderAdminConsole();
+    closePromoCodeEdit();
+  }
+  document.getElementById('promoCodeEditBg').addEventListener('click', function(e){ if(e.target === this) closePromoCodeEdit(); });
+
 
   // ── Analytics PIN gate - same pattern as Mavis's own Analytics PIN: create-then-confirm on
   // first use, PIN required on later visits, a short grace period so it doesn't ask every
@@ -2242,6 +2468,8 @@
     setModalStatus(existing ? existing.status : 'hold');
     setModalPeople(existing ? (existing.people || 1) : 1);
     setModalPaymentStatus(existing ? (existing.paymentStatus || 'unpaid') : 'unpaid');
+    modalPromoCode = existing ? (existing.promoCode || null) : null;
+    modalDiscountPct = existing ? (existing.discountPct || 0) : 0;
     document.getElementById('clearWrap').style.display = existing ? 'block' : 'none';
 
     // Arrived only makes sense for an actual confirmed booking, not a provisional hold or a
@@ -2327,7 +2555,7 @@
       arrived: existing ? (existing.arrived || false) : false,
       arrivedAt: existing ? (existing.arrivedAt || null) : null,
       bookingType: window._pendingBookingType || (existing ? existing.bookingType : null) || null,
-      paymentStatus: modalPaymentStatus
+      paymentStatus: modalPaymentStatus, promoCode: modalPromoCode, discountPct: modalDiscountPct
     };
     window._pendingBookingType = null;
     saveBookings();
@@ -2600,6 +2828,7 @@
   loadShifts();
   loadCustomers();
   loadRoomNameOverrides();
+  loadPromoCodes();
   renderGrid();
   renderQueue();
 
@@ -2786,6 +3015,61 @@
     </div>
   </div>
 
+  <div id="view-admin" style="display:none;min-height:100vh">
+    <div class="topbar">
+      <div>
+        <div class="logo"><b>M</b>avis<span>.</span></div>
+        <div class="topbar-title" style="margin-top:8px">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#C4973B" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l8 4v6c0 5-3.5 8.5-8 10-4.5-1.5-8-5-8-10V6l8-4z"/><path d="M9 12l2 2 4-4"/></svg>
+          Admin Console
+        </div>
+        <div class="topbar-date" id="today-label-admin"></div>
+      </div>
+    </div>
+    <div style="padding:22px;max-width:700px;margin:0 auto">
+
+      <div style="font-size:11px;font-weight:700;color:#94A3B8;margin-bottom:18px">
+        Manager-level settings - promo codes, the Analytics PIN, and room names all live here. This is a first pass to show the shape of it; a real admin console would likely need its own login separate from the rest of the app.
+      </div>
+
+      <div class="dash-section-label"><span class="dash-section-ico"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M20.59 13.41L13.42 20.58a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg></span>Promo Codes</div>
+      <div style="background:white;border:1.5px solid #E2E8F0;border-radius:14px;overflow:hidden;margin-bottom:14px">
+        <table style="width:100%;border-collapse:collapse;font-size:12.5px">
+          <thead>
+            <tr style="background:#0F1E2E;color:white;text-align:left">
+              <th style="padding:10px 14px;font-size:10px;text-transform:uppercase;letter-spacing:0.4px">Code</th>
+              <th style="padding:10px 14px;font-size:10px;text-transform:uppercase;letter-spacing:0.4px">Discount</th>
+              <th style="padding:10px 14px"></th>
+            </tr>
+          </thead>
+          <tbody id="adminPromoTableBody"></tbody>
+        </table>
+      </div>
+      <button class="topbar-action-btn" style="background:#0D9488;border-color:#0D9488;margin-bottom:28px" onclick="openAddPromoCode()">+ Add Promo Code</button>
+
+      <div class="dash-section-label"><span class="dash-section-ico"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></span>Analytics PIN</div>
+      <div style="background:white;border:1.5px solid #E2E8F0;border-radius:14px;padding:16px;margin-bottom:28px;display:flex;align-items:center;justify-content:space-between">
+        <div style="font-size:12.5px;color:#64748B">The PIN staff need to view Analytics.</div>
+        <button class="topbar-action-btn" style="background:#0F1E2E" onclick="startResetAnalyticsPin()">Reset PIN</button>
+      </div>
+
+      <div class="dash-section-label"><span class="dash-section-ico"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18M5 21V7l8-4v18M13 21V11l6 4v6"/></svg></span>Room Names</div>
+      <div style="background:white;border:1.5px solid #E2E8F0;border-radius:14px;overflow:hidden">
+        <table style="width:100%;border-collapse:collapse;font-size:12.5px">
+          <thead>
+            <tr style="background:#0F1E2E;color:white;text-align:left">
+              <th style="padding:10px 14px;font-size:10px;text-transform:uppercase;letter-spacing:0.4px">Code</th>
+              <th style="padding:10px 14px;font-size:10px;text-transform:uppercase;letter-spacing:0.4px">Current Name</th>
+              <th style="padding:10px 14px"></th>
+            </tr>
+          </thead>
+          <tbody id="adminRoomsTableBody"></tbody>
+        </table>
+      </div>
+
+    </div>
+  </div>
+
 
 <script>
   function switchView(view){
@@ -2793,10 +3077,12 @@
     document.getElementById('view-front-desk').style.display = view === 'front-desk' ? '' : 'none';
     document.getElementById('view-customer-db').style.display = view === 'customer-db' ? '' : 'none';
     document.getElementById('view-analytics').style.display = view === 'analytics' ? '' : 'none';
+    document.getElementById('view-admin').style.display = view === 'admin' ? '' : 'none';
     document.getElementById('tabTherapistBookings').classList.toggle('active', view === 'therapist-bookings');
     document.getElementById('tabFrontDesk').classList.toggle('active', view === 'front-desk');
     document.getElementById('tabCustomerDb').classList.toggle('active', view === 'customer-db');
     document.getElementById('tabAnalytics').classList.toggle('active', view === 'analytics');
+    document.getElementById('tabAdmin').classList.toggle('active', view === 'admin');
     if(view === 'front-desk'){
       document.getElementById('today-label-fd').textContent = new Date().toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
     }
@@ -2807,6 +3093,10 @@
     if(view === 'analytics'){
       document.getElementById('today-label-an').textContent = new Date().toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
       renderAnalytics();
+    }
+    if(view === 'admin'){
+      document.getElementById('today-label-admin').textContent = new Date().toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+      renderAdminConsole();
     }
   }
 
@@ -2905,13 +3195,13 @@
     if(fdTimeIdx === null){ appAlert('Choose a desired time first.'); return; }
     if(!fdBookingType){ appAlert('Choose how this booking is coming in first.'); return; }
 
-    function finishSubmission(paymentStatus){
+    function finishSubmission(paymentStatus, promoCode, discountPct){
       pendingQueue.push({
         id: 'q' + Date.now() + Math.floor(Math.random()*10000),
         client: client, phone: phone, email: email, returning: null,
         serviceCode: fdServiceCode, requestedH: fdTimeIdx, bookingType: fdBookingType,
         genderPref: fdGenderPref, people: fdPeople, createdAt: Date.now(),
-        paymentStatus: paymentStatus
+        paymentStatus: paymentStatus, promoCode: promoCode || null, discountPct: discountPct || 0
       });
       saveQueue();
       renderQueue();
@@ -2927,7 +3217,12 @@
       msg: 'This needs to be confirmed before ' + client + '\u2019s request goes to the waiting list.',
       buttons: [
         { label: 'Unpaid', cls: 'confirm-btn-cancel', onClick: function(){ finishSubmission('unpaid'); } },
-        { label: 'Paid', cls: 'confirm-btn-success', onClick: function(){ finishSubmission('paid'); } }
+        { label: 'Paid', cls: 'confirm-btn-success', onClick: function(){
+          const svc = serviceByCode(fdServiceCode);
+          openPaymentDetails(svc ? svc.price : 0, function(promoCode, discountPct){
+            finishSubmission('paid', promoCode, discountPct);
+          });
+        } }
       ]
     });
   }

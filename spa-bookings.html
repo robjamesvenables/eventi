@@ -1658,18 +1658,40 @@
         appAlert(targetTherapistName + ' isn\u2019t working at that time \u2014 try a different therapist or time.');
         return;
       }
-      // Open the booking form pre-filled from the queue item, rather than saving directly -
-      // this makes sure Room (and everything else required) actually gets set before it
-      // becomes a real booking, instead of drag-and-drop skipping the form entirely.
-      openSlot(targetKey);
-      document.getElementById('modalClientInput').value = item.client;
-      document.getElementById('modalPhoneInput').value = item.phone || '';
-      document.getElementById('modalNotesInput').value = item.clientNotes || '';
-      setServiceLabel(item.serviceCode);
-      setModalStatus('booked');
-      setModalPeople(item.people || 1);
-      window._pendingQueueRemoval = id;
-      window._pendingBookingType = item.bookingType; // carried through to the saved booking, so the Dashboard can report on it later
+
+      function proceedWithQueueAllocation(){
+        // Open the booking form pre-filled from the queue item, rather than saving directly -
+        // this makes sure Room (and everything else required) actually gets set before it
+        // becomes a real booking, instead of drag-and-drop skipping the form entirely.
+        openSlot(targetKey);
+        document.getElementById('modalClientInput').value = item.client;
+        document.getElementById('modalPhoneInput').value = item.phone || '';
+        document.getElementById('modalNotesInput').value = item.clientNotes || '';
+        setServiceLabel(item.serviceCode);
+        setModalStatus('booked');
+        setModalPeople(item.people || 1);
+        window._pendingQueueRemoval = id;
+        window._pendingBookingType = item.bookingType; // carried through to the saved booking, so the Dashboard can report on it later
+      }
+
+      // A soft heads-up, not a block - the client may have already spoken to the customer
+      // again and it no longer matters, so this never stops the allocation, it just makes
+      // sure reception notices before it happens rather than after.
+      const targetTherapist = THERAPISTS[targetTi];
+      if(item.genderPref && targetTherapist.gender !== item.genderPref){
+        const wantedLabel = item.genderPref === 'M' ? 'a male' : 'a female';
+        showConfirm({
+          title: 'Therapist Preference',
+          msg: item.client + ' asked for ' + wantedLabel + ' therapist \u2014 ' + targetTherapist.name + ' is ' + (targetTherapist.gender === 'M' ? 'male' : 'female') + '. Allocate anyway?',
+          buttons: [
+            { label: 'Cancel', cls: 'confirm-btn-cancel', onClick: function(){} },
+            { label: 'Allocate Anyway', cls: 'confirm-btn-danger', onClick: proceedWithQueueAllocation }
+          ]
+        });
+        return;
+      }
+
+      proceedWithQueueAllocation();
     }
   }
 

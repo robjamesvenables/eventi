@@ -925,7 +925,7 @@
   // Represents bookings that have come in (for now: online) but haven't been assigned
   // a therapist/room yet. Three intake sources were mentioned (online being one) - the
   // other two are still being confirmed with the client, so only "online" is wired up here.
-  const QUEUE_STORAGE_KEY = 'mavis_spa_queue_demo_v4';
+  const QUEUE_STORAGE_KEY = 'mavis_spa_queue_demo_v5';
   let pendingQueue = [];
 
   function loadQueue(){
@@ -1128,14 +1128,24 @@
       { client: 'Fiona Campbell',   phone: '',             email: '',                        returning: null,  serviceCode: 'FR60',    requestedH: 4,  createdAt: now - 8*60000 },
       { client: 'Alex Novak',       phone: randomPhone(), email: 'alex.novak@yahoo.com',     returning: true,  serviceCode: 'TBM120',  requestedH: 14, createdAt: now - 18*60000 },
       { client: 'Grace Lin',        phone: randomPhone(), email: 'grace.lin88@gmail.com',    returning: false, serviceCode: 'SBM90',   requestedH: 8,  createdAt: now - 35*60000 },
-      { client: 'Tomasz Wojcik',    phone: '',             email: '',                        returning: null,  serviceCode: 'DMHM90',  requestedH: 16, createdAt: now }
+      { client: 'Tomasz Wojcik',    phone: '',             email: '',                        returning: null,  serviceCode: 'DMHM90',  requestedH: 16, createdAt: now },
+      // Simulates the future PayPal-on-website flow, as discussed - these land straight in
+      // the queue with no human involved at all, already classified as Website and already
+      // marked Paid, exactly like a real payment-webhook-driven booking would arrive.
+      { client: 'Jennifer Park',    phone: randomPhone(), email: 'jennifer.park@gmail.com',  returning: false, serviceCode: 'HLSM120', requestedH: 20, createdAt: now - 5*60000,  bookingType: 'website', paymentStatus: 'paid' },
+      { client: 'David Chen',       phone: randomPhone(), email: 'david.chen@gmail.com',     returning: true,  serviceCode: 'TBM90',   requestedH: 24, createdAt: now - 12*60000, bookingType: 'website', paymentStatus: 'paid' }
     ];
-    demo.forEach(function(d){ d.id = 'q' + Date.now() + Math.floor(Math.random()*10000); d.bookingType = null; pendingQueue.push(d); });
+    demo.forEach(function(d){
+      d.id = 'q' + Date.now() + Math.floor(Math.random()*10000);
+      if(d.bookingType === undefined) d.bookingType = null;
+      if(d.paymentStatus === undefined) d.paymentStatus = 'unpaid';
+      pendingQueue.push(d);
+    });
     saveQueue();
   }
 
-  const BOOKING_TYPE_LABELS = { paid: 'PAID', walkin: 'WALK IN', wa: 'WA', referral: 'REFERRAL' };
-  const BOOKING_TYPE_COLORS = { paid: '#8B5CF6', walkin: '#F59E0B', wa: '#22C55E', referral: '#3B82F6' };
+  const BOOKING_TYPE_LABELS = { paid: 'PAID', walkin: 'WALK IN', wa: 'WA', referral: 'REFERRAL', website: 'WEBSITE' };
+  const BOOKING_TYPE_COLORS = { paid: '#8B5CF6', walkin: '#F59E0B', wa: '#22C55E', referral: '#3B82F6', website: '#0F1E2E' };
 
   // ── Rooms panel: a quick snapshot of what's free, in cleanup buffer, or taken ──
   function slotStartMinutes(hIdx){ return 9 * 60 + hIdx * 15; } // grid starts at 9:00am, 15-min steps

@@ -1622,7 +1622,17 @@
               ? '<div class="slot-payment-badge paid" title="Paid">$</div>'
               : '<div class="slot-payment-badge unpaid" title="Not paid yet">$</div>';
           }
+          // Hover shows the treatment window plus the room's buffer explicitly, so the exact
+          // same 30-minute buffer math shown in the Rooms panel is directly checkable here too.
+          let bookingTooltip = '';
+          if(svc){
+            const startMin = slotStartMinutes(hIdx);
+            const endMin = startMin + svc.duration;
+            const bufferEndMin = endMin + ROOM_BUFFER_MIN;
+            bookingTooltip = fmtMinutesAsTime(startMin) + ' to ' + fmtMinutesAsTime(endMin) + ' (incl. buffer, room available ' + fmtMinutesAsTime(bufferEndMin) + ')';
+          }
           html += '<div class="slot ' + b.status + (b.arrived ? ' arrived' : '') + '" data-key="' + key + '" style="grid-column:' + col + ';grid-row:' + rowStart + ' / span ' + span + '" ' +
+              'onmouseenter="showAppTooltip(event,\'' + bookingTooltip + '\')" onmousemove="positionAppTooltip(event)" onmouseleave="hideAppTooltip()" ' +
               'onclick="openSlot(\'' + key + '\')" ondragover="dragOver(event,\'' + key + '\')" ondragleave="dragLeave(event)" ondrop="drop(event,\'' + key + '\')">' +
             '<div class="slot-inner" draggable="true" ondragstart="bookingDragStart(event,\'' + key + '\')">' +
               statusBadge +

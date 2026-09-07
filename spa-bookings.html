@@ -1695,20 +1695,37 @@
   let draggedBookingKey = null;
   let draggedQueueId = null;
 
+  // A much simpler, lightweight drag-ghost image (just a name in a small pill) instead of
+  // dragging the whole complex box with all its badges - the browser renders this more
+  // smoothly, since native drag-and-drop's ghost image is entirely browser-controlled and
+  // can lag behind the actual cursor with a heavier element.
+  function setSimpleDragImage(e, text){
+    const ghost = document.createElement('div');
+    ghost.textContent = text;
+    ghost.style.cssText = 'position:absolute;top:-1000px;left:-1000px;background:#0F1E2E;color:white;font-family:Inter,sans-serif;font-size:12px;font-weight:700;padding:8px 14px;border-radius:8px;white-space:nowrap;';
+    document.body.appendChild(ghost);
+    e.dataTransfer.setDragImage(ghost, 14, 14);
+    setTimeout(function(){ document.body.removeChild(ghost); }, 0);
+  }
   function therapistDragStart(e, name){
     draggedTherapist = name; draggedBookingKey = null; draggedQueueId = null;
     e.dataTransfer.effectAllowed = 'copy';
     e.currentTarget.classList.add('dragging');
+    setSimpleDragImage(e, name);
   }
   function therapistDragEnd(e){ e.currentTarget.classList.remove('dragging'); }
   function bookingDragStart(e, key){
     draggedBookingKey = key; draggedTherapist = null; draggedQueueId = null;
     e.dataTransfer.effectAllowed = 'move';
+    const b = bookings[key];
+    setSimpleDragImage(e, b ? b.client : 'Booking');
   }
   function queueDragStart(e, id){
     draggedQueueId = id; draggedTherapist = null; draggedBookingKey = null;
     e.dataTransfer.effectAllowed = 'move';
     e.currentTarget.classList.add('dragging');
+    const item = pendingQueue.find(function(q){ return q.id === id; });
+    setSimpleDragImage(e, item ? item.client : 'Booking');
   }
   function queueDragEnd(e){ e.currentTarget.classList.remove('dragging'); }
   function currentDraggedSpan(){

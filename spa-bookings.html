@@ -260,6 +260,8 @@
   .rc-room-card { border: 1.5px solid #86D9A0; background: #F0FDF6; border-radius: 10px; padding: 9px 12px; margin-bottom: 8px; cursor: pointer; }
   .rc-room-card:hover { border-color: #0D9488; }
   .rc-room-card.rc-unavailable { border-color: #E2E8F0; background: #F8FAFC; opacity: 0.65; cursor: default; }
+  .rc-room-card.rc-buffer-warning { border-color: #F0B429; background: #FFFBEB; }
+  .rc-room-card.rc-buffer-warning:hover { border-color: #D97706; }
   .rc-room-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; }
   .rc-room-name { font-size: 13px; font-weight: 800; color: #0F1E2E; }
   .rc-unavailable .rc-room-name { color: #64748B; }
@@ -427,6 +429,10 @@
       <div id="rcAvailableSection">
         <div class="rc-section-label">Available Now</div>
         <div id="rcAvailableList"></div>
+      </div>
+      <div id="rcBufferSection" style="display:none">
+        <div class="rc-section-label">Still In Cleaning Buffer — Tap To Confirm Anyway</div>
+        <div id="rcBufferList"></div>
       </div>
       <div id="rcUnavailableSection">
         <div class="rc-section-label">Not Free At This Time</div>
@@ -1817,10 +1823,16 @@
   // Same idea as spanFree, but for the chosen Room instead of the therapist - a room can only
   // be used by one booking at a time regardless of which therapist or column it's on, so this
   // checks across ALL bookings, not just one therapist's column.
-  function roomSpanFree(roomId, startH, span, ignoreKey){
-    if(!roomId) return true; // nothing chosen yet, nothing to conflict with
+  // Returns { free: true } if nothing conflicts, or { free: false, bufferOnly: bool } if
+  // something does - bufferOnly means the actual treatment times don't overlap at all (that
+  // would be physically impossible, so it's always a hard block), it's only the 30-minute
+  // cleaning buffer that's encroached on. That's treated as a soft warning instead, since
+  // cleaning sometimes genuinely finishes faster than the full 30 minutes.
+  function checkRoomConflict(roomId, startH, span, ignoreKey){
+    if(!roomId) return { free: true }; // nothing chosen yet, nothing to conflict with
     const bufferSlots = ROOM_BUFFER_MIN / 15; // 30 min buffer = 2 slots, needed after every booking for cleaning
-    const newEndWithBuffer = startH + span + bufferSlots; // this booking also needs its own buffer before whatever comes next
+    const newEnd = startH + span;
+    const newEndWithBuffer = newEnd + bufferSlots;
     for(const key in bookings){
       if(key === ignoreKey) continue;
       const b = bookings[key];
@@ -1829,11 +1841,21 @@
       const bStart = Number(parts[1]);
       const svc = serviceByCode(b.serviceCode);
       const bSpan = svc ? slotsForDuration(svc.duration) : 1;
-      const bEndWithBuffer = bStart + bSpan + bufferSlots;
-      const overlaps = startH < bEndWithBuffer && newEndWithBuffer > bStart;
-      if(overlaps) return false;
+      const bEnd = bStart + bSpan;
+      const bEndWithBuffer = bEnd + bufferSlots;
+
+      const hardOverlap = startH < bEnd && newEnd > bStart; // actual treatment times overlap - physically impossible
+      if(hardOverlap) return { free: false, bufferOnly: false };
+
+      const softOverlap = startH < bEndWithBuffer && newEndWithBuffer > bStart; // only the buffer is encroached
+      if(softOverlap) return { free: false, bufferOnly: true };
     }
-    return true;
+    return { free: true };
+  }
+  // Kept for anywhere that only needs a plain yes/no answer (e.g. the Rooms panel's own bar
+  // rendering doesn't need the buffer-vs-hard distinction).
+  function roomSpanFree(roomId, startH, span, ignoreKey){
+    return checkRoomConflict(roomId, startH, span, ignoreKey).free;
   }
 
   function drop(e, targetKey){
@@ -1897,13 +1919,28 @@
         appAlert(targetTherapistName + ' isn\u2019t working at that time \u2014 this booking can\u2019t be moved there.');
         return;
       }
-      if(!roomSpanFree(b.roomId, targetH, span, key)){
+      function finishMove(){
+        delete bookings[key];
+        bookings[targetKey] = b;
+        saveBookings(); renderGrid();
+      }
+      const roomCheck = checkRoomConflict(b.roomId, targetH, span, key);
+      if(!roomCheck.free && !roomCheck.bufferOnly){
         appAlert('That room is already booked for part of that time — this booking can\u2019t move there.');
         return;
       }
-      delete bookings[key];
-      bookings[targetKey] = b;
-      saveBookings(); renderGrid();
+      if(!roomCheck.free && roomCheck.bufferOnly){
+        showConfirm({
+          title: 'Still In Cleaning Buffer',
+          msg: 'This falls within the room\u2019s 30-minute cleaning buffer from the previous booking. If it\u2019ll genuinely be ready sooner, you can confirm anyway.',
+          buttons: [
+            { label: 'Cancel', cls: 'confirm-btn-cancel', onClick: function(){} },
+            { label: 'Confirm Anyway', cls: 'confirm-btn-danger', onClick: finishMove }
+          ]
+        });
+        return;
+      }
+      finishMove();
       return;
     }
 
@@ -2067,11 +2104,14 @@
       svc.name + ' (' + svc.duration + ' min) — ' + fmtTimeSlot(TIME_SLOTS[startH]);
 
     const available = [];
+    const bufferWarning = [];
     const unavailable = [];
     ROOMS.forEach(function(room){
       if(room.id === currentRoomId) return; // shown separately below, not as a normal pickable option
-      const free = roomSpanFree(room.id, startH, span, modalKey);
-      (free ? available : unavailable).push(room);
+      const check = checkRoomConflict(room.id, startH, span, modalKey);
+      if(check.free) available.push(room);
+      else if(check.bufferOnly) bufferWarning.push(room);
+      else unavailable.push(room);
     });
 
     function roomBarHtml(room){
@@ -2084,12 +2124,17 @@
       });
       return barHtml;
     }
-    function roomCardHtml(room, isAvailable){
-      const clickAttr = isAvailable ? ' onclick="pickRoomFromChooser(' + room.id + ')"' : '';
-      const statusHtml = isAvailable
+    // Three states now, not two - truly free, still-in-buffer (clickable but flagged, since
+    // cleaning can sometimes genuinely finish sooner than the full 30 minutes), or a genuine
+    // treatment-time clash (never clickable, that one's physically impossible).
+    function roomCardHtml(room, kind){
+      const clickAttr = kind !== 'unavailable' ? ' onclick="pickRoomFromChooser(' + room.id + ',' + (kind === 'buffer' ? 'true' : 'false') + ')"' : '';
+      const statusHtml = kind === 'available'
         ? '<span class="rc-room-status" style="color:#2F7D4F">FREE</span>'
-        : '<span class="rc-room-status" style="color:#9C4A32">TAKEN</span>';
-      return '<div class="rc-room-card' + (isAvailable ? '' : ' rc-unavailable') + '"' + clickAttr + '>' +
+        : kind === 'buffer'
+          ? '<span class="rc-room-status" style="color:#92400E">BUFFER</span>'
+          : '<span class="rc-room-status" style="color:#9C4A32">TAKEN</span>';
+      return '<div class="rc-room-card' + (kind === 'unavailable' ? ' rc-unavailable' : kind === 'buffer' ? ' rc-buffer-warning' : '') + '"' + clickAttr + '>' +
         '<div class="rc-room-top"><span class="rc-room-name" title="' + room.description + '">' + room.name + '</span>' + statusHtml + '</div>' +
         '<div class="rc-room-bar">' + roomBarHtml(room) + '</div>' +
       '</div>';
@@ -2111,16 +2156,33 @@
     }
 
     document.getElementById('rcAvailableList').innerHTML = available.length
-      ? available.map(function(r){ return roomCardHtml(r, true); }).join('')
+      ? available.map(function(r){ return roomCardHtml(r, 'available'); }).join('')
       : '<div style="font-size:12.5px;color:#94A3B8;padding:8px 0">No other rooms free for the whole treatment at this time.</div>';
     document.getElementById('rcAvailableSection').style.display = 'block';
 
-    document.getElementById('rcUnavailableList').innerHTML = unavailable.map(function(r){ return roomCardHtml(r, false); }).join('');
+    document.getElementById('rcBufferList').innerHTML = bufferWarning.map(function(r){ return roomCardHtml(r, 'buffer'); }).join('');
+    document.getElementById('rcBufferSection').style.display = bufferWarning.length ? 'block' : 'none';
+
+    document.getElementById('rcUnavailableList').innerHTML = unavailable.map(function(r){ return roomCardHtml(r, 'unavailable'); }).join('');
     document.getElementById('rcUnavailableSection').style.display = unavailable.length ? 'block' : 'none';
 
     document.getElementById('roomChooserBg').classList.add('show');
   }
-  function pickRoomFromChooser(id){
+  function pickRoomFromChooser(id, isBufferWarning){
+    if(isBufferWarning){
+      showConfirm({
+        title: 'Still In Cleaning Buffer',
+        msg: 'This room falls within its 30-minute cleaning buffer at this time. If it\u2019ll genuinely be ready sooner, you can confirm anyway.',
+        buttons: [
+          { label: 'Cancel', cls: 'confirm-btn-cancel', onClick: function(){} },
+          { label: 'Confirm Anyway', cls: 'confirm-btn-danger', onClick: function(){
+            setRoomLabel(id);
+            closeRoomChooser();
+          } }
+        ]
+      });
+      return;
+    }
     setRoomLabel(id);
     closeRoomChooser();
   }
@@ -2638,11 +2700,28 @@
       appAlert(chosenTherapist + ' isn\u2019t working at that time \u2014 this booking can\u2019t be made with them.');
       return;
     }
-    if(!roomSpanFree(selectedRoomId, oldStartH, span, modalKey)){
+    const roomCheck = checkRoomConflict(selectedRoomId, oldStartH, span, modalKey);
+    if(!roomCheck.free && !roomCheck.bufferOnly){
       appAlert('That room is already booked for part of that time — pick a different room or time.');
       return;
     }
+    if(!roomCheck.free && roomCheck.bufferOnly){
+      showConfirm({
+        title: 'Still In Cleaning Buffer',
+        msg: 'This falls within the room\u2019s 30-minute cleaning buffer from the previous booking. If it\u2019ll genuinely be ready sooner, you can confirm anyway.',
+        buttons: [
+          { label: 'Cancel', cls: 'confirm-btn-cancel', onClick: function(){} },
+          { label: 'Confirm Anyway', cls: 'confirm-btn-danger', onClick: function(){
+            finalizeSaveModal(client, phone, notes, serviceCode, newKey);
+          } }
+        ]
+      });
+      return;
+    }
 
+    finalizeSaveModal(client, phone, notes, serviceCode, newKey);
+  }
+  function finalizeSaveModal(client, phone, notes, serviceCode, newKey){
     const existing = bookings[modalKey];
     const holdStartedAt = (modalStatus === 'hold')
       ? (existing && existing.status === 'hold' ? existing.holdStartedAt : Date.now())

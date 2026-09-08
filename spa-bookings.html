@@ -2984,10 +2984,18 @@
     });
     if(changed) saveShifts();
   }
+  // Refreshes the Therapists table immediately at the point a shift actually changes, rather
+  // than only when the edit modal closes - the modal deliberately stays open after clicking
+  // Sick/Holiday/etc (it refreshes itself in place so the active button updates), so relying
+  // on close alone meant the table behind it could sit stale until the modal was dismissed.
+  function refreshTherapistsPageIfOpen(){
+    if(document.getElementById('therapistsPageBg').classList.contains('show')) renderTherapistsPage();
+  }
   function setTherapistDayStatus(name, key){
     therapistShifts[name] = { type: key };
     saveShifts();
     renderGrid();
+    refreshTherapistsPageIfOpen();
     openTherapistInfo(name); // refresh the modal in place so the active button updates
     warnIfTherapistHasBookings(name, key);
   }
@@ -3018,6 +3026,7 @@
     delete therapistShifts[name];
     saveShifts();
     renderGrid();
+    refreshTherapistsPageIfOpen();
     openTherapistInfo(name);
   }
   function clearWholeShift(name){
@@ -3025,6 +3034,7 @@
     saveShifts();
     shiftDraft = { startIdx: null, endIdx: null, lunchIdx: null };
     renderGrid();
+    refreshTherapistsPageIfOpen();
     openTherapistInfo(name); // refresh the modal in place
     warnIfTherapistHasBookings(name, 'unscheduled for today');
   }
@@ -3040,6 +3050,7 @@
     therapistShifts[name] = { type: 'custom', startIdx: shiftDraft.startIdx, endIdx: shiftDraft.endIdx, lunchIdx: shiftDraft.lunchIdx };
     saveShifts();
     renderGrid();
+    refreshTherapistsPageIfOpen();
     openTherapistInfo(name);
   }
   // For a given therapist + time slot index, works out which class the vacant box should
@@ -3153,9 +3164,7 @@
   }
   function closeTherapistInfo(){
     document.getElementById('therapistInfoBg').classList.remove('show');
-    // Refresh the Therapists table if that popup is open behind this modal, so any change
-    // just made (hours, lunch, day status) shows immediately rather than needing a reload.
-    if(document.getElementById('therapistsPageBg').classList.contains('show')) renderTherapistsPage();
+    refreshTherapistsPageIfOpen(); // safety net - the real-time refresh now happens at each mutation point directly
   }
   document.getElementById('therapistInfoBg').addEventListener('click', function(e){ if(e.target === this) closeTherapistInfo(); });
 

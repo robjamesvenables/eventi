@@ -117,7 +117,8 @@
   .rooms-legend { margin-left: auto; display: flex; gap: 8px; }
   .rooms-legend-item { display: flex; align-items: center; gap: 3px; font-size: 9.5px; font-weight: 700; color: rgba(255,255,255,0.7); }
   .rooms-legend-dot { width: 7px; height: 7px; border-radius: 2px; }
-  .rooms-body { padding: 12px 14px; max-height: 260px; overflow-y: auto; position: relative; }
+  .rooms-body { padding: 12px 14px; max-height: 260px; overflow-y: auto; position: relative; display: flex; gap: 18px; }
+  .rooms-body-col { flex: 1; min-width: 0; position: relative; }
   #roomsList { position: relative; }
   .rooms-now-line { position: absolute; top: 0; bottom: 0; width: 0; border-left: 1.5px dashed #475569; z-index: 4; pointer-events: none; }
   .room-hours-row { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; position: sticky; top: -12px; background: #E9EDF3; z-index: 2; padding-top: 2px; }
@@ -752,7 +753,7 @@
   </div>
 
   <div class="modal-bg" id="roomsSnapshotBg" style="z-index:210">
-    <div class="modal-box" style="max-width:560px;max-height:95vh">
+    <div class="modal-box" style="max-width:820px;max-height:95vh">
       <div class="rooms-header" style="margin-bottom:10px">
         <div class="rooms-ico">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#0D9488" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18M5 21V7l8-4v18M13 21V11l6 4v6"/></svg>
@@ -1332,51 +1333,63 @@
     }
     hoursHtml += '</div><div class="room-hours-timer-spacer"></div></div>';
 
-    const roomsHtml = ROOMS.map(function(room){
-      let barHtml = '';
-      const segWidth = (100 / TIME_SLOTS.length).toFixed(3);
-      TIME_SLOTS.forEach(function(hh, hIdx){
-        const segMin = slotStartMinutes(hIdx);
-        const s = roomStatusAt(room.id, segMin);
-        const tip = roomTooltipFor(room.id, segMin, s.status);
-        barHtml += '<div class="room-bar-seg" onmouseenter="showAppTooltip(event,\'' + tip + '\')" onmousemove="positionAppTooltip(event)" onmouseleave="hideAppTooltip()" style="width:' + segWidth + '%;background:' + colorMap[s.status] + '"></div>';
-      });
+    // Split into two side-by-side columns rather than one long list - roughly halves the
+    // vertical space needed to show every room at once, since 34 rooms in a single list was
+    // still requiring a scroll even with a much taller popup.
+    function buildColumnHtml(roomsSubset){
+      return roomsSubset.map(function(room){
+        let barHtml = '';
+        const segWidth = (100 / TIME_SLOTS.length).toFixed(3);
+        TIME_SLOTS.forEach(function(hh, hIdx){
+          const segMin = slotStartMinutes(hIdx);
+          const s = roomStatusAt(room.id, segMin);
+          const tip = roomTooltipFor(room.id, segMin, s.status);
+          barHtml += '<div class="room-bar-seg" onmouseenter="showAppTooltip(event,\'' + tip + '\')" onmousemove="positionAppTooltip(event)" onmouseleave="hideAppTooltip()" style="width:' + segWidth + '%;background:' + colorMap[s.status] + '"></div>';
+        });
 
-      const live = roomStatusAt(room.id, nowMinutes);
-      let timerHtml;
-      if(live.status === 'buffer'){
-        const soon = live.minutesLeftInBuffer <= 5;
-        timerHtml = '<div class="room-timer buffer' + (soon ? ' soon' : '') + '" onmouseenter="showAppTooltip(event,\'Cleaning \u2014 free in ' + live.minutesLeftInBuffer + ' min\')" onmousemove="positionAppTooltip(event)" onmouseleave="hideAppTooltip()">' +
-          '<div class="room-timer-num">' + live.minutesLeftInBuffer + '</div>' +
-        '</div>';
-      } else if(live.status === 'taken'){
-        timerHtml = '<div class="room-timer taken" onmouseenter="showAppTooltip(event,\'In treatment \u2014 ' + live.minutesLeftInTreatment + ' min left\')" onmousemove="positionAppTooltip(event)" onmouseleave="hideAppTooltip()">' +
-          '<div class="room-timer-num">' + live.minutesLeftInTreatment + '</div>' +
-        '</div>';
-      } else {
-        timerHtml = '<div class="room-timer" onmouseenter="showAppTooltip(event,\'Free\')" onmousemove="positionAppTooltip(event)" onmouseleave="hideAppTooltip()">\u2014</div>';
-      }
+        const live = roomStatusAt(room.id, nowMinutes);
+        let timerHtml;
+        if(live.status === 'buffer'){
+          const soon = live.minutesLeftInBuffer <= 5;
+          timerHtml = '<div class="room-timer buffer' + (soon ? ' soon' : '') + '" onmouseenter="showAppTooltip(event,\'Cleaning \u2014 free in ' + live.minutesLeftInBuffer + ' min\')" onmousemove="positionAppTooltip(event)" onmouseleave="hideAppTooltip()">' +
+            '<div class="room-timer-num">' + live.minutesLeftInBuffer + '</div>' +
+          '</div>';
+        } else if(live.status === 'taken'){
+          timerHtml = '<div class="room-timer taken" onmouseenter="showAppTooltip(event,\'In treatment \u2014 ' + live.minutesLeftInTreatment + ' min left\')" onmousemove="positionAppTooltip(event)" onmouseleave="hideAppTooltip()">' +
+            '<div class="room-timer-num">' + live.minutesLeftInTreatment + '</div>' +
+          '</div>';
+        } else {
+          timerHtml = '<div class="room-timer" onmouseenter="showAppTooltip(event,\'Free\')" onmousemove="positionAppTooltip(event)" onmouseleave="hideAppTooltip()">\u2014</div>';
+        }
 
-      return '<div class="room-row"><div class="room-row-name" onmouseenter="showAppTooltip(event,\'' + room.description + '\')" onmousemove="positionAppTooltip(event)" onmouseleave="hideAppTooltip()">' + room.name + '</div><div class="room-bar">' + barHtml + '</div>' + timerHtml + '</div>';
-    }).join('');
+        return '<div class="room-row"><div class="room-row-name" onmouseenter="showAppTooltip(event,\'' + room.description + '\')" onmousemove="positionAppTooltip(event)" onmouseleave="hideAppTooltip()">' + room.name + '</div><div class="room-bar">' + barHtml + '</div>' + timerHtml + '</div>';
+      }).join('');
+    }
+
+    const mid = Math.ceil(ROOMS.length / 2);
+    const colA = ROOMS.slice(0, mid);
+    const colB = ROOMS.slice(mid);
 
     // Render the hours header + room rows first, then measure the real rendered height and
-    // set the now-line's height explicitly in pixels - CSS percentage/auto-height resolution
-    // on an absolutely positioned element wasn't reliably stretching to match, so measuring
-    // directly after layout is the robust way to guarantee it reaches the last room.
-    list.innerHTML = hoursHtml + roomsHtml;
-    const fullHeight = list.scrollHeight;
+    // set each column's now-line height explicitly in pixels - CSS percentage/auto-height
+    // resolution on an absolutely positioned element wasn't reliably stretching to match, so
+    // measuring directly after layout is the robust way to guarantee it reaches the last room.
+    list.innerHTML =
+      '<div class="rooms-body-col">' + hoursHtml + buildColumnHtml(colA) + '</div>' +
+      '<div class="rooms-body-col">' + hoursHtml + buildColumnHtml(colB) + '</div>';
 
     const dayStartMin = 9 * 60, dayEndMin = 22 * 60;
     const nowFraction = Math.max(0, Math.min(1, (nowMinutes - dayStartMin) / (dayEndMin - dayStartMin)));
-    const nowLeft = 'calc(14px + 62px + 8px + ' + nowFraction + ' * (100% - 28px - 62px - 8px - 8px - 30px))';
+    const nowLeft = 'calc(62px + 8px + ' + nowFraction + ' * (100% - 62px - 8px - 8px - 30px))';
     if(nowMinutes >= dayStartMin && nowMinutes <= dayEndMin){
-      const line = document.createElement('div');
-      line.className = 'rooms-now-line';
-      line.style.left = nowLeft;
-      line.style.height = fullHeight + 'px';
-      line.innerHTML = '';
-      list.appendChild(line);
+      list.querySelectorAll('.rooms-body-col').forEach(function(col){
+        const fullHeight = col.scrollHeight;
+        const line = document.createElement('div');
+        line.className = 'rooms-now-line';
+        line.style.left = nowLeft;
+        line.style.height = fullHeight + 'px';
+        col.appendChild(line);
+      });
     }
   }
   setInterval(renderRoomsPanel, 5000); // live countdown - refresh every 5s, quick enough that transitions feel close to real-time

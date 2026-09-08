@@ -710,7 +710,24 @@
     {name:'Putu 2', gender:'F'}, {name:'Gede 2', gender:'M'}, {name:'Ayu', gender:'F'},
     {name:'Dewa', gender:'M'}, {name:'Sri', gender:'F'}, {name:'Agus', gender:'M'},
     {name:'Rina', gender:'F'}, {name:'Bayu', gender:'M'}, {name:'Maria', gender:'F'},
-    {name:'Kevin', gender:'M'}, {name:'Sophie', gender:'F'}
+    {name:'Kevin', gender:'M'}, {name:'Sophie', gender:'F'}, {name:'Putu 3', gender:'M'},
+    {name:'Gede 3', gender:'M'}, {name:'Made 2', gender:'M'}, {name:'Wayan 2', gender:'M'},
+    {name:'Ketut 2', gender:'M'}, {name:'Komang 2', gender:'M'}, {name:'Dewa 2', gender:'M'},
+    {name:'Agus 2', gender:'M'}, {name:'Bayu 2', gender:'M'}, {name:'Nyoman 2', gender:'M'},
+    {name:'Wira', gender:'M'}, {name:'Sudarma', gender:'M'}, {name:'Putra', gender:'M'},
+    {name:'Arya', gender:'M'}, {name:'Yoga', gender:'M'}, {name:'Surya', gender:'M'},
+    {name:'Wisnu', gender:'M'}, {name:'Adi', gender:'M'}, {name:'Eka', gender:'M'},
+    {name:'Bagus', gender:'M'}, {name:'Gede 4', gender:'M'}, {name:'Made 3', gender:'M'},
+    {name:'Ketut 3', gender:'M'}, {name:'Wayan 3', gender:'M'}, {name:'Putu 4', gender:'M'},
+    {name:'Komang 3', gender:'M'}, {name:'Nyoman 3', gender:'M'}, {name:'Dewa 3', gender:'M'},
+    {name:'Agus 3', gender:'M'}, {name:'Bayu 3', gender:'M'}, {name:'Putu 5', gender:'F'},
+    {name:'Made 4', gender:'F'}, {name:'Nyoman 4', gender:'F'}, {name:'Kadek 2', gender:'F'},
+    {name:'Luh 2', gender:'F'}, {name:'Ayu 2', gender:'F'}, {name:'Sri 2', gender:'F'},
+    {name:'Rina 2', gender:'F'}, {name:'Sophie 2', gender:'F'}, {name:'Maria 2', gender:'F'},
+    {name:'Dewi', gender:'F'}, {name:'Sinta', gender:'F'}, {name:'Putri', gender:'F'},
+    {name:'Ratih', gender:'F'}, {name:'Widya', gender:'F'}, {name:'Lestari', gender:'F'},
+    {name:'Sagita', gender:'F'}, {name:'Cintya', gender:'F'}, {name:'Diah', gender:'F'},
+    {name:'Wulan', gender:'F'}
   ];
 
   // The spa's actual room/chair layout, as given by the client - short codes so there's
@@ -1585,10 +1602,19 @@
     const now = new Date();
     const nowMinForGrid = now.getHours() * 60 + now.getMinutes();
 
+    // Only therapists actually scheduled to work today get a column at all - anyone off
+    // (no shift set, or marked Holiday/Sick/Emergency/Training) simply doesn't appear,
+    // rather than showing an empty greyed-out column that just wastes space. Original
+    // indices are kept for every data lookup (bookings, shifts, buffers all key off these) -
+    // only the on-screen column position is based on where they land in this filtered list.
+    const workingIndices = [];
+    THERAPISTS.forEach(function(t, ti){ if(isWorkingToday(t.name)) workingIndices.push(ti); });
+
     // Header row - therapist names as real column headers, part of the grid itself
     html += '<div class="hd-time"></div>';
-    THERAPISTS.forEach(function(t, ti){
-      html += '<div class="hd-cell" style="grid-column:' + (ti+2) + '" draggable="true" onclick="openTherapistInfo(\'' + t.name + '\')" ondragstart="therapistDragStart(event,\'' + t.name + '\')" ondragend="therapistDragEnd(event)">' +
+    workingIndices.forEach(function(ti, colIdx){
+      const t = THERAPISTS[ti];
+      html += '<div class="hd-cell" style="grid-column:' + (colIdx+2) + '" draggable="true" onclick="openTherapistInfo(\'' + t.name + '\')" ondragstart="therapistDragStart(event,\'' + t.name + '\')" ondragend="therapistDragEnd(event)">' +
         '<span class="gender-badge ' + t.gender + '">' + t.gender + '</span><div class="hd-cell-name">' + t.name + '</div></div>';
     });
 
@@ -1603,10 +1629,11 @@
     });
 
     // Booking / vacant cells
-    THERAPISTS.forEach(function(t, ti){
+    workingIndices.forEach(function(ti, colIdx){
+      const t = THERAPISTS[ti];
       const covered = coveredSlots(ti);
       const buffer = roomBufferSlots(ti, covered);
-      const col = ti + 2;
+      const col = colIdx + 2;
       TIME_SLOTS.forEach(function(hh, hIdx){
         const rowStart = 5 + hIdx * ROWS_PER_SLOT;
         const key = slotKey(ti, hIdx);
@@ -1689,7 +1716,7 @@
       html += '<div class="grid-now-line" style="top:' + topPx + 'px"></div>';
     }
 
-    grid.style.setProperty('--n-therapists', THERAPISTS.length);
+    grid.style.setProperty('--n-therapists', workingIndices.length);
     grid.style.gridTemplateRows = 'repeat(' + (totalRows + 4) + ', 15px)';
     grid.innerHTML = html;
     if(typeof renderRoomsPanel === 'function') renderRoomsPanel();
@@ -2821,6 +2848,18 @@
   function saveShifts(){
     try{ localStorage.setItem(SHIFT_STORAGE_KEY, JSON.stringify(therapistShifts)); }catch(e){}
   }
+  // With 70 therapists on the roster but only whoever's actually rostered on today getting a
+  // column, a completely fresh load would show zero columns until shifts are set one by one -
+  // seeds a standard 9am-9pm shift (1pm lunch) for most of them, leaving a chunk genuinely
+  // unscheduled, matching "50 working out of 70" as a realistic starting demo state.
+  function seedShiftsForDemo(){
+    if(Object.keys(therapistShifts).length > 0) return; // one-time seed only, never overwrites real data
+    THERAPISTS.forEach(function(t, ti){
+      if(ti % 7 === 6) return; // roughly 1 in 7 stays unscheduled - the "off today" group
+      therapistShifts[t.name] = { type: 'custom', startIdx: 0, endIdx: 48, lunchIdx: 16 };
+    });
+    saveShifts();
+  }
   function setTherapistDayStatus(name, key){
     therapistShifts[name] = { type: key };
     saveShifts();
@@ -2882,6 +2921,15 @@
   // For a given therapist + time slot index, works out which class the vacant box should
   // get: on-shift (white), off-shift (grey), on-lunch (dark navy, same as the banners), or
   // one of the whole-day statuses.
+  // Whether a therapist has actual working hours set for today at all - used to decide
+  // whether they get a column on the main calendar. No shift set, or marked Holiday/Sick/
+  // Emergency/Training, all mean they're not working today and simply don't appear -
+  // as opposed to on-shift/off-shift/lunch, which are about specific times within a day
+  // they ARE working.
+  function isWorkingToday(name){
+    const s = therapistShifts[name];
+    return !!s && s.type === 'custom';
+  }
   function shiftClassFor(name, hIdx){
     const s = therapistShifts[name];
     if(!s) return ''; // no shift set yet - leave as the normal neutral vacant look
@@ -3031,6 +3079,7 @@
   loadQueue();
   seedQueueForDemo();
   loadShifts();
+  seedShiftsForDemo();
   loadCustomers();
   loadRoomNameOverrides();
   loadPromoCodes();

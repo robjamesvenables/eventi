@@ -2605,22 +2605,32 @@
   // click on a name only ever opens the read-only summary.
   function renderTherapistsPage(){
     const sorted = THERAPISTS.slice().sort(function(a, b){ return a.name.localeCompare(b.name); });
+    // Colour-coded to match the exact same day-status colours already used on the main
+    // calendar, so the two views read consistently - working is green, each day-status its
+    // own established colour, and unscheduled a plain neutral grey since it isn't a specific
+    // reason, just nothing set. Lets you scan the whole roster and immediately pick out who's
+    // actually working today without reading every status cell individually.
+    const statusColorFor = { custom: '#16A34A', holiday: '#C4973B', sick: '#D9808C', emergency: '#6366F1', training: '#B09A7C', none: '#CBD5E1' };
     document.getElementById('therapistsTableBody').innerHTML = sorted.map(function(t, i){
       const rowBg = i % 2 === 0 ? 'white' : '#FAFBFC';
       const s = therapistShifts[t.name] || null;
-      let statusText;
+      let statusText, statusKey;
       if(s && s.type === 'custom'){
         statusText = fmtTimeSlot(TIME_SLOTS[s.startIdx]) + ' \u2013 ' + fmtTimeSlot(TIME_SLOTS[s.endIdx]);
+        statusKey = 'custom';
       } else if(s && DAY_STATUSES[s.type]){
         statusText = DAY_STATUSES[s.type].label.replace('<br>', ' ');
+        statusKey = s.type;
       } else {
         statusText = 'Not scheduled';
+        statusKey = 'none';
       }
-      return '<tr style="background:' + rowBg + ';border-top:1px solid #F1F5F9">' +
+      const stripeColor = statusColorFor[statusKey];
+      return '<tr style="background:' + rowBg + ';border-top:1px solid #F1F5F9;border-left:4px solid ' + stripeColor + '">' +
         '<td style="padding:9px 14px;font-weight:800;color:#0F1E2E">' +
           '<span class="gender-badge ' + t.gender + '" style="margin-right:6px">' + t.gender + '</span>' + t.name +
         '</td>' +
-        '<td style="padding:9px 14px;color:#64748B">' + statusText + '</td>' +
+        '<td style="padding:9px 14px;color:#64748B"><span style="display:inline-flex;align-items:center;gap:6px"><span style="width:8px;height:8px;border-radius:50%;background:' + stripeColor + ';flex-shrink:0"></span>' + statusText + '</span></td>' +
         '<td style="padding:9px 14px;text-align:right"><button onclick="openTherapistInfo(\'' + t.name + '\')" style="background:none;border:none;color:#0D9488;font-family:inherit;font-size:12px;font-weight:700;cursor:pointer">Edit</button></td>' +
       '</tr>';
     }).join('');

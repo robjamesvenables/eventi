@@ -9,11 +9,13 @@
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
   * { box-sizing: border-box; }
-  body { margin: 0 0 0 76px; }
+  body { margin: 0 0 0 14px; }
   .app-sidebar {
-    position: fixed; top: 0; left: 0; bottom: 0; width: 76px; background: #0F1E2E;
+    position: fixed; top: 0; left: 0; bottom: 0; width: 14px; background: #0F1E2E;
     display: flex; flex-direction: column; align-items: center; padding: 18px 0; gap: 6px; z-index: 100;
+    overflow: hidden; transition: width 0.15s ease;
   }
+  .app-sidebar:hover { width: 76px; box-shadow: 4px 0 16px rgba(0,0,0,0.25); }
   .app-sidebar-logo { color: white; font-size: 15px; font-weight: 800; margin-bottom: 18px; }
   .app-sidebar-logo b { color: #0D9488; }
   .sidebar-tab {
@@ -659,9 +661,33 @@
     </div>
   </div>
 
-  <div class="top-boxes">
-    <div class="queue-panel">
-      <div class="queue-header">
+  <div style="padding:4px 22px;display:flex;gap:10px;flex-wrap:wrap">
+    <button class="dashboard-open-btn" onclick="openDashboard()">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9"/><rect x="14" y="3" width="7" height="5"/><rect x="14" y="12" width="7" height="9"/><rect x="3" y="16" width="7" height="5"/></svg>
+      Dashboard
+    </button>
+    <button class="dashboard-open-btn" onclick="openAllocationModal()">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+      Allocation
+      <span id="allocationBtnCount" style="display:none;background:#D97757;color:white;font-size:10.5px;font-weight:800;padding:1px 7px;border-radius:10px"></span>
+    </button>
+    <button class="dashboard-open-btn" onclick="openRoomsModal()">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18M5 21V7l8-4v18M13 21V11l6 4v6"/></svg>
+      Rooms
+    </button>
+    <button class="dashboard-open-btn" onclick="switchView('admin')">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+      Therapists
+    </button>
+  </div>
+
+  <div class="wrap">
+    <div class="grid-outer" id="grid"></div>
+  </div>
+
+  <div class="modal-bg" id="allocationBg" style="z-index:214">
+    <div class="modal-box" style="max-width:520px;max-height:88vh">
+      <div class="queue-header" style="margin-bottom:10px">
         <div class="queue-ico">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#C4973B" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
         </div>
@@ -669,13 +695,16 @@
         <div class="queue-live-dot"></div>
         <div class="queue-count" id="queueCount"></div>
       </div>
-      <div class="queue-scroll-outer">
+      <div class="queue-scroll-outer" style="max-height:70vh">
         <div class="queue-scroll-inner" id="queueList"></div>
       </div>
+      <button class="modal-btn modal-btn-cancel" style="width:100%;margin-top:14px" onclick="closeAllocationModal()">Close</button>
     </div>
+  </div>
 
-    <div class="rooms-panel">
-      <div class="rooms-header">
+  <div class="modal-bg" id="roomsSnapshotBg" style="z-index:214">
+    <div class="modal-box" style="max-width:520px;max-height:88vh">
+      <div class="rooms-header" style="margin-bottom:10px">
         <div class="rooms-ico">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#0D9488" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18M5 21V7l8-4v18M13 21V11l6 4v6"/></svg>
         </div>
@@ -686,19 +715,9 @@
           <div class="rooms-legend-item"><span class="rooms-legend-dot" style="background:#D97757"></span>Taken</div>
         </div>
       </div>
-      <div class="rooms-body" id="roomsList"></div>
+      <div class="rooms-body" id="roomsList" style="max-height:65vh"></div>
+      <button class="modal-btn modal-btn-cancel" style="width:100%;margin-top:14px" onclick="closeRoomsModal()">Close</button>
     </div>
-  </div>
-
-  <div style="padding:4px 22px;">
-    <button class="dashboard-open-btn" onclick="openDashboard()">
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9"/><rect x="14" y="3" width="7" height="5"/><rect x="14" y="12" width="7" height="9"/><rect x="3" y="16" width="7" height="5"/></svg>
-      Dashboard
-    </button>
-  </div>
-
-  <div class="wrap">
-    <div class="grid-outer" id="grid"></div>
   </div>
 
 
@@ -1318,6 +1337,15 @@
     const count = document.getElementById('queueCount');
     if(!list) return;
     count.textContent = pendingQueue.length + (pendingQueue.length === 1 ? ' waiting' : ' waiting');
+
+    // Since the queue is now a popup rather than a permanent panel, the Allocation button
+    // itself carries a count badge so it's still obvious at a glance whether anyone needs
+    // allocating without having to open it first.
+    const btnCount = document.getElementById('allocationBtnCount');
+    if(btnCount){
+      btnCount.style.display = pendingQueue.length ? 'inline' : 'none';
+      btnCount.textContent = pendingQueue.length;
+    }
 
     if(!pendingQueue.length){
       list.innerHTML = '<div class="queue-empty">Nobody waiting to be allocated right now.</div>';
@@ -2428,6 +2456,16 @@
   }
   function closeDashboard(){ document.getElementById('dashboardBg').classList.remove('show'); }
   document.getElementById('dashboardBg').addEventListener('click', function(e){ if(e.target === this) closeDashboard(); });
+
+  // ── Allocation and Rooms are now popups off the main calendar, not permanent side panels -
+  // same underlying queueList/roomsList elements and render functions as before, just shown
+  // in a modal so the calendar itself gets the full page.
+  function openAllocationModal(){ renderQueue(); document.getElementById('allocationBg').classList.add('show'); }
+  function closeAllocationModal(){ document.getElementById('allocationBg').classList.remove('show'); }
+  document.getElementById('allocationBg').addEventListener('click', function(e){ if(e.target === this) closeAllocationModal(); });
+  function openRoomsModal(){ renderRoomsPanel(); document.getElementById('roomsSnapshotBg').classList.add('show'); }
+  function closeRoomsModal(){ document.getElementById('roomsSnapshotBg').classList.remove('show'); }
+  document.getElementById('roomsSnapshotBg').addEventListener('click', function(e){ if(e.target === this) closeRoomsModal(); });
 
   // ── Rename Room - lets the client swap a room's default code (e.g. SGL-SH-1) for their
   // own name (e.g. "Ocean View"), persisted separately so it can always be reset back.

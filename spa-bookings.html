@@ -133,7 +133,13 @@
   .gender-badge.M { background: #2a78d6; }
   .gender-badge.F { background: #d4537e; }
 
-  .wrap { padding: 22px; overflow-x: auto; }
+  .wrap { padding: 22px; }
+  .grid-block-wrap { overflow-x: auto; margin-bottom: 8px; }
+  .grid-block-label {
+    font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px;
+    color: #64748B; margin: 22px 0 8px; padding-left: 2px;
+  }
+  .grid-block-label:first-child { margin-top: 0; }
   .grid-outer {
     background: white;
     border: 1px solid #E2E8F0;
@@ -691,7 +697,7 @@
   </div>
 
   <div class="wrap">
-    <div class="grid-outer" id="grid"></div>
+    <div id="gridBlocksContainer"></div>
   </div>
 
   <div id="allocationDrawer" class="side-drawer">
@@ -1632,32 +1638,22 @@
     return buffer;
   }
 
-  function renderGrid(){
-    const grid = document.getElementById('grid');
+  // Builds one block's worth of grid HTML (up to 20 therapists) - identical structure to what
+  // used to be the single whole-day grid, just scoped to one alphabetical chunk of the roster
+  // at a time. Returns the HTML string for that block's grid-outer only, not the label above it.
+  function buildGridBlockHtml(blockIndices, nowMinForGrid){
     const totalRows = TIME_SLOTS.length * ROWS_PER_SLOT;
     let html = '';
-    const now = new Date();
-    const nowMinForGrid = now.getHours() * 60 + now.getMinutes();
 
-    // Only therapists actually scheduled to work today get a column at all - anyone off
-    // (no shift set, or marked Holiday/Sick/Emergency/Training) simply doesn't appear,
-    // rather than showing an empty greyed-out column that just wastes space. Original
-    // indices are kept for every data lookup (bookings, shifts, buffers all key off these) -
-    // only the on-screen column position is based on where they land in this filtered list.
-    const workingIndices = [];
-    THERAPISTS.forEach(function(t, ti){ if(isWorkingToday(t.name)) workingIndices.push(ti); });
-
-    // Header row - therapist names as real column headers, part of the grid itself
     html += '<div class="hd-time"></div>';
-    workingIndices.forEach(function(ti, colIdx){
+    blockIndices.forEach(function(ti, colIdx){
       const t = THERAPISTS[ti];
       html += '<div class="hd-cell" style="grid-column:' + (colIdx+2) + '" draggable="true" onclick="openTherapistInfo(\'' + t.name + '\')" ondragstart="therapistDragStart(event,\'' + t.name + '\')" ondragend="therapistDragEnd(event)">' +
         '<span class="gender-badge ' + t.gender + '">' + t.gender + '</span><div class="hd-cell-name">' + t.name + '</div></div>';
     });
 
-    // Time labels down the left - full hours prominent, half-hours smaller and lighter
     TIME_SLOTS.forEach(function(hh, hIdx){
-      const rowStart = 5 + hIdx * ROWS_PER_SLOT; // rows 1-4 are the header
+      const rowStart = 5 + hIdx * ROWS_PER_SLOT;
       if(hh.endsWith(':00')){
         html += '<div class="time-label" style="grid-row:' + rowStart + ' / span ' + ROWS_PER_SLOT + '">' + fmtTimeSlot(hh) + '</div>';
       } else {
@@ -1665,8 +1661,7 @@
       }
     });
 
-    // Booking / vacant cells
-    workingIndices.forEach(function(ti, colIdx){
+    blockIndices.forEach(function(ti, colIdx){
       const t = THERAPISTS[ti];
       const covered = coveredSlots(ti);
       const buffer = roomBufferSlots(ti, covered);
@@ -1693,8 +1688,6 @@
               ? '<div class="slot-payment-badge paid" title="Paid">$</div>'
               : '<div class="slot-payment-badge unpaid" title="Not paid yet">$</div>';
           }
-          // Hover shows the treatment window plus the room's buffer explicitly, so the exact
-          // same 30-minute buffer math shown in the Rooms panel is directly checkable here too.
           let bookingTooltip = '';
           if(svc){
             const startMin = slotStartMinutes(hIdx);
@@ -1716,7 +1709,7 @@
           '</div>';
           return;
         }
-        if(covered[hIdx] !== undefined) return; // covered by an earlier-starting booking, skip
+        if(covered[hIdx] !== undefined) return;
 
         const isBuffer = !!buffer[hIdx];
         const shiftClass = shiftClassFor(t.name, hIdx);
@@ -1733,35 +1726,64 @@
       });
     });
 
-    // One continuous frame around each working therapist's whole shift block - a single
-    // border from their start time to their end time, like a merged border in Excel, so it's
-    // obvious at a glance who's actually in today without having to compare shade-of-grey.
-    THERAPISTS.forEach(function(t, ti){
+    // One continuous frame around each working therapist's whole shift block - uses colIdx
+    // (this block's own local column position), not the therapist's original roster index,
+    // since each block is its own independent grid starting at column 2 again.
+    blockIndices.forEach(function(ti, colIdx){
+      const t = THERAPISTS[ti];
       const s = therapistShifts[t.name];
       if(!s || s.type !== 'custom') return;
-      const col = ti + 2;
+      const col = colIdx + 2;
       const frameRowStart = 5 + s.startIdx * ROWS_PER_SLOT;
       const frameSpan = (s.endIdx - s.startIdx) * ROWS_PER_SLOT;
       html += '<div class="shift-frame" style="grid-column:' + col + ';grid-row:' + frameRowStart + ' / span ' + frameSpan + '"></div>';
     });
 
-    // Small current-time marker - just a short bright blue dash right at the very left edge,
-    // clear of the time-label text entirely, not spanning into the column at all.
     const dayStartMin = 9 * 60, dayEndMin = 22 * 60;
     if(nowMinForGrid >= dayStartMin && nowMinForGrid <= dayEndMin){
       const topPx = 60 + (nowMinForGrid - dayStartMin);
       html += '<div class="grid-now-line" style="top:' + topPx + 'px"></div>';
     }
 
-    grid.style.setProperty('--n-therapists', workingIndices.length);
-    grid.style.gridTemplateRows = 'repeat(' + (totalRows + 4) + ', 15px)';
-    // Explicit min-width computed directly from the real column count (60px time column +
-    // 90px per therapist), rather than relying on the grid container's own auto-sizing to
-    // correctly expand for horizontal scroll - removing any ambiguity there, since with the
-    // therapist count now varying daily (whoever's actually working), a hardcoded width can't
-    // work and CSS-only auto-sizing here was unreliable.
-    grid.style.minWidth = (60 + workingIndices.length * 90) + 'px';
-    grid.innerHTML = html;
+    return html;
+  }
+
+  function renderGrid(){
+    const container = document.getElementById('gridBlocksContainer');
+    const totalRows = TIME_SLOTS.length * ROWS_PER_SLOT;
+    const now = new Date();
+    const nowMinForGrid = now.getHours() * 60 + now.getMinutes();
+
+    // Only therapists actually scheduled to work today get shown at all - anyone off (no
+    // shift set, or marked Holiday/Sick/Emergency/Training) simply doesn't appear. Sorted
+    // alphabetically by name (helps finding someone quickly) and split into blocks of 20,
+    // each a full 9am-9pm day of its own, stacked vertically - scrolling down for the next
+    // block of therapists rather than scrolling sideways through a very wide single grid.
+    const workingIndices = [];
+    THERAPISTS.forEach(function(t, ti){ if(isWorkingToday(t.name)) workingIndices.push(ti); });
+    workingIndices.sort(function(a, b){ return THERAPISTS[a].name.localeCompare(THERAPISTS[b].name); });
+
+    const BLOCK_SIZE = 20;
+    const blocks = [];
+    for(let i = 0; i < workingIndices.length; i += BLOCK_SIZE){
+      blocks.push(workingIndices.slice(i, i + BLOCK_SIZE));
+    }
+
+    let outerHtml = '';
+    blocks.forEach(function(block, blockIdx){
+      const firstName = THERAPISTS[block[0]].name;
+      const lastName = THERAPISTS[block[block.length - 1]].name;
+      outerHtml += '<div class="grid-block-label">' + firstName + ' \u2013 ' + lastName + '</div>';
+      outerHtml += '<div class="grid-block-wrap"><div class="grid-outer" id="gridBlock' + blockIdx + '" style="--n-therapists:' + block.length + ';min-width:' + (60 + block.length * 90) + 'px;grid-template-rows:repeat(' + (totalRows + 4) + ', 15px)">' +
+        buildGridBlockHtml(block, nowMinForGrid) +
+      '</div></div>';
+    });
+
+    if(!blocks.length){
+      outerHtml = '<div style="padding:40px;text-align:center;color:#94A3B8;font-size:13px">No therapists are scheduled to work today. Set shifts in the Admin Console.</div>';
+    }
+
+    container.innerHTML = outerHtml;
     if(typeof renderRoomsPanel === 'function') renderRoomsPanel();
   }
   setInterval(renderGrid, 60000); // keep the now-line current even with no other changes

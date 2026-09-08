@@ -2891,12 +2891,20 @@
   // seeds a standard 9am-9pm shift (1pm lunch) for most of them, leaving a chunk genuinely
   // unscheduled, matching "50 working out of 70" as a realistic starting demo state.
   function seedShiftsForDemo(){
-    if(Object.keys(therapistShifts).length > 0) return; // one-time seed only, never overwrites real data
+    // Tops up rather than an all-or-nothing check - respects any therapist whose shift was
+    // already explicitly set (never overwrites real data), but fills in anyone with no entry
+    // at all. Matters especially right after the roster grew from 20 to 70: the new 50 have
+    // genuinely never had shift data in anyone's browser, so an all-or-nothing "only seed if
+    // completely empty" check would leave them all invisible just because a couple of the
+    // original 20 already had shifts saved from earlier testing.
+    let changed = false;
     THERAPISTS.forEach(function(t, ti){
+      if(therapistShifts[t.name]) return; // already has something set, explicit or seeded before - leave it alone
       if(ti % 7 === 6) return; // roughly 1 in 7 stays unscheduled - the "off today" group
       therapistShifts[t.name] = { type: 'custom', startIdx: 0, endIdx: 48, lunchIdx: 16 };
+      changed = true;
     });
-    saveShifts();
+    if(changed) saveShifts();
   }
   function setTherapistDayStatus(name, key){
     therapistShifts[name] = { type: key };

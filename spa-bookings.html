@@ -593,25 +593,29 @@
       <div class="modal-title" id="tiName"></div>
       <div class="modal-sub" id="tiSub"></div>
 
-      <div class="modal-label">Today's Working Hours</div>
-      <div class="field-picker" onclick="openShiftTimePicker('start')">
-        <span id="shiftStartLabel">Set start time</span>
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#94A3B8" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
-      </div>
-      <div class="field-picker" onclick="openShiftTimePicker('end')">
-        <span id="shiftEndLabel">Set end time</span>
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#94A3B8" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+      <div id="tiWorkingHoursSection">
+        <div class="modal-label">Today's Working Hours</div>
+        <div class="field-picker" onclick="openShiftTimePicker('start')">
+          <span id="shiftStartLabel">Set start time</span>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#94A3B8" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+        </div>
+        <div class="field-picker" onclick="openShiftTimePicker('end')">
+          <span id="shiftEndLabel">Set end time</span>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#94A3B8" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+        </div>
+
+        <div class="modal-label">Lunch Hour (1 hour)</div>
+        <div class="field-picker" onclick="openShiftTimePicker('lunch')">
+          <span id="shiftLunchLabel">No lunch set</span>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#94A3B8" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+        </div>
+        <button onclick="clearLunch()" style="background:none;border:none;color:#94A3B8;font-family:inherit;font-size:11px;font-weight:700;cursor:pointer;margin:-10px 0 12px;padding:0">Clear lunch</button>
+
+        <button class="modal-btn modal-btn-save" style="width:100%;margin-bottom:8px" onclick="saveTherapistCustomShift(window._tiName)">Save Working Hours</button>
+        <button id="tiClearShiftBtn" onclick="clearWholeShift(window._tiName)" style="width:100%;margin-bottom:16px;background:none;border:1.5px dashed #E2E8F0;border-radius:9px;color:#DC2626;font-family:inherit;font-size:11.5px;font-weight:700;padding:9px;cursor:pointer;display:none">Clear This Day's Schedule</button>
       </div>
 
-      <div class="modal-label">Lunch Hour (1 hour)</div>
-      <div class="field-picker" onclick="openShiftTimePicker('lunch')">
-        <span id="shiftLunchLabel">No lunch set</span>
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#94A3B8" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
-      </div>
-      <button onclick="clearLunch()" style="background:none;border:none;color:#94A3B8;font-family:inherit;font-size:11px;font-weight:700;cursor:pointer;margin:-10px 0 12px;padding:0">Clear lunch</button>
-
-      <button class="modal-btn modal-btn-save" style="width:100%;margin-bottom:8px" onclick="saveTherapistCustomShift(window._tiName)">Save Working Hours</button>
-      <button id="tiClearShiftBtn" onclick="clearWholeShift(window._tiName)" style="width:100%;margin-bottom:16px;background:none;border:1.5px dashed #E2E8F0;border-radius:9px;color:#DC2626;font-family:inherit;font-size:11.5px;font-weight:700;padding:9px;cursor:pointer;display:none">Clear This Day's Schedule</button>
+      <div id="tiDayStatusActiveNote" style="display:none;font-size:12.5px;font-weight:700;color:#0F1E2E;background:#F8FAFC;border:1.5px solid #E2E8F0;border-radius:9px;padding:11px 14px;margin-bottom:16px"></div>
 
       <div class="modal-label">Or mark the whole day as</div>
       <div id="tiDayStatusBtns" class="shift-btns"></div>
@@ -3123,6 +3127,20 @@
       shiftDraft = { startIdx: null, endIdx: null, lunchIdx: null };
     }
     renderShiftFields();
+
+    // A whole-day status (Holiday/Sick/etc) and specific working hours are mutually exclusive
+    // states, not two things to fill in together - once a day status is active, working hours
+    // are irrelevant, so the whole section (including Save Working Hours) is hidden entirely
+    // rather than left clickable and confusing.
+    const dayStatusActive = current && DAY_STATUSES[current.type];
+    document.getElementById('tiWorkingHoursSection').style.display = dayStatusActive ? 'none' : 'block';
+    const noteEl = document.getElementById('tiDayStatusActiveNote');
+    if(dayStatusActive){
+      noteEl.textContent = 'Marked ' + DAY_STATUSES[current.type].label.replace('<br>', ' ') + ' today \u2014 not working, no hours needed.';
+      noteEl.style.display = 'block';
+    } else {
+      noteEl.style.display = 'none';
+    }
 
     const dayColorFor = { holiday: '#C4973B', sick: '#D9808C', emergency: '#6366F1', training: '#B09A7C' };
     document.getElementById('tiDayStatusBtns').innerHTML = Object.keys(DAY_STATUSES).map(function(key){

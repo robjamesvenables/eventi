@@ -663,6 +663,24 @@
     </div>
   </div>
 
+  <div class="modal-bg" id="therapistReadOnlyBg">
+    <div class="modal-box" style="max-width:360px">
+      <div class="modal-title" id="troName"></div>
+      <div class="modal-sub" id="troSub"></div>
+
+      <div class="modal-label">Today's Working Hours</div>
+      <div style="font-size:14px;font-weight:700;color:#0F1E2E;background:#F8FAFC;border:1.5px solid #E2E8F0;border-radius:9px;padding:11px 14px;margin-bottom:14px" id="troHours"></div>
+
+      <div class="modal-label">Lunch Hour</div>
+      <div style="font-size:14px;font-weight:700;color:#0F1E2E;background:#F8FAFC;border:1.5px solid #E2E8F0;border-radius:9px;padding:11px 14px;margin-bottom:14px" id="troLunch"></div>
+
+      <div class="modal-label">Services offered</div>
+      <div id="troSkills" style="margin-bottom:18px"></div>
+      <div style="font-size:11px;color:#94A3B8;text-align:center;margin-bottom:12px">To change working hours, use the Therapists page in Admin Console.</div>
+      <button class="modal-btn modal-btn-cancel" style="width:100%" onclick="closeTherapistReadOnly()">Close</button>
+    </div>
+  </div>
+
   <div id="view-therapist-bookings">
 
   <div class="topbar">
@@ -690,7 +708,7 @@
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18M5 21V7l8-4v18M13 21V11l6 4v6"/></svg>
       Rooms
     </button>
-    <button class="dashboard-open-btn" onclick="switchView('admin')">
+    <button class="dashboard-open-btn" onclick="switchView('therapists')">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
       Therapists
     </button>
@@ -1648,7 +1666,7 @@
     html += '<div class="hd-time"></div>';
     blockIndices.forEach(function(ti, colIdx){
       const t = THERAPISTS[ti];
-      html += '<div class="hd-cell" style="grid-column:' + (colIdx+2) + '" draggable="true" onclick="openTherapistInfo(\'' + t.name + '\')" ondragstart="therapistDragStart(event,\'' + t.name + '\')" ondragend="therapistDragEnd(event)">' +
+      html += '<div class="hd-cell" style="grid-column:' + (colIdx+2) + '" draggable="true" onclick="openTherapistReadOnly(\'' + t.name + '\')" ondragstart="therapistDragStart(event,\'' + t.name + '\')" ondragend="therapistDragEnd(event)">' +
         '<span class="gender-badge ' + t.gender + '">' + t.gender + '</span><div class="hd-cell-name">' + t.name + '</div></div>';
     });
 
@@ -2561,6 +2579,32 @@
     }).join('');
   }
 
+  // ── Dedicated Therapists page (Admin Console) - the only place shift times can be set now.
+  // Clicking a name here opens the existing full editable modal; the main calendar's own
+  // click on a name only ever opens the read-only summary.
+  function renderTherapistsPage(){
+    const sorted = THERAPISTS.slice().sort(function(a, b){ return a.name.localeCompare(b.name); });
+    document.getElementById('therapistsTableBody').innerHTML = sorted.map(function(t, i){
+      const rowBg = i % 2 === 0 ? 'white' : '#FAFBFC';
+      const s = therapistShifts[t.name] || null;
+      let statusText;
+      if(s && s.type === 'custom'){
+        statusText = fmtTimeSlot(TIME_SLOTS[s.startIdx]) + ' \u2013 ' + fmtTimeSlot(TIME_SLOTS[s.endIdx]);
+      } else if(s && DAY_STATUSES[s.type]){
+        statusText = DAY_STATUSES[s.type].label.replace('<br>', ' ');
+      } else {
+        statusText = 'Not scheduled';
+      }
+      return '<tr style="background:' + rowBg + ';border-top:1px solid #F1F5F9">' +
+        '<td style="padding:9px 14px;font-weight:800;color:#0F1E2E">' +
+          '<span class="gender-badge ' + t.gender + '" style="margin-right:6px">' + t.gender + '</span>' + t.name +
+        '</td>' +
+        '<td style="padding:9px 14px;color:#64748B">' + statusText + '</td>' +
+        '<td style="padding:9px 14px;text-align:right"><button onclick="openTherapistInfo(\'' + t.name + '\')" style="background:none;border:none;color:#0D9488;font-family:inherit;font-size:12px;font-weight:700;cursor:pointer">Edit</button></td>' +
+      '</tr>';
+    }).join('');
+  }
+
   let editingPromoId = null;
   function openAddPromoCode(){
     editingPromoId = null;
@@ -3111,8 +3155,45 @@
     shiftDraft.lunchIdx = null;
     renderShiftFields();
   }
-  function closeTherapistInfo(){ document.getElementById('therapistInfoBg').classList.remove('show'); }
+  function closeTherapistInfo(){
+    document.getElementById('therapistInfoBg').classList.remove('show');
+    // Refresh the Therapists table if that's the page open behind this modal, so any change
+    // just made (hours, lunch, day status) shows immediately rather than needing a reload.
+    if(document.getElementById('view-therapists').style.display !== 'none') renderTherapistsPage();
+  }
   document.getElementById('therapistInfoBg').addEventListener('click', function(e){ if(e.target === this) closeTherapistInfo(); });
+
+  // ── Read-only therapist info, shown when clicking a name on the main calendar - working
+  // hours and skills only, no editing controls at all. Editing now only happens from the
+  // dedicated Therapists page (Admin Console), since a therapist who isn't working today
+  // wouldn't even have a column here to click on in the first place.
+  function openTherapistReadOnly(name){
+    const t = THERAPISTS.find(function(x){ return x.name === name; });
+    if(!t) return;
+    document.getElementById('troName').textContent = t.name;
+    document.getElementById('troSub').textContent = (t.gender === 'M' ? 'Male' : 'Female') + ' therapist';
+
+    const s = therapistShifts[name] || null;
+    const hoursBox = document.getElementById('troHours');
+    const lunchBox = document.getElementById('troLunch');
+    if(s && s.type === 'custom'){
+      hoursBox.textContent = fmtTimeSlot(TIME_SLOTS[s.startIdx]) + ' \u2013 ' + fmtTimeSlot(TIME_SLOTS[s.endIdx]);
+      lunchBox.textContent = (s.lunchIdx !== null && s.lunchIdx !== undefined) ? (fmtTimeSlot(TIME_SLOTS[s.lunchIdx]) + ' (1 hour)') : 'No lunch set';
+    } else if(s && DAY_STATUSES[s.type]){
+      hoursBox.textContent = DAY_STATUSES[s.type].label.replace('<br>', ' ') + ' today';
+      lunchBox.textContent = '\u2014';
+    } else {
+      hoursBox.textContent = 'Not scheduled today';
+      lunchBox.textContent = '\u2014';
+    }
+
+    document.getElementById('troSkills').innerHTML = SKILLS_DEMO.map(function(sk){
+      return '<div class="skill-item"><span class="skill-check">\u2713</span>' + sk + '</div>';
+    }).join('');
+    document.getElementById('therapistReadOnlyBg').classList.add('show');
+  }
+  function closeTherapistReadOnly(){ document.getElementById('therapistReadOnlyBg').classList.remove('show'); }
+  document.getElementById('therapistReadOnlyBg').addEventListener('click', function(e){ if(e.target === this) closeTherapistReadOnly(); });
 
   // ── Small confirm popup helper ──
   function showConfirm(opts){
@@ -3414,6 +3495,36 @@
     </div>
   </div>
 
+  <div id="view-therapists" style="display:none;min-height:100vh">
+    <div class="topbar">
+      <div>
+        <div class="logo"><b>M</b>avis<span>.</span></div>
+        <div class="topbar-title" style="margin-top:8px">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#C4973B" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+          Therapists
+        </div>
+        <div class="topbar-date" id="today-label-therapists"></div>
+      </div>
+    </div>
+    <div style="padding:22px;max-width:700px;margin:0 auto">
+      <div style="font-size:11px;font-weight:700;color:#94A3B8;margin-bottom:18px">
+        Set who's working today, their hours, lunch, or a whole-day status. Tap anyone to edit - this is the only place shift times can be changed now.
+      </div>
+      <div style="background:white;border:1.5px solid #E2E8F0;border-radius:14px;overflow:hidden">
+        <table style="width:100%;border-collapse:collapse;font-size:12.5px">
+          <thead>
+            <tr style="background:#0F1E2E;color:white;text-align:left">
+              <th style="padding:10px 14px;font-size:10px;text-transform:uppercase;letter-spacing:0.4px">Name</th>
+              <th style="padding:10px 14px;font-size:10px;text-transform:uppercase;letter-spacing:0.4px">Today</th>
+              <th style="padding:10px 14px"></th>
+            </tr>
+          </thead>
+          <tbody id="therapistsTableBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
 
 <script>
   function switchView(view){
@@ -3422,6 +3533,7 @@
     document.getElementById('view-customer-db').style.display = view === 'customer-db' ? '' : 'none';
     document.getElementById('view-analytics').style.display = view === 'analytics' ? '' : 'none';
     document.getElementById('view-admin').style.display = view === 'admin' ? '' : 'none';
+    document.getElementById('view-therapists').style.display = view === 'therapists' ? '' : 'none';
     document.getElementById('tabTherapistBookings').classList.toggle('active', view === 'therapist-bookings');
     document.getElementById('tabFrontDesk').classList.toggle('active', view === 'front-desk');
     document.getElementById('tabCustomerDb').classList.toggle('active', view === 'customer-db');
@@ -3441,6 +3553,10 @@
     if(view === 'admin'){
       document.getElementById('today-label-admin').textContent = new Date().toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
       renderAdminConsole();
+    }
+    if(view === 'therapists'){
+      document.getElementById('today-label-therapists').textContent = new Date().toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+      renderTherapistsPage();
     }
   }
 

@@ -153,6 +153,7 @@
   }
   .hd-cell:active { cursor: grabbing; }
   .hd-cell.dragging { opacity: 0.4; }
+  .drag-source-dimmed { opacity: 0.3 !important; }
   .hd-cell-name { font-size: 10.5px; font-weight: 800; color: #0F1E2E; line-height: 1.15; }
 
   .time-label {
@@ -1716,24 +1717,33 @@
   function therapistDragStart(e, name){
     draggedTherapist = name; draggedBookingKey = null; draggedQueueId = null;
     e.dataTransfer.effectAllowed = 'copy';
-    e.currentTarget.classList.add('dragging');
+    e.currentTarget.classList.add('dragging', 'drag-source-dimmed');
     setSimpleDragImage(e, name);
   }
-  function therapistDragEnd(e){ e.currentTarget.classList.remove('dragging'); }
+  function therapistDragEnd(e){ e.currentTarget.classList.remove('dragging', 'drag-source-dimmed'); }
   function bookingDragStart(e, key){
     draggedBookingKey = key; draggedTherapist = null; draggedQueueId = null;
     e.dataTransfer.effectAllowed = 'move';
     const b = bookings[key];
+    e.currentTarget.classList.add('drag-source-dimmed');
     setSimpleDragImage(e, b ? b.client : 'Booking');
   }
   function queueDragStart(e, id){
     draggedQueueId = id; draggedTherapist = null; draggedBookingKey = null;
     e.dataTransfer.effectAllowed = 'move';
-    e.currentTarget.classList.add('dragging');
+    e.currentTarget.classList.add('dragging', 'drag-source-dimmed');
     const item = pendingQueue.find(function(q){ return q.id === id; });
     setSimpleDragImage(e, item ? item.client : 'Booking');
   }
-  function queueDragEnd(e){ e.currentTarget.classList.remove('dragging'); }
+  function queueDragEnd(e){ e.currentTarget.classList.remove('dragging', 'drag-source-dimmed'); }
+  // A shared safety-net cleanup for the dim effect, since a booking box has no dedicated
+  // dragend handler of its own (unlike therapist/queue) - covers it for a cancelled or
+  // invalid drop where the grid never re-renders to naturally clear it.
+  function clearAllDragDimming(){
+    document.querySelectorAll('.drag-source-dimmed').forEach(function(el){
+      el.classList.remove('drag-source-dimmed');
+    });
+  }
   function currentDraggedSpan(){
     // Figures out how many half-hour slots whatever's being dragged right now actually needs,
     // so we can check ahead of time if a hovered slot has enough consecutive room for it.
@@ -1868,6 +1878,7 @@
     // relied on as the only cleanup path.
     hideDragTimeBadge();
     clearDragHighlight();
+    clearAllDragDimming();
     const parts = targetKey.split('-');
     const targetTi = Number(parts[0]), targetH = Number(parts[1]);
 
@@ -3060,6 +3071,7 @@
     lastDragClientY = null;
     clearDragHighlight();
     hideDragTimeBadge();
+    clearAllDragDimming();
   });
 </script>
 

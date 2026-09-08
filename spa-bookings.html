@@ -644,7 +644,7 @@
     <div class="confirm-box" id="confirmBox"></div>
   </div>
 
-  <div class="modal-bg" id="therapistInfoBg">
+  <div class="modal-bg" id="therapistInfoBg" style="z-index:220">
     <div class="modal-box">
       <div class="modal-title" id="tiName"></div>
       <div class="modal-sub" id="tiSub"></div>
@@ -724,7 +724,7 @@
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18M5 21V7l8-4v18M13 21V11l6 4v6"/></svg>
       Rooms
     </button>
-    <button class="dashboard-open-btn" onclick="switchView('therapists')">
+    <button class="dashboard-open-btn" onclick="openTherapistsPageModal()">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
       Therapists
     </button>
@@ -3173,9 +3173,9 @@
   }
   function closeTherapistInfo(){
     document.getElementById('therapistInfoBg').classList.remove('show');
-    // Refresh the Therapists table if that's the page open behind this modal, so any change
+    // Refresh the Therapists table if that popup is open behind this modal, so any change
     // just made (hours, lunch, day status) shows immediately rather than needing a reload.
-    if(document.getElementById('view-therapists').style.display !== 'none') renderTherapistsPage();
+    if(document.getElementById('therapistsPageBg').classList.contains('show')) renderTherapistsPage();
   }
   document.getElementById('therapistInfoBg').addEventListener('click', function(e){ if(e.target === this) closeTherapistInfo(); });
 
@@ -3511,22 +3511,13 @@
     </div>
   </div>
 
-  <div id="view-therapists" style="display:none;min-height:100vh">
-    <div class="topbar">
-      <div>
-        <div class="logo"><b>M</b>avis<span>.</span></div>
-        <div class="topbar-title" style="margin-top:8px">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#C4973B" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-          Therapists
-        </div>
-        <div class="topbar-date" id="today-label-therapists"></div>
+  <div class="modal-bg" id="therapistsPageBg" style="z-index:214">
+    <div class="modal-box" style="max-width:520px;max-height:88vh">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
+        <div class="modal-title" style="margin-bottom:0">Therapists</div>
       </div>
-    </div>
-    <div style="padding:22px;max-width:700px;margin:0 auto">
-      <div style="font-size:11px;font-weight:700;color:#94A3B8;margin-bottom:18px">
-        Set who's working today, their hours, lunch, or a whole-day status. Tap anyone to edit - this is the only place shift times can be changed now.
-      </div>
-      <div style="background:white;border:1.5px solid #E2E8F0;border-radius:14px;overflow:hidden">
+      <div class="modal-sub" style="margin-bottom:14px">Set who's working today, their hours, lunch, or a whole-day status. Tap anyone to edit - this is the only place shift times can be changed now.</div>
+      <div style="background:white;border:1.5px solid #E2E8F0;border-radius:14px;overflow:hidden;overflow-y:auto;max-height:60vh">
         <table style="width:100%;border-collapse:collapse;font-size:12.5px">
           <thead>
             <tr style="background:#0F1E2E;color:white;text-align:left">
@@ -3538,6 +3529,7 @@
           <tbody id="therapistsTableBody"></tbody>
         </table>
       </div>
+      <button class="modal-btn modal-btn-cancel" style="width:100%;margin-top:14px" onclick="closeTherapistsPageModal()">Close</button>
     </div>
   </div>
 
@@ -3549,7 +3541,6 @@
     document.getElementById('view-customer-db').style.display = view === 'customer-db' ? '' : 'none';
     document.getElementById('view-analytics').style.display = view === 'analytics' ? '' : 'none';
     document.getElementById('view-admin').style.display = view === 'admin' ? '' : 'none';
-    document.getElementById('view-therapists').style.display = view === 'therapists' ? '' : 'none';
     document.getElementById('tabTherapistBookings').classList.toggle('active', view === 'therapist-bookings');
     document.getElementById('tabFrontDesk').classList.toggle('active', view === 'front-desk');
     document.getElementById('tabCustomerDb').classList.toggle('active', view === 'customer-db');
@@ -3570,11 +3561,17 @@
       document.getElementById('today-label-admin').textContent = new Date().toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
       renderAdminConsole();
     }
-    if(view === 'therapists'){
-      document.getElementById('today-label-therapists').textContent = new Date().toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
-      renderTherapistsPage();
-    }
   }
+
+  // ── Therapists is a popup, not a page - same reasoning as Dashboard/Rooms, since it never
+  // needs to be visible alongside the calendar (unlike Allocation, nothing gets dragged from
+  // here onto a therapist column).
+  function openTherapistsPageModal(){
+    renderTherapistsPage();
+    document.getElementById('therapistsPageBg').classList.add('show');
+  }
+  function closeTherapistsPageModal(){ document.getElementById('therapistsPageBg').classList.remove('show'); }
+  document.getElementById('therapistsPageBg').addEventListener('click', function(e){ if(e.target === this) closeTherapistsPageModal(); });
 
   // Front Desk form state
   let fdServiceCode = null;

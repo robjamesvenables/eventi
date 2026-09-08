@@ -1862,6 +1862,12 @@
     e.preventDefault();
     e.currentTarget.classList.remove('drag-over');
     hideAppTooltip();
+    // Called directly here, not left to the dragend listener alone - a successful drop often
+    // re-renders the grid (renderGrid()), which destroys the very element being dragged
+    // before the browser gets a chance to fire dragend on it, so that listener can't be
+    // relied on as the only cleanup path.
+    hideDragTimeBadge();
+    clearDragHighlight();
     const parts = targetKey.split('-');
     const targetTi = Number(parts[0]), targetH = Number(parts[1]);
 

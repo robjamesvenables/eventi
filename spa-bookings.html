@@ -674,7 +674,7 @@
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9"/><rect x="14" y="3" width="7" height="5"/><rect x="14" y="12" width="7" height="9"/><rect x="3" y="16" width="7" height="5"/></svg>
       Dashboard
     </button>
-    <button class="dashboard-open-btn" onclick="openAllocationModal()">
+    <button class="dashboard-open-btn" id="allocationOpenBtn" onclick="openAllocationModal()">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
       Allocation
       <span id="allocationBtnCount" style="display:none;background:#D97757;color:white;font-size:10.5px;font-weight:800;padding:1px 7px;border-radius:10px"></span>
@@ -2523,13 +2523,21 @@
   function closeDashboard(){ document.getElementById('dashboardBg').classList.remove('show'); }
   document.getElementById('dashboardBg').addEventListener('click', function(e){ if(e.target === this) closeDashboard(); });
 
-  // ── Allocation is a slide-out drawer, not a modal - deliberately no click-outside-to-close
-  // and no dark overlay, so it can sit open beside the calendar while a queue card gets
-  // dragged onto a therapist column, closing only via its own explicit close button. Rooms
-  // stays a centered popup since it's purely a reference view, no drag interaction happens
-  // from it.
+  // ── Allocation is a slide-out drawer, not a modal - no dark overlay, so it can sit open
+  // beside the calendar while a queue card gets dragged onto a therapist column. Closes via
+  // its own X button, or by clicking anywhere outside it (the calendar, or empty page space) -
+  // if that outside click happens to be on something with its own action (a booking, a
+  // therapist), that action still runs as normal, the drawer closing is just a side effect of
+  // having moved on to something else.
   function openAllocationModal(){ renderQueue(); document.getElementById('allocationDrawer').classList.add('show'); }
   function closeAllocationModal(){ document.getElementById('allocationDrawer').classList.remove('show'); }
+  document.addEventListener('click', function(e){
+    const drawer = document.getElementById('allocationDrawer');
+    if(!drawer.classList.contains('show')) return;
+    if(drawer.contains(e.target)) return;
+    if(document.getElementById('allocationOpenBtn').contains(e.target)) return;
+    closeAllocationModal();
+  });
   function openRoomsModal(){ renderRoomsPanel(); document.getElementById('roomsSnapshotBg').classList.add('show'); }
   function closeRoomsModal(){ document.getElementById('roomsSnapshotBg').classList.remove('show'); }
   document.getElementById('roomsSnapshotBg').addEventListener('click', function(e){ if(e.target === this) closeRoomsModal(); });

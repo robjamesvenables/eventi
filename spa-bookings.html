@@ -1784,6 +1784,10 @@
     return html;
   }
 
+  // Slot-element lookup cache, rebuilt fresh every time renderGrid() runs - see the note
+  // inside renderGrid() for why this exists (avoiding expensive full-document searches on
+  // every dragover event).
+  let slotElementCache = {};
   function renderGrid(){
     const container = document.getElementById('gridBlocksContainer');
     const totalRows = TIME_SLOTS.length * ROWS_PER_SLOT;
@@ -1820,6 +1824,17 @@
     }
 
     container.innerHTML = outerHtml;
+    // Rebuilds the slot-element lookup cache used during drag - avoids repeated
+    // document.querySelector('[data-key=...]') calls on every single dragover event (which
+    // fires continuously as the mouse moves, dozens of times a second), each of which used to
+    // search the ENTIRE document. With 70 therapists now spread across multiple grid blocks,
+    // the DOM is far larger than it used to be, and that per-event full-document search was
+    // the actual cause of the drag lag - a plain object lookup here is effectively instant
+    // regardless of how large the calendar grows.
+    slotElementCache = {};
+    container.querySelectorAll('[data-key]').forEach(function(el){
+      slotElementCache[el.getAttribute('data-key')] = el;
+    });
     if(typeof renderRoomsPanel === 'function') renderRoomsPanel();
   }
   setInterval(renderGrid, 60000); // keep the now-line current even with no other changes
@@ -1891,7 +1906,7 @@
   let dragHighlightedKeys = [];
   function clearDragHighlight(){
     dragHighlightedKeys.forEach(function(k){
-      const el = document.querySelector('[data-key="' + k + '"]');
+      const el = slotElementCache[k];
       if(el) el.classList.remove('drag-over', 'drag-invalid', 'drag-over-buffer');
     });
     dragHighlightedKeys = [];
@@ -1910,7 +1925,7 @@
     // needs, not just where it starts.
     for(let i = 0; i < info.span; i++){
       const k = slotKey(ti, h + i);
-      const el = document.querySelector('[data-key="' + k + '"]');
+      const el = slotElementCache[k];
       if(el){
         el.classList.add(fits ? 'drag-over' : 'drag-invalid');
         dragHighlightedKeys.push(k);
@@ -1922,7 +1937,7 @@
       const bufferSlotCount = ROOM_BUFFER_MIN / 15;
       for(let i = 0; i < bufferSlotCount; i++){
         const k = slotKey(ti, h + info.span + i);
-        const el = document.querySelector('[data-key="' + k + '"]');
+        const el = slotElementCache[k];
         if(el && !el.classList.contains('drag-over')){
           el.classList.add('drag-over-buffer');
           dragHighlightedKeys.push(k);

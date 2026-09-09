@@ -1981,8 +1981,28 @@
     });
     dragHighlightedKeys = [];
   }
+  // Throttled via requestAnimationFrame - native dragover can fire far more often than the
+  // screen can actually redraw (sometimes 100+ times a second depending on the browser), so
+  // however fast the actual highlight/badge work is, doing it on every single event is pure
+  // waste beyond what's visually possible anyway. This caps it to at most once per frame
+  // (~60 times a second), using only the MOST RECENT position if several events arrive
+  // before the next frame - a hard ceiling on drag-over work regardless of its own cost.
+  let dragOverRAFScheduled = false;
+  let pendingDragOverTargetKey = null;
+  let pendingDragOverX = 0, pendingDragOverY = 0;
   function dragOver(e, targetKey){
-    e.preventDefault();
+    e.preventDefault(); // must stay synchronous on every event, or the browser won't allow dropping here at all
+    pendingDragOverTargetKey = targetKey;
+    pendingDragOverX = e.clientX;
+    pendingDragOverY = e.clientY;
+    if(dragOverRAFScheduled) return;
+    dragOverRAFScheduled = true;
+    requestAnimationFrame(function(){
+      dragOverRAFScheduled = false;
+      if(pendingDragOverTargetKey) processDragOver(pendingDragOverTargetKey, pendingDragOverX, pendingDragOverY);
+    });
+  }
+  function processDragOver(targetKey, clientX, clientY){
     const parts = targetKey.split('-');
     const ti = Number(parts[0]), h = Number(parts[1]);
     const info = currentDraggedSpan();
@@ -2019,10 +2039,11 @@
     const startMin = slotStartMinutes(h);
     const endMin = startMin + info.span * 15;
     const timeRange = fmtMinutesAsTime(startMin) + ' \u2013 ' + fmtMinutesAsTime(endMin);
-    showDragTimeBadge(e, (t ? t.name + ' \u2022 ' : '') + timeRange + (fits ? '' : ' \u2014 unavailable'));
+    showDragTimeBadge(clientX, clientY, (t ? t.name + ' \u2022 ' : '') + timeRange + (fits ? '' : ' \u2014 unavailable'));
   }
   function dragLeave(e){
     hideDragTimeBadge();
+    pendingDragOverTargetKey = null; // stop a frame already queued via requestAnimationFrame from re-applying a highlight after actually leaving this slot
   }
 
   function spanFree(ti, startH, span, ignoreKey){
@@ -3438,6 +3459,7 @@
     hideDragTimeBadge();
     clearAllDragDimming();
     document.body.classList.remove('dragging-active');
+    pendingDragOverTargetKey = null; // stop a frame already queued via requestAnimationFrame from re-applying a highlight after the drag itself has actually ended
   });
 </script>
 
@@ -4010,16 +4032,15 @@
   // A bigger, bolder floating time badge specifically for dragging - the regular small
   // tooltip was too easy to lose against a busy, colourful grid while attention is on the
   // tile being dragged, not on a small label off to the side.
-  function showDragTimeBadge(e, text){
+  function showDragTimeBadge(x, y, text){
     const badge = document.getElementById('dragTimeBadge');
     badge.textContent = text;
     badge.style.display = 'block';
-    positionDragTimeBadge(e);
+    positionDragTimeBadge(x, y);
   }
-  function positionDragTimeBadge(e){
+  function positionDragTimeBadge(x, y){
     const badge = document.getElementById('dragTimeBadge');
     if(badge.style.display === 'none') return;
-    const x = e.clientX, y = e.clientY;
     // Uses a fixed, generous width estimate rather than reading badge.offsetWidth - reading
     // a layout property immediately after dragOver() has just toggled several CSS classes
     // forces the browser to synchronously recalculate layout for the whole page before it can

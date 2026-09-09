@@ -4007,7 +4007,14 @@
     const badge = document.getElementById('dragTimeBadge');
     if(badge.style.display === 'none') return;
     const x = e.clientX, y = e.clientY;
-    badge.style.left = Math.min(x + 34, window.innerWidth - badge.offsetWidth - 10) + 'px';
+    // Uses a fixed, generous width estimate rather than reading badge.offsetWidth - reading
+    // a layout property immediately after dragOver() has just toggled several CSS classes
+    // forces the browser to synchronously recalculate layout for the whole page before it can
+    // answer that read ("layout thrashing"), on every single mouse-move event during drag.
+    // With the DOM now much larger (70 therapists across multiple grid blocks), that forced
+    // recalculation was expensive enough to be the dominant remaining cause of drag lag.
+    const assumedBadgeWidth = 240;
+    badge.style.left = Math.min(x + 34, window.innerWidth - assumedBadgeWidth - 10) + 'px';
     badge.style.top = Math.max(y - 50, 10) + 'px';
   }
   function hideDragTimeBadge(){

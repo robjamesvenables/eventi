@@ -143,7 +143,10 @@
     align-items: center; gap: 3px; cursor: grab; min-width: 0;
   }
   .hd-cell:active { cursor: grabbing; }
-  .hd-cell.dragging { opacity: 0.4; }
+  /* .hd-cell.dragging removed - nothing adds that class anymore now that all drag sources
+     (queue cards, bookings, therapist headers) share the one drag-source-dimmed class via
+     the custom mouse-drag system, applied uniformly rather than each source having its own
+     slightly different dimming rule. */
   .drag-source-dimmed { opacity: 0.08 !important; }
   .hd-cell-name { font-size: 10.5px; font-weight: 800; color: #0F1E2E; line-height: 1.15; overflow-wrap: break-word; width: 100%; }
 
@@ -1497,7 +1500,7 @@
       const readyBadge = '<span style="font-size:9px;font-weight:800;color:#0D9488;background:#F0FDFA;border:1px solid #99E6D9;padding:2.5px 8px;border-radius:8px;letter-spacing:0.3px;display:inline-flex;align-items:center;gap:4px">' +
         '<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>Ready to allocate</span>';
 
-      return '<div class="queue-card" draggable="true" ondragstart="queueDragStart(event,\'' + item.id + '\')" ondragend="queueDragEnd(event)" onclick="openBookingInfo(\'' + item.id + '\')" style="cursor:grab">' +
+      return '<div class="queue-card" onmousedown="startCustomDrag(event,\'queue\',\'' + item.id + '\')" onclick="openBookingInfo(\'' + item.id + '\')" style="cursor:grab">' +
         urgency +
         advanceBadge +
         '<div class="queue-card-toprow"' + cardPad + '>' + nameHtml + '</div>' +
@@ -1751,7 +1754,7 @@
     html += '<div class="hd-time"></div>';
     blockIndices.forEach(function(ti, colIdx){
       const t = THERAPISTS[ti];
-      html += '<div class="hd-cell" style="grid-column:' + (colIdx+2) + '" draggable="true" onclick="openTherapistReadOnly(\'' + t.name + '\')" ondragstart="therapistDragStart(event,\'' + t.name + '\')" ondragend="therapistDragEnd(event)">' +
+      html += '<div class="hd-cell" style="grid-column:' + (colIdx+2) + '" onclick="openTherapistReadOnly(\'' + t.name + '\')" onmousedown="startCustomDrag(event,\'therapist\',\'' + t.name + '\')">' +
         '<span class="gender-badge ' + t.gender + '">' + t.gender + '</span><div class="hd-cell-name">' + t.name + '</div></div>';
     });
 
@@ -1800,8 +1803,8 @@
           }
           html += '<div class="slot ' + b.status + (b.arrived ? ' arrived' : '') + '" data-key="' + key + '" style="grid-column:' + col + ';grid-row:' + rowStart + ' / span ' + span + '" ' +
               'onmouseenter="showAppTooltip(event,\'' + bookingTooltip + '\')" onmousemove="positionAppTooltip(event)" onmouseleave="hideAppTooltip()" ' +
-              'onclick="openSlot(\'' + key + '\')" ondragover="dragOver(event,\'' + key + '\')" ondragleave="dragLeave(event)" ondrop="drop(event,\'' + key + '\')">' +
-            '<div class="slot-inner" draggable="true" ondragstart="bookingDragStart(event,\'' + key + '\')">' +
+              'onclick="openSlot(\'' + key + '\')">' +
+            '<div class="slot-inner" onmousedown="startCustomDrag(event,\'booking\',\'' + key + '\')">' +
               statusBadge +
               paymentBadge +
               '<div class="slot-code">' + b.serviceCode + (b.people && b.people > 1 ? ' \u00d7' + b.people : '') + '</div>' +
@@ -1826,7 +1829,7 @@
         const dayLetter = DAY_STATUS_LETTERS[shiftClass] || '';
         html += '<div class="slot vacant' + (shiftClass ? ' ' + shiftClass : '') + (isBuffer ? ' room-buffer' : '') + '" data-key="' + key + '" style="grid-column:' + col + ';grid-row:' + rowStart + ' / span ' + ROWS_PER_SLOT + '" ' +
             shiftHoverAttrs +
-            'onclick="openSlot(\'' + key + '\')" ondragover="dragOver(event,\'' + key + '\')" ondragleave="dragLeave(event)" ondrop="drop(event,\'' + key + '\')">' +
+            'onclick="openSlot(\'' + key + '\')">' +
           '<div class="slot-inner">' + (dayLetter ? '<span class="slot-day-letter">' + dayLetter + '</span>' : '') + '</div>' +
         '</div>';
       });
@@ -1919,36 +1922,150 @@
   // dragging the whole complex box with all its badges - the browser renders this more
   // smoothly, since native drag-and-drop's ghost image is entirely browser-controlled and
   // can lag behind the actual cursor with a heavier element.
-  function setSimpleDragImage(e, text, color){
+  // ══════════════════════════════════════════════════════════════════════
+  // Custom mouse-based drag-and-drop, replacing native HTML5 drag-and-drop
+  // entirely. Native drag events (dragover especially) are throttled
+  // internally by the browser at a rate that can't be changed from JS -
+  // that's why dragging still felt laggy at speed even after every other
+  // optimization (cached lookups, algorithm fixes, no layout thrashing,
+  // requestAnimationFrame throttling) had already been applied. Plain mouse
+  // events report cursor position at the full input rate with no such
+  // ceiling, so this removes the limitation at its actual source rather
+  // than continuing to optimize around it.
+  // ══════════════════════════════════════════════════════════════════════
+  let customDragStarted = false; // true only once movement passes a small threshold - distinguishes an intentional drag from a simple click
+  let customDragType = null; // 'queue' | 'booking' | 'therapist'
+  let customDragId = null;
+  let customDragSourceEl = null;
+  let customDragGhostEl = null;
+  let customDragStartX = 0, customDragStartY = 0;
+  let suppressNextClick = false; // a genuine drag shouldn't also fire the element's own onclick once released
+
+  function startCustomDrag(e, type, id){
+    if(e.button !== 0) return; // left click only
+    e.preventDefault(); // stops native text-selection from kicking in once the mouse actually moves, before a real drag is even confirmed
+    customDragType = type;
+    customDragId = id;
+    customDragSourceEl = e.currentTarget;
+    customDragStartX = e.clientX;
+    customDragStartY = e.clientY;
+    customDragStarted = false;
+    document.addEventListener('mousemove', onCustomDragMove);
+    document.addEventListener('mouseup', onCustomDragUp);
+  }
+
+  function beginCustomDragVisuals(){
+    // Syncs the shared draggedTherapist/draggedBookingKey/draggedQueueId state that the rest
+    // of the app (currentDraggedSpan, drop, etc) already reads from - unchanged from before.
+    draggedTherapist = customDragType === 'therapist' ? customDragId : null;
+    draggedBookingKey = customDragType === 'booking' ? customDragId : null;
+    draggedQueueId = customDragType === 'queue' ? customDragId : null;
+
+    hideAppTooltip();
+    document.body.classList.add('dragging-active');
+    if(customDragSourceEl) customDragSourceEl.classList.add('drag-source-dimmed');
+
+    let text = 'Booking', color = '#D97757';
+    if(customDragType === 'therapist'){
+      text = customDragId; color = '#0F1E2E';
+    } else if(customDragType === 'booking'){
+      const b = bookings[customDragId];
+      text = b ? b.client : 'Booking';
+      color = b && b.status === 'hold' ? '#C4973B' : '#D97757';
+    } else if(customDragType === 'queue'){
+      const item = pendingQueue.find(function(q){ return q.id === customDragId; });
+      text = item ? item.client : 'Booking';
+      color = '#D97757';
+    }
+
     const ghost = document.createElement('div');
     ghost.textContent = text;
-    ghost.style.cssText = 'position:absolute;top:-1000px;left:-1000px;background:' + (color || '#D97757') + ';opacity:0.8;color:white;font-family:Inter,sans-serif;font-size:12px;font-weight:800;padding:10px 16px;border-radius:8px;white-space:nowrap;box-shadow:0 4px 10px rgba(0,0,0,0.3);';
+    ghost.style.cssText = 'position:fixed;top:0;left:0;background:' + color + ';opacity:0.9;color:white;font-family:Inter,sans-serif;font-size:12px;font-weight:800;padding:10px 16px;border-radius:8px;white-space:nowrap;box-shadow:0 4px 10px rgba(0,0,0,0.35);pointer-events:none;z-index:5000;will-change:transform;';
     document.body.appendChild(ghost);
-    e.dataTransfer.setDragImage(ghost, 20, 20);
-    setTimeout(function(){ document.body.removeChild(ghost); }, 0);
+    customDragGhostEl = ghost;
+
+    if(!dragAutoScrollTimer){
+      dragAutoScrollTimer = setInterval(function(){
+        if(lastDragClientY === null) return;
+        const vh = window.innerHeight;
+        if(lastDragClientY < DRAG_SCROLL_EDGE) window.scrollBy(0, -DRAG_SCROLL_SPEED);
+        else if(lastDragClientY > vh - DRAG_SCROLL_EDGE) window.scrollBy(0, DRAG_SCROLL_SPEED);
+      }, 20);
+    }
   }
-  function therapistDragStart(e, name){
-    draggedTherapist = name; draggedBookingKey = null; draggedQueueId = null;
-    e.dataTransfer.effectAllowed = 'copy';
-    e.currentTarget.classList.add('dragging', 'drag-source-dimmed');
-    setSimpleDragImage(e, name, '#0F1E2E');
+
+  function onCustomDragMove(e){
+    lastDragClientY = e.clientY;
+    if(!customDragStarted){
+      if(Math.abs(e.clientX - customDragStartX) < 4 && Math.abs(e.clientY - customDragStartY) < 4) return;
+      customDragStarted = true;
+      beginCustomDragVisuals();
+    }
+    // GPU-accelerated transform, updated on every single mousemove with no throttling at all -
+    // this is what actually eliminates the "catching up" feeling at high cursor speed, since
+    // moving the ghost itself is cheap regardless of how the (still-throttled) highlight
+    // calculation below is paced.
+    if(customDragGhostEl){
+      customDragGhostEl.style.transform = 'translate(' + (e.clientX + 16) + 'px,' + (e.clientY + 16) + 'px)';
+    }
+    const targetEl = document.elementFromPoint(e.clientX, e.clientY);
+    const slotEl = targetEl ? targetEl.closest('[data-key]') : null;
+    if(slotEl){
+      pendingDragOverTargetKey = slotEl.getAttribute('data-key');
+      pendingDragOverX = e.clientX;
+      pendingDragOverY = e.clientY;
+      if(!dragOverRAFScheduled){
+        dragOverRAFScheduled = true;
+        requestAnimationFrame(function(){
+          dragOverRAFScheduled = false;
+          if(pendingDragOverTargetKey) processDragOver(pendingDragOverTargetKey, pendingDragOverX, pendingDragOverY);
+        });
+      }
+    } else {
+      pendingDragOverTargetKey = null;
+      clearDragHighlight();
+      hideDragTimeBadge();
+    }
   }
-  function therapistDragEnd(e){ e.currentTarget.classList.remove('dragging', 'drag-source-dimmed'); }
-  function bookingDragStart(e, key){
-    draggedBookingKey = key; draggedTherapist = null; draggedQueueId = null;
-    e.dataTransfer.effectAllowed = 'move';
-    const b = bookings[key];
-    e.currentTarget.classList.add('drag-source-dimmed');
-    setSimpleDragImage(e, b ? b.client : 'Booking', b && b.status === 'hold' ? '#C4973B' : '#D97757');
+
+  function onCustomDragUp(e){
+    document.removeEventListener('mousemove', onCustomDragMove);
+    document.removeEventListener('mouseup', onCustomDragUp);
+    if(customDragStarted){
+      suppressNextClick = true;
+      const targetEl = document.elementFromPoint(e.clientX, e.clientY);
+      const slotEl = targetEl ? targetEl.closest('[data-key]') : null;
+      if(slotEl) drop(slotEl.getAttribute('data-key'));
+    }
+    endCustomDrag();
   }
-  function queueDragStart(e, id){
-    draggedQueueId = id; draggedTherapist = null; draggedBookingKey = null;
-    e.dataTransfer.effectAllowed = 'move';
-    e.currentTarget.classList.add('dragging', 'drag-source-dimmed');
-    const item = pendingQueue.find(function(q){ return q.id === id; });
-    setSimpleDragImage(e, item ? item.client : 'Booking', '#D97757');
+
+  function endCustomDrag(){
+    clearInterval(dragAutoScrollTimer);
+    dragAutoScrollTimer = null;
+    lastDragClientY = null;
+    clearDragHighlight();
+    hideDragTimeBadge();
+    clearAllDragDimming();
+    document.body.classList.remove('dragging-active');
+    pendingDragOverTargetKey = null;
+    if(customDragGhostEl){ customDragGhostEl.remove(); customDragGhostEl = null; }
+    customDragStarted = false;
+    customDragType = null;
+    customDragId = null;
+    customDragSourceEl = null;
   }
-  function queueDragEnd(e){ e.currentTarget.classList.remove('dragging', 'drag-source-dimmed'); }
+  // A genuine drag shouldn't also trigger the dragged element's own onclick once released -
+  // this runs in the capture phase, before the element's own handler, and swallows exactly
+  // one click right after a real drag ended.
+  document.addEventListener('click', function(e){
+    if(suppressNextClick){
+      suppressNextClick = false;
+      e.stopPropagation();
+      e.preventDefault();
+    }
+  }, true);
+
   // A shared safety-net cleanup for the dim effect, since a booking box has no dedicated
   // dragend handler of its own (unlike therapist/queue) - covers it for a cancelled or
   // invalid drop where the grid never re-renders to naturally clear it.
@@ -1990,18 +2107,9 @@
   let dragOverRAFScheduled = false;
   let pendingDragOverTargetKey = null;
   let pendingDragOverX = 0, pendingDragOverY = 0;
-  function dragOver(e, targetKey){
-    e.preventDefault(); // must stay synchronous on every event, or the browser won't allow dropping here at all
-    pendingDragOverTargetKey = targetKey;
-    pendingDragOverX = e.clientX;
-    pendingDragOverY = e.clientY;
-    if(dragOverRAFScheduled) return;
-    dragOverRAFScheduled = true;
-    requestAnimationFrame(function(){
-      dragOverRAFScheduled = false;
-      if(pendingDragOverTargetKey) processDragOver(pendingDragOverTargetKey, pendingDragOverX, pendingDragOverY);
-    });
-  }
+  // dragOver/dragLeave (the old ondragover/ondragleave entry points) are gone - onCustomDragMove
+  // now drives processDragOver directly via document.elementFromPoint(), since there's no
+  // native drag event system left to attach per-slot handlers to.
   function processDragOver(targetKey, clientX, clientY){
     const parts = targetKey.split('-');
     const ti = Number(parts[0]), h = Number(parts[1]);
@@ -2040,10 +2148,6 @@
     const endMin = startMin + info.span * 15;
     const timeRange = fmtMinutesAsTime(startMin) + ' \u2013 ' + fmtMinutesAsTime(endMin);
     showDragTimeBadge(clientX, clientY, (t ? t.name + ' \u2022 ' : '') + timeRange + (fits ? '' : ' \u2014 unavailable'));
-  }
-  function dragLeave(e){
-    hideDragTimeBadge();
-    pendingDragOverTargetKey = null; // stop a frame already queued via requestAnimationFrame from re-applying a highlight after actually leaving this slot
   }
 
   function spanFree(ti, startH, span, ignoreKey){
@@ -2104,14 +2208,11 @@
     return checkRoomConflict(roomId, startH, span, ignoreKey).free;
   }
 
-  function drop(e, targetKey){
-    e.preventDefault();
-    e.currentTarget.classList.remove('drag-over');
+  function drop(targetKey){
     hideAppTooltip();
-    // Called directly here, not left to the dragend listener alone - a successful drop often
-    // re-renders the grid (renderGrid()), which destroys the very element being dragged
-    // before the browser gets a chance to fire dragend on it, so that listener can't be
-    // relied on as the only cleanup path.
+    // Called directly here, not left to endCustomDrag() alone - a successful drop often
+    // re-renders the grid (renderGrid()), which destroys the very element being dragged, so
+    // cleanup needs to happen before that re-render, not rely solely on the caller afterward.
     hideDragTimeBadge();
     clearDragHighlight();
     clearAllDragDimming();
@@ -3422,45 +3523,14 @@
   renderGrid();
   renderQueue();
 
-  // Auto-scroll the page while dragging anything near the top or bottom edge of the screen -
-  // native browser drag-and-drop doesn't do this on its own, so without it there's no way to
-  // reach a time slot that's currently scrolled out of view while mid-drag. Global listeners
-  // (dragstart/dragend both bubble) catch every draggable thing on the page - queue cards,
-  // existing bookings, therapist headers - without needing to touch each one individually.
+  // Auto-scroll state shared with the custom drag system above - the timer itself is started
+  // in beginCustomDragVisuals() and stopped in endCustomDrag(), no global listeners needed
+  // here anymore since mousedown/mousemove/mouseup on the dragged element itself now drives
+  // the whole thing directly, rather than relying on native drag events bubbling up.
   let dragAutoScrollTimer = null;
   let lastDragClientY = null;
   const DRAG_SCROLL_EDGE = 90;
   const DRAG_SCROLL_SPEED = 14;
-
-  document.addEventListener('dragover', function(e){
-    lastDragClientY = e.clientY;
-  });
-  document.addEventListener('dragstart', function(){
-    hideAppTooltip(); // the regular hover tooltip on the source tile never gets a mouseleave
-                       // when a drag starts, so without this it stays stuck visible - the
-                       // drag time badge takes over from here instead.
-    document.body.classList.add('dragging-active'); // disables the vacant-slot hover transition for the whole drag
-    if(dragAutoScrollTimer) return;
-    dragAutoScrollTimer = setInterval(function(){
-      if(lastDragClientY === null) return;
-      const vh = window.innerHeight;
-      if(lastDragClientY < DRAG_SCROLL_EDGE){
-        window.scrollBy(0, -DRAG_SCROLL_SPEED);
-      } else if(lastDragClientY > vh - DRAG_SCROLL_EDGE){
-        window.scrollBy(0, DRAG_SCROLL_SPEED);
-      }
-    }, 20);
-  });
-  document.addEventListener('dragend', function(){
-    clearInterval(dragAutoScrollTimer);
-    dragAutoScrollTimer = null;
-    lastDragClientY = null;
-    clearDragHighlight();
-    hideDragTimeBadge();
-    clearAllDragDimming();
-    document.body.classList.remove('dragging-active');
-    pendingDragOverTargetKey = null; // stop a frame already queued via requestAnimationFrame from re-applying a highlight after the drag itself has actually ended
-  });
 </script>
 
   </div>

@@ -177,6 +177,11 @@
   .slot-payment-badge.paid { background: #16A34A; }
   .slot-payment-badge.unpaid { background: #DC2626; }
   .vacant .slot-inner { background: #F1F5F9; border: 1.5px solid #E2E8F0; color: #94A3B8; opacity: 0.9; transition: background 0.12s ease, border-color 0.12s ease; }
+  /* Disables that transition entirely for the whole duration of any drag, not just while a
+     drag-specific class happens to be present - dragOver() adds AND removes these classes
+     continuously and rapidly as the mouse moves (clearDragHighlight() un-highlights the
+     previous slots every single event), so both directions needed covering, not just one. */
+  body.dragging-active .vacant .slot-inner { transition: none !important; }
   .vacant.drag-over .slot-inner { opacity: 1; background: #E2E8F0; }
   .vacant.on-shift .slot-inner { background: white; border: 1.5px solid #E8EBEF; opacity: 1; }
   .vacant.on-shift.drag-over .slot-inner { background: #F8FAFC; }
@@ -210,9 +215,15 @@
   .slot-client { font-size: 9px; font-weight: 700; opacity: 0.95; line-height: 1.1; word-break: break-word; }
   .slot-therapist { font-size: 7.5px; font-weight: 600; opacity: 0.85; line-height: 1.1; }
   .slot-room { font-size: 7.5px; font-weight: 800; opacity: 0.95; line-height: 1.1; margin-top: 1px; }
-  .slot.drag-over .slot-inner { outline: 3px solid #0D9488; outline-offset: -3px; }
-  .slot.drag-invalid .slot-inner { outline: 3px solid #DC2626; outline-offset: -3px; background: #FCA5A5; }
-  .slot.drag-over-buffer .slot-inner { outline: 3px dashed #F0B429; outline-offset: -3px; background: repeating-linear-gradient(45deg, #FBBF24, #FBBF24 6px, #FDE68A 6px, #FDE68A 12px); }
+  /* transition:none on all three - the base .vacant .slot-inner rule has a smooth transition
+     for the normal hover-to-add-booking stripe effect, which is fine at that pace, but during
+     an active drag, dragOver() clears and re-applies these classes continuously and rapidly
+     as the mouse moves - inheriting that transition meant each highlight change animated over
+     ~120ms instead of applying instantly, and with rapid dragging those animations overlapped
+     and queued up, making the highlight visibly lag behind the actual cursor position. */
+  .slot.drag-over .slot-inner { outline: 3px solid #0D9488; outline-offset: -3px; transition: none !important; }
+  .slot.drag-invalid .slot-inner { outline: 3px solid #DC2626; outline-offset: -3px; background: #FCA5A5; transition: none !important; }
+  .slot.drag-over-buffer .slot-inner { outline: 3px dashed #F0B429; outline-offset: -3px; background: repeating-linear-gradient(45deg, #FBBF24, #FBBF24 6px, #FDE68A 6px, #FDE68A 12px); transition: none !important; }
   .shift-frame { outline: 2.5px solid #0F1E2E; outline-offset: -1.5px; border-radius: 4px; pointer-events: none; z-index: 3; }
   .grid-now-line { position: absolute; left: 0; right: 0; height: 0; border-top: 2.5px solid #3B82F6; z-index: 6; pointer-events: none; animation: nowLinePulse 2.8s ease-in-out infinite; }
   @keyframes nowLinePulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.2; } }
@@ -3407,6 +3418,7 @@
     hideAppTooltip(); // the regular hover tooltip on the source tile never gets a mouseleave
                        // when a drag starts, so without this it stays stuck visible - the
                        // drag time badge takes over from here instead.
+    document.body.classList.add('dragging-active'); // disables the vacant-slot hover transition for the whole drag
     if(dragAutoScrollTimer) return;
     dragAutoScrollTimer = setInterval(function(){
       if(lastDragClientY === null) return;
@@ -3425,6 +3437,7 @@
     clearDragHighlight();
     hideDragTimeBadge();
     clearAllDragDimming();
+    document.body.classList.remove('dragging-active');
   });
 </script>
 

@@ -2015,19 +2015,21 @@
   }
 
   function spanFree(ti, startH, span, ignoreKey){
-    for(let i = 0; i < span; i++){
-      const k = slotKey(ti, startH + i);
-      if(bookings[k] && k !== ignoreKey) return false;
-      // also check it's not covered by a booking that started earlier
-      for(const key in bookings){
-        if(key === ignoreKey) continue;
-        const parts = key.split('-');
-        if(Number(parts[0]) !== ti) continue;
-        const bStart = Number(parts[1]);
-        const svc = serviceByCode(bookings[key].serviceCode);
-        const bSpan = svc ? slotsForDuration(svc.duration) : 1;
-        if(startH + i >= bStart && startH + i < bStart + bSpan) return false;
-      }
+    // Single pass over this therapist's bookings, checking for a genuine interval overlap -
+    // replaces the previous nested loop (re-scanning ALL bookings on the ENTIRE calendar for
+    // EACH slot in the span, i.e. span * totalBookings work), which was the dominant cause of
+    // the reported drag lag: this runs on every single dragover event, firing continuously
+    // and rapidly as the mouse moves during a drag, so an expensive check here compounds fast.
+    const endH = startH + span;
+    for(const key in bookings){
+      if(key === ignoreKey) continue;
+      const parts = key.split('-');
+      if(Number(parts[0]) !== ti) continue;
+      const bStart = Number(parts[1]);
+      const svc = serviceByCode(bookings[key].serviceCode);
+      const bSpan = svc ? slotsForDuration(svc.duration) : 1;
+      const bEnd = bStart + bSpan;
+      if(startH < bEnd && endH > bStart) return false; // proposed [startH,endH) overlaps existing [bStart,bEnd)
     }
     return true;
   }

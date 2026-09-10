@@ -2428,6 +2428,87 @@ img.emoji-tw{width:1.15em;height:1.15em;vertical-align:-0.2em;margin:0 1px}
 </head>
 <body>
 
+<div id="installReminderBg" style="display:none;position:fixed;inset:0;background:rgba(15,30,46,0.55);z-index:99999;align-items:center;justify-content:center;padding:20px">
+  <div style="background:white;border-radius:14px;padding:24px 22px;width:100%;max-width:340px;box-shadow:0 12px 32px rgba(0,0,0,0.25)">
+    <div style="width:44px;height:44px;border-radius:11px;background:#E1F5EE;display:flex;align-items:center;justify-content:center;margin-bottom:14px">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#0D9488" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.9 4.5 4.5 1.9-4.5 1.9L12 16l-1.9-4.5-4.5-1.9 4.5-1.9L12 3z"/><path d="M19 15l.8 2 2 .8-2 .8-.8 2-.8-2-2-.8 2-.8.8-2z"/></svg>
+    </div>
+    <div id="installReminderTitle" style="font-weight:800;font-size:16px;color:#0F1E2E;margin-bottom:6px">Quick tip from the team</div>
+    <div id="installReminderBody" style="font-size:13.5px;color:#64748B;line-height:1.55;margin-bottom:18px">Mavis feels a lot smoother installed as an app on your device - takes a few seconds, no app store needed. Want to set it up now?</div>
+    <div style="display:flex;gap:8px">
+      <button id="installReminderPrimaryBtn" onclick="installReminderPrimaryAction()" style="flex:1;background:#0F1E2E;color:white;border:none;border-radius:9px;padding:11px;font-family:inherit;font-size:13px;font-weight:700;cursor:pointer">Yes, install</button>
+      <button onclick="closeInstallReminder()" style="flex:1;background:none;border:1.5px solid #E2E8F0;border-radius:9px;padding:11px;font-family:inherit;font-size:13px;font-weight:700;color:#64748B;cursor:pointer">Remind me later</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  // ── Install reminder ── encourages using Mavis as an installed app rather than a browser
+  // tab - avoids a confirmed Chrome/Vivaldi engine bug on some tablets (a large text box can
+  // zoom the whole page out and get it stuck), and is generally a better experience anyway
+  // (full screen, no browser address bar). Shows on a timer to anyone NOT already running the
+  // installed version, regardless of which part of the app they're in or whether they're
+  // logged in yet - skipped entirely for anyone who's already installed it.
+  (function(){
+    const REMINDER_INTERVAL_MS = 30 * 60 * 1000; // 30 minutes
+    const FIRST_SHOW_DELAY_MS = 8000; // let the page settle first, not an instant popup on load
+
+    function isAlreadyInstalled(){
+      // Covers the standard case (Android/desktop Chrome, Samsung Internet) and iOS Safari's
+      // older, separate flag - between the two this catches every platform Mavis supports.
+      return window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+    }
+    if(isAlreadyInstalled()) return; // nothing else in this block should run at all
+
+    let deferredInstallPrompt = null; // captured from beforeinstallprompt, used for the direct-install path
+    window.addEventListener('beforeinstallprompt', function(e){
+      e.preventDefault(); // stops Chrome's own mini-infobar so this popup is the only prompt shown
+      deferredInstallPrompt = e;
+    });
+    window.addEventListener('appinstalled', function(){
+      closeInstallReminder();
+      clearInterval(reminderTimer);
+    });
+
+    function isIOS(){
+      return /iphone|ipad|ipod/i.test(navigator.userAgent);
+    }
+
+    window.installReminderPrimaryAction = function(){
+      if(deferredInstallPrompt){
+        deferredInstallPrompt.prompt();
+        deferredInstallPrompt.userChoice.finally(function(){ deferredInstallPrompt = null; });
+        closeInstallReminder();
+        return;
+      }
+      // No direct-install path available (iOS, or a browser that doesn't support it, or the
+      // one-time prompt was already used) - show manual steps instead, tailored to iOS vs
+      // everyone else since the actual steps genuinely differ.
+      document.getElementById('installReminderTitle').textContent = 'How to install Mavis';
+      document.getElementById('installReminderBody').innerHTML = isIOS()
+        ? 'Tap the <b>Share</b> button in Safari, then choose <b>Add to Home Screen</b>.'
+        : 'Open your browser\'s menu (usually the three dots) and look for <b>Install app</b> or <b>Add to Home screen</b>.';
+      document.getElementById('installReminderPrimaryBtn').style.display = 'none';
+    };
+
+    window.closeInstallReminder = function(){
+      document.getElementById('installReminderBg').style.display = 'none';
+    };
+    function showInstallReminder(){
+      if(isAlreadyInstalled()) return; // could have been installed since the last check
+      // Reset back to the original install-offer copy each time it reopens, in case a
+      // previous open had fallen through to the manual-steps text.
+      document.getElementById('installReminderTitle').textContent = 'Quick tip from the team';
+      document.getElementById('installReminderBody').innerHTML = 'Mavis feels a lot smoother installed as an app on your device - takes a few seconds, no app store needed. Want to set it up now?';
+      document.getElementById('installReminderPrimaryBtn').style.display = '';
+      document.getElementById('installReminderBg').style.display = 'flex';
+    }
+
+    setTimeout(showInstallReminder, FIRST_SHOW_DELAY_MS);
+    const reminderTimer = setInterval(showInstallReminder, REMINDER_INTERVAL_MS);
+  })();
+</script>
+
 <script>
   // Runs immediately during page parse, before anything paints - sets the correct starting
   // display state right away so the login screen never flashes for returning users. The full

@@ -2408,41 +2408,43 @@ img.emoji-tw{width:1.15em;height:1.15em;vertical-align:-0.2em;margin:0 1px}
 </style>
 
 <script>
-// ── Tablet "whole screen zooms out and gets stuck" workaround ──
-// Root cause narrowed down precisely via direct testing on the affected tablets: it is NOT
-// triggered by short single-line fields (Title, etc), and NOT specifically by switching
-// focus between two fields (an earlier theory, now disproven - it happens on a first,
-// isolated tap too) - it's specifically the large multi-line textarea (Sandbox/Sticky
-// Notes/Recipes' note-body field, min-height:160px, resizable) that triggers it, every time
-// it receives focus. This matches Chrome's own real, deliberately-built "focused editable
-// zoom" behavior (confirmed to exist via Chromium's own test suite, focused_editable_zoom.html)
-// - a large/resizable focused element interacting with the reduced viewport space once a
-// tablet's keyboard opens appears to trigger a zoom adjustment that, on these devices, ends
-// up wrong and stuck rather than settling back to 1.0.
-// Already ruled out before this: not a font-size issue (every field in the app is 16px+),
-// not a Chrome-version issue (confirmed on 152), not Samsung DeX specific (reproduced on
-// HarmonyOS in normal mode too), not fixed by any static viewport meta declaration tried so
-// far (plain, zoom-locked, interactive-widget=overlays-content), and not a focus-transition
-// pattern (the previous version of this fix, replaced now that testing disproved that theory).
-// This corrects it directly at the source now confirmed: focusing a textarea specifically
-// briefly forces minimum-scale=1.0 on the viewport (the bug zooms OUT, so minimum-scale is
-// the correct lever - maximum-scale, used in earlier failed attempts, only affects zooming
-// IN and can't correct this direction) then immediately removes the constraint again -
-// narrow and momentary, not a permanent lock, and scoped only to textareas so it shouldn't
-// affect deliberate pinch-zoom on short fields or elsewhere in the app.
+// ── TEMPORARY DIAGNOSTIC - tablet zoom-stuck bug ──
+// Two attempts at correcting this (toggling minimum-scale on the viewport tag, targeting
+// first a focus-transition pattern, then textarea focus specifically once that was confirmed
+// as the actual trigger) have both failed to fix it. Rather than guess at a third theory, or
+// a different reason the same correction technique might not be taking effect, this shows a
+// small live readout of the actual numbers Chrome is reporting - screen recording this while
+// triggering the bug will show exactly what changes and by how much, which is a much more
+// reliable way forward than continuing to guess blind. Remove this block entirely once the
+// real fix is found and confirmed - it's not meant to ship long-term.
 (function(){
-  document.addEventListener('focusin', function(e){
-    if(e.target.tagName !== 'TEXTAREA') return;
-    setTimeout(function(){
-      const viewport = document.querySelector('meta[name="viewport"]');
-      if(!viewport) return;
-      const original = viewport.getAttribute('content');
-      viewport.setAttribute('content', original + ', minimum-scale=1.0');
-      requestAnimationFrame(function(){
-        viewport.setAttribute('content', original);
-      });
-    }, 400); // gives the keyboard show animation time to actually finish first
-  }, true);
+  function init(){
+    const badge = document.createElement('div');
+    badge.style.cssText = 'position:fixed;top:0;left:0;z-index:999999;background:rgba(220,38,38,0.92);color:white;font-size:11px;font-family:monospace;padding:6px 8px;white-space:pre;pointer-events:none;line-height:1.4';
+    document.body.appendChild(badge);
+    function update(){
+      const vv = window.visualViewport;
+      badge.textContent =
+        'inner: ' + window.innerWidth + 'x' + window.innerHeight + '\n' +
+        'outer: ' + window.outerWidth + 'x' + window.outerHeight + '\n' +
+        'vv scale: ' + (vv ? vv.scale.toFixed(3) : 'n/a') + '\n' +
+        'vv size: ' + (vv ? Math.round(vv.width) + 'x' + Math.round(vv.height) : 'n/a') + '\n' +
+        'vv offset: ' + (vv ? Math.round(vv.offsetLeft) + ',' + Math.round(vv.offsetTop) : 'n/a') + '\n' +
+        'dpr: ' + window.devicePixelRatio + '\n' +
+        'body: ' + document.body.clientWidth + 'x' + document.body.clientHeight;
+    }
+    update();
+    window.addEventListener('resize', update);
+    if(window.visualViewport){
+      window.visualViewport.addEventListener('resize', update);
+      window.visualViewport.addEventListener('scroll', update);
+    }
+    setInterval(update, 150);
+  }
+  // This script runs in <head>, before <body> exists yet - document.body would still be
+  // null here, so init() has to wait for the DOM to actually be ready first.
+  if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
+  else init();
 })();
 </script>
 </head>

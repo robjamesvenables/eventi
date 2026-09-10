@@ -12017,11 +12017,21 @@ window.announceToggleReaction = function(id, emojiId){
   const a = announcements.find(a=>a.id===id);
   if(!a) return;
   if(!a.reactions) a.reactions = {};
-  if(!a.reactions[emojiId]) a.reactions[emojiId] = [];
   const me = currentUserFirstName || announceCurrentUser || 'You';
-  const idx = a.reactions[emojiId].indexOf(me);
-  if(idx > -1) a.reactions[emojiId].splice(idx, 1);
-  else a.reactions[emojiId].push(me);
+  const alreadyOnThis = (a.reactions[emojiId] || []).includes(me);
+  // Only one reaction per person per post, matching how reactions work on any social
+  // platform - switching to a different reaction replaces the old one rather than adding
+  // alongside it. Removes this person from every reaction type on this post first, then
+  // adds them back to the one just tapped, unless that's the one they already had (in which
+  // case tapping it again just removes it, same as tapping an active reaction anywhere else).
+  Object.keys(a.reactions).forEach(function(key){
+    const idx = a.reactions[key].indexOf(me);
+    if(idx > -1) a.reactions[key].splice(idx, 1);
+  });
+  if(!alreadyOnThis){
+    if(!a.reactions[emojiId]) a.reactions[emojiId] = [];
+    a.reactions[emojiId].push(me);
+  }
   announceRender();
   if(a.dbId){
     sb.from('announcements').update({ reactions: a.reactions }).eq('id', a.dbId)
@@ -12497,12 +12507,19 @@ function announceReplyReactionBarHtml(replyId){
 
 window.announceToggleReplyReaction = function(replyId, emojiId){
   if(!announceReplyReactions[replyId]) announceReplyReactions[replyId] = {};
-  if(!announceReplyReactions[replyId][emojiId]) announceReplyReactions[replyId][emojiId] = [];
   const me = announceCurrentUser;
-  const list = announceReplyReactions[replyId][emojiId];
-  const at = list.indexOf(me);
-  if(at > -1) list.splice(at, 1);
-  else list.push(me);
+  const reactions = announceReplyReactions[replyId];
+  const alreadyOnThis = (reactions[emojiId] || []).includes(me);
+  // Only one reaction per person per reply, same as post reactions - switching to a
+  // different reaction replaces the old one rather than stacking alongside it.
+  Object.keys(reactions).forEach(function(key){
+    const idx = reactions[key].indexOf(me);
+    if(idx > -1) reactions[key].splice(idx, 1);
+  });
+  if(!alreadyOnThis){
+    if(!reactions[emojiId]) reactions[emojiId] = [];
+    reactions[emojiId].push(me);
+  }
   announceRender();
 };
 

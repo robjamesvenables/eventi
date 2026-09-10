@@ -11803,10 +11803,14 @@ window.addEventListener('load', () => {
   // ahead of it in this chain. Now kicked off together, each one rendering on its own as soon
   // as its own data comes back, rather than waiting its turn behind unrelated features.
   initCurrency();
+  // Highlights first - it's the most visually prominent, above-the-fold element on Home, so
+  // it gets first claim on one of the browser's limited simultaneous-connection slots rather
+  // than potentially queuing behind the other 11 features' requests, which now all fire in
+  // the same instant as each other.
+  momentsLoadFromSupabase().then(momentsRebuild);
   loadAppSettings();
   announceLoadFromSupabase().then(announceRender);
   djSchedLoadFromSupabase().then(djSchedRender);
-  momentsLoadFromSupabase().then(momentsRebuild);
   sandboxLoadFromSupabase().then(sandboxRender);
   quickLinksLoadFromSupabase().then(quickLinksRender);
   myDriveLoadFromSupabase().then(myDriveRender);
@@ -16721,7 +16725,24 @@ function highlightPlaceholderHtml(i){
 }
 
 // ── HIGHLIGHTS (wired to Supabase - falls back to the demo data above if the table is empty or unreachable) ──
+const MOMENTS_CACHE_KEY = 'mavis_highlights_cache_v1';
+
 async function momentsLoadFromSupabase(){
+  // Shows the last-known highlights instantly from a local cache, before the network fetch
+  // below even starts - a returning user sees real content immediately instead of empty
+  // skeleton placeholders while waiting on a fresh copy. The actual fetch always still runs
+  // and silently corrects/updates anything once it resolves; this only smooths over the
+  // otherwise-unavoidable round-trip time on every single load.
+  try{
+    const cached = JSON.parse(localStorage.getItem(MOMENTS_CACHE_KEY) || 'null');
+    if(Array.isArray(cached) && cached.length){
+      momentsData.length = 0;
+      cached.forEach(m => momentsData.push(m));
+      momentsLoading = false;
+      momentsRebuild();
+    }
+  } catch(e){ /* corrupted or unavailable cache - ignore, the fetch below still runs normally */ }
+
   try{
     // Only fetch the small thumbnail for the initial strip - not the full photo. This is
     // the fix for the "3 seconds to load" report: previously every load pulled the full,
@@ -16751,6 +16772,13 @@ async function momentsLoadFromSupabase(){
         meta: `Posted by ${row.by_name} \u00b7 ${new Date(row.created_at).toLocaleDateString('en-GB',{day:'numeric',month:'short'})}`
       });
     });
+    // Caches the lean fields only (never the full-size img, which stays lazily fetched on
+    // open as before) so the next load can show this instantly ahead of its own fresh fetch.
+    try{
+      localStorage.setItem(MOMENTS_CACHE_KEY, JSON.stringify(momentsData.map(m => ({
+        dbId: m.dbId, thumb: m.thumb, caption: m.caption, reactions: m.reactions, createdAt: m.createdAt, meta: m.meta
+      }))));
+    } catch(e){ /* localStorage full or unavailable - not critical, skip silently */ }
 
     // Legacy rows saved before the thumb column existed have no thumb value, and the
     // lean query above doesn't fetch the full photo either - without this they'd show

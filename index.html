@@ -1724,7 +1724,7 @@ img.emoji-tw{width:1.15em;height:1.15em;vertical-align:-0.2em;margin:0 1px}
 /* Lightbox */
 .moment-lightbox{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.88);z-index:9999;align-items:center;justify-content:center;flex-direction:column;padding:20px}
 .moment-lightbox.open{display:flex}
-.moment-lightbox-img{max-width:90vw;max-height:70vh;border-radius:12px;object-fit:contain}
+.moment-lightbox-img{max-width:90vw;max-height:70vh;border-radius:12px;object-fit:contain;transition:opacity 0.12s ease}
 .moment-lightbox-body{background:white;border-radius:12px;padding:16px 20px;max-width:500px;width:100%;margin-top:14px}
 .moment-lightbox-caption{font-size:14px;color:var(--navy);line-height:1.6;margin-bottom:10px;font-weight:700}
 .moment-lightbox-actions{display:flex;align-items:center;justify-content:space-between}
@@ -16459,22 +16459,54 @@ function momentDisplayIdx(idx){
   momentsCurrentIdx = idx;
   // Show the thumbnail immediately so there's no blank gap, then swap in the full-size
   // photo once it arrives (it's only fetched on-demand, not as part of the strip load).
-  document.getElementById('moment-lb-img').src = m.img || m.thumb;
+  const imgEl = document.getElementById('moment-lb-img');
+  imgEl.style.opacity = '1';
+  imgEl.src = m.img || m.thumb;
   document.getElementById('moment-lb-caption').innerHTML = momentsTwemojiParse(m.caption);
   document.getElementById('moment-lb-meta').textContent = m.meta;
   document.getElementById('moment-lb-download').href = m.img || m.thumb;
   const lbBar = document.getElementById('moment-lb-reactions');
   if(lbBar) lbBar.innerHTML = momentsReactionBarHtml(idx, false);
 
-  if(!m.img && m.dbId){
-    sb.from('highlights').select('img').eq('id', m.dbId).single().then(({data, error})=>{
-      if(error || !data || momentsCurrentIdx !== idx) return;
-      m.img = data.img;
-      document.getElementById('moment-lb-img').src = m.img;
-      document.getElementById('moment-lb-download').href = m.img;
-    });
-  }
+  momentPrefetchFullImage(idx);
 }
+
+// Fetches and caches the full-resolution photo for one highlight, reused both by the
+// lightbox itself and by momentTouchPrefetch() below (which kicks this off early, on
+// touchstart/mousedown, before the actual click/tap that opens the lightbox even
+// completes - shaving real time off the visible thumbnail-to-full-photo swap that was
+// otherwise happening on every single open, since previously the fetch only ever started
+// once the lightbox was already showing the thumbnail).
+function momentPrefetchFullImage(idx){
+  const m = momentsData[idx];
+  if(!m || m.img || !m.dbId || m._fetchingFull) return;
+  m._fetchingFull = true;
+  sb.from('highlights').select('img').eq('id', m.dbId).single().then(({data, error})=>{
+    m._fetchingFull = false;
+    if(error || !data) return;
+    m.img = data.img;
+    // Only actually swap the visible lightbox image if this is still the one being shown -
+    // if the person has since swiped on to a different highlight, just cache the fetched
+    // photo on its own object for whenever it's viewed, without touching what's on screen.
+    if(momentsCurrentIdx !== idx) return;
+    const imgEl = document.getElementById('moment-lb-img');
+    // A brief fade rather than a hard cut - the swap is still real (the fetch still takes
+    // however long it takes), but it now reads as an intentional transition rather than a
+    // jarring pop from thumbnail to full quality.
+    imgEl.style.opacity = '0';
+    setTimeout(function(){
+      imgEl.src = m.img;
+      document.getElementById('moment-lb-download').href = m.img;
+      imgEl.style.opacity = '1';
+    }, 120);
+  });
+}
+// Starts the full-image fetch the moment a finger or cursor touches a highlight card, ahead
+// of the click/tap itself actually registering - by the time openMoment() runs a beat later,
+// the fetch already has a head start, sometimes finishing before the lightbox even opens.
+window.momentTouchPrefetch = function(idx){
+  momentPrefetchFullImage(idx);
+};
 
 function openMoment(idx){
   if(!momentsData[idx]) return;
@@ -16772,7 +16804,7 @@ function momentsRebuild(){
         <div class="hl-story-mobile-label" style="color:#94A3B8;font-style:italic">Add here</div>
       </div>`;
     }
-    return `<div class="hl-story" onclick="openMoment(${it.idx})">
+    return `<div class="hl-story" onclick="openMoment(${it.idx})" onmousedown="momentTouchPrefetch(${it.idx})" ontouchstart="momentTouchPrefetch(${it.idx})">
       <div class="hl-story-ring"><img class="hl-story-img" src="${it.img}" alt=""></div>
       <div class="hl-story-label">${it.caption}</div>
       <div class="hl-story-mobile-label">${it.meta.replace(/^Posted by\s*/i,'').split('\u00b7')[0].trim() || 'Highlight'}</div>

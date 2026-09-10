@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0">
 <title>Mavis</title>
 <link rel="icon" type="image/png" href="/icon-192.png">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -2408,35 +2408,22 @@ img.emoji-tw{width:1.15em;height:1.15em;vertical-align:-0.2em;margin:0 1px}
 </style>
 
 <script>
-// ── Tablet zoom-stuck bug - fix based on confirmed exact mechanism ──
-// Precisely confirmed via a diagnostic readout and screen recording: focusing the large
-// note textarea causes window.innerWidth/Height and visualViewport's own reported size to
-// jump to almost exactly 4x their normal value (1365x598 -> 5461x2391 in the actual test),
-// with visualViewport.scale dropping to exactly 0.250 - a genuine browser zoom-out to 25%.
-// Critically, window.outerWidth/Height (the real physical window/screen size) and
-// document.body's own clientWidth/Height never change at all - only the browser's own
-// zoom/scale reporting does. This is not a CSS layout bug, not a DOM resize, and nothing in
-// Mavis's own code causes it - it's the browser's zoom state itself getting set wrong.
-// Earlier correction attempts guessed at a fixed delay after a focus event and didn't work -
-// this instead reacts directly to visualViewport's own resize event and checks the actual
-// scale value Chrome is reporting, correcting immediately once it's confirmed wrong rather
-// than guessing when the wrong state will appear.
-(function(){
-  function forceZoomReset(){
-    const viewport = document.querySelector('meta[name="viewport"]');
-    if(!viewport) return;
-    const original = viewport.getAttribute('content');
-    viewport.setAttribute('content', 'width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0');
-    requestAnimationFrame(function(){
-      viewport.setAttribute('content', original);
-    });
-  }
-  if(window.visualViewport){
-    window.visualViewport.addEventListener('resize', function(){
-      if(window.visualViewport.scale < 0.9) forceZoomReset();
-    });
-  }
-})();
+// ── Tablet zoom-stuck bug - static constraint instead of reactive JS correction ──
+// Precisely confirmed via a diagnostic readout and screen recording: focusing the large note
+// textarea causes visualViewport.scale to drop to exactly 0.250 (a genuine browser zoom-out
+// to 25%) - window.outerWidth/Height and document.body's own dimensions never change at all,
+// confirming this is purely the browser's own zoom state going wrong, not a layout or DOM bug.
+// Three different reactive JS corrections (toggling the viewport tag via JS after detecting
+// the problem, tried with different trigger timings) all failed to fix it, despite correctly
+// targeting the confirmed mechanism - strongly suggesting the "toggle after the fact"
+// technique itself doesn't reliably work on this device, not that the diagnosis is wrong.
+// This instead adds minimum-scale=1.0 directly and permanently to the viewport declaration
+// itself, so the browser is never allowed to reach the buggy zoomed-out state in the first
+// place, rather than trying to correct it after it happens. Deliberately NOT the same as the
+// earlier failed "full zoom lock" experiment (maximum-scale=1.0 + user-scalable=no, which
+// caused a different, worse Android rendering bug and was reverted) - this only constrains
+// zooming OUT below normal size, leaving pinch-zoom-IN fully available for anyone who wants
+// to zoom in to read something.
 </script>
 </head>
 <body>

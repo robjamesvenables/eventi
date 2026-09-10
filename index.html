@@ -16812,6 +16812,21 @@ function momentsRebuild(){
   }).join('');
 
   hlInitScroll();
+  momentPrefetchAllInBackground();
+}
+
+// Quietly fetches the full-resolution photo for every highlight currently in the strip,
+// staggered a little rather than firing them all in the same instant - by the time anyone
+// actually taps one, it should typically already be sitting in memory rather than starting
+// the fetch fresh at that moment. Highlights is normally a small, bounded set (a handful
+// visible at once), so prefetching all of them is a reasonable trade against the strip's
+// own thumbnail-only load staying fast - the earlier touchstart-based prefetch only ever
+// saved the few milliseconds between touch and click, not the roughly one-second network
+// fetch itself, which is where nearly all of the visible delay was actually coming from.
+function momentPrefetchAllInBackground(){
+  momentsData.forEach(function(m, i){
+    setTimeout(function(){ momentPrefetchFullImage(i); }, i * 150);
+  });
 }
 
 function hlInitScroll(){

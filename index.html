@@ -12007,11 +12007,33 @@ function announceReactionBarHtml(id){
       const mine = list.includes(me);
       const count = list.length;
       return `<button onclick="announceToggleReaction(${id},'${r.id}')" title="${r.label}" style="display:flex;align-items:center;gap:4px;padding:4px 8px;border-radius:16px;border:1.5px solid ${mine?'#0D9488':'#E2E8F0'};background:${mine?'rgba(13,148,136,0.1)':'white'};cursor:pointer;font-size:13px;line-height:1;font-family:'Inter',sans-serif">
-        <span>${momentsTwemojiParse(r.char)}</span>${count>0?`<span style="font-size:10.5px;font-weight:700;color:${mine?'#0D9488':'#64748B'}">${count}</span>`:''}
+        <span>${momentsTwemojiParse(r.char)}</span>${count>0?`<span onclick="event.stopPropagation();announceShowReactionNames(event,${id},'${r.id}')" style="font-size:10.5px;font-weight:700;color:${mine?'#0D9488':'#64748B'};cursor:pointer;text-decoration:underline;text-decoration-color:transparent" onmouseover="this.style.textDecorationColor='currentColor'" onmouseout="this.style.textDecorationColor='transparent'">${count}</span>`:''}
       </button>`;
     }).join('')}
   </div>`;
 }
+
+// Shows who specifically reacted with one emoji on one post - tapping the count number
+// (not the emoji itself, which still just toggles your own reaction) opens a small popover
+// listing names, reusing one shared popover element rather than building a new one per
+// reaction button. Since a person can only have one active reaction per post now, nobody
+// ever appears in more than one of these lists for the same post.
+window.announceShowReactionNames = function(event, id, emojiId){
+  const a = announcements.find(a=>a.id===id);
+  if(!a || !a.reactions) return;
+  const names = a.reactions[emojiId] || [];
+  if(!names.length) return;
+  const pop = document.getElementById('reactionNamesPopover');
+  document.getElementById('reactionNamesPopoverList').textContent = names.join(', ');
+  const rect = event.target.getBoundingClientRect();
+  pop.style.left = Math.min(rect.left, window.innerWidth - 220) + 'px';
+  pop.style.top = (rect.bottom + window.scrollY + 6) + 'px';
+  pop.style.display = 'block';
+};
+document.addEventListener('click', function(e){
+  const pop = document.getElementById('reactionNamesPopover');
+  if(pop && pop.style.display !== 'none' && !pop.contains(e.target)) pop.style.display = 'none';
+});
 
 window.announceToggleReaction = function(id, emojiId){
   const a = announcements.find(a=>a.id===id);
@@ -18375,6 +18397,10 @@ chatAttachmentPreviewStyle.textContent=`
 document.head.appendChild(chatAttachmentPreviewStyle);
 
 </script>
+
+<div id="reactionNamesPopover" style="display:none;position:absolute;z-index:100000;background:#0F1E2E;color:white;border-radius:9px;padding:10px 14px;max-width:220px;font-size:12px;font-weight:600;line-height:1.5;box-shadow:0 8px 20px rgba(0,0,0,0.25)">
+  <span id="reactionNamesPopoverList"></span>
+</div>
 </body>
 </html>
 <!-- deploy trigger check 2026-08-04T06:28:40Z -->

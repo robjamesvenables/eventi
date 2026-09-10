@@ -16739,13 +16739,20 @@ async function momentsLoadFromSupabase(){
     const staleIds = momentsData.filter(m => m.thumb && m.thumb.length < OLD_THUMB_LEN_THRESHOLD).map(m => m.dbId);
     const upgradeIds = [...new Set([...legacyIds, ...staleIds])];
     if(upgradeIds.length){
-      const { data: legacyRows } = await sb.from('highlights').select('id, img').in('id', upgradeIds);
-      if(legacyRows){
+      // Fire-and-forget, not awaited - this used to block the ENTIRE strip from rendering
+      // any real content at all until every legacy/stale row's full-size photo had been
+      // fetched, which is exactly the "takes several seconds to load" report: the lean
+      // query above already has everything needed to show every OTHER highlight
+      // immediately, so there's no reason the whole strip should wait on this patch-up
+      // step for a handful of older rows. Those specific cards simply pick up their real
+      // thumb once this resolves in the background and momentsRebuild() runs again.
+      sb.from('highlights').select('id, img').in('id', upgradeIds).then(({data: legacyRows})=>{
+        if(!legacyRows) return;
         legacyRows.forEach(row => {
           const m = momentsData.find(x => x.dbId === row.id);
           if(m && !m.thumb){ m.thumb = row.img; m.img = row.img; }
         });
-        // Fire-and-forget: don't block this page load waiting for the backfill.
+        momentsRebuild(); // reflect the now-available thumbs immediately, rather than waiting for the slower per-row backfill below
         legacyRows.forEach(async row => {
           try{
             const smallThumb = await appDataUrlToThumb(row.img);
@@ -16758,7 +16765,7 @@ async function momentsLoadFromSupabase(){
             console.warn('Highlight thumb backfill failed for row', row.id, e);
           }
         });
-      }
+      });
     }
   } catch(e){
     console.warn('Highlights Supabase load failed, using demo data', e);

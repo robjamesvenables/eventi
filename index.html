@@ -2563,7 +2563,7 @@ img.emoji-tw{width:1.15em;height:1.15em;vertical-align:-0.2em;margin:0 1px}
       <svg class="sb-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.42 4.58a5.4 5.4 0 0 0-7.65 0l-.77.78-.77-.78a5.4 5.4 0 0 0-7.65 0C1.46 6.7 1.33 10.28 4 13l8 8 8-8c2.67-2.72 2.54-6.3.42-8.42z"/></svg>
       Sandbox
     </button>
-    <button class="sb-link" id="n-stickynotes" onclick="stickyOpenBoard('mine')">
+    <button class="sb-link" id="n-stickynotes" onclick="nav('stickynotes')">
       <svg class="sb-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
       Sticky Notes
     </button>
@@ -3430,21 +3430,14 @@ img.emoji-tw{width:1.15em;height:1.15em;vertical-align:-0.2em;margin:0 1px}
       <div class="ph">
         <div class="ph-title">Sticky Notes</div>
       </div>
-      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px;max-width:640px">
-        <button onclick="stickyOpenBoard('mine')" class="tb-root-tile" style="background:white">
-          <div class="tb-root-tile-icon" style="background:rgba(13,148,136,0.1);color:#0D9488"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></div>
-          <div class="tb-root-tile-title">My Notes</div>
-          <div class="tb-root-tile-sub">Your own notes - only you can see these</div>
-        </button>
-        <button onclick="stickyOpenBoard('brainstorm')" class="tb-root-tile" style="background:#0F1E2E">
-          <div class="tb-root-tile-icon" style="background:rgba(196,151,59,0.18);color:#C4973B"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9.663 17h4.673M12 3a6 6 0 0 0-6 6c0 1.887.454 2.755 1.826 4.5.638.735 1.174 1.5 1.174 2.5m3-13a6 6 0 0 1 6 6c0 1.887-.454 2.755-1.826 4.5-.638.735-1.174 1.5-1.174 2.5"/></svg></div>
-          <div class="tb-root-tile-title" style="color:white">Brainstorm</div>
-          <div class="tb-root-tile-sub" style="color:rgba(255,255,255,0.6)">Shared with your team - live for everyone</div>
-        </button>
-      </div>
+      <div id="sticky-project-grid" style="display:grid;grid-template-columns:repeat(4,1fr);gap:16px"></div>
     </div>
 
     <div class="page" id="p-stickynotes-board" style="padding:32px 28px 60px">
+      <button onclick="nav('stickynotes')" style="display:flex;align-items:center;gap:6px;background:none;border:none;cursor:pointer;font-family:'Inter',sans-serif;font-size:12.5px;font-weight:700;color:#64748B;padding:0;margin-bottom:16px">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+        Back to Projects
+      </button>
       <div class="ph">
         <div class="ph-title" id="sticky-board-title">My Notes</div>
         <button class="btn btn-navy" onclick="stickyOpenAdd()">
@@ -5018,7 +5011,7 @@ function nav(id, pushState=true){
   if(id==='survey'){surveyRender();}
   if(id==='vacancies'){vacanciesRender();}
   if(id==='analytics'){ analyticsRender(); businessMetricsLoadFromSupabase().then(analyticsRender); }
-  if(id==='stickynotes'){ /* root chooser - no board to render */ }
+  if(id==='stickynotes'){ stickyRenderProjects(); }
   if(id==='reporting'){reportingRender();}
   if(id==='reporting-calendar'){repcalRender();}
 
@@ -11830,7 +11823,7 @@ window.addEventListener('load', () => {
   customerLoadFromSupabase().then(customerRenderList);
   vacanciesLoadFromSupabase().then(vacanciesRender);
   businessMetricsLoadFromSupabase();
-  stickyLoadMyNotes();
+  stickyLoadProjectsFromSupabase().then(stickyRenderProjects);
 });
 
 // ── ANNOUNCEMENTS ──
@@ -15478,18 +15471,96 @@ const STICKY_COLORS = {
   coral: { bg:'#F0997B', text:'#4A1B0C', del:'#993C1D', label:'Coral' }
 };
 let stickyActiveTab = 'mine';
-let stickyMyNotes = [];
 let stickyBrainstormNotes = [];
 let stickyBrainstormSubscribed = false;
 let stickyDragState = null;
+let stickyProjects = []; // each: {id, dbId, name, color, notes: [...]}
+let stickyActiveProjectId = null;
 
-function stickyLoadMyNotes(){
-  try{ stickyMyNotes = JSON.parse(localStorage.getItem('mavis_sticky_my_notes') || '[]'); }
-  catch(e){ stickyMyNotes = []; }
+async function stickyLoadProjectsFromSupabase(){
+  try{
+    const { data: projectRows, error: projErr } = await sb.from('sticky_projects').select('*').order('created_at', { ascending: true });
+    if(projErr) throw projErr;
+    const { data: noteRows, error: noteErr } = await sb.from('sticky_my_notes').select('*');
+    if(noteErr) throw noteErr;
+    stickyProjects = (projectRows || []).map(p => ({
+      id: p.id, dbId: p.id, name: p.name, color: p.color || '#0F1E2E',
+      notes: (noteRows || []).filter(n => n.project_id === p.id)
+    }));
+  } catch(e){
+    console.warn('Sticky Notes projects not reachable yet (run the SQL if this is the first load)', e);
+    stickyProjects = [];
+  }
 }
-function stickySaveMyNotes(){
-  localStorage.setItem('mavis_sticky_my_notes', JSON.stringify(stickyMyNotes));
+
+function stickyRenderProjects(){
+  const grid = document.getElementById('sticky-project-grid');
+  if(!grid) return;
+  grid.innerHTML = stickyProjects.map(p => `
+    <div class="myd-folder-tile" style="background:${p.color};position:relative" onclick="stickyOpenProject(${p.id})">
+      <button class="myd-folder-tile-del" onclick="event.stopPropagation();stickyDeleteProject(${p.id})">×</button>
+      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.7)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-bottom:10px"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+      <div>
+        <div class="myd-folder-tile-name">${p.name}</div>
+        <div class="myd-folder-tile-count">${p.notes.length} note${p.notes.length!==1?'s':''}</div>
+      </div>
+      <button class="card-colour-btn" onclick="event.stopPropagation();stickyEditProject(${p.id})" title="Edit project"><svg width="13" height="13" viewBox="0 0 24 24" fill="white"><circle cx="12" cy="5" r="2.2"/><circle cx="12" cy="12" r="2.2"/><circle cx="12" cy="19" r="2.2"/></svg></button>
+    </div>`).join('') + `
+    <div class="myd-new-tile" onclick="stickyAddProject()">
+      <div class="myd-new-tile-ico"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#94A3B8" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/><line x1="12" y1="11" x2="12" y2="17"/><line x1="9" y1="14" x2="15" y2="14"/></svg></div>
+      <div class="myd-new-tile-txt">New Project</div>
+    </div>`;
 }
+
+window.stickyAddProject = function(){
+  appModalShow({
+    title: 'New Project',
+    fields: [{label:'Project name', placeholder:'e.g. Beach Party Planning'}],
+    async onOk([name]){
+      if(!name) return;
+      try{
+        const { data, error } = await sb.from('sticky_projects').insert({ name, color: '#0F1E2E' }).select().single();
+        if(error) throw error;
+        stickyProjects.push({ id: data.id, dbId: data.id, name, color: '#0F1E2E', notes: [] });
+        toast('Project created ✓');
+      } catch(e){
+        console.warn('Could not save project to Supabase', e);
+        toast('Save failed - check your connection and try again');
+        return;
+      }
+      stickyRenderProjects();
+    }
+  });
+};
+
+window.stickyEditProject = function(id){
+  const p = stickyProjects.find(x=>x.id===id);
+  if(!p) return;
+  appModalShow({
+    title: 'Edit Project',
+    fields: [
+      {label:'Project name', value:p.name, placeholder:'Project name'},
+      {label:'Colour', type:'color', options: DEPT_COLORS, value: p.color}
+    ],
+    async onOk([newName, color]){
+      if(newName) p.name = newName;
+      p.color = color;
+      stickyRenderProjects();
+      toast('Project updated ✓');
+      const { error } = await sb.from('sticky_projects').update({ name: p.name, color }).eq('id', p.dbId);
+      if(error) console.warn('Could not save project edit to Supabase', error);
+    }
+  });
+};
+
+window.stickyDeleteProject = function(id){
+  appConfirmShow({title:'Delete Project', msg:'Delete this project and all its notes? This cannot be undone.', onOk: async ()=>{
+    const i = stickyProjects.findIndex(p=>p.id===id);
+    if(i>-1){ stickyProjects.splice(i,1); stickyRenderProjects(); toast('Project removed'); }
+    const { error } = await sb.from('sticky_projects').delete().eq('id', id);
+    if(error) console.warn('Could not delete project from Supabase', error);
+  }});
+};
 
 async function stickyLoadBrainstormFromSupabase(){
   try{
@@ -15520,21 +15591,41 @@ function stickySubscribeBrainstormRealtime(){
     .subscribe();
 }
 
-function stickyOpenBoard(tab){
-  stickyActiveTab = tab;
-  document.getElementById('sticky-board-title').textContent = tab === 'brainstorm' ? 'Brainstorm' : 'My Notes';
-  if(tab === 'brainstorm') stickySubscribeBrainstormRealtime();
+// Opens one project's own board of notes - the 'mine' tab value is kept purely so the
+// existing note CRUD functions below (which branch on stickyActiveTab) don't need
+// rewriting; stickyActiveProjectId is what actually scopes which notes show and get saved.
+window.stickyOpenProject = function(id){
+  const p = stickyProjects.find(x=>x.id===id);
+  if(!p) return;
+  stickyActiveTab = 'mine';
+  stickyActiveProjectId = id;
+  document.getElementById('sticky-board-title').textContent = p.name;
   nav('stickynotes-board');
   stickyRenderBoard();
-  if(tab === 'brainstorm'){
-    stickyLoadBrainstormFromSupabase().then(()=>{ if(stickyActiveTab==='brainstorm') stickyRenderBoard(); });
-  }
+};
+
+// Kept purely for Brainstorm - now that 'mine' is fully replaced by stickyOpenProject()
+// (project-scoped, not a single board), this only ever needs to handle 'brainstorm'.
+function stickyOpenBoard(tab){
+  stickyActiveTab = 'brainstorm';
+  document.getElementById('sticky-board-title').textContent = 'Brainstorm';
+  stickySubscribeBrainstormRealtime();
+  nav('stickynotes-board');
+  stickyRenderBoard();
+  stickyLoadBrainstormFromSupabase().then(()=>{ if(stickyActiveTab==='brainstorm') stickyRenderBoard(); });
+}
+
+// Returns whichever project is currently open's own notes array (for 'mine') - a plain
+// helper so the render/CRUD functions below don't each need to re-look-up the active project.
+function stickyCurrentProjectNotes(){
+  const p = stickyProjects.find(x=>x.id===stickyActiveProjectId);
+  return p ? p.notes : [];
 }
 
 function stickyRenderBoard(){
   const board = document.getElementById('sticky-board');
   if(!board) return;
-  const notes = stickyActiveTab === 'mine' ? stickyMyNotes : stickyBrainstormNotes;
+  const notes = stickyActiveTab === 'mine' ? stickyCurrentProjectNotes() : stickyBrainstormNotes;
   board.querySelectorAll('.sticky-note').forEach(el => el.remove());
   document.getElementById('sticky-empty').style.display = notes.length ? 'none' : 'block';
   notes.forEach(n => {
@@ -15588,8 +15679,13 @@ function stickyDragEnd(e){
   el.removeEventListener('pointerup', stickyDragEnd);
   if(moved && x !== undefined && y !== undefined){
     if(stickyActiveTab === 'mine'){
-      const n = stickyMyNotes.find(n=>n.id===id);
-      if(n){ n.x = x; n.y = y; stickySaveMyNotes(); }
+      const n = stickyCurrentProjectNotes().find(n=>n.id===id);
+      if(n){
+        n.x = x; n.y = y;
+        sb.from('sticky_my_notes').update({ x, y }).eq('id', id).then(({error})=>{
+          if(error) console.warn('Sticky note position save failed', error);
+        });
+      }
     } else {
       const n = stickyBrainstormNotes.find(n=>n.id===id);
       if(n){ n.x = x; n.y = y; }
@@ -15616,8 +15712,9 @@ function stickyOpenAdd(){
       const x = 8 + Math.random()*50;
       const y = 8 + Math.random()*40;
       if(stickyActiveTab === 'mine'){
-        stickyMyNotes.push({ id: Date.now(), x, y, color, title, note_text: text||'' });
-        stickySaveMyNotes();
+        const { data, error } = await sb.from('sticky_my_notes').insert([{ project_id: stickyActiveProjectId, x, y, color, title, note_text: text||'' }]).select();
+        if(error){ toast('Save failed - try again'); console.warn(error); return; }
+        if(data && data[0]) stickyCurrentProjectNotes().push(data[0]);
         stickyRenderBoard();
       } else {
         const { data, error } = await sb.from('sticky_notes').insert([{ x, y, color, title, note_text: text||'' }]).select();
@@ -15630,7 +15727,7 @@ function stickyOpenAdd(){
 }
 
 function stickyOpenEdit(id){
-  const notes = stickyActiveTab === 'mine' ? stickyMyNotes : stickyBrainstormNotes;
+  const notes = stickyActiveTab === 'mine' ? stickyCurrentProjectNotes() : stickyBrainstormNotes;
   const n = notes.find(n=>n.id===id);
   if(!n) return;
   appModalShow({
@@ -15644,8 +15741,9 @@ function stickyOpenEdit(id){
       if(!title) return;
       if(stickyActiveTab === 'mine'){
         n.color = color; n.title = title; n.note_text = text||'';
-        stickySaveMyNotes();
         stickyRenderBoard();
+        const { error } = await sb.from('sticky_my_notes').update({ color, title, note_text: text||'' }).eq('id', id);
+        if(error){ toast('Save failed - try again'); console.warn(error); }
       } else {
         n.color = color; n.title = title; n.note_text = text||'';
         stickyRenderBoard();
@@ -15663,9 +15761,12 @@ function stickyDeleteNote(id){
     label:'Delete',
     onOk(){
       if(stickyActiveTab === 'mine'){
-        stickyMyNotes = stickyMyNotes.filter(n=>n.id!==id);
-        stickySaveMyNotes();
+        const p = stickyProjects.find(x=>x.id===stickyActiveProjectId);
+        if(p) p.notes = p.notes.filter(n=>n.id!==id);
         stickyRenderBoard();
+        sb.from('sticky_my_notes').delete().eq('id', id).then(({error})=>{
+          if(error) console.warn('Sticky note delete failed', error);
+        });
       } else {
         stickyBrainstormNotes = stickyBrainstormNotes.filter(n=>n.id!==id);
         stickyRenderBoard();

@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, interactive-widget=overlays-content">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Mavis</title>
 <link rel="icon" type="image/png" href="/icon-192.png">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -2406,6 +2406,52 @@ img.emoji-tw{width:1.15em;height:1.15em;vertical-align:-0.2em;margin:0 1px}
 .chat-voice-icon img.emoji-tw,.chat-voice-icon img.emoji{width:20px!important;height:20px!important;margin:0!important;vertical-align:middle!important;display:block!important}
 .chat-preview-text img.emoji-tw,.chat-preview-text img.emoji{width:14px!important;height:14px!important;margin:0 3px 0 0!important;vertical-align:-2px!important;display:inline-block!important}
 </style>
+
+<script>
+// ── Tablet "whole screen zooms out and gets stuck" workaround ──
+// Root cause confirmed via a screen recording of the actual bug happening (frame-by-frame:
+// typing in one field, tapping directly into a second field in the same popup, bug appears
+// on the very next frame) and matched to a real, officially tracked Chromium engine bug
+// (issues.chromium.org/issues/40924170): switching focus directly between two input-type
+// elements makes the on-screen keyboard briefly hide and reshow, and during that animation
+// the browser's own effective page scale can be calculated wrong and get stuck there.
+// Ruled out first: not a font-size issue (every field in the app is already 16px+), not a
+// Chrome-version issue (confirmed on 152, well past where a related fix landed), not
+// Samsung DeX specific (reproduced on HarmonyOS in normal, non-desktop mode too), and not
+// fixed by any static viewport meta declaration tried so far (plain, zoom-locked, and
+// interactive-widget=overlays-content were all tried and none held up).
+// This actively corrects it instead of trying to prevent it: shortly after a focus change
+// that follows another field losing focus within about a second (i.e. a genuine rapid
+// field-to-field switch, matching the exact confirmed trigger) - not a fresh, isolated tap
+// into a single field - it forces the browser to snap its zoom back to 1.0 by briefly adding
+// minimum-scale=1.0 to the viewport tag (the bug zooms OUT, so minimum-scale is what
+// constrains that, not maximum-scale) then immediately removing it again. Narrow and
+// momentary rather than a permanent lock, and scoped to only this specific trigger, so it
+// shouldn't interfere with someone deliberately pinch-zooming in to read something elsewhere
+// in the app.
+(function(){
+  let lastBlurTime = 0;
+  function isTextField(el){
+    return el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.tagName === 'SELECT');
+  }
+  document.addEventListener('focusout', function(e){
+    if(isTextField(e.target)) lastBlurTime = Date.now();
+  }, true);
+  document.addEventListener('focusin', function(e){
+    if(!isTextField(e.target)) return;
+    if(Date.now() - lastBlurTime > 1200) return; // fresh, isolated focus - leave it alone
+    setTimeout(function(){
+      const viewport = document.querySelector('meta[name="viewport"]');
+      if(!viewport) return;
+      const original = viewport.getAttribute('content');
+      viewport.setAttribute('content', original + ', minimum-scale=1.0');
+      requestAnimationFrame(function(){
+        viewport.setAttribute('content', original);
+      });
+    }, 400); // gives the keyboard hide/show animation time to actually finish first
+  }, true);
+})();
+</script>
 </head>
 <body>
 

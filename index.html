@@ -11787,7 +11787,37 @@ function kitchenDeleteAllergenDish(id){
 }
 // ── INIT ──
 window.addEventListener('keydown',e=>{if(e.key==='Enter'&&document.getElementById('login').style.display!=='none')doLogin();});
-window.addEventListener('load',async ()=>{ initCurrency(); await loadAppSettings(); await announceLoadFromSupabase(); announceRender(); await djSchedLoadFromSupabase(); djSchedRender(); await momentsLoadFromSupabase(); momentsRebuild(); await sandboxLoadFromSupabase(); sandboxRender(); await quickLinksLoadFromSupabase(); quickLinksRender(); await myDriveLoadFromSupabase(); myDriveRender(); await sopLoadFromSupabase(); sopRenderDeptList(); await suggestionLoadFromSupabase(); suggestionRenderList(); await vendorLoadFromSupabase(); vendorRenderDepts(); await customerLoadFromSupabase(); customerRenderList(); await vacanciesLoadFromSupabase(); vacanciesRender(); await businessMetricsLoadFromSupabase(); stickyLoadMyNotes(); });
+window.addEventListener('load', () => {
+  // Every one of these loads a completely separate Supabase table into its own, unrelated
+  // piece of state (announcements, dj_stages/bookings, highlights, sandbox, quick links, My
+  // Drive, SOPs, suggestions, vendors, customers, vacancies, business metrics) - confirmed
+  // none of them read from appSettings or from each other's data at all. They used to run
+  // strictly one after another (await X; renderX(); await Y; renderY(); ...), which meant
+  // every single one waited on every one before it, even though there was never any real
+  // reason for that ordering - each was just an accident of how they'd been added over time.
+  // With several of these individually making 2-4 of their OWN sequential queries internally
+  // (Entertainment Schedule alone makes at least 4), the accumulated round-trip time before
+  // a feature further down the list even started loading could plausibly reach into the
+  // 7-12 second range reported - which is exactly why fixing Highlights' own code specifically
+  // never resolved it: the actual bottleneck was never inside Highlights, it was everything
+  // ahead of it in this chain. Now kicked off together, each one rendering on its own as soon
+  // as its own data comes back, rather than waiting its turn behind unrelated features.
+  initCurrency();
+  loadAppSettings();
+  announceLoadFromSupabase().then(announceRender);
+  djSchedLoadFromSupabase().then(djSchedRender);
+  momentsLoadFromSupabase().then(momentsRebuild);
+  sandboxLoadFromSupabase().then(sandboxRender);
+  quickLinksLoadFromSupabase().then(quickLinksRender);
+  myDriveLoadFromSupabase().then(myDriveRender);
+  sopLoadFromSupabase().then(sopRenderDeptList);
+  suggestionLoadFromSupabase().then(suggestionRenderList);
+  vendorLoadFromSupabase().then(vendorRenderDepts);
+  customerLoadFromSupabase().then(customerRenderList);
+  vacanciesLoadFromSupabase().then(vacanciesRender);
+  businessMetricsLoadFromSupabase();
+  stickyLoadMyNotes();
+});
 
 // ── ANNOUNCEMENTS ──
 const announcements = [

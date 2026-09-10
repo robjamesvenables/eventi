@@ -2428,31 +2428,16 @@ img.emoji-tw{width:1.15em;height:1.15em;vertical-align:-0.2em;margin:0 1px}
 </head>
 <body>
 
-<div id="installReminderBg" style="display:none;position:fixed;inset:0;background:rgba(15,30,46,0.55);z-index:99999;align-items:center;justify-content:center;padding:20px">
-  <div style="background:white;border-radius:14px;padding:24px 22px;width:100%;max-width:340px;box-shadow:0 12px 32px rgba(0,0,0,0.25)">
-    <div style="width:44px;height:44px;border-radius:11px;background:#E1F5EE;display:flex;align-items:center;justify-content:center;margin-bottom:14px">
-      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#0D9488" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.9 4.5 4.5 1.9-4.5 1.9L12 16l-1.9-4.5-4.5-1.9 4.5-1.9L12 3z"/><path d="M19 15l.8 2 2 .8-2 .8-.8 2-.8-2-2-.8 2-.8.8-2z"/></svg>
-    </div>
-    <div id="installReminderTitle" style="font-weight:800;font-size:16px;color:#0F1E2E;margin-bottom:6px">Quick tip from the team</div>
-    <div id="installReminderBody" style="font-size:13.5px;color:#64748B;line-height:1.55;margin-bottom:18px">Mavis feels a lot smoother installed as an app on your device - takes a few seconds, no app store needed. Want to set it up now?</div>
-    <div style="display:flex;gap:8px">
-      <button id="installReminderPrimaryBtn" onclick="installReminderPrimaryAction()" style="flex:1;background:#0F1E2E;color:white;border:none;border-radius:9px;padding:11px;font-family:inherit;font-size:13px;font-weight:700;cursor:pointer">Yes, install</button>
-      <button onclick="closeInstallReminder()" style="flex:1;background:none;border:1.5px solid #E2E8F0;border-radius:9px;padding:11px;font-family:inherit;font-size:13px;font-weight:700;color:#64748B;cursor:pointer">Remind me later</button>
-    </div>
-  </div>
-</div>
-
 <script>
-  // ── Install reminder ── encourages using Mavis as an installed app rather than a browser
-  // tab - avoids a confirmed Chrome/Vivaldi engine bug on some tablets (a large text box can
-  // zoom the whole page out and get it stuck), and is generally a better experience anyway
-  // (full screen, no browser address bar). Shows on a timer to anyone NOT already running the
-  // installed version, regardless of which part of the app they're in or whether they're
-  // logged in yet - skipped entirely for anyone who's already installed it.
+  // ── Install reminder icon ── small warning icon next to the "Good morning, John" greeting
+  // on Home, encouraging use of the installed app rather than a browser tab - avoids a
+  // confirmed Chrome/Vivaldi engine bug on some tablets (a large text box can zoom the whole
+  // page out and get it stuck), and is generally a better experience anyway (full screen, no
+  // browser address bar). Persistent rather than a timed popup, by request - the icon simply
+  // stays there for as long as the person is using the browser version, tucked next to the
+  // greeting rather than interrupting anything. Skipped entirely for anyone already running
+  // the installed version.
   (function(){
-    const REMINDER_INTERVAL_MS = 30 * 60 * 1000; // 30 minutes
-    const FIRST_SHOW_DELAY_MS = 8000; // let the page settle first, not an instant popup on load
-
     function isAlreadyInstalled(){
       // Covers the standard case (Android/desktop Chrome, Samsung Internet) and iOS Safari's
       // older, separate flag - between the two this catches every platform Mavis supports.
@@ -2462,50 +2447,53 @@ img.emoji-tw{width:1.15em;height:1.15em;vertical-align:-0.2em;margin:0 1px}
 
     let deferredInstallPrompt = null; // captured from beforeinstallprompt, used for the direct-install path
     window.addEventListener('beforeinstallprompt', function(e){
-      e.preventDefault(); // stops Chrome's own mini-infobar so this popup is the only prompt shown
+      e.preventDefault(); // stops Chrome's own mini-infobar so this icon is the only prompt shown
       deferredInstallPrompt = e;
     });
     window.addEventListener('appinstalled', function(){
-      closeInstallReminder();
-      clearInterval(reminderTimer);
+      const wrap = document.getElementById('installWarnWrap');
+      if(wrap) wrap.style.display = 'none';
     });
 
     function isIOS(){
       return /iphone|ipad|ipod/i.test(navigator.userAgent);
     }
 
-    window.installReminderPrimaryAction = function(){
+    window.toggleInstallWarnPopover = function(){
+      const pop = document.getElementById('installWarnPopover');
+      pop.style.display = pop.style.display === 'none' ? 'block' : 'none';
+    };
+    document.addEventListener('click', function(e){
+      const wrap = document.getElementById('installWarnWrap');
+      const pop = document.getElementById('installWarnPopover');
+      if(!wrap || !pop || pop.style.display === 'none') return;
+      if(!wrap.contains(e.target)) pop.style.display = 'none';
+    });
+
+    window.installWarnPrimaryAction = function(){
       if(deferredInstallPrompt){
         deferredInstallPrompt.prompt();
         deferredInstallPrompt.userChoice.finally(function(){ deferredInstallPrompt = null; });
-        closeInstallReminder();
+        document.getElementById('installWarnPopover').style.display = 'none';
         return;
       }
       // No direct-install path available (iOS, or a browser that doesn't support it, or the
       // one-time prompt was already used) - show manual steps instead, tailored to iOS vs
       // everyone else since the actual steps genuinely differ.
-      document.getElementById('installReminderTitle').textContent = 'How to install Mavis';
-      document.getElementById('installReminderBody').innerHTML = isIOS()
-        ? 'Tap the <b>Share</b> button in Safari, then choose <b>Add to Home Screen</b>.'
-        : 'Open your browser\'s menu (usually the three dots) and look for <b>Install app</b> or <b>Add to Home screen</b>.';
-      document.getElementById('installReminderPrimaryBtn').style.display = 'none';
+      document.getElementById('installWarnText').innerHTML = isIOS()
+        ? 'Tap <b>Share</b> in Safari, then <b>Add to Home Screen</b>.'
+        : 'Open your browser menu (usually the three dots) and look for <b>Install app</b>.';
+      document.getElementById('installWarnBtn').style.display = 'none';
     };
 
-    window.closeInstallReminder = function(){
-      document.getElementById('installReminderBg').style.display = 'none';
-    };
-    function showInstallReminder(){
-      if(isAlreadyInstalled()) return; // could have been installed since the last check
-      // Reset back to the original install-offer copy each time it reopens, in case a
-      // previous open had fallen through to the manual-steps text.
-      document.getElementById('installReminderTitle').textContent = 'Quick tip from the team';
-      document.getElementById('installReminderBody').innerHTML = 'Mavis feels a lot smoother installed as an app on your device - takes a few seconds, no app store needed. Want to set it up now?';
-      document.getElementById('installReminderPrimaryBtn').style.display = '';
-      document.getElementById('installReminderBg').style.display = 'flex';
+    function init(){
+      const wrap = document.getElementById('installWarnWrap');
+      if(wrap) wrap.style.display = 'inline-flex';
     }
-
-    setTimeout(showInstallReminder, FIRST_SHOW_DELAY_MS);
-    const reminderTimer = setInterval(showInstallReminder, REMINDER_INTERVAL_MS);
+    // The greeting markup this icon lives inside is part of the Home page's own HTML, parsed
+    // further down the page than this script - wait for the DOM to actually be ready first.
+    if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
+    else init();
   })();
 </script>
 
@@ -2758,7 +2746,17 @@ img.emoji-tw{width:1.15em;height:1.15em;vertical-align:-0.2em;margin:0 1px}
       <div class="sky-banner" id="sky-banner" style="background:#0F1E2E">
         <div class="sky-banner-top" style="margin-bottom:0">
           <div>
-            <div class="sky-greeting" id="sky-greeting" style="display:flex;align-items:center;gap:8px"><svg id="sky-greeting-icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#C4973B" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"></svg><span id="sky-greeting-text">Good morning, John</span></div>
+            <div class="sky-greeting" id="sky-greeting" style="display:flex;align-items:center;gap:8px;position:relative"><svg id="sky-greeting-icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#C4973B" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"></svg><span id="sky-greeting-text">Good morning, John</span>
+              <div id="installWarnWrap" style="display:none;position:relative">
+                <button id="installWarnIcon" onclick="event.stopPropagation();toggleInstallWarnPopover()" style="background:none;border:none;padding:0;margin-left:2px;cursor:pointer;display:flex;align-items:center" aria-label="Install reminder">
+                  <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#F0B429" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                </button>
+                <div id="installWarnPopover" style="display:none;position:absolute;top:28px;left:0;z-index:200;background:white;border-radius:12px;box-shadow:0 8px 24px rgba(0,0,0,0.22);padding:16px;width:270px">
+                  <div id="installWarnText" style="font-size:12.5px;color:#334155;line-height:1.55;margin-bottom:12px;font-weight:600">Mavis works best installed as an app - faster, and no browser bar in the way.</div>
+                  <button id="installWarnBtn" onclick="installWarnPrimaryAction()" style="width:100%;background:#0D9488;color:white;border:none;border-radius:7px;padding:9px;font-family:inherit;font-size:12.5px;font-weight:700;cursor:pointer">Install now</button>
+                </div>
+              </div>
+            </div>
             <div class="sky-date" id="home-date-label"></div>
           </div>
           <div class="venue-switcher" id="venue-switcher">

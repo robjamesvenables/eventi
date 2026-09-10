@@ -2409,37 +2409,30 @@ img.emoji-tw{width:1.15em;height:1.15em;vertical-align:-0.2em;margin:0 1px}
 
 <script>
 // ── Tablet "whole screen zooms out and gets stuck" workaround ──
-// Root cause confirmed via a screen recording of the actual bug happening (frame-by-frame:
-// typing in one field, tapping directly into a second field in the same popup, bug appears
-// on the very next frame) and matched to a real, officially tracked Chromium engine bug
-// (issues.chromium.org/issues/40924170): switching focus directly between two input-type
-// elements makes the on-screen keyboard briefly hide and reshow, and during that animation
-// the browser's own effective page scale can be calculated wrong and get stuck there.
-// Ruled out first: not a font-size issue (every field in the app is already 16px+), not a
-// Chrome-version issue (confirmed on 152, well past where a related fix landed), not
-// Samsung DeX specific (reproduced on HarmonyOS in normal, non-desktop mode too), and not
-// fixed by any static viewport meta declaration tried so far (plain, zoom-locked, and
-// interactive-widget=overlays-content were all tried and none held up).
-// This actively corrects it instead of trying to prevent it: shortly after a focus change
-// that follows another field losing focus within about a second (i.e. a genuine rapid
-// field-to-field switch, matching the exact confirmed trigger) - not a fresh, isolated tap
-// into a single field - it forces the browser to snap its zoom back to 1.0 by briefly adding
-// minimum-scale=1.0 to the viewport tag (the bug zooms OUT, so minimum-scale is what
-// constrains that, not maximum-scale) then immediately removing it again. Narrow and
-// momentary rather than a permanent lock, and scoped to only this specific trigger, so it
-// shouldn't interfere with someone deliberately pinch-zooming in to read something elsewhere
-// in the app.
+// Root cause narrowed down precisely via direct testing on the affected tablets: it is NOT
+// triggered by short single-line fields (Title, etc), and NOT specifically by switching
+// focus between two fields (an earlier theory, now disproven - it happens on a first,
+// isolated tap too) - it's specifically the large multi-line textarea (Sandbox/Sticky
+// Notes/Recipes' note-body field, min-height:160px, resizable) that triggers it, every time
+// it receives focus. This matches Chrome's own real, deliberately-built "focused editable
+// zoom" behavior (confirmed to exist via Chromium's own test suite, focused_editable_zoom.html)
+// - a large/resizable focused element interacting with the reduced viewport space once a
+// tablet's keyboard opens appears to trigger a zoom adjustment that, on these devices, ends
+// up wrong and stuck rather than settling back to 1.0.
+// Already ruled out before this: not a font-size issue (every field in the app is 16px+),
+// not a Chrome-version issue (confirmed on 152), not Samsung DeX specific (reproduced on
+// HarmonyOS in normal mode too), not fixed by any static viewport meta declaration tried so
+// far (plain, zoom-locked, interactive-widget=overlays-content), and not a focus-transition
+// pattern (the previous version of this fix, replaced now that testing disproved that theory).
+// This corrects it directly at the source now confirmed: focusing a textarea specifically
+// briefly forces minimum-scale=1.0 on the viewport (the bug zooms OUT, so minimum-scale is
+// the correct lever - maximum-scale, used in earlier failed attempts, only affects zooming
+// IN and can't correct this direction) then immediately removes the constraint again -
+// narrow and momentary, not a permanent lock, and scoped only to textareas so it shouldn't
+// affect deliberate pinch-zoom on short fields or elsewhere in the app.
 (function(){
-  let lastBlurTime = 0;
-  function isTextField(el){
-    return el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.tagName === 'SELECT');
-  }
-  document.addEventListener('focusout', function(e){
-    if(isTextField(e.target)) lastBlurTime = Date.now();
-  }, true);
   document.addEventListener('focusin', function(e){
-    if(!isTextField(e.target)) return;
-    if(Date.now() - lastBlurTime > 1200) return; // fresh, isolated focus - leave it alone
+    if(e.target.tagName !== 'TEXTAREA') return;
     setTimeout(function(){
       const viewport = document.querySelector('meta[name="viewport"]');
       if(!viewport) return;
@@ -2448,7 +2441,7 @@ img.emoji-tw{width:1.15em;height:1.15em;vertical-align:-0.2em;margin:0 1px}
       requestAnimationFrame(function(){
         viewport.setAttribute('content', original);
       });
-    }, 400); // gives the keyboard hide/show animation time to actually finish first
+    }, 400); // gives the keyboard show animation time to actually finish first
   }, true);
 })();
 </script>

@@ -15743,20 +15743,23 @@ function analyticsExportPdf(){
   if(!el) return;
   toast('Preparing your PDF…');
   analyticsHideHeaderButtonsDuring(function(){
+    // A fixed page format (A4, even in landscape) was clipping the right-hand side of wide
+    // rows entirely rather than scaling them down to fit - confirmed from an actual exported
+    // PDF sent back (numbers and chart bars cut off mid-value on the right edge). Standard
+    // page sizes fundamentally can't fit an arbitrarily wide, arbitrarily tall dashboard
+    // without either clipping or shrinking, so this builds one custom page sized to exactly
+    // match the content's own real proportions instead - a single continuous page, at the
+    // content's own width, tall enough for all of it, so nothing needs to be cut or scaled.
+    const pxToMm = px => px * 0.264583;
+    const widthMm = pxToMm(el.scrollWidth);
+    const heightMm = pxToMm(el.scrollHeight);
     return html2pdf().set({
-      margin: 8,
+      margin: 0,
       filename: 'analytics-' + new Date().toISOString().slice(0,10) + '.pdf',
       image: { type: 'jpeg', quality: 0.95 },
-      html2canvas: { scale: 2, useCORS: true, backgroundColor: '#ffffff' },
-      // Landscape, not portrait - the page itself is a wide, multi-column layout, and
-      // forcing that into a narrow A4 portrait page was squeezing everything down hard to
-      // fit the width, which is exactly what read as "scrunched". Landscape is a much
-      // closer match to the content's actual shape.
-      jsPDF: { unit: 'mm', format: 'a4', orientation: 'landscape' },
-      // Lets the page genuinely split across as many pages as it needs, breaking at natural
-      // section boundaries rather than forcing everything onto one page (the other half of
-      // what was causing the shrink) or cutting an element awkwardly in half mid-section.
-      pagebreak: { mode: ['css', 'legacy'] }
+      html2canvas: { scale: 2, useCORS: true, backgroundColor: '#ffffff', windowWidth: el.scrollWidth, windowHeight: el.scrollHeight },
+      jsPDF: { unit: 'mm', format: [widthMm, heightMm] }, // no orientation needed - the custom array already fully defines the page's exact shape
+      pagebreak: { mode: ['avoid-all'] } // one continuous page, sized to fit everything - no splitting needed
     }).from(el).save();
   }).then(function(){
     toast('PDF downloaded ✓');

@@ -10757,6 +10757,9 @@ function barRecipeCardHtml(r){
             <span class="recipe-badge ${r.allergensColor}">Allergens: ${r.allergens}</span>
           </div>
           <div style="font-size:12px;color:var(--ink2);line-height:1.7"><strong>Ingredients:</strong> ${r.ingredients}<br><strong>Method:</strong> ${r.method}</div>
+          <div style="display:flex;justify-content:flex-end;margin-top:12px;padding-top:12px;border-top:1px solid #F1F5F9">
+            <button onclick="barMoveToMenuOpen(${r.id})" style="display:flex;align-items:center;gap:5px;padding:7px 13px;background:#0F1E2E;border:none;border-radius:7px;font-family:'Inter',sans-serif;font-size:12px;font-weight:700;color:white;cursor:pointer">→ Move to Menu</button>
+          </div>
         </div>
       </div>
     </div>`;
@@ -11651,6 +11654,87 @@ window.kitchenMoveToMenuConfirm = function(){
     count++;
   });
   kitchenMoveToMenuClose();
+  toast(`Added to ${count} menu${count===1?'':'s'} ✓`);
+};
+
+// ── BAR MOVE TO MENU ── mirrors Kitchen's version exactly, one level down (barMenusData /
+// barRecipesData instead of kitchen's), since Bar has always been kept as its own fully
+// separate system from Kitchen rather than a shared one.
+let barMoveToMenuRecipeId = null;
+let barMoveToMenuSelections = {}; // {menuId: {checked, sectionId}}
+window.barMoveToMenuOpen = function(recipeId){
+  barMoveToMenuRecipeId = recipeId;
+  barMoveToMenuSelections = {};
+  barMenusData.forEach(m => {
+    barMoveToMenuSelections[m.id] = {checked:false, sectionId: m.content.sections[0] ? m.content.sections[0].id : null};
+  });
+  document.getElementById('barMoveToMenuOverlay').style.display = 'flex';
+  barMoveToMenuRender();
+};
+window.barMoveToMenuClose = function(){
+  document.getElementById('barMoveToMenuOverlay').style.display = 'none';
+  barMoveToMenuRecipeId = null;
+};
+window.barMoveToMenuToggle = function(menuId){
+  barMoveToMenuSelections[menuId].checked = !barMoveToMenuSelections[menuId].checked;
+  barMoveToMenuRender();
+};
+window.barMoveToMenuSectionChange = function(menuId, sectionId){
+  barMoveToMenuSelections[menuId].sectionId = parseInt(sectionId);
+};
+function barMoveToMenuRender(){
+  const body = document.getElementById('barMoveToMenuBody');
+  if(!barMenusData.length){
+    body.innerHTML = '<div style="text-align:center;padding:24px;color:#94A3B8;font-size:13px">No menus yet — add one on the Menus tab first.</div>';
+    return;
+  }
+  body.innerHTML = barMenusData.map(m => {
+    const sec = kitchenMenuSections.find(s=>s.id===m.section); // shared sections list - Bar reuses this same one, not a separate copy
+    const sel = barMoveToMenuSelections[m.id];
+    const sectionPicker = sel.checked ? `
+      <select onchange="barMoveToMenuSectionChange(${m.id}, this.value)" style="margin-top:8px;width:100%;padding:8px 10px;border:1.5px solid #E2E8F0;border-radius:7px;font-family:'Inter',sans-serif;font-size:16px;color:#334155">
+        ${m.content.sections.map(s => `<option value="${s.id}" ${s.id===sel.sectionId?'selected':''}>${s.name}</option>`).join('')}
+      </select>` : '';
+    return `
+      <div style="padding:12px 0;border-bottom:1px solid #F1F5F9">
+        <div style="display:flex;align-items:center;gap:10px;cursor:pointer" onclick="barMoveToMenuToggle(${m.id})">
+          <input type="checkbox" ${sel.checked?'checked':''} style="width:18px;height:18px;flex-shrink:0;accent-color:#0D9488" onclick="event.stopPropagation();barMoveToMenuToggle(${m.id})">
+          <div style="flex:1;min-width:0">
+            <div style="font-size:13.5px;font-weight:700;color:#0F1E2E">${m.name}</div>
+            <div style="font-size:11.5px;color:#64748B">${m.cat}</div>
+          </div>
+          <span class="menu-badge ${sec.badge}">${sec.badgeLabel}</span>
+        </div>
+        ${sectionPicker}
+      </div>`;
+  }).join('');
+}
+window.barMoveToMenuConfirm = function(){
+  const r = barRecipesData.find(x=>x.id===barMoveToMenuRecipeId);
+  if(!r) return;
+  const targets = Object.entries(barMoveToMenuSelections).filter(([id,sel]) => sel.checked);
+  if(!targets.length){
+    toast('Select at least one menu');
+    return;
+  }
+  let count = 0;
+  targets.forEach(([menuId, sel]) => {
+    const m = barMenusData.find(x=>x.id===parseInt(menuId));
+    if(!m) return;
+    const sec = m.content.sections.find(s=>s.id===sel.sectionId) || m.content.sections[0];
+    if(!sec) return;
+    const maxId = Math.max(0, ...sec.dishes.map(d=>d.id));
+    sec.dishes.push({
+      id: maxId+1,
+      name: r.name,
+      desc: '',
+      price: '',
+      allergens: r.allergens ? r.allergens.split(',').map(a=>a.trim()) : [],
+      photo: r.photo || ''
+    });
+    count++;
+  });
+  barMoveToMenuClose();
   toast(`Added to ${count} menu${count===1?'':'s'} ✓`);
 };
 
@@ -17272,6 +17356,20 @@ document.addEventListener('DOMContentLoaded', initCardColours);
     <div style="padding:0 24px;overflow-y:auto;flex:1" id="moveToMenuBody"></div>
     <div style="padding:16px 24px;border-top:1px solid #F1F5F9;flex-shrink:0">
       <button onclick="kitchenMoveToMenuConfirm()" style="width:100%;padding:12px;background:#0D9488;border:none;border-radius:9px;font-family:'Inter',sans-serif;font-size:13.5px;font-weight:700;color:white;cursor:pointer">Add to Selected Menu(s)</button>
+    </div>
+  </div>
+</div>
+
+<div id="barMoveToMenuOverlay" style="display:none;position:fixed;inset:0;background:rgba(15,30,46,0.6);z-index:10001;align-items:center;justify-content:center;padding:20px" onclick="if(event.target===this)barMoveToMenuClose()">
+  <div style="background:white;border-radius:16px;max-width:480px;width:100%;max-height:85vh;display:flex;flex-direction:column;overflow:hidden">
+    <div style="background:#0F1E2E;padding:20px 24px;border-radius:16px 16px 0 0;display:flex;align-items:center;justify-content:space-between;flex-shrink:0">
+      <div style="color:white;font-size:16px;font-weight:800">Move to Menu</div>
+      <button onclick="barMoveToMenuClose()" style="background:rgba(255,255,255,0.12);border:none;color:white;width:32px;height:32px;border-radius:50%;cursor:pointer;font-size:16px;flex-shrink:0">×</button>
+    </div>
+    <div style="padding:8px 24px 20px;font-size:12.5px;color:#64748B;flex-shrink:0">Select which menu(s) to add this cocktail to. The recipe stays here too — this copies it in.</div>
+    <div style="padding:0 24px;overflow-y:auto;flex:1" id="barMoveToMenuBody"></div>
+    <div style="padding:16px 24px;border-top:1px solid #F1F5F9;flex-shrink:0">
+      <button onclick="barMoveToMenuConfirm()" style="width:100%;padding:12px;background:#0D9488;border:none;border-radius:9px;font-family:'Inter',sans-serif;font-size:13.5px;font-weight:700;color:white;cursor:pointer">Add to Selected Menu(s)</button>
     </div>
   </div>
 </div>

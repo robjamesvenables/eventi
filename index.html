@@ -3146,10 +3146,16 @@ img.emoji-tw{width:1.15em;height:1.15em;vertical-align:-0.2em;margin:0 1px}
     <div class="page" id="p-analytics" style="padding:32px 28px 60px">
       <div class="ph">
         <div class="ph-title">Analytics</div>
-        <button class="btn btn-navy" onclick="nav('reporting')" style="gap:6px">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-          Add / Edit Figures
-        </button>
+        <div style="display:flex;gap:8px">
+          <button class="btn btn-navy" id="analytics-export-btn" onclick="analyticsExportShare(event)" style="gap:6px;background:#0D9488">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12v7a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-7"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>
+            Share / Export
+          </button>
+          <button class="btn btn-navy" onclick="nav('reporting')" style="gap:6px">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            Add / Edit Figures
+          </button>
+        </div>
       </div>
 
       <div class="an-hero-split" style="display:grid;grid-template-columns:1fr 1.5fr;gap:16px;margin-bottom:16px">
@@ -15693,6 +15699,108 @@ function anTargetChangeMonth(delta){
   anTargetViewDate = new Date(anTargetViewDate.getFullYear(), anTargetViewDate.getMonth()+delta, 1);
   anRenderTargetGrid();
 }
+
+// Captures the whole Analytics page live (as it's actually showing right now, not a rebuilt
+// copy), then either downloads it as one PDF or, on a device that supports it, hands it to
+// the operating system's own share sheet - which is what actually puts WhatsApp (or Mail,
+// AirDrop, etc) in front of the person, since there's no separate WhatsApp-specific API for
+// sharing an image or PDF directly. Falls back to a plain PNG download on browsers that
+// don't support sharing files (most desktop browsers) - the recipient loses nothing, it's
+// just one extra manual step (attach the downloaded file themselves) instead of the
+// one-tap share sheet a phone gets.
+window.analyticsExportShare = function(event){
+  if(event) event.preventDefault();
+  appModalShow({
+    title: 'Share / Export Analytics',
+    fields: [
+      {label:'Format', type:'pillpicker', options:[
+        {id:'pdf', name:'PDF'},
+        {id:'image', name:'Image (share/WhatsApp)'}
+      ], value:'pdf'}
+    ],
+    onOk: function(vals){
+      const choice = vals[0] || 'pdf';
+      if(choice === 'pdf') analyticsExportPdf();
+      else analyticsExportImage();
+    }
+  });
+};
+
+// Hides the header buttons for the duration of the capture only, so neither this button nor
+// "Add / Edit Figures" ends up baked into the exported page - restored immediately after,
+// whether the export succeeded or failed.
+function analyticsHideHeaderButtonsDuring(fn){
+  const header = document.querySelector('#p-analytics .ph');
+  const prevDisplay = header ? header.style.display : null;
+  if(header) header.style.display = 'none';
+  return Promise.resolve().then(fn).finally(function(){
+    if(header) header.style.display = prevDisplay || '';
+  });
+}
+
+function analyticsExportPdf(){
+  const el = document.getElementById('p-analytics');
+  if(!el) return;
+  toast('Preparing your PDF…');
+  analyticsHideHeaderButtonsDuring(function(){
+    return html2pdf().set({
+      margin: 8,
+      filename: 'analytics-' + new Date().toISOString().slice(0,10) + '.pdf',
+      image: { type: 'jpeg', quality: 0.95 },
+      html2canvas: { scale: 2, useCORS: true, backgroundColor: '#ffffff' },
+      jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+    }).from(el).save();
+  }).then(function(){
+    toast('PDF downloaded ✓');
+  }).catch(function(err){
+    console.error('Analytics PDF export failed:', err);
+    toast('PDF export failed — please try again');
+  });
+}
+
+async function analyticsExportImage(){
+  const el = document.getElementById('p-analytics');
+  if(!el || typeof window.html2canvas !== 'function'){
+    alert('The export library did not load. Please refresh the page and try again.');
+    return;
+  }
+  toast('Preparing your image…');
+  try{
+    const canvas = await analyticsHideHeaderButtonsDuring(function(){
+      return window.html2canvas(el, { scale: 2, useCORS: true, backgroundColor: '#ffffff', logging: false });
+    });
+    const blob = await new Promise(function(resolve){ canvas.toBlob(resolve, 'image/png'); });
+    if(!blob) throw new Error('The image could not be created.');
+    const filename = 'analytics-' + new Date().toISOString().slice(0,10) + '.png';
+    const file = new File([blob], filename, { type: 'image/png' });
+
+    // navigator.canShare/share with files is what actually opens the OS share sheet
+    // (WhatsApp, Mail, AirDrop, etc) with the image already attached - only reliably
+    // supported on phones/tablets today, not most desktop browsers.
+    if(navigator.canShare && navigator.canShare({ files: [file] })){
+      await navigator.share({ files: [file], title: 'Analytics' });
+      return;
+    }
+
+    // Fallback: straight download - works everywhere, just needs the file attached
+    // manually afterward instead of a one-tap share sheet.
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.download = filename;
+    link.href = url;
+    link.style.display = 'none';
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    setTimeout(function(){ URL.revokeObjectURL(url); }, 1500);
+    toast('Image downloaded ✓ — attach it to WhatsApp or email manually');
+  } catch(err){
+    if(err && err.name === 'AbortError') return; // person cancelled the native share sheet - not an error
+    console.error('Analytics image export failed:', err);
+    toast('Image export failed — please try again');
+  }
+}
+
 function anOpenSetTarget(){
   const monthStart = anMonthStartStr(anTargetViewDate);
   const current = anGetGuideTarget(anTargetViewDate);

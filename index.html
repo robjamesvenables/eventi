@@ -8708,22 +8708,22 @@ let ADMIN_PERMS = {
   dailyworker: {teamfeed:1,chat:1,suggestions:0,vacancies:1,tasks:1,inventory:0,entertainment:0,calendar:0,sops:1,survey:0,reports:0,directory:0,marketing:0,adminconsole:0},
 };
 
-let PEOPLE_DEPARTMENTS = ['Sales and Marketing', 'Kitchen', 'Bar', 'Housekeeping', 'Engineering', 'Audiovisual', 'IT', 'Music Curation', 'Operations', 'Guest Relations'];
+let PEOPLE_DEPARTMENTS = ['Management', 'GRO', 'Operations', 'Audio Visual', 'IT', 'Engineering', 'Housekeeping', 'Kitchen', 'Bar', 'Sales and Marketing', 'Human Resources'];
 
 let PEOPLE = [
-  {id:1, firstName:'Robbie', lastName:'', role:'superadmin', departments:['Operations']},
-  {id:2, firstName:'Greta', lastName:'Steccanella', role:'director', departments:['Guest Relations']},
+  {id:1, firstName:'Robbie', lastName:'', role:'superadmin', departments:['Operations','Kitchen','Management']},
+  {id:2, firstName:'Greta', lastName:'Steccanella', role:'director', departments:['GRO']},
   {id:3, firstName:'James', lastName:'Smith', role:'manager', departments:['Operations']},
   {id:4, firstName:'I Gede Bagus', lastName:'Tri Prayoga', role:'teammember', departments:['Kitchen']},
-  {id:5, firstName:'John', lastName:'Smith', role:'supervisor', departments:['Guest Relations']},
+  {id:5, firstName:'John', lastName:'Smith', role:'supervisor', departments:['GRO']},
   {id:6, firstName:'Emma', lastName:'Evans', role:'teammember', departments:['Kitchen','Housekeeping']},
   {id:7, firstName:'Peter', lastName:'Jackson', role:'dailyworker', departments:['Housekeeping']},
   {id:8, firstName:'Sarah', lastName:'Chen', role:'teammember', departments:['Sales and Marketing']},
   {id:9, firstName:'David', lastName:'Wilson', role:'teammember', departments:['Bar']},
   {id:10, firstName:'Made', lastName:'Wirawan', role:'teammember', departments:['Engineering']},
-  {id:11, firstName:'Kadek', lastName:'Putra', role:'teammember', departments:['Audiovisual']},
+  {id:11, firstName:'Kadek', lastName:'Putra', role:'teammember', departments:['Audio Visual']},
   {id:12, firstName:'Tina', lastName:'Marsh', role:'teammember', departments:['IT']},
-  {id:13, firstName:'Alex', lastName:'Rahman', role:'teammember', departments:['Music Curation']},
+  {id:13, firstName:'Alex', lastName:'Rahman', role:'teammember', departments:['Operations']},
 ];
 let peopleNextId = 14;
 let peopleEditingId = null;
@@ -13224,7 +13224,7 @@ const CHAT_PEOPLE_DIRECTORY = [
   {name:'Sarah', role:'Operations', color:'#0D9488', online:true},
   {name:'Wayan', role:'Engineering', color:'#475569', online:true},
   {name:'Made', role:'Events', color:'#A855F7', online:false},
-  {name:'Ayu (GRO)', role:'Guest Relations', color:'#EF4444', online:true},
+  {name:'Ayu (GRO)', role:'GRO', color:'#EF4444', online:true},
   {name:'James Smith', role:'IT', color:'#0F1E2E', online:false},
   {name:'Greta', role:'Marketing', color:'#0D9488', online:true},
   {name:'I Gede Bagus', role:'Security', color:'#475569', online:false},
@@ -13339,9 +13339,13 @@ let chatLoadedFromDb = false;
 const CHAT_LOCAL_STORAGE_KEY = 'mavis_chat_conversations_v1';
 
 function chatSeedDepartmentGroups(){
+  // Every department in the list shows as a group here, even ones with nobody currently
+  // assigned - this is deliberately a preview/guide of the eventual group structure while the
+  // real tagging/permissions system in Admin Console isn't built yet, not a fully-wired
+  // membership system. Remove this guard-less behavior once that real system exists, at which
+  // point an empty department genuinely having no group makes more sense again.
   PEOPLE_DEPARTMENTS.forEach((dept, idx) => {
     const memberIds = PEOPLE.filter(p => p.departments.includes(dept)).map(p => p.id);
-    if(!memberIds.length) return;
     const groupId = 90000 + idx;
     const existing = chatConversations.find(c => c.id === groupId);
     if(existing){ existing.memberIds = memberIds; return; }
@@ -13359,6 +13363,29 @@ function chatSeedDepartmentGroups(){
       ]
     });
   });
+
+  // "All" isn't a real department anyone gets individually tagged with - it's meant to
+  // include literally everyone in the company regardless of their own department, so it's
+  // handled as its own special case here rather than living in PEOPLE_DEPARTMENTS.
+  const allGroupId = 89999;
+  const allMemberIds = PEOPLE.map(p => p.id);
+  const existingAll = chatConversations.find(c => c.id === allGroupId);
+  if(existingAll){ existingAll.memberIds = allMemberIds; }
+  else {
+    chatConversations.push({
+      id: allGroupId,
+      name: 'All',
+      isGroup: true,
+      memberIds: allMemberIds,
+      avatar: '',
+      color: '#0F1E2E',
+      online: false,
+      unread: 0,
+      messages: [
+        {from:'them', text:'This is the All group — everyone in the company is automatically a member, regardless of department.', time:'Now', createdAt: new Date(0).toISOString()}
+      ]
+    });
+  }
 }
 
 let chatGroupRealtimeSubscribed = false;

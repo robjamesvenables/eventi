@@ -12579,6 +12579,15 @@ window.announcePickMention = function(idx){
   if(!opt || !info) return;
   const { node, matchStart, matchEnd } = info;
 
+  // Tagging the same department/person twice in one post doesn't add anything - remove any
+  // existing pill for this exact name first, so there's only ever one live copy of a given
+  // tag, rather than an old, now-orphaned pill sitting there looking like plain text next
+  // to a new one.
+  const input = document.getElementById('announce-input');
+  input.querySelectorAll('[data-mention]').forEach(el => {
+    if(el.dataset.mention === opt.name) el.remove();
+  });
+
   const pill = document.createElement('span');
   pill.dataset.mention = opt.name;
   pill.contentEditable = 'false';

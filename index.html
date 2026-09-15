@@ -10,6 +10,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.9.3/html2pdf.bundle.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 <link rel="manifest" href="/manifest.json">
 <meta name="theme-color" content="#0F1E2E">
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
@@ -3090,9 +3091,21 @@ img.emoji-tw{width:1.15em;height:1.15em;vertical-align:-0.2em;margin:0 1px}
       <div class="ph" style="margin-bottom:16px">
         <div>
           <div class="ph-title">Customer Survey</div>
-          <div class="ph-sub">Quick guest comments, logged by voice or typed — one entry at a time</div>
+          <div class="ph-sub">Guests scan the QR to leave feedback themselves, or GRO logs it after asking</div>
         </div>
         <button class="btn btn-ghost" onclick="surveyGoToday()">Today</button>
+      </div>
+
+      <div style="background:#0F1E2E;border-radius:14px;padding:24px;margin-bottom:20px;display:flex;gap:22px;align-items:center;flex-wrap:wrap">
+        <div id="survey-qr-canvas" style="background:white;border-radius:10px;padding:10px;flex-shrink:0"></div>
+        <div style="flex:1;min-width:200px">
+          <div style="color:white;font-size:15px;font-weight:800;margin-bottom:4px">Scan to leave feedback</div>
+          <div style="color:rgba(255,255,255,0.6);font-size:12.5px;margin-bottom:14px">Print this on a table talker, business card, or menu — or share it straight from here.</div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap">
+            <button onclick="surveyDownloadQr()" style="padding:9px 14px;background:white;color:#0F1E2E;border:none;border-radius:8px;font-family:'Inter',sans-serif;font-size:12.5px;font-weight:700;cursor:pointer">↓ Download</button>
+            <button onclick="surveyShareQrLink()" style="padding:9px 14px;background:#0D9488;color:white;border:none;border-radius:8px;font-family:'Inter',sans-serif;font-size:12.5px;font-weight:700;cursor:pointer">💬 Send via Chat</button>
+          </div>
+        </div>
       </div>
 
       <div style="display:flex;align-items:center;justify-content:center;gap:16px;background:white;border:1.5px solid #E2E8F0;border-radius:12px;padding:12px;margin-bottom:16px">
@@ -3107,7 +3120,7 @@ img.emoji-tw{width:1.15em;height:1.15em;vertical-align:-0.2em;margin:0 1px}
           <button onclick="surveyPdf()" style="padding:9px 14px;background:#F1F5F9;color:#334155;border:none;border-radius:8px;font-family:'Inter',sans-serif;font-size:12.5px;font-weight:700;cursor:pointer">PDF</button>
           <button onclick="surveyShare()" style="padding:9px 14px;background:#0F1E2E;color:white;border:none;border-radius:8px;font-family:'Inter',sans-serif;font-size:12.5px;font-weight:700;cursor:pointer">💬 Send via Chat</button>
           <button onclick="surveyShareWA()" style="padding:9px 14px;background:#F1F5F9;color:#334155;border:none;border-radius:8px;font-family:'Inter',sans-serif;font-size:12.5px;font-weight:700;cursor:pointer">Send via WA</button>
-          <button onclick="surveyOpenForm()" style="padding:9px 16px;background:#0F1E2E;color:white;border:none;border-radius:8px;font-family:'Inter',sans-serif;font-size:12.5px;font-weight:700;cursor:pointer">+ Add Comment</button>
+          <button onclick="surveyOpenForm()" style="padding:9px 16px;background:#0F1E2E;color:white;border:none;border-radius:8px;font-family:'Inter',sans-serif;font-size:12.5px;font-weight:700;cursor:pointer">+ Log Response</button>
         </div>
       </div>
 
@@ -9536,6 +9549,34 @@ function surveyShareWA(){
   window.open('https://wa.me/?text=' + encodeURIComponent(text), '_blank');
 }
 
+// The public, no-login survey page a guest lands on after scanning - a completely separate,
+// standalone file (survey-qr.html) rather than a page inside the main logged-in app, since
+// a customer scanning this shouldn't ever hit Mavis's own login screen at all.
+function surveyQrUrl(){
+  return window.location.origin + '/survey-qr.html';
+}
+
+function surveyRenderQr(){
+  const el = document.getElementById('survey-qr-canvas');
+  if(!el || typeof QRCode === 'undefined') return;
+  el.innerHTML = '';
+  new QRCode(el, { text: surveyQrUrl(), width: 108, height: 108, colorDark: '#0F1E2E', colorLight: '#ffffff' });
+}
+
+function surveyDownloadQr(){
+  const el = document.getElementById('survey-qr-canvas');
+  const canvas = el ? el.querySelector('canvas') : null;
+  if(!canvas){ toast('QR code not ready yet - please try again'); return; }
+  const link = document.createElement('a');
+  link.download = 'mavis-feedback-qr.png';
+  link.href = canvas.toDataURL('image/png');
+  link.click();
+}
+
+function surveyShareQrLink(){
+  shareToChatOpen('Scan or tap this link to leave feedback: ' + surveyQrUrl());
+}
+
 // ── JOB VACANCIES ──
 let vacanciesNextId = 3;
 let vacanciesActiveTab = 'current';
@@ -12256,6 +12297,7 @@ window.addEventListener('load', () => {
   musicLoadFromSupabase().then(musicRender);
   mnLoadFromSupabase();
   surveyLoadFromSupabase().then(surveyRender);
+  surveyRenderQr();
   businessMetricsLoadFromSupabase();
   stickyLoadMyNotes();
 });

@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Tell us about your visit</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'Inter',-apple-system,sans-serif;background:#F8FAFC;color:#0F1E2E;min-height:100vh;display:flex;align-items:flex-start;justify-content:center;padding:24px 16px}
+  .card{background:white;border-radius:18px;padding:28px 22px;max-width:440px;width:100%;box-shadow:0 4px 24px rgba(0,0,0,0.06)}
+  .logo{width:44px;height:44px;border-radius:11px;background:#0F1E2E;display:flex;align-items:center;justify-content:center;color:#0D9488;font-weight:800;font-size:19px;margin:0 auto 14px}
+  h1{font-size:19px;font-weight:800;text-align:center;margin-bottom:4px}
+  .sub{font-size:13px;color:#64748B;text-align:center;margin-bottom:26px}
+  .q{margin-bottom:22px}
+  .q-label{font-size:14px;font-weight:700;margin-bottom:10px}
+  .stars{display:flex;gap:6px;justify-content:center}
+  .stars svg{cursor:pointer;transition:transform 0.1s}
+  .stars svg:active{transform:scale(0.9)}
+  .rec-row{display:flex;gap:10px}
+  .rec-btn{flex:1;padding:13px;border-radius:10px;border:1.5px solid #E2E8F0;background:white;color:#64748B;font-family:inherit;font-size:14px;font-weight:700;cursor:pointer}
+  .rec-btn.active-yes{background:#0D9488;border-color:#0D9488;color:white}
+  .rec-btn.active-no{background:#DC2626;border-color:#DC2626;color:white}
+  select,input[type=text]{width:100%;padding:12px 14px;border:1.5px solid #E2E8F0;border-radius:10px;font-family:inherit;font-size:16px;background:white}
+  .optional-label{font-size:12px;color:#94A3B8;font-weight:700;text-transform:uppercase;letter-spacing:0.4px;margin:24px 0 14px}
+  .submit-btn{width:100%;padding:15px;background:#0F1E2E;color:white;border:none;border-radius:11px;font-family:inherit;font-size:15px;font-weight:800;cursor:pointer;margin-top:10px}
+  .submit-btn:disabled{opacity:0.5;cursor:not-allowed}
+  .error{font-size:12px;color:#DC2626;text-align:center;margin-top:10px;display:none}
+  .thankyou{text-align:center;padding:20px 0}
+  .thankyou .check{width:64px;height:64px;border-radius:50%;background:#0D9488;display:flex;align-items:center;justify-content:center;margin:0 auto 18px}
+  .thankyou h2{font-size:19px;font-weight:800;margin-bottom:8px}
+  .thankyou p{font-size:13px;color:#64748B}
+</style>
+</head>
+<body>
+
+<div class="card" id="formCard">
+  <div class="logo">M</div>
+  <h1>How was your visit today?</h1>
+  <div class="sub">Takes less than a minute — thank you for helping us improve</div>
+
+  <div id="questionsWrap"></div>
+
+  <div class="q">
+    <div class="q-label">Would you recommend us to a friend?</div>
+    <div class="rec-row">
+      <button class="rec-btn" id="recYes" onclick="setRecommend('yes')">Yes</button>
+      <button class="rec-btn" id="recNo" onclick="setRecommend('no')">No</button>
+    </div>
+  </div>
+
+  <div class="optional-label">Just a couple more (optional)</div>
+
+  <div class="q">
+    <div class="q-label" style="font-size:13px">Age range</div>
+    <select id="ageRange">
+      <option value="">Prefer not to say</option>
+      <option>18-24</option><option>25-34</option><option>35-44</option><option>45-54</option><option>55+</option>
+    </select>
+  </div>
+  <div class="q">
+    <div class="q-label" style="font-size:13px">Where are you visiting from?</div>
+    <input type="text" id="country" placeholder="e.g. Australia">
+  </div>
+
+  <button class="submit-btn" id="submitBtn" onclick="submitSurvey()">Submit</button>
+  <div class="error" id="errorMsg">Please rate all five questions first.</div>
+</div>
+
+<div class="card thankyou" id="thankyouCard" style="display:none">
+  <div class="check">
+    <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+  </div>
+  <h2>Thank you!</h2>
+  <p>Your feedback helps us make every visit better.</p>
+</div>
+
+<script>
+const SUPABASE_URL = 'https://qjxcpmkiyfrukxicdwkl.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFqeGNwbWtpeWZydWt4aWNkd2tsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE5NDkwOTAsImV4cCI6MjA5NzUyNTA5MH0.Wiwtqf1bkokU7H6VauvFyysHcMMi5KV8mgSfwR5NEWc';
+const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+const QUESTIONS = [
+  {id:'overall', label:'Overall experience'},
+  {id:'food', label:'Food quality'},
+  {id:'drinks', label:'Drinks quality'},
+  {id:'service', label:'Service'},
+  {id:'music', label:'Music / atmosphere'}
+];
+const ratings = {overall:0, food:0, drinks:0, service:0, music:0};
+let recommend = null;
+
+function starSvg(filled){
+  return `<svg width="30" height="30" viewBox="0 0 24 24" fill="${filled?'#F0B429':'#E2E8F0'}"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87L18.18 21 12 17.77 5.82 21 7 14.14l-5-4.87 6.91-1.01L12 2z"/></svg>`;
+}
+
+function renderQuestions(){
+  document.getElementById('questionsWrap').innerHTML = QUESTIONS.map(q => `
+    <div class="q">
+      <div class="q-label">${q.label}</div>
+      <div class="stars">${[1,2,3,4,5].map(n => `<span onclick="setRating('${q.id}',${n})">${starSvg(n<=ratings[q.id])}</span>`).join('')}</div>
+    </div>`).join('');
+}
+
+function setRating(key, value){
+  ratings[key] = value;
+  renderQuestions();
+}
+
+function setRecommend(val){
+  recommend = val;
+  document.getElementById('recYes').className = 'rec-btn' + (val==='yes' ? ' active-yes' : '');
+  document.getElementById('recNo').className = 'rec-btn' + (val==='no' ? ' active-no' : '');
+}
+
+async function submitSurvey(){
+  const allRated = QUESTIONS.every(q => ratings[q.id] > 0);
+  const errorEl = document.getElementById('errorMsg');
+  if(!allRated){
+    errorEl.style.display = 'block';
+    return;
+  }
+  errorEl.style.display = 'none';
+  const btn = document.getElementById('submitBtn');
+  btn.disabled = true;
+  btn.textContent = 'Submitting…';
+
+  const now = new Date();
+  const dateKey = now.getFullYear() + '-' + String(now.getMonth()+1).padStart(2,'0') + '-' + String(now.getDate()).padStart(2,'0');
+  const timeStr = now.toLocaleTimeString('en-GB', {hour:'2-digit', minute:'2-digit'});
+  const ageRange = document.getElementById('ageRange').value;
+  const country = document.getElementById('country').value.trim();
+
+  try{
+    const { error } = await sb.from('customer_survey_entries').insert({
+      date_key: dateKey, time_str: timeStr, source: 'qr',
+      overall: ratings.overall, food: ratings.food, drinks: ratings.drinks, service: ratings.service, music: ratings.music,
+      recommend, age_range: ageRange || null, country: country || null
+    });
+    if(error) throw error;
+    document.getElementById('formCard').style.display = 'none';
+    document.getElementById('thankyouCard').style.display = 'block';
+  } catch(e){
+    console.error('Survey submission failed:', e);
+    errorEl.textContent = 'Something went wrong - please try again.';
+    errorEl.style.display = 'block';
+    btn.disabled = false;
+    btn.textContent = 'Submit';
+  }
+}
+
+renderQuestions();
+</script>
+
+</body>
+</html>

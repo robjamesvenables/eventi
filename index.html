@@ -12534,7 +12534,13 @@ function announceOpenModal(title, text, tag, link, photo){
   announceSelectedTag = tag || 'Info';
   announcePhotoData = photo || '';
   document.getElementById('announce-modal-title').textContent = title;
-  document.getElementById('announce-input').innerHTML = text ? announceStyleEmojis(text).replace(/\n/g,'<br>') : '';
+  // Emoji styling only here, deliberately not announceStyleMentions - a mention rendered as
+  // a styled pill inside this editable field can't be deleted cleanly with normal backspace
+  // (the browser's contenteditable behavior around a styled span isn't predictable), even
+  // though the underlying text itself was always preserved correctly either way. Someone
+  // editing a post should just see and edit plain text, exactly as they'd have typed it -
+  // mention styling is for the finished, read-only post view, not for editing.
+  document.getElementById('announce-input').innerHTML = text ? momentsTwemojiParse(text).replace(/\n/g,'<br>') : '';
   document.getElementById('announce-link').value = link || '';
   document.getElementById('announce-modal').style.display = 'flex';
   announceModalOpen = true;

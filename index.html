@@ -10901,13 +10901,7 @@ function barDeleteRecipe(id){
 }
 
 const kitchenLinkIcon = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#16A34A" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M3 15h18M9 3v18"/></svg>';
-let kitchenLinkNextId = 100;
-let kitchenLinksData = [
-  {id:1, name:'Weekly Food Cost Sheet', meta:'Updated weekly', content:''},
-  {id:2, name:'Monthly P&L — Kitchen', meta:'Finance team', content:''},
-  {id:3, name:'Stock & Inventory Tracker', meta:'Daily update', content:''},
-  {id:4, name:'Supplier Order Template', meta:'Weekly orders', content:''}
-];
+let kitchenLinksData = [];
 
 function kitchenRenderLinks(){
   const list = document.getElementById('kitchen-links-list');
@@ -10930,6 +10924,16 @@ function kitchenRenderLinks(){
   `).join('');
 }
 
+async function kitchenLinksLoadFromSupabase(){
+  try{
+    const { data, error } = await sb.from('kitchen_links').select('*').order('id', { ascending: true });
+    if(error) throw error;
+    kitchenLinksData = data.map(row => ({ id: row.id, name: row.name, meta: row.meta, content: row.content || '' }));
+  } catch(e){
+    console.warn('Kitchen Links Supabase load failed, showing empty list (run the SQL if this is the first load)', e);
+  }
+}
+
 function kitchenLinksAdd(){
   appModalShow({
     title:'Add Note',
@@ -10937,8 +10941,11 @@ function kitchenLinksAdd(){
       {label:'Title', placeholder:'e.g. Weekly Food Cost Sheet'},
       {label:'Content', type:'textarea', rows:8, placeholder:'Track it right here — figures, notes, links to internal records', optional:true}
     ],
-    onOk([name, content]){
-      kitchenLinksData.push({id: kitchenLinkNextId++, name, meta:'Added ' + new Date().toLocaleDateString(), content: content||''});
+    async onOk([name, content]){
+      const meta = 'Added ' + new Date().toLocaleDateString();
+      const { data, error } = await sb.from('kitchen_links').insert({ name, meta, content: content||'' }).select().single();
+      if(error){ toast('Save failed - check your connection and try again'); console.warn('Kitchen link insert failed', error); return; }
+      kitchenLinksData.push({ id: data.id, name, meta, content: content||'' });
       kitchenRenderLinks();
       toast('Note added ✓');
     }
@@ -10959,6 +10966,8 @@ function kitchenEditLink(id){
       l.meta = 'Last updated ' + new Date().toLocaleDateString();
       kitchenRenderLinks();
       toast('Note updated ✓');
+      sb.from('kitchen_links').update({ name: l.name, content: l.content, meta: l.meta }).eq('id', id)
+        .then(({error})=>{ if(error) console.warn('Kitchen link update failed', error); });
     }
   });
 }
@@ -10970,6 +10979,8 @@ function kitchenDeleteLink(id){
     kitchenLinksData = kitchenLinksData.filter(x=>x.id!==id);
     kitchenRenderLinks();
     toast('Note deleted');
+    sb.from('kitchen_links').delete().eq('id', id)
+      .then(({error})=>{ if(error) console.warn('Kitchen link delete failed', error); });
   }});
 }
 
@@ -12045,6 +12056,7 @@ window.addEventListener('load', () => {
   customerLoadFromSupabase().then(customerRenderList);
   vacanciesLoadFromSupabase().then(vacanciesRender);
   kitchenLoadFromSupabase().then(()=>{ kitchenRenderAreaTabs(); kitchenRenderMenus(); kitchenRenderRecipes(); kitchenRenderAllergens(); });
+  kitchenLinksLoadFromSupabase().then(kitchenRenderLinks);
   barLoadFromSupabase().then(()=>{ barRenderAreaTabs(); barRenderMenus(); barRenderRecipes(); });
   businessMetricsLoadFromSupabase();
   stickyLoadMyNotes();

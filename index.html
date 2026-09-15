@@ -10365,7 +10365,6 @@ function barTab(id, el){
 
 // ── BAR MENUS (same Live/In Progress/Coming Up pattern as Kitchen) ──
 // ── BAR AREAS (a venue can have multiple bars, each with their own lists) ──
-let barAreaNextId = 10;
 let barAreas = [
   {id:'mainbar', name:'Main Bar'},
   {id:'poolbar', name:'Pool Bar'},
@@ -10373,7 +10372,6 @@ let barAreas = [
 ];
 let barActiveArea = 'all';
 
-let barMenuNextId = 100;
 let barMenusData = [
   {id:1, area:'mainbar', section:'live', cat:'Cocktails', name:'Cocktail Menu', meta:'Updated 3 Jun 2026', links:[], content:{sections:[
     {id:1, name:'Signature Cocktails', dishes:[
@@ -10486,6 +10484,7 @@ window.barSectionAdd = function(){
       m.content.sections.push({id:maxId+1, name, dishes:[]});
       barMenuDetailRender();
       toast('Section added ✓');
+      barSaveMenuContent(m.id);
     }
   });
 };
@@ -10496,6 +10495,7 @@ window.barSectionDelete = function(sectionId){
     m.content.sections = m.content.sections.filter(s=>s.id!==sectionId);
     barMenuDetailRender();
     toast('Section deleted');
+    barSaveMenuContent(m.id);
   }});
 };
 
@@ -10517,6 +10517,7 @@ window.barDishAdd = function(sectionId){
       sec.dishes.push({id:maxId+1, name, desc, price, allergens: allergens ? allergens.split(',').map(a=>a.trim()) : [], photo: photo||''});
       barMenuDetailRender();
       toast('Drink added ✓');
+      barSaveMenuContent(m.id);
     }
   });
 };
@@ -10541,6 +10542,7 @@ window.barDishEdit = function(sectionId, dishId){
       if(photo) d.photo = photo;
       barMenuDetailRender();
       toast('Drink updated ✓');
+      barSaveMenuContent(m.id);
     }
   });
 };
@@ -10552,6 +10554,7 @@ window.barDishDelete = function(sectionId, dishId){
     sec.dishes = sec.dishes.filter(d=>d.id!==dishId);
     barMenuDetailRender();
     toast('Drink removed');
+    barSaveMenuContent(m.id);
   }});
 };
 
@@ -10579,9 +10582,11 @@ function barAddArea(){
   appModalShow({
     title:'Add Area',
     fields:[{label:'Area name', placeholder:'e.g. Rooftop Bar'}],
-    onOk([name]){
+    async onOk([name]){
       let id = name.trim().toLowerCase().replace(/[^a-z0-9]+/g,'-');
       if(!id || barAreas.find(a=>a.id===id)) id = id + '-' + Date.now();
+      const { error } = await sb.from('bar_areas').insert({ id, name });
+      if(error){ toast('Save failed - check your connection and try again'); console.warn('Bar area insert failed', error); return; }
       barAreas.push({id, name});
       barActiveArea = id;
       barRenderAreaTabs();
@@ -10602,6 +10607,8 @@ function barRenameArea(id){
       barRenderAreaTabs();
       barRenderMenus();
       toast('Area renamed ✓');
+      sb.from('bar_areas').update({ name }).eq('id', id)
+        .then(({error})=>{ if(error) console.warn('Bar area rename failed', error); });
     }
   });
 }
@@ -10610,12 +10617,19 @@ function barDeleteArea(id){
   const a = barAreas.find(x=>x.id===id);
   if(!a) return;
   appConfirmShow({title:'Delete Area', msg:`Delete "${a.name}"? This will permanently remove all its menus.`, onOk:()=>{
+    const menuIdsToDelete = barMenusData.filter(m=>m.area===id).map(m=>m.id);
     barAreas = barAreas.filter(x=>x.id!==id);
     barMenusData = barMenusData.filter(m=>m.area!==id);
     if(barActiveArea===id) barActiveArea = 'all';
     barRenderAreaTabs();
     barRenderMenus();
     toast('Area deleted');
+    if(menuIdsToDelete.length){
+      sb.from('bar_menus').delete().in('id', menuIdsToDelete)
+        .then(({error})=>{ if(error) console.warn('Bar menus-in-deleted-area cleanup failed', error); });
+    }
+    sb.from('bar_areas').delete().eq('id', id)
+      .then(({error})=>{ if(error) console.warn('Bar area delete failed', error); });
   }});
 }
 
@@ -10651,14 +10665,33 @@ function barAddMenu(sectionId){
       {label:'Category', placeholder:'e.g. Cocktails'},
       {label:'Menu name', placeholder:'e.g. Cocktail Menu'}
     ],
-    onOk([area, cat, name]){
+    async onOk([area, cat, name]){
       const now = new Date();
       const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-      barMenusData.push({id: barMenuNextId++, area, section: sectionId, cat, name, meta:`Updated ${now.getDate()} ${months[now.getMonth()]} ${now.getFullYear()}`, links:[]});
+      const meta = `Updated ${now.getDate()} ${months[now.getMonth()]} ${now.getFullYear()}`;
+      // content.sections set here from the start - same pre-existing bug as Kitchen had:
+      // a brand new menu never got this field at all, which would throw as soon as
+      // anyone tried to open it (barMenuDetailRender/barSectionAdd both assume it exists).
+      const newMenu = {area, section: sectionId, cat, name, meta, links:[], content:{sections:[]}};
+      const { data, error } = await sb.from('bar_menus').insert({
+        area, section: sectionId, cat, name, meta, links: [], content: {sections:[]}
+      }).select().single();
+      if(error){ toast('Save failed - check your connection and try again'); console.warn('Bar menu insert failed', error); return; }
+      newMenu.id = data.id;
+      barMenusData.push(newMenu);
       barRenderMenus();
       toast('Menu added ✓');
     }
   });
+}
+
+// Shared by every function that changes what's inside a menu (sections, dishes, links) -
+// same pattern as Kitchen's version, saving the whole content/links blob in one call.
+function barSaveMenuContent(menuId){
+  const m = barMenusData.find(x=>x.id===menuId);
+  if(!m) return;
+  sb.from('bar_menus').update({ content: m.content, links: m.links }).eq('id', menuId)
+    .then(({error})=>{ if(error) console.warn('Bar menu content save failed', error); });
 }
 
 function barEditMenu(id){
@@ -10675,6 +10708,8 @@ function barEditMenu(id){
       m.area = area; m.cat = cat; m.name = name;
       barRenderMenus();
       toast('Menu updated ✓');
+      sb.from('bar_menus').update({ area, cat, name }).eq('id', id)
+        .then(({error})=>{ if(error) console.warn('Bar menu update failed', error); });
     }
   });
 }
@@ -10686,6 +10721,8 @@ function barDeleteMenu(id){
     barMenusData = barMenusData.filter(x=>x.id!==id);
     barRenderMenus();
     toast('Menu deleted');
+    sb.from('bar_menus').delete().eq('id', id)
+      .then(({error})=>{ if(error) console.warn('Bar menu delete failed', error); });
   }});
 }
 
@@ -10702,6 +10739,7 @@ function barAddLink(menuId){
       m.links.push({name, url});
       barRenderMenus();
       toast('Link saved ✓');
+      barSaveMenuContent(menuId);
     }
   });
 }
@@ -10711,6 +10749,7 @@ function barRemoveMenuLink(menuId, idx){
   if(!m) return;
   m.links.splice(idx,1);
   barRenderMenus();
+  barSaveMenuContent(menuId);
 }
 
 function barViewMenu(menuId){
@@ -10720,12 +10759,39 @@ function barViewMenu(menuId){
 }
 
 // ── BAR RECIPES (how the cocktails are made) ──
-let barRecipeNextId = 100;
 let barRecipesData = [
   {id:1, name:'Espresso Martini', cat:'Signature', catColor:'green', serves:1, allergens:'None', allergensColor:'green', ingredients:'45ml vodka, 30ml coffee liqueur, 30ml fresh espresso, 10ml sugar syrup', method:'Shake all ingredients hard with ice. Double strain into a chilled martini glass. Garnish with 3 coffee beans.', photo:'recipe-photos/espresso-martini.webp'},
   {id:2, name:'Bali Sunset', cat:'Signature', catColor:'green', serves:1, allergens:'None', allergensColor:'green', ingredients:'45ml white rum, 20ml passionfruit puree, 15ml lime juice, 10ml grenadine, soda top', method:'Shake rum, passionfruit, and lime with ice. Strain into glass over ice. Float grenadine, top with soda. Garnish with pineapple leaf.', photo:''},
   {id:3, name:'Classic Mojito', cat:'Classic', catColor:'green', serves:1, allergens:'None', allergensColor:'green', ingredients:'50ml white rum, 8 mint leaves, 20ml lime juice, 15ml sugar syrup, soda top', method:'Muddle mint gently with lime and syrup. Add rum and ice, top with soda. Stir and garnish with mint sprig.', photo:''}
 ];
+
+// Loads Bar's three separate data sets (Areas, Menus, Recipes) from Supabase in parallel -
+// same pattern as Kitchen's loader. No allergen guide here, since Bar never had one.
+async function barLoadFromSupabase(){
+  try{
+    const [areasRes, menusRes, recipesRes] = await Promise.all([
+      sb.from('bar_areas').select('*'),
+      sb.from('bar_menus').select('*').order('id', { ascending: true }),
+      sb.from('bar_recipes').select('*').order('id', { ascending: true })
+    ]);
+    if(areasRes.error) throw areasRes.error;
+    if(menusRes.error) throw menusRes.error;
+    if(recipesRes.error) throw recipesRes.error;
+
+    barAreas = areasRes.data;
+    barMenusData = menusRes.data.map(row => ({
+      id: row.id, area: row.area, section: row.section, cat: row.cat, name: row.name,
+      meta: row.meta, links: row.links || [], content: row.content || {sections:[]}
+    }));
+    barRecipesData = recipesRes.data.map(row => ({
+      id: row.id, name: row.name, cat: row.cat, catColor: row.cat_color, serves: row.serves,
+      allergens: row.allergens, allergensColor: row.allergens_color, ingredients: row.ingredients,
+      method: row.method, photo: row.photo || ''
+    }));
+  } catch(e){
+    console.warn('Bar Supabase load failed, using demo data (run the SQL if this is the first load)', e);
+  }
+}
 
 function barRecipeCardHtml(r){
   const photoBox = r.photo
@@ -10782,8 +10848,14 @@ function barAddRecipe(){
       {label:'Ingredients', type:'textarea', rows:7, placeholder:'e.g. 45ml vodka\n30ml coffee liqueur\n30ml fresh espresso\n10ml sugar syrup'},
       {label:'Method', type:'textarea', rows:9, placeholder:'e.g. Shake all ingredients hard with ice.\nDouble strain into a chilled glass.\nGarnish.'}
     ],
-    onOk([photo, name, cat, serves, allergens, ingredients, method]){
-      barRecipesData.push({id: barRecipeNextId++, name, cat, catColor:'green', serves, allergens, allergensColor:'amber', ingredients, method, photo: photo||''});
+    async onOk([photo, name, cat, serves, allergens, ingredients, method]){
+      const newRecipe = {name, cat, catColor:'green', serves, allergens, allergensColor:'amber', ingredients, method, photo: photo||''};
+      const { data, error } = await sb.from('bar_recipes').insert({
+        name, cat, cat_color: 'green', serves, allergens, allergens_color: 'amber', ingredients, method, photo: photo || null
+      }).select().single();
+      if(error){ toast('Save failed - check your connection and try again'); console.warn('Bar recipe insert failed', error); return; }
+      newRecipe.id = data.id;
+      barRecipesData.push(newRecipe);
       barRenderRecipes();
       toast('Recipe added ✓');
     }
@@ -10809,6 +10881,9 @@ function barEditRecipe(id){
       if(photo) r.photo = photo;
       barRenderRecipes();
       toast('Recipe updated ✓');
+      sb.from('bar_recipes').update({
+        name: r.name, cat: r.cat, serves: r.serves, allergens: r.allergens, ingredients: r.ingredients, method: r.method, photo: r.photo || null
+      }).eq('id', id).then(({error})=>{ if(error) console.warn('Bar recipe update failed', error); });
     }
   });
 }
@@ -10820,6 +10895,8 @@ function barDeleteRecipe(id){
     barRecipesData = barRecipesData.filter(x=>x.id!==id);
     barRenderRecipes();
     toast('Recipe deleted');
+    sb.from('bar_recipes').delete().eq('id', id)
+      .then(({error})=>{ if(error) console.warn('Bar recipe delete failed', error); });
   }});
 }
 
@@ -11791,6 +11868,7 @@ window.barMoveToMenuConfirm = function(){
       photo: r.photo || ''
     });
     count++;
+    barSaveMenuContent(m.id);
   });
   barMoveToMenuClose();
   toast(`Added to ${count} menu${count===1?'':'s'} ✓`);
@@ -11967,6 +12045,7 @@ window.addEventListener('load', () => {
   customerLoadFromSupabase().then(customerRenderList);
   vacanciesLoadFromSupabase().then(vacanciesRender);
   kitchenLoadFromSupabase().then(()=>{ kitchenRenderAreaTabs(); kitchenRenderMenus(); kitchenRenderRecipes(); kitchenRenderAllergens(); });
+  barLoadFromSupabase().then(()=>{ barRenderAreaTabs(); barRenderMenus(); barRenderRecipes(); });
   businessMetricsLoadFromSupabase();
   stickyLoadMyNotes();
 });

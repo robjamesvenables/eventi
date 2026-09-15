@@ -3105,7 +3105,8 @@ img.emoji-tw{width:1.15em;height:1.15em;vertical-align:-0.2em;margin:0 1px}
         <div id="survey-tally" style="font-size:13px;font-weight:700;color:#64748B"></div>
         <div style="display:flex;gap:8px">
           <button onclick="surveyPdf()" style="padding:9px 14px;background:#F1F5F9;color:#334155;border:none;border-radius:8px;font-family:'Inter',sans-serif;font-size:12.5px;font-weight:700;cursor:pointer">PDF</button>
-          <button onclick="surveyShare()" style="padding:9px 14px;background:#F1F5F9;color:#334155;border:none;border-radius:8px;font-family:'Inter',sans-serif;font-size:12.5px;font-weight:700;cursor:pointer">Share</button>
+          <button onclick="surveyShare()" style="padding:9px 14px;background:#0F1E2E;color:white;border:none;border-radius:8px;font-family:'Inter',sans-serif;font-size:12.5px;font-weight:700;cursor:pointer">💬 Send via Chat</button>
+          <button onclick="surveyShareWA()" style="padding:9px 14px;background:#F1F5F9;color:#334155;border:none;border-radius:8px;font-family:'Inter',sans-serif;font-size:12.5px;font-weight:700;cursor:pointer">Send via WA</button>
           <button onclick="surveyOpenForm()" style="padding:9px 16px;background:#0F1E2E;color:white;border:none;border-radius:8px;font-family:'Inter',sans-serif;font-size:12.5px;font-weight:700;cursor:pointer">+ Add Comment</button>
         </div>
       </div>
@@ -9276,14 +9277,28 @@ function notetakerViewPast(id){
 
 // ── CUSTOMER SURVEY (guest comments, logged by voice or typed) ──
 let surveySelectedDate = new Date();
-let surveyEntries = [
-  {id:1, dateKey: surveyDateKey(new Date()), name:'Table 12', comment:'Guests loved the sunset seating and asked if they could book the same table again next visit.', time:'19:42'},
-  {id:2, dateKey: surveyDateKey(new Date()), name:'', comment:'Guest at the bar mentioned the music was a touch loud for conversation tonight.', time:'20:15'},
-];
-let surveyNextId = 3;
-let surveyRecognition = null;
-let surveyIsRecording = false;
-let surveyUsedVoiceThisEntry = false;
+// ── CUSTOMER SURVEY ── two entry paths feeding the same 8-question set: GRO logs it
+// manually after asking a guest verbally (source:'manual'), or a guest fills it in
+// themselves after scanning the QR code (source:'qr', submitted from the separate public
+// survey-qr.html page, no Mavis login involved at all). Both write to the same Supabase
+// table and show up in the same day-grouped list here.
+let surveyEntries = [];
+let surveyLoading = true;
+
+async function surveyLoadFromSupabase(){
+  try{
+    const { data, error } = await sb.from('customer_survey_entries').select('*').order('created_at', { ascending: false });
+    if(error) throw error;
+    surveyEntries = data.map(row => ({
+      id: row.id, dateKey: row.date_key, time: row.time_str, source: row.source || 'manual',
+      overall: row.overall, food: row.food, drinks: row.drinks, service: row.service, music: row.music,
+      recommend: row.recommend, ageRange: row.age_range || '', country: row.country || ''
+    }));
+  } catch(e){
+    console.warn('Customer Survey Supabase load failed (run the SQL if this is the first load)', e);
+  }
+  surveyLoading = false;
+}
 
 function surveyDateKey(d){
   return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
@@ -9304,6 +9319,22 @@ function surveyEntriesForSelectedDay(){
   return surveyEntries.filter(e => e.dateKey === key);
 }
 
+const SURVEY_QUESTIONS = [
+  {id:'overall', label:'Overall experience'},
+  {id:'food', label:'Food quality'},
+  {id:'drinks', label:'Drinks quality'},
+  {id:'service', label:'Service'},
+  {id:'music', label:'Music / atmosphere'}
+];
+
+function surveyStarsHtml(value){
+  let out = '';
+  for(let i=1;i<=5;i++){
+    out += `<svg width="13" height="13" viewBox="0 0 24 24" fill="${i<=value?'#F0B429':'#E2E8F0'}" style="margin-right:1px"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87L18.18 21 12 17.77 5.82 21 7 14.14l-5-4.87 6.91-1.01L12 2z"/></svg>`;
+  }
+  return out;
+}
+
 function surveyRender(){
   const label = document.getElementById('survey-date-label');
   const tally = document.getElementById('survey-tally');
@@ -9313,143 +9344,162 @@ function surveyRender(){
   const isToday = surveyDateKey(surveySelectedDate) === surveyDateKey(new Date());
   label.textContent = surveySelectedDate.toLocaleDateString('en-GB', {weekday:'long', day:'numeric', month:'long'}) + (isToday ? ' (Today)' : '');
 
+  if(surveyLoading){
+    list.innerHTML = '<div style="padding:30px;text-align:center;color:#94A3B8;font-size:13px">Loading…</div>';
+    tally.textContent = '';
+    return;
+  }
+
   const dayEntries = surveyEntriesForSelectedDay();
-  tally.textContent = dayEntries.length + ' comment' + (dayEntries.length!==1?'s':'') + (isToday ? ' today' : '');
+  tally.textContent = dayEntries.length + ' response' + (dayEntries.length!==1?'s':'') + (isToday ? ' today' : '');
 
   if(dayEntries.length === 0){
-    list.innerHTML = '<div style="padding:30px;text-align:center;color:#94A3B8;font-size:13px">No comments logged for this day yet</div>';
+    list.innerHTML = '<div style="padding:30px;text-align:center;color:#94A3B8;font-size:13px">No responses logged for this day yet</div>';
     return;
   }
 
   list.innerHTML = dayEntries.map((e,i) => `
     <div style="padding:16px 18px;${i<dayEntries.length-1?'border-bottom:1px solid #F1F5F9':''}">
-      <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:6px">
-        <div style="font-size:13px;font-weight:800;color:#0F1E2E">${e.name ? e.name : 'Comment'}</div>
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px">
+        <span style="display:inline-flex;align-items:center;gap:5px;background:${e.source==='qr'?'#CCFBF1':'#F1F5F9'};color:${e.source==='qr'?'#0D9488':'#64748B'};font-size:10px;font-weight:800;padding:3px 9px;border-radius:20px;text-transform:uppercase;letter-spacing:0.4px">${e.source==='qr'?'Via QR':'Logged by GRO'}</span>
         <div style="display:flex;align-items:center;gap:10px;flex-shrink:0">
           <div style="font-size:11.5px;color:#94A3B8">${e.time}</div>
           <button onclick="surveyDelete(${e.id})" style="background:none;border:none;color:#CBD5E1;cursor:pointer;font-size:15px;padding:0">×</button>
         </div>
       </div>
-      <div style="font-size:13px;color:#334155;line-height:1.55">${e.comment}</div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:6px 16px;margin-bottom:${e.ageRange||e.country?'10px':'0'}">
+        ${SURVEY_QUESTIONS.map(q => `<div style="display:flex;align-items:center;justify-content:space-between;gap:8px"><span style="font-size:12px;color:#64748B">${q.label}</span><span>${surveyStarsHtml(e[q.id]||0)}</span></div>`).join('')}
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:8px"><span style="font-size:12px;color:#64748B">Would recommend</span><span style="font-size:12px;font-weight:700;color:${e.recommend==='yes'?'#0D9488':'#DC2626'}">${e.recommend==='yes'?'Yes':e.recommend==='no'?'No':'—'}</span></div>
+      </div>
+      ${e.ageRange||e.country ? `<div style="font-size:11.5px;color:#94A3B8">${[e.ageRange, e.country].filter(Boolean).join(' · ')}</div>` : ''}
     </div>
   `).join('');
 }
 
+let surveyFormRatings = {};
+
 function surveyOpenForm(){
   const wrap = document.getElementById('survey-form-wrap');
   if(!wrap) return;
-  surveyUsedVoiceThisEntry = false;
-  const voiceSupported = !!(window.SpeechRecognition || window.webkitSpeechRecognition);
+  surveyFormRatings = {overall:0, food:0, drinks:0, service:0, music:0, recommend:null};
   wrap.style.display = 'block';
   wrap.innerHTML = `<div style="background:white;border:1.5px solid #E2E8F0;border-radius:14px;padding:20px;box-shadow:0 2px 8px rgba(0,0,0,0.06)">
-    <div style="font-size:14px;font-weight:800;color:#0F1E2E;margin-bottom:14px">Add Comment</div>
-    <div style="margin-bottom:12px">
-      <label style="font-size:11px;font-weight:700;color:#64748B;display:block;margin-bottom:5px">Name or table (optional)</label>
-      <input id="survey-form-name" placeholder="e.g. Table 12, or leave blank" style="width:100%;padding:9px 10px;border:1.5px solid #E2E8F0;border-radius:8px;font-family:'Inter',sans-serif;font-size:16px;box-sizing:border-box">
-    </div>
-    <div style="margin-bottom:8px">
-      <label style="font-size:11px;font-weight:700;color:#64748B;display:block;margin-bottom:5px">Comment</label>
-      <div style="display:flex;gap:8px;align-items:flex-start">
-        <textarea id="survey-form-comment" rows="3" placeholder="Type here${voiceSupported ? ', or tap the mic and speak…' : '…'}" style="flex:1;padding:9px 10px;border:1.5px solid #E2E8F0;border-radius:8px;font-family:'Inter',sans-serif;font-size:16px;box-sizing:border-box;resize:vertical"></textarea>
-        <button id="survey-mic-btn" onclick="surveyToggleMic()" ${voiceSupported ? '' : 'disabled'} title="${voiceSupported ? 'Speak instead of typing' : 'Voice input isn\'t available in this browser - please type instead'}" style="width:40px;height:40px;border-radius:50%;background:${voiceSupported ? '#0D9488' : '#CBD5E1'};border:none;cursor:${voiceSupported ? 'pointer' : 'not-allowed'};display:flex;align-items:center;justify-content:center;flex-shrink:0">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
-        </button>
+    <div style="font-size:14px;font-weight:800;color:#0F1E2E;margin-bottom:4px">Log a Response</div>
+    <div style="font-size:12px;color:#94A3B8;margin-bottom:16px">Ask the guest each question and tap in their answer.</div>
+    <div id="survey-form-ratings"></div>
+    <div style="margin:16px 0">
+      <label style="font-size:11px;font-weight:700;color:#64748B;display:block;margin-bottom:6px">Would recommend to a friend?</label>
+      <div style="display:flex;gap:8px">
+        <button id="survey-rec-yes" onclick="surveySetRecommend('yes')" style="flex:1;padding:9px;border-radius:8px;font-family:'Inter',sans-serif;font-size:13px;font-weight:700;cursor:pointer;border:1.5px solid #E2E8F0;background:white;color:#64748B">Yes</button>
+        <button id="survey-rec-no" onclick="surveySetRecommend('no')" style="flex:1;padding:9px;border-radius:8px;font-family:'Inter',sans-serif;font-size:13px;font-weight:700;cursor:pointer;border:1.5px solid #E2E8F0;background:white;color:#64748B">No</button>
       </div>
-      <div id="survey-mic-status" style="font-size:11px;color:#94A3B8;margin-top:6px">${voiceSupported ? '' : 'Voice input needs Chrome or Edge - not available in this browser, so just type your comment below.'}</div>
     </div>
-    <div style="display:flex;gap:10px;margin-top:14px">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px">
+      <div>
+        <label style="font-size:11px;font-weight:700;color:#64748B;display:block;margin-bottom:5px">Age range (optional)</label>
+        <select id="survey-form-age" style="width:100%;padding:9px 10px;border:1.5px solid #E2E8F0;border-radius:8px;font-family:'Inter',sans-serif;font-size:16px">
+          <option value="">—</option>
+          <option>18-24</option><option>25-34</option><option>35-44</option><option>45-54</option><option>55+</option>
+        </select>
+      </div>
+      <div>
+        <label style="font-size:11px;font-weight:700;color:#64748B;display:block;margin-bottom:5px">Where from (optional)</label>
+        <input id="survey-form-country" placeholder="e.g. Australia" style="width:100%;padding:9px 10px;border:1.5px solid #E2E8F0;border-radius:8px;font-family:'Inter',sans-serif;font-size:16px;box-sizing:border-box">
+      </div>
+    </div>
+    <div style="display:flex;gap:10px">
       <button onclick="surveySaveForm()" style="padding:10px 18px;background:#0F1E2E;color:white;border:none;border-radius:8px;font-family:'Inter',sans-serif;font-size:13px;font-weight:700;cursor:pointer">Save</button>
       <button onclick="surveyCloseForm()" style="padding:10px 18px;background:#F1F5F9;color:#64748B;border:none;border-radius:8px;font-family:'Inter',sans-serif;font-size:13px;font-weight:700;cursor:pointer">Cancel</button>
     </div>
   </div>`;
+  surveyRenderFormRatings();
   wrap.scrollIntoView({behavior:'smooth', block:'nearest'});
 }
 
+function surveyRenderFormRatings(){
+  const wrap = document.getElementById('survey-form-ratings');
+  if(!wrap) return;
+  wrap.innerHTML = SURVEY_QUESTIONS.map(q => `
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px">
+      <span style="font-size:13px;color:#0F1E2E;font-weight:600">${q.label}</span>
+      <div>${[1,2,3,4,5].map(n => `<span onclick="surveySetRating('${q.id}',${n})" style="cursor:pointer;padding:2px">${surveyStarSvg(n<=surveyFormRatings[q.id])}</span>`).join('')}</div>
+    </div>`).join('');
+}
+
+function surveyStarSvg(filled){
+  return `<svg width="20" height="20" viewBox="0 0 24 24" fill="${filled?'#F0B429':'#E2E8F0'}"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87L18.18 21 12 17.77 5.82 21 7 14.14l-5-4.87 6.91-1.01L12 2z"/></svg>`;
+}
+
+window.surveySetRating = function(key, value){
+  surveyFormRatings[key] = value;
+  surveyRenderFormRatings();
+};
+
+window.surveySetRecommend = function(val){
+  surveyFormRatings.recommend = val;
+  const yesBtn = document.getElementById('survey-rec-yes');
+  const noBtn = document.getElementById('survey-rec-no');
+  if(yesBtn) { yesBtn.style.background = val==='yes' ? '#0D9488' : 'white'; yesBtn.style.color = val==='yes' ? 'white' : '#64748B'; yesBtn.style.borderColor = val==='yes' ? '#0D9488' : '#E2E8F0'; }
+  if(noBtn) { noBtn.style.background = val==='no' ? '#DC2626' : 'white'; noBtn.style.color = val==='no' ? 'white' : '#64748B'; noBtn.style.borderColor = val==='no' ? '#DC2626' : '#E2E8F0'; }
+};
+
 function surveyCloseForm(){
-  if(surveyIsRecording) surveyToggleMic();
   const wrap = document.getElementById('survey-form-wrap');
   if(wrap){ wrap.style.display = 'none'; wrap.innerHTML = ''; }
 }
 
-function surveyToggleMic(){
-  const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
-  const statusEl = document.getElementById('survey-mic-status');
-  const btn = document.getElementById('survey-mic-btn');
-  if(!SpeechRec){
-    if(statusEl) statusEl.textContent = 'Voice input isn\'t supported in this browser - try Chrome, or just type instead.';
+async function surveySaveForm(){
+  if(!SURVEY_QUESTIONS.every(q => surveyFormRatings[q.id] > 0)){
+    alert('Please rate all five questions before saving.');
     return;
   }
-
-  if(surveyIsRecording){
-    if(surveyRecognition) surveyRecognition.stop();
-    return;
-  }
-
-  surveyRecognition = new SpeechRec();
-  surveyRecognition.continuous = true;
-  surveyRecognition.interimResults = false;
-  surveyRecognition.lang = 'en-US';
-
-  surveyRecognition.onstart = () => {
-    surveyIsRecording = true;
-    surveyUsedVoiceThisEntry = true;
-    if(btn) btn.style.background = '#DC2626';
-    if(statusEl) statusEl.textContent = '● Listening… tap the mic again to stop';
-  };
-  surveyRecognition.onresult = (event) => {
-    const textarea = document.getElementById('survey-form-comment');
-    if(!textarea) return;
-    let finalText = '';
-    for(let i = event.resultIndex; i < event.results.length; i++){
-      if(event.results[i].isFinal) finalText += event.results[i][0].transcript;
-    }
-    if(finalText) textarea.value = (textarea.value + ' ' + finalText).trim();
-  };
-  surveyRecognition.onerror = () => {
-    if(statusEl) statusEl.textContent = 'Didn\'t catch that - tap the mic to try again, or type instead.';
-  };
-  surveyRecognition.onend = () => {
-    surveyIsRecording = false;
-    if(btn) btn.style.background = '#0D9488';
-    if(statusEl) statusEl.textContent = 'Please check the text below and edit anything the speech got wrong before saving.';
-  };
-  surveyRecognition.start();
-}
-
-function surveySaveForm(){
-  const name = document.getElementById('survey-form-name').value.trim();
-  const comment = document.getElementById('survey-form-comment').value.trim();
-  if(!comment){ alert('Please add a comment first.'); return; }
-
-  surveyEntries.push({
-    id: surveyNextId++,
+  const ageRange = document.getElementById('survey-form-age').value;
+  const country = document.getElementById('survey-form-country').value.trim();
+  const now = new Date();
+  const entry = {
     dateKey: surveyDateKey(surveySelectedDate),
-    name, comment,
-    time: new Date().toLocaleTimeString('en-GB', {hour:'2-digit', minute:'2-digit'})
-  });
+    time: now.toLocaleTimeString('en-GB', {hour:'2-digit', minute:'2-digit'}),
+    source: 'manual',
+    overall: surveyFormRatings.overall, food: surveyFormRatings.food, drinks: surveyFormRatings.drinks,
+    service: surveyFormRatings.service, music: surveyFormRatings.music, recommend: surveyFormRatings.recommend,
+    ageRange, country
+  };
+  const { data, error } = await sb.from('customer_survey_entries').insert({
+    date_key: entry.dateKey, time_str: entry.time, source: entry.source,
+    overall: entry.overall, food: entry.food, drinks: entry.drinks, service: entry.service, music: entry.music,
+    recommend: entry.recommend, age_range: ageRange || null, country: country || null
+  }).select().single();
+  if(error){ toast('Save failed - check your connection and try again'); console.warn('Survey entry insert failed', error); return; }
+  entry.id = data.id;
+  surveyEntries.unshift(entry);
   surveyCloseForm();
   surveyRender();
-  toast(surveyUsedVoiceThisEntry ? 'Saved — please double check it read your speech correctly ✓' : 'Comment saved ✓');
+  toast('Response saved ✓');
 }
 
 function surveyDelete(id){
   surveyEntries = surveyEntries.filter(e => e.id !== id);
   surveyRender();
+  sb.from('customer_survey_entries').delete().eq('id', id)
+    .then(({error})=>{ if(error) console.warn('Survey entry delete failed', error); });
 }
 
 function surveyPdf(){
   const dayEntries = surveyEntriesForSelectedDay();
-  if(dayEntries.length === 0){ toast('No comments to export for this day'); return; }
+  if(dayEntries.length === 0){ toast('No responses to export for this day'); return; }
 
   const tpl = document.createElement('div');
   tpl.style.cssText = 'position:fixed;top:0;left:0;width:700px;max-height:100vh;overflow:auto;background:white;padding:36px;font-family:Inter,sans-serif;z-index:99999';
   tpl.innerHTML = `
     <div style="font-size:22px;font-weight:800;color:#0F1E2E;margin-bottom:4px">Customer Survey</div>
-    <div style="font-size:12px;color:#94A3B8;margin-bottom:20px">${surveySelectedDate.toLocaleDateString('en-GB', {weekday:'long', day:'numeric', month:'long', year:'numeric'})} · ${dayEntries.length} comment${dayEntries.length!==1?'s':''}</div>
+    <div style="font-size:12px;color:#94A3B8;margin-bottom:20px">${surveySelectedDate.toLocaleDateString('en-GB', {weekday:'long', day:'numeric', month:'long', year:'numeric'})} · ${dayEntries.length} response${dayEntries.length!==1?'s':''}</div>
     ${dayEntries.map(e => `
       <div style="margin-bottom:16px;padding-bottom:16px;border-bottom:1px solid #E2E8F0">
-        <div style="font-size:13px;font-weight:700;color:#0F1E2E">${e.name ? e.name : 'Comment'} <span style="font-weight:400;color:#94A3B8">· ${e.time}</span></div>
-        <div style="font-size:13px;color:#334155;line-height:1.6;margin-top:4px">${e.comment}</div>
+        <div style="font-size:13px;font-weight:700;color:#0F1E2E;margin-bottom:6px">${e.source==='qr'?'Via QR':'Logged by GRO'} <span style="font-weight:400;color:#94A3B8">· ${e.time}</span></div>
+        <div style="font-size:12px;color:#334155;line-height:1.8">
+          ${SURVEY_QUESTIONS.map(q => `${q.label}: ${e[q.id]}/5`).join(' &nbsp;·&nbsp; ')}<br>
+          Would recommend: ${e.recommend==='yes'?'Yes':e.recommend==='no'?'No':'—'}${e.ageRange||e.country ? ' &nbsp;·&nbsp; ' + [e.ageRange, e.country].filter(Boolean).join(', ') : ''}
+        </div>
       </div>
     `).join('')}
   `;
@@ -9466,15 +9516,24 @@ function surveyPdf(){
 
 function surveyShare(){
   const dayEntries = surveyEntriesForSelectedDay();
-  if(dayEntries.length === 0){ toast('No comments to share for this day'); return; }
+  if(dayEntries.length === 0){ toast('No responses to share for this day'); return; }
   const dateStr = surveySelectedDate.toLocaleDateString('en-GB', {weekday:'long', day:'numeric', month:'long'});
-  let text = `📋 *Customer Survey — ${dateStr}*\n${dayEntries.length} comment${dayEntries.length!==1?'s':''}\n\n`;
-  dayEntries.forEach(e => { text += `• ${e.name ? e.name+': ' : ''}${e.comment}\n`; });
-  if(navigator.share){
-    navigator.share({text}).catch(()=>{});
-  } else {
-    window.open('https://wa.me/?text=' + encodeURIComponent(text), '_blank');
-  }
+  let text = `Customer Survey — ${dateStr}\n${dayEntries.length} response${dayEntries.length!==1?'s':''}\n\n`;
+  dayEntries.forEach(e => {
+    text += `${e.source==='qr'?'Via QR':'Logged by GRO'} (${e.time}): ${SURVEY_QUESTIONS.map(q => `${q.label} ${e[q.id]}/5`).join(', ')}, Recommend: ${e.recommend==='yes'?'Yes':'No'}\n`;
+  });
+  shareToChatOpen(text);
+}
+
+function surveyShareWA(){
+  const dayEntries = surveyEntriesForSelectedDay();
+  if(dayEntries.length === 0){ toast('No responses to share for this day'); return; }
+  const dateStr = surveySelectedDate.toLocaleDateString('en-GB', {weekday:'long', day:'numeric', month:'long'});
+  let text = `📋 *Customer Survey — ${dateStr}*\n${dayEntries.length} response${dayEntries.length!==1?'s':''}\n\n`;
+  dayEntries.forEach(e => {
+    text += `• ${SURVEY_QUESTIONS.map(q => `${q.label} ${e[q.id]}/5`).join(', ')}, Recommend: ${e.recommend==='yes'?'Yes':'No'}\n`;
+  });
+  window.open('https://wa.me/?text=' + encodeURIComponent(text), '_blank');
 }
 
 // ── JOB VACANCIES ──
@@ -12196,6 +12255,7 @@ window.addEventListener('load', () => {
   barLoadFromSupabase().then(()=>{ barRenderAreaTabs(); barRenderMenus(); barRenderRecipes(); });
   musicLoadFromSupabase().then(musicRender);
   mnLoadFromSupabase();
+  surveyLoadFromSupabase().then(surveyRender);
   businessMetricsLoadFromSupabase();
   stickyLoadMyNotes();
 });

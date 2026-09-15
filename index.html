@@ -8825,17 +8825,25 @@ function peopleRender(){
 
 function peopleOpenForm(personId){
   peopleEditingId = personId || null;
-  const p = personId ? PEOPLE.find(x=>x.id===personId) : {firstName:'',lastName:'',role:'teammember',departments:[]};
+  const p = personId ? PEOPLE.find(x=>x.id===personId) : {firstName:'',lastName:'',role:'teammember',departments:[],photo:''};
   const wrap = document.getElementById('people-form-wrap');
   if(!wrap) return;
 
   wrap.style.display = 'block';
   wrap.innerHTML = `<div style="background:white;border:1.5px solid #E2E8F0;border-radius:14px;padding:22px;box-shadow:0 2px 8px rgba(0,0,0,0.06)">
     <div style="font-size:15px;font-weight:800;color:#0F1E2E;margin-bottom:16px">${personId ? 'Edit' : 'Add'} Person</div>
+    <div style="display:flex;align-items:center;gap:14px;margin-bottom:18px">
+      <div id="people-form-photo-preview" style="width:56px;height:56px;border-radius:50%;background:${p.photo?'none':'#0F1E2E'};background-image:${p.photo?`url('${p.photo}')`:'none'};background-size:cover;background-position:center;display:flex;align-items:center;justify-content:center;color:white;font-size:20px;font-weight:700;flex-shrink:0">${p.photo?'':(p.firstName.charAt(0).toUpperCase()||'?')}</div>
+      <div>
+        <input type="file" id="people-form-photo-input" accept="image/*" style="display:none" onchange="peoplePhotoSelected(event)">
+        <button type="button" onclick="document.getElementById('people-form-photo-input').click()" style="padding:7px 14px;background:#F1F5F9;color:#0F1E2E;border:none;border-radius:7px;font-family:'Inter',sans-serif;font-size:12px;font-weight:700;cursor:pointer">${p.photo ? 'Change photo' : 'Add photo'}</button>
+        ${p.photo ? `<button type="button" onclick="peoplePhotoRemove()" style="padding:7px 14px;background:none;color:#DC2626;border:none;font-family:'Inter',sans-serif;font-size:12px;font-weight:700;cursor:pointer">Remove</button>` : ''}
+      </div>
+    </div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px">
       <div>
         <label style="font-size:11px;font-weight:700;color:#64748B;display:block;margin-bottom:5px">First name</label>
-        <input id="people-form-first" value="${p.firstName}" style="width:100%;padding:9px 10px;border:1.5px solid #E2E8F0;border-radius:8px;font-family:'Inter',sans-serif;font-size:16px;box-sizing:border-box">
+        <input id="people-form-first" value="${p.firstName}" oninput="peoplePhotoUpdateInitial()" style="width:100%;padding:9px 10px;border:1.5px solid #E2E8F0;border-radius:8px;font-family:'Inter',sans-serif;font-size:16px;box-sizing:border-box">
       </div>
       <div>
         <label style="font-size:11px;font-weight:700;color:#64748B;display:block;margin-bottom:5px">Surname</label>
@@ -8866,7 +8874,39 @@ function peopleOpenForm(personId){
       ${personId ? `<button onclick="peopleDelete(${personId})" style="padding:10px 18px;background:none;color:#DC2626;border:none;font-family:'Inter',sans-serif;font-size:13px;font-weight:700;cursor:pointer;margin-left:auto">Remove person</button>` : ''}
     </div>
   </div>`;
+  peopleFormPhotoData = p.photo || '';
   wrap.scrollIntoView({behavior:'smooth', block:'nearest'});
+}
+
+let peopleFormPhotoData = '';
+
+async function peoplePhotoSelected(event){
+  const file = event.target.files[0];
+  if(!file) return;
+  try{
+    peopleFormPhotoData = await appFileToDataUrl(file);
+    const preview = document.getElementById('people-form-photo-preview');
+    preview.style.backgroundImage = `url('${peopleFormPhotoData}')`;
+    preview.style.background = `url('${peopleFormPhotoData}') center/cover`;
+    preview.textContent = '';
+  } catch(e){
+    console.warn('Person photo upload failed', e);
+    toast('Photo upload failed - please try again');
+  }
+}
+
+function peoplePhotoRemove(){
+  peopleFormPhotoData = '';
+  peopleOpenForm(peopleEditingId);
+}
+
+// Keeps the placeholder initial in sync with whatever's typed, for a person who doesn't
+// have a photo yet - purely cosmetic, has no effect once a real photo is set.
+function peoplePhotoUpdateInitial(){
+  if(peopleFormPhotoData) return;
+  const preview = document.getElementById('people-form-photo-preview');
+  const first = document.getElementById('people-form-first').value;
+  if(preview) preview.textContent = first.charAt(0).toUpperCase() || '?';
 }
 
 function peopleCloseForm(){
@@ -8954,14 +8994,15 @@ function peopleSaveForm(){
   const lastName = document.getElementById('people-form-last').value.trim();
   const role = document.getElementById('people-form-role').value;
   const departments = Array.from(document.querySelectorAll('.people-form-dept:checked')).map(c=>c.value);
+  const photo = peopleFormPhotoData || '';
 
   if(!firstName){ alert('First name is required.'); return; }
 
   if(peopleEditingId){
     const p = PEOPLE.find(x=>x.id===peopleEditingId);
-    Object.assign(p, {firstName, lastName, role, departments});
+    Object.assign(p, {firstName, lastName, role, departments, photo});
   } else {
-    PEOPLE.push({id:peopleNextId++, firstName, lastName, role, departments});
+    PEOPLE.push({id:peopleNextId++, firstName, lastName, role, departments, photo});
   }
   peopleCloseForm();
   peopleRender();
@@ -12521,7 +12562,7 @@ let announceMentionFilteredOptions = [];
 function announceMentionOptions(){
   const opts = [{type:'dept', name:'All'}];
   PEOPLE_DEPARTMENTS.forEach(d => opts.push({type:'dept', name:d}));
-  PEOPLE.forEach(p => opts.push({type:'person', name:(p.firstName+' '+(p.lastName||'')).trim()}));
+  PEOPLE.forEach(p => opts.push({type:'person', name:(p.firstName+' '+(p.lastName||'')).trim(), photo: p.photo || ''}));
   return opts;
 }
 
@@ -12553,11 +12594,18 @@ window.announceCheckMention = function(){
 function announceRenderMentionPopup(){
   const popup = document.getElementById('announce-mention-popup');
   const deptIconSvg = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>';
-  popup.innerHTML = announceMentionFilteredOptions.map((o,i) => `
+  popup.innerHTML = announceMentionFilteredOptions.map((o,i) => {
+    // People show a real uploaded photo when they have one; departments always show the
+    // generic group icon (a photo was never wanted for those), and a person without a
+    // photo yet falls back to their initial letter, same as everywhere else in the app.
+    const avatarInner = o.type==='dept' ? deptIconSvg : o.name.charAt(0).toUpperCase();
+    const avatarBg = o.photo ? `background-image:url('${o.photo}');background-size:cover;background-position:center` : `background:${o.type==='dept'?'#0F1E2E':'#0D9488'}`;
+    return `
     <div onmousedown="event.preventDefault();announcePickMention(${i})" style="display:flex;align-items:center;gap:8px;padding:9px 12px;cursor:pointer;background:${i===announceMentionIndex?'#F1F5F9':'white'}">
-      <div style="width:26px;height:26px;border-radius:50%;background:${o.type==='dept'?'#0F1E2E':'#0D9488'};display:flex;align-items:center;justify-content:center;color:white;font-size:11px;font-weight:700;flex-shrink:0">${o.type==='dept'?deptIconSvg:o.name.charAt(0).toUpperCase()}</div>
+      <div style="width:26px;height:26px;border-radius:50%;${avatarBg};display:flex;align-items:center;justify-content:center;color:white;font-size:11px;font-weight:700;flex-shrink:0">${o.photo?'':avatarInner}</div>
       <span style="font-size:13px;font-weight:600;color:#0F1E2E">${o.name}</span>
-    </div>`).join('');
+    </div>`;
+  }).join('');
   popup.style.display = 'block';
   announceMentionActive = true;
 }

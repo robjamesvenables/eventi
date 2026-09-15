@@ -10913,7 +10913,6 @@ let kitchenAreas = [
 ];
 let kitchenActiveArea = 'all';
 
-let kitchenMenuNextId = 100;
 let kitchenMenusData = [
   {id:1, area:'main', section:'live', cat:'Breakfast', name:'Morning Menu', meta:'Updated 3 Jun 2026', links:[], content:{sections:[
     {id:1, name:'Breakfast Classics', dishes:[]},
@@ -11023,9 +11022,11 @@ function kitchenAddArea(){
   appModalShow({
     title:'Add Area',
     fields:[{label:'Area name', placeholder:'e.g. Sunset Terrace'}],
-    onOk([name]){
+    async onOk([name]){
       let id = name.trim().toLowerCase().replace(/[^a-z0-9]+/g,'-');
       if(!id || kitchenAreas.find(a=>a.id===id)) id = id + '-' + Date.now();
+      const { error } = await sb.from('kitchen_areas').insert({ id, name });
+      if(error){ toast('Save failed - check your connection and try again'); console.warn('Kitchen area insert failed', error); return; }
       kitchenAreas.push({id, name});
       kitchenActiveArea = id;
       kitchenRenderAreaTabs();
@@ -11046,6 +11047,8 @@ function kitchenRenameArea(id){
       kitchenRenderAreaTabs();
       kitchenRenderMenus();
       toast('Area renamed ✓');
+      sb.from('kitchen_areas').update({ name }).eq('id', id)
+        .then(({error})=>{ if(error) console.warn('Kitchen area rename failed', error); });
     }
   });
 }
@@ -11054,12 +11057,21 @@ function kitchenDeleteArea(id){
   const a = kitchenAreas.find(x=>x.id===id);
   if(!a) return;
   appConfirmShow({title:'Delete Area', msg:`Delete "${a.name}"? This will permanently remove all its menus.`, onOk:()=>{
+    const menuIdsToDelete = kitchenMenusData.filter(m=>m.area===id).map(m=>m.id);
     kitchenAreas = kitchenAreas.filter(x=>x.id!==id);
     kitchenMenusData = kitchenMenusData.filter(m=>m.area!==id);
     if(kitchenActiveArea===id) kitchenActiveArea = 'all';
     kitchenRenderAreaTabs();
     kitchenRenderMenus();
     toast('Area deleted');
+    // Areas cascading to their menus isn't a database-level foreign key here (the two
+    // tables aren't linked that way), so its own menus are deleted explicitly alongside it.
+    if(menuIdsToDelete.length){
+      sb.from('kitchen_menus').delete().in('id', menuIdsToDelete)
+        .then(({error})=>{ if(error) console.warn('Kitchen menus-in-deleted-area cleanup failed', error); });
+    }
+    sb.from('kitchen_areas').delete().eq('id', id)
+      .then(({error})=>{ if(error) console.warn('Kitchen area delete failed', error); });
   }});
 }
 
@@ -11095,14 +11107,35 @@ function kitchenAddMenu(sectionId){
       {label:'Category', placeholder:'e.g. Breakfast'},
       {label:'Menu name', placeholder:'e.g. Morning Menu'}
     ],
-    onOk([area, cat, name]){
+    async onOk([area, cat, name]){
       const now = new Date();
       const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-      kitchenMenusData.push({id: kitchenMenuNextId++, area, section: sectionId, cat, name, meta:`Updated ${now.getDate()} ${months[now.getMonth()]} ${now.getFullYear()}`, links:[]});
+      const meta = `Updated ${now.getDate()} ${months[now.getMonth()]} ${now.getFullYear()}`;
+      // content.sections is set here (a pre-existing bug: it was previously left out
+      // entirely on a brand new menu, which would throw as soon as anyone tried to open
+      // it, since kitchenMenuDetailRender and kitchenSectionAdd both assume it exists).
+      const newMenu = {area, section: sectionId, cat, name, meta, links:[], content:{sections:[]}};
+      const { data, error } = await sb.from('kitchen_menus').insert({
+        area, section: sectionId, cat, name, meta, links: [], content: {sections:[]}
+      }).select().single();
+      if(error){ toast('Save failed - check your connection and try again'); console.warn('Kitchen menu insert failed', error); return; }
+      newMenu.id = data.id;
+      kitchenMenusData.push(newMenu);
       kitchenRenderMenus();
       toast('Menu added ✓');
     }
   });
+}
+
+// Shared by every function that changes what's inside a menu (sections, dishes, links) -
+// saves the whole content/links blob back in one call rather than trying to update
+// individual dishes as separate rows, since the nested menu -> section -> dish shape is
+// all stored as one JSON column, matching the in-memory shape exactly.
+function kitchenSaveMenuContent(menuId){
+  const m = kitchenMenusData.find(x=>x.id===menuId);
+  if(!m) return;
+  sb.from('kitchen_menus').update({ content: m.content, links: m.links }).eq('id', menuId)
+    .then(({error})=>{ if(error) console.warn('Kitchen menu content save failed', error); });
 }
 
 function kitchenEditMenu(id){
@@ -11119,6 +11152,8 @@ function kitchenEditMenu(id){
       m.area = area; m.cat = cat; m.name = name;
       kitchenRenderMenus();
       toast('Menu updated ✓');
+      sb.from('kitchen_menus').update({ area, cat, name }).eq('id', id)
+        .then(({error})=>{ if(error) console.warn('Kitchen menu update failed', error); });
     }
   });
 }
@@ -11130,6 +11165,8 @@ function kitchenDeleteMenu(id){
     kitchenMenusData = kitchenMenusData.filter(x=>x.id!==id);
     kitchenRenderMenus();
     toast('Menu deleted');
+    sb.from('kitchen_menus').delete().eq('id', id)
+      .then(({error})=>{ if(error) console.warn('Kitchen menu delete failed', error); });
   }});
 }
 
@@ -11146,6 +11183,7 @@ function kitchenAddLink(menuId){
       m.links.push({name, url});
       kitchenRenderMenus();
       toast('Link saved ✓');
+      kitchenSaveMenuContent(menuId);
     }
   });
 }
@@ -11155,6 +11193,7 @@ function kitchenRemoveMenuLink(menuId, idx){
   if(!m) return;
   m.links.splice(idx,1);
   kitchenRenderMenus();
+  kitchenSaveMenuContent(menuId);
 }
 
 function kitchenViewMenu(menuId){
@@ -11213,6 +11252,7 @@ window.kitchenDishMove = function(sectionId, dishId, direction){
   if(swapWith < 0 || swapWith >= sec.dishes.length) return;
   [sec.dishes[idx], sec.dishes[swapWith]] = [sec.dishes[swapWith], sec.dishes[idx]];
   kitchenMenuDetailRender();
+  kitchenSaveMenuContent(m.id);
 };
 
 function kitchenDishCardHtml(sectionId, d, idx, total){
@@ -11256,6 +11296,7 @@ window.kitchenSectionAdd = function(){
       m.content.sections.push({id:maxId+1, name, dishes:[]});
       kitchenMenuDetailRender();
       toast('Section added ✓');
+      kitchenSaveMenuContent(m.id);
     }
   });
 };
@@ -11266,6 +11307,7 @@ window.kitchenSectionDelete = function(sectionId){
     m.content.sections = m.content.sections.filter(s=>s.id!==sectionId);
     kitchenMenuDetailRender();
     toast('Section deleted');
+    kitchenSaveMenuContent(m.id);
   }});
 };
 
@@ -11288,6 +11330,7 @@ window.kitchenDishAdd = function(sectionId){
       sec.dishes.push({id:maxId+1, name, desc, price, allergens: allergens ? allergens.split(',').map(a=>a.trim()) : [], photo: photo||'', foodCostPct: foodCostPct ? parseFloat(foodCostPct) : null});
       kitchenMenuDetailRender();
       toast('Dish added ✓');
+      kitchenSaveMenuContent(m.id);
     }
   });
 };
@@ -11314,6 +11357,7 @@ window.kitchenDishEdit = function(sectionId, dishId){
       if(photo) d.photo = photo;
       kitchenMenuDetailRender();
       toast('Dish updated ✓');
+      kitchenSaveMenuContent(m.id);
     }
   });
 };
@@ -11325,11 +11369,11 @@ window.kitchenDishDelete = function(sectionId, dishId){
     sec.dishes = sec.dishes.filter(d=>d.id!==dishId);
     kitchenMenuDetailRender();
     toast('Dish removed');
+    kitchenSaveMenuContent(m.id);
   }});
 };
 
 // ── KITCHEN RECIPES (data-driven) ──
-let kitchenRecipeNextId = 100;
 let kitchenRecipesData = [
   {id:1, name:'Grilled Barramundi with Lemon Butter', cat:'Main', catColor:'green', serves:1, allergens:'Fish, Dairy', allergensColor:'amber', ingredients:'200g barramundi fillet, 30g butter, 1 lemon, fresh herbs, salt, pepper', method:'Season fish, grill 4 mins each side. Rest 2 mins. Finish with lemon butter sauce.', photo:'recipe-photos/grilled-barramundi.jpg', foodCostPct:34, pdfVersion:0, editedSincePdf:false, pdfHistory:[]},
   {id:2, name:'Truffle Mushroom Pasta', cat:'Main', catColor:'green', serves:1, allergens:'Gluten, Dairy, Egg', allergensColor:'red', ingredients:'120g tagliatelle, mixed mushrooms, truffle oil, parmesan, cream, garlic, shallots', method:'Sauté mushrooms with garlic. Add cream, reduce. Toss with pasta, finish with truffle oil and parmesan.', photo:'', foodCostPct:41, pdfVersion:0, editedSincePdf:false, pdfHistory:[]},
@@ -11468,6 +11512,8 @@ window.kitchenRecipeDownloadPdf = function(id){
       r.pdfHistory.push({version: nextVersion, downloadedAt: Date.now()});
       kitchenRenderRecipes();
       toast(`v${nextVersion} downloaded ✓`);
+      sb.from('kitchen_recipes').update({ pdf_version: r.pdfVersion, edited_since_pdf: false, pdf_history: r.pdfHistory }).eq('id', id)
+        .then(({error})=>{ if(error) console.warn('Kitchen recipe PDF version save failed', error); });
     })
     .catch((err)=>{
       tpl.remove();
@@ -11516,11 +11562,19 @@ function kitchenAddRecipe(){
       {label:'Method', type:'textarea', rows:9, placeholder:'e.g. Season fish, grill 4 mins each side.\nRest 2 mins.\nFinish with lemon butter sauce.'},
       {label:'Food cost %', placeholder:'e.g. 32', optional:true}
     ],
-    onOk([photo, name, cat, serves, allergens, ingredients, method, foodCostPct]){
-      const newId = kitchenRecipeNextId++;
-      kitchenRecipesData.push({id: newId, name, cat, catColor:'green', serves, allergens, allergensColor:'amber', ingredients, method, photo: photo||'', foodCostPct: foodCostPct ? parseFloat(foodCostPct) : null, pdfVersion:0, editedSincePdf:false, pdfHistory:[]});
+    async onOk([photo, name, cat, serves, allergens, ingredients, method, foodCostPct]){
+      const newRecipe = {name, cat, catColor:'green', serves, allergens, allergensColor:'amber', ingredients, method, photo: photo||'', foodCostPct: foodCostPct ? parseFloat(foodCostPct) : null, pdfVersion:0, editedSincePdf:false, pdfHistory:[]};
+      const { data, error } = await sb.from('kitchen_recipes').insert({
+        name: newRecipe.name, cat: newRecipe.cat, cat_color: newRecipe.catColor, serves: newRecipe.serves,
+        allergens: newRecipe.allergens, allergens_color: newRecipe.allergensColor, ingredients: newRecipe.ingredients,
+        method: newRecipe.method, photo: newRecipe.photo || null, food_cost_pct: newRecipe.foodCostPct,
+        pdf_version: 0, edited_since_pdf: false, pdf_history: []
+      }).select().single();
+      if(error){ toast('Save failed - check your connection and try again'); console.warn('Kitchen recipe insert failed', error); return; }
+      newRecipe.id = data.id;
+      kitchenRecipesData.push(newRecipe);
       kitchenRenderRecipes();
-      kitchenShowPdfPrompt(newId);
+      kitchenShowPdfPrompt(newRecipe.id);
     }
   });
 }
@@ -11541,22 +11595,28 @@ function kitchenEditRecipe(id){
       {label:'Method', type:'textarea', rows:9, value:r.method},
       {label:'Food cost %', value: r.foodCostPct!=null?String(r.foodCostPct):'', placeholder:'e.g. 32', optional:true}
     ],
-    onOk([photo, name, cat, serves, allergens, ingredients, method, foodCostPct]){
+    async onOk([photo, name, cat, serves, allergens, ingredients, method, foodCostPct]){
       const changed = name!==original.name || cat!==original.cat || serves!==original.serves
         || allergens!==original.allergens || ingredients!==original.ingredients || method!==original.method
         || foodCostPct!==original.foodCostPct || (photo && photo!==r.photo);
-
-      r.name=name; r.cat=cat; r.serves=serves; r.allergens=allergens; r.ingredients=ingredients; r.method=method;
-      r.foodCostPct = foodCostPct ? parseFloat(foodCostPct) : null;
-      if(photo) r.photo = photo;
-      kitchenRenderRecipes();
 
       if(!changed){
         toast('No changes made');
         return;
       }
+
+      r.name=name; r.cat=cat; r.serves=serves; r.allergens=allergens; r.ingredients=ingredients; r.method=method;
+      r.foodCostPct = foodCostPct ? parseFloat(foodCostPct) : null;
+      if(photo) r.photo = photo;
       if(r.pdfVersion > 0) r.editedSincePdf = true;
+      kitchenRenderRecipes();
       kitchenShowPdfPrompt(id);
+
+      const { error } = await sb.from('kitchen_recipes').update({
+        name: r.name, cat: r.cat, serves: r.serves, allergens: r.allergens, ingredients: r.ingredients,
+        method: r.method, photo: r.photo || null, food_cost_pct: r.foodCostPct, edited_since_pdf: r.editedSincePdf
+      }).eq('id', id);
+      if(error){ toast('Save failed - check your connection and try again'); console.warn('Kitchen recipe update failed', error); }
     }
   });
 }
@@ -11564,10 +11624,12 @@ function kitchenEditRecipe(id){
 function kitchenDeleteRecipe(id){
   const r = kitchenRecipesData.find(x=>x.id===id);
   if(!r) return;
-  appConfirmShow({title:'Delete Recipe', msg:`Delete "${r.name}"?`, onOk:()=>{
+  appConfirmShow({title:'Delete Recipe', msg:`Delete "${r.name}"?`, onOk: async ()=>{
     kitchenRecipesData = kitchenRecipesData.filter(x=>x.id!==id);
     kitchenRenderRecipes();
     toast('Recipe deleted');
+    const { error } = await sb.from('kitchen_recipes').delete().eq('id', id);
+    if(error) console.warn('Kitchen recipe delete failed', error);
   }});
 }
 
@@ -11647,6 +11709,7 @@ window.kitchenMoveToMenuConfirm = function(){
       foodCostPct: r.foodCostPct
     });
     count++;
+    kitchenSaveMenuContent(m.id);
   });
   kitchenMoveToMenuClose();
   toast(`Added to ${count} menu${count===1?'':'s'} ✓`);
@@ -11745,12 +11808,47 @@ const ALLERGEN_ICONS = [
   {id:'soy', label:'Soy', svg:'<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3c-3 3-3 9 0 14 2 3 6 3 8 0 3-5 3-11 0-14"/><circle cx="10" cy="9" r="1" fill="currentColor" stroke="none"/><circle cx="14" cy="14" r="1" fill="currentColor" stroke="none"/></svg>'},
   {id:'vegan', label:'Vegan', svg:'<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10Z"/><path d="M2 21c0-3 1.85-5.36 5.08-6C9.5 14.52 11 13.98 11 13"/></svg>'}
 ];
-let kitchenAllergenNextId = 100;
 let kitchenAllergensData = [
   {id:1, dish:'Grilled Barramundi', gluten:false, dairy:true, egg:false, fish:true, shellfish:false, nuts:false, soy:false, vegan:false},
   {id:2, dish:'Truffle Mushroom Pasta', gluten:true, dairy:true, egg:true, fish:false, shellfish:false, nuts:false, soy:false, vegan:false},
   {id:3, dish:'Acai Bowl', gluten:false, dairy:false, egg:false, fish:false, shellfish:false, nuts:false, soy:false, vegan:true}
 ];
+
+// Loads all four of Kitchen's separate data sets (areas, menus, recipes, the allergen
+// guide) from Supabase in parallel. Always trusts the database once reachable - clean
+// slate, no leftover demo content mixed in with real data, same pattern as every other
+// module. Falls back to the demo arrays already declared above if the tables aren't
+// reachable yet (e.g. the SQL hasn't been run), so Kitchen still shows something rather
+// than an empty page.
+async function kitchenLoadFromSupabase(){
+  try{
+    const [areasRes, menusRes, recipesRes, allergensRes] = await Promise.all([
+      sb.from('kitchen_areas').select('*'),
+      sb.from('kitchen_menus').select('*').order('id', { ascending: true }),
+      sb.from('kitchen_recipes').select('*').order('id', { ascending: true }),
+      sb.from('kitchen_allergen_dishes').select('*').order('id', { ascending: true })
+    ]);
+    if(areasRes.error) throw areasRes.error;
+    if(menusRes.error) throw menusRes.error;
+    if(recipesRes.error) throw recipesRes.error;
+    if(allergensRes.error) throw allergensRes.error;
+
+    kitchenAreas = areasRes.data;
+    kitchenMenusData = menusRes.data.map(row => ({
+      id: row.id, area: row.area, section: row.section, cat: row.cat, name: row.name,
+      meta: row.meta, links: row.links || [], content: row.content || {sections:[]}
+    }));
+    kitchenRecipesData = recipesRes.data.map(row => ({
+      id: row.id, name: row.name, cat: row.cat, catColor: row.cat_color, serves: row.serves,
+      allergens: row.allergens, allergensColor: row.allergens_color, ingredients: row.ingredients,
+      method: row.method, photo: row.photo || '', foodCostPct: row.food_cost_pct,
+      pdfVersion: row.pdf_version || 0, editedSincePdf: row.edited_since_pdf || false, pdfHistory: row.pdf_history || []
+    }));
+    kitchenAllergensData = allergensRes.data.map(row => ({ id: row.id, dish: row.dish, ...row.flags }));
+  } catch(e){
+    console.warn('Kitchen Supabase load failed, using demo data (run the SQL if this is the first load)', e);
+  }
+}
 
 function kitchenAllergensToText(row){
   return ALLERGEN_CATS.filter(c=>row[c]).map(c=>c.charAt(0).toUpperCase()+c.slice(1)).join(', ');
@@ -11788,11 +11886,12 @@ function kitchenAddAllergenDish(){
       {label:'Dish name', placeholder:'e.g. Grilled Barramundi'},
       {label:'Allergens', type:'iconmulti', options: ALLERGEN_ICONS}
     ],
-    onOk([dish, allergenIds]){
-      const row = {};
-      ALLERGEN_CATS.forEach(c=>{ row[c] = allergenIds.includes(c); });
-      row.id = kitchenAllergenNextId++;
-      row.dish = dish;
+    async onOk([dish, allergenIds]){
+      const flags = {};
+      ALLERGEN_CATS.forEach(c=>{ flags[c] = allergenIds.includes(c); });
+      const { data, error } = await sb.from('kitchen_allergen_dishes').insert({ dish, flags }).select().single();
+      if(error){ toast('Save failed - check your connection and try again'); console.warn('Kitchen allergen dish insert failed', error); return; }
+      const row = { ...flags, id: data.id, dish };
       kitchenAllergensData.push(row);
       kitchenRenderAllergens();
       toast('Dish added ✓');
@@ -11814,6 +11913,10 @@ function kitchenEditAllergenDish(id){
       row.dish = dish;
       kitchenRenderAllergens();
       toast('Dish updated ✓');
+      const flags = {};
+      ALLERGEN_CATS.forEach(c=>{ flags[c] = row[c]; });
+      sb.from('kitchen_allergen_dishes').update({ dish, flags }).eq('id', id)
+        .then(({error})=>{ if(error) console.warn('Kitchen allergen dish update failed', error); });
     }
   });
 }
@@ -11825,6 +11928,8 @@ function kitchenDeleteAllergenDish(id){
     kitchenAllergensData = kitchenAllergensData.filter(x=>x.id!==id);
     kitchenRenderAllergens();
     toast('Dish deleted');
+    sb.from('kitchen_allergen_dishes').delete().eq('id', id)
+      .then(({error})=>{ if(error) console.warn('Kitchen allergen dish delete failed', error); });
   }});
 }
 // ── INIT ──
@@ -11861,6 +11966,7 @@ window.addEventListener('load', () => {
   vendorLoadFromSupabase().then(vendorRenderDepts);
   customerLoadFromSupabase().then(customerRenderList);
   vacanciesLoadFromSupabase().then(vacanciesRender);
+  kitchenLoadFromSupabase().then(()=>{ kitchenRenderAreaTabs(); kitchenRenderMenus(); kitchenRenderRecipes(); kitchenRenderAllergens(); });
   businessMetricsLoadFromSupabase();
   stickyLoadMyNotes();
 });

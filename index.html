@@ -7569,29 +7569,6 @@ const kbBoards = {
   }
 };
 const colColors = {todo:'#94A3B8', progress:'#F59E0B', done:'#10B981'};
-let kbNextId = 30;
-
-const TB_PERSONAL_KEY = 'mavis_taskboard_personal_v1';
-function taskboardSavePersonal(){
-  try{
-    localStorage.setItem(TB_PERSONAL_KEY, JSON.stringify({
-      projects: kbPersonalProjects,
-      boards: kbPersonalProjects.reduce((acc,p)=>{ acc[p.id] = kbBoards[p.id] || {todo:[],progress:[],done:[]}; return acc; }, {})
-    }));
-  }catch(e){ console.warn('Could not save personal task boards locally', e); }
-}
-function taskboardLoadPersonal(){
-  try{
-    const raw = localStorage.getItem(TB_PERSONAL_KEY);
-    if(!raw) return;
-    const saved = JSON.parse(raw);
-    if(Array.isArray(saved.projects) && saved.projects.length){
-      kbPersonalProjects = saved.projects;
-      Object.assign(kbBoards, saved.boards || {});
-    }
-  }catch(e){ console.warn('Could not load personal task boards locally', e); }
-}
-
 function taskboardRenderRoot(){}
 
 function tbProjectTile(p, isTeam){
@@ -7605,10 +7582,12 @@ function tbProjectTile(p, isTeam){
 }
 
 function taskboardRenderPersonalTiles(){
-  taskboardLoadPersonal();
   const grid = document.getElementById('tb-personal-grid');
   if(!grid) return;
   grid.innerHTML = kbPersonalProjects.map(p => tbProjectTile(p, false)).join('');
+  taskboardLoadPersonalFromSupabase().then(()=>{
+    grid.innerHTML = kbPersonalProjects.map(p => tbProjectTile(p, false)).join('');
+  });
 }
 
 function taskboardRenderTeamTiles(){
@@ -7653,10 +7632,10 @@ function taskboardAddProject(isTeam){
         kbBoards['team-'+data.id] = {todo:[],progress:[],done:[]};
         taskboardRenderTeamTiles();
       } else {
-        const id = 'p'+Date.now();
-        kbPersonalProjects.push({id, name});
-        kbBoards[id] = {todo:[],progress:[],done:[]};
-        taskboardSavePersonal();
+        const { data, error } = await sb.from('personal_task_projects').insert([{ name }]).select().single();
+        if(error){ toast('Save failed - try again'); console.warn(error); return; }
+        kbPersonalProjects.push({id:'personal-'+data.id, name, dbId:data.id});
+        kbBoards['personal-'+data.id] = {todo:[],progress:[],done:[]};
         taskboardRenderPersonalTiles();
       }
     }
@@ -7680,13 +7659,52 @@ function taskboardDeleteProject(projectId, isTeam){
           });
         }
       } else {
+        const proj = kbPersonalProjects.find(p=>p.id===projectId);
         kbPersonalProjects = kbPersonalProjects.filter(p=>p.id!==projectId);
         delete kbBoards[projectId];
-        taskboardSavePersonal();
         taskboardRenderPersonalTiles();
+        if(proj && proj.dbId){
+          sb.from('personal_task_projects').delete().eq('id', proj.dbId).then(({error})=>{
+            if(error) console.warn('Personal project delete failed', error);
+          });
+        }
       }
     }
   });
+}
+
+async function taskboardLoadPersonalFromSupabase(){
+  try{
+    const { data: projects, error: perr } = await sb.from('personal_task_projects').select('*').order('created_at', { ascending: true });
+    if(perr) throw perr;
+    // Always trust the database once reachable, even if it returns zero rows - same
+    // clean-slate pattern used everywhere else in the app, rather than only replacing the
+    // hardcoded 'My Tasks' starter once real projects exist.
+    kbPersonalProjects = [];
+    (projects || []).forEach(row => {
+      const id = 'personal-'+row.id;
+      kbPersonalProjects.push({id, name: row.name, dbId: row.id});
+      if(!kbBoards[id]) kbBoards[id] = {todo:[],progress:[],done:[]};
+    });
+    const { data: cards, error: cerr } = await sb.from('personal_task_cards').select('*').order('sort_order', { ascending: true });
+    if(cerr) throw cerr;
+    (cards || []).forEach(row => taskboardApplyPersonalCard(row));
+  } catch(e){
+    console.warn('Personal task board tables not reachable yet (run the SQL if this is the first load)', e);
+  }
+}
+
+function taskboardApplyPersonalCard(row){
+  const projId = 'personal-'+row.project_id;
+  if(!kbBoards[projId]) kbBoards[projId] = {todo:[],progress:[],done:[]};
+  const board = kbBoards[projId];
+  ['todo','progress','done'].forEach(c => {
+    board[c] = board[c].filter(x => x.dbId !== row.id);
+  });
+  if(row.deleted) return;
+  const targetCol = board[row.col] ? row.col : 'todo';
+  board[targetCol].push({ dbId: row.id, id: row.id, title: row.title, description: row.description || '', assignee: row.assignee || 'Unassigned', photos: row.photos || [], createdAt: new Date(row.created_at).getTime() });
+  board[targetCol].sort((a,b) => (a.createdAt||0) - (b.createdAt||0));
 }
 
 let kbTeamRealtimeSubscribed = false;
@@ -7950,7 +7968,9 @@ function taskboardPersistCardMove(card, toCol){
       if(error) console.warn('Task move save failed', error);
     });
   } else {
-    taskboardSavePersonal();
+    sb.from('personal_task_cards').update({ col: toCol }).eq('id', card.dbId).then(({error})=>{
+      if(error) console.warn('Personal task move save failed', error);
+    });
   }
 }
 
@@ -8019,16 +8039,18 @@ window.addKanbanCard = function(colSelector){
       {label:'Description', type:'textarea', placeholder:'Add more detail about this task…', rows:5, optional:true}
     ],
     async onOk([title, description]){
+      const me = (typeof currentUserFirstName !== 'undefined' && currentUserFirstName) ? currentUserFirstName : 'John';
       if(kbActiveIsTeam){
         const proj = kbTeamProjects.find(p=>p.id===kbActiveProjectId);
-        const me = (typeof currentUserFirstName !== 'undefined' && currentUserFirstName) ? currentUserFirstName : 'John';
         const { data, error } = await sb.from('task_cards').insert([{ project_id: proj.dbId, col: colId, title, description: description||'', assignee: me }]).select().single();
         if(error){ toast('Save failed - try again'); console.warn(error); return; }
         taskboardApplyTeamCard(data);
         kbRender();
       } else {
-        kbBoards[kbActiveProjectId][colId].push({id:kbNextId++, title, description: description||'', assignee:'John', photos:[], createdAt: Date.now()});
-        taskboardSavePersonal();
+        const proj = kbPersonalProjects.find(p=>p.id===kbActiveProjectId);
+        const { data, error } = await sb.from('personal_task_cards').insert([{ project_id: proj.dbId, col: colId, title, description: description||'', assignee: me }]).select().single();
+        if(error){ toast('Save failed - try again'); console.warn(error); return; }
+        taskboardApplyPersonalCard(data);
         kbRender();
       }
       toast('Task added');
@@ -8042,12 +8064,15 @@ window.kbDelete = function(cardId, colId){
     const card = board[colId].find(c => c.id === cardId);
     board[colId] = board[colId].filter(c => c.id !== cardId);
     kbRender();
-    if(kbActiveIsTeam && card){
+    if(!card) return;
+    if(kbActiveIsTeam){
       sb.from('task_cards').delete().eq('id', card.dbId).then(({error})=>{
         if(error) console.warn('Task delete failed', error);
       });
     } else {
-      taskboardSavePersonal();
+      sb.from('personal_task_cards').delete().eq('id', card.dbId).then(({error})=>{
+        if(error) console.warn('Personal task delete failed', error);
+      });
     }
   }});
 };
@@ -17672,15 +17697,11 @@ window.kbAddPhotoClick = function(cardId, colId){
 
 function kbCardPhotosChanged(card){
   kbRender();
-  if(kbActiveIsTeam){
-    if(card.dbId){
-      sb.from('task_cards').update({ photos: card.photos }).eq('id', card.dbId).then(({error})=>{
-        if(error) console.warn('Task card photo save failed', error);
-      });
-    }
-  } else {
-    taskboardSavePersonal();
-  }
+  if(!card.dbId) return;
+  const table = kbActiveIsTeam ? 'task_cards' : 'personal_task_cards';
+  sb.from(table).update({ photos: card.photos }).eq('id', card.dbId).then(({error})=>{
+    if(error) console.warn('Task card photo save failed', error);
+  });
 }
 
 window.maintEditTicket = function(ticketId){
@@ -17722,12 +17743,9 @@ window.kbEditCard = function(cardId, colId){
       card.description = description || '';
       card.assignee = assignee || 'Unassigned';
       kbRender();
-      if(kbActiveIsTeam){
-        const { error } = await sb.from('task_cards').update({ title: card.title, description: card.description, assignee: card.assignee }).eq('id', card.dbId);
-        if(error){ toast('Save failed - try again'); console.warn(error); return; }
-      } else {
-        taskboardSavePersonal();
-      }
+      const table = kbActiveIsTeam ? 'task_cards' : 'personal_task_cards';
+      const { error } = await sb.from(table).update({ title: card.title, description: card.description, assignee: card.assignee }).eq('id', card.dbId);
+      if(error){ toast('Save failed - try again'); console.warn(error); return; }
       toast('Task updated ✓');
     }
   });

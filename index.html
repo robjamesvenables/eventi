@@ -10253,7 +10253,7 @@ function sopNewDoc(){
 }
 
 // ── MUSIC ──
-const musicPlaylists = [
+let musicPlaylists = [
   {id:1, label:'Breakfast', name:'Morning Chill Mix', desc:'Pool area · 8am–12pm', link:'https://open.spotify.com/playlist/37i9dQZF1DX6ziVCJnEski'},
   {id:2, label:'Lunch', name:'Midday Vibes', desc:'Restaurant & bar · 12pm–4pm', link:'https://open.spotify.com/playlist/37i9dQZF1DWXRqgorJj26U'},
   {id:3, label:'Sunset', name:'Sundowner Mix', desc:'Pool & beach · 4pm–8pm', link:'https://open.spotify.com/playlist/37i9dQZF1DX4sWSpwq3LiO'},
@@ -10261,7 +10261,18 @@ const musicPlaylists = [
   {id:5, label:'Late Night', name:'Club Night', desc:'Main floor · 10pm–close', link:'https://open.spotify.com/playlist/37i9dQZF1DX0BF4ezvoh11'},
   {id:6, label:'Events', name:'NYE 2026', desc:'Special events playlist', link:'https://open.spotify.com/playlist/37i9dQZF1DX0h0QnLkMBl4'},
 ];
-let musicNextId = 7;
+
+async function musicLoadFromSupabase(){
+  try{
+    const { data, error } = await sb.from('music_playlists').select('*').order('id', { ascending: true });
+    if(error) throw error;
+    // Always trust the database once reachable, even if empty - same clean-slate pattern
+    // used everywhere else in the app.
+    musicPlaylists = data.map(row => ({ id: row.id, label: row.label, name: row.name, desc: row.desc || '', link: row.link }));
+  } catch(e){
+    console.warn('Music Supabase load failed, using demo data (run the SQL if this is the first load)', e);
+  }
+}
 
 function musicRender(){
   const grid = document.getElementById('music-grid');
@@ -10341,6 +10352,8 @@ function musicSaveEdit(id){
   p.desc = document.getElementById('medit-desc-'+id).value.trim();
   musicRender();
   toast('Playlist updated ✓');
+  sb.from('music_playlists').update({ label: p.label, name: p.name, link: p.link, desc: p.desc }).eq('id', id)
+    .then(({error})=>{ if(error) console.warn('Music playlist update failed', error); });
 }
 
 function musicShowAddForm(){
@@ -10355,13 +10368,15 @@ function musicHideAddForm(){
   document.getElementById('music-desc-input').value='';
 }
 
-function musicSavePlaylist(){
+async function musicSavePlaylist(){
   const label = document.getElementById('music-label-input').value;
   const name = document.getElementById('music-name-input').value.trim();
   const link = document.getElementById('music-link-input').value.trim();
   const desc = document.getElementById('music-desc-input').value.trim();
   if(!name || !link){ toast('Please enter a name and Spotify link'); return; }
-  musicPlaylists.push({id: musicNextId++, label, name, desc, link});
+  const { data, error } = await sb.from('music_playlists').insert({ label, name, link, desc }).select().single();
+  if(error){ toast('Save failed - check your connection and try again'); console.warn('Music playlist insert failed', error); return; }
+  musicPlaylists.push({ id: data.id, label, name, desc, link });
   musicHideAddForm();
   musicRender();
   toast('Playlist added ✓');
@@ -10369,7 +10384,12 @@ function musicSavePlaylist(){
 
 function musicDelete(id){
   const idx = musicPlaylists.findIndex(p => p.id === id);
-  if(idx > -1){ musicPlaylists.splice(idx,1); musicRender(); }
+  if(idx > -1){
+    musicPlaylists.splice(idx,1);
+    musicRender();
+    sb.from('music_playlists').delete().eq('id', id)
+      .then(({error})=>{ if(error) console.warn('Music playlist delete failed', error); });
+  }
 }
 
 // ── KITCHEN ──
@@ -12088,6 +12108,7 @@ window.addEventListener('load', () => {
   kitchenLoadFromSupabase().then(()=>{ kitchenRenderAreaTabs(); kitchenRenderMenus(); kitchenRenderRecipes(); kitchenRenderAllergens(); });
   kitchenLinksLoadFromSupabase().then(kitchenRenderLinks);
   barLoadFromSupabase().then(()=>{ barRenderAreaTabs(); barRenderMenus(); barRenderRecipes(); });
+  musicLoadFromSupabase().then(musicRender);
   businessMetricsLoadFromSupabase();
   stickyLoadMyNotes();
 });

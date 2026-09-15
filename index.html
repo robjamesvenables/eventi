@@ -12170,16 +12170,6 @@ const announcements = [
 
 let announceNextId = 10;
 let announceEditId = null;
-let announceSelectedTag = 'Info';
-
-const announceTags = {
-  Info:    {color:'#0D9488', tagBg:'#CCFBF1', tagColor:'#065F46'},
-  Events:  {color:'#0D9488', tagBg:'#CCFBF1', tagColor:'#065F46'},
-  SOPs:    {color:'#C4973B', tagBg:'#FEF3C7', tagColor:'#78350F'},
-  Kitchen: {color:'#10B981', tagBg:'#D1FAE5', tagColor:'#065F46'},
-  Reminder:{color:'#A855F7', tagBg:'#EDE9FE', tagColor:'#4C1D95'},
-  Other:   {color:'#64748B', tagBg:'#F1F5F9', tagColor:'#334155'},
-};
 
 const announceCurrentUser = 'John';
 const announcePlaceholders = [
@@ -12488,14 +12478,134 @@ function announceStyleEmojis(text){
   return out;
 }
 
-// Highlights @Name / @Department mentions as a pill so it reads as a tag rather than plain text.
-// Real version would look up a directory of staff/departments and fire a notification to whoever
-// is mentioned; this just does the visual styling for the demo.
+// Highlights a real, picked @Department/@Person mention as a pill. Stored as @[Full Name]
+// with square brackets specifically so it reliably matches any name shape - a plain
+// capitalized-word regex (the old approach) breaks on names like "Sales and Marketing"
+// (lowercase "and" in the middle) or "GRO" (all caps), which this format avoids entirely.
 function announceStyleMentions(text){
-  return text.replace(/@([A-Z][a-zA-Z.]*(?:\s[A-Z][a-zA-Z.]*){0,2})/g, (match, name) => {
+  return text.replace(/@\[([^\]]+)\]/g, (match, name) => {
     return `<span style="display:inline-flex;align-items:center;background:#CCFBF1;color:#0D9488;font-weight:700;padding:1px 7px 1px 6px;border-radius:10px;font-size:10.5px">@${name}</span>`;
   });
 }
+
+// The plain-text form of a mention (no styling) - used when loading a post's saved text
+// back into the editable input, and anywhere else the raw, typeable text is needed rather
+// than the display pill.
+function announceMentionPlainText(text){
+  return text.replace(/@\[([^\]]+)\]/g, (match, name) => `@${name}`);
+}
+
+// ── @ MENTION PICKER (Team Feed compose) ── typing "@" pops up a searchable list mixing
+// departments and people, same interaction as WhatsApp. Picking one inserts a real,
+// non-editable pill (contentEditable=false marks it as one atomic unit the browser can
+// select/delete cleanly as a whole with a single backspace, unlike a plain styled span,
+// which is what caused the earlier "can't delete a mention" bug) - typing continues
+// normally right after it.
+let announceMentionActive = false;
+let announceMentionIndex = 0;
+let announceMentionFilteredOptions = [];
+
+function announceMentionOptions(){
+  const opts = [{type:'dept', name:'All'}];
+  PEOPLE_DEPARTMENTS.forEach(d => opts.push({type:'dept', name:d}));
+  PEOPLE.forEach(p => opts.push({type:'person', name:(p.firstName+' '+(p.lastName||'')).trim()}));
+  return opts;
+}
+
+// Finds an "@partial query" immediately before the cursor, if there is one - only looks
+// within the current text node, which is exactly where a freshly-typed "@" will be.
+function announceGetMentionQuery(){
+  const sel = window.getSelection();
+  if(!sel.rangeCount) return null;
+  const range = sel.getRangeAt(0);
+  if(!range.collapsed) return null;
+  const node = range.startContainer;
+  if(node.nodeType !== Node.TEXT_NODE) return null;
+  const textBeforeCursor = node.textContent.slice(0, range.startOffset);
+  const match = textBeforeCursor.match(/@([\w ]*)$/);
+  if(!match) return null;
+  return { query: match[1], node, matchStart: range.startOffset - match[0].length, matchEnd: range.startOffset };
+}
+
+window.announceCheckMention = function(){
+  const info = announceGetMentionQuery();
+  if(!info){ announceHideMentionPopup(); return; }
+  const q = info.query.toLowerCase();
+  announceMentionFilteredOptions = announceMentionOptions().filter(o => o.name.toLowerCase().includes(q)).slice(0, 8);
+  announceMentionIndex = 0;
+  if(!announceMentionFilteredOptions.length){ announceHideMentionPopup(); return; }
+  announceRenderMentionPopup();
+};
+
+function announceRenderMentionPopup(){
+  const popup = document.getElementById('announce-mention-popup');
+  const deptIconSvg = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>';
+  popup.innerHTML = announceMentionFilteredOptions.map((o,i) => `
+    <div onmousedown="event.preventDefault();announcePickMention(${i})" style="display:flex;align-items:center;gap:8px;padding:9px 12px;cursor:pointer;background:${i===announceMentionIndex?'#F1F5F9':'white'}">
+      <div style="width:26px;height:26px;border-radius:50%;background:${o.type==='dept'?'#0F1E2E':'#0D9488'};display:flex;align-items:center;justify-content:center;color:white;font-size:11px;font-weight:700;flex-shrink:0">${o.type==='dept'?deptIconSvg:o.name.charAt(0).toUpperCase()}</div>
+      <span style="font-size:13px;font-weight:600;color:#0F1E2E">${o.name}</span>
+    </div>`).join('');
+  popup.style.display = 'block';
+  announceMentionActive = true;
+}
+
+window.announceHideMentionPopup = function(){
+  const popup = document.getElementById('announce-mention-popup');
+  if(popup) popup.style.display = 'none';
+  announceMentionActive = false;
+};
+
+window.announceMentionKeydown = function(event){
+  if(!announceMentionActive) return;
+  if(event.key === 'ArrowDown'){
+    event.preventDefault();
+    announceMentionIndex = Math.min(announceMentionIndex+1, announceMentionFilteredOptions.length-1);
+    announceRenderMentionPopup();
+  } else if(event.key === 'ArrowUp'){
+    event.preventDefault();
+    announceMentionIndex = Math.max(announceMentionIndex-1, 0);
+    announceRenderMentionPopup();
+  } else if(event.key === 'Enter' || event.key === 'Tab'){
+    event.preventDefault();
+    announcePickMention(announceMentionIndex);
+  } else if(event.key === 'Escape'){
+    announceHideMentionPopup();
+  }
+};
+
+window.announcePickMention = function(idx){
+  const opt = announceMentionFilteredOptions[idx];
+  const info = announceGetMentionQuery();
+  if(!opt || !info) return;
+  const { node, matchStart, matchEnd } = info;
+
+  const pill = document.createElement('span');
+  pill.dataset.mention = opt.name;
+  pill.contentEditable = 'false';
+  pill.style.cssText = 'display:inline-flex;align-items:center;background:#CCFBF1;color:#0D9488;font-weight:700;padding:1px 7px 1px 6px;border-radius:10px;font-size:13px';
+  pill.textContent = '@' + opt.name;
+
+  // Splits the text node around the @query match, drops the pill in its place, then moves
+  // the cursor to just after it (inside a leading non-breaking space) so typing continues
+  // normally rather than merging into the pill itself.
+  const fullText = node.textContent;
+  const before = fullText.slice(0, matchStart);
+  const after = fullText.slice(matchEnd);
+  const afterNode = document.createTextNode('\u00A0' + after);
+  node.textContent = before;
+  node.parentNode.insertBefore(pill, node.nextSibling);
+  node.parentNode.insertBefore(afterNode, pill.nextSibling);
+
+  const range = document.createRange();
+  range.setStart(afterNode, 1);
+  range.collapse(true);
+  const sel = window.getSelection();
+  sel.removeAllRanges();
+  sel.addRange(range);
+
+  announceHideMentionPopup();
+  document.getElementById('announce-input').focus();
+};
 
 function announceExtractText(){
   const input = document.getElementById('announce-input');
@@ -12519,6 +12629,10 @@ function announceWalkNode(el){
       } else if(node.dataset && node.dataset.emoji){
         const e = ANNOUNCE_EMOJIS.find(x=>x.id===node.dataset.emoji);
         out += e ? e.char : '';
+      } else if(node.dataset && node.dataset.mention){
+        // A picked @Department/@Person pill - output the real, bracket-delimited form so
+        // it's saved and displayed as a validated mention, not just styled placeholder text.
+        out += `@[${node.dataset.mention}]`;
       } else if(node.tagName === 'DIV' || node.tagName === 'P'){
         // Pressing Enter in a contenteditable wraps the new line in its own block element -
         // that's a line break, not just adjacent content to concatenate.
@@ -12534,24 +12648,23 @@ function announceWalkNode(el){
 
 let announcePhotoData = '';
 
-function announceOpenModal(title, text, tag, link, photo){
-  announceSelectedTag = tag || 'Info';
+function announceOpenModal(title, text, link, photo){
   announcePhotoData = photo || '';
   document.getElementById('announce-modal-title').textContent = title;
-  // Emoji styling only here, deliberately not announceStyleMentions - a mention rendered as
-  // a styled pill inside this editable field can't be deleted cleanly with normal backspace
-  // (the browser's contenteditable behavior around a styled span isn't predictable), even
-  // though the underlying text itself was always preserved correctly either way. Someone
-  // editing a post should just see and edit plain text, exactly as they'd have typed it -
-  // mention styling is for the finished, read-only post view, not for editing.
-  document.getElementById('announce-input').innerHTML = text ? momentsTwemojiParse(text).replace(/\n/g,'<br>') : '';
+  // Mentions load back in as plain "@Name" text (not a styled, pickable pill) for the same
+  // reason emoji-only styling was chosen here before: a browser's contenteditable field
+  // doesn't handle backspace/delete predictably against a styled span, so editing should
+  // just show plain, typeable text. If untouched and re-saved, the mention simply won't
+  // re-gain its bracket-delimited, validated form (a graceful, minor trade-off) - re-tagging
+  // it via @ again restores the real, pickable version.
+  const plainText = text ? announceMentionPlainText(text) : '';
+  document.getElementById('announce-input').innerHTML = plainText ? momentsTwemojiParse(plainText).replace(/\n/g,'<br>') : '';
   document.getElementById('announce-link').value = link || '';
   document.getElementById('announce-modal').style.display = 'flex';
   announceModalOpen = true;
   announceAutoScrollPaused = true;
   announceSetComposeMode('post');
   announceUpdatePhotoPreview();
-  announceRenderTags();
   announceRenderEmojis();
   setTimeout(()=>document.getElementById('announce-input').focus(),100);
 }
@@ -12612,17 +12725,6 @@ window.announceInsertEmoji = function(id){
   const sel = window.getSelection();
   sel.removeAllRanges();
   sel.addRange(range);
-};
-
-function announceRenderTags(){
-  const container = document.getElementById('announce-tags');
-  if(!container) return;
-  container.innerHTML = '';
-}
-
-window.announceSelectTag = function(tag){
-  announceSelectedTag = tag;
-  announceRenderTags();
 };
 
 window.announceCloseModal = function(){
@@ -12687,15 +12789,14 @@ window.announceSubmit = async function(){
   const text = announceExtractText();
   if(!text){ toast('Please write something first'); return; }
   const link = document.getElementById('announce-link').value.trim();
-  const s = announceTags[announceSelectedTag]||announceTags.Info;
   const now = new Date();
   const time = 'Today, '+now.getHours()+':'+String(now.getMinutes()).padStart(2,'0');
   if(announceEditId!==null){
     const a = announcements.find(a=>a.id===announceEditId);
     if(a){
-      a.text=text; a.tag=announceSelectedTag; a.link=link; a.photo=announcePhotoData; Object.assign(a,s);
+      a.text=text; a.link=link; a.photo=announcePhotoData;
       if(a.dbId){
-        const { error } = await sb.from('announcements').update({ text, tag: announceSelectedTag, photo: announcePhotoData || null, link: link || null }).eq('id', a.dbId);
+        const { error } = await sb.from('announcements').update({ text, photo: announcePhotoData || null, link: link || null }).eq('id', a.dbId);
         if(error){
           console.warn('Supabase update failed', error);
           toast('Updated here, but could not save - check your connection');
@@ -12707,10 +12808,10 @@ window.announceSubmit = async function(){
     }
     toast('Updated ✓');
   } else {
-    const newPost = {id:announceNextId++, text, tag:announceSelectedTag, link, photo:announcePhotoData, ...s, by:'John', time, ts:Date.now()};
+    const newPost = {id:announceNextId++, text, link, photo:announcePhotoData, color:'#0D9488', tagBg:'#CCFBF1', tagColor:'#065F46', by:'John', time, ts:Date.now()};
     const insertAt = announcements.findIndex(a => !a.pinned);
     announcements.splice(insertAt === -1 ? announcements.length : insertAt, 0, newPost);
-    const { data, error } = await sb.from('announcements').insert({ text, tag: announceSelectedTag, by_name: 'John', photo: announcePhotoData || null, link: link || null }).select().single();
+    const { data, error } = await sb.from('announcements').insert({ text, by_name: 'John', photo: announcePhotoData || null, link: link || null }).select().single();
     if(error){
       console.warn('Supabase insert failed', error);
       toast('Posted here, but not saved - check your connection');
@@ -12725,7 +12826,7 @@ window.announceSubmit = async function(){
 
 window.announceAdd = function(){
   announceEditId = null;
-  announceOpenModal('Post Announcement','','Info','','');
+  announceOpenModal('Post Announcement','','','');
 };
 
 window.announceEdit = function(id){
@@ -12733,7 +12834,7 @@ window.announceEdit = function(id){
   if(!a) return;
   announceEditId = id;
   if(a.pollOptions){
-    announceOpenModal('Edit Poll','','Info','','');
+    announceOpenModal('Edit Poll','','','');
     announceSetComposeMode('poll');
     document.getElementById('pollQInput').value = a.text;
     document.getElementById('pollOptFields').innerHTML = a.pollOptions.map((o,i) => pollOptFieldHtml(i+1)).join('');
@@ -12742,7 +12843,7 @@ window.announceEdit = function(id){
     pollUpdateAddBtnState();
     document.getElementById('announce-submit-btn').textContent = 'Save Changes';
   } else {
-    announceOpenModal('Edit Announcement', a.text, a.tag, a.link, a.photo);
+    announceOpenModal('Edit Announcement', a.text, a.link, a.photo);
   }
 };
 
@@ -16843,7 +16944,10 @@ window.nav = function(id, pushState){
       <button id="announce-mode-poll-btn" onclick="announceSetComposeMode('poll')" style="flex:1;padding:9px;border-radius:8px;font-family:'Inter',sans-serif;font-size:12.5px;font-weight:700;cursor:pointer;border:1.5px solid #E2E8F0;background:white;color:#64748B">📊 Poll</button>
     </div>
     <div id="announce-post-fields">
-    <div id="announce-input" contenteditable="true" data-placeholder="Write your announcement here..." style="width:100%;min-height:90px;max-height:160px;overflow-y:auto;padding:14px;border:1.5px solid #E2E8F0;border-radius:10px;font-family:'Inter',sans-serif;font-size:16px;color:#0F1E2E;outline:none;line-height:1.6;box-sizing:border-box"></div>
+    <div style="position:relative">
+      <div id="announce-input" contenteditable="true" data-placeholder="Write your announcement here... (type @ to tag a department or person)" oninput="announceCheckMention()" onkeydown="announceMentionKeydown(event)" onblur="setTimeout(announceHideMentionPopup,150)" style="width:100%;min-height:90px;max-height:160px;overflow-y:auto;padding:14px;border:1.5px solid #E2E8F0;border-radius:10px;font-family:'Inter',sans-serif;font-size:16px;color:#0F1E2E;outline:none;line-height:1.6;box-sizing:border-box"></div>
+      <div id="announce-mention-popup" style="display:none;position:absolute;z-index:100;background:white;border:1px solid #E2E8F0;border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,0.15);max-height:220px;overflow-y:auto;width:260px"></div>
+    </div>
     <div id="announce-emojis" style="display:flex;align-items:center;gap:6px;padding:8px 2px 0"></div>
     <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;color:#94A3B8;margin:16px 0 8px">Photo (optional)</div>
     <div id="announce-photo-wrap" style="display:flex;align-items:center;gap:12px">
@@ -16857,9 +16961,7 @@ window.nav = function(id, pushState){
       </div>
     </div>
     <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;color:#94A3B8;margin:16px 0 8px">Link (optional)</div>
-    <input id="announce-link" type="text" placeholder="https://..." style="width:100%;padding:11px 14px;border:1.5px solid #E2E8F0;border-radius:9px;font-family:'Inter',sans-serif;font-size:16px;color:#0F1E2E;outline:none;box-sizing:border-box">
-    <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;color:#94A3B8;margin:16px 0 10px">Tag</div>
-    <div id="announce-tags" style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:24px"></div>
+    <input id="announce-link" type="text" placeholder="https://..." style="width:100%;padding:11px 14px;border:1.5px solid #E2E8F0;border-radius:9px;font-family:'Inter',sans-serif;font-size:16px;color:#0F1E2E;outline:none;box-sizing:border-box;margin-bottom:24px">
     </div>
     <div id="announce-poll-fields" style="display:none">
       <div style="font-size:11px;font-weight:700;color:#94A3B8;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px">Question</div>

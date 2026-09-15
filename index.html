@@ -10268,7 +10268,7 @@ async function musicLoadFromSupabase(){
     if(error) throw error;
     // Always trust the database once reachable, even if empty - same clean-slate pattern
     // used everywhere else in the app.
-    musicPlaylists = data.map(row => ({ id: row.id, label: row.label, name: row.name, desc: row.desc || '', link: row.link }));
+    musicPlaylists = data.map(row => ({ id: row.id, label: row.label, name: row.name, desc: row.description || '', link: row.link }));
   } catch(e){
     console.warn('Music Supabase load failed, using demo data (run the SQL if this is the first load)', e);
   }
@@ -10352,7 +10352,7 @@ function musicSaveEdit(id){
   p.desc = document.getElementById('medit-desc-'+id).value.trim();
   musicRender();
   toast('Playlist updated ✓');
-  sb.from('music_playlists').update({ label: p.label, name: p.name, link: p.link, desc: p.desc }).eq('id', id)
+  sb.from('music_playlists').update({ label: p.label, name: p.name, link: p.link, description: p.desc }).eq('id', id)
     .then(({error})=>{ if(error) console.warn('Music playlist update failed', error); });
 }
 
@@ -10374,7 +10374,7 @@ async function musicSavePlaylist(){
   const link = document.getElementById('music-link-input').value.trim();
   const desc = document.getElementById('music-desc-input').value.trim();
   if(!name || !link){ toast('Please enter a name and Spotify link'); return; }
-  const { data, error } = await sb.from('music_playlists').insert({ label, name, link, desc }).select().single();
+  const { data, error } = await sb.from('music_playlists').insert({ label, name, link, description: desc }).select().single();
   if(error){ toast('Save failed - check your connection and try again'); console.warn('Music playlist insert failed', error); return; }
   musicPlaylists.push({ id: data.id, label, name, desc, link });
   musicHideAddForm();

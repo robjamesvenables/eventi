@@ -7712,12 +7712,17 @@ async function taskboardLoadTeamFromSupabase(){
   try{
     const { data: projects, error: perr } = await sb.from('task_projects').select('*').order('created_at', { ascending: true });
     if(perr) throw perr;
+    // Always trust the database once reachable, even if it returns zero rows - the same
+    // clean-slate pattern used everywhere else in the app. This function previously only
+    // ever appended new Supabase projects on top of the hardcoded 7 demo ones (Horizon,
+    // Solaris, Wedding, etc) and never cleared them, so those demo projects would show up
+    // forever regardless of what was actually in the database - a real, pre-existing bug
+    // caught while checking why 7 team projects were showing when there should be none.
+    kbTeamProjects = [];
     (projects || []).forEach(row => {
       const id = 'team-'+row.id;
-      if(!kbTeamProjects.find(p=>p.id===id)){
-        kbTeamProjects.push({id, name: row.name, dbId: row.id});
-        if(!kbBoards[id]) kbBoards[id] = {todo:[],progress:[],done:[]};
-      }
+      kbTeamProjects.push({id, name: row.name, dbId: row.id});
+      if(!kbBoards[id]) kbBoards[id] = {todo:[],progress:[],done:[]};
     });
     const { data: cards, error: cerr } = await sb.from('task_cards').select('*').order('sort_order', { ascending: true });
     if(cerr) throw cerr;

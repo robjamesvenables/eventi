@@ -14234,15 +14234,22 @@ window.chatSendMessage = async function(){
   }
 };
 
-// ── SHARE TO CHAT (generic) ── lets any other part of the app (Meeting Notes, etc) send a
-// piece of text into Mavis's own Chat, as an alternative to WhatsApp - the person picks
-// which conversation/group to send it to, then it posts through the exact same insert
-// logic chatSendMessage itself uses, so it shows up as a completely normal chat message.
+// ── SHARE TO CHAT (generic) ── lets any other part of the app (Meeting Notes, Analytics
+// export, etc) send text and/or an image into Mavis's own Chat, as an alternative to
+// WhatsApp - the person picks which conversation/group to send it to. Text goes through the
+// exact same insert logic chatSendMessage itself uses, so it's a completely normal, properly
+// synced chat message. Images are local-only for now, matching how every other photo/voice/
+// video attachment in Chat already works today (none of them are saved to Supabase yet -
+// a real, separate gap flagged for its own dedicated fix later, not something new here) -
+// so a shared image is visible on the sending device, but not yet synced to other devices
+// or after Chat's local data is cleared, until that underlying piece is built.
 // Chat messages are plain text only (no bold/markdown support anywhere in Chat), so this
 // deliberately doesn't attempt any text styling - a correction from what was said earlier.
 let shareToChatPendingText = '';
-window.shareToChatOpen = function(text){
-  shareToChatPendingText = text;
+let shareToChatPendingImage = null;
+window.shareToChatOpen = function(text, imageDataUrl){
+  shareToChatPendingText = text || '';
+  shareToChatPendingImage = imageDataUrl || null;
   document.getElementById('shareToChatOverlay').style.display = 'flex';
   shareToChatRender();
 };
@@ -14267,9 +14274,24 @@ function shareToChatRender(){
 window.shareToChatSend = async function(conversationId){
   const c = chatConversations.find(x=>x.id===conversationId);
   const text = shareToChatPendingText;
-  if(!c || !text) return;
+  const image = shareToChatPendingImage;
+  if(!c || (!text && !image)) return;
   shareToChatClose();
   const me = chatCurrentUserName();
+
+  // An image attachment is local-only for now (see note above) - pushed straight into this
+  // conversation and saved locally, same as any other photo sent in Chat today, rather than
+  // attempting a Supabase insert that the attachment columns aren't actually wired for yet.
+  if(image){
+    c.messages.push({ from:'me', text: text||'', attachment: image, attachmentType:'image', time: chatFormatTime(), createdAt: new Date().toISOString(), pending:false });
+    chatSaveLocal();
+    if(chatActiveId === conversationId) chatRenderMessages();
+    chatRenderList();
+    chatRenderDashboardList();
+    toast(`Sent to ${c.name} ✓`);
+    return;
+  }
+
   const pending = {from:'me', text, time: chatFormatTime(), createdAt: new Date().toISOString(), pending:true};
   c.messages.push(pending);
   if(chatActiveId === conversationId) chatRenderMessages();
@@ -16165,12 +16187,14 @@ window.analyticsExportShare = function(event){
     fields: [
       {label:'Format', type:'pillpicker', options:[
         {id:'pdf', name:'PDF'},
-        {id:'image', name:'Image (share/WhatsApp)'}
+        {id:'chat', name:'Send via Mavis Chat'},
+        {id:'other', name:'Other'}
       ], value:'pdf'}
     ],
     onOk: function(vals){
       const choice = vals[0] || 'pdf';
       if(choice === 'pdf') analyticsExportPdf();
+      else if(choice === 'chat') analyticsShareToMavisChat();
       else analyticsExportImage();
     }
   });
@@ -16235,9 +16259,10 @@ async function analyticsExportImage(){
     const filename = 'analytics-' + new Date().toISOString().slice(0,10) + '.png';
     const file = new File([blob], filename, { type: 'image/png' });
 
-    // navigator.canShare/share with files is what actually opens the OS share sheet
-    // (WhatsApp, Mail, AirDrop, etc) with the image already attached - only reliably
-    // supported on phones/tablets today, not most desktop browsers.
+    // navigator.canShare/share with files is what actually opens the device's own native
+    // share sheet (whatever's installed - Mail, Messages, AirDrop, any messaging app) with
+    // the image already attached - only reliably supported on phones/tablets today, not
+    // most desktop browsers.
     if(navigator.canShare && navigator.canShare({ files: [file] })){
       await navigator.share({ files: [file], title: 'Analytics' });
       return;
@@ -16254,10 +16279,34 @@ async function analyticsExportImage(){
     link.click();
     link.remove();
     setTimeout(function(){ URL.revokeObjectURL(url); }, 1500);
-    toast('Image downloaded ✓ — attach it to WhatsApp or email manually');
+    toast('Image downloaded ✓ — attach it to your message manually');
   } catch(err){
     if(err && err.name === 'AbortError') return; // person cancelled the native share sheet - not an error
     console.error('Analytics image export failed:', err);
+    toast('Image export failed — please try again');
+  }
+}
+
+// Captures the live Analytics page the same way the PDF/Image options do, then hands it
+// straight to the generic Send via Chat picker as an image attachment - the priority option,
+// ahead of PDF/Other, since Chat is the whole point over WhatsApp. Image attachments in Chat
+// are local-only for now (see the note on shareToChatSend above), same as any other photo
+// sent in Chat today.
+async function analyticsShareToMavisChat(){
+  const el = document.getElementById('p-analytics');
+  if(!el || typeof window.html2canvas !== 'function'){
+    alert('The export library did not load. Please refresh the page and try again.');
+    return;
+  }
+  toast('Preparing your image…');
+  try{
+    const canvas = await analyticsHideHeaderButtonsDuring(function(){
+      return window.html2canvas(el, { scale: 2, useCORS: true, backgroundColor: '#ffffff', logging: false });
+    });
+    const dataUrl = canvas.toDataURL('image/png');
+    shareToChatOpen('', dataUrl);
+  } catch(err){
+    console.error('Analytics share to chat failed:', err);
     toast('Image export failed — please try again');
   }
 }

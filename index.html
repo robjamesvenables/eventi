@@ -7393,6 +7393,22 @@ const mnMonths=['January','February','March','April','May','June','July','August
 const mnDows=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
 let mnActiveKey=null, mnSaveTimer=null;
 
+async function mnLoadFromSupabase(){
+  try{
+    const { data, error } = await sb.from('meeting_notes').select('*');
+    if(error) throw error;
+    // Always trust the database once reachable, even if empty - same clean-slate pattern
+    // used everywhere else in the app.
+    Object.keys(mnNotes).forEach(k => delete mnNotes[k]);
+    (data || []).forEach(row => {
+      mnNotes[row.date] = { title: row.title || '', location: row.location || '', attendees: row.attendees || '', notes: row.notes || '' };
+    });
+    mnRender();
+  } catch(e){
+    console.warn('Meeting Notes Supabase load failed, using demo data (run the SQL if this is the first load)', e);
+  }
+}
+
 // Init week start to Monday of current week
 function mnGetMonday(d){
   const day=d.getDay(), diff=(day===0)?-6:1-day;
@@ -7471,15 +7487,18 @@ function mnAutoSave(key){
   clearTimeout(mnSaveTimer);
   const status=document.getElementById('mn-save-status');
   if(status) status.textContent='Saving…';
-  mnSaveTimer=setTimeout(()=>{
-    mnNotes[key]={
+  mnSaveTimer=setTimeout(async ()=>{
+    const entry = {
       title:(document.getElementById('mn-title')||{}).value||'',
       location:(document.getElementById('mn-location')||{}).value||'',
       attendees:(document.getElementById('mn-attendees')||{}).value||'',
       notes:(document.getElementById('mn-textarea')||{}).value||''
     };
-    if(status) status.textContent='✓ Saved';
+    mnNotes[key]=entry;
     mnRender();
+    const { error } = await sb.from('meeting_notes').upsert({ date: key, title: entry.title, location: entry.location, attendees: entry.attendees, notes: entry.notes });
+    if(status) status.textContent = error ? 'Save failed - check your connection' : '✓ Saved';
+    if(error) console.warn('Meeting note save failed', error);
   },800);
 }
 
@@ -12109,6 +12128,7 @@ window.addEventListener('load', () => {
   kitchenLinksLoadFromSupabase().then(kitchenRenderLinks);
   barLoadFromSupabase().then(()=>{ barRenderAreaTabs(); barRenderMenus(); barRenderRecipes(); });
   musicLoadFromSupabase().then(musicRender);
+  mnLoadFromSupabase();
   businessMetricsLoadFromSupabase();
   stickyLoadMyNotes();
 });

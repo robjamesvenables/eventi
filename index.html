@@ -4221,7 +4221,10 @@ img.emoji-tw{width:1.15em;height:1.15em;vertical-align:-0.2em;margin:0 1px}
           <textarea id="mn-textarea" class="mn-note-area" placeholder="Notes..."></textarea>
           <div class="mn-panel-footer">
             <span id="mn-save-status" style="font-size:12px;color:var(--ink3)">Start typing to save…</span>
-            <button class="btn btn-ghost" style="font-size:12px" onclick="mnCopyComms()">💬 Copy for WhatsApp</button>
+            <div style="display:flex;gap:8px">
+              <button class="btn btn-navy" style="font-size:12px" onclick="mnSendViaChat()">💬 Send via Chat</button>
+              <button class="btn btn-ghost" style="font-size:12px" onclick="mnCopyComms()">Send via WA</button>
+            </div>
           </div>
         </div>
       </div>
@@ -7508,6 +7511,15 @@ function mnCopyComms(){
   const text=`📋 *${n.title||'Meeting Notes'}*\n📍 ${n.location||'—'}\n👥 ${n.attendees||'—'}\n\n${n.notes||''}`;
   navigator.clipboard.writeText(text);
   toast('Copied for WhatsApp ✓');
+}
+
+function mnSendViaChat(){
+  const key=mnActiveKey; if(!key) return;
+  const n=mnNotes[key]||{};
+  // Plain text, no asterisks - unlike the WhatsApp version above, Chat doesn't interpret
+  // any bold/markdown syntax at all, so this stays as a straightforward, clean read.
+  const text=`📋 ${n.title||'Meeting Notes'}\n📍 ${n.location||'—'}\n👥 ${n.attendees||'—'}\n\n${n.notes||''}`;
+  shareToChatOpen(text);
 }
 
 
@@ -14221,6 +14233,69 @@ window.chatSendMessage = async function(){
   }
 };
 
+// ── SHARE TO CHAT (generic) ── lets any other part of the app (Meeting Notes, etc) send a
+// piece of text into Mavis's own Chat, as an alternative to WhatsApp - the person picks
+// which conversation/group to send it to, then it posts through the exact same insert
+// logic chatSendMessage itself uses, so it shows up as a completely normal chat message.
+// Chat messages are plain text only (no bold/markdown support anywhere in Chat), so this
+// deliberately doesn't attempt any text styling - a correction from what was said earlier.
+let shareToChatPendingText = '';
+window.shareToChatOpen = function(text){
+  shareToChatPendingText = text;
+  document.getElementById('shareToChatOverlay').style.display = 'flex';
+  shareToChatRender();
+};
+window.shareToChatClose = function(){
+  document.getElementById('shareToChatOverlay').style.display = 'none';
+};
+function shareToChatRender(){
+  const body = document.getElementById('shareToChatBody');
+  if(!chatConversations.length){
+    body.innerHTML = '<div style="text-align:center;padding:24px;color:#94A3B8;font-size:13px">No conversations yet.</div>';
+    return;
+  }
+  body.innerHTML = chatConversations.map(c => `
+    <div onclick="shareToChatSend(${c.id})" style="display:flex;align-items:center;gap:10px;padding:12px 0;border-bottom:1px solid #F1F5F9;cursor:pointer">
+      <div style="width:36px;height:36px;border-radius:50%;background:${c.color||'#0F1E2E'};display:flex;align-items:center;justify-content:center;color:white;font-weight:700;font-size:14px;flex-shrink:0">${(c.name||'?').charAt(0).toUpperCase()}</div>
+      <div style="flex:1;min-width:0">
+        <div style="font-size:13.5px;font-weight:700;color:#0F1E2E">${c.name}</div>
+        ${c.isGroup ? `<div style="font-size:11px;color:#94A3B8">Group</div>` : ''}
+      </div>
+    </div>`).join('');
+}
+window.shareToChatSend = async function(conversationId){
+  const c = chatConversations.find(x=>x.id===conversationId);
+  const text = shareToChatPendingText;
+  if(!c || !text) return;
+  shareToChatClose();
+  const me = chatCurrentUserName();
+  const pending = {from:'me', text, time: chatFormatTime(), createdAt: new Date().toISOString(), pending:true};
+  c.messages.push(pending);
+  if(chatActiveId === conversationId) chatRenderMessages();
+  chatRenderList();
+  chatRenderDashboardList();
+  try{
+    let data, error;
+    if(c.isGroup){
+      ({ data, error } = await sb.from('chat_group_messages').insert({ department: c.name, sender_name: me, body: text }).select().single());
+    } else {
+      ({ data, error } = await sb.from('chat_messages').insert({ conversation_key: chatConversationKey(c.name), sender_name: me, recipient_name: c.name, body: text }).select().single());
+    }
+    if(error) throw error;
+    pending.dbId = data.id;
+    pending.createdAt = data.created_at;
+    pending.time = chatFormatTime(data.created_at);
+    pending.pending = false;
+    if(chatActiveId === conversationId) chatRenderMessages();
+    toast(`Sent to ${c.name} ✓`);
+  } catch(err){
+    pending.failed = true;
+    pending.pending = false;
+    console.error('Share to chat failed:', err);
+    toast('Message not saved - check your connection');
+  }
+};
+
 function chatInit(){
   chatLoadLocal();
   chatUpdateBadges();
@@ -17661,6 +17736,17 @@ document.addEventListener('DOMContentLoaded', initCardColours);
     <div style="padding:16px 24px;border-top:1px solid #F1F5F9;flex-shrink:0">
       <button onclick="barMoveToMenuConfirm()" style="width:100%;padding:12px;background:#0D9488;border:none;border-radius:9px;font-family:'Inter',sans-serif;font-size:13.5px;font-weight:700;color:white;cursor:pointer">Add to Selected Menu(s)</button>
     </div>
+  </div>
+</div>
+
+<div id="shareToChatOverlay" style="display:none;position:fixed;inset:0;background:rgba(15,30,46,0.6);z-index:10001;align-items:center;justify-content:center;padding:20px" onclick="if(event.target===this)shareToChatClose()">
+  <div style="background:white;border-radius:16px;max-width:420px;width:100%;max-height:80vh;display:flex;flex-direction:column;overflow:hidden">
+    <div style="background:#0F1E2E;padding:20px 24px;border-radius:16px 16px 0 0;display:flex;align-items:center;justify-content:space-between;flex-shrink:0">
+      <div style="color:white;font-size:16px;font-weight:800">Send via Chat</div>
+      <button onclick="shareToChatClose()" style="background:rgba(255,255,255,0.12);border:none;color:white;width:32px;height:32px;border-radius:50%;cursor:pointer;font-size:16px;flex-shrink:0">×</button>
+    </div>
+    <div style="padding:8px 24px 4px;font-size:12.5px;color:#64748B;flex-shrink:0">Choose who to send this to.</div>
+    <div style="padding:0 24px 16px;overflow-y:auto;flex:1" id="shareToChatBody"></div>
   </div>
 </div>
 

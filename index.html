@@ -7208,7 +7208,7 @@ window.djSchedSavePng = function(event){
         return;
       }
 
-      const weeks = djSchedWeeksForRange(fromKey, toKey);
+      const weeks = djSchedChunkRangeIntoWeeks(fromKey, toKey);
       const rangeLabel = fromDate.toLocaleDateString('en-GB',{day:'numeric',month:'short'})+' – '+toDate.toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'});
       djSchedCapturePng(djSchedBuildExportHtml(weeks, rangeLabel), rangeLabel, button, {renderWidth:1400, outputWidth:1920});
     }
@@ -7242,6 +7242,29 @@ function djSchedWeeksForRange(fromStr, toStr){
   return weeks;
 }
 
+// For an arbitrary, user-picked date range (the daterange picker, not a calendar-week
+// preset like "This Week"): chunks the EXACT [from,to] span into consecutive 7-day blocks
+// starting right at "from" itself, with no Monday-snapping at all. djSchedWeeksForRange
+// above snaps back to the Monday of the starting week, which is exactly right for "This
+// Week"/"This Month" style presets, but produces two week-blocks (each showing every stage
+// again) for a plain 7-day pick that doesn't happen to start on a Monday - a real bug this
+// avoids by only ever covering the days actually selected, nothing more.
+function djSchedChunkRangeIntoWeeks(fromStr, toStr){
+  const from = new Date(fromStr);
+  const to = new Date(toStr);
+  let cursor = new Date(from);
+  const weeks = [];
+  while(cursor <= to){
+    const days = [];
+    for(let i=0;i<7 && cursor<=to;i++){
+      days.push(new Date(cursor));
+      cursor.setDate(cursor.getDate()+1);
+    }
+    weeks.push({start:days[0], days});
+  }
+  return weeks;
+}
+
 // Builds a clean, non-interactive version of the schedule (no edit/delete/color buttons)
 // for the given weeks, sized for a PDF page rather than the live app view.
 function djSchedBuildExportHtml(weeks, title){
@@ -7271,7 +7294,7 @@ function djSchedBuildExportHtml(weeks, title){
           return so !== 0 ? so : a.start.localeCompare(b2.start);
         });
         page += '<div style="background:#F8FAFC;border:1px solid #E2E8F0;border-radius:5px;padding:5px;min-height:82px;box-sizing:border-box;overflow:hidden">';
-        page += '<div style="font-size:7px;font-weight:800;color:#0D9488;text-transform:uppercase;letter-spacing:0.4px">'+dayNames[i]+'</div>';
+        page += '<div style="font-size:7px;font-weight:800;color:#0D9488;text-transform:uppercase;letter-spacing:0.4px">'+dayNames[(d.getDay()+6)%7]+'</div>';
         page += '<div style="font-size:8px;font-weight:700;color:#64748B;margin:1px 0 4px">'+d.getDate()+' '+d.toLocaleDateString('en-GB',{month:'short'})+'</div>';
         if(dayBookings.length === 0){
           page += '<div style="font-size:7px;color:#CBD5E1;text-align:center;padding-top:17px">No bookings</div>';

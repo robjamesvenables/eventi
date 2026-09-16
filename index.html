@@ -7193,37 +7193,24 @@ window.djSchedSavePng = function(event){
   appModalShow({
     title: 'Save Schedule as PNG',
     fields: [
-      {label:'View', type:'pillpicker', options:[
-        {id:'day',name:'Daily'},
-        {id:'week',name:'Weekly'},
-        {id:'month',name:'Monthly'}
-      ], value:'week'},
-      {label:'Date', type:'date', value:today}
+      {label:'Dates', type:'daterange', value:{from:today, to:today}}
     ],
     onOk: function(vals){
-      const choice = vals[0] || 'week';
-      const selectedKey = vals[1] || today;
-      const selectedDate = new Date(selectedKey + 'T12:00:00');
+      const range = vals[0] || {};
+      const fromKey = range.from || today;
+      const toKey = range.to || fromKey;
+      const fromDate = new Date(fromKey + 'T12:00:00');
+      const toDate = new Date(toKey + 'T12:00:00');
 
-      if(choice === 'day'){
-        const dayLabel = selectedDate.toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
-        djSchedCapturePng(djSchedBuildDayExportHtml(selectedDate, dayLabel), dayLabel, button, {renderWidth:1080, outputWidth:1080, outputMaxHeight:1350});
+      if(fromKey === toKey){
+        const dayLabel = fromDate.toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
+        djSchedCapturePng(djSchedBuildDayExportHtml(fromDate, dayLabel), dayLabel, button, {renderWidth:1080, outputWidth:1080, outputMaxHeight:1350});
         return;
       }
 
-      if(choice === 'week'){
-        const weeks = djSchedWeeksForRange(selectedKey, selectedKey);
-        const week = weeks[0];
-        const weekLabel = week.days[0].toLocaleDateString('en-GB',{day:'numeric',month:'short'})+' – '+week.days[6].toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'});
-        djSchedCapturePng(djSchedBuildExportHtml([week], 'Week of '+weekLabel), weekLabel, button, {renderWidth:1400, outputWidth:1920});
-        return;
-      }
-
-      const year = selectedDate.getFullYear();
-      const month = selectedDate.getMonth();
-      const weeks = djSchedWeeksForMonth(year, month);
-      const monthTitle = new Date(year, month, 1).toLocaleString('en-GB',{month:'long',year:'numeric'});
-      djSchedCapturePng(djSchedBuildExportHtml(weeks, monthTitle), monthTitle, button, {renderWidth:1400, outputWidth:1920});
+      const weeks = djSchedWeeksForRange(fromKey, toKey);
+      const rangeLabel = fromDate.toLocaleDateString('en-GB',{day:'numeric',month:'short'})+' – '+toDate.toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'});
+      djSchedCapturePng(djSchedBuildExportHtml(weeks, rangeLabel), rangeLabel, button, {renderWidth:1400, outputWidth:1920});
     }
   });
 };

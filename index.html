@@ -14241,13 +14241,19 @@ window.chatOpenConversation = function(id, skipHistory){
       <div style="font-size:14px;font-weight:700;color:#0F1E2E">${c.name}</div>
       <div style="font-size:11px;color:${c.isGroup?'#94A3B8':(c.online?'#22C55E':'#94A3B8')}">${c.isGroup ? (c.memberIds.length + ' members') : (c.online?'Online':'Offline')}</div>
     </div>`;
-  chatRenderMessages();
 
-  // Phone-width: swap to a fullscreen thread view instead of showing both panes squeezed
+  // Phone-width: swap to a fullscreen thread view instead of showing both panes squeezed.
+  // This has to happen BEFORE chatRenderMessages() below, not after - that function scrolls
+  // to the bottom by reading scrollHeight, and a display:none pane (its default state on
+  // mobile until this class is added) always reports scrollHeight as 0, since hidden
+  // elements aren't laid out at all. Rendering into a still-hidden pane silently made every
+  // mobile chat open scrolled to the top instead of the most recent message.
   if(window.innerWidth <= 700){
     document.getElementById('chat-thread-pane').classList.add('mobile-open');
     document.getElementById('chat-list-pane').classList.add('mobile-hidden');
   }
+  chatRenderMessages();
+
   // Give the thread its own place in browser history on every screen size, so the
   // physical/browser back button returns to the conversation list first, not straight
   // past Chat entirely to whatever page was open before it.

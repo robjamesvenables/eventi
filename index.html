@@ -9843,23 +9843,29 @@ function vacancyDetailRender(){
     <div style="font-size:13px;color:#334155;line-height:1.7;margin-bottom:16px">${v.description}</div>
     ${v.requirements ? `<div style="font-size:13px;font-weight:800;color:#0F1E2E;margin-bottom:6px">Requirements</div><div style="font-size:13px;color:#334155;line-height:1.7;margin-bottom:16px">${v.requirements}</div>` : ''}
     <div style="background:#F1F5F9;border-radius:9px;padding:12px 14px;font-size:13px;color:#334155;margin-bottom:20px"><strong>To apply:</strong> ${v.applyEmail}</div>
-    <div style="display:flex;gap:8px;margin-bottom:16px">
-      <button onclick="vacancyShare(${v.id})" style="flex:1;padding:10px;background:#F1F5F9;border:1.5px solid #E2E8F0;border-radius:8px;font-family:'Inter',sans-serif;font-size:12.5px;font-weight:700;color:#334155;cursor:pointer">↗ Share</button>
+    <div style="display:flex;gap:8px;margin-bottom:8px">
+      <button onclick="vacancyShareChat(${v.id})" style="flex:1;padding:10px;background:#0F1E2E;border:none;border-radius:8px;font-family:'Inter',sans-serif;font-size:12.5px;font-weight:700;color:white;cursor:pointer">💬 Send via Chat</button>
       <button onclick="vacancyPdf(${v.id})" style="flex:1;padding:10px;background:#F1F5F9;border:1.5px solid #E2E8F0;border-radius:8px;font-family:'Inter',sans-serif;font-size:12.5px;font-weight:700;color:#334155;cursor:pointer">⬇ Download PDF</button>
+    </div>
+    <div style="margin-bottom:16px">
+      <button onclick="vacancyShareWA(${v.id})" style="width:100%;padding:10px;background:#F1F5F9;border:1.5px solid #E2E8F0;border-radius:8px;font-family:'Inter',sans-serif;font-size:12.5px;font-weight:700;color:#334155;cursor:pointer">Send via WA</button>
     </div>
     <div style="display:flex;gap:8px;padding-top:16px;border-top:1px solid #F1F5F9">${actionButtons}</div>
   `;
 }
 
-window.vacancyShare = function(id){
+window.vacancyShareChat = function(id){
+  const v = vacanciesData.find(x=>x.id===id);
+  if(!v) return;
+  const text = `💼 ${v.title}\n${v.department} · Needed from ${vacanciesFormatDate(v.dateNeeded)}\n\n${v.description}\n\nTo apply: ${v.applyEmail}`;
+  shareToChatOpen(text);
+};
+
+window.vacancyShareWA = function(id){
   const v = vacanciesData.find(x=>x.id===id);
   if(!v) return;
   const text = `💼 *${v.title}*\n${v.department} · Needed from ${vacanciesFormatDate(v.dateNeeded)}\n\n${v.description}\n\nTo apply: ${v.applyEmail}`;
-  if(navigator.share){
-    navigator.share({title: v.title, text}).catch(()=>{});
-  } else {
-    window.open('https://wa.me/?text=' + encodeURIComponent(text), '_blank');
-  }
+  window.open('https://wa.me/?text=' + encodeURIComponent(text), '_blank');
 };
 
 window.vacancyPdf = function(id){

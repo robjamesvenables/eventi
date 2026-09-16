@@ -3320,6 +3320,29 @@ img.emoji-tw{width:1.15em;height:1.15em;vertical-align:-0.2em;margin:0 1px}
 
       <div style="font-size:11.5px;font-weight:800;color:#64748B;text-transform:uppercase;letter-spacing:0.6px;margin:8px 0 12px">Team & Operations</div>
       <div id="analytics-ops-grid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px"></div>
+
+      <div style="font-size:11.5px;font-weight:800;color:#64748B;text-transform:uppercase;letter-spacing:0.6px;margin:28px 0 12px">Customer Survey</div>
+      <div id="an-survey-empty" style="font-size:12px;color:#94A3B8;padding:12px 0">No responses logged yet</div>
+      <div id="an-survey-body" style="display:none">
+        <div id="an-survey-ratings-grid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:14px;margin-bottom:14px"></div>
+
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px">
+          <div style="background:white;border:1px solid var(--line);border-radius:14px;padding:16px 18px">
+            <div style="font-size:12px;font-weight:700;color:#64748B;margin-bottom:10px">Ratings trend</div>
+            <div id="an-survey-trend-empty" style="font-size:12px;color:#94A3B8;padding:12px 0">Not enough responses yet to show a trend</div>
+            <div style="position:relative;height:0" id="an-survey-trend-wrap"><canvas id="an-survey-trend-chart"></canvas></div>
+          </div>
+          <div style="background:white;border:1px solid var(--line);border-radius:14px;padding:16px 18px">
+            <div style="font-size:12px;font-weight:700;color:#64748B;margin-bottom:10px">Where guests are from</div>
+            <div id="an-survey-country-list"></div>
+          </div>
+          <div style="background:white;border:1px solid var(--line);border-radius:14px;padding:16px 18px">
+            <div style="font-size:12px;font-weight:700;color:#64748B;margin-bottom:10px">Age range</div>
+            <div id="an-survey-age-empty" style="font-size:12px;color:#94A3B8;padding:12px 0">Not enough responses yet</div>
+            <div style="position:relative;height:0" id="an-survey-age-wrap"><canvas id="an-survey-age-chart"></canvas></div>
+          </div>
+        </div>
+      </div>
     </div>
 
     <div class="page" id="p-reporting" style="padding:32px 28px 60px">
@@ -12306,7 +12329,7 @@ window.addEventListener('load', () => {
   barLoadFromSupabase().then(()=>{ barRenderAreaTabs(); barRenderMenus(); barRenderRecipes(); });
   musicLoadFromSupabase().then(musicRender);
   mnLoadFromSupabase();
-  surveyLoadFromSupabase().then(surveyRender);
+  surveyLoadFromSupabase().then(()=>{ surveyRender(); if(typeof analyticsRenderSurveySection==='function') analyticsRenderSurveySection(); });
   surveyRenderQr();
   businessMetricsLoadFromSupabase();
   stickyLoadMyNotes();
@@ -17025,6 +17048,102 @@ function analyticsRender(){
     html += opsTile('Entertainment bookings', djWeek, 'this week');
     html += opsTile('Avg food cost', avgFoodCost ? avgFoodCost.toFixed(1)+'%' : '—', 'across all recipes');
     opsGrid.innerHTML = html;
+  }
+
+  analyticsRenderSurveySection();
+}
+
+function analyticsRenderSurveySection(){
+  const emptyEl = document.getElementById('an-survey-empty');
+  const bodyEl = document.getElementById('an-survey-body');
+  if(!emptyEl || !bodyEl) return;
+
+  if(!surveyEntries.length){
+    emptyEl.style.display = 'block';
+    bodyEl.style.display = 'none';
+    return;
+  }
+  emptyEl.style.display = 'none';
+  bodyEl.style.display = 'block';
+
+  // Average per rating category, plus recommendation rate as a 6th stat alongside them -
+  // meaningful even with just a handful of responses, unlike the trend/breakdown charts
+  // below which need real volume to say anything.
+  const ratingsGrid = document.getElementById('an-survey-ratings-grid');
+  const avg = key => {
+    const vals = surveyEntries.map(e => e[key]).filter(v => v > 0);
+    return vals.length ? (vals.reduce((a,b)=>a+b,0)/vals.length) : null;
+  };
+  let ratingsHtml = SURVEY_QUESTIONS.map(q => {
+    const a = avg(q.id);
+    return `<div style="background:white;border:1px solid var(--line);border-radius:14px;padding:16px 18px">
+      <div style="font-size:12px;font-weight:700;color:#64748B;margin-bottom:2px">${q.label}</div>
+      <div style="font-size:20px;font-weight:800;color:#0F1E2E">${a ? a.toFixed(1)+' ★' : '—'}</div>
+    </div>`;
+  }).join('');
+  const recTotal = surveyEntries.filter(e => e.recommend === 'yes' || e.recommend === 'no').length;
+  const recYes = surveyEntries.filter(e => e.recommend === 'yes').length;
+  const recPct = recTotal ? Math.round((recYes/recTotal)*100) : null;
+  ratingsHtml += `<div style="background:white;border:1px solid var(--line);border-radius:14px;padding:16px 18px">
+    <div style="font-size:12px;font-weight:700;color:#64748B;margin-bottom:2px">Would recommend</div>
+    <div style="font-size:20px;font-weight:800;color:#0F1E2E">${recPct!==null ? recPct+'%' : '—'}</div>
+  </div>`;
+  ratingsGrid.innerHTML = ratingsHtml;
+
+  // Ratings trend by day - "overall experience" only, not all 5 categories at once, to
+  // avoid a cluttered chart. Needs at least 2 distinct days of responses to draw a
+  // meaningful line, same principle as the other charts on this page needing real data.
+  const trendWrap = document.getElementById('an-survey-trend-wrap');
+  const trendEmpty = document.getElementById('an-survey-trend-empty');
+  if(window.anSurveyTrendChart) window.anSurveyTrendChart.destroy();
+  const dayKeys = [...new Set(surveyEntries.map(e => e.dateKey))].sort();
+  if(dayKeys.length >= 2){
+    trendEmpty.style.display = 'none';
+    trendWrap.style.height = '150px';
+    const trendData = dayKeys.map(d => {
+      const vals = surveyEntries.filter(e => e.dateKey === d).map(e => e.overall).filter(v => v > 0);
+      return vals.length ? +(vals.reduce((a,b)=>a+b,0)/vals.length).toFixed(2) : null;
+    });
+    window.anSurveyTrendChart = new Chart(document.getElementById('an-survey-trend-chart'), {
+      type:'line',
+      data:{ labels: dayKeys.map(d=>{ const dt=new Date(d); return dt.toLocaleDateString('en-GB',{day:'numeric',month:'short'}); }),
+        datasets:[{ label:'Overall experience', data: trendData, borderColor:'#0D9488', backgroundColor:'rgba(13,148,136,0.08)', fill:true, tension:0.3, pointRadius:3 }] },
+      options:{ responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}}, scales:{ x:{grid:{display:false}}, y:{min:0, max:5, grid:{color:'#F1F5F9'}} } }
+    });
+  } else {
+    trendEmpty.style.display = 'block';
+    trendWrap.style.height = '0px';
+  }
+
+  // Where guests are from - a ranked list reads fine even with very few responses, unlike
+  // a chart which looks sparse/misleading until there's real volume.
+  const countryList = document.getElementById('an-survey-country-list');
+  const countryCounts = {};
+  surveyEntries.forEach(e => { if(e.country) countryCounts[e.country] = (countryCounts[e.country]||0) + 1; });
+  const countryEntries = Object.entries(countryCounts).sort((a,b) => b[1]-a[1]);
+  countryList.innerHTML = countryEntries.length
+    ? countryEntries.map(([c,n]) => `<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid #F8FAFC;font-size:13px"><span style="color:#334155">${c}</span><span style="font-weight:700;color:#0F1E2E">${n}</span></div>`).join('')
+    : '<div style="font-size:12px;color:#94A3B8;padding:12px 0">No responses with a country given yet</div>';
+
+  // Age range breakdown - needs at least a few different responses with an age range given
+  // to be worth showing as a chart rather than an empty state.
+  const ageWrap = document.getElementById('an-survey-age-wrap');
+  const ageEmpty = document.getElementById('an-survey-age-empty');
+  if(window.anSurveyAgeChart) window.anSurveyAgeChart.destroy();
+  const AGE_BRACKETS = ['18-24','25-34','35-44','45-54','55+'];
+  const ageCounts = AGE_BRACKETS.map(b => surveyEntries.filter(e => e.ageRange === b).length);
+  const ageTotal = ageCounts.reduce((a,b)=>a+b,0);
+  if(ageTotal >= 2){
+    ageEmpty.style.display = 'none';
+    ageWrap.style.height = '150px';
+    window.anSurveyAgeChart = new Chart(document.getElementById('an-survey-age-chart'), {
+      type:'bar',
+      data:{ labels: AGE_BRACKETS, datasets:[{ data: ageCounts, backgroundColor:'#0D9488', borderRadius:4, maxBarThickness:32 }] },
+      options:{ responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}}, scales:{ x:{grid:{display:false}}, y:{grid:{color:'#F1F5F9'}, ticks:{stepSize:1} } } }
+    });
+  } else {
+    ageEmpty.style.display = 'block';
+    ageWrap.style.height = '0px';
   }
 }
 

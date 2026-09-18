@@ -3413,6 +3413,11 @@ img.emoji-tw{width:1.15em;height:1.15em;vertical-align:-0.2em;margin:0 1px}
           <div class="rep-card-title">Guests Through the Door</div>
           <div class="rep-card-sub">Opens the calendar view</div>
         </button>
+        <button onclick="reportingOpenCsvUpload()" class="rep-card">
+          <div class="rep-card-icon" style="background:rgba(13,148,136,0.1);color:#0D9488"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg></div>
+          <div class="rep-card-title">Upload Historical Data</div>
+          <div class="rep-card-sub">Bring in past daily revenue and covers from a CSV</div>
+        </button>
       </div>
 
       <div style="margin-top:36px">
@@ -3425,6 +3430,8 @@ img.emoji-tw{width:1.15em;height:1.15em;vertical-align:-0.2em;margin:0 1px}
         </div>
         <div id="reporting-recent-list"></div>
       </div>
+
+      <div id="reporting-csv-uploads"></div>
     </div>
 
     <div class="page" id="p-reporting-calendar" style="padding:32px 28px 60px">
@@ -15912,6 +15919,149 @@ async function bmInsert(rows){
   analyticsRender();
 }
 
+// ── CSV historical data upload ── every row this creates is tagged with a shared
+// upload_batch id, so an entire upload can be cleanly deleted and redone if the file
+// turns out to have had a mistake in it - without touching any other data (later manual
+// entries, or a separate CSV upload done another time). Existing dates already in
+// business_metrics are skipped, not overwritten, so this is safe to use for backfilling
+// history without risking today's/recent real entries.
+window.reportingOpenCsvUpload = function(){
+  document.getElementById('csvUploadOverlay').style.display = 'flex';
+};
+
+window.csvUploadClose = function(){
+  document.getElementById('csvUploadOverlay').style.display = 'none';
+  document.getElementById('csvUploadInput').value = '';
+  document.getElementById('csvUploadLabel').textContent = 'Choose CSV file';
+};
+
+window.csvUploadFileSelected = async function(event){
+  const file = event.target.files[0];
+  if(!file) return;
+  document.getElementById('csvUploadLabel').textContent = file.name;
+  const text = await file.text();
+  const parsed = reportingParseCsv(text);
+  csvUploadClose();
+  if(!parsed.rows.length){ toast('No valid rows found in that file - check it has date, revenue, covers columns'); return; }
+  reportingConfirmCsvImport(parsed);
+};
+
+function reportingParseCsv(text){
+  const lines = text.split(/\r?\n/).filter(l => l.trim().length);
+  const header = lines[0].split(',').map(h => h.trim().toLowerCase());
+  const dateIdx = header.indexOf('date');
+  const revenueIdx = header.indexOf('revenue');
+  const coversIdx = header.indexOf('covers');
+  const rows = [];
+  const errors = [];
+  if(dateIdx === -1 || revenueIdx === -1 || coversIdx === -1){
+    return { rows: [], errors: ['CSV must have date, revenue, and covers columns'] };
+  }
+  for(let i=1;i<lines.length;i++){
+    const cols = lines[i].split(',');
+    const date = (cols[dateIdx]||'').trim();
+    const revenue = parseFloat(cols[revenueIdx]);
+    const covers = parseFloat(cols[coversIdx]);
+    if(!/^\d{4}-\d{2}-\d{2}$/.test(date) || isNaN(revenue) || isNaN(covers)){
+      errors.push('Row '+(i+1)+' skipped - could not read date/revenue/covers');
+      continue;
+    }
+    rows.push({ date, revenue, covers });
+  }
+  return { rows, errors };
+}
+
+function reportingConfirmCsvImport(parsed){
+  const { rows, errors } = parsed;
+  const existingDates = new Set(businessMetrics.filter(m => m.metric_key==='revenue').map(m => m.period_date));
+  const newRows = rows.filter(r => !existingDates.has(r.date));
+  const skipped = rows.length - newRows.length;
+  const sorted = [...rows].sort((a,b) => a.date.localeCompare(b.date));
+  const from = sorted[0].date, to = sorted[sorted.length-1].date;
+
+  appConfirmShow({
+    title: 'Confirm import',
+    msg: `${rows.length} rows read (${from} to ${to}). ${newRows.length} new day${newRows.length!==1?'s':''} will be added, ${skipped} already-logged day${skipped!==1?'s':''} will be skipped.${errors.length ? ' '+errors.length+' row(s) could not be read and were ignored.' : ''}`,
+    label: 'Import '+newRows.length+' days',
+    onOk: () => reportingRunCsvImport(newRows, from, to)
+  });
+}
+
+async function reportingRunCsvImport(newRows, from, to){
+  if(!newRows.length){ toast('Nothing new to import - every date in that file is already logged'); return; }
+  toast('Importing '+newRows.length+' days…');
+  const batchId = 'csv-'+Date.now();
+  const records = [];
+  newRows.forEach(r => {
+    records.push({ metric_key:'revenue', period_date:r.date, value:r.revenue, upload_batch:batchId });
+    records.push({ metric_key:'covers_served', period_date:r.date, value:r.covers, upload_batch:batchId });
+  });
+  // Insert in batches of 500 rather than one call per row - this can be 1000+ records
+  // for two years of daily data.
+  for(let i=0;i<records.length;i+=500){
+    const chunk = records.slice(i, i+500);
+    const { data, error } = await sb.from('business_metrics').insert(chunk).select();
+    if(error){ toast('Import failed partway through - check your connection and try again'); console.warn('CSV import failed', error); return; }
+    businessMetrics = businessMetrics.concat(data || chunk);
+  }
+  reportingCsvUploads.push({ id: batchId, from, to, count: newRows.length, importedAt: new Date().toISOString() });
+  reportingSaveCsvUploadsLocal();
+  toast('Imported '+newRows.length+' days ✓');
+  reportingRenderRecent();
+  reportingRenderCsvUploads();
+  analyticsRender();
+}
+
+// A record of past uploads (batch id, date range, count) is kept in localStorage purely so
+// the "past uploads" list can show something to delete - this is just a UI convenience
+// list, not the actual data (which lives in business_metrics, tagged by upload_batch).
+let reportingCsvUploads = [];
+(function reportingLoadCsvUploadsLocal(){
+  try{ reportingCsvUploads = JSON.parse(localStorage.getItem('mavis_csv_uploads_v1') || '[]'); }
+  catch(e){ reportingCsvUploads = []; }
+})();
+function reportingSaveCsvUploadsLocal(){
+  try{ localStorage.setItem('mavis_csv_uploads_v1', JSON.stringify(reportingCsvUploads)); }catch(e){}
+}
+
+function reportingRenderCsvUploads(){
+  const wrap = document.getElementById('reporting-csv-uploads');
+  if(!wrap) return;
+  if(!reportingCsvUploads.length){ wrap.innerHTML = ''; return; }
+  wrap.innerHTML = `
+    <div style="font-size:11.5px;font-weight:800;color:#64748B;text-transform:uppercase;letter-spacing:0.6px;margin:28px 0 10px">Past Uploads</div>
+    ${reportingCsvUploads.map(u => `
+      <div style="display:flex;align-items:center;justify-content:space-between;background:white;border:1.5px solid #E2E8F0;border-radius:10px;padding:12px 16px;margin-bottom:8px">
+        <div>
+          <div style="font-size:13px;font-weight:700;color:#0F1E2E">${u.from} to ${u.to}</div>
+          <div style="font-size:11.5px;color:#94A3B8">${u.count} day${u.count!==1?'s':''} imported</div>
+        </div>
+        <button onclick="reportingDeleteCsvUpload('${u.id}')" style="padding:7px 14px;background:none;color:#DC2626;border:none;font-family:'Inter',sans-serif;font-size:12px;font-weight:700;cursor:pointer">Delete this upload</button>
+      </div>
+    `).join('')}
+  `;
+}
+
+window.reportingDeleteCsvUpload = function(batchId){
+  const upload = reportingCsvUploads.find(u => u.id === batchId);
+  if(!upload) return;
+  appConfirmShow({
+    title: 'Delete this upload',
+    msg: `This permanently removes all ${upload.count} day${upload.count!==1?'s':''} of revenue and covers data from ${upload.from} to ${upload.to} that came from this upload. This cannot be undone.`,
+    label: 'Delete',
+    onOk: async () => {
+      const { error } = await sb.from('business_metrics').delete().eq('upload_batch', batchId);
+      if(error){ toast('Delete failed - try again'); console.warn(error); return; }
+      businessMetrics = businessMetrics.filter(m => m.upload_batch !== batchId);
+      reportingCsvUploads = reportingCsvUploads.filter(u => u.id !== batchId);
+      reportingSaveCsvUploadsLocal();
+      toast('Upload deleted ✓');
+      reportingRenderRecent();
+      reportingRenderCsvUploads();
+    }
+  });
+};
+
 const BM_LABELS = { revenue:'Revenue', covers_served:'Covers Served', dept_spend:'Department Spend', staff_target:'Staff Target', staff_actual:'Staff Actual', guests_arrived:'Guests Arrived' };
 let reportingJumpDate = null;
 
@@ -16191,6 +16341,7 @@ function bmDeleteEntry(id){
 
 function reportingRender(){
   reportingRenderRecent();
+  reportingRenderCsvUploads();
   document.querySelectorAll('.currency-pill').forEach(p => p.classList.toggle('active', p.dataset.cur===currentCurrency));
 }
 
@@ -18194,6 +18345,21 @@ document.addEventListener('DOMContentLoaded', initCardColours);
     </div>
     <div style="padding:8px 24px 4px;font-size:12.5px;color:#64748B;flex-shrink:0">Choose who to send this to.</div>
     <div style="padding:0 24px 16px;overflow-y:auto;flex:1" id="shareToChatBody"></div>
+  </div>
+</div>
+
+<div id="csvUploadOverlay" style="display:none;position:fixed;inset:0;background:rgba(15,30,46,0.6);z-index:10001;align-items:center;justify-content:center;padding:20px" onclick="if(event.target===this)csvUploadClose()">
+  <div style="background:white;border-radius:16px;max-width:440px;width:100%;padding:24px">
+    <div style="font-size:16px;font-weight:800;color:#0F1E2E;margin-bottom:6px">Upload Historical Data</div>
+    <div style="font-size:12.5px;color:#64748B;margin-bottom:18px;line-height:1.5">A CSV with <b>date, revenue, covers</b> columns - each date not already logged will be added. Existing dates are left untouched.</div>
+    <input type="file" id="csvUploadInput" accept=".csv" style="display:none" onchange="csvUploadFileSelected(event)">
+    <label onclick="document.getElementById('csvUploadInput').click()" style="display:flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:16px;border:1.5px dashed #CBD5E1;border-radius:10px;font-family:'Inter',sans-serif;font-size:13px;font-weight:700;color:#64748B;cursor:pointer;box-sizing:border-box;margin-bottom:16px">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+      <span id="csvUploadLabel">Choose CSV file</span>
+    </label>
+    <div style="display:flex;gap:10px">
+      <button onclick="csvUploadClose()" style="padding:10px 18px;background:#F1F5F9;color:#64748B;border:none;border-radius:8px;font-family:'Inter',sans-serif;font-size:13px;font-weight:700;cursor:pointer">Cancel</button>
+    </div>
   </div>
 </div>
 

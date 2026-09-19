@@ -17613,7 +17613,12 @@ function predictorRenderBody(){
   const stats = predictorMetricStats('covers_served');
   const todayLYValue = predictorHistoricalMetric('covers_served', today);
   const bracket = predictorBracketColor(todayLYValue, stats);
-  const verdict = idHoliday ? 'busy' : bracket === 'high' ? 'busy' : bracket === 'low' ? 'quiet' : isWeekend ? 'busy' : 'moderate';
+  // Directly mirrors the same statistical bracket the week strip uses for this exact date,
+  // so the two sections can never disagree - a public holiday is still treated as an
+  // automatic "busy" override (a genuinely different, external signal not captured by past
+  // history alone), but the weekend is no longer a separate rule that could contradict what
+  // the data itself says about this specific Saturday.
+  const verdict = idHoliday ? 'busy' : bracket === 'high' ? 'busy' : bracket === 'low' ? 'quiet' : 'moderate';
   const card = document.getElementById('predictor-today-card');
   // Bold, solid fills with white text - a real, unmissable signal card rather than a
   // subtle pastel background that reads as flat/vanilla.

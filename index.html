@@ -17695,7 +17695,11 @@ function predictorRenderBody(){
     const hol = predictorHolidayForDate(c.code, today);
     const school = predictorIsSchoolHoliday(c.code, today);
     let score = 30;
-    if(cur.strength === 'Strong') score += 30; else if(cur.strength === 'Weak') score -= 15;
+    // A genuinely strong currency alone should be enough to register as High/green on its
+    // own - the earlier +30 only reached 60, just short of the 65 High threshold, so a
+    // strong currency with no other signal active landed as amber Moderate instead, which
+    // read wrong given how meaningful a real currency strength move actually is.
+    if(cur.strength === 'Strong') score += 40; else if(cur.strength === 'Weak') score -= 15;
     if(hol) score += 30;
     if(school) score += 25;
     const reasonParts = [];

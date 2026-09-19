@@ -3388,14 +3388,14 @@ img.emoji-tw{width:1.15em;height:1.15em;vertical-align:-0.2em;margin:0 1px}
         </div>
 
         <div style="display:flex;gap:14px;margin-bottom:20px;flex-wrap:wrap">
-          <div style="background:white;border:1.5px solid #E2E8F0;border-radius:14px;padding:16px 18px;flex:1;min-width:160px">
-            <div style="font-size:12px;color:#64748B;margin-bottom:4px">This week vs last year</div>
-            <div id="predictor-yoy" style="font-size:22px;font-weight:800;color:#0F1E2E">—</div>
-            <div id="predictor-yoy-sub" style="font-size:11px;color:#94A3B8;margin-top:2px"></div>
+          <div style="background:linear-gradient(135deg,#0F1E2E,#1E3A52);border-radius:14px;padding:18px 20px;flex:1;min-width:180px;box-shadow:0 4px 12px rgba(15,30,46,0.15)">
+            <div style="font-size:11.5px;font-weight:700;color:rgba(255,255,255,0.65);margin-bottom:6px;text-transform:uppercase;letter-spacing:0.4px">This Week So Far</div>
+            <div id="predictor-yoy" style="font-size:28px;font-weight:800;color:white">—</div>
+            <div id="predictor-yoy-sub" style="font-size:11.5px;color:rgba(255,255,255,0.6);margin-top:4px"></div>
           </div>
-          <div style="background:white;border:1.5px solid #E2E8F0;border-radius:14px;padding:16px 18px;flex:1;min-width:160px">
-            <div style="font-size:12px;color:#64748B;margin-bottom:4px">Season</div>
-            <div id="predictor-season" style="font-size:22px;font-weight:800;color:#0F1E2E">—</div>
+          <div style="background:linear-gradient(135deg,#0D9488,#0F766E);border-radius:14px;padding:18px 20px;flex:1;min-width:180px;box-shadow:0 4px 12px rgba(13,148,136,0.2)">
+            <div style="font-size:11.5px;font-weight:700;color:rgba(255,255,255,0.75);margin-bottom:6px;text-transform:uppercase;letter-spacing:0.4px">Season</div>
+            <div id="predictor-season" style="font-size:28px;font-weight:800;color:white">—</div>
           </div>
         </div>
 
@@ -17506,11 +17506,14 @@ function predictorHistoricalMetric(metricKey, date){
   const lastYear = new Date(date); lastYear.setFullYear(lastYear.getFullYear()-1);
   const dateStr = predictorDateStr(lastYear);
   const row = businessMetrics.find(m => m.metric_key===metricKey && m.period_date===dateStr);
-  return row ? row.value : null;
+  return row ? Number(row.value) : null;
 }
 
 function predictorMetricRange(metricKey){
-  const vals = businessMetrics.filter(m => m.metric_key===metricKey).map(m => m.value);
+  // Coerces to Number explicitly and drops anything invalid - protects against a value
+  // being stored as text rather than a true numeric type, which would otherwise silently
+  // break Math.min/Math.max's comparison.
+  const vals = businessMetrics.filter(m => m.metric_key===metricKey).map(m => Number(m.value)).filter(v => !isNaN(v));
   if(!vals.length) return null;
   return { min: Math.min(...vals), max: Math.max(...vals) };
 }
@@ -17605,24 +17608,27 @@ function predictorRenderBody(){
   const bracket = predictorBracketColor(todayLYValue, range);
   const verdict = idHoliday ? 'busy' : bracket === 'high' ? 'busy' : bracket === 'low' ? 'quiet' : isWeekend ? 'busy' : 'moderate';
   const card = document.getElementById('predictor-today-card');
-  const cardColors = { busy:['#ECFDF5','#065F46','#A7F3D0'], quiet:['#F1F5F9','#475569','#E2E8F0'], moderate:['#FEF3C7','#92400E','#FDE68A'] };
-  const [bg, fg, border] = cardColors[verdict];
-  card.style.background = bg; card.style.border = '1px solid '+border;
-  document.getElementById('predictor-today-title').style.color = fg;
+  // Bold, solid fills with white text - a real, unmissable signal card rather than a
+  // subtle pastel background that reads as flat/vanilla.
+  const cardColors = { busy:'#0D9488', quiet:'#64748B', moderate:'#F0B429' };
+  const bg = cardColors[verdict];
+  card.style.background = bg; card.style.border = 'none'; card.style.boxShadow = '0 4px 14px rgba(0,0,0,0.12)'; card.style.color = 'white';
+  document.getElementById('predictor-today-title').style.color = 'white';
+  document.getElementById('predictor-today-title').style.fontSize = '18px';
   document.getElementById('predictor-today-title').textContent =
-    verdict === 'busy' ? 'Today looks busy' : verdict === 'quiet' ? 'Today looks quiet' : 'Today looks moderate';
+    verdict === 'busy' ? '🔥 Today looks busy' : verdict === 'quiet' ? 'Today looks quiet' : 'Today looks moderate';
   const reasons = [];
   if(idHoliday) reasons.push('It\'s '+(idHoliday.localName||idHoliday.name)+' in Indonesia');
   if(isWeekend) reasons.push('it\'s the weekend');
   if(weatherToday && weatherToday.rain < 30) reasons.push('clear weather forecast');
   if(todayLYValue) reasons.push('same day last year saw '+Math.round(todayLYValue)+' guests');
-  document.getElementById('predictor-today-sub').style.color = fg;
+  document.getElementById('predictor-today-sub').style.color = 'rgba(255,255,255,0.9)';
   document.getElementById('predictor-today-sub').textContent = reasons.length ? reasons.join(', ')+'.' : 'No strong signals either way today.';
   const tagsEl = document.getElementById('predictor-today-tags');
   let tagsHtml = '';
-  if(weatherToday) tagsHtml += `<span style="background:white;font-size:12px;padding:4px 10px;border-radius:20px;color:#0F1E2E">☀ ${weatherToday.temp}°C, ${weatherToday.rain}% rain</span>`;
-  if(idHoliday) tagsHtml += `<span style="background:white;font-size:12px;padding:4px 10px;border-radius:20px;color:#0F1E2E">🇮🇩 ${idHoliday.localName||idHoliday.name}</span>`;
-  if(isWeekend) tagsHtml += `<span style="background:white;font-size:12px;padding:4px 10px;border-radius:20px;color:#0F1E2E">Weekend</span>`;
+  if(weatherToday) tagsHtml += `<span style="background:rgba(255,255,255,0.2);font-size:12.5px;font-weight:700;padding:5px 12px;border-radius:20px;color:white">☀ ${weatherToday.temp}°C, ${weatherToday.rain}% rain</span>`;
+  if(idHoliday) tagsHtml += `<span style="background:rgba(255,255,255,0.2);font-size:12.5px;font-weight:700;padding:5px 12px;border-radius:20px;color:white">🇮🇩 ${idHoliday.localName||idHoliday.name}</span>`;
+  if(isWeekend) tagsHtml += `<span style="background:rgba(255,255,255,0.2);font-size:12.5px;font-weight:700;padding:5px 12px;border-radius:20px;color:white">Weekend</span>`;
   tagsEl.innerHTML = tagsHtml;
 
   // ── Week strip: same day last year, colored by historical bracket
@@ -17636,13 +17642,16 @@ function predictorRenderBody(){
     const lyCovers = predictorHistoricalMetric('covers_served', d);
     const lyRevenue = predictorHistoricalMetric('revenue', d);
     const b = predictorBracketColor(lyCovers, range);
-    const colors = { high:['#ECFDF5','#065F46'], mid:['#FEF3C7','#92400E'], low:['#F1F5F9','#64748B'], neutral:['#F8FAFC','#94A3B8'] };
-    const [cbg, cfg] = colors[b];
-    const border = isToday ? '2px solid #0F1E2E' : '2px solid transparent';
-    stripHtml += `<div style="background:${cbg};border:${border};border-radius:12px;padding:10px 6px;text-align:center;box-sizing:border-box">
-      <div style="font-size:11px;color:${cfg};margin-bottom:4px">${dayNames[i]}${isToday ? ' · Today' : ''}</div>
-      <div style="font-size:13px;font-weight:800;color:${cfg}">${lyCovers != null ? Math.round(lyCovers) : '—'}</div>
-      <div style="font-size:10px;color:${cfg}">${lyRevenue != null ? predictorFmtMoney(lyRevenue) : ''}</div>
+    // Bold, saturated solid fills with white text - reads as a real signal at a glance,
+    // rather than a subtle pastel tint that's easy to miss.
+    const colors = { high:'#0D9488', mid:'#F0B429', low:'#94A3B8', neutral:'#CBD5E1' };
+    const bg = colors[b];
+    const border = isToday ? '3px solid #0F1E2E' : '3px solid transparent';
+    stripHtml += `<div style="background:${bg};border:${border};border-radius:14px;padding:14px 6px;text-align:center;box-sizing:border-box;box-shadow:0 2px 8px rgba(0,0,0,0.08)">
+      <div style="font-size:11.5px;font-weight:800;color:white;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.4px">${dayNames[i]}${isToday ? ' ★' : ''}</div>
+      <div style="font-size:19px;font-weight:800;color:white;line-height:1.1">${lyCovers != null ? Math.round(lyCovers) : '—'}</div>
+      <div style="font-size:10px;font-weight:700;color:rgba(255,255,255,0.85);margin-bottom:4px">guests</div>
+      <div style="font-size:11.5px;font-weight:800;color:white">${lyRevenue != null ? predictorFmtMoney(lyRevenue) : ''}</div>
     </div>`;
   }
   stripEl.innerHTML = stripHtml;

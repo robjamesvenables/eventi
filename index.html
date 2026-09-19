@@ -38,6 +38,10 @@
 }
 html{font-size:14px;-webkit-font-smoothing:antialiased}
 body{margin:0;padding:0;font-family:'Inter',sans-serif;background:var(--bg);color:var(--ink)}
+/* Slow pulse for "today" in the Predictor week strip, instead of a static border - a
+   subtle, gentle breathing effect rather than anything jarring or distracting. */
+@keyframes predictorTodayPulse{0%,100%{box-shadow:0 0 0 0 rgba(15,30,46,0.5)}50%{box-shadow:0 0 0 6px rgba(15,30,46,0)}}
+.predictor-today-pulse{animation:predictorTodayPulse 2.4s ease-in-out infinite}
 /* Custom tooltip, replacing the native title="" attribute - a browser's own tooltip always
    renders in the OS's system font regardless of the page's CSS, which is exactly what read
    as visually inconsistent. This uses the app's own font instead, same as everything else. */
@@ -17667,8 +17671,8 @@ function predictorRenderBody(){
     // rather than a subtle pastel tint that's easy to miss.
     const colors = { high:'#0D9488', mid:'#B7791F', low:'#94A3B8', neutral:'#CBD5E1' };
     const bg = colors[b];
-    const border = isToday ? '3px solid #0F1E2E' : '3px solid transparent';
-    stripHtml += `<div style="background:${bg};border:${border};border-radius:14px;padding:14px 6px;text-align:center;box-sizing:border-box;box-shadow:0 2px 8px rgba(0,0,0,0.08)">
+    const pulseClass = isToday ? 'predictor-today-pulse' : '';
+    stripHtml += `<div class="${pulseClass}" style="background:${bg};border-radius:14px;padding:14px 6px;text-align:center;box-sizing:border-box;box-shadow:0 2px 8px rgba(0,0,0,0.08)">
       <div style="font-size:11.5px;font-weight:800;color:white;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.4px">${dayNames[i]}${isToday ? ' ★' : ''}</div>
       <div style="font-size:19px;font-weight:800;color:white;line-height:1.1">${lyCovers != null ? Math.round(lyCovers) : '—'}</div>
       <div style="font-size:10px;font-weight:700;color:rgba(255,255,255,0.85);margin-bottom:4px">guests</div>

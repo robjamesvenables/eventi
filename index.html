@@ -3391,6 +3391,7 @@ img.emoji-tw{width:1.15em;height:1.15em;vertical-align:-0.2em;margin:0 1px}
           <div style="background:white;border:1.5px solid #E2E8F0;border-radius:14px;padding:16px 18px;flex:1;min-width:160px">
             <div style="font-size:12px;color:#64748B;margin-bottom:4px">This week vs last year</div>
             <div id="predictor-yoy" style="font-size:22px;font-weight:800;color:#0F1E2E">—</div>
+            <div id="predictor-yoy-sub" style="font-size:11px;color:#94A3B8;margin-top:2px"></div>
           </div>
           <div style="background:white;border:1.5px solid #E2E8F0;border-radius:14px;padding:16px 18px;flex:1;min-width:160px">
             <div style="font-size:12px;color:#64748B;margin-bottom:4px">Season</div>
@@ -17563,13 +17564,16 @@ function predictorRenderBody(){
     if(ly) lastYearWeekSum += ly;
   }
   const yoyEl = document.getElementById('predictor-yoy');
+  const yoySubEl = document.getElementById('predictor-yoy-sub');
   if(lastYearWeekSum > 0){
     const pct = Math.round(((thisWeekSum - lastYearWeekSum) / lastYearWeekSum) * 100);
     yoyEl.textContent = (pct>=0?'+':'')+pct+'%';
     yoyEl.style.color = pct >= 0 ? '#0D9488' : '#DC2626';
+    if(yoySubEl) yoySubEl.textContent = predictorFmtMoney(thisWeekSum)+' so far vs '+predictorFmtMoney(lastYearWeekSum)+' same days last year';
   } else {
     yoyEl.textContent = 'Not enough history yet';
     yoyEl.style.fontSize = '14px';
+    if(yoySubEl) yoySubEl.textContent = '';
   }
   const yoyLabelEl = document.querySelector('#predictor-yoy').previousElementSibling;
   if(yoyLabelEl) yoyLabelEl.textContent = 'This week so far vs last year';
@@ -17609,17 +17613,20 @@ function predictorRenderBody(){
 
   // ── Week strip: same day last year, colored by historical bracket
   const stripEl = document.getElementById('predictor-week-strip');
-  const dayNames = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  const dayNames = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+  const todayStr = predictorDateStr(today);
   let stripHtml = '';
   for(let i=0;i<7;i++){
-    const d = new Date(today); d.setDate(d.getDate()-today.getDay()+i);
+    const d = new Date(today); d.setDate(d.getDate()-((today.getDay()+6)%7)+i); // Monday-start week
+    const isToday = predictorDateStr(d) === todayStr;
     const lyCovers = predictorHistoricalMetric('covers_served', d);
     const lyRevenue = predictorHistoricalMetric('revenue', d);
     const b = predictorBracketColor(lyCovers, range);
     const colors = { high:['#ECFDF5','#065F46'], mid:['#FEF3C7','#92400E'], low:['#F1F5F9','#64748B'], neutral:['#F8FAFC','#94A3B8'] };
     const [cbg, cfg] = colors[b];
-    stripHtml += `<div style="background:${cbg};border-radius:12px;padding:10px 6px;text-align:center">
-      <div style="font-size:11px;color:${cfg};margin-bottom:4px">${dayNames[d.getDay()]}</div>
+    const border = isToday ? '2px solid #0F1E2E' : '2px solid transparent';
+    stripHtml += `<div style="background:${cbg};border:${border};border-radius:12px;padding:10px 6px;text-align:center;box-sizing:border-box">
+      <div style="font-size:11px;color:${cfg};margin-bottom:4px">${dayNames[i]}${isToday ? ' · Today' : ''}</div>
       <div style="font-size:13px;font-weight:800;color:${cfg}">${lyCovers != null ? Math.round(lyCovers) : '—'}</div>
       <div style="font-size:10px;color:${cfg}">${lyRevenue != null ? predictorFmtMoney(lyRevenue) : ''}</div>
     </div>`;

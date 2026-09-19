@@ -17393,6 +17393,14 @@ function predictorIsSchoolHoliday(countryCode, date){
   return windows.some(w => predictorDateInWindow(date, w));
 }
 
+// A local-date-based YYYY-MM-DD string, not toISOString() - that method always converts
+// to UTC first, which for Bali (UTC+8) can shift an early-morning local date back onto the
+// previous day once converted, silently breaking date-string lookups against period_date
+// values that were never stored with any timezone conversion in mind.
+function predictorDateStr(date){
+  return date.getFullYear()+'-'+String(date.getMonth()+1).padStart(2,'0')+'-'+String(date.getDate()).padStart(2,'0');
+}
+
 function predictorSeason(date){
   const m = date.getMonth()+1;
   return (m >= 4 && m <= 10) ? 'Dry' : 'Wet';
@@ -17428,8 +17436,8 @@ async function predictorFetchWeather(){
 
 async function predictorFetchCurrency(){
   // Compares today's rate to 90 days ago, both vs IDR, to judge relative strength.
-  const today = new Date().toISOString().slice(0,10);
-  const past = new Date(Date.now() - 90*86400000).toISOString().slice(0,10);
+  const today = predictorDateStr(new Date());
+  const past = predictorDateStr(new Date(Date.now() - 90*86400000));
   const codes = [...new Set(PREDICTOR_COUNTRIES.map(c => c.currency))].filter(c => c !== 'IDR');
   const results = {};
   try{
@@ -17461,8 +17469,11 @@ async function predictorFetchCurrency(){
 async function predictorLoadAll(){
   document.getElementById('predictor-loading').style.display = 'block';
   document.getElementById('predictor-body').style.display = 'none';
+  // Ensures the real Reporting/CSV history is actually in memory before computing anything
+  // from it - this page shouldn't silently depend on the app-init load (or a prior visit to
+  // Analytics) having already finished by the time someone opens Predictor directly.
   const [holidays, weather, currency] = await Promise.all([
-    predictorFetchHolidays(), predictorFetchWeather(), predictorFetchCurrency()
+    predictorFetchHolidays(), predictorFetchWeather(), predictorFetchCurrency(), businessMetricsLoadFromSupabase()
   ]);
   predictorData = { holidays, weather, currency, loaded: true };
   document.getElementById('predictor-loading').style.display = 'none';
@@ -17471,14 +17482,14 @@ async function predictorLoadAll(){
 }
 
 function predictorHolidayForDate(countryCode, date){
-  const dateStr = date.toISOString().slice(0,10);
+  const dateStr = predictorDateStr(date);
   const list = predictorData.holidays[countryCode] || [];
   return list.find(h => h.date === dateStr) || null;
 }
 
 function predictorHistoricalMetric(metricKey, date){
   const lastYear = new Date(date); lastYear.setFullYear(lastYear.getFullYear()-1);
-  const dateStr = lastYear.toISOString().slice(0,10);
+  const dateStr = predictorDateStr(lastYear);
   const row = businessMetrics.find(m => m.metric_key===metricKey && m.period_date===dateStr);
   return row ? row.value : null;
 }
@@ -17540,7 +17551,7 @@ function predictorRenderBody(){
   let thisWeekSum = 0, lastYearWeekSum = 0;
   for(let i=0;i<7;i++){
     const d = new Date(today); d.setDate(d.getDate()-today.getDay()+1+i); // Mon-Sun this week
-    const dateStr = d.toISOString().slice(0,10);
+    const dateStr = predictorDateStr(d);
     const row = businessMetrics.find(m => m.metric_key==='revenue' && m.period_date===dateStr);
     if(row) thisWeekSum += row.value;
     const ly = predictorHistoricalMetric('revenue', d);

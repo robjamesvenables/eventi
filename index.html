@@ -17509,19 +17509,26 @@ function predictorHistoricalMetric(metricKey, date){
   return row ? Number(row.value) : null;
 }
 
-function predictorMetricRange(metricKey){
-  // Coerces to Number explicitly and drops anything invalid - protects against a value
-  // being stored as text rather than a true numeric type, which would otherwise silently
-  // break Math.min/Math.max's comparison.
+// Classifies a day against the AVERAGE and how much days typically vary from it (standard
+// deviation), not the bare min/max range. A simple min-max percentage gets badly skewed by
+// a handful of genuinely extreme peak days (Idul Fitri, New Year's Eve) - that drags the
+// "high" cutoff up so far that even a solidly above-average day looks "low" purely because
+// it's nowhere near the single busiest day on record. This is the correct fix for that: a
+// day within roughly half a standard deviation of the average is "medium" (a typical day for
+// this business), clearly above that is "high", clearly below is "low" - genuinely
+// understanding what this venue's normal, quiet, and busy days actually look like.
+function predictorMetricStats(metricKey){
   const vals = businessMetrics.filter(m => m.metric_key===metricKey).map(m => Number(m.value)).filter(v => !isNaN(v));
   if(!vals.length) return null;
-  return { min: Math.min(...vals), max: Math.max(...vals) };
+  const mean = vals.reduce((a,b)=>a+b,0) / vals.length;
+  const variance = vals.reduce((a,b)=>a+(b-mean)*(b-mean),0) / vals.length;
+  return { mean, stdDev: Math.sqrt(variance), min: Math.min(...vals), max: Math.max(...vals) };
 }
 
-function predictorBracketColor(value, range){
-  if(value == null || !range || range.max === range.min) return 'neutral';
-  const pct = (value - range.min) / (range.max - range.min);
-  return pct >= 0.6 ? 'high' : pct <= 0.3 ? 'low' : 'mid';
+function predictorBracketColor(value, stats){
+  if(value == null || !stats || stats.stdDev === 0) return 'neutral';
+  const z = (value - stats.mean) / stats.stdDev; // how many typical swings above/below average
+  return z >= 0.4 ? 'high' : z <= -0.4 ? 'low' : 'mid';
 }
 
 function predictorFmtMoney(v){
@@ -17603,9 +17610,9 @@ function predictorRenderBody(){
   const idHoliday = predictorHolidayForDate('ID', today);
   const dow = today.getDay();
   const isWeekend = dow === 5 || dow === 6;
-  const range = predictorMetricRange('covers_served');
+  const stats = predictorMetricStats('covers_served');
   const todayLYValue = predictorHistoricalMetric('covers_served', today);
-  const bracket = predictorBracketColor(todayLYValue, range);
+  const bracket = predictorBracketColor(todayLYValue, stats);
   const verdict = idHoliday ? 'busy' : bracket === 'high' ? 'busy' : bracket === 'low' ? 'quiet' : isWeekend ? 'busy' : 'moderate';
   const card = document.getElementById('predictor-today-card');
   // Bold, solid fills with white text - a real, unmissable signal card rather than a
@@ -17641,7 +17648,7 @@ function predictorRenderBody(){
     const isToday = predictorDateStr(d) === todayStr;
     const lyCovers = predictorHistoricalMetric('covers_served', d);
     const lyRevenue = predictorHistoricalMetric('revenue', d);
-    const b = predictorBracketColor(lyCovers, range);
+    const b = predictorBracketColor(lyCovers, stats);
     // Bold, saturated solid fills with white text - reads as a real signal at a glance,
     // rather than a subtle pastel tint that's easy to miss.
     const colors = { high:'#0D9488', mid:'#F0B429', low:'#94A3B8', neutral:'#CBD5E1' };

@@ -17560,21 +17560,26 @@ function predictorRenderBody(){
   // logged yet simply because they haven't happened - not because business is actually down.
   const daysElapsedThisWeek = today.getDay() === 0 ? 7 : today.getDay(); // Sun=0 means the full week has passed
   let thisWeekSum = 0, lastYearWeekSum = 0;
+  const debugDates = [];
   for(let i=0;i<daysElapsedThisWeek;i++){
     const d = new Date(today); d.setDate(d.getDate()-today.getDay()+1+i); // Mon onward, up to today
     const dateStr = predictorDateStr(d);
     const row = businessMetrics.find(m => m.metric_key==='revenue' && m.period_date===dateStr);
     if(row) thisWeekSum += row.value;
+    debugDates.push(dateStr+':'+(row?'found':'MISSING'));
     const ly = predictorHistoricalMetric('revenue', d);
     if(ly) lastYearWeekSum += ly;
   }
+  console.log('Predictor debug - this week dates checked:', debugDates);
+  console.log('Predictor debug - total revenue rows in memory:', businessMetrics.filter(m=>m.metric_key==='revenue').length);
+  console.log('Predictor debug - sample revenue rows:', businessMetrics.filter(m=>m.metric_key==='revenue').slice(-5));
   const yoyEl = document.getElementById('predictor-yoy');
   const yoySubEl = document.getElementById('predictor-yoy-sub');
   if(lastYearWeekSum > 0){
     const pct = Math.round(((thisWeekSum - lastYearWeekSum) / lastYearWeekSum) * 100);
     yoyEl.textContent = (pct>=0?'+':'')+pct+'%';
     yoyEl.style.color = pct >= 0 ? '#0D9488' : '#DC2626';
-    if(yoySubEl) yoySubEl.textContent = predictorFmtMoney(thisWeekSum)+' so far vs '+predictorFmtMoney(lastYearWeekSum)+' same days last year';
+    if(yoySubEl) yoySubEl.textContent = predictorFmtMoney(thisWeekSum)+' so far vs '+predictorFmtMoney(lastYearWeekSum)+' same days last year — '+debugDates.join(', ');
   } else {
     yoyEl.textContent = 'Not enough history yet';
     yoyEl.style.fontSize = '14px';

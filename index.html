@@ -15798,14 +15798,23 @@ let businessMetrics = [];
 
 async function businessMetricsLoadFromSupabase(){
   try{
-    // Supabase caps a query at 1000 rows by default unless raised explicitly - the CSV
-    // import alone creates ~1,460 rows (730 days x 2 metrics), well past that default. Since
-    // the query is sorted oldest-first, that silently cut off the most recent dates (all of
-    // this year), while older dates (including "last year") still loaded fine - exactly why
-    // the year-over-year comparison could find last year's numbers but not this year's.
-    const { data, error } = await sb.from('business_metrics').select('*').order('period_date', { ascending: true }).limit(10000);
-    if(error) throw error;
-    businessMetrics = data || [];
+    // A Supabase project also enforces its own server-side max-rows cap (defaulting to
+    // 1000), which a client-side .limit() alone cannot override - confirmed to be the
+    // actual, remaining cause after that fix didn't resolve it. Proper pagination (fetching
+    // in pages via .range(), looping until a page comes back short of a full page) works
+    // regardless of whatever that server-side cap actually is, rather than hoping a single
+    // large request gets through uncapped.
+    let all = [];
+    let from = 0;
+    const pageSize = 1000;
+    while(true){
+      const { data, error } = await sb.from('business_metrics').select('*').order('period_date', { ascending: true }).range(from, from+pageSize-1);
+      if(error) throw error;
+      all = all.concat(data || []);
+      if(!data || data.length < pageSize) break;
+      from += pageSize;
+    }
+    businessMetrics = all;
     businessMetricsDedupe();
   } catch(e){
     console.warn('Business Metrics table not reachable yet (run the SQL if this is the first load)', e);
@@ -17560,26 +17569,21 @@ function predictorRenderBody(){
   // logged yet simply because they haven't happened - not because business is actually down.
   const daysElapsedThisWeek = today.getDay() === 0 ? 7 : today.getDay(); // Sun=0 means the full week has passed
   let thisWeekSum = 0, lastYearWeekSum = 0;
-  const debugDates = [];
   for(let i=0;i<daysElapsedThisWeek;i++){
     const d = new Date(today); d.setDate(d.getDate()-today.getDay()+1+i); // Mon onward, up to today
     const dateStr = predictorDateStr(d);
     const row = businessMetrics.find(m => m.metric_key==='revenue' && m.period_date===dateStr);
     if(row) thisWeekSum += row.value;
-    debugDates.push(dateStr+':'+(row?'found':'MISSING'));
     const ly = predictorHistoricalMetric('revenue', d);
     if(ly) lastYearWeekSum += ly;
   }
-  console.log('Predictor debug - this week dates checked:', debugDates);
-  console.log('Predictor debug - total revenue rows in memory:', businessMetrics.filter(m=>m.metric_key==='revenue').length);
-  console.log('Predictor debug - sample revenue rows:', businessMetrics.filter(m=>m.metric_key==='revenue').slice(-5));
   const yoyEl = document.getElementById('predictor-yoy');
   const yoySubEl = document.getElementById('predictor-yoy-sub');
   if(lastYearWeekSum > 0){
     const pct = Math.round(((thisWeekSum - lastYearWeekSum) / lastYearWeekSum) * 100);
     yoyEl.textContent = (pct>=0?'+':'')+pct+'%';
     yoyEl.style.color = pct >= 0 ? '#0D9488' : '#DC2626';
-    if(yoySubEl) yoySubEl.textContent = predictorFmtMoney(thisWeekSum)+' so far vs '+predictorFmtMoney(lastYearWeekSum)+' same days last year — '+debugDates.join(', ');
+    if(yoySubEl) yoySubEl.textContent = predictorFmtMoney(thisWeekSum)+' so far vs '+predictorFmtMoney(lastYearWeekSum)+' same days last year';
   } else {
     yoyEl.textContent = 'Not enough history yet';
     yoyEl.style.fontSize = '14px';

@@ -17547,10 +17547,15 @@ function predictorRenderBody(){
   // ── Season
   document.getElementById('predictor-season').textContent = predictorSeason(today);
 
-  // ── Year-over-year: sum this week's real revenue vs the same week last year
+  // ── Year-over-year: compare only the days that have actually happened so far this week
+  // against those SAME days last year - not the full Mon-Sun week either side. Comparing a
+  // partial week (today's still in progress) against a complete week last year would always
+  // show a fake, misleading drop, since future days in the current week have no revenue
+  // logged yet simply because they haven't happened - not because business is actually down.
+  const daysElapsedThisWeek = today.getDay() === 0 ? 7 : today.getDay(); // Sun=0 means the full week has passed
   let thisWeekSum = 0, lastYearWeekSum = 0;
-  for(let i=0;i<7;i++){
-    const d = new Date(today); d.setDate(d.getDate()-today.getDay()+1+i); // Mon-Sun this week
+  for(let i=0;i<daysElapsedThisWeek;i++){
+    const d = new Date(today); d.setDate(d.getDate()-today.getDay()+1+i); // Mon onward, up to today
     const dateStr = predictorDateStr(d);
     const row = businessMetrics.find(m => m.metric_key==='revenue' && m.period_date===dateStr);
     if(row) thisWeekSum += row.value;
@@ -17566,6 +17571,8 @@ function predictorRenderBody(){
     yoyEl.textContent = 'Not enough history yet';
     yoyEl.style.fontSize = '14px';
   }
+  const yoyLabelEl = document.querySelector('#predictor-yoy').previousElementSibling;
+  if(yoyLabelEl) yoyLabelEl.textContent = 'This week so far vs last year';
 
   // ── Today's "why" card
   const weatherToday = predictorData.weather && predictorData.weather.daily ? {

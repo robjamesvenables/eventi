@@ -15798,7 +15798,12 @@ let businessMetrics = [];
 
 async function businessMetricsLoadFromSupabase(){
   try{
-    const { data, error } = await sb.from('business_metrics').select('*').order('period_date', { ascending: true });
+    // Supabase caps a query at 1000 rows by default unless raised explicitly - the CSV
+    // import alone creates ~1,460 rows (730 days x 2 metrics), well past that default. Since
+    // the query is sorted oldest-first, that silently cut off the most recent dates (all of
+    // this year), while older dates (including "last year") still loaded fine - exactly why
+    // the year-over-year comparison could find last year's numbers but not this year's.
+    const { data, error } = await sb.from('business_metrics').select('*').order('period_date', { ascending: true }).limit(10000);
     if(error) throw error;
     businessMetrics = data || [];
     businessMetricsDedupe();

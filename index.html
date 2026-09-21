@@ -2415,15 +2415,6 @@ img.emoji-tw{width:1.15em;height:1.15em;vertical-align:-0.2em;margin:0 1px}
   .pws-tile{flex:1 1 0;min-width:0}
 }
 
-/* ── Forecast: Today/Heads up/Season cards - stacked full-width on mobile (unchanged),
-   3-column row of equal-height cards on desktop. Forecast estimate / This Week So Far
-   sit below as normal full-width blocks (they're mutually exclusive and vary in height,
-   so they don't belong in this row). ── */
-@media (min-width:701px){
-  .predictor-top3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:20px;align-items:stretch;margin-bottom:28px}
-  .predictor-top3 > div{margin-bottom:0 !important}
-}
-
 /* ── PDF EXPORT (html2pdf.js captures .beo directly - toggled via JS, not @media print) ── */
 .pdf-export-mode .card-colour-btn,.pdf-export-mode .card-colour-popup,
 .pdf-export-mode .dept-toolbar,.pdf-export-mode .chev,
@@ -3417,6 +3408,32 @@ img.emoji-tw{width:1.15em;height:1.15em;vertical-align:-0.2em;margin:0 1px}
 
       <div id="predictor-body" style="display:none">
 
+        <!-- ── SNAPSHOT CARD — one card replacing the old Today/Heads-up/Season/Forecast-estimate/This-Week-So-Far cards ── -->
+        <div id="predictor-snapshot-card" style="background:white;border:1.5px solid #E2E8F0;border-radius:20px;padding:32px 36px;margin-bottom:24px;box-shadow:0 6px 20px rgba(15,30,46,0.06)">
+          <div style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:14px">
+            <div>
+              <div id="predictor-snap-date" style="font-size:11.5px;font-weight:700;color:#94A3B8;text-transform:uppercase;letter-spacing:0.6px;margin-bottom:8px"></div>
+              <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap">
+                <div id="predictor-snap-headline" style="font-size:30px;font-weight:800;color:#0F1E2E"></div>
+                <div id="predictor-snap-tags" style="display:flex;gap:8px;flex-wrap:wrap"></div>
+              </div>
+            </div>
+            <div id="predictor-season-pill" style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:0.6px;border-radius:20px;padding:8px 16px;white-space:nowrap"></div>
+          </div>
+
+          <div id="predictor-snap-stats" style="margin-top:22px"></div>
+
+          <div id="predictor-headsup" style="display:none;background:#0F1E2E;border-radius:10px;padding:14px 18px;margin-top:16px">
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#FAC775" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+              <span style="font-size:11px;font-weight:800;color:#FAC775;text-transform:uppercase;letter-spacing:0.6px">Heads up</span>
+            </div>
+            <div id="predictor-headsup-title" style="font-size:13.5px;color:white;margin-bottom:2px;margin-left:23px"></div>
+            <div id="predictor-headsup-sub" style="font-size:12px;color:rgba(255,255,255,0.65);margin-left:23px"></div>
+          </div>
+        </div>
+
+        <!-- ── CHART ── -->
         <div style="background:white;border:1.5px solid #E2E8F0;border-radius:14px;padding:18px 20px 16px;margin-bottom:28px">
           <div style="font-size:12.5px;font-weight:800;color:#0F1E2E;margin-bottom:12px">This week vs last year — guests &amp; revenue, Mon to Sun</div>
           <div class="predictor-week-chart-wrap">
@@ -3425,69 +3442,25 @@ img.emoji-tw{width:1.15em;height:1.15em;vertical-align:-0.2em;margin:0 1px}
           <div style="display:flex;gap:14px;margin-top:12px;flex-wrap:wrap">
             <span style="display:flex;align-items:center;gap:5px;font-size:11px;color:#64748B"><span style="width:10px;height:2px;background:#0D9488;display:inline-block"></span>Guests</span>
             <span style="display:flex;align-items:center;gap:5px;font-size:11px;color:#64748B"><span style="width:10px;height:0;border-top:2px dashed #378ADD;display:inline-block"></span>Revenue</span>
-            <span style="display:flex;align-items:center;gap:5px;font-size:11px;color:#64748B"><span style="width:9px;height:9px;border-radius:50%;background:#DC2626;display:inline-block"></span>Spike</span>
+            <span style="display:flex;align-items:center;gap:5px;font-size:11px;color:#64748B"><span style="width:9px;height:9px;border-radius:50%;background:#B45252;display:inline-block"></span>Spike</span>
             <span style="display:flex;align-items:center;gap:5px;font-size:11px;color:#64748B"><span style="width:9px;height:9px;border-radius:50%;background:#B7791F;display:inline-block"></span>Dip</span>
             <span style="display:flex;align-items:center;gap:5px;font-size:11px;color:#64748B"><span style="width:9px;height:9px;border-radius:50%;background:#94A3B8;display:inline-block"></span>Low day</span>
           </div>
           <div id="predictor-week-chart-debug" style="display:none"></div>
         </div>
 
+        <!-- ── DAY BY DAY ── -->
         <div style="font-size:12px;color:#64748B;margin-bottom:12px">Same day, last year — colored against your full historical range</div>
         <div class="predictor-week-strip-wrap">
           <div id="predictor-week-strip" style="display:flex;align-items:stretch;gap:12px;min-width:min-content"></div>
         </div>
         <div id="predictor-strip-spike-explain" style="display:none;margin:-10px 0 20px;background:#0F1E2E;color:white;font-size:12px;line-height:1.6;padding:12px 16px;border-radius:10px"></div>
 
-        <div style="font-size:11px;font-weight:800;color:#94A3B8;text-transform:uppercase;letter-spacing:0.6px;margin:4px 0 12px">Based on holidays, weather, currency, and your own history</div>
-        <div class="predictor-top3">
-        <div id="predictor-today-card" style="border-radius:14px;padding:18px 20px;margin-bottom:20px">
-          <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
-            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"/></svg>
-            <span id="predictor-today-title" style="font-size:15px;font-weight:800"></span>
-          </div>
-          <div id="predictor-today-sub" style="font-size:13px;margin-bottom:10px;line-height:1.55"></div>
-          <div id="predictor-today-tags" style="display:flex;flex-wrap:wrap;gap:6px"></div>
+        <!-- ── COUNTRIES & CURRENCY — one bar-chart card instead of 12 separate tiles ── -->
+        <div style="font-size:13px;font-weight:800;color:#0F1E2E;margin:28px 0 14px">Countries & Currency Strength, ranked this week</div>
+        <div style="background:white;border:1.5px solid #E2E8F0;border-radius:16px;padding:28px 32px 24px;margin-bottom:32px">
+          <div id="predictor-countries" style="display:flex;align-items:flex-end;gap:14px;height:150px;padding:0 4px"></div>
         </div>
-
-        <div id="predictor-headsup" style="display:none;background:#0F1E2E;border-radius:14px;padding:18px 20px;margin-bottom:20px">
-          <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#FAC775" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
-            <span style="font-size:12px;font-weight:800;color:#FAC775;text-transform:uppercase;letter-spacing:0.6px">Heads up</span>
-          </div>
-          <div id="predictor-headsup-title" style="font-size:14.5px;color:white;margin-bottom:2px"></div>
-          <div id="predictor-headsup-sub" style="font-size:12.5px;color:rgba(255,255,255,0.65)"></div>
-        </div>
-
-        <div id="predictor-season-card" style="background:linear-gradient(135deg,#0D9488,#0F766E);border-radius:14px;padding:18px 20px;margin-bottom:20px;box-shadow:0 4px 12px rgba(13,148,136,0.2)">
-          <div style="font-size:11.5px;font-weight:700;color:rgba(255,255,255,0.75);margin-bottom:6px;text-transform:uppercase;letter-spacing:0.4px">Season</div>
-          <div id="predictor-season" style="font-size:21px;font-weight:800;color:white">—</div>
-        </div>
-        </div>
-
-        <div id="predictor-estimate-story" style="display:none;background:linear-gradient(135deg,#475569,#64748B);border-radius:14px;padding:20px 22px;margin-bottom:20px;box-shadow:0 4px 12px rgba(71,85,105,0.2)">
-          <div style="font-size:11.5px;font-weight:700;color:rgba(255,255,255,0.65);margin-bottom:14px;text-transform:uppercase;letter-spacing:0.4px">Forecast (Estimate, Based On Last Year)</div>
-          <div style="display:flex;flex-wrap:wrap;gap:16px;margin-bottom:14px">
-            <div style="flex:1;min-width:140px">
-              <div style="font-size:11px;color:rgba(255,255,255,0.6);margin-bottom:3px">Today</div>
-              <div id="predictor-est-today" style="font-size:18px;font-weight:800;color:white"></div>
-            </div>
-            <div style="flex:1;min-width:140px">
-              <div style="font-size:11px;color:rgba(255,255,255,0.6);margin-bottom:3px">By Sunday, full week</div>
-              <div id="predictor-est-week" style="font-size:18px;font-weight:800;color:white"></div>
-            </div>
-          </div>
-          <div id="predictor-est-spike" style="display:none;background:rgba(0,0,0,0.18);border-radius:10px;padding:10px 14px;font-size:12.5px;color:white;line-height:1.5"></div>
-        </div>
-
-        <div id="predictor-yoy-card" style="display:none;background:linear-gradient(135deg,#475569,#64748B);border-radius:14px;padding:20px 22px;margin-bottom:20px;box-shadow:0 4px 12px rgba(71,85,105,0.2)">
-          <div style="font-size:11.5px;font-weight:700;color:rgba(255,255,255,0.65);margin-bottom:6px;text-transform:uppercase;letter-spacing:0.4px">This Week So Far</div>
-          <div id="predictor-yoy" style="font-size:28px;font-weight:800;color:white">—</div>
-          <div id="predictor-yoy-sub" style="font-size:11.5px;color:rgba(255,255,255,0.6);margin-top:4px"></div>
-        </div>
-        </div>
-
-        <div style="font-size:13px;font-weight:800;color:#0F1E2E;margin:8px 0 14px">Countries & Currency Strength, ranked this week</div>
-        <div id="predictor-countries" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px;margin-bottom:32px"></div>
 
       </div>
     </div>
@@ -17859,6 +17832,9 @@ function predictorRenderBody(){
   const today = new Date();
   predictorRenderWeekChart();
 
+  document.getElementById('predictor-snap-date').textContent =
+    today.toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'long'}).toUpperCase();
+
   // ── Heads up: scan the next 7 days across every country for the most significant
   // upcoming public or school holiday, and surface just that one.
   let bestEvent = null;
@@ -17882,22 +17858,45 @@ function predictorRenderBody(){
     headsUp.style.display = 'none';
   }
 
-  // ── Season
+  // ── Season - now a small pill in the Snapshot card header instead of its own full card.
   const seasonNow = predictorSeason(today);
-  document.getElementById('predictor-season').textContent = seasonNow;
-  // High season (busier) gets the same teal used for "busy" elsewhere on this page; low
-  // season now gets a muted, deeper red/maroon instead of grey - a mild warm tone rather
-  // than anything too intense, since low season genuinely is the quieter period for the
-  // business, so a subtle warning-adjacent tone fits better than a neutral slate.
-  document.getElementById('predictor-season-card').style.background =
-    seasonNow === 'High Season' ? 'linear-gradient(135deg,#0D9488,#0F766E)' : 'linear-gradient(135deg,#B45252,#943C3C)';
+  const seasonPillEl = document.getElementById('predictor-season-pill');
+  seasonPillEl.textContent = seasonNow;
+  seasonPillEl.style.color = seasonNow === 'High Season' ? '#0D9488' : '#B45252';
+  seasonPillEl.style.background = seasonNow === 'High Season' ? 'rgba(13,148,136,0.1)' : 'rgba(180,82,82,0.1)';
 
-  // ── Year-over-year: compare only the days that have actually FINISHED so far this week
-  // against those SAME days last year - not today itself, and not the full Mon-Sun week
-  // either side. Today's own figure is inherently incomplete (the day hasn't finished, so
-  // revenue for it isn't fully known/logged yet) - including it would always show a fake,
-  // misleading drop versus a complete day last year, especially stark early in the week
-  // (a Monday morning would compare 0 so far against a whole day last year).
+  // ── Headline + tags (weather / holiday / weekend) for the Snapshot card. Same verdict
+  // logic as before, but the card no longer swaps its whole background color - it's a
+  // stable white card now, so the verdict just changes the headline wording.
+  const weatherToday = predictorData.weather && predictorData.weather.daily ? {
+    temp: Math.round(predictorData.weather.daily.temperature_2m_max[0]),
+    rain: predictorData.weather.daily.precipitation_probability_max[0]
+  } : null;
+  const idHoliday = predictorHolidayForDate('ID', today);
+  const dow = today.getDay();
+  const isWeekend = dow === 5 || dow === 6;
+  const stats = predictorMetricStats('covers_served');
+  const todayLYValue = predictorHistoricalMetric('covers_served', today);
+  const bracket = predictorBracketColor(todayLYValue, stats);
+  // Directly mirrors the same statistical bracket the week strip uses for this exact date,
+  // so the two sections can never disagree - a public holiday is still treated as an
+  // automatic "busy" override (a genuinely different, external signal not captured by past
+  // history alone), but the weekend is no longer a separate rule that could contradict what
+  // the data itself says about this specific Saturday.
+  const verdict = idHoliday ? 'busy' : bracket === 'high' ? 'busy' : bracket === 'low' ? 'quiet' : 'moderate';
+  document.getElementById('predictor-snap-headline').textContent =
+    verdict === 'busy' ? '🔥 Busy day ahead' : verdict === 'quiet' ? 'Quiet day ahead' : 'Moderate day ahead';
+  const tagsEl = document.getElementById('predictor-snap-tags');
+  let tagsHtml = '';
+  if(weatherToday) tagsHtml += `<span style="background:#F0FDFA;border:1px solid #99F6E4;font-size:12.5px;font-weight:700;padding:5px 12px;border-radius:20px;color:#0D9488">☀ ${weatherToday.temp}°C · ${weatherToday.rain}% rain</span>`;
+  if(idHoliday) tagsHtml += `<span style="background:#F1F5F9;font-size:12.5px;font-weight:700;padding:5px 12px;border-radius:20px;color:#475569">🇮🇩 ${idHoliday.localName||idHoliday.name}</span>`;
+  if(isWeekend) tagsHtml += `<span style="background:#F1F5F9;font-size:12.5px;font-weight:700;padding:5px 12px;border-radius:20px;color:#475569">Weekend</span>`;
+  tagsEl.innerHTML = tagsHtml;
+
+  // ── Snapshot stats: either the Monday-style "estimate story" (no completed days yet this
+  // week) or "this week so far vs last year" - same two branches and same underlying
+  // numbers as before, now built as one HTML block inside the Snapshot card instead of two
+  // separate hidden/shown cards.
   const completedDaysThisWeek = today.getDay() === 0 ? 6 : today.getDay()-1; // days before today, Mon onward
   let thisWeekSum = 0, lastYearWeekSum = 0;
   for(let i=0;i<completedDaysThisWeek;i++){
@@ -17908,23 +17907,15 @@ function predictorRenderBody(){
     const ly = predictorHistoricalMetric('revenue', d);
     if(ly) lastYearWeekSum += ly;
   }
-  const yoyEl = document.getElementById('predictor-yoy');
-  const yoySubEl = document.getElementById('predictor-yoy-sub');
-  const yoyCardEl = document.getElementById('predictor-yoy-card');
-  const estimateStoryEl = document.getElementById('predictor-estimate-story');
+  const statsEl = document.getElementById('predictor-snap-stats');
   if(completedDaysThisWeek === 0){
     // No real days have finished yet this week - rather than a dead-end "check back later",
     // or a bare, context-free number, this builds an actual three-part story: what today
     // should look like, what the full week should look like by Sunday, and a flag for any
     // day that was a genuine statistical outlier last year (so a forgotten holiday or a
     // one-off event doesn't quietly repeat unnoticed).
-    yoyCardEl.style.display = 'none';
-    estimateStoryEl.style.display = 'block';
-
     const todayLYRevenue = predictorHistoricalMetric('revenue', today);
     const todayLYCovers = predictorHistoricalMetric('covers_served', today);
-    document.getElementById('predictor-est-today').textContent =
-      todayLYRevenue != null ? predictorFmtMoney(todayLYRevenue)+(todayLYCovers!=null?' / '+Math.round(todayLYCovers)+' guests':'') : 'Not enough history yet';
 
     let lastYearFullWeekSum = 0;
     let biggestSpike = null;
@@ -17944,83 +17935,57 @@ function predictorRenderBody(){
         }
       }
     }
-    document.getElementById('predictor-est-week').textContent =
-      lastYearFullWeekSum > 0 ? predictorFmtMoney(lastYearFullWeekSum) : 'Not enough history yet';
+    const revTodayStr = todayLYRevenue != null ? predictorFmtMoney(todayLYRevenue) : '—';
+    const guestsTodayStr = todayLYCovers != null ? String(Math.round(todayLYCovers)) : '—';
+    const weekStr = lastYearFullWeekSum > 0 ? predictorFmtMoney(lastYearFullWeekSum) : '—';
 
     // Always shown, not just when a spike exists - a clear "all clear" state is as
     // meaningful as a warning, so the section never just silently disappears. Includes a
     // tappable info button (not hover, since that doesn't work on mobile) explaining the
     // real calculation in one sentence, for when a customer asks what actually makes
     // something a spike.
-    const spikeEl = document.getElementById('predictor-est-spike');
-    spikeEl.style.display = 'block';
-    const spikeInfoBtn = '<button onclick="predictorToggleSpikeInfo()" style="background:rgba(255,255,255,0.25);border:none;color:white;width:18px;height:18px;border-radius:50%;font-size:11px;font-weight:800;cursor:pointer;line-height:18px;padding:0;vertical-align:middle;margin-left:6px">?</button>';
-    const spikeInfoBox = '<div id="predictor-spike-info" style="display:none;margin-top:8px;padding-top:8px;border-top:1px solid rgba(255,255,255,0.2);font-size:11.5px;color:rgba(255,255,255,0.85);line-height:1.5">Flags any unusual spikes or dips from past data (a day counts as unusual if it\'s more than 1.5x its normal ups-and-downs away from its own average).</div>';
-    if(biggestSpike){
-      spikeEl.innerHTML = '⚠️ <b>Spike Warning — watch '+biggestSpike.day+'</b>'+spikeInfoBtn+'<br>Last year saw an unusual '+biggestSpike.direction+' ('+Math.round(biggestSpike.covers)+' guests, well '+(biggestSpike.direction==='spike'?'above':'below')+' a typical '+biggestSpike.day+'). Worth checking if something specific caused it.'+spikeInfoBox;
-    } else {
-      spikeEl.innerHTML = '⚠️ <b>Spike Warning</b>'+spikeInfoBtn+'<br>No unusual spikes or dips predicted this week, based on last year.'+spikeInfoBox;
-    }
-  } else if(lastYearWeekSum > 0){
-    yoyCardEl.style.display = 'block';
-    estimateStoryEl.style.display = 'none';
-    const yoyLabelEl2 = yoyCardEl.querySelector('div');
-    if(yoyLabelEl2) yoyLabelEl2.textContent = 'This Week So Far vs Last Year';
-    const pct = Math.round(((thisWeekSum - lastYearWeekSum) / lastYearWeekSum) * 100);
-    yoyEl.textContent = (pct>=0?'+':'')+pct+'%';
-    yoyEl.style.fontSize = '28px';
-    yoyEl.style.color = pct >= 0 ? '#5EEAD4' : '#FCA5A5';
-    if(yoySubEl) yoySubEl.textContent = predictorFmtMoney(thisWeekSum)+' so far vs '+predictorFmtMoney(lastYearWeekSum)+' same days last year';
-  } else {
-    yoyCardEl.style.display = 'block';
-    estimateStoryEl.style.display = 'none';
-    const yoyLabelEl2 = yoyCardEl.querySelector('div');
-    if(yoyLabelEl2) yoyLabelEl2.textContent = 'This Week So Far vs Last Year';
-    yoyEl.textContent = 'Not enough history yet';
-    yoyEl.style.fontSize = '14px';
-    if(yoySubEl) yoySubEl.textContent = '';
-  }
+    const spikeInfoBtn = '<button onclick="predictorToggleSpikeInfo()" style="background:#E2E8F0;border:none;color:#64748B;width:18px;height:18px;border-radius:50%;font-size:11px;font-weight:800;cursor:pointer;line-height:18px;padding:0;vertical-align:middle;margin-left:6px">?</button>';
+    const spikeInfoBox = '<div id="predictor-spike-info" style="display:none;margin-top:8px;padding-top:8px;border-top:1px solid rgba(0,0,0,0.08);font-size:11.5px;color:#64748B;line-height:1.5">Flags any unusual spikes or dips from past data (a day counts as unusual if it\'s more than 1.5x its normal ups-and-downs away from its own average).</div>';
+    const spikeHtml = biggestSpike
+      ? '⚠️ <b>Spike Warning — watch '+biggestSpike.day+'</b>'+spikeInfoBtn+'<br>Last year saw an unusual '+biggestSpike.direction+' ('+Math.round(biggestSpike.covers)+' guests, well '+(biggestSpike.direction==='spike'?'above':'below')+' a typical '+biggestSpike.day+'). Worth checking if something specific caused it.'+spikeInfoBox
+      : '⚠️ <b>Spike Warning</b>'+spikeInfoBtn+'<br>No unusual spikes or dips predicted this week, based on last year.'+spikeInfoBox;
 
-  // ── Today's "why" card
-  const weatherToday = predictorData.weather && predictorData.weather.daily ? {
-    temp: Math.round(predictorData.weather.daily.temperature_2m_max[0]),
-    rain: predictorData.weather.daily.precipitation_probability_max[0]
-  } : null;
-  const idHoliday = predictorHolidayForDate('ID', today);
-  const dow = today.getDay();
-  const isWeekend = dow === 5 || dow === 6;
-  const stats = predictorMetricStats('covers_served');
-  const todayLYValue = predictorHistoricalMetric('covers_served', today);
-  const bracket = predictorBracketColor(todayLYValue, stats);
-  // Directly mirrors the same statistical bracket the week strip uses for this exact date,
-  // so the two sections can never disagree - a public holiday is still treated as an
-  // automatic "busy" override (a genuinely different, external signal not captured by past
-  // history alone), but the weekend is no longer a separate rule that could contradict what
-  // the data itself says about this specific Saturday.
-  const verdict = idHoliday ? 'busy' : bracket === 'high' ? 'busy' : bracket === 'low' ? 'quiet' : 'moderate';
-  const card = document.getElementById('predictor-today-card');
-  // Bold, solid fills with white text - a real, unmissable signal card rather than a
-  // subtle pastel background that reads as flat/vanilla.
-  const cardColors = { busy:'#0D9488', quiet:'#64748B', moderate:'#B7791F' };
-  const bg = cardColors[verdict];
-  card.style.background = bg; card.style.border = 'none'; card.style.boxShadow = '0 4px 14px rgba(0,0,0,0.12)'; card.style.color = 'white';
-  document.getElementById('predictor-today-title').style.color = 'white';
-  document.getElementById('predictor-today-title').style.fontSize = '18px';
-  document.getElementById('predictor-today-title').textContent =
-    verdict === 'busy' ? '🔥 Today looks busy' : verdict === 'quiet' ? 'Today looks quiet' : 'Today looks moderate';
-  const reasons = [];
-  if(idHoliday) reasons.push('It\'s '+(idHoliday.localName||idHoliday.name)+' in Indonesia');
-  if(isWeekend) reasons.push('it\'s the weekend');
-  if(weatherToday && weatherToday.rain < 30) reasons.push('clear weather forecast');
-  if(todayLYValue) reasons.push('same day last year saw '+Math.round(todayLYValue)+' guests');
-  document.getElementById('predictor-today-sub').style.color = 'rgba(255,255,255,0.9)';
-  document.getElementById('predictor-today-sub').textContent = reasons.length ? reasons.join(', ')+'.' : 'No strong signals either way today.';
-  const tagsEl = document.getElementById('predictor-today-tags');
-  let tagsHtml = '';
-  if(weatherToday) tagsHtml += `<span style="background:rgba(255,255,255,0.2);font-size:12.5px;font-weight:700;padding:5px 12px;border-radius:20px;color:white">☀ ${weatherToday.temp}°C, ${weatherToday.rain}% rain</span>`;
-  if(idHoliday) tagsHtml += `<span style="background:rgba(255,255,255,0.2);font-size:12.5px;font-weight:700;padding:5px 12px;border-radius:20px;color:white">🇮🇩 ${idHoliday.localName||idHoliday.name}</span>`;
-  if(isWeekend) tagsHtml += `<span style="background:rgba(255,255,255,0.2);font-size:12.5px;font-weight:700;padding:5px 12px;border-radius:20px;color:white">Weekend</span>`;
-  tagsEl.innerHTML = tagsHtml;
+    statsEl.innerHTML = `
+      <div style="display:flex;align-items:stretch;gap:36px;flex-wrap:wrap">
+        <div>
+          <div style="font-size:11px;font-weight:700;color:#94A3B8;text-transform:uppercase;letter-spacing:0.6px;margin-bottom:6px">Est. revenue today</div>
+          <div style="font-size:38px;font-weight:800;color:#0D9488;line-height:1">${revTodayStr}</div>
+        </div>
+        <div>
+          <div style="font-size:11px;font-weight:700;color:#94A3B8;text-transform:uppercase;letter-spacing:0.6px;margin-bottom:6px">Est. guests today</div>
+          <div style="font-size:38px;font-weight:800;color:#0F1E2E;line-height:1">${guestsTodayStr}</div>
+        </div>
+        <div style="width:1.5px;background:#E2E8F0"></div>
+        <div style="flex-grow:1;min-width:160px">
+          <div style="font-size:11px;font-weight:700;color:#94A3B8;text-transform:uppercase;letter-spacing:0.6px;margin-bottom:6px">Est. this week (Mon–Sun)</div>
+          <div style="font-size:38px;font-weight:800;color:#0F1E2E;line-height:1">${weekStr}</div>
+        </div>
+      </div>
+      <div style="font-size:12.5px;color:#94A3B8;margin-top:10px">↳ Same day last year: ${todayLYCovers != null ? Math.round(todayLYCovers)+' guests' : 'no data'}${todayLYRevenue != null ? ' · '+predictorFmtMoney(todayLYRevenue) : ''}</div>
+      <div style="display:flex;align-items:center;gap:10px;background:rgba(180,82,82,0.08);border-radius:10px;padding:12px 16px;margin-top:14px;font-size:13px;color:#0F1E2E;line-height:1.5">${spikeHtml}</div>
+    `;
+  } else if(lastYearWeekSum > 0){
+    const pct = Math.round(((thisWeekSum - lastYearWeekSum) / lastYearWeekSum) * 100);
+    statsEl.innerHTML = `
+      <div>
+        <div style="font-size:11px;font-weight:700;color:#94A3B8;text-transform:uppercase;letter-spacing:0.6px;margin-bottom:6px">This week so far vs last year</div>
+        <div style="font-size:42px;font-weight:800;color:${pct>=0?'#0D9488':'#B45252'};line-height:1">${pct>=0?'+':''}${pct}%</div>
+        <div style="font-size:12.5px;color:#94A3B8;margin-top:8px">${predictorFmtMoney(thisWeekSum)} so far vs ${predictorFmtMoney(lastYearWeekSum)} same days last year</div>
+      </div>
+    `;
+  } else {
+    statsEl.innerHTML = `
+      <div>
+        <div style="font-size:11px;font-weight:700;color:#94A3B8;text-transform:uppercase;letter-spacing:0.6px;margin-bottom:6px">This week so far vs last year</div>
+        <div style="font-size:16px;font-weight:700;color:#94A3B8">Not enough history yet</div>
+      </div>
+    `;
+  }
 
   // ── Week strip: same day last year, colored by historical bracket
   const stripEl = document.getElementById('predictor-week-strip');
@@ -18039,6 +18004,12 @@ function predictorRenderBody(){
     // chart dots use, so the tiles and the chart never disagree on what a color means.
     const colors = { high:PREDICTOR_STATUS_COLORS.high, mid:PREDICTOR_STATUS_COLORS.dip, low:PREDICTOR_STATUS_COLORS.low, neutral:'#CBD5E1' };
     const bg = colors[b];
+    // A second, separate label from the color itself - "how busy is this day generally"
+    // (High/Medium/Low) is a different question from "was this day unusual" (the spike/dip
+    // badge below). Keeping them as two distinct signals rather than folding both into one
+    // color avoids the earlier ambiguity where a color alone had to carry both meanings.
+    const tierLabels = { high:'High', mid:'Medium', low:'Low', neutral:'' };
+    const tierLabel = tierLabels[b];
     const pulseClass = isToday ? 'predictor-today-pulse' : '';
     const todayBadge = isToday ? '<div style="position:absolute;top:-8px;left:50%;transform:translateX(-50%);background:#0F1E2E;color:white;font-size:9px;font-weight:800;padding:2px 9px;border-radius:20px;text-transform:uppercase;letter-spacing:0.4px;white-space:nowrap;box-shadow:0 2px 4px rgba(0,0,0,0.15)">Today</div>' : '';
     // Same day-of-week comparison as the Spike Warning card and the week chart - flags this
@@ -18062,11 +18033,14 @@ function predictorRenderBody(){
       // the white border keeps it a distinct, clickable target either way.
       spikeBadge = '<div onclick="event.stopPropagation();predictorToggleStripSpike('+i+')" style="cursor:pointer;position:absolute;bottom:-12px;left:50%;transform:translateX(-50%);background:'+badgeColor+';border:2px solid rgba(255,255,255,0.85);color:white;font-size:11px;font-weight:800;padding:4px 12px;border-radius:20px;white-space:nowrap;box-shadow:0 2px 6px rgba(0,0,0,0.2)">⚠ Potential '+direction+' — why?</div>';
     }
-    stripHtml += `<div class="${pulseClass} pws-tile" style="position:relative;background:${bg};border-radius:14px;padding:14px 6px;text-align:center;box-sizing:border-box;box-shadow:0 2px 8px rgba(0,0,0,0.08);display:flex;flex-direction:column;justify-content:center;min-height:108px">
+    stripHtml += `<div class="${pulseClass} pws-tile" style="position:relative;background:${bg};border-radius:14px;padding:14px 6px;text-align:center;box-sizing:border-box;box-shadow:0 2px 8px rgba(0,0,0,0.08);display:flex;flex-direction:column;gap:6px;justify-content:center;min-height:108px">
       ${todayBadge}
-      <div style="font-size:11.5px;font-weight:800;color:white;margin-bottom:8px;text-transform:uppercase;letter-spacing:0.4px">${dayNames[i]}</div>
-      <div style="font-size:11px;font-weight:700;color:white;margin-bottom:3px">Revenue = ${lyRevenue != null ? predictorFmtMoney(lyRevenue) : '—'}</div>
-      <div style="font-size:11px;font-weight:700;color:white">Guests = ${lyCovers != null ? Math.round(lyCovers) : '—'}</div>
+      <div style="font-size:11.5px;font-weight:800;color:white;text-transform:uppercase;letter-spacing:0.4px">${dayNames[i]}</div>
+      ${tierLabel ? `<div style="font-size:9px;font-weight:800;color:${bg};background:white;border-radius:20px;padding:3px 10px;align-self:center;text-transform:uppercase;letter-spacing:0.4px">${tierLabel}</div>` : ''}
+      <div>
+        <div style="font-size:11px;font-weight:700;color:white">Revenue = ${lyRevenue != null ? predictorFmtMoney(lyRevenue) : '—'}</div>
+        <div style="font-size:11px;font-weight:700;color:white">Guests = ${lyCovers != null ? Math.round(lyCovers) : '—'}</div>
+      </div>
       ${spikeBadge}
     </div>`;
   }
@@ -18096,17 +18070,16 @@ function predictorRenderBody(){
 
   const countriesEl = document.getElementById('predictor-countries');
   countriesEl.innerHTML = countryScores.map(c => {
-    const level = c.score >= 65 ? 'High' : c.score >= 40 ? 'Moderate' : 'Low';
-    const levelColors = { High:['#ECFDF5','#10B981','#6EE7B7'], Moderate:['#FEF3C7','#92400E','#FDE68A'], Low:['#F1F5F9','#64748B','#E2E8F0'] };
-    const [lbg, lfg, lborder] = levelColors[level];
-    const barPct = Math.max(10, Math.min(95, c.score));
-    return `<div style="background:white;border:1px solid ${lborder};border-radius:12px;padding:14px 16px">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
-        <span style="font-size:13px;font-weight:700;color:#0F1E2E">${c.name}</span>
-        <span style="background:${lbg};color:${lfg};font-size:10px;padding:2px 8px;border-radius:20px;font-weight:700">${level}</span>
-      </div>
-      <div style="height:6px;background:#F1F5F9;border-radius:3px;overflow:hidden;margin-bottom:8px"><div style="width:${barPct}%;height:100%;background:${lfg}"></div></div>
-      <div style="font-size:11.5px;color:#64748B">${c.reason}</div>
+    const level = c.score >= 65 ? 'High' : c.score >= 40 ? 'Medium' : 'Low';
+    const levelColors = { High:'#0D9488', Medium:'#B7791F', Low:'#94A3B8' };
+    const barBg = { High:'#0D9488', Medium:'#B7791F', Low:'#CBD5E1' };
+    const barHeights = { High:96, Medium:60, Low:30 };
+    const labelColor = levelColors[level];
+    return `<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:6px;height:100%;justify-content:flex-end" title="${c.reason}">
+      <div style="font-size:10px;font-weight:800;color:${labelColor};text-transform:uppercase;letter-spacing:0.4px;white-space:nowrap">${level}</div>
+      <div style="width:100%;height:${barHeights[level]}px;background:${barBg[level]};border-radius:6px 6px 3px 3px"></div>
+      <div style="font-size:11px;font-weight:700;color:#0F1E2E;margin-top:4px">${c.currency}</div>
+      <div style="font-size:9.5px;color:#94A3B8;white-space:nowrap">${c.name}</div>
     </div>`;
   }).join('');
 

@@ -3548,6 +3548,11 @@ img.emoji-tw{width:1.15em;height:1.15em;vertical-align:-0.2em;margin:0 1px}
           <div class="rep-card-title">Upload Historical Data</div>
           <div class="rep-card-sub">Bring in past daily revenue and covers from a CSV</div>
         </button>
+        <button onclick="nav('reporting-targets')" class="rep-card">
+          <div class="rep-card-icon" style="background:rgba(196,151,59,0.12);color:#C4973B"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></div>
+          <div class="rep-card-title">Monthly Targets</div>
+          <div class="rep-card-sub">Set targets for many months at once</div>
+        </button>
       </div>
 
       <div style="margin-top:36px">
@@ -3584,6 +3589,21 @@ img.emoji-tw{width:1.15em;height:1.15em;vertical-align:-0.2em;margin:0 1px}
       </div>
 
       <div id="repcal-grid" style="background:white;border:1px solid var(--line);border-radius:14px;padding:16px;overflow-x:auto"></div>
+    </div>
+
+    <div class="page" id="p-reporting-targets" style="padding:32px 28px 60px">
+      <button onclick="nav('reporting')" style="display:flex;align-items:center;gap:6px;background:none;border:none;cursor:pointer;font-family:'Inter',sans-serif;font-size:12.5px;font-weight:700;color:#64748B;padding:0;margin-bottom:16px">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+        Back to Reporting
+      </button>
+      <div class="ph">
+        <div>
+          <div class="ph-title">Monthly Targets</div>
+          <div class="ph-sub">Set a revenue target for as many months as you like, all in one place - handy right after uploading years of historical data via CSV.</div>
+        </div>
+        <button class="btn btn-navy" onclick="reportingSaveMonthlyTargets()">Save All</button>
+      </div>
+      <div id="reporting-targets-grid"></div>
     </div>
 
     <div class="page" id="p-sandbox" style="padding:32px 28px 60px">
@@ -5178,6 +5198,7 @@ function nav(id, pushState=true){
   if(id==='stickynotes'){ /* root chooser - no board to render */ }
   if(id==='reporting'){reportingRender();}
   if(id==='reporting-calendar'){repcalRender();}
+  if(id==='reporting-targets'){reportingTargetsRender();}
 
   // Wait a frame so the page's content/height is fully laid out before positioning scroll
   requestAnimationFrame(() => {
@@ -16502,6 +16523,72 @@ function reportingRender(){
   reportingRenderRecent();
   reportingRenderCsvUploads();
   document.querySelectorAll('.currency-pill').forEach(p => p.classList.toggle('active', p.dataset.cur===currentCurrency));
+}
+
+// ── MONTHLY TARGETS (bulk) - lets you set a revenue target for many months at once,
+// rather than one month at a time via "Set Guide" on Analytics. Most useful right after
+// a CSV import of years of historical data, so every one of those months can show a
+// hit/miss color on the Analytics calendar instead of sitting gray for lack of a target.
+function reportingTargetsRender(){
+  const wrap = document.getElementById('reporting-targets-grid');
+  if(!wrap) return;
+  const thisYear = new Date().getFullYear();
+  const startYear = thisYear - 5;
+  let html = '';
+  for(let y = thisYear; y >= startYear; y--){
+    html += `<div style="margin-bottom:24px">
+      <div style="font-size:13px;font-weight:800;color:#0F1E2E;margin-bottom:10px">${y}</div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px">
+        ${Array.from({length:12},(_,m)=>{
+          const dateStr = `${y}-${String(m+1).padStart(2,'0')}-01`;
+          const existing = businessMetrics.find(mm => mm.metric_key==='guide_target' && mm.period_date===dateStr);
+          const monthLabel = new Date(y,m,1).toLocaleDateString('en-GB',{month:'short'});
+          return `<div>
+            <div style="font-size:11px;color:#94A3B8;margin-bottom:4px">${monthLabel}</div>
+            <input class="reporting-target-input" data-date="${dateStr}" type="text" inputmode="numeric" placeholder="e.g. 250,000,000"
+              value="${existing ? Number(existing.value).toLocaleString('en-US') : ''}"
+              style="width:100%;padding:9px 10px;border:1.5px solid #E2E8F0;border-radius:8px;font-family:'Inter',sans-serif;font-size:13px;color:#0F1E2E;outline:none;box-sizing:border-box">
+          </div>`;
+        }).join('')}
+      </div>
+    </div>`;
+  }
+  wrap.innerHTML = html;
+}
+
+async function reportingSaveMonthlyTargets(){
+  const inputs = document.querySelectorAll('.reporting-target-input');
+  const toInsert = [];
+  const toUpdate = [];
+  inputs.forEach(inp => {
+    const raw = inp.value.replace(/,/g,'').trim();
+    if(!raw) return;
+    const num = parseFloat(raw);
+    if(isNaN(num)) return;
+    const dateStr = inp.dataset.date;
+    const existing = businessMetrics.find(m => m.metric_key==='guide_target' && m.period_date===dateStr);
+    if(existing){
+      if(Number(existing.value) !== num) toUpdate.push({ id: existing.id, value: num });
+    } else {
+      toInsert.push({ metric_key:'guide_target', period_date: dateStr, value: num });
+    }
+  });
+  if(!toInsert.length && !toUpdate.length){ toast('Nothing to save'); return; }
+  toast('Saving targets…');
+  if(toInsert.length){
+    const { data, error } = await sb.from('business_metrics').insert(toInsert).select();
+    if(error){ toast('Save failed - try again'); console.warn(error); return; }
+    businessMetrics = businessMetrics.concat(data || toInsert);
+  }
+  for(const u of toUpdate){
+    const { error } = await sb.from('business_metrics').update({ value: u.value }).eq('id', u.id);
+    if(error){ toast('Save failed partway through - try again'); console.warn(error); return; }
+    const row = businessMetrics.find(m => m.id === u.id);
+    if(row) row.value = u.value;
+  }
+  toast('Targets saved ✓ ('+(toInsert.length+toUpdate.length)+' months)');
+  reportingTargetsRender();
+  analyticsRender();
 }
 
 

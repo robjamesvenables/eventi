@@ -2404,6 +2404,15 @@ img.emoji-tw{width:1.15em;height:1.15em;vertical-align:-0.2em;margin:0 1px}
 @media (min-width:701px){
   .predictor-week-chart-wrap{height:300px}
 }
+/* ── Forecast: Week Strip tiles - fixed-width horizontal scroll on mobile (unchanged),
+   stretch to fill the full row on desktop instead of leaving a big empty gap ── */
+.predictor-week-strip-wrap{overflow-x:auto;margin-bottom:24px;-webkit-overflow-scrolling:touch;padding:12px 6px 24px 6px;margin-left:-6px;margin-right:-6px}
+.pws-tile{flex:0 0 108px}
+@media (min-width:701px){
+  .predictor-week-strip-wrap{overflow-x:visible;padding:0;margin:0 0 24px}
+  #predictor-week-strip{min-width:0 !important}
+  .pws-tile{flex:1 1 0;min-width:0}
+}
 
 /* ── PDF EXPORT (html2pdf.js captures .beo directly - toggled via JS, not @media print) ── */
 .pdf-export-mode .card-colour-btn,.pdf-export-mode .card-colour-popup,
@@ -3412,9 +3421,10 @@ img.emoji-tw{width:1.15em;height:1.15em;vertical-align:-0.2em;margin:0 1px}
         </div>
 
         <div style="font-size:12px;color:#64748B;margin-bottom:10px">Same day, last year — colored against your full historical range</div>
-        <div style="overflow-x:auto;margin-bottom:24px;-webkit-overflow-scrolling:touch;padding:12px 6px 24px 6px;margin-left:-6px;margin-right:-6px">
+        <div class="predictor-week-strip-wrap">
           <div id="predictor-week-strip" style="display:flex;align-items:stretch;gap:12px;min-width:min-content"></div>
         </div>
+        <div id="predictor-strip-spike-explain" style="display:none;margin:-10px 0 20px;background:#0F1E2E;color:white;font-size:12px;line-height:1.6;padding:12px 16px;border-radius:10px"></div>
 
         <div style="font-size:11px;font-weight:800;color:#94A3B8;text-transform:uppercase;letter-spacing:0.6px;margin-bottom:6px">Based on holidays, weather, currency, and your own history</div>
         <div id="predictor-today-card" style="border-radius:14px;padding:16px 20px;margin-bottom:20px">
@@ -17699,6 +17709,22 @@ window.predictorToggleSpikeInfo = function(){
   if(el) el.style.display = el.style.display === 'none' ? 'block' : 'none';
 };
 
+window.predictorToggleStripSpike = function(i){
+  const el = document.getElementById('predictor-strip-spike-explain');
+  if(!el) return;
+  const text = (window._pwsExplain || [])[i];
+  if(!text) return;
+  // Clicking the same day's badge again closes it; clicking a different day swaps the text in.
+  const isOpenForThisDay = el.style.display !== 'none' && el.dataset.day === String(i);
+  if(isOpenForThisDay){
+    el.style.display = 'none';
+  } else {
+    el.innerHTML = '⚠️ ' + text;
+    el.dataset.day = String(i);
+    el.style.display = 'block';
+  }
+};
+
 function predictorRenderBody(){
   const today = new Date();
   predictorRenderWeekChart();
@@ -17870,6 +17896,7 @@ function predictorRenderBody(){
   const stripEl = document.getElementById('predictor-week-strip');
   const dayNames = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
   const todayStr = predictorDateStr(today);
+  window._pwsExplain = [];
   let stripHtml = '';
   for(let i=0;i<7;i++){
     const d = new Date(today); d.setDate(d.getDate()-((today.getDay()+6)%7)+i); // Monday-start week
@@ -17885,12 +17912,24 @@ function predictorRenderBody(){
     const todayBadge = isToday ? '<div style="position:absolute;top:-8px;left:50%;transform:translateX(-50%);background:#0F1E2E;color:white;font-size:9px;font-weight:800;padding:2px 9px;border-radius:20px;text-transform:uppercase;letter-spacing:0.4px;white-space:nowrap;box-shadow:0 2px 4px rgba(0,0,0,0.15)">Today</div>' : '';
     // Same day-of-week comparison as the Spike Warning card and the week chart - flags this
     // specific box too, so the warning shows up everywhere the day itself appears, not just
-    // in one separate text block elsewhere on the page.
+    // in one separate text block elsewhere on the page. Direction-aware: this is a spike
+    // if last year's value came in ABOVE the typical range for that weekday, a dip if BELOW -
+    // a below-average day is not a spike, and labeling it as one is misleading.
     const dowStatsForBadge = predictorMetricStatsForDow('covers_served', d.getDay());
-    const isSpike = lyCovers != null && dowStatsForBadge && dowStatsForBadge.stdDev > 0 &&
+    const isAnomaly = lyCovers != null && dowStatsForBadge && dowStatsForBadge.stdDev > 0 &&
       Math.abs((lyCovers - dowStatsForBadge.mean) / dowStatsForBadge.stdDev) >= 1.5;
-    const spikeBadge = isSpike ? '<div style="position:absolute;bottom:-8px;left:50%;transform:translateX(-50%);background:#D85A30;color:white;font-size:8px;font-weight:800;padding:2px 7px;border-radius:20px;white-space:nowrap;box-shadow:0 2px 4px rgba(0,0,0,0.15)">⚠ Potential spike</div>' : '';
-    stripHtml += `<div class="${pulseClass}" style="position:relative;flex:0 0 108px;background:${bg};border-radius:14px;padding:14px 6px;text-align:center;box-sizing:border-box;box-shadow:0 2px 8px rgba(0,0,0,0.08);display:flex;flex-direction:column;justify-content:center;min-height:108px">
+    const direction = isAnomaly ? (lyCovers > dowStatsForBadge.mean ? 'spike' : 'dip') : null;
+    let spikeBadge = '';
+    if(isAnomaly){
+      window._pwsExplain[i] = dayNames[i]+' last year saw '+Math.round(lyCovers)+' guests, well '
+        +(direction==='spike'?'above':'below')+' the typical '+dayNames[i]+' average of '+Math.round(dowStatsForBadge.mean)+'. '
+        +(direction==='spike'
+          ? 'Worth checking what drove the extra traffic — an event, promo or holiday — before assuming this '+dayNames[i]+' will do the same.'
+          : 'Worth checking what caused the shortfall — bad weather, a cancellation, a closure — before assuming this '+dayNames[i]+' will be quiet too.');
+      const badgeColor = direction === 'spike' ? '#D85A30' : '#5B7DB1';
+      spikeBadge = '<div onclick="event.stopPropagation();predictorToggleStripSpike('+i+')" style="cursor:pointer;position:absolute;bottom:-8px;left:50%;transform:translateX(-50%);background:'+badgeColor+';color:white;font-size:8px;font-weight:800;padding:2px 7px;border-radius:20px;white-space:nowrap;box-shadow:0 2px 4px rgba(0,0,0,0.15)">⚠ Potential '+direction+' — why?</div>';
+    }
+    stripHtml += `<div class="${pulseClass} pws-tile" style="position:relative;background:${bg};border-radius:14px;padding:14px 6px;text-align:center;box-sizing:border-box;box-shadow:0 2px 8px rgba(0,0,0,0.08);display:flex;flex-direction:column;justify-content:center;min-height:108px">
       ${todayBadge}
       <div style="font-size:11.5px;font-weight:800;color:white;margin-bottom:8px;text-transform:uppercase;letter-spacing:0.4px">${dayNames[i]}</div>
       <div style="font-size:11px;font-weight:700;color:white;margin-bottom:3px">Revenue = ${lyRevenue != null ? predictorFmtMoney(lyRevenue) : '—'}</div>
@@ -17899,6 +17938,8 @@ function predictorRenderBody(){
     </div>`;
   }
   stripEl.innerHTML = stripHtml;
+  const explainEl = document.getElementById('predictor-strip-spike-explain');
+  if(explainEl){ explainEl.style.display = 'none'; explainEl.innerHTML = ''; }
 
   // ── Countries, ranked by strength
   const countryScores = PREDICTOR_COUNTRIES.map(c => {

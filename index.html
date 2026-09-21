@@ -17566,6 +17566,22 @@ function predictorMetricStats(metricKey){
   return { mean, stdDev: Math.sqrt(variance), min: Math.min(...vals), max: Math.max(...vals) };
 }
 
+// Same as predictorMetricStats, but scoped to a single day of the week (0=Sun...6=Sat) - a
+// Wednesday should only ever be judged against other Wednesdays, not against every day
+// mixed together. Comparing Wednesday to the overall average (which is pulled up by busy
+// weekends) would make a perfectly ordinary weekday look artificially low - that's just the
+// normal weekly rhythm, not a real anomaly. Used specifically for spike detection, where the
+// question is "was this Wednesday unusual for a Wednesday", not "was it a busy day overall".
+function predictorMetricStatsForDow(metricKey, dow){
+  const vals = businessMetrics
+    .filter(m => m.metric_key===metricKey && new Date(m.period_date+'T00:00:00').getDay()===dow)
+    .map(m => Number(m.value)).filter(v => !isNaN(v));
+  if(vals.length < 3) return null; // too few of this specific weekday to judge what's "typical"
+  const mean = vals.reduce((a,b)=>a+b,0) / vals.length;
+  const variance = vals.reduce((a,b)=>a+(b-mean)*(b-mean),0) / vals.length;
+  return { mean, stdDev: Math.sqrt(variance) };
+}
+
 function predictorBracketColor(value, stats){
   if(value == null || !stats || stats.stdDev === 0) return 'neutral';
   const z = (value - stats.mean) / stats.stdDev; // how many typical swings above/below average
@@ -17655,15 +17671,18 @@ function predictorRenderBody(){
       todayLYRevenue != null ? predictorFmtMoney(todayLYRevenue)+(todayLYCovers!=null?' / '+Math.round(todayLYCovers)+' guests':'') : 'Not enough history yet';
 
     let lastYearFullWeekSum = 0;
-    const dayStats = predictorMetricStats('covers_served');
     let biggestSpike = null;
     for(let i=0;i<7;i++){
       const d = new Date(today); d.setDate(d.getDate()-today.getDay()+1+i);
       const ly = predictorHistoricalMetric('revenue', d);
       if(ly) lastYearFullWeekSum += ly;
       const lyCovers = predictorHistoricalMetric('covers_served', d);
-      if(lyCovers != null && dayStats && dayStats.stdDev > 0){
-        const z = (lyCovers - dayStats.mean) / dayStats.stdDev;
+      // Compared against OTHER days of this same weekday only (e.g. Wednesday vs other
+      // Wednesdays) - not the overall average, which would wrongly flag an ordinary weekday
+      // as "low" just because weekends pull the overall average up.
+      const dowStats = predictorMetricStatsForDow('covers_served', d.getDay());
+      if(lyCovers != null && dowStats && dowStats.stdDev > 0){
+        const z = (lyCovers - dowStats.mean) / dowStats.stdDev;
         if(Math.abs(z) >= 1.5 && (!biggestSpike || Math.abs(z) > Math.abs(biggestSpike.z))){
           biggestSpike = { day: ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][d.getDay()], z, covers: lyCovers, direction: z > 0 ? 'spike' : 'dip' };
         }
@@ -17672,12 +17691,14 @@ function predictorRenderBody(){
     document.getElementById('predictor-est-week').textContent =
       lastYearFullWeekSum > 0 ? predictorFmtMoney(lastYearFullWeekSum) : 'Not enough history yet';
 
+    // Always shown, not just when a spike exists - a clear "all clear" state is as
+    // meaningful as a warning, so the section never just silently disappears.
     const spikeEl = document.getElementById('predictor-est-spike');
+    spikeEl.style.display = 'block';
     if(biggestSpike){
-      spikeEl.style.display = 'block';
-      spikeEl.innerHTML = '⚠️ <b>Watch '+biggestSpike.day+'</b> — last year saw an unusual '+biggestSpike.direction+' ('+Math.round(biggestSpike.covers)+' guests, well '+(biggestSpike.direction==='spike'?'above':'below')+' a typical '+biggestSpike.day+'). Worth checking if something specific caused it.';
+      spikeEl.innerHTML = '⚠️ <b>Spike Warning — watch '+biggestSpike.day+'</b><br>Last year saw an unusual '+biggestSpike.direction+' ('+Math.round(biggestSpike.covers)+' guests, well '+(biggestSpike.direction==='spike'?'above':'below')+' a typical '+biggestSpike.day+'). Worth checking if something specific caused it.';
     } else {
-      spikeEl.style.display = 'none';
+      spikeEl.innerHTML = '⚠️ <b>Spike Warning</b><br>No unusual spikes or dips predicted this week, based on last year.';
     }
   } else if(lastYearWeekSum > 0){
     yoyCardEl.style.display = 'block';

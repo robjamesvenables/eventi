@@ -3402,6 +3402,7 @@ img.emoji-tw{width:1.15em;height:1.15em;vertical-align:-0.2em;margin:0 1px}
             <span style="display:flex;align-items:center;gap:5px;font-size:11px;color:#64748B"><span style="width:10px;height:0;border-top:2px dashed #378ADD;display:inline-block"></span>Revenue</span>
             <span style="display:flex;align-items:center;gap:5px;font-size:11px;color:#64748B"><span style="width:9px;height:9px;border-radius:50%;background:#D85A30;display:inline-block"></span>Spike</span>
           </div>
+          <div id="predictor-week-chart-debug" style="margin-top:10px;padding-top:10px;border-top:1px solid #E2E8F0;font-size:10.5px;color:#94A3B8;line-height:1.6"></div>
         </div>
 
         <div style="font-size:11px;font-weight:800;color:#94A3B8;text-transform:uppercase;letter-spacing:0.6px;margin-bottom:6px">Based on holidays, weather, currency, and your own history</div>
@@ -17608,12 +17609,15 @@ function predictorRenderWeekChart(){
   const dayNames = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
   const dowOrder = [1,2,3,4,5,6,0]; // Monday-start
   const guestAvgs = [], revenueAvgs = [];
+  const debugLines = [];
   let spikeIdx = -1, biggestZ = 0;
   dowOrder.forEach((dow, i) => {
     const gStats = predictorMetricStatsForDow('covers_served', dow);
     const rStats = predictorMetricStatsForDow('revenue', dow);
     guestAvgs.push(gStats ? Math.round(gStats.mean) : null);
     revenueAvgs.push(rStats ? Math.round(rStats.mean/1000000) : null); // in millions for the axis
+    const rCount = businessMetrics.filter(m => m.metric_key==='revenue' && new Date(m.period_date+'T00:00:00').getDay()===dow).length;
+    debugLines.push(dayNames[i]+': '+(rStats?Math.round(rStats.mean/1000000):'—')+'M avg revenue, '+(gStats?Math.round(gStats.mean):'—')+' avg guests ('+rCount+' data points)');
     // Flag the day whose most recent occurrence deviated most from its own typical range -
     // same logic as the Spike Warning card, kept in sync rather than reinvented here.
     const today = new Date();
@@ -17624,6 +17628,8 @@ function predictorRenderWeekChart(){
       if(z >= 1.5 && z > biggestZ){ biggestZ = z; spikeIdx = i; }
     }
   });
+  const debugEl = document.getElementById('predictor-week-chart-debug');
+  if(debugEl) debugEl.innerHTML = debugLines.join('<br>');
   if(predictorWeekChartInstance) predictorWeekChartInstance.destroy();
   predictorWeekChartInstance = new Chart(canvas, {
     type: 'line',

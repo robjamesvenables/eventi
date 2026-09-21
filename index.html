@@ -16958,17 +16958,24 @@ function anRenderTargetGrid(){
     }
     const revEntry = businessMetrics.find(m => m.metric_key==='revenue' && m.period_date===dateStr);
     const targetEntry = businessMetrics.find(m => m.metric_key==='daily_target' && m.period_date===dateStr);
-    if(!revEntry || !targetEntry){
+    // A day with real revenue but no target of its own is NOT "no data" - it just falls back
+    // to the month's guide target, same as the day-detail modal already does. Previously this
+    // was treated identically to a genuinely empty day, which looked like the revenue wasn't
+    // there at all.
+    const effectiveTarget = targetEntry ? Number(targetEntry.value) : guideTarget;
+    if(!revEntry || !effectiveTarget){
       html += `<div class="an-target-box no-data" style="${cursorStyle}" ${clickAttr}><div class="an-target-box-day">${day}</div></div>`;
       continue;
     }
     const rev = Number(revEntry.value);
-    const dayTarget = Number(targetEntry.value);
+    const dayTarget = effectiveTarget;
     const pct = dayTarget ? ((rev - dayTarget) / dayTarget) * 100 : 0;
     const hit = rev >= dayTarget;
-    html += `<div class="an-target-box ${hit?'hit':'miss'}" style="cursor:pointer" ${clickAttr}>
+    const usedFallback = !targetEntry;
+    html += `<div class="an-target-box ${hit?'hit':'miss'}" style="cursor:pointer;position:relative" ${clickAttr}>
       <div class="an-target-box-day">${day}</div>
       <div class="an-target-box-pct">${pct>=0?'+':''}${pct.toFixed(0)}%</div>
+      ${usedFallback ? '<div style="position:absolute;top:3px;right:5px;font-size:8px;font-weight:800;opacity:0.75" title="No target set for this specific day - using the monthly guide target">*</div>' : ''}
     </div>`;
   }
   grid.innerHTML = html;

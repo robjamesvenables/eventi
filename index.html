@@ -44,7 +44,7 @@ body{margin:0;padding:0;font-family:'Inter',sans-serif;background:var(--bg);colo
 /* A gentle "breathing" effect for today's cell - a moderate brightness range plus a subtle
    scale, rather than an extreme, jarring brightness swing which read as harsh/glitchy
    instead of a natural pulse. */
-@keyframes predictorTodayPulse{0%,100%{filter:brightness(1.12);transform:scale(1.02)}50%{filter:brightness(0.92);transform:scale(0.99)}}
+@keyframes predictorTodayPulse{0%,100%{filter:brightness(1)}50%{filter:brightness(3.2)}}
 .predictor-today-pulse{animation:predictorTodayPulse 2.6s ease-in-out infinite}
 /* Custom tooltip, replacing the native title="" attribute - a browser's own tooltip always
    renders in the OS's system font regardless of the page's CSS, which is exactly what read
@@ -3419,7 +3419,7 @@ img.emoji-tw{width:1.15em;height:1.15em;vertical-align:-0.2em;margin:0 1px}
 
         <div style="font-size:12px;color:#64748B;margin-bottom:10px">Same day, last year — colored against your full historical range</div>
         <div style="overflow-x:auto;margin-bottom:24px;-webkit-overflow-scrolling:touch">
-          <div id="predictor-week-strip" style="display:flex;gap:8px;min-width:min-content"></div>
+          <div id="predictor-week-strip" style="display:flex;align-items:stretch;gap:8px;min-width:min-content"></div>
         </div>
 
         <div style="font-size:13px;font-weight:800;color:#0F1E2E;margin-bottom:10px">Countries & Currency Strength, ranked this week</div>
@@ -17599,15 +17599,16 @@ function predictorRenderBody(){
   document.getElementById('predictor-season-card').style.background =
     seasonNow === 'High Season' ? 'linear-gradient(135deg,#0D9488,#0F766E)' : 'linear-gradient(135deg,#B45252,#943C3C)';
 
-  // ── Year-over-year: compare only the days that have actually happened so far this week
-  // against those SAME days last year - not the full Mon-Sun week either side. Comparing a
-  // partial week (today's still in progress) against a complete week last year would always
-  // show a fake, misleading drop, since future days in the current week have no revenue
-  // logged yet simply because they haven't happened - not because business is actually down.
-  const daysElapsedThisWeek = today.getDay() === 0 ? 7 : today.getDay(); // Sun=0 means the full week has passed
+  // ── Year-over-year: compare only the days that have actually FINISHED so far this week
+  // against those SAME days last year - not today itself, and not the full Mon-Sun week
+  // either side. Today's own figure is inherently incomplete (the day hasn't finished, so
+  // revenue for it isn't fully known/logged yet) - including it would always show a fake,
+  // misleading drop versus a complete day last year, especially stark early in the week
+  // (a Monday morning would compare 0 so far against a whole day last year).
+  const completedDaysThisWeek = today.getDay() === 0 ? 6 : today.getDay()-1; // days before today, Mon onward
   let thisWeekSum = 0, lastYearWeekSum = 0;
-  for(let i=0;i<daysElapsedThisWeek;i++){
-    const d = new Date(today); d.setDate(d.getDate()-today.getDay()+1+i); // Mon onward, up to today
+  for(let i=0;i<completedDaysThisWeek;i++){
+    const d = new Date(today); d.setDate(d.getDate()-today.getDay()+1+i); // Mon onward, up to yesterday
     const dateStr = predictorDateStr(d);
     const row = businessMetrics.find(m => m.metric_key==='revenue' && m.period_date===dateStr);
     if(row) thisWeekSum += row.value;
@@ -17616,9 +17617,15 @@ function predictorRenderBody(){
   }
   const yoyEl = document.getElementById('predictor-yoy');
   const yoySubEl = document.getElementById('predictor-yoy-sub');
-  if(lastYearWeekSum > 0){
+  if(completedDaysThisWeek === 0){
+    yoyEl.textContent = 'New week';
+    yoyEl.style.fontSize = '18px';
+    yoyEl.style.color = 'white';
+    if(yoySubEl) yoySubEl.textContent = 'Check back once a day or two has finished';
+  } else if(lastYearWeekSum > 0){
     const pct = Math.round(((thisWeekSum - lastYearWeekSum) / lastYearWeekSum) * 100);
     yoyEl.textContent = (pct>=0?'+':'')+pct+'%';
+    yoyEl.style.fontSize = '28px';
     yoyEl.style.color = pct >= 0 ? '#5EEAD4' : '#FCA5A5';
     if(yoySubEl) yoySubEl.textContent = predictorFmtMoney(thisWeekSum)+' so far vs '+predictorFmtMoney(lastYearWeekSum)+' same days last year';
   } else {
@@ -17687,7 +17694,7 @@ function predictorRenderBody(){
     const bg = colors[b];
     const pulseClass = isToday ? 'predictor-today-pulse' : '';
     const todayBadge = isToday ? '<div style="position:absolute;top:-8px;left:50%;transform:translateX(-50%);background:#0F1E2E;color:white;font-size:9px;font-weight:800;padding:2px 9px;border-radius:20px;text-transform:uppercase;letter-spacing:0.4px;white-space:nowrap;box-shadow:0 2px 4px rgba(0,0,0,0.15)">Today</div>' : '';
-    stripHtml += `<div class="${pulseClass}" style="position:relative;flex:0 0 108px;background:${bg};border-radius:14px;padding:14px 6px;text-align:center;box-sizing:border-box;box-shadow:0 2px 8px rgba(0,0,0,0.08)">
+    stripHtml += `<div class="${pulseClass}" style="position:relative;flex:0 0 108px;background:${bg};border-radius:14px;padding:14px 6px;text-align:center;box-sizing:border-box;box-shadow:0 2px 8px rgba(0,0,0,0.08);display:flex;flex-direction:column;justify-content:center;min-height:108px">
       ${todayBadge}
       <div style="font-size:11.5px;font-weight:800;color:white;margin-bottom:8px;text-transform:uppercase;letter-spacing:0.4px">${dayNames[i]}</div>
       <div style="font-size:11px;font-weight:700;color:white;margin-bottom:3px">Revenue = ${lyRevenue != null ? predictorFmtMoney(lyRevenue) : '—'}</div>

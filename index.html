@@ -47,8 +47,11 @@ body{margin:0;padding:0;font-family:'Inter',sans-serif;background:var(--bg);colo
 /* A flashing black border around today's cell, rather than the cell itself changing color -
    the box stays a solid, static color like every other day; only a border ring appears and
    disappears in a slow flash. */
-@keyframes predictorTodayPulse{0%,50%{box-shadow:0 0 0 3px #000000}51%,100%{box-shadow:0 0 0 3px transparent}}
-.predictor-today-pulse{animation:predictorTodayPulse 1.6s step-end infinite}
+/* A smooth, gradual fade for the border ring around today's cell - eases in and out rather
+   than snapping on/off abruptly, so it dims up and back down gently rather than looking
+   aggressive. */
+@keyframes predictorTodayPulse{0%,100%{box-shadow:0 0 0 3px rgba(0,0,0,0)}50%{box-shadow:0 0 0 3px rgba(0,0,0,0.9)}}
+.predictor-today-pulse{animation:predictorTodayPulse 2.8s ease-in-out infinite}
 /* Custom tooltip, replacing the native title="" attribute - a browser's own tooltip always
    renders in the OS's system font regardless of the page's CSS, which is exactly what read
    as visually inconsistent. This uses the app's own font instead, same as everything else. */
@@ -17620,24 +17623,43 @@ function predictorRenderBody(){
   }
   const yoyEl = document.getElementById('predictor-yoy');
   const yoySubEl = document.getElementById('predictor-yoy-sub');
+  const yoyLabelEl2 = document.querySelector('#predictor-yoy').previousElementSibling;
   if(completedDaysThisWeek === 0){
-    yoyEl.textContent = 'New week';
-    yoyEl.style.fontSize = '18px';
-    yoyEl.style.color = 'white';
-    if(yoySubEl) yoySubEl.textContent = 'Check back once a day or two has finished';
+    // No real days have finished yet this week - rather than a dead-end "check back later",
+    // a forecast should still give an estimate: last year's FULL week as the projected
+    // expectation for this week, clearly labeled as an estimate rather than a real
+    // comparison, since there's nothing real to compare against yet.
+    let lastYearFullWeekSum = 0;
+    for(let i=0;i<7;i++){
+      const d = new Date(today); d.setDate(d.getDate()-today.getDay()+1+i);
+      const ly = predictorHistoricalMetric('revenue', d);
+      if(ly) lastYearFullWeekSum += ly;
+    }
+    if(yoyLabelEl2) yoyLabelEl2.textContent = 'Expected This Week (Estimate)';
+    if(lastYearFullWeekSum > 0){
+      yoyEl.textContent = predictorFmtMoney(lastYearFullWeekSum);
+      yoyEl.style.fontSize = '28px';
+      yoyEl.style.color = 'white';
+      if(yoySubEl) yoySubEl.textContent = 'Based on this same week last year';
+    } else {
+      yoyEl.textContent = 'Not enough history yet';
+      yoyEl.style.fontSize = '14px';
+      yoyEl.style.color = 'white';
+      if(yoySubEl) yoySubEl.textContent = '';
+    }
   } else if(lastYearWeekSum > 0){
+    if(yoyLabelEl2) yoyLabelEl2.textContent = 'This Week So Far vs Last Year';
     const pct = Math.round(((thisWeekSum - lastYearWeekSum) / lastYearWeekSum) * 100);
     yoyEl.textContent = (pct>=0?'+':'')+pct+'%';
     yoyEl.style.fontSize = '28px';
     yoyEl.style.color = pct >= 0 ? '#5EEAD4' : '#FCA5A5';
     if(yoySubEl) yoySubEl.textContent = predictorFmtMoney(thisWeekSum)+' so far vs '+predictorFmtMoney(lastYearWeekSum)+' same days last year';
   } else {
+    if(yoyLabelEl2) yoyLabelEl2.textContent = 'This Week So Far vs Last Year';
     yoyEl.textContent = 'Not enough history yet';
     yoyEl.style.fontSize = '14px';
     if(yoySubEl) yoySubEl.textContent = '';
   }
-  const yoyLabelEl = document.querySelector('#predictor-yoy').previousElementSibling;
-  if(yoyLabelEl) yoyLabelEl.textContent = 'This week so far vs last year';
 
   // ── Today's "why" card
   const weatherToday = predictorData.weather && predictorData.weather.daily ? {

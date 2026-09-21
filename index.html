@@ -2415,6 +2415,35 @@ img.emoji-tw{width:1.15em;height:1.15em;vertical-align:-0.2em;margin:0 1px}
   .pws-tile{flex:1 1 0;min-width:0}
 }
 
+/* ── Forecast: Snapshot card - compact padding/headline/stacked stats on mobile,
+   full-size spread-out layout on desktop ── */
+#predictor-snapshot-card{padding:20px 20px}
+#predictor-snap-headline{font-size:22px}
+#predictor-snap-headline svg{width:19px;height:19px}
+.psnap-stats-row{flex-direction:column;align-items:stretch;gap:16px}
+.psnap-divider{display:none}
+.psnap-stat-value{font-size:28px}
+@media (min-width:701px){
+  #predictor-snapshot-card{padding:32px 36px}
+  #predictor-snap-headline{font-size:30px}
+  #predictor-snap-headline svg{width:24px;height:24px}
+  .psnap-stats-row{flex-direction:row;align-items:stretch;gap:36px}
+  .psnap-divider{display:block;width:1.5px;background:#E2E8F0}
+  .psnap-stat-value{font-size:38px}
+}
+
+/* ── Forecast: Countries & Currency bar chart - fixed-width horizontal scroll on mobile
+   (12 bars can't legibly fit a narrow screen), stretch to fill the row on desktop ── */
+.predictor-countries-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;margin:0 -6px;padding:0 6px}
+#predictor-countries{min-width:min-content}
+.pcountry-bar{flex:0 0 82px}
+@media (min-width:701px){
+  .predictor-countries-wrap{overflow-x:visible;margin:0;padding:0}
+  #predictor-countries{min-width:0}
+  .pcountry-bar{flex:1 1 0;min-width:0}
+  #predictor-countries-card{padding:28px 32px 24px !important}
+}
+
 /* ── PDF EXPORT (html2pdf.js captures .beo directly - toggled via JS, not @media print) ── */
 .pdf-export-mode .card-colour-btn,.pdf-export-mode .card-colour-popup,
 .pdf-export-mode .dept-toolbar,.pdf-export-mode .chev,
@@ -3458,8 +3487,10 @@ img.emoji-tw{width:1.15em;height:1.15em;vertical-align:-0.2em;margin:0 1px}
 
         <!-- ── COUNTRIES & CURRENCY — one bar-chart card instead of 12 separate tiles ── -->
         <div style="font-size:13px;font-weight:800;color:#0F1E2E;margin:28px 0 14px">Countries & Currency Strength, ranked this week</div>
-        <div style="background:white;border:1.5px solid #E2E8F0;border-radius:16px;padding:28px 32px 24px;margin-bottom:32px">
-          <div id="predictor-countries" style="display:flex;align-items:flex-end;gap:14px;height:150px;padding:0 4px"></div>
+        <div id="predictor-countries-card" style="background:white;border:1.5px solid #E2E8F0;border-radius:16px;padding:20px 16px 20px;margin-bottom:32px">
+          <div class="predictor-countries-wrap">
+            <div id="predictor-countries" style="display:flex;align-items:flex-end;gap:14px;height:168px;padding:0 4px"></div>
+          </div>
         </div>
 
       </div>
@@ -17956,19 +17987,19 @@ function predictorRenderBody(){
 
     const cornerArrowSvg = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#94A3B8" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:5px"><path d="M9 10L4 15l5 5"/><path d="M20 4v7a4 4 0 0 1-4 4H4"/></svg>';
     statsEl.innerHTML = `
-      <div style="display:flex;align-items:stretch;gap:36px;flex-wrap:wrap">
+      <div class="psnap-stats-row" style="display:flex">
         <div>
           <div style="font-size:11px;font-weight:700;color:#94A3B8;text-transform:uppercase;letter-spacing:0.6px;margin-bottom:6px">Est. revenue today</div>
-          <div style="font-size:38px;font-weight:800;color:#0D9488;line-height:1">${revTodayStr}</div>
+          <div class="psnap-stat-value" style="font-weight:800;color:#0D9488;line-height:1">${revTodayStr}</div>
         </div>
         <div>
           <div style="font-size:11px;font-weight:700;color:#94A3B8;text-transform:uppercase;letter-spacing:0.6px;margin-bottom:6px">Est. guests today</div>
-          <div style="font-size:38px;font-weight:800;color:#0F1E2E;line-height:1">${guestsTodayStr}</div>
+          <div class="psnap-stat-value" style="font-weight:800;color:#0F1E2E;line-height:1">${guestsTodayStr}</div>
         </div>
-        <div style="width:1.5px;background:#E2E8F0"></div>
+        <div class="psnap-divider"></div>
         <div style="flex-grow:1;min-width:160px">
           <div style="font-size:11px;font-weight:700;color:#94A3B8;text-transform:uppercase;letter-spacing:0.6px;margin-bottom:6px">Est. this week (Mon–Sun)</div>
-          <div style="font-size:38px;font-weight:800;color:#0F1E2E;line-height:1">${weekStr}</div>
+          <div class="psnap-stat-value" style="font-weight:800;color:#0F1E2E;line-height:1">${weekStr}</div>
         </div>
       </div>
       <div style="font-size:12.5px;color:#94A3B8;margin-top:10px">${cornerArrowSvg}Same day last year: ${todayLYCovers != null ? Math.round(todayLYCovers)+' guests' : 'no data'}${todayLYRevenue != null ? ' · '+predictorFmtMoney(todayLYRevenue) : ''}</div>
@@ -17979,7 +18010,7 @@ function predictorRenderBody(){
     statsEl.innerHTML = `
       <div>
         <div style="font-size:11px;font-weight:700;color:#94A3B8;text-transform:uppercase;letter-spacing:0.6px;margin-bottom:6px">This week so far vs last year</div>
-        <div style="font-size:42px;font-weight:800;color:${pct>=0?'#0D9488':'#B45252'};line-height:1">${pct>=0?'+':''}${pct}%</div>
+        <div class="psnap-stat-value" style="font-weight:800;color:${pct>=0?'#0D9488':'#B45252'};line-height:1">${pct>=0?'+':''}${pct}%</div>
         <div style="font-size:12.5px;color:#94A3B8;margin-top:8px">${predictorFmtMoney(thisWeekSum)} so far vs ${predictorFmtMoney(lastYearWeekSum)} same days last year</div>
       </div>
     `;
@@ -18084,11 +18115,11 @@ function predictorRenderBody(){
     const barBg = { High:'#0D9488', Medium:'#B7791F', Normal:'#CBD5E1', Low:'#B45252' };
     const barHeights = { High:96, Medium:60, Normal:30, Low:16 };
     const labelColor = levelColors[level];
-    return `<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:6px;height:100%;justify-content:flex-end" title="${c.reason}">
+    return `<div class="pcountry-bar" style="display:flex;flex-direction:column;align-items:center;gap:6px;height:100%;justify-content:flex-end" title="${c.reason}">
       <div style="font-size:10px;font-weight:800;color:${labelColor};text-transform:uppercase;letter-spacing:0.4px;white-space:nowrap">${level}</div>
       <div style="width:100%;height:${barHeights[level]}px;background:${barBg[level]};border-radius:6px 6px 3px 3px"></div>
       <div style="font-size:11px;font-weight:700;color:#0F1E2E;margin-top:4px">${c.currency}</div>
-      <div style="font-size:9.5px;font-weight:700;color:#94A3B8;white-space:nowrap">${c.name}</div>
+      <div style="font-size:9.5px;font-weight:700;color:#94A3B8;line-height:1.25;text-align:center">${c.name}</div>
     </div>`;
   }).join('');
 

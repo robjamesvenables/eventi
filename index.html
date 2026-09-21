@@ -3412,10 +3412,12 @@ img.emoji-tw{width:1.15em;height:1.15em;vertical-align:-0.2em;margin:0 1px}
           <div class="predictor-week-chart-wrap">
             <canvas id="predictor-week-chart"></canvas>
           </div>
-          <div style="display:flex;gap:16px;margin-top:8px;flex-wrap:wrap">
+          <div style="display:flex;gap:14px;margin-top:8px;flex-wrap:wrap">
             <span style="display:flex;align-items:center;gap:5px;font-size:11px;color:#64748B"><span style="width:10px;height:2px;background:#0D9488;display:inline-block"></span>Guests</span>
             <span style="display:flex;align-items:center;gap:5px;font-size:11px;color:#64748B"><span style="width:10px;height:0;border-top:2px dashed #378ADD;display:inline-block"></span>Revenue</span>
-            <span style="display:flex;align-items:center;gap:5px;font-size:11px;color:#64748B"><span style="width:9px;height:9px;border-radius:50%;background:#D85A30;display:inline-block"></span>Spike</span>
+            <span style="display:flex;align-items:center;gap:5px;font-size:11px;color:#64748B"><span style="width:9px;height:9px;border-radius:50%;background:#DC2626;display:inline-block"></span>Spike</span>
+            <span style="display:flex;align-items:center;gap:5px;font-size:11px;color:#64748B"><span style="width:9px;height:9px;border-radius:50%;background:#B7791F;display:inline-block"></span>Dip</span>
+            <span style="display:flex;align-items:center;gap:5px;font-size:11px;color:#64748B"><span style="width:9px;height:9px;border-radius:50%;background:#94A3B8;display:inline-block"></span>Low day</span>
           </div>
           <div id="predictor-week-chart-debug" style="display:none"></div>
         </div>
@@ -17420,6 +17422,13 @@ function analyticsRenderSurveySection(){
 // (researched, stable year to year rather than a live feed - no clean free API for this
 // exists anywhere, confirmed). Historical comparison reads from business_metrics, the same
 // table Reporting/Analytics already use, so the CSV upload feeds this directly.
+// Shared status colors - used identically by the week chart dots, the Week Strip tile
+// backgrounds, and the spike/dip badges, so the whole Forecast page reads as one consistent
+// color system instead of several different ones: red = genuine spike (unusual vs a typical
+// day of that same weekday), orange = genuine dip, teal = normal/high (profitable) day,
+// gray = low day.
+const PREDICTOR_STATUS_COLORS = { spike:'#DC2626', dip:'#B7791F', high:'#0D9488', low:'#94A3B8' };
+
 const PREDICTOR_COUNTRIES = [
   {name:'Australia', code:'AU', currency:'AUD'},
   {name:'Indonesia', code:'ID', currency:'IDR'},
@@ -17617,17 +17626,19 @@ function predictorMetricStatsForDow(metricKey, dow){
 // day of the current week - not an all-time average. An all-time average mixes high season
 // with low season into one meaningless number (e.g. averaging a Christmas Monday with a
 // quiet August Monday), whereas comparing against the same time of year is the only version
-// that's actually valid. The single day whose last-year value was unusual for that weekday
-// (reusing the same day-of-week comparison as the Spike Warning) is marked as a bigger,
-// orange point on both lines - identical logic to the spike badge on the Week Strip.
+// that's actually valid. Every point uses the same status coloring as the Week Strip tiles
+// below - red for a genuine spike, orange for a dip, teal for a normal/high day, gray for a
+// low day - so the two sections read as one consistent system, not two different ones. Every
+// point is the same larger size (not just the flagged ones), so any day is an easy target to
+// hover/tap for its exact numbers.
 let predictorWeekChartInstance = null;
 function predictorRenderWeekChart(){
   const canvas = document.getElementById('predictor-week-chart');
   if(!canvas || typeof Chart === 'undefined') return;
   const dayNames = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
-  const guestVals = [], revenueVals = [];
+  const guestVals = [], revenueVals = [], dotColors = [];
   const debugLines = [];
-  let spikeIdx = -1, biggestZ = 0;
+  const overallStats = predictorMetricStats('covers_served');
   const today = new Date();
   for(let i=0;i<7;i++){
     const d = new Date(today); d.setDate(d.getDate()-((today.getDay()+6)%7)+i); // Monday-start week, same dates as the Week Strip
@@ -17635,15 +17646,23 @@ function predictorRenderWeekChart(){
     const lyRevenue = predictorHistoricalMetric('revenue', d);
     guestVals.push(lyCovers != null ? Math.round(lyCovers) : null);
     revenueVals.push(lyRevenue != null ? Math.round(lyRevenue/1000000) : null); // in millions for the axis
-    debugLines.push(dayNames[i]+': '+(lyRevenue!=null?Math.round(lyRevenue/1000000):'—')+'M revenue, '+(lyCovers!=null?Math.round(lyCovers):'—')+' guests (same day last year)');
-    // Flag the day whose last-year value deviated most from its own typical range for that
-    // weekday - same logic as the Spike Warning card and the Week Strip's spike badge, kept
-    // in sync rather than reinvented here.
+    // Same status color every day gets elsewhere on the page: a genuine per-weekday anomaly
+    // (spike/dip) takes priority; otherwise fall back to the day's overall bracket, exactly
+    // as the Week Strip tile backgrounds do - one shared color system, not a one-off.
+    const bracket = predictorBracketColor(lyCovers, overallStats);
+    const bracketColors = { high:PREDICTOR_STATUS_COLORS.high, mid:PREDICTOR_STATUS_COLORS.dip, low:PREDICTOR_STATUS_COLORS.low, neutral:'#CBD5E1' };
+    let dotColor = bracketColors[bracket];
+    let direction = null;
     const dowStats = predictorMetricStatsForDow('covers_served', d.getDay());
     if(lyCovers != null && dowStats && dowStats.stdDev > 0){
       const z = Math.abs((lyCovers - dowStats.mean) / dowStats.stdDev);
-      if(z >= 1.5 && z > biggestZ){ biggestZ = z; spikeIdx = i; }
+      if(z >= 1.5){
+        direction = lyCovers > dowStats.mean ? 'spike' : 'dip';
+        dotColor = direction === 'spike' ? PREDICTOR_STATUS_COLORS.spike : PREDICTOR_STATUS_COLORS.dip;
+      }
     }
+    dotColors.push(dotColor);
+    debugLines.push(dayNames[i]+': '+(lyRevenue!=null?Math.round(lyRevenue/1000000):'—')+'M revenue, '+(lyCovers!=null?Math.round(lyCovers):'—')+' guests (same day last year)'+(direction?' — '+direction:''));
   }
   const debugEl = document.getElementById('predictor-week-chart-debug');
   if(debugEl) debugEl.innerHTML = debugLines.join('<br>');
@@ -17656,15 +17675,15 @@ function predictorRenderWeekChart(){
         {
           label: 'Guests', data: guestVals, yAxisID: 'y',
           borderColor: '#0D9488', backgroundColor: 'rgba(13,148,136,0.08)', fill: true, tension: 0.35,
-          pointRadius: guestVals.map((v,i) => i===spikeIdx ? 7 : 3),
-          pointBackgroundColor: guestVals.map((v,i) => i===spikeIdx ? '#D85A30' : '#0D9488'),
+          pointRadius: 7,
+          pointBackgroundColor: dotColors,
           pointBorderColor: '#fff', pointBorderWidth: 2, borderWidth: 2.5, spanGaps: true
         },
         {
           label: 'Revenue (M)', data: revenueVals, yAxisID: 'y1',
           borderColor: '#378ADD', borderDash: [5,4], fill: false, tension: 0.35,
-          pointRadius: revenueVals.map((v,i) => i===spikeIdx ? 7 : 3),
-          pointBackgroundColor: revenueVals.map((v,i) => i===spikeIdx ? '#D85A30' : '#378ADD'),
+          pointRadius: 7,
+          pointBackgroundColor: dotColors,
           pointBorderColor: '#fff', pointBorderWidth: 2, borderWidth: 2, spanGaps: true
         }
       ]
@@ -17680,7 +17699,7 @@ function predictorRenderWeekChart(){
         // stretched one.
         y: { display: false, position: 'left', beginAtZero: true },
         y1: { display: false, position: 'right', beginAtZero: true, grid: { drawOnChartArea: false } },
-        x: { grid: { display: false }, ticks: { color: '#94A3B8', font: { size: 10 } } }
+        x: { grid: { display: false }, ticks: { color: '#334155', font: { size: 13, weight: '700' } } }
       }
     }
   });
@@ -17905,8 +17924,9 @@ function predictorRenderBody(){
     const lyRevenue = predictorHistoricalMetric('revenue', d);
     const b = predictorBracketColor(lyCovers, stats);
     // Bold, saturated solid fills with white text - reads as a real signal at a glance,
-    // rather than a subtle pastel tint that's easy to miss.
-    const colors = { high:'#0D9488', mid:'#B7791F', low:'#94A3B8', neutral:'#CBD5E1' };
+    // rather than a subtle pastel tint that's easy to miss. Same shared palette the week
+    // chart dots use, so the tiles and the chart never disagree on what a color means.
+    const colors = { high:PREDICTOR_STATUS_COLORS.high, mid:PREDICTOR_STATUS_COLORS.dip, low:PREDICTOR_STATUS_COLORS.low, neutral:'#CBD5E1' };
     const bg = colors[b];
     const pulseClass = isToday ? 'predictor-today-pulse' : '';
     const todayBadge = isToday ? '<div style="position:absolute;top:-8px;left:50%;transform:translateX(-50%);background:#0F1E2E;color:white;font-size:9px;font-weight:800;padding:2px 9px;border-radius:20px;text-transform:uppercase;letter-spacing:0.4px;white-space:nowrap;box-shadow:0 2px 4px rgba(0,0,0,0.15)">Today</div>' : '';
@@ -17926,8 +17946,10 @@ function predictorRenderBody(){
         +(direction==='spike'
           ? 'Worth checking what drove the extra traffic — an event, promo or holiday — before assuming this '+dayNames[i]+' will do the same.'
           : 'Worth checking what caused the shortfall — bad weather, a cancellation, a closure — before assuming this '+dayNames[i]+' will be quiet too.');
-      const badgeColor = direction === 'spike' ? '#D85A30' : '#5B7DB1';
-      spikeBadge = '<div onclick="event.stopPropagation();predictorToggleStripSpike('+i+')" style="cursor:pointer;position:absolute;bottom:-12px;left:50%;transform:translateX(-50%);background:'+badgeColor+';color:white;font-size:11px;font-weight:800;padding:5px 12px;border-radius:20px;white-space:nowrap;box-shadow:0 2px 6px rgba(0,0,0,0.2)">⚠ Potential '+direction+' — why?</div>';
+      const badgeColor = direction === 'spike' ? PREDICTOR_STATUS_COLORS.spike : PREDICTOR_STATUS_COLORS.dip;
+      // A dip badge on an amber "mid" background would otherwise blend straight into it -
+      // the white border keeps it a distinct, clickable target either way.
+      spikeBadge = '<div onclick="event.stopPropagation();predictorToggleStripSpike('+i+')" style="cursor:pointer;position:absolute;bottom:-12px;left:50%;transform:translateX(-50%);background:'+badgeColor+';border:2px solid rgba(255,255,255,0.85);color:white;font-size:11px;font-weight:800;padding:4px 12px;border-radius:20px;white-space:nowrap;box-shadow:0 2px 6px rgba(0,0,0,0.2)">⚠ Potential '+direction+' — why?</div>';
     }
     stripHtml += `<div class="${pulseClass} pws-tile" style="position:relative;background:${bg};border-radius:14px;padding:14px 6px;text-align:center;box-sizing:border-box;box-shadow:0 2px 8px rgba(0,0,0,0.08);display:flex;flex-direction:column;justify-content:center;min-height:108px">
       ${todayBadge}

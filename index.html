@@ -3414,7 +3414,7 @@ img.emoji-tw{width:1.15em;height:1.15em;vertical-align:-0.2em;margin:0 1px}
             <div>
               <div id="predictor-snap-date" style="font-size:11.5px;font-weight:700;color:#94A3B8;text-transform:uppercase;letter-spacing:0.6px;margin-bottom:8px"></div>
               <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap">
-                <div id="predictor-snap-headline" style="font-size:30px;font-weight:800;color:#0F1E2E"></div>
+                <div id="predictor-snap-headline" style="display:flex;align-items:center;gap:10px;font-size:30px;font-weight:800;color:#0F1E2E"><span id="predictor-snap-headline-icon" style="display:flex"></span><span id="predictor-snap-headline-text"></span></div>
                 <div id="predictor-snap-tags" style="display:flex;gap:8px;flex-wrap:wrap"></div>
               </div>
             </div>
@@ -17797,6 +17797,7 @@ function predictorBracketColor(value, stats){
 
 function predictorFmtMoney(v){
   if(v == null) return '—';
+  if(v >= 1000000000) return (v/1000000000).toFixed(2)+'B';
   if(v >= 1000000) return (v/1000000).toFixed(0)+'M';
   if(v >= 1000) return (v/1000).toFixed(0)+'K';
   return String(Math.round(v));
@@ -17822,7 +17823,7 @@ window.predictorToggleStripSpike = function(i){
   if(isOpenForThisDay){
     el.style.display = 'none';
   } else {
-    el.innerHTML = '⚠️ ' + text;
+    el.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#B45252" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-3px;margin-right:6px"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>' + text;
     el.dataset.day = String(i);
     el.style.display = 'block';
   }
@@ -17884,8 +17885,10 @@ function predictorRenderBody(){
   // history alone), but the weekend is no longer a separate rule that could contradict what
   // the data itself says about this specific Saturday.
   const verdict = idHoliday ? 'busy' : bracket === 'high' ? 'busy' : bracket === 'low' ? 'quiet' : 'moderate';
-  document.getElementById('predictor-snap-headline').textContent =
-    verdict === 'busy' ? '🔥 Busy day ahead' : verdict === 'quiet' ? 'Quiet day ahead' : 'Moderate day ahead';
+  const flameSvg = '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#0D9488" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"/></svg>';
+  document.getElementById('predictor-snap-headline-icon').innerHTML = verdict === 'busy' ? flameSvg : '';
+  document.getElementById('predictor-snap-headline-text').textContent =
+    verdict === 'busy' ? 'Busy day ahead' : verdict === 'quiet' ? 'Quiet day ahead' : 'Moderate day ahead';
   const tagsEl = document.getElementById('predictor-snap-tags');
   let tagsHtml = '';
   if(weatherToday) tagsHtml += `<span style="background:#F0FDFA;border:1px solid #99F6E4;font-size:12.5px;font-weight:700;padding:5px 12px;border-radius:20px;color:#0D9488">☀ ${weatherToday.temp}°C · ${weatherToday.rain}% rain</span>`;
@@ -17944,12 +17947,14 @@ function predictorRenderBody(){
     // tappable info button (not hover, since that doesn't work on mobile) explaining the
     // real calculation in one sentence, for when a customer asks what actually makes
     // something a spike.
+    const warningSvg = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#B45252" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-3px;margin-right:6px"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>';
     const spikeInfoBtn = '<button onclick="predictorToggleSpikeInfo()" style="background:#E2E8F0;border:none;color:#64748B;width:18px;height:18px;border-radius:50%;font-size:11px;font-weight:800;cursor:pointer;line-height:18px;padding:0;vertical-align:middle;margin-left:6px">?</button>';
     const spikeInfoBox = '<div id="predictor-spike-info" style="display:none;margin-top:8px;padding-top:8px;border-top:1px solid rgba(0,0,0,0.08);font-size:11.5px;color:#64748B;line-height:1.5">Flags any unusual spikes or dips from past data (a day counts as unusual if it\'s more than 1.5x its normal ups-and-downs away from its own average).</div>';
     const spikeHtml = biggestSpike
-      ? '⚠️ <b>Spike Warning — watch '+biggestSpike.day+'</b>'+spikeInfoBtn+'<br>Last year saw an unusual '+biggestSpike.direction+' ('+Math.round(biggestSpike.covers)+' guests, well '+(biggestSpike.direction==='spike'?'above':'below')+' a typical '+biggestSpike.day+'). Worth checking if something specific caused it.'+spikeInfoBox
-      : '⚠️ <b>Spike Warning</b>'+spikeInfoBtn+'<br>No unusual spikes or dips predicted this week, based on last year.'+spikeInfoBox;
+      ? warningSvg+'<b>Spike Warning — watch '+biggestSpike.day+'</b>'+spikeInfoBtn+'<br>Last year saw an unusual '+biggestSpike.direction+' ('+Math.round(biggestSpike.covers)+' guests, well '+(biggestSpike.direction==='spike'?'above':'below')+' a typical '+biggestSpike.day+'). Worth checking if something specific caused it.'+spikeInfoBox
+      : warningSvg+'<b>Spike Warning</b>'+spikeInfoBtn+'<br>No unusual spikes or dips predicted this week, based on last year.'+spikeInfoBox;
 
+    const cornerArrowSvg = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#94A3B8" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:5px"><path d="M9 10L4 15l5 5"/><path d="M20 4v7a4 4 0 0 1-4 4H4"/></svg>';
     statsEl.innerHTML = `
       <div style="display:flex;align-items:stretch;gap:36px;flex-wrap:wrap">
         <div>
@@ -17966,7 +17971,7 @@ function predictorRenderBody(){
           <div style="font-size:38px;font-weight:800;color:#0F1E2E;line-height:1">${weekStr}</div>
         </div>
       </div>
-      <div style="font-size:12.5px;color:#94A3B8;margin-top:10px">↳ Same day last year: ${todayLYCovers != null ? Math.round(todayLYCovers)+' guests' : 'no data'}${todayLYRevenue != null ? ' · '+predictorFmtMoney(todayLYRevenue) : ''}</div>
+      <div style="font-size:12.5px;color:#94A3B8;margin-top:10px">${cornerArrowSvg}Same day last year: ${todayLYCovers != null ? Math.round(todayLYCovers)+' guests' : 'no data'}${todayLYRevenue != null ? ' · '+predictorFmtMoney(todayLYRevenue) : ''}</div>
       <div style="display:flex;align-items:center;gap:10px;background:rgba(180,82,82,0.08);border-radius:10px;padding:12px 16px;margin-top:14px;font-size:13px;color:#0F1E2E;line-height:1.5">${spikeHtml}</div>
     `;
   } else if(lastYearWeekSum > 0){
@@ -18079,7 +18084,7 @@ function predictorRenderBody(){
       <div style="font-size:10px;font-weight:800;color:${labelColor};text-transform:uppercase;letter-spacing:0.4px;white-space:nowrap">${level}</div>
       <div style="width:100%;height:${barHeights[level]}px;background:${barBg[level]};border-radius:6px 6px 3px 3px"></div>
       <div style="font-size:11px;font-weight:700;color:#0F1E2E;margin-top:4px">${c.currency}</div>
-      <div style="font-size:9.5px;color:#94A3B8;white-space:nowrap">${c.name}</div>
+      <div style="font-size:9.5px;font-weight:700;color:#94A3B8;white-space:nowrap">${c.name}</div>
     </div>`;
   }).join('');
 

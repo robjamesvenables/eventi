@@ -2410,8 +2410,8 @@ img.emoji-tw{width:1.15em;height:1.15em;vertical-align:-0.2em;margin:0 1px}
 .pws-tile{flex:0 0 108px}
 @media (min-width:701px){
   .predictor-week-strip-wrap{overflow-x:visible;padding:0;margin:0 0 32px}
-  #predictor-week-strip{min-width:0 !important}
-  .pws-tile{flex:1 1 0;min-width:0}
+  #predictor-week-strip{min-width:0 !important;display:grid !important;grid-template-columns:repeat(2,1fr) !important;gap:12px !important}
+  .pws-tile{flex:none;min-width:0;min-height:160px !important}
 }
 
 /* ── PDF EXPORT (html2pdf.js captures .beo directly - toggled via JS, not @media print) ── */
@@ -3476,14 +3476,6 @@ img.emoji-tw{width:1.15em;height:1.15em;vertical-align:-0.2em;margin:0 1px}
 
         <div style="font-size:13px;font-weight:800;color:#0F1E2E;margin-bottom:10px">Countries & Currency Strength, ranked this week</div>
         <div id="predictor-countries" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px;margin-bottom:24px"></div>
-
-        <div style="background:white;border:1.5px solid #E2E8F0;border-radius:14px;padding:16px 20px">
-          <div style="display:flex;align-items:center;gap:6px;margin-bottom:8px">
-            <span style="font-size:13px;font-weight:800;color:#0F1E2E">Estimated guest mix</span>
-            <span style="background:#FEF3C7;color:#92400E;font-size:10px;padding:2px 8px;border-radius:20px;font-weight:700">estimate, not measured</span>
-          </div>
-          <div id="predictor-mix-text" style="font-size:12.5px;color:#64748B;line-height:1.55"></div>
-        </div>
 
       </div>
     </div>
@@ -17427,7 +17419,7 @@ function analyticsRenderSurveySection(){
 // color system instead of several different ones: red = genuine spike (unusual vs a typical
 // day of that same weekday), orange = genuine dip, teal = normal/high (profitable) day,
 // gray = low day.
-const PREDICTOR_STATUS_COLORS = { spike:'#DC2626', dip:'#B7791F', high:'#0D9488', low:'#94A3B8' };
+const PREDICTOR_STATUS_COLORS = { spike:'#B45252', dip:'#B7791F', high:'#0D9488', low:'#94A3B8' };
 
 const PREDICTOR_COUNTRIES = [
   {name:'Australia', code:'AU', currency:'AUD'},
@@ -17999,19 +17991,6 @@ function predictorRenderBody(){
     </div>`;
   }).join('');
 
-  // ── Estimated guest mix - clearly labeled as an estimate, generic Western/Asian/local
-  // language, not specific menu items.
-  const topCountries = countryScores.slice(0,3).map(c => c.name);
-  const westernSet = ['Australia','United Kingdom','United States','France','Germany','Netherlands'];
-  const hasWestern = topCountries.some(c => westernSet.includes(c));
-  const hasAsian = topCountries.some(c => ['China','South Korea','India','Malaysia','Singapore'].includes(c));
-  const hasLocal = topCountries.includes('Indonesia');
-  const mixParts = [];
-  if(hasWestern) mixParts.push('Western');
-  if(hasAsian) mixParts.push('Asian');
-  if(hasLocal) mixParts.push('local');
-  document.getElementById('predictor-mix-text').textContent =
-    'Based on today\'s strongest countries ('+topCountries.join(', ')+'), expect a mostly '+(mixParts.join('/')||'mixed')+' crowd. Consider keeping '+(mixParts.join(' and ')||'a varied selection')+' menu items well stocked.';
 }
 
 

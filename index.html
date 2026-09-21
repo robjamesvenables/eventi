@@ -16149,36 +16149,50 @@ async function reportingRunCsvImport(newRows, from, to){
     if(error){ toast('Import failed partway through - check your connection and try again'); console.warn('CSV import failed', error); return; }
     businessMetrics = businessMetrics.concat(data || chunk);
   }
-  reportingCsvUploads.push({ id: batchId, from, to, count: newRows.length, importedAt: new Date().toISOString() });
-  reportingSaveCsvUploadsLocal();
   toast('Imported '+newRows.length+' days ✓');
   reportingRenderRecent();
   reportingRenderCsvUploads();
   analyticsRender();
 }
 
-// A record of past uploads (batch id, date range, count) is kept in localStorage purely so
-// the "past uploads" list can show something to delete - this is just a UI convenience
-// list, not the actual data (which lives in business_metrics, tagged by upload_batch).
-let reportingCsvUploads = [];
-(function reportingLoadCsvUploadsLocal(){
-  try{ reportingCsvUploads = JSON.parse(localStorage.getItem('mavis_csv_uploads_v1') || '[]'); }
-  catch(e){ reportingCsvUploads = []; }
-})();
-function reportingSaveCsvUploadsLocal(){
-  try{ localStorage.setItem('mavis_csv_uploads_v1', JSON.stringify(reportingCsvUploads)); }catch(e){}
+// Upload history is computed directly from business_metrics itself (grouped by
+// upload_batch) rather than tracked separately in localStorage. This means it's always
+// accurate, always in sync with the real data, and visible from any device/browser -
+// the old localStorage-only version disappeared if you cleared your browser or switched
+// devices, even though the underlying data was still there.
+function reportingComputeCsvUploads(){
+  const byBatch = {};
+  businessMetrics.forEach(m => {
+    if(!m.upload_batch) return;
+    if(!byBatch[m.upload_batch]) byBatch[m.upload_batch] = { id: m.upload_batch, dates: [], count: 0 };
+    if(m.metric_key === 'revenue'){
+      byBatch[m.upload_batch].dates.push(m.period_date);
+      byBatch[m.upload_batch].count++;
+    }
+  });
+  return Object.values(byBatch).map(b => {
+    b.dates.sort();
+    return { id: b.id, from: b.dates[0], to: b.dates[b.dates.length-1], count: b.count };
+  }).sort((a,b) => b.from.localeCompare(a.from));
 }
 
 function reportingRenderCsvUploads(){
   const wrap = document.getElementById('reporting-csv-uploads');
   if(!wrap) return;
-  if(!reportingCsvUploads.length){ wrap.innerHTML = ''; return; }
+  const uploads = reportingComputeCsvUploads();
+  if(!uploads.length){
+    wrap.innerHTML = `
+      <div style="font-size:11.5px;font-weight:800;color:#64748B;text-transform:uppercase;letter-spacing:0.6px;margin:28px 0 10px">CSV Uploads</div>
+      <div style="text-align:center;padding:20px;color:#94A3B8;font-size:12.5px;background:white;border:1.5px solid #E2E8F0;border-radius:10px">No CSV uploads on record</div>
+    `;
+    return;
+  }
   wrap.innerHTML = `
-    <div style="font-size:11.5px;font-weight:800;color:#64748B;text-transform:uppercase;letter-spacing:0.6px;margin:28px 0 10px">Past Uploads</div>
-    ${reportingCsvUploads.map(u => `
+    <div style="font-size:11.5px;font-weight:800;color:#64748B;text-transform:uppercase;letter-spacing:0.6px;margin:28px 0 10px">CSV Uploads</div>
+    ${uploads.map(u => `
       <div style="display:flex;align-items:center;justify-content:space-between;background:white;border:1.5px solid #E2E8F0;border-radius:10px;padding:12px 16px;margin-bottom:8px">
         <div>
-          <div style="font-size:13px;font-weight:700;color:#0F1E2E">${u.from} to ${u.to}</div>
+          <div style="font-size:13px;font-weight:700;color:#0F1E2E">${bmFriendlyDate(u.from)} to ${bmFriendlyDate(u.to)}</div>
           <div style="font-size:11.5px;color:#94A3B8">${u.count} day${u.count!==1?'s':''} imported</div>
         </div>
         <button onclick="reportingDeleteCsvUpload('${u.id}')" style="padding:7px 14px;background:none;color:#DC2626;border:none;font-family:'Inter',sans-serif;font-size:12px;font-weight:700;cursor:pointer">Delete this upload</button>
@@ -16188,21 +16202,21 @@ function reportingRenderCsvUploads(){
 }
 
 window.reportingDeleteCsvUpload = function(batchId){
-  const upload = reportingCsvUploads.find(u => u.id === batchId);
+  const uploads = reportingComputeCsvUploads();
+  const upload = uploads.find(u => u.id === batchId);
   if(!upload) return;
   appConfirmShow({
     title: 'Delete this upload',
-    msg: `This permanently removes all ${upload.count} day${upload.count!==1?'s':''} of revenue and covers data from ${upload.from} to ${upload.to} that came from this upload. This cannot be undone.`,
+    msg: `This permanently removes all ${upload.count} day${upload.count!==1?'s':''} of revenue and covers data from ${bmFriendlyDate(upload.from)} to ${bmFriendlyDate(upload.to)} that came from this upload. This cannot be undone.`,
     label: 'Delete',
     onOk: async () => {
       const { error } = await sb.from('business_metrics').delete().eq('upload_batch', batchId);
       if(error){ toast('Delete failed - try again'); console.warn(error); return; }
       businessMetrics = businessMetrics.filter(m => m.upload_batch !== batchId);
-      reportingCsvUploads = reportingCsvUploads.filter(u => u.id !== batchId);
-      reportingSaveCsvUploadsLocal();
       toast('Upload deleted ✓');
       reportingRenderRecent();
       reportingRenderCsvUploads();
+      analyticsRender();
     }
   });
 };

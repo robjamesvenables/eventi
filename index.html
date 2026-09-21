@@ -18070,15 +18070,19 @@ function predictorRenderBody(){
     if(hol) reasonParts.push('Public holiday today');
     if(school) reasonParts.push('School holiday period');
     if(cur.strength !== 'Unknown') reasonParts.push(c.currency+' '+cur.strength.toLowerCase()+' ('+(cur.pctChange>=0?'+':'')+cur.pctChange.toFixed(1)+'% vs 90 days ago)');
-    return { ...c, score, reason: reasonParts.length ? reasonParts.join(', ') : 'No signals right now' };
+    return { ...c, score, cur, reason: reasonParts.length ? reasonParts.join(', ') : 'No signals right now' };
   }).sort((a,b) => b.score - a.score);
 
   const countriesEl = document.getElementById('predictor-countries');
   countriesEl.innerHTML = countryScores.map(c => {
-    const level = c.score >= 65 ? 'High' : c.score >= 40 ? 'Medium' : 'Low';
-    const levelColors = { High:'#0D9488', Medium:'#B7791F', Low:'#94A3B8' };
-    const barBg = { High:'#0D9488', Medium:'#B7791F', Low:'#CBD5E1' };
-    const barHeights = { High:96, Medium:60, Low:30 };
+    // "Low" used to mean two very different things: a currency that's actually weakened,
+    // and a country with simply no signal at all (steady currency, no holiday). Splitting
+    // those into Low (genuinely weakened) and Normal (nothing notable happening) so the
+    // label doesn't make a quiet, ordinary day sound like a decline.
+    const level = c.score >= 65 ? 'High' : c.score >= 40 ? 'Medium' : c.cur.strength === 'Weak' ? 'Low' : 'Normal';
+    const levelColors = { High:'#0D9488', Medium:'#B7791F', Normal:'#94A3B8', Low:'#B45252' };
+    const barBg = { High:'#0D9488', Medium:'#B7791F', Normal:'#CBD5E1', Low:'#B45252' };
+    const barHeights = { High:96, Medium:60, Normal:30, Low:16 };
     const labelColor = levelColors[level];
     return `<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:6px;height:100%;justify-content:flex-end" title="${c.reason}">
       <div style="font-size:10px;font-weight:800;color:${labelColor};text-transform:uppercase;letter-spacing:0.4px;white-space:nowrap">${level}</div>

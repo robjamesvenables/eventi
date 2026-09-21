@@ -17600,6 +17600,11 @@ function predictorRender(){
   predictorRenderBody();
 }
 
+window.predictorToggleSpikeInfo = function(){
+  const el = document.getElementById('predictor-spike-info');
+  if(el) el.style.display = el.style.display === 'none' ? 'block' : 'none';
+};
+
 function predictorRenderBody(){
   const today = new Date();
 
@@ -17692,13 +17697,18 @@ function predictorRenderBody(){
       lastYearFullWeekSum > 0 ? predictorFmtMoney(lastYearFullWeekSum) : 'Not enough history yet';
 
     // Always shown, not just when a spike exists - a clear "all clear" state is as
-    // meaningful as a warning, so the section never just silently disappears.
+    // meaningful as a warning, so the section never just silently disappears. Includes a
+    // tappable info button (not hover, since that doesn't work on mobile) explaining the
+    // real calculation in one sentence, for when a customer asks what actually makes
+    // something a spike.
     const spikeEl = document.getElementById('predictor-est-spike');
     spikeEl.style.display = 'block';
+    const spikeInfoBtn = '<button onclick="predictorToggleSpikeInfo()" style="background:rgba(255,255,255,0.25);border:none;color:white;width:18px;height:18px;border-radius:50%;font-size:11px;font-weight:800;cursor:pointer;line-height:18px;padding:0;vertical-align:middle;margin-left:6px">?</button>';
+    const spikeInfoBox = '<div id="predictor-spike-info" style="display:none;margin-top:8px;padding-top:8px;border-top:1px solid rgba(255,255,255,0.2);font-size:11.5px;color:rgba(255,255,255,0.85);line-height:1.5">Flags any unusual spikes or dips from past data (a day counts as unusual if it\'s more than 1.5x its normal ups-and-downs away from its own average).</div>';
     if(biggestSpike){
-      spikeEl.innerHTML = '⚠️ <b>Spike Warning — watch '+biggestSpike.day+'</b><br>Last year saw an unusual '+biggestSpike.direction+' ('+Math.round(biggestSpike.covers)+' guests, well '+(biggestSpike.direction==='spike'?'above':'below')+' a typical '+biggestSpike.day+'). Worth checking if something specific caused it.';
+      spikeEl.innerHTML = '⚠️ <b>Spike Warning — watch '+biggestSpike.day+'</b>'+spikeInfoBtn+'<br>Last year saw an unusual '+biggestSpike.direction+' ('+Math.round(biggestSpike.covers)+' guests, well '+(biggestSpike.direction==='spike'?'above':'below')+' a typical '+biggestSpike.day+'). Worth checking if something specific caused it.'+spikeInfoBox;
     } else {
-      spikeEl.innerHTML = '⚠️ <b>Spike Warning</b><br>No unusual spikes or dips predicted this week, based on last year.';
+      spikeEl.innerHTML = '⚠️ <b>Spike Warning</b>'+spikeInfoBtn+'<br>No unusual spikes or dips predicted this week, based on last year.'+spikeInfoBox;
     }
   } else if(lastYearWeekSum > 0){
     yoyCardEl.style.display = 'block';

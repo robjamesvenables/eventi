@@ -2399,6 +2399,27 @@ img.emoji-tw{width:1.15em;height:1.15em;vertical-align:-0.2em;margin:0 1px}
   #sandbox-feed audio{max-width:100% !important;width:100%}
 }
 
+/* ── Forecast: Week at a glance card - roomier on desktop, unchanged on mobile ── */
+.predictor-week-chart-wrap{position:relative;height:160px}
+.predictor-week-stats{margin-top:10px;padding-top:10px;border-top:1px solid #E2E8F0;font-size:10.5px;color:#94A3B8;line-height:1.6}
+.predictor-week-stats-grid{display:none}
+@media (min-width:701px){
+  .predictor-week-chart-wrap{height:300px}
+  .predictor-week-stats{display:none}
+  .predictor-week-stats-grid{
+    display:grid;grid-template-columns:repeat(7,1fr);gap:10px;
+    margin-top:18px;padding-top:16px;border-top:1px solid #E2E8F0;
+  }
+  .predictor-week-stats-grid .pwd-cell{
+    background:#F8FAFC;border:1px solid #EEF2F6;border-radius:10px;padding:12px 10px;text-align:center;
+  }
+  .predictor-week-stats-grid .pwd-cell.pwd-spike{background:#FDF3ED;border-color:#F3D8C7}
+  .predictor-week-stats-grid .pwd-day{font-size:11.5px;font-weight:800;color:#0F1E2E;margin-bottom:6px}
+  .predictor-week-stats-grid .pwd-rev{font-size:14px;font-weight:800;color:#378ADD}
+  .predictor-week-stats-grid .pwd-guests{font-size:11.5px;color:#0D9488;font-weight:700;margin-top:2px}
+  .predictor-week-stats-grid .pwd-n{font-size:9.5px;color:#94A3B8;margin-top:4px}
+}
+
 /* ── PDF EXPORT (html2pdf.js captures .beo directly - toggled via JS, not @media print) ── */
 .pdf-export-mode .card-colour-btn,.pdf-export-mode .card-colour-popup,
 .pdf-export-mode .dept-toolbar,.pdf-export-mode .chev,
@@ -3394,7 +3415,7 @@ img.emoji-tw{width:1.15em;height:1.15em;vertical-align:-0.2em;margin:0 1px}
 
         <div style="background:white;border:1.5px solid #E2E8F0;border-radius:14px;padding:16px 18px 10px;margin-bottom:20px">
           <div style="font-size:12.5px;font-weight:800;color:#0F1E2E;margin-bottom:10px">Week at a glance — typical guests &amp; revenue, Mon to Sun</div>
-          <div style="position:relative;height:160px">
+          <div class="predictor-week-chart-wrap">
             <canvas id="predictor-week-chart"></canvas>
           </div>
           <div style="display:flex;gap:16px;margin-top:8px;flex-wrap:wrap">
@@ -3402,7 +3423,8 @@ img.emoji-tw{width:1.15em;height:1.15em;vertical-align:-0.2em;margin:0 1px}
             <span style="display:flex;align-items:center;gap:5px;font-size:11px;color:#64748B"><span style="width:10px;height:0;border-top:2px dashed #378ADD;display:inline-block"></span>Revenue</span>
             <span style="display:flex;align-items:center;gap:5px;font-size:11px;color:#64748B"><span style="width:9px;height:9px;border-radius:50%;background:#D85A30;display:inline-block"></span>Spike</span>
           </div>
-          <div id="predictor-week-chart-debug" style="margin-top:10px;padding-top:10px;border-top:1px solid #E2E8F0;font-size:10.5px;color:#94A3B8;line-height:1.6"></div>
+          <div id="predictor-week-chart-debug" class="predictor-week-stats"></div>
+          <div id="predictor-week-chart-debug-grid" class="predictor-week-stats-grid"></div>
         </div>
 
         <div style="font-size:11px;font-weight:800;color:#94A3B8;text-transform:uppercase;letter-spacing:0.6px;margin-bottom:6px">Based on holidays, weather, currency, and your own history</div>
@@ -17610,6 +17632,7 @@ function predictorRenderWeekChart(){
   const dowOrder = [1,2,3,4,5,6,0]; // Monday-start
   const guestAvgs = [], revenueAvgs = [];
   const debugLines = [];
+  const dayCells = [];
   let spikeIdx = -1, biggestZ = 0;
   dowOrder.forEach((dow, i) => {
     const gStats = predictorMetricStatsForDow('covers_served', dow);
@@ -17617,7 +17640,10 @@ function predictorRenderWeekChart(){
     guestAvgs.push(gStats ? Math.round(gStats.mean) : null);
     revenueAvgs.push(rStats ? Math.round(rStats.mean/1000000) : null); // in millions for the axis
     const rCount = businessMetrics.filter(m => m.metric_key==='revenue' && new Date(m.period_date+'T00:00:00').getDay()===dow).length;
-    debugLines.push(dayNames[i]+': '+(rStats?Math.round(rStats.mean/1000000):'—')+'M avg revenue, '+(gStats?Math.round(gStats.mean):'—')+' avg guests ('+rCount+' data points)');
+    const revStr = rStats ? Math.round(rStats.mean/1000000)+'M' : '—';
+    const guestStr = gStats ? Math.round(gStats.mean) : '—';
+    debugLines.push(dayNames[i]+': '+revStr+' avg revenue, '+guestStr+' avg guests ('+rCount+' data points)');
+    dayCells.push({ day: dayNames[i], revStr, guestStr, n: rCount });
     // Flag the day whose most recent occurrence deviated most from its own typical range -
     // same logic as the Spike Warning card, kept in sync rather than reinvented here.
     const today = new Date();
@@ -17630,6 +17656,17 @@ function predictorRenderWeekChart(){
   });
   const debugEl = document.getElementById('predictor-week-chart-debug');
   if(debugEl) debugEl.innerHTML = debugLines.join('<br>');
+  const debugGridEl = document.getElementById('predictor-week-chart-debug-grid');
+  if(debugGridEl){
+    debugGridEl.innerHTML = dayCells.map((c,i) =>
+      '<div class="pwd-cell'+(i===spikeIdx?' pwd-spike':'')+'">'
+        + '<div class="pwd-day">'+c.day+(i===spikeIdx?' 🔶':'')+'</div>'
+        + '<div class="pwd-rev">'+c.revStr+'</div>'
+        + '<div class="pwd-guests">'+c.guestStr+' guests</div>'
+        + '<div class="pwd-n">'+c.n+' pts</div>'
+      + '</div>'
+    ).join('');
+  }
   if(predictorWeekChartInstance) predictorWeekChartInstance.destroy();
   predictorWeekChartInstance = new Chart(canvas, {
     type: 'line',

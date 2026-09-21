@@ -18066,8 +18066,11 @@ function predictorRenderBody(){
           : 'Worth checking what caused the shortfall — bad weather, a cancellation, a closure — before assuming this '+dayNames[i]+' will be quiet too.');
       const badgeColor = direction === 'spike' ? PREDICTOR_STATUS_COLORS.spike : PREDICTOR_STATUS_COLORS.dip;
       // A dip badge on an amber "mid" background would otherwise blend straight into it -
-      // the white border keeps it a distinct, clickable target either way.
-      spikeBadge = '<div onclick="event.stopPropagation();predictorToggleStripSpike('+i+')" style="cursor:pointer;position:absolute;bottom:-12px;left:50%;transform:translateX(-50%);background:'+badgeColor+';border:2px solid rgba(255,255,255,0.85);color:white;font-size:11px;font-weight:800;padding:4px 12px;border-radius:20px;white-space:nowrap;box-shadow:0 2px 6px rgba(0,0,0,0.2)">⚠ Potential '+direction+' — why?</div>';
+      // the white border keeps it a distinct, clickable target either way. Sits inside the
+      // tile's own padding now (not hanging below it via negative positioning) - that
+      // overhang was getting clipped inside the horizontally-scrolling container on some
+      // mobile browsers, since overflow-x:auto forces overflow-y to clip too.
+      spikeBadge = '<div onclick="event.stopPropagation();predictorToggleStripSpike('+i+')" style="cursor:pointer;background:'+badgeColor+';border:2px solid rgba(255,255,255,0.85);color:white;font-size:10px;font-weight:800;padding:4px 10px;border-radius:20px;white-space:nowrap;box-shadow:0 2px 6px rgba(0,0,0,0.2);align-self:center;margin-top:4px">⚠ Potential '+direction+' — why?</div>';
     }
     stripHtml += `<div class="${pulseClass} pws-tile" style="position:relative;background:${bg};border-radius:14px;padding:14px 6px;text-align:center;box-sizing:border-box;box-shadow:0 2px 8px rgba(0,0,0,0.08);display:flex;flex-direction:column;gap:6px;justify-content:center;min-height:108px">
       ${todayBadge}

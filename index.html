@@ -3361,19 +3361,13 @@ img.emoji-tw{width:1.15em;height:1.15em;vertical-align:-0.2em;margin:0 1px}
         </div>
       </div>
 
-      <div style="font-size:11.5px;font-weight:800;color:#C4973B;text-transform:uppercase;letter-spacing:0.6px;margin:8px 0 12px">Costs & Staffing</div>
+      <div style="font-size:11.5px;font-weight:800;color:#C4973B;text-transform:uppercase;letter-spacing:0.6px;margin:8px 0 12px">Costs</div>
 
       <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px;margin-bottom:36px">
         <div style="background:white;border:1px solid var(--line);border-radius:14px;padding:16px 18px">
           <div style="font-size:12px;font-weight:700;color:#64748B;margin-bottom:10px">Department spend this month</div>
           <div id="an-dept-empty" style="font-size:12px;color:#94A3B8;padding:12px 0">Not yet entered</div>
           <div style="position:relative;height:0" id="an-dept-chart-wrap"><canvas id="an-dept-chart"></canvas></div>
-        </div>
-        <div style="background:white;border:1px solid var(--line);border-radius:14px;padding:16px 18px">
-          <div style="font-size:12px;font-weight:700;color:#64748B;margin-bottom:8px">Staffing</div>
-          <div id="an-staff-val" style="font-size:18px;font-weight:800;color:#0F1E2E;margin-bottom:8px">—</div>
-          <div style="height:8px;border-radius:4px;background:#F1F5F9;overflow:hidden"><div id="an-staff-bar" style="height:100%;width:0%;background:#1baf7a;border-radius:4px;transition:width 0.4s"></div></div>
-          <div id="an-staff-sub" style="font-size:11px;color:#94A3B8;margin-top:6px"></div>
         </div>
       </div>
     </div>
@@ -3479,11 +3473,6 @@ img.emoji-tw{width:1.15em;height:1.15em;vertical-align:-0.2em;margin:0 1px}
           <div class="rep-card-icon" style="background:rgba(196,151,59,0.12);color:#C4973B"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 21H4.6c-.6 0-1.1-.5-1.1-1.1V3"/><rect x="7" y="13" width="3" height="5"/><rect x="12" y="9" width="3" height="9"/><rect x="17" y="5" width="3" height="13"/></svg></div>
           <div class="rep-card-title">Department Spend</div>
           <div class="rep-card-sub">Log a month's spend</div>
-        </button>
-        <button onclick="repcalOpenForMetric('staffing')" class="rep-card">
-          <div class="rep-card-icon" style="background:rgba(15,30,46,0.06);color:#0F1E2E"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div>
-          <div class="rep-card-title">Staffing</div>
-          <div class="rep-card-sub">Opens the calendar view</div>
         </button>
         <button onclick="reportingOpenCsvUpload()" class="rep-card">
           <div class="rep-card-icon" style="background:rgba(13,148,136,0.1);color:#0D9488"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg></div>
@@ -15937,27 +15926,6 @@ function reportingOpenDeptSpend(){
     }
   });
 }
-function reportingOpenStaff(){
-  const yest = bmDateStr(bmDaysAgo(1));
-  const existingTarget = businessMetrics.find(x => x.metric_key==='staff_target' && x.period_date===yest);
-  const existingActual = businessMetrics.find(x => x.metric_key==='staff_actual' && x.period_date===yest);
-  appModalShow({
-    title: 'Staffing — ' + bmFriendlyDate(yest),
-    sub: (existingTarget || existingActual) ? 'Already has figures logged - shown below. Save again to correct them.' : 'Log yesterday\'s target vs actual headcount. To correct an earlier day, tap it in Recently Added below instead.',
-    fields:[
-      {label:'Target headcount', placeholder:'e.g. 100', value: existingTarget ? String(existingTarget.value) : ''},
-      {label:'Actual headcount', placeholder:'e.g. 98', value: existingActual ? String(existingActual.value) : ''}
-    ],
-    async onOk([target, actual]){
-      const t = parseFloat(target), a = parseFloat(actual);
-      if(isNaN(t) || isNaN(a)) return;
-      await bmInsert([
-        { metric_key:'staff_target', period_date: yest, value: t },
-        { metric_key:'staff_actual', period_date: yest, value: a }
-      ]);
-    }
-  });
-}
 
 async function bmInsert(rows){
   for(const r of rows){
@@ -16135,14 +16103,12 @@ window.reportingDeleteCsvUpload = function(batchId){
   });
 };
 
-const BM_LABELS = { revenue:'Revenue', covers_served:'Guests', dept_spend:'Department Spend', staff_target:'Staff Target', staff_actual:'Staff Actual' };
+const BM_LABELS = { revenue:'Revenue', covers_served:'Guests', dept_spend:'Department Spend' };
 let reportingJumpDate = null;
 
 function reportingDayRowHtml(date, rows){
   const rev = rows.find(r => r.metric_key === 'revenue');
   const covers = rows.find(r => r.metric_key === 'covers_served');
-  const staffT = rows.find(r => r.metric_key === 'staff_target');
-  const staffA = rows.find(r => r.metric_key === 'staff_actual');
   const deptRows = rows.filter(r => r.metric_key === 'dept_spend');
 
   const cell = (entry, display) => entry
@@ -16150,7 +16116,6 @@ function reportingDayRowHtml(date, rows){
     : `<td style="padding:11px 14px;text-align:right;font-size:13px;color:#CBD5E1">—</td>`;
 
   const otherBits = [];
-  if(staffT || staffA) otherBits.push(`<span onclick="bmEditEntry(${(staffA||staffT).id})" style="cursor:pointer;text-decoration:underline;text-decoration-style:dotted">Staffing</span>`);
   deptRows.forEach(d => otherBits.push(`<span onclick="bmEditEntry(${d.id})" style="cursor:pointer;text-decoration:underline;text-decoration-style:dotted">Spend · ${d.department}</span>`));
 
   return `<tr style="border-bottom:1px solid #F1F5F9">
@@ -16215,19 +16180,12 @@ function reportingRenderRecent(){
 // ── CALENDAR VIEW ──
 const REPCAL_METRICS = [
   {key:'revenue', label:'Revenue', isMoney:true},
-  {key:'covers_served', label:'Guests'},
-  {key:'staffing', label:'Staffing'}
+  {key:'covers_served', label:'Guests'}
 ];
 let repcalMetric = 'revenue';
 let repcalDate = new Date();
 
 function repcalValueForDay(metric, dateStr){
-  if(metric === 'staffing'){
-    const t = businessMetrics.find(m => m.metric_key==='staff_target' && m.period_date===dateStr);
-    const a = businessMetrics.find(m => m.metric_key==='staff_actual' && m.period_date===dateStr);
-    if(!t && !a) return null;
-    return (a?a.value:'—') + ' / ' + (t?t.value:'—');
-  }
   const row = businessMetrics.find(m => m.metric_key===metric && m.period_date===dateStr);
   return row ? row.value : null;
 }
@@ -16316,25 +16274,6 @@ function repcalOpenDay(dateStr){
         const num = parseFloat(value);
         if(isNaN(num)) return;
         await bmInsert([{ metric_key:'covers_served', period_date: dateStr, value: num }]);
-        repcalRenderGrid();
-      }
-    });
-  } else if(repcalMetric === 'staffing'){
-    const t = businessMetrics.find(m => m.metric_key==='staff_target' && m.period_date===dateStr);
-    const a = businessMetrics.find(m => m.metric_key==='staff_actual' && m.period_date===dateStr);
-    appModalShow({
-      title: 'Staffing — ' + friendly,
-      fields:[
-        {label:'Target headcount', placeholder:'e.g. 100', value: t?String(t.value):''},
-        {label:'Actual headcount', placeholder:'e.g. 98', value: a?String(a.value):''}
-      ],
-      async onOk([target, actual]){
-        const tv = parseFloat(target), av = parseFloat(actual);
-        if(isNaN(tv) || isNaN(av)) return;
-        await bmInsert([
-          { metric_key:'staff_target', period_date: dateStr, value: tv },
-          { metric_key:'staff_actual', period_date: dateStr, value: av }
-        ]);
         repcalRenderGrid();
       }
     });
@@ -17103,12 +17042,6 @@ function analyticsRender(){
     return { d, curr, prev };
   }).filter(r => r.curr || r.prev);
 
-  // Staffing (latest entry)
-  const staffTargetRows = businessMetrics.filter(m=>m.metric_key==='staff_target').sort((a,b)=>a.period_date.localeCompare(b.period_date));
-  const staffActualRows = businessMetrics.filter(m=>m.metric_key==='staff_actual').sort((a,b)=>a.period_date.localeCompare(b.period_date));
-  const staffTarget = staffTargetRows.length ? Number(staffTargetRows[staffTargetRows.length-1].value) : null;
-  const staffActual = staffActualRows.length ? Number(staffActualRows[staffActualRows.length-1].value) : null;
-
   // Top strip: Yesterday / Month to Date / Year to Date - plain figures, no comparisons yet
   const revYesterdayEl = document.getElementById('an-rev-yesterday-val');
   if(revYesterdayEl) revYesterdayEl.textContent = revYesterday ? bmMoney(revYesterday) : '—';
@@ -17150,24 +17083,6 @@ function analyticsRender(){
   if(avgSpendValEl) avgSpendValEl.textContent = avgSpend ? bmMoney(avgSpend) : '—';
   const coversWeekValEl = document.getElementById('an-covers-week-val');
   if(coversWeekValEl) setDeltaBox(coversWeekValEl, document.getElementById('an-covers-week-delta'), coversWeek, coversPrevWeek, 'vs last week', v => Math.round(v).toLocaleString('en-US'));
-
-  // Staffing bar
-  const staffValEl = document.getElementById('an-staff-val');
-  if(staffValEl){
-    if(staffTarget !== null && staffActual !== null){
-      staffValEl.textContent = staffActual + ' / ' + staffTarget;
-      const pct = Math.min(100, (staffActual/staffTarget)*100);
-      const short = staffTarget - staffActual;
-      const bar = document.getElementById('an-staff-bar');
-      bar.style.width = pct + '%';
-      bar.style.background = short > 0 ? '#DC2626' : '#1baf7a';
-      document.getElementById('an-staff-sub').textContent = short > 0 ? `looking for ${short} more` : 'fully staffed';
-    } else {
-      staffValEl.textContent = '—';
-      document.getElementById('an-staff-bar').style.width = '0%';
-      document.getElementById('an-staff-sub').textContent = 'not yet entered';
-    }
-  }
 
   // Revenue by month - this year vs last year (the hero chart)
   function bmMonthlyRevenue(year){

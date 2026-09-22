@@ -264,10 +264,12 @@ body{margin:0;padding:0;font-family:'Inter',sans-serif;background:var(--bg);colo
 .tb-root-tile-title{font-size:16px;font-weight:800;color:#0F1E2E}
 .tb-root-tile-sub{font-size:12.5px;color:#94A3B8}
 .tb-proj-tile{position:relative;background:white;border:1px solid #E2E8F0;border-radius:14px;padding:18px;text-align:left;cursor:pointer;font-family:'Inter',sans-serif}
-.tb-proj-tile-name{font-size:14px;font-weight:800;color:#0F1E2E;margin-bottom:4px;padding-right:20px}
+.tb-proj-tile-name{font-size:14px;font-weight:800;color:#0F1E2E;margin-bottom:4px;padding-right:44px}
 .tb-proj-tile-count{font-size:12px;color:#94A3B8}
-.tb-proj-tile-del{position:absolute;top:12px;right:12px;font-size:14px;color:#CBD5E1;cursor:pointer}
-.tb-proj-tile-del:hover{color:#EF4444}
+.tb-proj-tile-del{font-size:14px;color:#CBD5E1;cursor:pointer;width:20px;height:20px;display:flex;align-items:center;justify-content:center;border-radius:6px}
+.tb-proj-tile-del:hover{color:#EF4444;background:#FEF2F2}
+.tb-proj-tile-edit{color:#CBD5E1;cursor:pointer;width:20px;height:20px;display:flex;align-items:center;justify-content:center;border-radius:6px}
+.tb-proj-tile-edit:hover{color:#0D9488;background:rgba(13,148,136,0.08)}
 .sticky-tabs{display:flex;gap:8px;margin-bottom:18px}
 .sticky-tab{padding:8px 16px;border-radius:20px;border:1.5px solid #E2E8F0;background:white;font-family:'Inter',sans-serif;font-size:12.5px;font-weight:700;color:#64748B;cursor:pointer}
 .sticky-tab.active{background:#0F1E2E;border-color:#0F1E2E;color:white}
@@ -7716,7 +7718,10 @@ function tbProjectTile(p, isTeam){
   const board = kbBoards[p.id] || {todo:[],progress:[],done:[]};
   const count = (board.todo||[]).length + (board.progress||[]).length + (board.done||[]).length;
   return `<div class="tb-proj-tile" onclick="taskboardOpenProject('${p.id}',${isTeam})">
-    <div class="tb-proj-tile-del" onclick="event.stopPropagation();taskboardDeleteProject('${p.id}',${isTeam})">×</div>
+    <div style="position:absolute;top:10px;right:10px;display:flex;gap:4px">
+      <div class="tb-proj-tile-edit" onclick="event.stopPropagation();taskboardRenameProject('${p.id}',${isTeam})" title="Rename"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg></div>
+      <div class="tb-proj-tile-del" onclick="event.stopPropagation();taskboardDeleteProject('${p.id}',${isTeam})">×</div>
+    </div>
     <div class="tb-proj-tile-name">${p.name}</div>
     <div class="tb-proj-tile-count">${count} task${count===1?'':'s'}</div>
   </div>`;
@@ -7814,6 +7819,42 @@ function taskboardDeleteProject(projectId, isTeam){
   });
 }
 
+function taskboardRenameProject(projectId, isTeam){
+  const list = isTeam ? kbTeamProjects : kbPersonalProjects;
+  const proj = list.find(p => p.id === projectId);
+  if(!proj) return;
+  appModalShow({
+    title: 'Rename Project',
+    fields: [{label:'Project name', placeholder:'e.g. Kitchen Renovation', value: proj.name}],
+    async onOk([name]){
+      if(!name || !name.trim()) return;
+      proj.name = name.trim();
+      if(isTeam){
+        taskboardRenderTeamTiles();
+        if(kbActiveProjectId === projectId){
+          const titleEl = document.getElementById('kb-project-title');
+          if(titleEl) titleEl.textContent = proj.name;
+        }
+        if(proj.dbId){
+          const { error } = await sb.from('task_projects').update({ name: proj.name }).eq('id', proj.dbId);
+          if(error){ toast('Rename failed - try again'); console.warn(error); return; }
+        }
+      } else {
+        taskboardRenderPersonalTiles();
+        if(kbActiveProjectId === projectId){
+          const titleEl = document.getElementById('kb-project-title');
+          if(titleEl) titleEl.textContent = proj.name;
+        }
+        if(proj.dbId){
+          const { error } = await sb.from('personal_task_projects').update({ name: proj.name }).eq('id', proj.dbId);
+          if(error){ toast('Rename failed - try again'); console.warn(error); return; }
+        }
+      }
+      toast('Project renamed ✓');
+    }
+  });
+}
+
 async function taskboardLoadPersonalFromSupabase(){
   try{
     const { data: projects, error: perr } = await sb.from('personal_task_projects').select('*').order('created_at', { ascending: true });
@@ -7898,13 +7939,27 @@ function taskboardSubscribeTeamRealtime(){
     })
     .subscribe();
   sb.channel('task_projects_live')
-    .on('postgres_changes', { event:'INSERT', schema:'public', table:'task_projects' }, payload => {
-      const id = 'team-'+payload.new.id;
-      if(!kbTeamProjects.find(p=>p.id===id)){
-        kbTeamProjects.push({id, name: payload.new.name, dbId: payload.new.id});
-        kbBoards[id] = {todo:[],progress:[],done:[]};
-        taskboardRenderTeamTiles();
+    .on('postgres_changes', { event:'*', schema:'public', table:'task_projects' }, payload => {
+      const id = 'team-'+(payload.eventType === 'DELETE' ? payload.old.id : payload.new.id);
+      if(payload.eventType === 'INSERT'){
+        if(!kbTeamProjects.find(p=>p.id===id)){
+          kbTeamProjects.push({id, name: payload.new.name, dbId: payload.new.id});
+          kbBoards[id] = {todo:[],progress:[],done:[]};
+        }
+      } else if(payload.eventType === 'UPDATE'){
+        const proj = kbTeamProjects.find(p=>p.id===id);
+        if(proj){
+          proj.name = payload.new.name;
+          if(kbActiveProjectId === id){
+            const titleEl = document.getElementById('kb-project-title');
+            if(titleEl) titleEl.textContent = proj.name;
+          }
+        }
+      } else if(payload.eventType === 'DELETE'){
+        kbTeamProjects = kbTeamProjects.filter(p=>p.id!==id);
+        delete kbBoards[id];
       }
+      if(document.getElementById('p-taskboard-team').style.display !== 'none') taskboardRenderTeamTiles();
     })
     .subscribe();
 }

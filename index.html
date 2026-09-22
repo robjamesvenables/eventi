@@ -11801,12 +11801,14 @@ window.kitchenDishAdd = function(sectionId){
       {label:'Description', type:'textarea', rows:4, placeholder:'e.g. Lemon butter sauce, seasonal greens'},
       {label:'Price (Rp)', placeholder:'e.g. 220,000'},
       {label:'Allergens (optional)', placeholder:'e.g. Fish, Dairy', optional:true},
-      {label:'Food cost %', placeholder:'e.g. 32', optional:true}
+      {label:'Food cost %', placeholder:'e.g. 32', optional:true},
+      {label:'Ingredients (optional)', type:'textarea', rows:5, optional:true, placeholder:'e.g. 200g barramundi fillet, 30g butter, 1 lemon'},
+      {label:'Method (optional)', type:'textarea', rows:6, optional:true, placeholder:'e.g. Season fish, grill 4 mins each side.'}
     ],
-    onOk([photo, name, desc, price, allergens, foodCostPct]){
+    onOk([photo, name, desc, price, allergens, foodCostPct, ingredients, method]){
       if(!name) return;
       const maxId = Math.max(0, ...sec.dishes.map(d=>d.id));
-      sec.dishes.push({id:maxId+1, name, desc, price, allergens: allergens ? allergens.split(',').map(a=>a.trim()) : [], photo: photo||'', foodCostPct: foodCostPct ? parseFloat(foodCostPct) : null});
+      sec.dishes.push({id:maxId+1, name, desc, price, allergens: allergens ? allergens.split(',').map(a=>a.trim()) : [], photo: photo||'', foodCostPct: foodCostPct ? parseFloat(foodCostPct) : null, ingredients: ingredients||'', method: method||''});
       kitchenMenuDetailRender();
       toast('Dish added ✓');
       kitchenSaveMenuContent(m.id);
@@ -11827,12 +11829,16 @@ window.kitchenDishEdit = function(sectionId, dishId){
       {label:'Description', type:'textarea', rows:4, value:d.desc||''},
       {label:'Price (Rp)', value:d.price},
       {label:'Allergens (optional)', value:(d.allergens||[]).join(', '), optional:true},
-      {label:'Food cost %', value: d.foodCostPct!=null?String(d.foodCostPct):'', placeholder:'e.g. 32', optional:true}
+      {label:'Food cost %', value: d.foodCostPct!=null?String(d.foodCostPct):'', placeholder:'e.g. 32', optional:true},
+      {label:'Ingredients (optional)', type:'textarea', rows:5, optional:true, value: d.ingredients||''},
+      {label:'Method (optional)', type:'textarea', rows:6, optional:true, value: d.method||''}
     ],
-    onOk([photo, name, desc, price, allergens, foodCostPct]){
+    onOk([photo, name, desc, price, allergens, foodCostPct, ingredients, method]){
       d.name=name; d.desc=desc; d.price=price;
       d.allergens = allergens ? allergens.split(',').map(a=>a.trim()) : [];
       d.foodCostPct = foodCostPct ? parseFloat(foodCostPct) : null;
+      d.ingredients = ingredients || '';
+      d.method = method || '';
       if(photo) d.photo = photo;
       kitchenMenuDetailRender();
       toast('Dish updated ✓');
@@ -12185,7 +12191,9 @@ window.kitchenMoveToMenuConfirm = function(){
       price: '',
       allergens: r.allergens ? r.allergens.split(',').map(a=>a.trim()) : [],
       photo: r.photo || '',
-      foodCostPct: r.foodCostPct
+      foodCostPct: r.foodCostPct,
+      ingredients: r.ingredients || '',
+      method: r.method || ''
     });
     count++;
     kitchenSaveMenuContent(m.id);

@@ -11757,12 +11757,45 @@ function kitchenDishCardHtml(sectionId, d, idx, total){
       ${allergensLabel ? `<div style="font-size:10.5px;color:#D97706;margin-top:3px">Allergens: ${allergensLabel}</div>` : ''}
       ${foodCostLabel}
       <div style="display:flex;gap:8px;margin-top:8px">
+        <button onclick="kitchenDishView(${sectionId},${d.id})" style="display:flex;align-items:center;gap:5px;padding:7px 13px;background:#F1F5F9;border:1.5px solid #E2E8F0;border-radius:7px;font-family:'Inter',sans-serif;font-size:12px;font-weight:700;color:#334155;cursor:pointer">👁 View</button>
         <button onclick="kitchenDishEdit(${sectionId},${d.id})" style="display:flex;align-items:center;gap:5px;padding:7px 13px;background:#F1F5F9;border:1.5px solid #E2E8F0;border-radius:7px;font-family:'Inter',sans-serif;font-size:12px;font-weight:700;color:#334155;cursor:pointer">✎ Edit</button>
         <button onclick="kitchenDishDelete(${sectionId},${d.id})" style="display:flex;align-items:center;gap:5px;padding:7px 13px;background:#FEF2F2;border:1.5px solid #FECACA;border-radius:7px;font-family:'Inter',sans-serif;font-size:12px;font-weight:700;color:#DC2626;cursor:pointer">🗑 Delete</button>
       </div>
     </div>
   </div>`;
 }
+
+window.kitchenDishView = function(sectionId, dishId){
+  const m = kitchenMenusData.find(x=>x.id===kitchenMenuDetailId);
+  const sec = m.content.sections.find(s=>s.id===sectionId);
+  const d = sec.dishes.find(x=>x.id===dishId);
+  if(!d) return;
+  const overlay = document.createElement('div');
+  overlay.id = 'kitchenDishViewOverlay';
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(15,30,46,0.55);z-index:9998;display:flex;align-items:center;justify-content:center;padding:20px';
+  overlay.onclick = (e) => { if(e.target === overlay) overlay.remove(); };
+  overlay.innerHTML = `
+    <div style="background:white;border-radius:16px;max-width:520px;width:100%;max-height:88vh;overflow-y:auto;padding:28px">
+      ${d.photo ? `<img src="${d.photo}" style="width:100%;height:200px;object-fit:cover;border-radius:10px;margin-bottom:18px">` : ''}
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;margin-bottom:6px">
+        <div style="font-size:20px;font-weight:800;color:#0F1E2E">${d.name}</div>
+        ${d.price ? `<div style="font-size:16px;font-weight:800;color:#0D9488;white-space:nowrap">Rp ${d.price}</div>` : ''}
+      </div>
+      ${d.desc ? `<div style="font-size:13px;color:#64748B;margin-bottom:14px">${d.desc}</div>` : ''}
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px">
+        ${(d.allergens||[]).length ? `<span style="font-size:11px;font-weight:700;padding:4px 10px;border-radius:10px;background:#FEF3C7;color:#D97706">Allergens: ${d.allergens.join(', ')}</span>` : ''}
+        ${d.foodCostPct!=null ? `<span style="font-size:11px;font-weight:700;padding:4px 10px;border-radius:10px;background:#F1F5F9;color:#475569">Food cost: ${d.foodCostPct}%</span>` : ''}
+      </div>
+      ${d.ingredients ? `<div style="font-size:13px;font-weight:800;color:#0F1E2E;margin-bottom:6px">Ingredients</div><div style="font-size:13px;color:#334155;line-height:1.7;margin-bottom:16px">${d.ingredients}</div>` : ''}
+      ${d.method ? `<div style="font-size:13px;font-weight:800;color:#0F1E2E;margin-bottom:6px">Method</div><div style="font-size:13px;color:#334155;line-height:1.7;margin-bottom:16px">${d.method}</div>` : ''}
+      ${(!d.ingredients && !d.method) ? `<div style="font-size:12.5px;color:#94A3B8;margin-bottom:16px">No ingredients or method added yet for this dish.</div>` : ''}
+      <div style="display:flex;gap:8px;margin-top:8px">
+        <button onclick="document.getElementById('kitchenDishViewOverlay').remove();kitchenDishEdit(${sectionId},${d.id})" style="flex:1;padding:11px;background:#0F1E2E;border:none;border-radius:9px;font-family:'Inter',sans-serif;font-size:13.5px;font-weight:700;color:white;cursor:pointer">✎ Edit</button>
+        <button onclick="document.getElementById('kitchenDishViewOverlay').remove()" style="padding:11px 18px;background:#F1F5F9;border:none;border-radius:9px;font-family:'Inter',sans-serif;font-size:13.5px;font-weight:700;color:#334155;cursor:pointer">Close</button>
+      </div>
+    </div>`;
+  document.body.appendChild(overlay);
+};
 
 window.kitchenSectionAdd = function(){
   const m = kitchenMenusData.find(x=>x.id===kitchenMenuDetailId);

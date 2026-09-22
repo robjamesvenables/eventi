@@ -3513,12 +3513,11 @@ img.emoji-tw{width:1.15em;height:1.15em;vertical-align:-0.2em;margin:0 1px}
         Back to Reporting
       </button>
       <div class="ph">
-        <div class="ph-title">Calendar View</div>
+        <div class="ph-title" id="repcal-title">Calendar View</div>
       </div>
       <p style="font-size:13px;color:#64748B;margin:-6px 0 20px">Tap any day to add or edit that figure.</p>
 
-      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:14px;margin-bottom:18px">
-        <div id="repcal-metric-pills" style="display:flex;gap:8px;flex-wrap:wrap"></div>
+      <div style="display:flex;align-items:center;justify-content:flex-end;flex-wrap:wrap;gap:14px;margin-bottom:18px">
         <div style="display:flex;align-items:center;gap:12px">
           <button onclick="repcalChangeMonth(-1)" style="width:34px;height:34px;border-radius:50%;border:1.5px solid #E2E8F0;background:white;cursor:pointer;display:flex;align-items:center;justify-content:center"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#0F1E2E" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg></button>
           <div id="repcal-month-label" style="font-size:14px;font-weight:800;color:#0F1E2E;min-width:140px;text-align:center"></div>
@@ -16209,18 +16208,11 @@ function repcalFormatValue(metric, val){
   return String(val);
 }
 
-function repcalRenderPills(){
-  const wrap = document.getElementById('repcal-metric-pills');
-  if(!wrap) return;
-  wrap.innerHTML = REPCAL_METRICS.map(m =>
-    `<button class="repcal-pill${m.key===repcalMetric?' active':''}" onclick="repcalSetMetric('${m.key}')">${m.label}</button>`
-  ).join('');
-}
-
-function repcalSetMetric(key){
-  repcalMetric = key;
-  repcalRenderPills();
-  repcalRenderGrid();
+function repcalSetTitle(){
+  const el = document.getElementById('repcal-title');
+  if(!el) return;
+  const metricDef = REPCAL_METRICS.find(m => m.key === repcalMetric);
+  el.textContent = (metricDef ? metricDef.label : 'Calendar') + ' — Calendar View';
 }
 
 function repcalChangeMonth(delta){
@@ -16235,7 +16227,7 @@ function repcalOpenForMetric(key){
 }
 
 function repcalRender(){
-  repcalRenderPills();
+  repcalSetTitle();
   repcalRenderGrid();
 }
 

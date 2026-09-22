@@ -10854,7 +10854,7 @@ function barDishCardHtml(sectionId, d){
         <div style="font-size:13.5px;font-weight:700;color:#0F1E2E">${d.name}</div>
         <div style="font-size:13px;font-weight:700;color:#0D9488;white-space:nowrap">Rp ${d.price}</div>
       </div>
-      <div style="font-size:12px;color:#64748B;margin-top:2px">${d.desc||''}</div>
+      <div style="font-size:12px;color:#64748B;margin-top:2px">${d.cat||''}${d.cat&&d.serves?' · ':''}${d.serves?'Serves '+d.serves:''}</div>
       ${allergensLabel ? `<div style="font-size:10.5px;color:#D97706;margin-top:3px">Allergens: ${allergensLabel}</div>` : ''}
       <div style="display:flex;gap:8px;margin-top:8px">
         <button onclick="barDishEdit(${sectionId},${d.id})" style="display:flex;align-items:center;gap:5px;padding:7px 13px;background:#F1F5F9;border:1.5px solid #E2E8F0;border-radius:7px;font-family:'Inter',sans-serif;font-size:12px;font-weight:700;color:#334155;cursor:pointer">✎ Edit</button>
@@ -10898,14 +10898,15 @@ window.barDishAdd = function(sectionId){
     fields:[
       {label:'Photo (optional)', type:'file', optional:true},
       {label:'Drink name', placeholder:'e.g. Bali Sunset'},
-      {label:'Description', type:'textarea', rows:4, placeholder:'e.g. White rum, passionfruit, lime, grenadine, soda'},
+      {label:'Category', placeholder:'e.g. Signature, Classic, Mocktail'},
+      {label:'Serves', placeholder:'e.g. 1'},
       {label:'Price (Rp)', placeholder:'e.g. 145,000'},
       {label:'Allergens (optional)', placeholder:'e.g. Dairy', optional:true}
     ],
-    onOk([photo, name, desc, price, allergens]){
+    onOk([photo, name, cat, serves, price, allergens]){
       if(!name) return;
       const maxId = Math.max(0, ...sec.dishes.map(d=>d.id));
-      sec.dishes.push({id:maxId+1, name, desc, price, allergens: allergens ? allergens.split(',').map(a=>a.trim()) : [], photo: photo||''});
+      sec.dishes.push({id:maxId+1, name, cat: cat||'', serves: serves||'', price, allergens: allergens ? allergens.split(',').map(a=>a.trim()) : [], photo: photo||''});
       barMenuDetailRender();
       toast('Drink added ✓');
       barSaveMenuContent(m.id);
@@ -10923,12 +10924,13 @@ window.barDishEdit = function(sectionId, dishId){
     fields:[
       {label:'Photo (optional)', type:'file', optional:true, value:d.photo||''},
       {label:'Drink name', value:d.name},
-      {label:'Description', type:'textarea', rows:4, value:d.desc||''},
+      {label:'Category', value:d.cat||''},
+      {label:'Serves', value:d.serves||''},
       {label:'Price (Rp)', value:d.price},
       {label:'Allergens (optional)', value:(d.allergens||[]).join(', '), optional:true}
     ],
-    onOk([photo, name, desc, price, allergens]){
-      d.name=name; d.desc=desc; d.price=price;
+    onOk([photo, name, cat, serves, price, allergens]){
+      d.name=name; d.cat=cat||''; d.serves=serves||''; d.price=price;
       d.allergens = allergens ? allergens.split(',').map(a=>a.trim()) : [];
       if(photo) d.photo = photo;
       barMenuDetailRender();
@@ -11175,7 +11177,7 @@ async function barLoadFromSupabase(){
       meta: row.meta, links: row.links || [], content: row.content || {sections:[]}
     }));
     barRecipesData = recipesRes.data.map(row => ({
-      id: row.id, name: row.name, cat: row.cat, catColor: row.cat_color, serves: row.serves,
+      id: row.id, name: row.name, cat: row.cat, catColor: row.cat_color, serves: row.serves, price: row.price || '',
       allergens: row.allergens, allergensColor: row.allergens_color, ingredients: row.ingredients,
       method: row.method, photo: row.photo || ''
     }));
@@ -11206,6 +11208,7 @@ function barRecipeCardHtml(r){
           <div class="recipe-card-meta">
             <span class="recipe-badge ${r.catColor}">${r.cat}</span>
             <span class="recipe-badge">Serves ${r.serves}</span>
+            ${r.price ? `<span class="recipe-badge">Rp ${r.price}</span>` : ''}
             <span class="recipe-badge ${r.allergensColor}">Allergens: ${r.allergens}</span>
           </div>
           <div style="font-size:12px;color:var(--ink2);line-height:1.7"><strong>Ingredients:</strong> ${r.ingredients}<br><strong>Method:</strong> ${r.method}</div>
@@ -11235,14 +11238,15 @@ function barAddRecipe(){
       {label:'Cocktail name', placeholder:'e.g. Espresso Martini'},
       {label:'Category', placeholder:'e.g. Signature, Classic, Mocktail'},
       {label:'Serves', placeholder:'e.g. 1'},
+      {label:'Price (Rp)', placeholder:'e.g. 145,000', optional:true},
       {label:'Allergens', placeholder:'e.g. Dairy, None'},
       {label:'Ingredients', type:'textarea', rows:7, placeholder:'e.g. 45ml vodka\n30ml coffee liqueur\n30ml fresh espresso\n10ml sugar syrup'},
       {label:'Method', type:'textarea', rows:9, placeholder:'e.g. Shake all ingredients hard with ice.\nDouble strain into a chilled glass.\nGarnish.'}
     ],
-    async onOk([photo, name, cat, serves, allergens, ingredients, method]){
-      const newRecipe = {name, cat, catColor:'green', serves, allergens, allergensColor:'amber', ingredients, method, photo: photo||''};
+    async onOk([photo, name, cat, serves, price, allergens, ingredients, method]){
+      const newRecipe = {name, cat, catColor:'green', serves, price: price||'', allergens, allergensColor:'amber', ingredients, method, photo: photo||''};
       const { data, error } = await sb.from('bar_recipes').insert({
-        name, cat, cat_color: 'green', serves, allergens, allergens_color: 'amber', ingredients, method, photo: photo || null
+        name, cat, cat_color: 'green', serves, price: price||'', allergens, allergens_color: 'amber', ingredients, method, photo: photo || null
       }).select().single();
       if(error){ toast('Save failed - check your connection and try again'); console.warn('Bar recipe insert failed', error); return; }
       newRecipe.id = data.id;
@@ -11263,17 +11267,18 @@ function barEditRecipe(id){
       {label:'Cocktail name', value:r.name},
       {label:'Category', value:r.cat},
       {label:'Serves', value:String(r.serves)},
+      {label:'Price (Rp)', value:r.price||'', placeholder:'e.g. 145,000', optional:true},
       {label:'Allergens', value:r.allergens},
       {label:'Ingredients', type:'textarea', rows:7, value:r.ingredients},
       {label:'Method', type:'textarea', rows:9, value:r.method}
     ],
-    onOk([photo, name, cat, serves, allergens, ingredients, method]){
-      r.name=name; r.cat=cat; r.serves=serves; r.allergens=allergens; r.ingredients=ingredients; r.method=method;
+    onOk([photo, name, cat, serves, price, allergens, ingredients, method]){
+      r.name=name; r.cat=cat; r.serves=serves; r.price=price||''; r.allergens=allergens; r.ingredients=ingredients; r.method=method;
       if(photo) r.photo = photo;
       barRenderRecipes();
       toast('Recipe updated ✓');
       sb.from('bar_recipes').update({
-        name: r.name, cat: r.cat, serves: r.serves, allergens: r.allergens, ingredients: r.ingredients, method: r.method, photo: r.photo || null
+        name: r.name, cat: r.cat, serves: r.serves, price: r.price, allergens: r.allergens, ingredients: r.ingredients, method: r.method, photo: r.photo || null
       }).eq('id', id).then(({error})=>{ if(error) console.warn('Bar recipe update failed', error); });
     }
   });
@@ -11753,7 +11758,7 @@ function kitchenDishCardHtml(sectionId, d, idx, total){
         <div style="font-size:13.5px;font-weight:700;color:#0F1E2E">${d.name}</div>
         <div style="font-size:13px;font-weight:700;color:#0D9488;white-space:nowrap">Rp ${d.price}</div>
       </div>
-      <div style="font-size:12px;color:#64748B;margin-top:2px">${d.desc||''}</div>
+      <div style="font-size:12px;color:#64748B;margin-top:2px">${d.cat||''}${d.cat&&d.serves?' · ':''}${d.serves?'Serves '+d.serves:''}</div>
       ${allergensLabel ? `<div style="font-size:10.5px;color:#D97706;margin-top:3px">Allergens: ${allergensLabel}</div>` : ''}
       ${foodCostLabel}
       <div style="display:flex;gap:8px;margin-top:8px">
@@ -11781,7 +11786,7 @@ window.kitchenDishView = function(sectionId, dishId){
         <div style="font-size:20px;font-weight:800;color:#0F1E2E">${d.name}</div>
         ${d.price ? `<div style="font-size:16px;font-weight:800;color:#0D9488;white-space:nowrap">Rp ${d.price}</div>` : ''}
       </div>
-      ${d.desc ? `<div style="font-size:13px;color:#64748B;margin-bottom:14px">${d.desc}</div>` : ''}
+      ${(d.cat||d.serves) ? `<div style="font-size:13px;color:#64748B;margin-bottom:14px">${d.cat||''}${d.cat&&d.serves?' · ':''}${d.serves?'Serves '+d.serves:''}</div>` : ''}
       <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px">
         ${(d.allergens||[]).length ? `<span style="font-size:11px;font-weight:700;padding:4px 10px;border-radius:10px;background:#FEF3C7;color:#D97706">Allergens: ${d.allergens.join(', ')}</span>` : ''}
         ${d.foodCostPct!=null ? `<span style="font-size:11px;font-weight:700;padding:4px 10px;border-radius:10px;background:#F1F5F9;color:#475569">Food cost: ${d.foodCostPct}%</span>` : ''}
@@ -11831,17 +11836,18 @@ window.kitchenDishAdd = function(sectionId){
     fields:[
       {label:'Photo (optional)', type:'file', optional:true},
       {label:'Dish name', placeholder:'e.g. Grilled Barramundi'},
-      {label:'Description', type:'textarea', rows:4, placeholder:'e.g. Lemon butter sauce, seasonal greens'},
+      {label:'Category', placeholder:'e.g. Main, Breakfast'},
+      {label:'Serves', placeholder:'e.g. 1'},
       {label:'Price (Rp)', placeholder:'e.g. 220,000'},
       {label:'Allergens (optional)', placeholder:'e.g. Fish, Dairy', optional:true},
       {label:'Food cost %', placeholder:'e.g. 32', optional:true},
       {label:'Ingredients (optional)', type:'textarea', rows:5, optional:true, placeholder:'e.g. 200g barramundi fillet, 30g butter, 1 lemon'},
       {label:'Method (optional)', type:'textarea', rows:6, optional:true, placeholder:'e.g. Season fish, grill 4 mins each side.'}
     ],
-    onOk([photo, name, desc, price, allergens, foodCostPct, ingredients, method]){
+    onOk([photo, name, cat, serves, price, allergens, foodCostPct, ingredients, method]){
       if(!name) return;
       const maxId = Math.max(0, ...sec.dishes.map(d=>d.id));
-      sec.dishes.push({id:maxId+1, name, desc, price, allergens: allergens ? allergens.split(',').map(a=>a.trim()) : [], photo: photo||'', foodCostPct: foodCostPct ? parseFloat(foodCostPct) : null, ingredients: ingredients||'', method: method||''});
+      sec.dishes.push({id:maxId+1, name, cat: cat||'', serves: serves||'', price, allergens: allergens ? allergens.split(',').map(a=>a.trim()) : [], photo: photo||'', foodCostPct: foodCostPct ? parseFloat(foodCostPct) : null, ingredients: ingredients||'', method: method||''});
       kitchenMenuDetailRender();
       toast('Dish added ✓');
       kitchenSaveMenuContent(m.id);
@@ -11859,15 +11865,16 @@ window.kitchenDishEdit = function(sectionId, dishId){
     fields:[
       {label:'Photo (optional)', type:'file', optional:true, value:d.photo||''},
       {label:'Dish name', value:d.name},
-      {label:'Description', type:'textarea', rows:4, value:d.desc||''},
+      {label:'Category', value:d.cat||''},
+      {label:'Serves', value:d.serves||''},
       {label:'Price (Rp)', value:d.price},
       {label:'Allergens (optional)', value:(d.allergens||[]).join(', '), optional:true},
       {label:'Food cost %', value: d.foodCostPct!=null?String(d.foodCostPct):'', placeholder:'e.g. 32', optional:true},
       {label:'Ingredients (optional)', type:'textarea', rows:5, optional:true, value: d.ingredients||''},
       {label:'Method (optional)', type:'textarea', rows:6, optional:true, value: d.method||''}
     ],
-    onOk([photo, name, desc, price, allergens, foodCostPct, ingredients, method]){
-      d.name=name; d.desc=desc; d.price=price;
+    onOk([photo, name, cat, serves, price, allergens, foodCostPct, ingredients, method]){
+      d.name=name; d.cat=cat||''; d.serves=serves||''; d.price=price;
       d.allergens = allergens ? allergens.split(',').map(a=>a.trim()) : [];
       d.foodCostPct = foodCostPct ? parseFloat(foodCostPct) : null;
       d.ingredients = ingredients || '';
@@ -11945,6 +11952,7 @@ function kitchenRecipeCardHtml(r){
           <div class="recipe-card-meta">
             <span class="recipe-badge ${r.catColor}">${r.cat}</span>
             <span class="recipe-badge">Serves ${r.serves}</span>
+            ${r.price ? `<span class="recipe-badge">Rp ${r.price}</span>` : ''}
             <span class="recipe-badge ${r.allergensColor}">Allergens: ${r.allergens}</span>
           </div>
           <div style="font-size:12px;color:var(--ink2);line-height:1.7"><strong>Ingredients:</strong> ${r.ingredients}<br><strong>Method:</strong> ${r.method}</div>
@@ -12006,6 +12014,7 @@ window.kitchenRecipeDownloadPdf = function(id){
     <div style="display:flex;gap:8px;margin-bottom:20px">
       <span style="font-size:11px;font-weight:700;padding:4px 10px;border-radius:10px;background:#F1F5F9;color:#475569">${r.cat}</span>
       <span style="font-size:11px;font-weight:700;padding:4px 10px;border-radius:10px;background:#F1F5F9;color:#475569">Serves ${r.serves}</span>
+      ${r.price ? `<span style="font-size:11px;font-weight:700;padding:4px 10px;border-radius:10px;background:#F1F5F9;color:#475569">Rp ${r.price}</span>` : ''}
       <span style="font-size:11px;font-weight:700;padding:4px 10px;border-radius:10px;background:#FEF3C7;color:#D97706">Allergens: ${r.allergens}</span>
     </div>
     <div style="font-size:14px;font-weight:800;color:#0F1E2E;margin-bottom:8px">Ingredients</div>
@@ -12075,16 +12084,17 @@ function kitchenAddRecipe(){
       {label:'Recipe name', placeholder:'e.g. Grilled Barramundi'},
       {label:'Category', placeholder:'e.g. Main, Breakfast'},
       {label:'Serves', placeholder:'e.g. 1'},
+      {label:'Price (Rp)', placeholder:'e.g. 220,000', optional:true},
       {label:'Allergens', placeholder:'e.g. Fish, Dairy'},
       {label:'Ingredients', type:'textarea', rows:7, placeholder:'e.g. 200g barramundi fillet\n30g butter\n1 lemon\nFresh herbs, salt, pepper'},
       {label:'Method', type:'textarea', rows:9, placeholder:'e.g. Season fish, grill 4 mins each side.\nRest 2 mins.\nFinish with lemon butter sauce.'},
       {label:'Food cost %', placeholder:'e.g. 32', optional:true}
     ],
-    async onOk([photo, name, cat, serves, allergens, ingredients, method, foodCostPct]){
-      const newRecipe = {name, cat, catColor:'green', serves, allergens, allergensColor:'amber', ingredients, method, photo: photo||'', foodCostPct: foodCostPct ? parseFloat(foodCostPct) : null, pdfVersion:0, editedSincePdf:false, pdfHistory:[]};
+    async onOk([photo, name, cat, serves, price, allergens, ingredients, method, foodCostPct]){
+      const newRecipe = {name, cat, catColor:'green', serves, price: price||'', allergens, allergensColor:'amber', ingredients, method, photo: photo||'', foodCostPct: foodCostPct ? parseFloat(foodCostPct) : null, pdfVersion:0, editedSincePdf:false, pdfHistory:[]};
       const { data, error } = await sb.from('kitchen_recipes').insert({
         name: newRecipe.name, cat: newRecipe.cat, cat_color: newRecipe.catColor, serves: newRecipe.serves,
-        allergens: newRecipe.allergens, allergens_color: newRecipe.allergensColor, ingredients: newRecipe.ingredients,
+        price: newRecipe.price, allergens: newRecipe.allergens, allergens_color: newRecipe.allergensColor, ingredients: newRecipe.ingredients,
         method: newRecipe.method, photo: newRecipe.photo || null, food_cost_pct: newRecipe.foodCostPct,
         pdf_version: 0, edited_since_pdf: false, pdf_history: []
       }).select().single();
@@ -12100,7 +12110,7 @@ function kitchenAddRecipe(){
 function kitchenEditRecipe(id){
   const r = kitchenRecipesData.find(x=>x.id===id);
   if(!r) return;
-  const original = {name:r.name, cat:r.cat, serves:String(r.serves), allergens:r.allergens, ingredients:r.ingredients, method:r.method, foodCostPct: r.foodCostPct!=null?String(r.foodCostPct):''};
+  const original = {name:r.name, cat:r.cat, serves:String(r.serves), price:r.price||'', allergens:r.allergens, ingredients:r.ingredients, method:r.method, foodCostPct: r.foodCostPct!=null?String(r.foodCostPct):''};
   appModalShow({
     title:'Edit Recipe',
     fields:[
@@ -12108,13 +12118,14 @@ function kitchenEditRecipe(id){
       {label:'Recipe name', value:r.name},
       {label:'Category', value:r.cat},
       {label:'Serves', value:String(r.serves)},
+      {label:'Price (Rp)', value:r.price||'', placeholder:'e.g. 220,000', optional:true},
       {label:'Allergens', value:r.allergens},
       {label:'Ingredients', type:'textarea', rows:7, value:r.ingredients},
       {label:'Method', type:'textarea', rows:9, value:r.method},
       {label:'Food cost %', value: r.foodCostPct!=null?String(r.foodCostPct):'', placeholder:'e.g. 32', optional:true}
     ],
-    async onOk([photo, name, cat, serves, allergens, ingredients, method, foodCostPct]){
-      const changed = name!==original.name || cat!==original.cat || serves!==original.serves
+    async onOk([photo, name, cat, serves, price, allergens, ingredients, method, foodCostPct]){
+      const changed = name!==original.name || cat!==original.cat || serves!==original.serves || price!==original.price
         || allergens!==original.allergens || ingredients!==original.ingredients || method!==original.method
         || foodCostPct!==original.foodCostPct || (photo && photo!==r.photo);
 
@@ -12123,7 +12134,7 @@ function kitchenEditRecipe(id){
         return;
       }
 
-      r.name=name; r.cat=cat; r.serves=serves; r.allergens=allergens; r.ingredients=ingredients; r.method=method;
+      r.name=name; r.cat=cat; r.serves=serves; r.price=price||''; r.allergens=allergens; r.ingredients=ingredients; r.method=method;
       r.foodCostPct = foodCostPct ? parseFloat(foodCostPct) : null;
       if(photo) r.photo = photo;
       if(r.pdfVersion > 0) r.editedSincePdf = true;
@@ -12131,7 +12142,7 @@ function kitchenEditRecipe(id){
       kitchenShowPdfPrompt(id);
 
       const { error } = await sb.from('kitchen_recipes').update({
-        name: r.name, cat: r.cat, serves: r.serves, allergens: r.allergens, ingredients: r.ingredients,
+        name: r.name, cat: r.cat, serves: r.serves, price: r.price, allergens: r.allergens, ingredients: r.ingredients,
         method: r.method, photo: r.photo || null, food_cost_pct: r.foodCostPct, edited_since_pdf: r.editedSincePdf
       }).eq('id', id);
       if(error){ toast('Save failed - check your connection and try again'); console.warn('Kitchen recipe update failed', error); }
@@ -12220,8 +12231,9 @@ window.kitchenMoveToMenuConfirm = function(){
     sec.dishes.push({
       id: maxId+1,
       name: r.name,
-      desc: '',
-      price: '',
+      cat: r.cat || '',
+      serves: r.serves || '',
+      price: r.price || '',
       allergens: r.allergens ? r.allergens.split(',').map(a=>a.trim()) : [],
       photo: r.photo || '',
       foodCostPct: r.foodCostPct,
@@ -12305,8 +12317,9 @@ window.barMoveToMenuConfirm = function(){
     sec.dishes.push({
       id: maxId+1,
       name: r.name,
-      desc: '',
-      price: '',
+      cat: r.cat || '',
+      serves: r.serves || '',
+      price: r.price || '',
       allergens: r.allergens ? r.allergens.split(',').map(a=>a.trim()) : [],
       photo: r.photo || ''
     });
@@ -12360,7 +12373,7 @@ async function kitchenLoadFromSupabase(){
       meta: row.meta, links: row.links || [], content: row.content || {sections:[]}
     }));
     kitchenRecipesData = recipesRes.data.map(row => ({
-      id: row.id, name: row.name, cat: row.cat, catColor: row.cat_color, serves: row.serves,
+      id: row.id, name: row.name, cat: row.cat, catColor: row.cat_color, serves: row.serves, price: row.price || '',
       allergens: row.allergens, allergensColor: row.allergens_color, ingredients: row.ingredients,
       method: row.method, photo: row.photo || '', foodCostPct: row.food_cost_pct,
       pdfVersion: row.pdf_version || 0, editedSincePdf: row.edited_since_pdf || false, pdfHistory: row.pdf_history || []

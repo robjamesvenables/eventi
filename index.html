@@ -19394,11 +19394,18 @@ function appModalShow({title, sub='', fields, onOk}){
   setTimeout(()=>{ const f=document.getElementById('appModalField_0'); if(f && f.type!=='file' && fields[0]?.type!=='color' && fields[0]?.type!=='icon' && fields[0]?.type!=='deptpicker' && fields[0]?.type!=='iconmulti' && fields[0]?.type!=='pillpicker' && fields[0]?.type!=='colordot' && fields[0]?.type!=='daterange') f.focus(); },80);
   document.getElementById('appModalOk').onclick = async ()=>{
     const vals = [];
+    let photoFailed = false;
     for(let i=0;i<fields.length;i++){
       const el = document.getElementById('appModalField_'+i);
       if(fields[i].type==='file'){
         if(el.files && el.files[0]){
-          vals.push(await appFileToDataUrl(el.files[0]));
+          try{
+            vals.push(await appFileToDataUrl(el.files[0]));
+          }catch(err){
+            console.warn('Photo failed to process', err);
+            photoFailed = true;
+            vals.push('');
+          }
         } else {
           vals.push('');
         }
@@ -19444,6 +19451,7 @@ function appModalShow({title, sub='', fields, onOk}){
     }
     appModalClose();
     onOk(vals);
+    if(photoFailed) toast('Everything saved, but that photo couldn\'t be processed - try a different file');
   };
   // Enter key submit
   fc.querySelectorAll('input[type="text"]').forEach(inp=>{

@@ -3471,7 +3471,7 @@ img.emoji-tw{width:1.15em;height:1.15em;vertical-align:-0.2em;margin:0 1px}
           <div class="rep-card-sub">Opens the calendar view</div>
         </button>
         <button onclick="repcalOpenForMetric('covers_served')" class="rep-card">
-          <div class="rep-card-icon" style="background:rgba(27,175,122,0.1);color:#1baf7a"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div>
+          <div class="rep-card-icon" style="background:rgba(27,175,122,0.1);color:#1baf7a"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M5 21a7 7 0 0 1 14 0"/></svg></div>
           <div class="rep-card-title">Guests</div>
           <div class="rep-card-sub">Opens the calendar view</div>
         </button>
@@ -15879,6 +15879,14 @@ function bmFriendlyDate(dateStr){
   return d.toLocaleDateString('en-GB', {weekday:'long', day:'numeric', month:'long'});
 }
 
+// Same as bmFriendlyDate but with the year included - needed for ranges that can span
+// multiple years (like a CSV upload), where "19 September to 18 September" with no year
+// looks like it runs backward instead of spanning two years forward.
+function bmFriendlyDateWithYear(dateStr){
+  const d = new Date(dateStr + 'T00:00:00');
+  return d.toLocaleDateString('en-GB', {weekday:'long', day:'numeric', month:'long', year:'numeric'});
+}
+
 function reportingOpenRevenue(){
   const yest = bmDateStr(bmDaysAgo(1));
   const existing = businessMetrics.find(x => x.metric_key==='revenue' && x.period_date===yest);
@@ -16098,7 +16106,7 @@ function reportingRenderCsvUploads(){
     ${uploads.map(u => `
       <div style="display:flex;align-items:center;justify-content:space-between;background:white;border:1.5px solid #E2E8F0;border-radius:10px;padding:12px 16px;margin-bottom:8px">
         <div>
-          <div style="font-size:13px;font-weight:700;color:#0F1E2E">${bmFriendlyDate(u.from)} to ${bmFriendlyDate(u.to)}</div>
+          <div style="font-size:13px;font-weight:700;color:#0F1E2E">${bmFriendlyDateWithYear(u.from)} to ${bmFriendlyDateWithYear(u.to)}</div>
           <div style="font-size:11.5px;color:#94A3B8">${u.count} day${u.count!==1?'s':''} imported</div>
         </div>
         <button onclick="reportingDeleteCsvUpload('${u.id}')" style="padding:7px 14px;background:none;color:#DC2626;border:none;font-family:'Inter',sans-serif;font-size:12px;font-weight:700;cursor:pointer">Delete this upload</button>
@@ -16113,7 +16121,7 @@ window.reportingDeleteCsvUpload = function(batchId){
   if(!upload) return;
   appConfirmShow({
     title: 'Delete this upload',
-    msg: `This permanently removes all ${upload.count} day${upload.count!==1?'s':''} of revenue and covers data from ${bmFriendlyDate(upload.from)} to ${bmFriendlyDate(upload.to)} that came from this upload. This cannot be undone.`,
+    msg: `This permanently removes all ${upload.count} day${upload.count!==1?'s':''} of revenue and covers data from ${bmFriendlyDateWithYear(upload.from)} to ${bmFriendlyDateWithYear(upload.to)} that came from this upload. This cannot be undone.`,
     label: 'Delete',
     onOk: async () => {
       const { error } = await sb.from('business_metrics').delete().eq('upload_batch', batchId);
@@ -17038,6 +17046,12 @@ function analyticsRender(){
   const clampedDay = Math.min(yesterdayDay, prevMonthLastDay);
   const lastMonthSameDay = bmDateStr(new Date(yesterdayDate.getFullYear(), yesterdayDate.getMonth()-1, clampedDay));
   const lastMonthStart = bmDateStr(new Date(yesterdayDate.getFullYear(), yesterdayDate.getMonth()-1, 1));
+  // For the single-day comparison specifically, match by weekday (28 days back = exactly
+  // 4 weeks, always the same day of the week) rather than the same calendar day number -
+  // months aren't a multiple of 7 days either, so "the 21st of last month" can just as
+  // easily land on a different weekday (e.g. this Monday vs what was actually a Friday),
+  // same root cause as the Year comparison bug fixed earlier.
+  const lastMonthSameWeekday = bmDateStr(new Date(yesterdayDate.getTime() - 28*24*60*60*1000));
 
   // Revenue - Yesterday / Month to Date / Year to Date, all cut off at yesterday (today is never closed out yet)
   const revYesterday = bmSum('revenue', yesterday, yesterday);
@@ -17053,7 +17067,7 @@ function analyticsRender(){
   const revMTDLastYear = bmSum('revenue', lastYearMonthStart, lastYearSameDay);
   const revYTDLastYear = bmSum('revenue', lastYearYearStart, lastYearSameDay);
   const revLastYearToDate = revYTDLastYear;
-  const revYesterdayLastMonth = bmSum('revenue', lastMonthSameDay, lastMonthSameDay);
+  const revYesterdayLastMonth = bmSum('revenue', lastMonthSameWeekday, lastMonthSameWeekday);
   const revMTDLastMonth = bmSum('revenue', lastMonthStart, lastMonthSameDay);
 
   // Covers

@@ -16138,25 +16138,43 @@ window.reportingDeleteCsvUpload = function(batchId){
 const BM_LABELS = { revenue:'Revenue', covers_served:'Guests', dept_spend:'Department Spend', staff_target:'Staff Target', staff_actual:'Staff Actual' };
 let reportingJumpDate = null;
 
-function reportingDayCardHtml(date, rows){
+function reportingDayRowHtml(date, rows){
   const rev = rows.find(r => r.metric_key === 'revenue');
   const covers = rows.find(r => r.metric_key === 'covers_served');
   const staffT = rows.find(r => r.metric_key === 'staff_target');
   const staffA = rows.find(r => r.metric_key === 'staff_actual');
   const deptRows = rows.filter(r => r.metric_key === 'dept_spend');
 
-  const lines = [];
-  if(rev) lines.push({ label:'Revenue', value: bmMoney(rev.value), id: rev.id });
-  if(covers) lines.push({ label:'Guests', value: covers.value, id: covers.id });
-  if(staffT || staffA) lines.push({ label:'Staffing', value: `${staffA?staffA.value:'—'} / ${staffT?staffT.value:'—'}`, id: (staffA||staffT).id });
-  deptRows.forEach(d => lines.push({ label:'Spend · '+d.department, value: bmMoney(d.value), id: d.id }));
+  const cell = (entry, display) => entry
+    ? `<td onclick="bmEditEntry(${entry.id})" style="padding:11px 14px;text-align:right;font-size:13px;font-weight:700;color:#0F1E2E;cursor:pointer;white-space:nowrap">${display}</td>`
+    : `<td style="padding:11px 14px;text-align:right;font-size:13px;color:#CBD5E1">—</td>`;
 
-  return `<div style="background:white;border:1px solid #E2E8F0;border-radius:12px;padding:14px 16px;margin-bottom:10px">
-    <div style="font-size:12px;font-weight:800;color:#0F1E2E;margin-bottom:8px">${date}</div>
-    ${lines.length ? lines.map(l => `<div onclick="bmEditEntry(${l.id})" style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-top:1px solid #F8FAFC;cursor:pointer">
-      <span style="font-size:12.5px;color:#64748B">${l.label}</span>
-      <span style="display:flex;align-items:center;gap:6px;font-size:13px;font-weight:700;color:#0F1E2E">${l.value}<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#CBD5E1" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg></span>
-    </div>`).join('') : '<div style="padding:8px 0;font-size:12.5px;color:#94A3B8">Nothing logged for this day</div>'}
+  const otherBits = [];
+  if(staffT || staffA) otherBits.push(`<span onclick="bmEditEntry(${(staffA||staffT).id})" style="cursor:pointer;text-decoration:underline;text-decoration-style:dotted">Staffing</span>`);
+  deptRows.forEach(d => otherBits.push(`<span onclick="bmEditEntry(${d.id})" style="cursor:pointer;text-decoration:underline;text-decoration-style:dotted">Spend · ${d.department}</span>`));
+
+  return `<tr style="border-bottom:1px solid #F1F5F9">
+    <td style="padding:11px 14px;font-size:12.5px;font-weight:700;color:#0F1E2E;white-space:nowrap">${date}</td>
+    ${cell(rev, rev ? bmMoney(rev.value) : '')}
+    ${cell(covers, covers ? covers.value : '')}
+    <td style="padding:11px 14px;font-size:11.5px;color:#94A3B8">${otherBits.join(', ') || ''}</td>
+  </tr>`;
+}
+
+function reportingTableHtml(rowsHtml){
+  if(!rowsHtml) return '<div style="text-align:center;padding:30px;color:#94A3B8;font-size:12.5px">Nothing logged yet</div>';
+  return `<div style="background:white;border:1px solid #E2E8F0;border-radius:12px;overflow:hidden">
+    <table style="width:100%;border-collapse:collapse">
+      <thead>
+        <tr style="border-bottom:2px solid #E2E8F0;background:#F8FAFC">
+          <th style="text-align:left;padding:9px 14px;font-size:10.5px;font-weight:800;color:#94A3B8;text-transform:uppercase;letter-spacing:0.4px">Date</th>
+          <th style="text-align:right;padding:9px 14px;font-size:10.5px;font-weight:800;color:#94A3B8;text-transform:uppercase;letter-spacing:0.4px">Revenue</th>
+          <th style="text-align:right;padding:9px 14px;font-size:10.5px;font-weight:800;color:#94A3B8;text-transform:uppercase;letter-spacing:0.4px">Guests</th>
+          <th style="text-align:left;padding:9px 14px;font-size:10.5px;font-weight:800;color:#94A3B8;text-transform:uppercase;letter-spacing:0.4px">Other</th>
+        </tr>
+      </thead>
+      <tbody>${rowsHtml}</tbody>
+    </table>
   </div>`;
 }
 
@@ -16180,7 +16198,7 @@ function reportingRenderRecent(){
 
   if(reportingJumpDate){
     const rows = businessMetrics.filter(m => m.period_date === reportingJumpDate);
-    el.innerHTML = reportingDayCardHtml(reportingJumpDate, rows);
+    el.innerHTML = reportingTableHtml(reportingDayRowHtml(reportingJumpDate, rows));
     return;
   }
 
@@ -16191,7 +16209,7 @@ function reportingRenderRecent(){
   const byDate = {};
   businessMetrics.forEach(m => { (byDate[m.period_date] = byDate[m.period_date] || []).push(m); });
   const dates = Object.keys(byDate).sort((a,b) => b.localeCompare(a)).slice(0, 30);
-  el.innerHTML = dates.map(date => reportingDayCardHtml(date, byDate[date])).join('');
+  el.innerHTML = reportingTableHtml(dates.map(date => reportingDayRowHtml(date, byDate[date])).join(''));
 }
 
 // ── CALENDAR VIEW ──

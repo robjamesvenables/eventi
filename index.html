@@ -5020,7 +5020,7 @@ async function loadAppSettings(){
   }
 }
 
-const ANALYTICS_PIN_GRACE_MS = 10 * 60 * 1000; // 10 minutes
+const ANALYTICS_PIN_GRACE_MS = 60 * 60 * 1000; // 1 hour
 
 function analyticsPinRecentlyVerified(){
   try{
@@ -5043,10 +5043,10 @@ function analyticsPinGate(pushState){
   if(!appSettings.analytics_pin){
     appModalShow({
       title:'Create Analytics PIN',
-      sub:'Set a PIN to protect Analytics - everyone will need to enter it on any device. Once entered, it stays unlocked on that device for 10 minutes.',
+      sub:'Set a PIN to protect Analytics - everyone will need to enter it on any device. Once entered, it stays unlocked on that device for 1 hour.',
       fields:[
-        {label:'New PIN (4+ digits)', placeholder:'e.g. 1234'},
-        {label:'Confirm PIN', placeholder:'e.g. 1234'}
+        {label:'New PIN (4+ digits)', placeholder:'— — — —'},
+        {label:'Confirm PIN', placeholder:'— — — —'}
       ],
       async onOk([pin, confirm]){
         if(!pin || pin.trim().length < 4){ toast('PIN must be at least 4 digits'); return; }
@@ -5066,7 +5066,7 @@ function analyticsPinGate(pushState){
   }
   appModalShow({
     title:'Enter Analytics PIN',
-    fields:[{label:'PIN', placeholder:'Enter PIN'}],
+    fields:[{label:'PIN', placeholder:'— — — —'}],
     onOk([pin]){
       if(!pin || pin.trim() !== appSettings.analytics_pin){
         toast('Incorrect PIN');
@@ -5083,8 +5083,8 @@ function adminChangeAnalyticsPin(){
     title: 'Change / Forgot PIN',
     sub: 'Setting a new PIN here doesn\'t require knowing the old one.',
     fields: [
-      {label:'New PIN (4+ digits)', placeholder:'e.g. 1234'},
-      {label:'Confirm New PIN', placeholder:'e.g. 1234'}
+      {label:'New PIN (4+ digits)', placeholder:'— — — —'},
+      {label:'Confirm New PIN', placeholder:'— — — —'}
     ],
     async onOk([pin, confirm]){
       if(!pin || pin.trim().length < 4){ toast('New PIN must be at least 4 digits'); return; }
@@ -5102,7 +5102,7 @@ function nav(id, pushState=true){
     if(analyticsPinBypassNext){
       analyticsPinBypassNext = false;
     } else if(analyticsPinRecentlyVerified()){
-      // Unlocked on this device within the last 10 minutes - skip the prompt
+      // Unlocked on this device within the last hour - skip the prompt
     } else {
       analyticsPinGate(pushState);
       return;

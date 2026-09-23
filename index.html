@@ -5424,6 +5424,15 @@ window.addEventListener('popstate', function(e){
   if(momentLightboxOpen && (!e.state || !e.state.momentOpen)){
     closeMoment(true);
   }
+  const dishViewEl = document.getElementById('kitchenDishViewOverlay');
+  if(dishViewEl && (!e.state || !e.state.dishViewOpen)){
+    kitchenDishViewClose(true);
+  }
+  const appConfirm = document.getElementById('appConfirm');
+  const appConfirmOpen = appConfirm && appConfirm.style.display === 'flex';
+  if(appConfirmOpen && (!e.state || !e.state.appConfirmOpen)){
+    appConfirmClose(true);
+  }
   const appModal = document.getElementById('appModal');
   const appModalOpen = appModal && appModal.style.display === 'flex';
   if(appModalOpen && (!e.state || !e.state.appModalOpen)){
@@ -10826,7 +10835,7 @@ function barMenuCardHtml(m){
       <div class="menu-card-meta" style="color:#475569">${m.meta}</div>
       ${actionsHtml}
       <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:6px">
-        <span onclick="barEditMenu(${m.id})" style="opacity:0.5;cursor:pointer;font-size:11px">✎ Edit</span>
+        <span onclick="barEditMenu(${m.id})" style="opacity:0.5;cursor:pointer;font-size:11px"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-1px;margin-right:3px"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>Edit</span>
         <span onclick="barDeleteMenu(${m.id})" style="opacity:0.5;cursor:pointer;font-size:11px;color:#EF4444">Delete</span>
       </div>
     </div>`;
@@ -10860,7 +10869,7 @@ function barMenuDetailRender(){
           <div style="width:8px;height:8px;border-radius:50%;background:#0D9488"></div>
           <div style="font-size:15px;font-weight:800;color:#0F1E2E;text-transform:uppercase;letter-spacing:0.5px">${sec.name}</div>
         </div>
-        <button onclick="barSectionDelete(${sec.id})" style="display:flex;align-items:center;gap:6px;background:#FEF2F2;border:1.5px solid #FECACA;border-radius:20px;padding:8px 16px;font-family:'Inter',sans-serif;color:#DC2626;font-size:12.5px;font-weight:700;cursor:pointer">🗑 Delete Section</button>
+        <button onclick="barSectionDelete(${sec.id})" style="display:flex;align-items:center;gap:6px;background:#FEF2F2;border:1.5px solid #FECACA;border-radius:20px;padding:8px 16px;font-family:'Inter',sans-serif;color:#DC2626;font-size:12.5px;font-weight:700;cursor:pointer"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0-1 14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2L4 6"/></svg>Delete Section</button>
       </div>
       ${sec.dishes.map(d => barDishCardHtml(sec.id, d)).join('') || '<div style="font-size:12px;color:#94A3B8;margin-bottom:12px">No drinks yet</div>'}
       <button onclick="barDishAdd(${sec.id})" style="width:100%;padding:14px;margin-top:2px;background:none;border:1.5px dashed #CBD5E1;border-radius:12px;font-family:'Inter',sans-serif;font-size:13px;font-weight:700;color:#64748B;cursor:pointer">+ Add Drink</button>
@@ -10883,8 +10892,8 @@ function barDishCardHtml(sectionId, d){
       <div style="font-size:13px;color:#94A3B8;margin-top:4px">${d.cat||''}${d.cat&&d.serves?' · ':''}${d.serves?'Serves '+d.serves:''}</div>
       ${allergensLabel ? `<div style="margin-top:14px"><span style="font-size:10.5px;font-weight:800;text-transform:uppercase;letter-spacing:0.4px;background:#FEF3C7;color:#D97706;padding:5px 12px;border-radius:20px">Allergens: ${allergensLabel}</span></div>` : ''}
       <div class="kmenu-actions" style="display:flex;gap:10px;margin-top:16px">
-        <button onclick="barDishEdit(${sectionId},${d.id})" style="display:flex;align-items:center;gap:6px;padding:9px 16px;background:white;border:1.5px solid #E2E8F0;border-radius:9px;font-family:'Inter',sans-serif;font-size:12.5px;font-weight:700;color:#334155;cursor:pointer">✎ Edit</button>
-        <button onclick="barDishDelete(${sectionId},${d.id})" style="display:flex;align-items:center;gap:6px;padding:9px 16px;background:white;border:1.5px solid #FECACA;border-radius:9px;font-family:'Inter',sans-serif;font-size:12.5px;font-weight:700;color:#DC2626;cursor:pointer">🗑 Delete</button>
+        <button onclick="barDishEdit(${sectionId},${d.id})" style="display:flex;align-items:center;gap:6px;padding:9px 16px;background:white;border:1.5px solid #E2E8F0;border-radius:9px;font-family:'Inter',sans-serif;font-size:12.5px;font-weight:700;color:#334155;cursor:pointer"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>Edit</button>
+        <button onclick="barDishDelete(${sectionId},${d.id})" style="display:flex;align-items:center;gap:6px;padding:9px 16px;background:white;border:1.5px solid #FECACA;border-radius:9px;font-family:'Inter',sans-serif;font-size:12.5px;font-weight:700;color:#DC2626;cursor:pointer"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0-1 14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2L4 6"/></svg>Delete</button>
       </div>
     </div>
   </div>`;
@@ -11227,8 +11236,8 @@ function barRecipeCardHtml(r){
           <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px">
             <div class="recipe-card-name">${r.name}</div>
             <div style="display:flex;gap:8px;flex-shrink:0">
-              <button onclick="barEditRecipe(${r.id})" style="display:flex;align-items:center;gap:5px;padding:7px 13px;background:#F1F5F9;border:1.5px solid #E2E8F0;border-radius:7px;font-family:'Inter',sans-serif;font-size:12px;font-weight:700;color:#334155;cursor:pointer">✎ Edit</button>
-              <button onclick="barDeleteRecipe(${r.id})" style="display:flex;align-items:center;gap:5px;padding:7px 13px;background:#FEF2F2;border:1.5px solid #FECACA;border-radius:7px;font-family:'Inter',sans-serif;font-size:12px;font-weight:700;color:#DC2626;cursor:pointer">🗑 Delete</button>
+              <button onclick="barEditRecipe(${r.id})" style="display:flex;align-items:center;gap:5px;padding:7px 13px;background:#F1F5F9;border:1.5px solid #E2E8F0;border-radius:7px;font-family:'Inter',sans-serif;font-size:12px;font-weight:700;color:#334155;cursor:pointer"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>Edit</button>
+              <button onclick="barDeleteRecipe(${r.id})" style="display:flex;align-items:center;gap:5px;padding:7px 13px;background:#FEF2F2;border:1.5px solid #FECACA;border-radius:7px;font-family:'Inter',sans-serif;font-size:12px;font-weight:700;color:#DC2626;cursor:pointer"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0-1 14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2L4 6"/></svg>Delete</button>
             </div>
           </div>
           <div class="recipe-card-meta">
@@ -11502,7 +11511,7 @@ function kitchenMenuCardHtml(m){
       ${actionsHtml}
       ${foodCostBadge}
       <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:6px">
-        <span onclick="kitchenEditMenu(${m.id})" style="opacity:0.5;cursor:pointer;font-size:11px">✎ Edit</span>
+        <span onclick="kitchenEditMenu(${m.id})" style="opacity:0.5;cursor:pointer;font-size:11px"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-1px;margin-right:3px"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>Edit</span>
         <span onclick="kitchenDeleteMenu(${m.id})" style="opacity:0.5;cursor:pointer;font-size:11px;color:#EF4444">Delete</span>
       </div>
     </div>`;
@@ -11750,7 +11759,7 @@ function kitchenMenuDetailRender(){
           <div style="width:8px;height:8px;border-radius:50%;background:#0D9488"></div>
           <div style="font-size:15px;font-weight:800;color:#0F1E2E;text-transform:uppercase;letter-spacing:0.5px">${sec.name}</div>
         </div>
-        <button onclick="kitchenSectionDelete(${sec.id})" style="display:flex;align-items:center;gap:6px;background:#FEF2F2;border:1.5px solid #FECACA;border-radius:20px;padding:8px 16px;font-family:'Inter',sans-serif;color:#DC2626;font-size:12.5px;font-weight:700;cursor:pointer">🗑 Delete Section</button>
+        <button onclick="kitchenSectionDelete(${sec.id})" style="display:flex;align-items:center;gap:6px;background:#FEF2F2;border:1.5px solid #FECACA;border-radius:20px;padding:8px 16px;font-family:'Inter',sans-serif;color:#DC2626;font-size:12.5px;font-weight:700;cursor:pointer"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0-1 14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2L4 6"/></svg>Delete Section</button>
       </div>
       ${sec.dishes.map((d,idx) => kitchenDishCardHtml(sec.id, d, idx, sec.dishes.length)).join('') || '<div style="font-size:12px;color:#94A3B8;margin-bottom:12px">No dishes yet</div>'}
       <button onclick="kitchenDishAdd(${sec.id})" style="width:100%;padding:14px;margin-top:2px;background:none;border:1.5px dashed #CBD5E1;border-radius:12px;font-family:'Inter',sans-serif;font-size:13px;font-weight:700;color:#64748B;cursor:pointer">+ Add Dish</button>
@@ -11795,9 +11804,9 @@ function kitchenDishCardHtml(sectionId, d, idx, total){
         ${foodCostBadge}
       </div>
       <div class="kmenu-actions" style="display:flex;gap:10px;margin-top:16px">
-        <button onclick="kitchenDishView(${sectionId},${d.id})" style="display:flex;align-items:center;gap:6px;padding:9px 16px;background:white;border:1.5px solid #E2E8F0;border-radius:9px;font-family:'Inter',sans-serif;font-size:12.5px;font-weight:700;color:#334155;cursor:pointer">👁 View</button>
-        <button onclick="kitchenDishEdit(${sectionId},${d.id})" style="display:flex;align-items:center;gap:6px;padding:9px 16px;background:white;border:1.5px solid #E2E8F0;border-radius:9px;font-family:'Inter',sans-serif;font-size:12.5px;font-weight:700;color:#334155;cursor:pointer">✎ Edit</button>
-        <button onclick="kitchenDishDelete(${sectionId},${d.id})" style="display:flex;align-items:center;gap:6px;padding:9px 16px;background:white;border:1.5px solid #FECACA;border-radius:9px;font-family:'Inter',sans-serif;font-size:12.5px;font-weight:700;color:#DC2626;cursor:pointer">🗑 Delete</button>
+        <button onclick="kitchenDishView(${sectionId},${d.id})" style="display:flex;align-items:center;gap:6px;padding:9px 16px;background:white;border:1.5px solid #E2E8F0;border-radius:9px;font-family:'Inter',sans-serif;font-size:12.5px;font-weight:700;color:#334155;cursor:pointer"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8Z"/><circle cx="12" cy="12" r="3"/></svg>View</button>
+        <button onclick="kitchenDishEdit(${sectionId},${d.id})" style="display:flex;align-items:center;gap:6px;padding:9px 16px;background:white;border:1.5px solid #E2E8F0;border-radius:9px;font-family:'Inter',sans-serif;font-size:12.5px;font-weight:700;color:#334155;cursor:pointer"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>Edit</button>
+        <button onclick="kitchenDishDelete(${sectionId},${d.id})" style="display:flex;align-items:center;gap:6px;padding:9px 16px;background:white;border:1.5px solid #FECACA;border-radius:9px;font-family:'Inter',sans-serif;font-size:12.5px;font-weight:700;color:#DC2626;cursor:pointer"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0-1 14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2L4 6"/></svg>Delete</button>
       </div>
     </div>
   </div>`;
@@ -11811,7 +11820,8 @@ window.kitchenDishView = function(sectionId, dishId){
   const overlay = document.createElement('div');
   overlay.id = 'kitchenDishViewOverlay';
   overlay.style.cssText = 'position:fixed;inset:0;background:rgba(15,30,46,0.55);z-index:10001;display:flex;align-items:center;justify-content:center;padding:20px';
-  overlay.onclick = (e) => { if(e.target === overlay) overlay.remove(); };
+  overlay.onclick = (e) => { if(e.target === overlay) kitchenDishViewClose(); };
+  const editIcon = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>';
   overlay.innerHTML = `
     <div style="background:white;border-radius:16px;max-width:520px;width:100%;max-height:88vh;overflow-y:auto;padding:28px">
       ${d.photo ? `<img src="${d.photo}" style="width:100%;height:200px;object-fit:cover;border-radius:10px;margin-bottom:18px">` : ''}
@@ -11828,11 +11838,19 @@ window.kitchenDishView = function(sectionId, dishId){
       ${d.method ? `<div style="font-size:13px;font-weight:800;color:#0F1E2E;margin-bottom:6px">Method</div><div style="font-size:13px;color:#334155;line-height:1.7;margin-bottom:16px">${d.method}</div>` : ''}
       ${(!d.ingredients && !d.method) ? `<div style="font-size:12.5px;color:#94A3B8;margin-bottom:16px">No ingredients or method added yet for this dish.</div>` : ''}
       <div style="display:flex;gap:8px;margin-top:8px">
-        <button onclick="document.getElementById('kitchenDishViewOverlay').remove();kitchenDishEdit(${sectionId},${d.id})" style="flex:1;padding:11px;background:#0F1E2E;border:none;border-radius:9px;font-family:'Inter',sans-serif;font-size:13.5px;font-weight:700;color:white;cursor:pointer">✎ Edit</button>
-        <button onclick="document.getElementById('kitchenDishViewOverlay').remove()" style="padding:11px 18px;background:#F1F5F9;border:none;border-radius:9px;font-family:'Inter',sans-serif;font-size:13.5px;font-weight:700;color:#334155;cursor:pointer">Close</button>
+        <button onclick="kitchenDishViewClose();kitchenDishEdit(${sectionId},${d.id})" style="flex:1;display:flex;align-items:center;justify-content:center;gap:7px;padding:11px;background:#0F1E2E;border:none;border-radius:9px;font-family:'Inter',sans-serif;font-size:13.5px;font-weight:700;color:white;cursor:pointer">${editIcon}Edit</button>
+        <button onclick="kitchenDishViewClose()" style="padding:11px 18px;background:#F1F5F9;border:none;border-radius:9px;font-family:'Inter',sans-serif;font-size:13.5px;font-weight:700;color:#334155;cursor:pointer">Close</button>
       </div>
     </div>`;
   document.body.appendChild(overlay);
+  const priorState = history.state || {page:'kitchen'};
+  history.pushState(Object.assign({}, priorState, {dishViewOpen:true}), '', location.hash || '#kitchen');
+};
+
+window.kitchenDishViewClose = function(fromPop){
+  const el = document.getElementById('kitchenDishViewOverlay');
+  if(el) el.remove();
+  if(!fromPop) history.back();
 };
 
 window.kitchenSectionAdd = function(){
@@ -11986,8 +12004,8 @@ function kitchenRecipeCardHtml(r){
           <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px">
             <div class="recipe-card-name">${r.name}</div>
             <div style="display:flex;gap:8px;flex-shrink:0">
-              <button onclick="kitchenEditRecipe(${r.id})" style="display:flex;align-items:center;gap:5px;padding:7px 13px;background:#F1F5F9;border:1.5px solid #E2E8F0;border-radius:7px;font-family:'Inter',sans-serif;font-size:12px;font-weight:700;color:#334155;cursor:pointer">✎ Edit</button>
-              <button onclick="kitchenDeleteRecipe(${r.id})" style="display:flex;align-items:center;gap:5px;padding:7px 13px;background:#FEF2F2;border:1.5px solid #FECACA;border-radius:7px;font-family:'Inter',sans-serif;font-size:12px;font-weight:700;color:#DC2626;cursor:pointer">🗑 Delete</button>
+              <button onclick="kitchenEditRecipe(${r.id})" style="display:flex;align-items:center;gap:5px;padding:7px 13px;background:#F1F5F9;border:1.5px solid #E2E8F0;border-radius:7px;font-family:'Inter',sans-serif;font-size:12px;font-weight:700;color:#334155;cursor:pointer"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>Edit</button>
+              <button onclick="kitchenDeleteRecipe(${r.id})" style="display:flex;align-items:center;gap:5px;padding:7px 13px;background:#FEF2F2;border:1.5px solid #FECACA;border-radius:7px;font-family:'Inter',sans-serif;font-size:12px;font-weight:700;color:#DC2626;cursor:pointer"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0-1 14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2L4 6"/></svg>Delete</button>
             </div>
           </div>
           ${versionLine}
@@ -19869,9 +19887,14 @@ function appConfirmShow({title, msg, label='Delete', onOk}){
   document.getElementById('appConfirmOk').textContent = label;
   const modal = document.getElementById('appConfirm');
   modal.style.display='flex';
+  const priorState = history.state || {page:'home'};
+  history.pushState(Object.assign({}, priorState, {appConfirmOpen:true}), '', location.hash || '#confirm');
   document.getElementById('appConfirmOk').onclick = ()=>{ appConfirmClose(); onOk(); };
 }
-function appConfirmClose(){ document.getElementById('appConfirm').style.display='none'; }
+function appConfirmClose(fromPop){
+  document.getElementById('appConfirm').style.display='none';
+  if(!fromPop) history.back();
+}
 
 // ── PWA: register service worker so the app is installable from the browser ──
 if('serviceWorker' in navigator){

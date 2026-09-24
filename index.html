@@ -3438,11 +3438,11 @@ img.emoji-tw{width:1.15em;height:1.15em;vertical-align:-0.2em;margin:0 1px}
         <div style="background:white;border:1.5px solid #E2E8F0;border-radius:14px;padding:18px 20px 16px;margin-bottom:28px">
           <div style="font-size:12.5px;font-weight:800;color:#0F1E2E;margin-bottom:12px">This week vs last year — guests &amp; revenue, Mon to Sun</div>
           <div class="predictor-week-chart-wrap">
-            <canvas id="predictor-week-chart"></canvas>
+            <div id="predictor-week-chart" style="width:100%;height:100%"></div>
           </div>
           <div style="display:flex;gap:14px;margin-top:12px;flex-wrap:wrap">
-            <span style="display:flex;align-items:center;gap:5px;font-size:11px;color:#64748B"><span style="width:10px;height:2px;background:#0D9488;display:inline-block"></span>Guests</span>
-            <span style="display:flex;align-items:center;gap:5px;font-size:11px;color:#64748B"><span style="width:10px;height:0;border-top:2px dashed #378ADD;display:inline-block"></span>Revenue</span>
+            <span style="display:flex;align-items:center;gap:5px;font-size:11px;color:#64748B"><span style="width:14px;height:3px;background:linear-gradient(90deg,#B45252,#0D9488,#C4973B);display:inline-block;border-radius:2px"></span>Guests</span>
+            <span style="display:flex;align-items:center;gap:5px;font-size:11px;color:#64748B"><span style="width:10px;height:0;border-top:2px dashed #CBD5E1;display:inline-block"></span>Revenue</span>
             <span style="display:flex;align-items:center;gap:5px;font-size:11px;color:#64748B"><span style="width:9px;height:9px;border-radius:50%;background:#B45252;display:inline-block"></span>Spike</span>
             <span style="display:flex;align-items:center;gap:5px;font-size:11px;color:#64748B"><span style="width:9px;height:9px;border-radius:50%;background:#B7791F;display:inline-block"></span>Dip</span>
             <span style="display:flex;align-items:center;gap:5px;font-size:11px;color:#64748B"><span style="width:9px;height:9px;border-radius:50%;background:#94A3B8;display:inline-block"></span>Low day</span>
@@ -17566,10 +17566,10 @@ function predictorMetricStatsForDow(metricKey, dow){
 // hover/tap for its exact numbers.
 let predictorWeekChartInstance = null;
 function predictorRenderWeekChart(){
-  const canvas = document.getElementById('predictor-week-chart');
-  if(!canvas || typeof Chart === 'undefined') return;
-  const dayNames = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
-  const guestVals = [], revenueVals = [], dotColors = [];
+  const container = document.getElementById('predictor-week-chart');
+  if(!container) return;
+  const dayNames = ['MON','TUE','WED','THU','FRI','SAT','SUN'];
+  const guestVals = [], revenueVals = [], dotColors = [], directions = [];
   const debugLines = [];
   const overallStats = predictorMetricStats('covers_served');
   const today = new Date();
@@ -17578,7 +17578,7 @@ function predictorRenderWeekChart(){
     const lyCovers = predictorHistoricalMetric('covers_served', d);
     const lyRevenue = predictorHistoricalMetric('revenue', d);
     guestVals.push(lyCovers != null ? Math.round(lyCovers) : null);
-    revenueVals.push(lyRevenue != null ? Math.round(lyRevenue/1000000) : null); // in millions for the axis
+    revenueVals.push(lyRevenue != null ? Math.round(lyRevenue) : null);
     // Same status color every day gets elsewhere on the page: a genuine per-weekday anomaly
     // (spike/dip) takes priority; otherwise fall back to the day's overall bracket, exactly
     // as the Week Strip tile backgrounds do - one shared color system, not a one-off.
@@ -17595,47 +17595,104 @@ function predictorRenderWeekChart(){
       }
     }
     dotColors.push(dotColor);
-    debugLines.push(dayNames[i]+': '+(lyRevenue!=null?Math.round(lyRevenue/1000000):'—')+'M revenue, '+(lyCovers!=null?Math.round(lyCovers):'—')+' guests (same day last year)'+(direction?' — '+direction:''));
+    directions.push(direction);
+    debugLines.push(dayNames[i]+': '+(lyRevenue!=null?predictorFmtMoney(lyRevenue):'—')+' revenue, '+(lyCovers!=null?Math.round(lyCovers):'—')+' guests (same day last year)'+(direction?' — '+direction:''));
   }
   const debugEl = document.getElementById('predictor-week-chart-debug');
   if(debugEl) debugEl.innerHTML = debugLines.join('<br>');
-  if(predictorWeekChartInstance) predictorWeekChartInstance.destroy();
-  predictorWeekChartInstance = new Chart(canvas, {
-    type: 'line',
-    data: {
-      labels: dayNames,
-      datasets: [
-        {
-          label: 'Guests', data: guestVals, yAxisID: 'y',
-          borderColor: '#0D9488', backgroundColor: 'rgba(13,148,136,0.08)', fill: true, tension: 0.35,
-          pointRadius: 7,
-          pointBackgroundColor: dotColors,
-          pointBorderColor: '#fff', pointBorderWidth: 2, borderWidth: 2.5, spanGaps: true
-        },
-        {
-          label: 'Revenue (M)', data: revenueVals, yAxisID: 'y1',
-          borderColor: '#378ADD', borderDash: [5,4], fill: false, tension: 0.35,
-          pointRadius: 7,
-          pointBackgroundColor: dotColors,
-          pointBorderColor: '#fff', pointBorderWidth: 2, borderWidth: 2, spanGaps: true
-        }
-      ]
-    },
-    options: {
-      responsive: true, maintainAspectRatio: false,
-      plugins: { legend: { display: false } },
-      scales: {
-        // beginAtZero on both scales - without it, each axis auto-scales tightly around its
-        // own narrow min/max, which visually exaggerates completely normal day-to-day
-        // variation into what looks like a dramatic, alarming zigzag. Starting from zero
-        // shows the real proportional scale of the difference, not an artificially
-        // stretched one.
-        y: { display: false, position: 'left', beginAtZero: true },
-        y1: { display: false, position: 'right', beginAtZero: true, grid: { drawOnChartArea: false } },
-        x: { grid: { display: false }, ticks: { color: '#334155', font: { size: 13, weight: '700', family: "'Inter', sans-serif" } } }
-      }
+
+  // ── Scale real values into the drawing area (viewBox 828 x 380, matching the approved mockup) ──
+  const validG = guestVals.filter(v => v != null);
+  if(!validG.length){ container.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100%;color:#94A3B8;font-size:12.5px">Not enough history yet to draw this chart</div>'; return; }
+  const minG = Math.min(...validG, 0), maxG = Math.max(...validG);
+  const validR = revenueVals.filter(v => v != null);
+  const minR = validR.length ? Math.min(...validR, 0) : 0, maxR = validR.length ? Math.max(...validR) : 1;
+  const padTop = 56, padBottom = 46, chartH = 380 - padTop - padBottom;
+  const xFor = i => 40 + i * (788/6);
+  const yForG = v => v == null ? null : padTop + chartH - ((v - minG) / ((maxG - minG) || 1)) * chartH;
+  const yForR = v => v == null ? null : padTop + chartH - ((v - minR) / ((maxR - minR) || 1)) * chartH * 0.7 - chartH * 0.12; // compressed band so it visually sits as a secondary line, not competing 1:1 with Guests
+
+  // Smooth path through whichever points have data, skipping gaps (mirrors spanGaps:true)
+  function smoothPath(ys, close){
+    const pts = ys.map((y,i) => y == null ? null : [xFor(i), y]).filter(Boolean);
+    if(pts.length < 2) return pts.length === 1 ? `M${pts[0][0]},${pts[0][1]}` : '';
+    let d = `M${pts[0][0]},${pts[0][1]}`;
+    for(let i=1;i<pts.length;i++){
+      const [x0,y0] = pts[i-1], [x1,y1] = pts[i];
+      const cx = x0 + (x1-x0)/2;
+      d += ` C${cx},${y0} ${cx},${y1} ${x1},${y1}`;
     }
-  });
+    if(close){
+      const last = pts[pts.length-1], first = pts[0];
+      d += ` L${last[0]},${padTop+chartH+30} L${first[0]},${padTop+chartH+30} Z`;
+    }
+    return d;
+  }
+
+  const guestYs = guestVals.map(yForG);
+  const revenueYs = revenueVals.map(yForR);
+  const guestPath = smoothPath(guestYs);
+  const areaPath = smoothPath(guestYs, true);
+  const revenuePath = smoothPath(revenueYs);
+
+  // Peak day - the single highest guest count this week, called out with its own flag
+  let peakIdx = -1, peakVal = -Infinity;
+  guestVals.forEach((v,i) => { if(v != null && v > peakVal){ peakVal = v; peakIdx = i; } });
+
+  const dots = guestVals.map((v,i) => {
+    if(v == null) return '';
+    const x = xFor(i), y = guestYs[i];
+    const isPeak = i === peakIdx;
+    const r = isPeak ? 11 : (directions[i] ? 9 : 8);
+    const labelY = y - 20;
+    return `<circle cx="${x}" cy="${y}" r="${r}" fill="${dotColors[i]}" stroke="white" stroke-width="${isPeak?3.5:3}" ${isPeak?'filter="url(#pweekGlow)"':''}/>
+      <text x="${x}" y="${labelY}" text-anchor="middle" font-size="14" font-weight="800" fill="#0F1E2E" font-family="Inter">${v}</text>`;
+  }).join('');
+
+  const peakFlag = peakIdx >= 0 ? (() => {
+    const x = xFor(peakIdx), y = guestYs[peakIdx];
+    const flagW = 118;
+    let flagX = x - flagW/2;
+    if(flagX < 4) flagX = 4;
+    if(flagX + flagW > 824) flagX = 824 - flagW;
+    return `<g>
+      <path d="M${x},${y-14} L${x},${y-48}" stroke="#C4973B" stroke-width="2.5"/>
+      <rect x="${flagX}" y="${y-80}" width="${flagW}" height="32" rx="16" fill="#0F1E2E"/>
+      <g transform="translate(${flagX+14},${y-68})"><path d="M6 0 L7.4 4.1 L11.7 4.1 L8.2 6.6 L9.5 10.7 L6 8.2 L2.5 10.7 L3.8 6.6 L0.3 4.1 L4.6 4.1 Z" fill="#C4973B"/></g>
+      <text x="${flagX+flagW/2+7}" y="-58" transform="translate(0,${y})" text-anchor="middle" font-size="12.5" font-weight="800" fill="white" font-family="Inter">Best day — ${peakVal}</text>
+    </g>`;
+  })() : '';
+
+  const xLabels = dayNames.map((n,i) => `<text x="${xFor(i)}" y="368" text-anchor="middle" font-size="13" font-weight="800" fill="#334155" font-family="Inter">${n}</text>`).join('');
+
+  container.innerHTML = `
+    <svg viewBox="0 0 828 380" preserveAspectRatio="none" style="width:100%;height:100%;overflow:visible">
+      <defs>
+        <linearGradient id="pweekLineGrad" x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0%" stop-color="#B45252"/>
+          <stop offset="35%" stop-color="#0D9488"/>
+          <stop offset="100%" stop-color="#C4973B"/>
+        </linearGradient>
+        <linearGradient id="pweekAreaGrad" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#0D9488" stop-opacity="0.22"/>
+          <stop offset="100%" stop-color="#0D9488" stop-opacity="0"/>
+        </linearGradient>
+        <filter id="pweekGlow" x="-50%" y="-50%" width="200%" height="200%">
+          <feGaussianBlur stdDeviation="5" result="blur"/>
+          <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+        </filter>
+      </defs>
+      <g opacity="0.5">
+        <circle cx="18" cy="70" r="1.5" fill="#E2E8F0"/><circle cx="18" cy="160" r="1.5" fill="#E2E8F0"/><circle cx="18" cy="250" r="1.5" fill="#E2E8F0"/>
+        <circle cx="810" cy="70" r="1.5" fill="#E2E8F0"/><circle cx="810" cy="160" r="1.5" fill="#E2E8F0"/><circle cx="810" cy="250" r="1.5" fill="#E2E8F0"/>
+      </g>
+      <path d="${areaPath}" fill="url(#pweekAreaGrad)"/>
+      <path d="${revenuePath}" fill="none" stroke="#CBD5E1" stroke-width="2.5" stroke-dasharray="8,7"/>
+      <path d="${guestPath}" fill="none" stroke="url(#pweekLineGrad)" stroke-width="5" stroke-linecap="round" filter="url(#pweekGlow)"/>
+      ${dots}
+      ${peakFlag}
+      ${xLabels}
+    </svg>`;
 }
 
 function predictorBracketColor(value, stats){

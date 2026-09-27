@@ -17752,7 +17752,7 @@ function predictorRenderBody(){
   const completedDaysThisWeek = today.getDay() === 0 ? 6 : today.getDay()-1; // days before today, Mon onward
   let thisWeekSum = 0, lastYearWeekSum = 0;
   for(let i=0;i<completedDaysThisWeek;i++){
-    const d = new Date(today); d.setDate(d.getDate()-today.getDay()+1+i); // Mon onward, up to yesterday
+    const d = new Date(today); d.setDate(d.getDate() - ((today.getDay()+6)%7) + i); // Mon onward, up to yesterday - (day+6)%7 correctly handles Sunday (getDay()===0), unlike a direct subtraction
     const dateStr = predictorDateStr(d);
     const row = businessMetrics.find(m => m.metric_key==='revenue' && m.period_date===dateStr);
     if(row) thisWeekSum += row.value;

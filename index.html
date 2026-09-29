@@ -10865,12 +10865,15 @@ function barMenuDetailRender(){
   const body = document.getElementById('menuDetailBody');
   body.innerHTML = m.content.sections.map(sec => `
     <div style="margin-bottom:32px">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
+      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:20px">
         <div style="display:flex;align-items:center;gap:10px">
           <div style="width:8px;height:8px;border-radius:50%;background:#0D9488"></div>
           <div style="font-size:15px;font-weight:800;color:#0F1E2E;text-transform:uppercase;letter-spacing:0.5px">${sec.name}</div>
         </div>
-        <button onclick="barSectionDelete(${sec.id})" style="display:flex;align-items:center;gap:6px;background:#FEF2F2;border:1.5px solid #FECACA;border-radius:20px;padding:8px 16px;font-family:'Inter',sans-serif;color:#DC2626;font-size:12.5px;font-weight:700;cursor:pointer"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0-1 14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2L4 6"/></svg>Delete Section</button>
+        <div style="display:flex;gap:8px">
+          <button onclick="barSectionRename(${sec.id})" style="display:flex;align-items:center;gap:6px;background:#F1F5F9;border:1.5px solid #E2E8F0;border-radius:20px;padding:8px 16px;font-family:'Inter',sans-serif;color:#334155;font-size:12.5px;font-weight:700;cursor:pointer"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>Edit</button>
+          <button onclick="barSectionDelete(${sec.id})" style="display:flex;align-items:center;gap:6px;background:#FEF2F2;border:1.5px solid #FECACA;border-radius:20px;padding:8px 16px;font-family:'Inter',sans-serif;color:#DC2626;font-size:12.5px;font-weight:700;cursor:pointer"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0-1 14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2L4 6"/></svg>Delete Section</button>
+        </div>
       </div>
       ${sec.dishes.map(d => barDishCardHtml(sec.id, d)).join('') || '<div style="font-size:12px;color:#94A3B8;margin-bottom:12px">No drinks yet</div>'}
       <button onclick="barDishAdd(${sec.id})" style="width:100%;padding:14px;margin-top:2px;background:none;border:1.5px dashed #CBD5E1;border-radius:12px;font-family:'Inter',sans-serif;font-size:13px;font-weight:700;color:#64748B;cursor:pointer">+ Add Drink</button>
@@ -10924,6 +10927,23 @@ window.barSectionDelete = function(sectionId){
     toast('Section deleted');
     barSaveMenuContent(m.id);
   }});
+};
+
+window.barSectionRename = function(sectionId){
+  const m = barMenusData.find(x=>x.id===barMenuDetailId);
+  const sec = m.content.sections.find(s=>s.id===sectionId);
+  if(!sec) return;
+  appModalShow({
+    title:'Rename Section',
+    fields:[{label:'Section name', placeholder:'e.g. Classics, Signatures, Mocktails', value:sec.name}],
+    onOk([name]){
+      if(!name || !name.trim()) return;
+      sec.name = name.trim();
+      barMenuDetailRender();
+      toast('Section renamed ✓');
+      barSaveMenuContent(m.id);
+    }
+  });
 };
 
 window.barDishAdd = function(sectionId){
@@ -11755,12 +11775,15 @@ function kitchenMenuDetailRender(){
     </div>` : '';
   body.innerHTML = summaryBar + m.content.sections.map(sec => `
     <div style="margin-bottom:32px">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
+      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:20px">
         <div style="display:flex;align-items:center;gap:10px">
           <div style="width:8px;height:8px;border-radius:50%;background:#0D9488"></div>
           <div style="font-size:15px;font-weight:800;color:#0F1E2E;text-transform:uppercase;letter-spacing:0.5px">${sec.name}</div>
         </div>
-        <button onclick="kitchenSectionDelete(${sec.id})" style="display:flex;align-items:center;gap:6px;background:#FEF2F2;border:1.5px solid #FECACA;border-radius:20px;padding:8px 16px;font-family:'Inter',sans-serif;color:#DC2626;font-size:12.5px;font-weight:700;cursor:pointer"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0-1 14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2L4 6"/></svg>Delete Section</button>
+        <div style="display:flex;gap:8px">
+          <button onclick="kitchenSectionRename(${sec.id})" style="display:flex;align-items:center;gap:6px;background:#F1F5F9;border:1.5px solid #E2E8F0;border-radius:20px;padding:8px 16px;font-family:'Inter',sans-serif;color:#334155;font-size:12.5px;font-weight:700;cursor:pointer"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>Edit</button>
+          <button onclick="kitchenSectionDelete(${sec.id})" style="display:flex;align-items:center;gap:6px;background:#FEF2F2;border:1.5px solid #FECACA;border-radius:20px;padding:8px 16px;font-family:'Inter',sans-serif;color:#DC2626;font-size:12.5px;font-weight:700;cursor:pointer"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0-1 14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2L4 6"/></svg>Delete Section</button>
+        </div>
       </div>
       ${sec.dishes.map((d,idx) => kitchenDishCardHtml(sec.id, d, idx, sec.dishes.length)).join('') || '<div style="font-size:12px;color:#94A3B8;margin-bottom:12px">No dishes yet</div>'}
       <button onclick="kitchenDishAdd(${sec.id})" style="width:100%;padding:14px;margin-top:2px;background:none;border:1.5px dashed #CBD5E1;border-radius:12px;font-family:'Inter',sans-serif;font-size:13px;font-weight:700;color:#64748B;cursor:pointer">+ Add Dish</button>
@@ -11878,6 +11901,23 @@ window.kitchenSectionDelete = function(sectionId){
     toast('Section deleted');
     kitchenSaveMenuContent(m.id);
   }});
+};
+
+window.kitchenSectionRename = function(sectionId){
+  const m = kitchenMenusData.find(x=>x.id===kitchenMenuDetailId);
+  const sec = m.content.sections.find(s=>s.id===sectionId);
+  if(!sec) return;
+  appModalShow({
+    title:'Rename Section',
+    fields:[{label:'Section name', placeholder:'e.g. Sides, Brunch, Set Menu', value:sec.name}],
+    onOk([name]){
+      if(!name || !name.trim()) return;
+      sec.name = name.trim();
+      kitchenMenuDetailRender();
+      toast('Section renamed ✓');
+      kitchenSaveMenuContent(m.id);
+    }
+  });
 };
 
 window.kitchenDishAdd = function(sectionId){

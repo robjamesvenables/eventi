@@ -5425,6 +5425,10 @@ window.addEventListener('popstate', function(e){
   if(momentLightboxOpen && (!e.state || !e.state.momentOpen)){
     closeMoment(true);
   }
+  const photoZoomEl = document.getElementById('recipePhotoLightbox');
+  if(photoZoomEl && photoZoomEl.style.display === 'flex' && (!e.state || !e.state.photoZoomOpen)){
+    recipePhotoZoomClose(true);
+  }
   const dishViewEl = document.getElementById('kitchenDishViewOverlay');
   if(dishViewEl && (!e.state || !e.state.dishViewOpen)){
     kitchenDishViewClose(true);
@@ -12071,9 +12075,12 @@ function kitchenRecipeCardHtml(r){
 window.recipePhotoZoom = function(url){
   document.getElementById('recipePhotoLightboxImg').src = url;
   document.getElementById('recipePhotoLightbox').style.display = 'flex';
+  const priorState = history.state || {page:'home'};
+  history.pushState(Object.assign({}, priorState, {photoZoomOpen:true}), '', location.hash || '#photo');
 };
-window.recipePhotoZoomClose = function(){
+window.recipePhotoZoomClose = function(fromPop){
   document.getElementById('recipePhotoLightbox').style.display = 'none';
+  if(!fromPop) history.back();
 };
 
 // ── RECIPE PDF VERSIONING ──
@@ -14258,6 +14265,7 @@ function chatSeedDepartmentGroups(){
 }
 
 let chatGroupRealtimeSubscribed = false;
+let chatDirectRealtimeSubscribed = false;
 
 function chatGroupMessageKey(row){ return 'gdb:' + row.id; }
 
@@ -14301,6 +14309,61 @@ function chatSubscribeGroupRealtime(){
       chatRenderDashboardList();
       chatUpdateBadges();
       if(payload.new.department && chatConversations.find(c=>c.id===chatActiveId)?.name === payload.new.department){
+        chatRenderMessages();
+      }
+    })
+    .subscribe();
+}
+
+function chatApplyDirectMessage(row){
+  const me = chatCurrentUserName();
+  if(row.sender_name !== me && row.recipient_name !== me) return; // not a conversation involving us
+  let other = row.sender_name === me ? row.recipient_name : row.sender_name;
+  if(row.sender_name === me && row.recipient_name === me) other = me;
+  let conv = chatConversations.find(c => !c.isGroup && String(c.name||'').toLowerCase() === String(other||'').toLowerCase());
+  if(!conv){
+    conv = {
+      id: Date.now(),
+      name: other,
+      avatar: other.split(/\s+/).map(x=>x[0]).slice(0,2).join('').toUpperCase() || '?',
+      color: '#0D9488',
+      online: true,
+      unread: 0,
+      messages: []
+    };
+    chatConversations.push(conv);
+  }
+  const seen = new Set((conv.messages||[]).filter(m=>m.dbId).map(m=>m.dbId));
+  if(seen.has(row.id)) return;
+  const mine = row.sender_name === me;
+  conv.messages.push({
+    dbId: row.id,
+    from: mine ? 'me' : 'them',
+    text: row.body || '',
+    time: chatFormatTime(row.created_at),
+    createdAt: row.created_at,
+    attachment: row.attachment || null,
+    attachmentType: row.attachment_type || null,
+    attachmentName: row.attachment_name || null
+  });
+  conv.messages.sort((a,b) => String(a.createdAt||'').localeCompare(String(b.createdAt||'')));
+  if(!mine && conv.id !== chatActiveId) conv.unread = (conv.unread || 0) + 1;
+}
+
+function chatSubscribeDirectRealtime(){
+  if(chatDirectRealtimeSubscribed) return;
+  chatDirectRealtimeSubscribed = true;
+  sb.channel('chat_messages_live')
+    .on('postgres_changes', { event:'INSERT', schema:'public', table:'chat_messages' }, payload => {
+      const me = chatCurrentUserName();
+      if(payload.new.sender_name === me) return; // our own send already renders instantly, avoid a duplicate
+      chatApplyDirectMessage(payload.new);
+      chatRenderList();
+      chatRenderDashboardList();
+      chatUpdateBadges();
+      const other = payload.new.sender_name;
+      const activeConv = chatConversations.find(c=>c.id===chatActiveId);
+      if(activeConv && !activeConv.isGroup && String(activeConv.name||'').toLowerCase() === String(other||'').toLowerCase()){
         chatRenderMessages();
       }
     })
@@ -14595,7 +14658,7 @@ function chatRenderMessages(){
         attachmentHtml = `<video src="${m.attachment}" controls style="max-width:220px;border-radius:12px;display:block;margin-bottom:${m.text?'6px':'0'}"></video>`;
       } else {
         attachmentHtml = `<div onclick="window.open('${m.attachment}','_blank')" style="display:flex;align-items:center;gap:10px;padding:10px;background:${mine?'rgba(255,255,255,0.1)':'white'};border-radius:10px;cursor:pointer;margin-bottom:${m.text?'6px':'0'};min-width:180px">
-          <div style="width:36px;height:36px;border-radius:8px;background:${mine?'rgba(255,255,255,0.15)':'#F1F5F9'};display:flex;align-items:center;justify-content:center;flex-shrink:0">📄</div>
+          <div style="width:36px;height:36px;border-radius:8px;background:${mine?'rgba(255,255,255,0.15)':'#F1F5F9'};display:flex;align-items:center;justify-content:center;flex-shrink:0"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="${mine?'white':'#64748B'}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>
           <div style="min-width:0"><div style="font-size:12.5px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${m.attachmentName||'Document'}</div><div style="font-size:10.5px;opacity:0.7">Tap to open</div></div>
         </div>`;
       }
@@ -14953,6 +15016,7 @@ function chatInit(){
     if(chatActiveId) chatRenderMessages();
   });
   chatSubscribeGroupRealtime();
+  chatSubscribeDirectRealtime();
   document.getElementById('chat-search').oninput = chatRenderList;
   chatSizeCard();
   if(!window._chatResizeWired){
@@ -15214,9 +15278,9 @@ function quickLinksRender(){
     const isNew = quickLinksIsNew(f.createdAt);
     let ageBadge = '';
     if(isNew){
-      ageBadge = `<div style="background:#DCFCE7;color:#16A34A;font-size:11px;font-weight:700;padding:4px 10px;border-radius:20px;white-space:nowrap;margin-right:8px">🕒 New</div>`;
+      ageBadge = `<div style="background:#DCFCE7;color:#16A34A;font-size:11px;font-weight:700;padding:4px 10px;border-radius:20px;white-space:nowrap;margin-right:8px"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-1px;margin-right:3px"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>New</div>`;
     } else if(ageLabel){
-      ageBadge = `<div style="background:#FEF3C7;color:#D97706;font-size:11px;font-weight:700;padding:4px 10px;border-radius:20px;white-space:nowrap;margin-right:8px">🕒 ${ageLabel}</div>`;
+      ageBadge = `<div style="background:#FEF3C7;color:#D97706;font-size:11px;font-weight:700;padding:4px 10px;border-radius:20px;white-space:nowrap;margin-right:8px"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-1px;margin-right:3px"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>${ageLabel}</div>`;
     }
     return `
       <div class="myd-file-row">

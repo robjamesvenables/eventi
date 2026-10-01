@@ -18865,10 +18865,15 @@ function momentPrefetchAllInBackground(){
   });
 }
 
+function hlRemoveClones(strip){
+  strip.querySelectorAll('[data-hl-clone]').forEach(function(c){ c.remove(); });
+}
+
 function hlInitScroll(){
   const strip = document.getElementById('hl-strip');
   const outer = document.getElementById('hl-outer');
   if(!strip || !outer) return;
+  hlRemoveClones(strip);
   const cards = Array.from(strip.children);
   const isMobile = window.innerWidth <= 700;
   if(isMobile || cards.length < 2){
@@ -18892,10 +18897,22 @@ function hlStartAutoScroll(strip, outer){
   const isPhoneWidth = window.innerWidth <= 700;
   if(isPhoneWidth) return;
 
-  // Duplicate so the loop can wrap seamlessly. strip.innerHTML is always a fresh,
-  // un-doubled render at this point (momentsRebuild rebuilds it from scratch every
-  // time), so this must run on every call, not just the first.
-  strip.innerHTML = strip.innerHTML + strip.innerHTML;
+  // Duplicate so the loop can wrap seamlessly - but ONLY when the real cards already
+  // overflow the strip. With just a few highlights there is nothing to scroll, and the
+  // copies showed up as visible duplicates (add one highlight, see two). Copies are
+  // marked data-hl-clone so they can always be stripped first: the resize handler calls
+  // this again WITHOUT a fresh rebuild, which previously doubled the doubled strip.
+  hlRemoveClones(strip);
+  outer.scrollLeft = 0;
+  if(strip.scrollWidth <= outer.clientWidth + 4){
+    return;
+  }
+  Array.from(strip.children).forEach(function(c){
+    const copy = c.cloneNode(true);
+    copy.setAttribute('data-hl-clone','1');
+    copy.setAttribute('aria-hidden','true');
+    strip.appendChild(copy);
+  });
   const cardW = 200 + 14;
   const halfWidth = strip.scrollWidth / 2;
   hlAutoScrollPaused = false;

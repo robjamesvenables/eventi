@@ -3310,11 +3310,11 @@ img.emoji-tw{width:1.15em;height:1.15em;vertical-align:-0.2em;margin:0 1px}
           </div>
           <div style="display:flex;gap:36px;padding-top:20px;border-top:1px solid rgba(255,255,255,0.14)">
             <div>
-              <div id="an-rev-mtd-lbl" style="font-size:12px;font-weight:700;color:rgba(255,255,255,0.55);margin-bottom:4px">Month to Date</div>
+              <div style="font-size:12px;font-weight:700;color:rgba(255,255,255,0.55);margin-bottom:4px">Month to Date</div>
               <div id="an-rev-mtd-val" style="font-size:19px;font-weight:800;color:white">—</div>
             </div>
             <div>
-              <div id="an-rev-ytd-lbl" style="font-size:12px;font-weight:700;color:rgba(255,255,255,0.55);margin-bottom:4px">Year to Date</div>
+              <div style="font-size:12px;font-weight:700;color:rgba(255,255,255,0.55);margin-bottom:4px">Year to Date</div>
               <div id="an-rev-ytd-val" style="font-size:19px;font-weight:800;color:white">—</div>
             </div>
           </div>
@@ -17346,28 +17346,12 @@ function analyticsRender(){
   }).filter(r => r.curr || r.prev);
 
   // Top strip: Yesterday / Month to Date / Year to Date - plain figures, no comparisons yet
-  // Never show a bare dash: on the 1st of a month there are no closed days yet in the new month
-  // (Month to Date runs to yesterday), so show last month's total instead; on 1 January the same
-  // for the year. Otherwise, if nothing has been entered yet, say so in words.
   const revYesterdayEl = document.getElementById('an-rev-yesterday-val');
-  if(revYesterdayEl) revYesterdayEl.textContent = revYesterday ? bmMoney(revYesterday) : 'Not entered yet';
+  if(revYesterdayEl) revYesterdayEl.textContent = revYesterday ? bmMoney(revYesterday) : '—';
   const revMtdEl = document.getElementById('an-rev-mtd-val');
-  const revMtdLbl = document.getElementById('an-rev-mtd-lbl');
-  const firstOfMonth = yesterday < monthStart;
-  if(revMtdLbl) revMtdLbl.textContent = firstOfMonth
-    ? (new Date(yesterdayDate.getFullYear(), yesterdayDate.getMonth(), 1).toLocaleString('en-GB',{month:'long'}) + ' total')
-    : 'Month to Date';
-  if(revMtdEl) revMtdEl.textContent = firstOfMonth
-    ? (revPrevMonth ? bmMoney(revPrevMonth) : 'No figures')
-    : (revMTD ? bmMoney(revMTD) : 'No figures yet');
+  if(revMtdEl) revMtdEl.textContent = revMTD ? bmMoney(revMTD) : '—';
   const revYtdEl = document.getElementById('an-rev-ytd-val');
-  const revYtdLbl = document.getElementById('an-rev-ytd-lbl');
-  const firstOfYear = yesterday < yearStart;
-  if(revYtdLbl) revYtdLbl.textContent = firstOfYear ? (yesterdayDate.getFullYear() + ' total') : 'Year to Date';
-  const revLastYearTotal = firstOfYear ? bmSum('revenue', bmDateStr(new Date(yesterdayDate.getFullYear(),0,1)), yesterday) : 0;
-  if(revYtdEl) revYtdEl.textContent = firstOfYear
-    ? (revLastYearTotal ? bmMoney(revLastYearTotal) : 'No figures')
-    : (revYTD ? bmMoney(revYTD) : 'No figures yet');
+  if(revYtdEl) revYtdEl.textContent = revYTD ? bmMoney(revYTD) : '—';
   [revYesterdayEl, revMtdEl, revYtdEl].forEach(anFitTextToBox);
 
   // vs Last Year / vs Last Month strips - blank until there's real prior data to compare against.

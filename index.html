@@ -8274,10 +8274,33 @@ function taskboardPersistCardMove(card, toCol){
   }
 }
 
+// Column names + colours are saved per board in Supabase (task_board_columns), so everyone on a
+// team board sees the same names/colours. localStorage is kept only as a fallback.
+let kbColSettings = {};
+function kbColGet(col, field){ const r = kbColSettings[kbActiveProjectId+'|'+col]; return r ? r[field] : null; }
+async function kbColSettingsLoad(){
+  try{
+    const { data, error } = await sb.from('task_board_columns').select('*');
+    if(error) throw error;
+    kbColSettings = {};
+    (data||[]).forEach(r=>{ kbColSettings[r.board_id+'|'+r.col] = { title: r.title, colour: r.colour }; });
+    if(kbActiveProjectId){ kbInitColColours(); kbApplyColTitles(); }
+  }catch(e){ console.warn('Task board column settings not loaded', e); }
+}
+function kbColSave(col, patch){
+  if(!kbActiveProjectId) return;
+  const key = kbActiveProjectId+'|'+col;
+  const cur = Object.assign({ title: null, colour: null }, kbColSettings[key] || {}, patch);
+  kbColSettings[key] = cur;
+  sb.from('task_board_columns').upsert({ board_id: kbActiveProjectId, col, title: cur.title, colour: cur.colour, updated_at: new Date().toISOString() }, { onConflict: 'board_id,col' })
+    .then(({error})=>{ if(error){ console.warn('Column save failed', error); toast('Column change not saved - check your connection'); } });
+}
+
 window.kbColColour = function(col, hex){
   const hd = document.getElementById('kbhd-'+col);
   if(hd) hd.style.background = hex;
   localStorage.setItem('kbColColour_'+kbActiveProjectId+'_'+col, hex);
+  kbColSave(col, { colour: hex });
   const pop = document.getElementById('kbpop-'+col);
   if(pop) pop.querySelectorAll('.card-swatch').forEach(sw=>{
     sw.classList.toggle('active', sw.dataset.hex===hex);
@@ -8294,7 +8317,7 @@ window.toggleKbColPicker = function(e, col){
 
 function kbInitColColours(){
   ['todo','progress','done'].forEach(col=>{
-    const saved = localStorage.getItem('kbColColour_'+kbActiveProjectId+'_'+col) || '#0F1E2E';
+    const saved = kbColGet(col,'colour') || localStorage.getItem('kbColColour_'+kbActiveProjectId+'_'+col) || '#0F1E2E';
     const hd = document.getElementById('kbhd-'+col);
     if(hd) hd.style.background = saved;
     const pop = document.getElementById('kbpop-'+col);
@@ -8310,7 +8333,7 @@ function kbInitColColours(){
 const KB_COL_DEFAULT_TITLES = {todo:'To Do', progress:'In Progress', done:'Done'};
 function kbApplyColTitles(){
   ['todo','progress','done'].forEach(col=>{
-    const saved = localStorage.getItem('kbColTitle_'+col) || KB_COL_DEFAULT_TITLES[col];
+    const saved = kbColGet(col,'title') || localStorage.getItem('kbColTitle_'+col) || KB_COL_DEFAULT_TITLES[col];
     const el = document.getElementById('kbtitle-'+col);
     if(el) el.textContent = saved;
   });
@@ -8322,7 +8345,7 @@ window.kbRenameCol = function(col){
     fields: [{label:'Column name', placeholder: 'e.g. To Do', value: current}],
     onOk([name]){
       const clean = (name||'').trim() || KB_COL_DEFAULT_TITLES[col];
-      localStorage.setItem('kbColTitle_'+col, clean);
+      kbColSave(col, { title: clean });
       const el = document.getElementById('kbtitle-'+col);
       if(el) el.textContent = clean;
       toast('Column renamed ✓');
@@ -12669,6 +12692,7 @@ window.addEventListener('load', () => {
   suggestionLoadFromSupabase().then(suggestionRenderList);
   vendorLoadFromSupabase().then(vendorRenderDepts);
   customerLoadFromSupabase().then(customerRenderList);
+  kbColSettingsLoad();
   calLoadFromSupabase().then(()=>{ try{ calRender(); }catch(e){} });
   vacanciesLoadFromSupabase().then(vacanciesRender);
   kitchenLoadFromSupabase().then(()=>{ kitchenRenderAreaTabs(); kitchenRenderMenus(); kitchenRenderRecipes(); kitchenRenderAllergens(); });

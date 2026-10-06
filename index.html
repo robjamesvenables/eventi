@@ -6189,6 +6189,7 @@ function calToggleLayer(id, checked){
   const cal = calCalendars.find(c=>c.id===id);
   if(cal) cal.visible = checked;
   calRender();
+  if(cal && !cal.builtin) calSave('visible', sb.from('cal_calendars').update({ visible: checked }).eq('id', id));
 }
 
 function calRenameCalendar(id){
@@ -6198,7 +6199,10 @@ function calRenameCalendar(id){
     title:'Rename Calendar',
     fields:[{label:'Calendar name', placeholder:'e.g. Game Nights', maxlength:24, value:cal.name}],
     onOk([name]){
-      if(name && name.trim()){ cal.name = name.trim(); calRenderLayers(); toast('Calendar renamed ✓'); }
+      if(name && name.trim()){
+        cal.name = name.trim(); calRenderLayers(); toast('Calendar renamed ✓');
+        if(!cal.builtin) calSave('rename', sb.from('cal_calendars').update({ name: cal.name }).eq('id', id));
+      }
     }
   });
 }
@@ -6215,6 +6219,7 @@ function calAddCalendar(){
       const id = 'cal_'+Date.now();
       calCalendars.push({id, name:name.trim(), color:color||CAL_ENTRY_COLORS[0], builtin:false, visible:true});
       calCustomEvents[id] = [];
+      calSave('add calendar', sb.from('cal_calendars').insert({ id, name:name.trim(), color:color||CAL_ENTRY_COLORS[0], visible:true }));
       calRenderLayers();
       calRender();
       toast('Calendar added ✓');
@@ -6228,6 +6233,7 @@ function calDeleteCalendar(id){
   appConfirmShow({title:'Remove Calendar', msg:`Remove "${cal.name}" and all ${(calCustomEvents[id]||[]).length} of its events? This can't be undone.`, onOk:()=>{
     calCalendars = calCalendars.filter(c=>c.id!==id);
     delete calCustomEvents[id];
+    calSave('remove calendar', sb.from('cal_calendars').delete().eq('id', id)); // its events go with it (cascade)
     calRenderLayers();
     calRender();
     toast('Calendar removed');
@@ -6248,7 +6254,9 @@ function calAddEventToCalendar(calId){
     onOk([title,date,time,venue]){
       if(!title || !date) return;
       calCustomEvents[calId] = calCustomEvents[calId]||[];
-      calCustomEvents[calId].push({id:calId+'-'+Date.now(), name:title, date, time:time||'TBC', venue:venue||''});
+      const ev = {id:calId+'-'+Date.now(), name:title, date, time:time||'TBC', venue:venue||''};
+      calCustomEvents[calId].push(ev);
+      calSave('add event', sb.from('cal_events').insert({ ...ev, calendar_id: calId }));
       calRenderLayers();
       calRender();
       toast(cal.name + ' updated ✓');
@@ -6268,6 +6276,7 @@ function calShowCustomEvent(calId, id){
     label: 'Delete',
     onOk: ()=>{
       calCustomEvents[calId] = list.filter(x=>x.id!==id);
+      calSave('remove event', sb.from('cal_events').delete().eq('id', id));
       calRenderLayers();
       calRender();
       toast('Removed');
@@ -6362,6 +6371,7 @@ function calImportICS(evt){
     calRenderLayers();
     calRender();
     toast(`${cal?cal.name:'Calendar'} updated ✓ (${calCustomEvents[targetId].length} imported)`);
+    calReplaceEventsInSupabase(targetId, calCustomEvents[targetId]);
   };
   reader.readAsText(file);
   evt.target.value = '';
@@ -6403,7 +6413,50 @@ function calGenerateDemoFixtures(){
   }
   return fixtures;
 }
-calCustomEvents.sports = calGenerateDemoFixtures();
+
+// ── Event Calendar ↔ Supabase ──
+// Tables: cal_calendars (custom calendar layers), cal_events (their events, incl. .ics imports),
+// cal_notes (one coloured note per day). The built-in "Events" layer still comes from the
+// demo Current Events data until that module is wired up.
+async function calSave(what, query){
+  try{ const { error } = await query; if(error) throw error; }
+  catch(e){ console.warn('Calendar '+what+' failed', e); toast('Calendar: could not '+what+' - check your connection'); }
+}
+async function calReplaceEventsInSupabase(calId, list){
+  try{
+    let r = await sb.from('cal_events').delete().eq('calendar_id', calId); if(r.error) throw r.error;
+    const rows = list.map(ev=>({ id: ev.id, calendar_id: calId, name: ev.name, date: ev.date, time: ev.time||'TBC', venue: ev.venue||'' }));
+    for(let i=0;i<rows.length;i+=500){ r = await sb.from('cal_events').upsert(rows.slice(i,i+500), { onConflict:'id' }); if(r.error) throw r.error; }
+  }catch(e){ console.warn('Calendar import save failed', e); toast('Calendar: imported events could not be saved - check your connection'); }
+}
+async function calLoadFromSupabase(){
+  try{
+    let { data: cals, error } = await sb.from('cal_calendars').select('*').order('created_at', { ascending: true });
+    if(error) throw error;
+    if(!cals || cals.length === 0){
+      // First run: save the starter "Sports Fixtures" calendar with a year of demo fixtures, once
+      const seed = { id:'sports', name:'Sports Fixtures', color:'#C4622D', visible:true };
+      const ins = await sb.from('cal_calendars').insert(seed).select(); if(ins.error) throw ins.error;
+      cals = ins.data;
+      await calReplaceEventsInSupabase('sports', calGenerateDemoFixtures());
+    }
+    const [evRes, noteRes] = await Promise.all([
+      sb.from('cal_events').select('*'),
+      sb.from('cal_notes').select('*')
+    ]);
+    if(evRes.error) throw evRes.error;
+    if(noteRes.error) throw noteRes.error;
+    calCalendars = [calCalendars.find(c=>c.builtin) || {id:'events', name:'Events', color:'#0D9488', builtin:true, visible:true}]
+      .concat(cals.map(c=>({ id:c.id, name:c.name, color:c.color, builtin:false, visible: c.visible !== false })));
+    calCustomEvents = {};
+    cals.forEach(c=>{ calCustomEvents[c.id] = []; });
+    (evRes.data||[]).forEach(ev=>{ (calCustomEvents[ev.calendar_id] = calCustomEvents[ev.calendar_id]||[]).push({ id:ev.id, name:ev.name, date:ev.date, time:ev.time||'TBC', venue:ev.venue||'' }); });
+    calManualEntries = {};
+    (noteRes.data||[]).forEach(n=>{ calManualEntries[n.date] = { text:n.text, color:n.color }; });
+  }catch(e){
+    console.warn('Calendar load failed', e);
+  }
+}
 
 function calRender(){
   calRenderLayers();
@@ -6516,6 +6569,7 @@ function calClickDay(dateStr){
     onOk([text, color]){
       calManualEntries[dateStr] = {text, color};
       calRenderMonth();
+      calSave('save entry', sb.from('cal_notes').upsert({ date: dateStr, text, color }, { onConflict: 'date' }));
       toast('Calendar updated ✓');
     }
   });
@@ -6524,6 +6578,7 @@ function calDeleteEntry(dateStr){
   appConfirmShow({title:'Remove Entry', msg:'Remove this calendar entry?', onOk:()=>{
     delete calManualEntries[dateStr];
     calRenderMonth();
+    calSave('remove entry', sb.from('cal_notes').delete().eq('date', dateStr));
     toast('Removed');
   }});
 }
@@ -12614,6 +12669,7 @@ window.addEventListener('load', () => {
   suggestionLoadFromSupabase().then(suggestionRenderList);
   vendorLoadFromSupabase().then(vendorRenderDepts);
   customerLoadFromSupabase().then(customerRenderList);
+  calLoadFromSupabase().then(()=>{ try{ calRender(); }catch(e){} });
   vacanciesLoadFromSupabase().then(vacanciesRender);
   kitchenLoadFromSupabase().then(()=>{ kitchenRenderAreaTabs(); kitchenRenderMenus(); kitchenRenderRecipes(); kitchenRenderAllergens(); });
   kitchenLinksLoadFromSupabase().then(kitchenRenderLinks);

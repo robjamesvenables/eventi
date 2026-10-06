@@ -6180,9 +6180,8 @@ const CAL_ENTRY_COLORS = ['#2563EB','#16A34A','#EF4444','#C4973B','#0D9488','#C4
 // Any other calendar is a custom layer backed by calCustomEvents[id], filled manually or via .ics import.
 let calCalendars = [
   {id:'events', name:'Events', color:'#0D9488', builtin:true, visible:true},
-  {id:'sports', name:'Sports Fixtures', color:'#C4622D', builtin:false, visible:true},
 ];
-let calCustomEvents = { sports: [] };
+let calCustomEvents = {};
 let calImportTargetId = null;
 
 function calToggleLayer(id, checked){
@@ -6433,19 +6432,20 @@ async function calLoadFromSupabase(){
   try{
     let { data: cals, error } = await sb.from('cal_calendars').select('*').order('created_at', { ascending: true });
     if(error) throw error;
-    if(!cals || cals.length === 0){
-      // First run: save the starter "Sports Fixtures" calendar with a year of demo fixtures, once
-      const seed = { id:'sports', name:'Sports Fixtures', color:'#C4622D', visible:true };
-      const ins = await sb.from('cal_calendars').insert(seed).select(); if(ins.error) throw ins.error;
-      cals = ins.data;
-      await calReplaceEventsInSupabase('sports', calGenerateDemoFixtures());
-    }
+    cals = cals || [];
     const [evRes, noteRes] = await Promise.all([
       sb.from('cal_events').select('*'),
       sb.from('cal_notes').select('*')
     ]);
     if(evRes.error) throw evRes.error;
     if(noteRes.error) throw noteRes.error;
+    // No calendars by default (only the built-in Events layer) - venues add their own.
+    // Clean up the old demo "Sports Fixtures" calendar if it's still only holding demo fixtures.
+    const sportsEvents = (evRes.data||[]).filter(ev=>ev.calendar_id==='sports');
+    if(cals.some(c=>c.id==='sports') && sportsEvents.every(ev=>String(ev.id).startsWith('sports-demo-'))){
+      const del = await sb.from('cal_calendars').delete().eq('id','sports');
+      if(!del.error){ cals = cals.filter(c=>c.id!=='sports'); evRes.data = (evRes.data||[]).filter(ev=>ev.calendar_id!=='sports'); }
+    }
     calCalendars = [calCalendars.find(c=>c.builtin) || {id:'events', name:'Events', color:'#0D9488', builtin:true, visible:true}]
       .concat(cals.map(c=>({ id:c.id, name:c.name, color:c.color, builtin:false, visible: c.visible !== false })));
     calCustomEvents = {};

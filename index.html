@@ -6122,6 +6122,7 @@ window.beoClientShareOpen = function(){
     el.innerHTML = card(`
       <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px"><div style="font-size:18px;font-weight:800;color:#0F1E2E">Client link is on</div><span style="background:#DCFCE7;color:#166534;font-size:11px;font-weight:800;padding:3px 9px;border-radius:20px">LIVE</span></div>
       <div style="font-size:13px;color:#475569;margin-bottom:12px">View-only. Updates automatically when the plan changes.</div>
+      <div id="beo-client-note" style="font-size:12.5px;font-weight:700;color:#15803D;min-height:18px;margin:-4px 0 6px;opacity:0;transition:opacity .2s"></div>
       <div style="background:#F1F5F9;border-radius:10px;padding:10px 12px;font-size:12.5px;color:#0F1E2E;word-break:break-all;margin-bottom:12px">${evEsc(url)}</div>
       <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px">
         <button class="btn btn-navy" onclick="beoClientCopy()">Copy link</button>
@@ -6142,11 +6143,17 @@ window.beoClientShareOpen = function(){
   }
   el.style.display = 'flex';
 };
+function beoClientNote(msg){
+  const n = document.getElementById('beo-client-note');
+  if(!n){ toast(msg); return; }
+  n.textContent = msg; n.style.opacity = '1';
+  clearTimeout(n._t); n._t = setTimeout(()=>{ n.style.opacity = '0'; }, 2200);
+}
 window.beoClientTurnOn = async function(){
   await beoFlush();
   beoShare.on = true;
   if(!beoShare.token) beoShare.token = beoNewToken();
-  if(await beoSaveShareFields()){ beoRenderClientUi(); beoClientShareOpen(); toast('Client link is on ✓'); }
+  if(await beoSaveShareFields()){ beoRenderClientUi(); beoClientShareOpen(); }
   else { beoShare.on = false; }
 };
 window.beoClientTurnOff = async function(){
@@ -6156,12 +6163,12 @@ window.beoClientTurnOff = async function(){
 window.beoClientNewLink = function(){
   appConfirmShow({ title:'Make a new client link?', msg:'The current link will stop working. Anyone who needs to see the plan will need the new link.', onOk: async ()=>{
     const old = beoShare.token; beoShare.token = beoNewToken();
-    if(await beoSaveShareFields()){ beoClientShareOpen(); toast('New link ready ✓'); } else beoShare.token = old;
+    if(await beoSaveShareFields()){ beoClientShareOpen(); beoClientNote('New link ready ✓'); } else beoShare.token = old;
   }});
 };
 window.beoClientTogglePrice = async function(on){
   beoShare.settings.show_price = !!on;
-  if(await beoSaveShareFields()) toast(on ? 'Price shown to client' : 'Price hidden from client');
+  if(await beoSaveShareFields()) beoClientNote(on ? 'Price now shown to the client ✓' : 'Price now hidden from the client ✓');
 };
 window.beoClientCopy = async function(){
   const url = beoClientUrl();
@@ -6169,7 +6176,7 @@ window.beoClientCopy = async function(){
     const ta=document.createElement('textarea'); ta.value=url; ta.style.cssText='position:fixed;top:0;left:0;opacity:0';
     document.body.appendChild(ta); ta.select(); try{ document.execCommand('copy'); }catch(_){} document.body.removeChild(ta);
   }
-  toast('Client link copied ✓');
+  beoClientNote('Link copied ✓');
 };
 async function beoSaveNow(){
   if(!beoCurrentId) return;

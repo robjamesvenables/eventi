@@ -1210,7 +1210,7 @@ textarea.rf-val{resize:vertical;min-height:72px;line-height:1.5}
 /* Month grid */
 .cal-grid-wrap{flex:1;background:#fff;border:2px solid #0F1E2E;border-radius:12px;overflow:hidden}
 .cal-dow-row{
-  display:grid;grid-template-columns:repeat(7,1fr);
+  display:grid;grid-template-columns:repeat(7,minmax(0,1fr));
   background:#0F1E2E;border-bottom:2px solid #0F1E2E;
 }
 .cal-dow{
@@ -1219,11 +1219,12 @@ textarea.rf-val{resize:vertical;min-height:72px;line-height:1.5}
   letter-spacing:1.2px;color:rgba(255,255,255,0.7);
 }
 .cal-month-grid{
-  display:grid;grid-template-columns:repeat(7,1fr);
+  display:grid;grid-template-columns:repeat(7,minmax(0,1fr));
   grid-auto-rows:minmax(100px,1fr);
   border-left:1px solid #E2E8F0;
 }
 .cal-cell{
+  min-width:0;overflow:hidden;
   border-right:1px solid #E2E8F0;
   border-bottom:1px solid #E2E8F0;
   padding:10px;
@@ -2518,6 +2519,27 @@ img.emoji-tw{width:1.15em;height:1.15em;vertical-align:-0.2em;margin:0 1px}
 .beo [data-photo-key]{gap:10px !important;margin:12px 0 !important}
 .beo [data-photo-key] img,.beo [data-photo-key] > div{width:120px !important;height:120px !important;border-radius:10px !important;font-size:15px !important}
 @media (max-width:700px){ .beo [data-photo-key]{gap:8px !important} .beo [data-photo-key] img,.beo [data-photo-key] > div{width:calc((100% - 16px)/3) !important;height:auto !important;aspect-ratio:1/1} }
+
+/* ── EVENTS: layout + usability fixes ── */
+.beo .ft{table-layout:fixed}
+.beo .ft td:nth-child(2){white-space:normal !important;word-break:break-word;overflow-wrap:anywhere}
+.beo .ft td:nth-child(3){width:34px;text-align:center}
+.beo .rd-item{position:relative}
+.beo .rd-item > .del-row{position:absolute !important;top:10px;right:8px;display:flex !important;align-items:center;justify-content:center;width:26px;height:26px;padding:0 !important;border:none;background:none;border-radius:6px;font-size:16px;color:#CBD5E1;cursor:pointer}
+.beo .rd-item > .del-row:hover{background:#FEE2E2;color:#DC2626}
+.beo .rd-right{padding-right:42px !important}
+.ev-ic{width:12px;height:12px;vertical-align:-2px;margin-right:4px;stroke:rgba(255,255,255,0.55)}
+@media (max-width:700px){
+  .beo-btns{flex-wrap:wrap}
+  .beo-btns > *{flex:1 1 calc(50% - 4px) !important}
+  #beo-status{flex-basis:100% !important}
+  .beo .beo-stats{grid-template-columns:1fr 1fr !important}
+  .beo .beo-stat{border-bottom:1px solid rgba(255,255,255,0.08);padding:14px 10px !important}
+  #p-dash .stats{grid-template-columns:1fr 1fr !important;gap:10px !important}
+  #p-dash .stat{padding:14px !important}
+  #p-dash .stat-val{font-size:22px !important}
+  #p-dash #stat-revenue{font-size:16px !important}
+}
 /* ── PDF EXPORT (html2pdf.js captures .beo directly - toggled via JS, not @media print) ── */
 .pdf-export-mode .card-colour-btn,.pdf-export-mode .card-colour-popup,
 .pdf-export-mode .dept-toolbar,.pdf-export-mode .chev,
@@ -3939,7 +3961,7 @@ img.emoji-tw{width:1.15em;height:1.15em;vertical-align:-0.2em;margin:0 1px}
       <div class="beo-wrap">
         <div class="beo-topbar">
           <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
-            <button class="beo-back" onclick="nav('dash')">← <span data-en="Current Events" data-id="Acara Aktif">Current Events</span></button>
+            <button class="beo-back" onclick="beoBack()">← <span id="beo-back-label">Current Events</span></button>
             <span id="beo-autosave-status" style="font-size:11px;font-weight:600;color:var(--amber)"></span>
           </div>
           <div class="beo-btns">
@@ -5910,7 +5932,7 @@ function evRenderDash(){
         </div>
         <div style="font-size:12px;color:rgba(255,255,255,0.45);margin-bottom:12px">${evEsc(ev.client||'No client yet')}</div>
         <div style="padding-top:10px;border-top:1px solid rgba(255,255,255,0.08);display:flex;gap:14px;flex-wrap:wrap;font-size:11px;color:rgba(255,255,255,0.5)">
-          <span>📅 ${evDateLabel(ev.event_date)}</span>${ev.pax?`<span>👥 ${Number(ev.pax).toLocaleString()} pax</span>`:''}${ev.revenue?`<span>${evMoney(ev.revenue)}</span>`:''}
+          <span><svg class="ev-ic" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>${evDateLabel(ev.event_date)}</span>${ev.pax?`<span><svg class="ev-ic" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>${Number(ev.pax).toLocaleString()} pax</span>`:''}${ev.revenue?`<span>${evMoney(ev.revenue)}</span>`:''}
         </div>
       </div>
       <div style="display:flex;border-top:1px solid rgba(255,255,255,0.08)">
@@ -6009,6 +6031,7 @@ function beoApply(ev){
   beoUpdateProfit();
   const st=document.getElementById('beo-status'); if(st) st.value = EV_STATUSES.includes(ev.status) ? ev.status : 'Enquiry';
   beoLoadShare(ev);
+  const bl=document.getElementById('beo-back-label'); if(bl) bl.textContent = evIsPast(ev) ? 'Past Events' : 'Current Events';
   const status=document.getElementById('beo-autosave-status'); if(status) status.textContent='';
 }
 function beoInitExtras(){
@@ -6042,6 +6065,24 @@ window.beoCreateNew = async function(){
   await beoOpenEvent(data.id);
   toast('Event Plan created ✓ - start with the event name');
   setTimeout(()=>{ const n=document.getElementById('det-name'); if(n) n.focus(); }, 250);
+};
+window.beoBack = function(){
+  const ev = evAll.find(e=>String(e.id)===String(beoCurrentId));
+  nav(ev && evIsPast(ev) ? 'past' : 'dash');
+};
+// Remove a department box from this event's plan (e.g. no Security needed)
+window.beoRemoveDept = function(id){
+  const body = document.getElementById('deptbody-'+id);
+  const box = body && body.closest('.dept');
+  if(!box) return;
+  const name = (box.querySelector('.dept-title')?.textContent||'this department').trim();
+  appConfirmShow({ title:'Remove department', msg:'Remove "'+name+'" from this event plan? Its notes, photos and links will be removed.', onOk: ()=>{
+    box.remove();
+    delete deptPhotos[id]; delete deptLinks[id];
+    const i = beoShare.settings.depts.indexOf(id); if(i>=0) beoShare.settings.depts.splice(i,1);
+    beoTriggerSave();
+    toast('Department removed');
+  }});
 };
 window.beoDeleteEvent = function(){
   const ev = evAll.find(e=>String(e.id)===String(beoCurrentId));
@@ -6582,6 +6623,7 @@ let deptLinks = {};
 function deptExtraHtml(id){
   return `<div class="dept-extra-wrap" data-dept-extra="${id}" onmousedown="event.stopPropagation()">
     <div style="display:flex;gap:6px;margin-top:10px;flex-wrap:wrap">
+      <button onclick="beoRemoveDept('${id}')" title="Remove this department" style="order:9;margin-left:auto;padding:6px 10px;border:none;border-radius:7px;background:none;font-size:12px;font-weight:600;color:#94A3B8;cursor:pointer;font-family:'Inter',sans-serif">Remove</button>
       <button class="dept-client-tog" data-dept="${id}" onclick="beoToggleDeptClient('${id}')" style="padding:6px 12px;border:1.5px solid #E2E8F0;border-radius:7px;background:white;font-size:12px;font-weight:600;color:#64748B;cursor:pointer;font-family:'Inter',sans-serif">Hidden from client</button>
       <button onclick="deptAddPhotoClick('${id}')" style="padding:6px 12px;border:1.5px solid #E2E8F0;border-radius:7px;background:white;font-size:12px;font-weight:600;color:#64748B;cursor:pointer;font-family:'Inter',sans-serif;display:flex;align-items:center;gap:5px"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2Z"/><circle cx="12" cy="13" r="4"/></svg> Add Photo</button>
       <button onclick="deptAddLinkClick('${id}')" style="padding:6px 12px;border:1.5px solid #E2E8F0;border-radius:7px;background:white;font-size:12px;font-weight:600;color:#64748B;cursor:pointer;font-family:'Inter',sans-serif;display:flex;align-items:center;gap:5px"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg> Add Link</button>

@@ -2476,6 +2476,33 @@ img.emoji-tw{width:1.15em;height:1.15em;vertical-align:-0.2em;margin:0 1px}
   #predictor-countries-card{padding:28px 32px 24px !important}
 }
 
+
+/* ── EVENT PLAN READABILITY (bigger text + more breathing room) ── */
+.beo .ft td:first-child{font-size:12px !important;padding:12px 16px !important;width:150px}
+.beo .ft td:nth-child(2){font-size:14.5px !important;padding:12px 18px !important;line-height:1.5 !important}
+.beo #det-date-cell{padding:8px 18px !important}
+.beo #det-date{font-size:14.5px !important;font-family:'Inter',sans-serif !important;padding:0 !important}
+.beo .rd-time{font-size:14px !important;padding:14px 16px !important}
+.beo .rd-right{padding:13px 18px !important}
+.beo .rd-act{font-size:14.5px !important;line-height:1.45 !important}
+.beo .dept{padding:18px 22px !important}
+.beo .dept-title{font-size:13.5px !important}
+.beo .dept-pic-name,.beo .dept-pic-label{font-size:12.5px !important}
+.beo .dept-body{font-size:14.5px !important;line-height:1.65 !important;padding-left:4px}
+.beo .dept-body ul,.beo .dept-body ol{padding-left:22px !important;margin:6px 0 !important}
+.beo .dept-body li{margin-bottom:4px !important}
+.beo .beo-stat-val{font-size:20px !important}
+.beo .beo-stat-lbl{font-size:10.5px !important}
+.beo .add-row-btn{font-size:13px !important}
+@media (max-width:700px){
+  .beo .ft td:first-child{width:110px;padding:11px 12px !important;font-size:11px !important}
+  .beo .ft td:nth-child(2){padding:11px 14px !important;font-size:14px !important}
+  .beo .rd-item{grid-template-columns:68px 1fr !important}
+  .beo .rd-time{padding:13px 12px !important}
+  .beo .rd-right{padding:12px 14px !important}
+  .beo .dept{padding:16px 16px !important}
+  .beo .beo-stat-val{font-size:18px !important}
+}
 /* ── PDF EXPORT (html2pdf.js captures .beo directly - toggled via JS, not @media print) ── */
 .pdf-export-mode .card-colour-btn,.pdf-export-mode .card-colour-popup,
 .pdf-export-mode .dept-toolbar,.pdf-export-mode .chev,
@@ -2483,6 +2510,11 @@ img.emoji-tw{width:1.15em;height:1.15em;vertical-align:-0.2em;margin:0 1px}
 .pdf-export-mode .dept-extra-wrap > div:first-child{display:none !important}
 .pdf-export-mode button[onclick^="addDepartment"]{display:none !important}
 .pdf-export-mode .beo-sec-hd{cursor:default !important}
+.pdf-export-mode .beo{width:700px !important;max-width:700px !important}
+.pdf-export-mode .beo .beo-stat-val{font-size:15px !important;white-space:nowrap}
+.pdf-export-mode #det-date{display:none !important}
+.pdf-export-mode #det-date-pdf{display:inline !important}
+.pdf-export-mode #beo-client-pill{display:none !important}
 
 /* ── DJ SCHEDULE PRINT/PDF EXPORT ── */
 @media print{
@@ -5467,9 +5499,19 @@ function exportEventPlanPDF(){
   sections.forEach(el=>{ if(el.classList.contains('open')) wasOpen.add(el.id); el.classList.add('open'); });
   document.querySelectorAll('#p-beo .chev').forEach(el=>el.classList.add('open'));
   document.body.classList.add('pdf-export-mode');
+  const dInput = document.getElementById('det-date');
+  let dSpan = null;
+  if(dInput){
+    dSpan = document.createElement('span');
+    dSpan.id = 'det-date-pdf';
+    dSpan.style.display = 'none';
+    dSpan.textContent = dInput.value ? evDateLabel(dInput.value) : '—';
+    dInput.after(dSpan);
+  }
 
   const restore = () => {
     document.body.classList.remove('pdf-export-mode');
+    if(dSpan) dSpan.remove();
     sections.forEach(el=>{ if(!wasOpen.has(el.id)) el.classList.remove('open'); });
     document.querySelectorAll('#p-beo .chev').forEach(el=>{
       const id = el.id.replace('cv-','');
@@ -5489,7 +5531,7 @@ function exportEventPlanPDF(){
     image: { type: 'jpeg', quality: 0.95 },
     html2canvas: { scale: 2, useCORS: true, backgroundColor: '#ffffff' },
     jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
-    pagebreak: { mode: ['css','avoid-all'] }
+    pagebreak: { mode: ['css','legacy'], avoid: ['.dept','.rd-item','tr','.beo-hd','.beo-stats','.beo-sec-hd'] }
   }).from(beoEl).save()
     .then(()=>{ restore(); toast('PDF downloaded ✓'); })
     .catch((err)=>{ restore(); toast('PDF export failed — please try again'); console.error(err); });

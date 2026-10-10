@@ -3899,7 +3899,7 @@ img.emoji-tw{width:1.15em;height:1.15em;vertical-align:-0.2em;margin:0 1px}
             <select id="beo-status" onchange="beoTriggerSave()" title="Event status" style="padding:9px 12px;border:1.5px solid var(--line);border-radius:8px;font-family:'Inter',sans-serif;font-size:13px;font-weight:700;color:var(--navy);background:white;cursor:pointer">
               <option>Enquiry</option><option>Confirmed</option><option>Deposit paid</option><option>Fully paid</option><option>Cancelled</option>
             </select>
-            <button class="btn btn-ghost" onclick="copyLink()">Share</button>
+            <button class="btn btn-ghost" onclick="evShareLink(beoCurrentId)">Share</button>
             <button class="btn btn-ghost" onclick="exportEventPlanPDF()">⬇ PDF</button>
             <button class="btn btn-ghost" onclick="beoDeleteEvent()" style="color:#EF4444;border-color:#FECACA">Delete</button>
           </div>
@@ -3928,7 +3928,7 @@ img.emoji-tw{width:1.15em;height:1.15em;vertical-align:-0.2em;margin:0 1px}
                 <div class="beo-doc-label" data-en="Event Plan" data-id="Event Plan">Event Plan</div>
                 <div class="beo-event-title">Horizon Tech Summit 2026 — Welcome Dinner</div>
               </div>
-              <div class="beo-share" onclick="copyLink()">Public Link</div>
+              <div class="beo-share" onclick="evShareLink(beoCurrentId)">Copy Link</div>
             </div>
           </div>
 
@@ -5520,6 +5520,7 @@ function doLogin(){
     quickLinksRender();
     chatUpdateBadges();
     nav('home');
+    setTimeout(()=>{ if(typeof evOpenPending==='function') evOpenPending(); }, 300);
   } else {
     toast('Please enter your email and password');
   }
@@ -5555,6 +5556,7 @@ window.addEventListener('load', () => {
       quickLinksRender();
       chatUpdateBadges();
       nav('home');
+      setTimeout(()=>{ if(typeof evOpenPending==='function') evOpenPending(); }, 600);
     }
   }catch(err){}
 });
@@ -5783,6 +5785,7 @@ async function evLoadFromSupabase(){
     evAll = [];
   }
   evRenderAll();
+  setTimeout(evOpenPending, 300);
 }
 
 function evRenderAll(){
@@ -5853,7 +5856,7 @@ function evRenderDash(){
         </div>
       </div>
       <div style="display:flex;border-top:1px solid rgba(255,255,255,0.08)">
-        <button onclick="event.stopPropagation();copyLink()" style="flex:1;padding:12px;background:rgba(255,255,255,0.05);border:none;border-right:1px solid rgba(255,255,255,0.08);color:rgba(255,255,255,0.6);font-family:'Inter',sans-serif;font-size:12px;font-weight:600;cursor:pointer">Share</button>
+        <button onclick="event.stopPropagation();evShareLink('${ev.id}')" style="flex:1;padding:12px;background:rgba(255,255,255,0.05);border:none;border-right:1px solid rgba(255,255,255,0.08);color:rgba(255,255,255,0.6);font-family:'Inter',sans-serif;font-size:12px;font-weight:600;cursor:pointer">Share</button>
         <button onclick="event.stopPropagation();beoOpenEvent('${ev.id}')" style="flex:2;padding:12px;background:var(--gold);border:none;color:white;font-family:'Inter',sans-serif;font-size:12px;font-weight:700;cursor:pointer">Open Event Plan →</button>
       </div>
     </div>`;
@@ -5875,6 +5878,35 @@ function evSyncCalendar(){
 async function beoFlush(){
   if(beoAutoSaveTimer){ clearTimeout(beoAutoSaveTimer); beoAutoSaveTimer=null; await beoSaveNow(); }
 }
+// Share: a link straight to this event inside Mavis (team members log in, then land on it).
+function evLinkFor(id){ return location.origin + location.pathname + '?event=' + encodeURIComponent(id); }
+window.evShareLink = async function(id){
+  const ev = evAll.find(e=>String(e.id)===String(id));
+  if(!ev){ toast('Open an event first'); return; }
+  const url = evLinkFor(ev.id);
+  const title = ev.name || 'Event Plan';
+  if(navigator.share && /Android|iPhone|iPad|iPod/i.test(navigator.userAgent)){
+    try{ await navigator.share({ title, text: title + ' - Event Plan in Mavis', url }); return; }catch(e){ if(e && e.name==='AbortError') return; }
+  }
+  try{
+    await navigator.clipboard.writeText(url);
+  }catch(e){
+    const ta=document.createElement('textarea'); ta.value=url; ta.style.cssText='position:fixed;top:0;left:0;opacity:0';
+    document.body.appendChild(ta); ta.select(); try{ document.execCommand('copy'); }catch(_){} document.body.removeChild(ta);
+  }
+  toast('Event link copied ✓ - your team can open it after logging in');
+};
+let evPendingOpenId = (()=>{ try{ return new URLSearchParams(location.search).get('event'); }catch(e){ return null; } })();
+function evOpenPending(){
+  if(!evPendingOpenId || !evAll.length) return;
+  const app = document.getElementById('app');
+  if(!app || app.style.display==='none') return;   // wait until logged in
+  const id = evPendingOpenId; evPendingOpenId = null;
+  try{ history.replaceState(history.state, '', location.pathname + location.hash); }catch(e){}
+  if(evAll.some(e=>String(e.id)===String(id))) beoOpenEvent(id);
+  else toast('That event no longer exists');
+}
+
 window.beoOpenEvent = async function(id){
   await beoFlush();
   const ev = evAll.find(e=>String(e.id)===String(id));
@@ -8901,7 +8933,7 @@ function pastEventCardHtml(ev){
             </div>
           </div>
           <div style="display:flex;border-top:1px solid rgba(255,255,255,0.08)">
-            <button onclick="event.stopPropagation();copyLink()" style="flex:1;padding:11px;background:rgba(255,255,255,0.05);border:none;color:rgba(255,255,255,0.6);font-family:'Inter',sans-serif;font-size:12px;font-weight:600;cursor:pointer">Share</button>
+            <button onclick="event.stopPropagation();evShareLink('${ev.id}')" style="flex:1;padding:11px;background:rgba(255,255,255,0.05);border:none;color:rgba(255,255,255,0.6);font-family:'Inter',sans-serif;font-size:12px;font-weight:600;cursor:pointer">Share</button>
             <button onclick="event.stopPropagation();beoOpenEvent('${ev.id}')" style="flex:2;padding:11px;background:var(--gold);border:none;color:white;font-family:'Inter',sans-serif;font-size:12px;font-weight:700;cursor:pointer">Open Event Plan →</button>
           </div>
         </div>`;

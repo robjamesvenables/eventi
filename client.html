@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<title>Event Plan</title>
+<link rel="icon" type="image/png" href="favicon-v6.png">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{--navy:#0F1E2E;--teal:#0D9488;--gold:#C4973B;--bg:#F4F4F2;--card:#fff;--line:#E2E8F0;--muted:#64748B;--ink:#0F1E2E}
+*{box-sizing:border-box}
+body{margin:0;font-family:Inter,system-ui,-apple-system,"Segoe UI",sans-serif;background:var(--bg);color:var(--ink);-webkit-font-smoothing:antialiased}
+.wrap{max-width:760px;margin:0 auto;padding:16px 16px 48px}
+.hero{background:var(--navy);color:#fff;border-radius:20px;padding:22px 22px 20px;margin-top:8px}
+.brand{display:flex;align-items:center;gap:8px;font-weight:800;font-size:15px}
+.brand i{width:9px;height:9px;border-radius:50%;background:var(--teal);display:inline-block}
+.lbl{font-size:11px;font-weight:800;letter-spacing:.14em;color:#5EEAD4;margin:18px 0 6px}
+h1{margin:0;font-size:26px;line-height:1.2;letter-spacing:-.01em}
+.status{display:inline-block;margin-top:12px;font-size:12px;font-weight:800;padding:5px 12px;border-radius:999px;background:rgba(45,212,191,.15);color:#5EEAD4}
+.facts{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-top:14px}
+@media(min-width:620px){.facts{grid-template-columns:repeat(4,1fr)}}
+.fact{background:var(--card);border-radius:14px;padding:14px;box-shadow:0 0 0 1px var(--line)}
+.fact span{display:block;font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+.fact b{display:block;font-size:16px;margin-top:4px;word-break:break-word}
+.card{background:var(--card);border-radius:18px;box-shadow:0 0 0 1px var(--line);padding:18px;margin-top:14px}
+.card h2{margin:0 0 12px;font-size:16px}
+.tl{display:grid;gap:0}
+.tl div{display:grid;grid-template-columns:72px 1fr;gap:12px;padding:10px 0;border-top:1px solid #F1F5F9;font-size:14.5px;line-height:1.45}
+.tl div:first-child{border-top:none}
+.tl em{font-style:normal;font-weight:800;color:var(--teal)}
+.dept h3{margin:0 0 8px;font-size:15px;padding-bottom:6px;border-bottom:2px solid var(--gold);display:inline-block}
+.notes{font-size:14.5px;line-height:1.6}
+.notes ul,.notes ol{padding-left:20px;margin:6px 0}
+.photos{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+.photos img{width:92px;height:92px;object-fit:cover;border-radius:10px;cursor:pointer}
+.links a{display:block;margin-top:8px;color:#2563EB;font-size:14px;text-decoration:none;word-break:break-all}
+.foot{text-align:center;color:var(--muted);font-size:12.5px;margin-top:26px;line-height:1.7}
+.foot b{color:var(--ink)}
+.msg{text-align:center;padding:80px 20px;color:var(--muted)}
+.msg h2{color:var(--ink);margin:0 0 8px}
+.upd{font-size:12px;color:rgba(255,255,255,.55);margin-top:10px}
+.lb{position:fixed;inset:0;background:rgba(0,0,0,.85);display:none;align-items:center;justify-content:center;z-index:9;padding:16px}
+.lb img{max-width:100%;max-height:100%;border-radius:10px}
+</style>
+</head>
+<body>
+<main class="wrap" id="app"><div class="msg">Loading event plan…</div></main>
+<div class="lb" id="lb" onclick="this.style.display='none'"><img id="lbimg" alt=""></div>
+<script>
+const SUPABASE_URL='https://qjxcpmkiyfrukxicdwkl.supabase.co';
+const KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFqeGNwbWtpeWZydWt4aWNkd2tsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE5NDkwOTAsImV4cCI6MjA5NzUyNTA5MH0.Wiwtqf1bkokU7H6VauvFyysHcMMi5KV8mgSfwR5NEWc';
+const token=new URLSearchParams(location.search).get('t')||'';
+const esc=v=>String(v==null?'':v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+function dateLabel(ds){ if(!ds) return 'To be confirmed'; const d=new Date(ds+'T00:00:00'); return d.toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'long',year:'numeric'}); }
+function money(n){ return 'Rp '+Math.round(Number(n)).toLocaleString('id-ID'); }
+// Keep only simple formatting from department notes (bold, italic, lists, colours, line breaks).
+function clean(html){
+  const doc=new DOMParser().parseFromString('<div>'+(html||'')+'</div>','text/html');
+  const ok=new Set(['B','STRONG','I','EM','U','UL','OL','LI','BR','P','DIV','SPAN','FONT']);
+  (function walk(n){ [...n.childNodes].forEach(c=>{
+    if(c.nodeType===1){
+      if(!ok.has(c.tagName)){ c.replaceWith(document.createTextNode(c.textContent)); return; }
+      const col=c.getAttribute('color')||(c.style&&c.style.color)||'';
+      [...c.attributes].forEach(a=>c.removeAttribute(a.name));
+      if(/^#[0-9a-f]{3,6}$|^rgb\(/i.test(col)) c.setAttribute('style','color:'+col);
+      walk(c);
+    } else if(c.nodeType!==3) c.remove();
+  }); })(doc.body.firstChild);
+  return doc.body.firstChild.innerHTML;
+}
+function safeUrl(u){ return /^https?:\/\//i.test(u||'') ? u : ''; }
+function safeImg(u){ return /^data:image\/(png|jpe?g|webp|gif);base64,/i.test(u||'') || /^https:\/\//i.test(u||'') ? u : ''; }
+function zoom(src){ document.getElementById('lbimg').src=src; document.getElementById('lb').style.display='flex'; }
+function render(d){
+  const v=d.view||{};
+  document.title=(d.name||'Event Plan')+' · Event Plan';
+  const facts=[['Date',dateLabel(d.event_date)],['Time',d.event_time||'TBC'],['Venue',d.venue||'TBC'],['Guests',d.pax?Number(d.pax).toLocaleString()+' pax':'TBC']];
+  if(d.price!=null) facts.push(['Price',money(d.price)]);
+  const tl=(v.timeline||[]);
+  const depts=(v.depts||[]).filter(x=>x.html||(x.photos||[]).length||(x.links||[]).length);
+  const upd=d.updated_at?new Date(d.updated_at).toLocaleString('en-GB',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}):'';
+  document.getElementById('app').innerHTML=`
+    <section class="hero">
+      <div class="brand"><i></i>${esc(v.brand||'')}</div>
+      <div class="lbl">EVENT PLAN</div>
+      <h1>${esc(d.name||'Event')}</h1>
+      ${d.status&&d.status!=='Enquiry'?`<span class="status">${esc(d.status==='Deposit paid'||d.status==='Fully paid'?'Confirmed':d.status)}</span>`:''}
+      ${upd?`<div class="upd">Last updated ${esc(upd)}</div>`:''}
+    </section>
+    <div class="facts">${facts.map(([k,val])=>`<div class="fact"><span>${k}</span><b>${esc(val)}</b></div>`).join('')}</div>
+    ${tl.length?`<section class="card"><h2>Timeline</h2><div class="tl">${tl.map(x=>`<div><em>${esc(x.time)}</em><span>${esc(x.act)}</span></div>`).join('')}</div></section>`:''}
+    ${depts.map(x=>`<section class="card dept"><h3>${esc(x.title)}</h3>
+      ${x.html?`<div class="notes">${clean(x.html)}</div>`:''}
+      ${(x.photos||[]).length?`<div class="photos">${x.photos.map(safeImg).filter(Boolean).map(p=>`<img src="${esc(p)}" alt="" onclick="zoom(this.src)">`).join('')}</div>`:''}
+      ${(x.links||[]).length?`<div class="links">${x.links.filter(l=>safeUrl(l.url)).map(l=>`<a href="${esc(l.url)}" target="_blank" rel="noopener">${esc(l.label||l.url)}</a>`).join('')}</div>`:''}
+    </section>`).join('')}
+    <div class="foot">This page updates automatically when the plan changes.<br>Event planning by <b>Mavis</b></div>`;
+}
+async function load(){
+  if(token.length<20){ fail(); return; }
+  try{
+    const r=await fetch(SUPABASE_URL+'/rest/v1/rpc/get_client_event',{method:'POST',headers:{'apikey':KEY,'Authorization':'Bearer '+KEY,'Content-Type':'application/json'},body:JSON.stringify({t:token})});
+    if(!r.ok) throw new Error(r.status);
+    const d=await r.json();
+    if(!d){ fail(); return; }
+    render(d);
+  }catch(e){ if(!document.querySelector('.hero')) document.getElementById('app').innerHTML='<div class="msg"><h2>Can\'t load the plan right now</h2>Please check your connection and refresh.</div>'; }
+}
+function fail(){ document.getElementById('app').innerHTML='<div class="msg"><h2>This link isn\'t active</h2>It may have been turned off or replaced. Please ask your event contact for the latest link.</div>'; }
+load();
+setInterval(()=>{ if(document.visibilityState==='visible') load(); }, 60000);
+document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==='visible') load(); });
+</script>
+</body>
+</html>

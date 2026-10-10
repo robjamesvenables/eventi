@@ -3899,7 +3899,8 @@ img.emoji-tw{width:1.15em;height:1.15em;vertical-align:-0.2em;margin:0 1px}
             <select id="beo-status" onchange="beoTriggerSave()" title="Event status" style="padding:9px 12px;border:1.5px solid var(--line);border-radius:8px;font-family:'Inter',sans-serif;font-size:13px;font-weight:700;color:var(--navy);background:white;cursor:pointer">
               <option>Enquiry</option><option>Confirmed</option><option>Deposit paid</option><option>Fully paid</option><option>Cancelled</option>
             </select>
-            <button class="btn btn-ghost" onclick="evShareLink(beoCurrentId)">Share</button>
+            <button class="btn btn-ghost" onclick="evShareLink(beoCurrentId)">Share with team</button>
+            <button class="btn btn-ghost" onclick="beoClientShareOpen()" id="beo-client-btn" style="color:var(--teal);border-color:#99F6E4">Share with client</button>
             <button class="btn btn-ghost" onclick="exportEventPlanPDF()">⬇ PDF</button>
             <button class="btn btn-ghost" onclick="beoDeleteEvent()" style="color:#EF4444;border-color:#FECACA">Delete</button>
           </div>
@@ -3928,7 +3929,7 @@ img.emoji-tw{width:1.15em;height:1.15em;vertical-align:-0.2em;margin:0 1px}
                 <div class="beo-doc-label" data-en="Event Plan" data-id="Event Plan">Event Plan</div>
                 <div class="beo-event-title">Horizon Tech Summit 2026 — Welcome Dinner</div>
               </div>
-              <div class="beo-share" onclick="evShareLink(beoCurrentId)">Copy Link</div>
+              <div class="beo-share" id="beo-client-pill" onclick="beoClientShareOpen()" style="display:none">Client link on</div>
             </div>
           </div>
 
@@ -5856,7 +5857,7 @@ function evRenderDash(){
         </div>
       </div>
       <div style="display:flex;border-top:1px solid rgba(255,255,255,0.08)">
-        <button onclick="event.stopPropagation();evShareLink('${ev.id}')" style="flex:1;padding:12px;background:rgba(255,255,255,0.05);border:none;border-right:1px solid rgba(255,255,255,0.08);color:rgba(255,255,255,0.6);font-family:'Inter',sans-serif;font-size:12px;font-weight:600;cursor:pointer">Share</button>
+        <button onclick="event.stopPropagation();evShareLink('${ev.id}')" style="flex:1;padding:12px;background:rgba(255,255,255,0.05);border:none;border-right:1px solid rgba(255,255,255,0.08);color:rgba(255,255,255,0.6);font-family:'Inter',sans-serif;font-size:12px;font-weight:600;cursor:pointer">Team link</button>
         <button onclick="event.stopPropagation();beoOpenEvent('${ev.id}')" style="flex:2;padding:12px;background:var(--gold);border:none;color:white;font-family:'Inter',sans-serif;font-size:12px;font-weight:700;cursor:pointer">Open Event Plan →</button>
       </div>
     </div>`;
@@ -5950,6 +5951,7 @@ function beoApply(ev){
   setT('stat-cost', ev.cost!=null ? evMoney(ev.cost) : '—');
   beoUpdateProfit();
   const st=document.getElementById('beo-status'); if(st) st.value = EV_STATUSES.includes(ev.status) ? ev.status : 'Enquiry';
+  beoLoadShare(ev);
   const status=document.getElementById('beo-autosave-status'); if(status) status.textContent='';
 }
 function beoInitExtras(){
@@ -5959,6 +5961,7 @@ function beoInitExtras(){
     deptRenderPhotos(id);
     deptRenderLinks(id);
   });
+  beoRenderClientUi();
 }
 function beoUpdateProfit(){
   const rev = evParseMoney(document.getElementById('stat-rev')?.textContent);
@@ -6015,9 +6018,154 @@ function beoCollect(){
     revenue: evParseMoney(txt('stat-rev')),
     cost: evParseMoney(txt('stat-cost')),
     plan: { details: document.getElementById('ft-details').innerHTML, timeline: document.getElementById('rd-list').innerHTML, depts: dp.innerHTML, photos: deptPhotos, links: deptLinks },
+    share_settings: beoShare.settings,
+    client_view: beoBuildClientView(),
     updated_at: new Date().toISOString()
   };
 }
+
+// ── CLIENT LINK (live, read-only page for the client: client.html?t=TOKEN) ──
+// Only what's in client_view (plus basic event facts) is ever readable through the link,
+// via the get_client_event database function. Costs, profit and department notes stay
+// private unless a department is switched to "Shown to client".
+let beoShare = { on:false, token:null, settings:{ show_price:false, depts:[] } };
+function beoLoadShare(ev){
+  const st = ev.share_settings || {};
+  beoShare = { on: !!ev.share_on, token: ev.share_token || null, settings: { show_price: !!st.show_price, depts: Array.isArray(st.depts) ? st.depts.slice() : [] } };
+  beoRenderClientUi();
+}
+function beoClientUrl(){ return location.origin + location.pathname.replace(/[^/]*$/, '') + 'client.html?t=' + encodeURIComponent(beoShare.token||''); }
+function beoNewToken(){
+  const a='ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789'; const r=new Uint32Array(26); crypto.getRandomValues(r);
+  return Array.from(r, n=>a[n % a.length]).join('');
+}
+function beoBuildClientView(){
+  const timeline = [...document.querySelectorAll('#rd-list .rd-item')].map(it=>({
+    time: (it.querySelector('.rd-time')?.textContent||'').trim(),
+    act: (it.querySelector('.rd-act')?.textContent||'').trim()
+  })).filter(x=>x.act && x.act!=='Add your first timeline item' && x.act!=='New item');
+  const depts = (beoShare.settings.depts||[]).map(id=>{
+    const body = document.getElementById('deptbody-'+id);
+    if(!body) return null;
+    const box = body.closest('.dept');
+    const title = (box?.querySelector('.dept-title')?.textContent||'').trim();
+    const html = body.innerHTML.trim();
+    const empty = !body.textContent.trim() || body.textContent.trim()==='Type department notes here…';
+    return { title, html: empty ? '' : html, photos: deptPhotos[id]||[], links: deptLinks[id]||[] };
+  }).filter(Boolean);
+  return { brand: evVenueName(), timeline, depts };
+}
+function beoRenderClientUi(){
+  const pill = document.getElementById('beo-client-pill');
+  if(pill) pill.style.display = beoShare.on ? '' : 'none';
+  const btn = document.getElementById('beo-client-btn');
+  if(btn) btn.textContent = beoShare.on ? 'Client link ✓' : 'Share with client';
+  document.querySelectorAll('.dept-client-tog').forEach(b=>{
+    const on = beoShare.settings.depts.includes(b.dataset.dept);
+    b.textContent = on ? '👁 Shown to client' : 'Hidden from client';
+    b.style.background = on ? '#CCFBF1' : 'white';
+    b.style.color = on ? '#0F766E' : '#64748B';
+    b.style.borderColor = on ? '#5EEAD4' : '#E2E8F0';
+  });
+}
+window.beoToggleDeptClient = function(id){
+  const d = beoShare.settings.depts;
+  const i = d.indexOf(id);
+  if(i>=0) d.splice(i,1); else d.push(id);
+  beoRenderClientUi();
+  beoTriggerSave();
+  toast(i>=0 ? 'Hidden from the client page' : 'Now shown on the client page');
+};
+async function beoSaveShareFields(extra){
+  if(!beoCurrentId) return false;
+  const row = Object.assign({ share_on: beoShare.on, share_token: beoShare.token, share_settings: beoShare.settings, client_view: beoBuildClientView() }, extra||{});
+  const { error } = await sb.from('events').update(row).eq('id', beoCurrentId);
+  if(error){ console.warn(error); toast('Not saved - check your connection'); return false; }
+  const ev = evAll.find(e=>e.id===beoCurrentId); if(ev) Object.assign(ev, row);
+  return true;
+}
+function beoClientPanelEl(){
+  let el = document.getElementById('beo-client-panel');
+  if(el) return el;
+  el = document.createElement('div');
+  el.id = 'beo-client-panel';
+  el.style.cssText = 'position:fixed;inset:0;background:rgba(15,30,46,0.55);z-index:3000;display:none;align-items:center;justify-content:center;padding:16px';
+  el.addEventListener('click', e=>{ if(e.target===el) beoClientShareClose(); });
+  document.body.appendChild(el);
+  return el;
+}
+window.beoClientShareClose = function(){ const el=document.getElementById('beo-client-panel'); if(el) el.style.display='none'; };
+window.beoClientShareOpen = function(){
+  if(!beoCurrentId){ toast('Open an event first'); return; }
+  const el = beoClientPanelEl();
+  const card = (inner)=>`<div style="background:white;border-radius:16px;max-width:440px;width:100%;padding:24px;font-family:'Inter',sans-serif;box-shadow:0 20px 50px rgba(0,0,0,0.25)">${inner}</div>`;
+  const shownCount = beoShare.settings.depts.length;
+  if(!beoShare.on){
+    el.innerHTML = card(`
+      <div style="font-size:18px;font-weight:800;color:#0F1E2E;margin-bottom:6px">Share with client</div>
+      <div style="font-size:13.5px;color:#475569;line-height:1.55;margin-bottom:14px">Creates a live, view-only page for this event. The client doesn't need a login and can't change anything. It updates whenever your team edits the plan.</div>
+      <div style="background:#F8FAFC;border-radius:10px;padding:12px 14px;font-size:12.5px;color:#475569;line-height:1.6;margin-bottom:16px">
+        <b style="color:#0F1E2E">They'll see:</b> event name, date, time, venue, guests, status and the timeline${shownCount?`, plus ${shownCount} department${shownCount>1?'s':''} you've marked "Shown to client"`:''}.<br>
+        <b style="color:#0F1E2E">Kept private:</b> costs, profit and department notes (unless you mark a department "Shown to client").
+      </div>
+      <div style="display:flex;gap:8px;justify-content:flex-end">
+        <button class="btn btn-ghost" onclick="beoClientShareClose()">Cancel</button>
+        <button class="btn btn-navy" onclick="beoClientTurnOn()">Turn on client link</button>
+      </div>`);
+  } else {
+    const url = beoClientUrl();
+    el.innerHTML = card(`
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px"><div style="font-size:18px;font-weight:800;color:#0F1E2E">Client link is on</div><span style="background:#DCFCE7;color:#166534;font-size:11px;font-weight:800;padding:3px 9px;border-radius:20px">LIVE</span></div>
+      <div style="font-size:13px;color:#475569;margin-bottom:12px">View-only. Updates automatically when the plan changes.</div>
+      <div style="background:#F1F5F9;border-radius:10px;padding:10px 12px;font-size:12.5px;color:#0F1E2E;word-break:break-all;margin-bottom:12px">${evEsc(url)}</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px">
+        <button class="btn btn-navy" onclick="beoClientCopy()">Copy link</button>
+        <a class="btn btn-ghost" style="text-decoration:none" target="_blank" rel="noopener" href="https://wa.me/?text=${encodeURIComponent('Here is the live plan for your event: '+url)}">WhatsApp</a>
+        <a class="btn btn-ghost" style="text-decoration:none" target="_blank" rel="noopener" href="${evEsc(url)}">Preview</a>
+      </div>
+      <label style="display:flex;align-items:center;gap:10px;font-size:13.5px;color:#0F1E2E;padding:10px 0;border-top:1px solid #F1F5F9;cursor:pointer">
+        <input type="checkbox" ${beoShare.settings.show_price?'checked':''} onchange="beoClientTogglePrice(this.checked)" style="width:18px;height:18px;accent-color:#0D9488"> Show the price (revenue) to the client
+      </label>
+      <div style="font-size:12.5px;color:#64748B;padding:4px 0 12px">Departments shown: <b style="color:#0F1E2E">${shownCount||'none'}</b>. Use the "Hidden from client" button inside each department to change this.</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:space-between;border-top:1px solid #F1F5F9;padding-top:14px">
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <button class="btn btn-ghost" onclick="beoClientTurnOff()" style="color:#EF4444;border-color:#FECACA">Turn off</button>
+          <button class="btn btn-ghost" onclick="beoClientNewLink()" title="The old link stops working">New link</button>
+        </div>
+        <button class="btn btn-ghost" onclick="beoClientShareClose()">Done</button>
+      </div>`);
+  }
+  el.style.display = 'flex';
+};
+window.beoClientTurnOn = async function(){
+  await beoFlush();
+  beoShare.on = true;
+  if(!beoShare.token) beoShare.token = beoNewToken();
+  if(await beoSaveShareFields()){ beoRenderClientUi(); beoClientShareOpen(); toast('Client link is on ✓'); }
+  else { beoShare.on = false; }
+};
+window.beoClientTurnOff = async function(){
+  beoShare.on = false;
+  if(await beoSaveShareFields()){ beoRenderClientUi(); beoClientShareClose(); toast('Client link turned off - it no longer works'); }
+};
+window.beoClientNewLink = function(){
+  appConfirmShow({ title:'Make a new client link?', msg:'The current link will stop working. Anyone who needs to see the plan will need the new link.', onOk: async ()=>{
+    const old = beoShare.token; beoShare.token = beoNewToken();
+    if(await beoSaveShareFields()){ beoClientShareOpen(); toast('New link ready ✓'); } else beoShare.token = old;
+  }});
+};
+window.beoClientTogglePrice = async function(on){
+  beoShare.settings.show_price = !!on;
+  if(await beoSaveShareFields()) toast(on ? 'Price shown to client' : 'Price hidden from client');
+};
+window.beoClientCopy = async function(){
+  const url = beoClientUrl();
+  try{ await navigator.clipboard.writeText(url); }catch(e){
+    const ta=document.createElement('textarea'); ta.value=url; ta.style.cssText='position:fixed;top:0;left:0;opacity:0';
+    document.body.appendChild(ta); ta.select(); try{ document.execCommand('copy'); }catch(_){} document.body.removeChild(ta);
+  }
+  toast('Client link copied ✓');
+};
 async function beoSaveNow(){
   if(!beoCurrentId) return;
   const id = beoCurrentId;
@@ -6365,6 +6513,7 @@ let deptLinks = {};
 function deptExtraHtml(id){
   return `<div class="dept-extra-wrap" data-dept-extra="${id}" onmousedown="event.stopPropagation()">
     <div style="display:flex;gap:6px;margin-top:10px;flex-wrap:wrap">
+      <button class="dept-client-tog" data-dept="${id}" onclick="beoToggleDeptClient('${id}')" style="padding:6px 12px;border:1.5px solid #E2E8F0;border-radius:7px;background:white;font-size:12px;font-weight:600;color:#64748B;cursor:pointer;font-family:'Inter',sans-serif">Hidden from client</button>
       <button onclick="deptAddPhotoClick('${id}')" style="padding:6px 12px;border:1.5px solid #E2E8F0;border-radius:7px;background:white;font-size:12px;font-weight:600;color:#64748B;cursor:pointer;font-family:'Inter',sans-serif;display:flex;align-items:center;gap:5px"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2Z"/><circle cx="12" cy="13" r="4"/></svg> Add Photo</button>
       <button onclick="deptAddLinkClick('${id}')" style="padding:6px 12px;border:1.5px solid #E2E8F0;border-radius:7px;background:white;font-size:12px;font-weight:600;color:#64748B;cursor:pointer;font-family:'Inter',sans-serif;display:flex;align-items:center;gap:5px"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg> Add Link</button>
     </div>
@@ -8933,7 +9082,7 @@ function pastEventCardHtml(ev){
             </div>
           </div>
           <div style="display:flex;border-top:1px solid rgba(255,255,255,0.08)">
-            <button onclick="event.stopPropagation();evShareLink('${ev.id}')" style="flex:1;padding:11px;background:rgba(255,255,255,0.05);border:none;color:rgba(255,255,255,0.6);font-family:'Inter',sans-serif;font-size:12px;font-weight:600;cursor:pointer">Share</button>
+            <button onclick="event.stopPropagation();evShareLink('${ev.id}')" style="flex:1;padding:11px;background:rgba(255,255,255,0.05);border:none;color:rgba(255,255,255,0.6);font-family:'Inter',sans-serif;font-size:12px;font-weight:600;cursor:pointer">Team link</button>
             <button onclick="event.stopPropagation();beoOpenEvent('${ev.id}')" style="flex:2;padding:11px;background:var(--gold);border:none;color:white;font-family:'Inter',sans-serif;font-size:12px;font-weight:700;cursor:pointer">Open Event Plan →</button>
           </div>
         </div>`;

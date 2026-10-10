@@ -3773,7 +3773,7 @@ img.emoji-tw{width:1.15em;height:1.15em;vertical-align:-0.2em;margin:0 1px}
         <div id="mkt-file-empty" style="display:none;text-align:center;padding:48px;color:#94A3B8">
           <div style="margin-bottom:12px"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#CBD5E1" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="margin:0 auto;display:block"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg></div>
           <div style="font-size:14px;font-weight:600;color:#0F1E2E;margin-bottom:6px">No assets yet</div>
-          <div style="font-size:13px">Upload a file (up to 25MB) or add a link to an existing doc</div>
+          <div style="font-size:13px">Upload a photo, PDF, Word, Excel or PowerPoint file (up to 25MB), or add a link to a Google Sheet or Doc</div>
         </div>
       </div>
     </div>
@@ -12724,6 +12724,7 @@ window.addEventListener('load', () => {
   vendorLoadFromSupabase().then(vendorRenderDepts);
   customerLoadFromSupabase().then(customerRenderList);
   kbColSettingsLoad();
+  marketingLoadFromSupabase();
   calLoadFromSupabase().then(()=>{ try{ calRender(); }catch(e){} });
   vacanciesLoadFromSupabase().then(vacanciesRender);
   kitchenLoadFromSupabase().then(()=>{ kitchenRenderAreaTabs(); kitchenRenderMenus(); kitchenRenderRecipes(); kitchenRenderAllergens(); });
@@ -13999,6 +14000,47 @@ function marketingFormatSize(bytes){
   if(bytes < 1024*1024*1024) return (bytes/1024/1024).toFixed(1) + ' MB';
   return (bytes/1024/1024/1024).toFixed(2) + ' GB';
 }
+// Shared Files are saved in Supabase: file details in the shared_files table, the files
+// themselves in the 'shared-files' storage bucket, and folder names/colours in shared_folders.
+const MKT_BUCKET = 'shared-files';
+async function marketingLoadFromSupabase(){
+  try{
+    const [fo, fi] = await Promise.all([
+      sb.from('shared_folders').select('*'),
+      sb.from('shared_files').select('*').order('created_at', { ascending: true })
+    ]);
+    if(fo.error) throw fo.error;
+    if(fi.error) throw fi.error;
+    (fo.data||[]).forEach(r=>{
+      const f = marketingFolders.find(x=>x.id===r.id);
+      if(f){ if(r.name) f.name = r.name; if(r.color) f.color = r.color; }
+    });
+    marketingFolders.forEach(f=>{ f.items = []; });
+    (fi.data||[]).forEach(r=>{
+      const f = marketingFolders.find(x=>x.id===r.folder);
+      if(!f) return;
+      f.items.push(r.kind==='link'
+        ? { id:r.id, type:'link', name:r.name, url:r.url, addedAt:new Date(r.created_at).getTime() }
+        : { id:r.id, type:'file', name:r.name, sizeBytes:Number(r.size_bytes)||0, dataUrl:r.url, path:r.path, fileType:r.file_type||'doc', addedAt:new Date(r.created_at).getTime() });
+    });
+    marketingRender();
+  }catch(e){ console.warn('Shared Files not loaded', e); }
+}
+function marketingFileKind(file){
+  if(file.type.startsWith('image/')) return 'image';
+  if(file.type === 'application/pdf') return 'pdf';
+  const n = file.name.toLowerCase();
+  if(/\.(xlsx?|csv)$/.test(n)) return 'sheet';
+  if(/\.(pptx?|key)$/.test(n)) return 'slides';
+  return 'doc';
+}
+const MKT_KIND_ICON = {
+  pdf:   {bg:'#FEE2E2', fg:'#DC2626', label:'PDF'},
+  sheet: {bg:'#DCFCE7', fg:'#16A34A', label:'XLS'},
+  slides:{bg:'#FFEDD5', fg:'#EA580C', label:'PPT'},
+  doc:   {bg:'#DBEAFE', fg:'#2563EB', label:'DOC'}
+};
+
 function marketingUpdateStorageBar(){
   const used = marketingTotalUsed();
   const pct = Math.min(100, (used / MKT_TOTAL_LIMIT) * 100);
@@ -14083,7 +14125,10 @@ window.marketingEditFolder = function(id){
       if(newName) folder.name = newName;
       folder.color = color;
       marketingRender();
-      toast('Folder updated ✓');
+      sb.from('shared_folders').upsert({ id: folder.id, name: folder.name, color: folder.color }).then(({error})=>{
+        if(error){ console.warn(error); toast('Folder change not saved - check your connection'); }
+        else toast('Folder updated ✓');
+      });
     }
   });
 };
@@ -14119,9 +14164,10 @@ function marketingRenderFiles(){
         </div>
       </div>`;
     }
+    const ki = MKT_KIND_ICON[item.fileType] || MKT_KIND_ICON.doc;
     const thumb = item.fileType === 'image'
       ? `<img src="${item.dataUrl}" style="width:38px;height:38px;object-fit:cover;border-radius:8px;flex-shrink:0">`
-      : `<div class="myd-file-row-ico" style="background:#FEE2E2;color:#DC2626">📄</div>`;
+      : `<div class="myd-file-row-ico" style="background:${ki.bg};color:${ki.fg};font-size:10px;font-weight:800">${ki.label}</div>`;
     return `<div class="myd-file-row">
       ${thumb}
       <div style="flex:1;min-width:0">
@@ -14139,7 +14185,7 @@ function marketingRenderFiles(){
 window.marketingAddFile = function(){
   const input = document.createElement('input');
   input.type = 'file';
-  input.accept = 'image/*,application/pdf';
+  input.accept = 'image/*,application/pdf,.doc,.docx,.xls,.xlsx,.csv,.ppt,.pptx,.txt';
   input.onchange = () => {
     const file = input.files[0];
     if(!file) return;
@@ -14154,26 +14200,33 @@ window.marketingAddFile = function(){
       return;
     }
 
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      const folder = marketingFolders.find(f=>f.id===marketingActiveFolder);
-      folder.items.push({
-        id: Date.now(),
-        type: 'file',
-        name: file.name,
-        sizeBytes: file.size,
-        dataUrl: e.target.result,
-        fileType: file.type.startsWith('image/') ? 'image' : 'pdf',
-        addedAt: Date.now()
-      });
-      marketingRenderFiles();
-      marketingUpdateStorageBar();
-      toast('Uploaded ✓');
-    };
-    reader.readAsDataURL(file);
+    const folder = marketingFolders.find(f=>f.id===marketingActiveFolder);
+    if(!folder) return;
+    marketingUploadFile(folder, file);
   };
   input.click();
 };
+
+async function marketingUploadFile(folder, file){
+  toast('Uploading…');
+  const safe = file.name.replace(/[^A-Za-z0-9._-]+/g,'_').slice(-80);
+  const path = folder.id + '/' + Date.now() + '-' + safe;
+  try{
+    const up = await sb.storage.from(MKT_BUCKET).upload(path, file, { contentType: file.type || undefined, upsert:false });
+    if(up.error) throw up.error;
+    const url = sb.storage.from(MKT_BUCKET).getPublicUrl(path).data.publicUrl;
+    const kind = marketingFileKind(file);
+    const ins = await sb.from('shared_files').insert({ folder: folder.id, kind:'file', name:file.name, url, path, size_bytes:file.size, file_type:kind }).select().single();
+    if(ins.error){ await sb.storage.from(MKT_BUCKET).remove([path]); throw ins.error; }
+    folder.items.push({ id:ins.data.id, type:'file', name:file.name, sizeBytes:file.size, dataUrl:url, path, fileType:kind, addedAt:Date.now() });
+    marketingRenderFiles();
+    marketingUpdateStorageBar();
+    toast('Uploaded ✓');
+  }catch(e){
+    console.warn('Shared Files upload failed', e);
+    toast('Upload failed - check your connection and try again');
+  }
+}
 
 function marketingShowRestriction(reason){
   appConfirmShow({
@@ -14193,9 +14246,13 @@ window.marketingAddLink = function(){
     ],
     onOk([name, url]){
       if(!url) return;
-      folder.items.push({id: Date.now(), type:'link', name: name || url, url, addedAt: Date.now()});
-      marketingRenderFiles();
-      toast('Link added ✓');
+      const clean = /^https?:\/\//i.test(url.trim()) ? url.trim() : 'https://' + url.trim();
+      sb.from('shared_files').insert({ folder: folder.id, kind:'link', name: name || clean, url: clean }).select().single().then(({data, error})=>{
+        if(error){ console.warn(error); toast('Link not saved - check your connection'); return; }
+        folder.items.push({id: data.id, type:'link', name: data.name, url: clean, addedAt: Date.now()});
+        marketingRenderFiles();
+        toast('Link added ✓');
+      });
     }
   });
 };
@@ -14204,10 +14261,15 @@ window.marketingDeleteItem = function(itemId){
   const folder = marketingFolders.find(f=>f.id===marketingActiveFolder);
   if(!folder) return;
   appConfirmShow({title:'Remove Asset', msg:'Remove this from ' + folder.name + '?', onOk:()=>{
-    folder.items = folder.items.filter(i=>i.id!==itemId);
-    marketingRenderFiles();
-    marketingUpdateStorageBar();
-    toast('Removed');
+    const item = folder.items.find(i=>i.id===itemId);
+    sb.from('shared_files').delete().eq('id', itemId).then(({error})=>{
+      if(error){ console.warn(error); toast('Not removed - check your connection'); return; }
+      if(item && item.path) sb.storage.from(MKT_BUCKET).remove([item.path]);
+      folder.items = folder.items.filter(i=>i.id!==itemId);
+      marketingRenderFiles();
+      marketingUpdateStorageBar();
+      toast('Removed');
+    });
   }});
 };
 

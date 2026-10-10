@@ -2694,8 +2694,10 @@ img.emoji-tw{width:1.15em;height:1.15em;vertical-align:-0.2em;margin:0 1px}
   // init sequence (nav, quickLinksRender, etc.) still happens in the 'load' listener below.
   (function(){
     try{
-      if(localStorage.getItem('mavis_logged_in_email')){
-        document.write('<style>#login{display:none !important}#app{display:flex !important}</style>');
+      var hasSession = Object.keys(localStorage).some(function(k){ return /^sb-.*-auth-token$/.test(k); });
+      var setupLink = /[?&]setup=/.test(location.search);
+      if(!setupLink && (hasSession || localStorage.getItem('mavis_logged_in_email'))){
+        document.write('<style id="early-app-style">#login{display:none !important}#app{display:flex !important}</style>');
       }
     }catch(err){}
   })();
@@ -2713,11 +2715,21 @@ img.emoji-tw{width:1.15em;height:1.15em;vertical-align:-0.2em;margin:0 1px}
     <div style="width:100%;max-width:320px">
       <div class="lf-title">Welcome back</div>
       <div class="lf-sub">Sign in to your Mavis account</div>
-      <label class="lf-label">Email Address</label>
-      <input class="lf-input" id="lemail" type="email" placeholder="you@mavis.app" value="john@mavis.app">
-      <label class="lf-label">Password</label>
-      <input class="lf-input" id="lpwd" type="password" placeholder="••••••••" value="password">
-      <button class="lf-btn" onclick="doLogin()">Sign in</button>
+      <form id="login-form" onsubmit="event.preventDefault();doLogin()" autocomplete="on">
+      <label class="lf-label" id="lemail-label" for="lemail">Username</label>
+      <input class="lf-input" id="lemail" type="text" autocomplete="username" autocapitalize="characters" spellcheck="false" placeholder="e.g. LUNA-JOHN-SMITH" value="">
+      <label class="lf-label" id="lpwd-label" for="lpwd">PIN or password</label>
+      <div style="position:relative">
+        <input class="lf-input" id="lpwd" type="password" autocomplete="current-password" placeholder="••••••" value="" style="padding-right:64px">
+        <button type="button" onclick="loginTogglePw()" id="lpwd-show" style="position:absolute;right:8px;top:0;height:46px;display:flex;align-items:center;background:none;border:none;color:#0D9488;font-weight:700;font-size:12.5px;cursor:pointer;font-family:'Inter',sans-serif">Show</button>
+      </div>
+      <div id="login-error" role="alert" style="display:none;margin:-4px 0 12px;font-size:13px;font-weight:600;color:#DC2626;line-height:1.4"></div>
+      <button class="lf-btn" type="submit" id="login-btn">Sign in</button>
+      </form>
+      <div id="login-help-link" style="text-align:center;margin-top:16px"><a onclick="loginShowHelp()" style="font-size:13px;color:#0D9488;font-weight:600;cursor:pointer">Forgot username or PIN?</a></div>
+      <div id="login-help" style="display:none;margin-top:12px;background:#F8FAFC;border:1px solid #E2E8F0;border-radius:10px;padding:12px 14px;font-size:13px;color:#475569;line-height:1.55">
+        <b style="color:#0F1E2E">Ask your manager.</b> They can see your username in Admin Console and send you a new link to choose a new PIN or password. Your username is usually your company code and name, e.g. <b>LUNA-JOHN-SMITH</b>.
+      </div>
       
       
     </div>
@@ -4922,6 +4934,7 @@ img.emoji-tw{width:1.15em;height:1.15em;vertical-align:-0.2em;margin:0 1px}
         <button onclick="adminChangeAnalyticsPin()" class="btn btn-navy">Change / Forgot PIN</button>
       </div>
 
+      <div id="owner-panel" style="display:none"></div>
       <!-- TABS -->
       <div style="display:flex;gap:4px;background:#F1F5F9;padding:4px;border-radius:10px;width:fit-content;margin-bottom:24px">
         <button id="admin-tab-roles" onclick="adminSwitchTab('roles')" style="padding:9px 18px;border:none;border-radius:7px;font-family:'Inter',sans-serif;font-size:13px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:7px">
@@ -5588,29 +5601,52 @@ function setLang(lang){
 }
 
 // ── LOGIN ──
-function doLogin(){
-  const e=document.getElementById('lemail');
-  const p=document.getElementById('lpwd');
-  if(!e||!p)return;
-  if(e.value.trim()&&p.value.trim()){
-    setCurrentUserFromEmail(e.value.trim());
-    try{ localStorage.setItem('mavis_logged_in_email', e.value.trim()); }catch(err){}
-    document.getElementById('login').style.display='none';
-    document.getElementById('app').style.display='flex';
-    quickLinksRender();
-    chatUpdateBadges();
-    nav('home');
-    setTimeout(()=>{ if(typeof evOpenPending==='function') evOpenPending(); }, 300);
-  } else {
-    toast('Please enter your email and password');
-  }
-}
+// ── LOGINS ──
+// Real accounts: everyone signs in with a Mavis username (e.g. LUNA-JOHN-SMITH) plus a 6-digit PIN
+// (staff) or a password (managers and up). The account checks happen in the /api functions on the
+// server. Until those are switched on (Vercel env var), the old demo login keeps working so nothing breaks.
+let authReady = null;          // null = not checked yet, true = real logins on, false = demo mode
+let myProfile = null;          // the logged-in person (from the profiles table)
+let myCompany = null;
 let currentUserFirstName = 'John';
-function setCurrentUserFromEmail(email){
-  let firstName = 'there';
-  const local = (email.split('@')[0]||'').trim();
-  const cleaned = local.split(/[._\d]+/).filter(Boolean)[0];
-  if(cleaned) firstName = cleaned.charAt(0).toUpperCase() + cleaned.slice(1).toLowerCase();
+function authApi(path, opts){
+  opts = opts || {};
+  const headers = { 'Content-Type':'application/json' };
+  if(opts.token) headers.Authorization = 'Bearer ' + opts.token;
+  return fetch('/api/' + path, { method: opts.method || 'POST', headers, body: opts.body ? JSON.stringify(opts.body) : undefined })
+    .then(async r => { let d = {}; try{ d = await r.json(); }catch(e){} d._status = r.status; return d; });
+}
+async function authCheckReady(){
+  if(authReady !== null) return authReady;
+  try{
+    const r = await fetch('/api/login', { method:'GET', cache:'no-store' });
+    const d = await r.json();
+    authReady = !!d.ready;
+  }catch(e){ authReady = false; }
+  return authReady;
+}
+function authShowLogin(){
+  const early = document.getElementById('early-app-style'); if(early) early.remove();
+  document.getElementById('app').style.display='none';
+  document.getElementById('login').style.display='flex';
+  try{
+    const last = localStorage.getItem('mavis_last_username');
+    const u = document.getElementById('lemail');
+    if(last && u && !u.value) u.value = last;
+    setTimeout(()=>{ (u && u.value ? document.getElementById('lpwd') : u)?.focus(); }, 50);
+  }catch(e){}
+}
+function authEnterApp(){
+  const early = document.getElementById('early-app-style'); if(early) early.remove();
+  document.getElementById('login').style.display='none';
+  document.getElementById('app').style.display='flex';
+  quickLinksRender();
+  chatUpdateBadges();
+  nav('home');
+  setTimeout(()=>{ if(typeof evOpenPending==='function') evOpenPending(); }, 400);
+}
+function setCurrentUserName(firstName){
+  firstName = firstName || 'there';
   currentUserFirstName = firstName;
   const greeting = document.getElementById('home-greeting-title');
   if(greeting) greeting.textContent = 'Good to see you, ' + firstName;
@@ -5618,26 +5654,218 @@ function setCurrentUserFromEmail(email){
   if(sbName) sbName.textContent = firstName;
   const sbAvatar = document.getElementById('sb-avatar');
   if(sbAvatar) sbAvatar.textContent = firstName.charAt(0).toUpperCase();
+  try{ updateSkyBanner(); }catch(e){}
 }
-function doLogout(){
+// Old demo login (only used until real logins are switched on)
+function setCurrentUserFromEmail(email){
+  const local = (String(email).split('@')[0]||'').trim();
+  const cleaned = local.split(/[._\d]+/).filter(Boolean)[0];
+  setCurrentUserName(cleaned ? cleaned.charAt(0).toUpperCase() + cleaned.slice(1).toLowerCase() : 'there');
+}
+async function authApplyProfile(profile, company){
+  myProfile = profile; myCompany = company || myCompany;
+  setCurrentUserName(profile.first_name);
+  authApplyRoleVisibility();
+  try{ await peopleLoadFromSupabase(); }catch(e){ console.warn(e); }
+}
+// Light role check for now: only people whose role has Admin Console switched on see it.
+function ownerPanelRender(){
+  const el = document.getElementById('owner-panel');
+  if(!el) return;
+  if(!myProfile || !myProfile.is_owner){ el.style.display='none'; el.innerHTML=''; return; }
+  el.style.display='block';
+  el.innerHTML = `<div style="background:#0F1E2E;color:white;border-radius:14px;padding:18px 20px;margin-bottom:20px">
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap">
+      <div><div style="font-size:11px;font-weight:800;letter-spacing:.12em;color:#5EEAD4">MAVIS OWNER</div>
+      <div style="font-size:16px;font-weight:800;margin-top:2px">Set up a new client</div>
+      <div style="font-size:12.5px;color:rgba(255,255,255,.7);margin-top:2px">Creates their company and a login link for their boss (Super Admin).</div></div>
+      <button class="btn" style="background:#0D9488;color:white;border:none" onclick="ownerNewClientForm()">+ New client</button>
+    </div>
+    <div id="owner-form"></div>
+  </div>`;
+}
+window.ownerNewClientForm = function(){
+  const f = document.getElementById('owner-form'); if(!f) return;
+  const inp = (id, ph, type) => `<input id="${id}" type="${type||'text'}" placeholder="${ph}" style="width:100%;padding:10px 12px;border:none;border-radius:8px;font-family:Inter,sans-serif;font-size:16px;box-sizing:border-box">`;
+  f.innerHTML = `<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px">
+    <div style="grid-column:1/-1">${inp('own-name','Company name, e.g. Sol Cantina')}</div>
+    <div style="grid-column:1/-1">${inp('own-code','Company code, e.g. SOLCANTINA (letters/numbers, used in usernames)')}</div>
+    <div>${inp('own-first','Boss first name')}</div><div>${inp('own-last','Boss surname')}</div>
+    <div style="grid-column:1/-1">${inp('own-email','Boss email (required)','email')}</div>
+  </div>
+  <div id="own-err" style="color:#FCA5A5;font-size:13px;font-weight:600;margin-top:8px"></div>
+  <div style="display:flex;gap:8px;margin-top:10px"><button class="btn" style="background:#C4973B;color:white;border:none" onclick="ownerCreateClient()">Create client</button>
+  <button class="btn" style="background:rgba(255,255,255,.1);color:white;border:none" onclick="document.getElementById('owner-form').innerHTML=''">Cancel</button></div>`;
+};
+window.ownerCreateClient = async function(){
+  const v = id => (document.getElementById(id)?.value||'').trim();
+  const err = m => { document.getElementById('own-err').textContent = m||''; };
+  const body = { action:'company', name:v('own-name'), code:v('own-code'), boss_first:v('own-first'), boss_last:v('own-last'), boss_email:v('own-email') };
+  if(!body.name || !body.code || !body.boss_first || !body.boss_email) return err('Please fill in company name, code, boss first name and email.');
+  if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(body.boss_email)) return err('That email doesn\'t look right.');
+  err('Creating…');
+  const d = await peopleApi(body);
+  if(!d.ok) return err(d.reason==='code taken' ? 'That company code is already used - pick another.' : 'Not created - ' + (d.reason||'please try again'));
+  document.getElementById('owner-form').innerHTML = '';
+  peopleShowInvite({ firstName: d.profile.first_name, lastName: d.profile.last_name, role:'superadmin', username: d.profile.username }, d.token, false);
+  toast(body.name + ' created ✓');
+};
+function authApplyRoleVisibility(){
+  if(!myProfile) return;
+  const perms = (typeof ADMIN_PERMS!=='undefined' && ADMIN_PERMS[myProfile.role]) || {};
+  const canAdmin = myProfile.is_owner || !!perms.adminconsole;
+  const link = document.getElementById('n-admin'); if(link) link.style.display = canAdmin ? '' : 'none';
+  ownerPanelRender();
+  // the "DEMO preview" note on Admin Console is no longer true once logins are on
+  document.querySelectorAll('#p-admin span').forEach(sp=>{ if(/DEMO preview, not yet wired/.test(sp.textContent)) sp.textContent = 'live accounts'; });
+}
+function loginError(msg){
+  const el = document.getElementById('login-error');
+  if(!el) return;
+  el.textContent = msg || ''; el.style.display = msg ? 'block' : 'none';
+}
+window.loginTogglePw = function(){
+  const i = document.getElementById('lpwd'), b = document.getElementById('lpwd-show');
+  const show = i.type === 'password'; i.type = show ? 'text' : 'password'; b.textContent = show ? 'Hide' : 'Show';
+};
+window.loginShowHelp = function(){
+  const h = document.getElementById('login-help'); if(h) h.style.display = h.style.display==='none' ? 'block' : 'none';
+};
+async function doLogin(){
+  const e=document.getElementById('lemail');
+  const p=document.getElementById('lpwd');
+  if(!e||!p)return;
+  const username = e.value.trim(), secret = p.value;
+  loginError('');
+  if(!(await authCheckReady())){
+    // demo mode: old behaviour
+    if(username && secret){
+      setCurrentUserFromEmail(username.includes('@') ? username : username.toLowerCase());
+      try{ localStorage.setItem('mavis_logged_in_email', username); }catch(err){}
+      authEnterApp();
+    } else loginError('Please enter your username and PIN or password');
+    return;
+  }
+  if(!username || !secret){ loginError('Please enter your username and PIN or password'); return; }
+  const btn = document.getElementById('login-btn'); if(btn){ btn.disabled = true; btn.textContent = 'Signing in…'; }
+  try{
+    const d = await authApi('login', { body:{ username, secret } });
+    if(!d.ok){
+      if(d.reason==='locked') loginError('Too many wrong tries. Please wait 15 minutes, or ask your manager to reset your PIN.');
+      else if(d.reason==='inactive') loginError('This account has been switched off. Please speak to your manager.');
+      else if(d.reason==='wrong') loginError('Username or PIN/password not right.' + (d.left>0 && d.left<=3 ? ' ' + d.left + ' tries left before a 15-minute lock.' : ''));
+      else loginError('Could not sign in right now. Please check your connection and try again.');
+      return;
+    }
+    await sb.auth.setSession({ access_token: d.session.access_token, refresh_token: d.session.refresh_token });
+    try{ localStorage.setItem('mavis_last_username', d.profile.username); localStorage.removeItem('mavis_logged_in_email'); }catch(err){}
+    p.value = '';
+    await authApplyProfile(d.profile, d.company);
+    authEnterApp();
+  }catch(err){
+    console.warn(err); loginError('Could not sign in right now. Please check your connection and try again.');
+  }finally{
+    if(btn){ btn.disabled = false; btn.textContent = 'Sign in'; }
+  }
+}
+async function doLogout(){
   try{ localStorage.removeItem('mavis_logged_in_email'); }catch(err){}
-  document.getElementById('login').style.display='flex';
-  document.getElementById('app').style.display='none';
+  try{ await sb.auth.signOut(); }catch(err){}
+  myProfile = null;
+  authShowLogin();
 }
 
-// Auto-restore a previous session on page load, so a hard refresh doesn't ask to log in again.
-window.addEventListener('load', () => {
+// ---- One-time setup / reset link: ?setup=TOKEN ----
+async function authRunSetup(token){
+  const early = document.getElementById('early-app-style'); if(early) early.remove();
+  document.getElementById('app').style.display='none';
+  document.getElementById('login').style.display='none';
+  let el = document.getElementById('setup-screen');
+  if(!el){
+    el = document.createElement('div'); el.id = 'setup-screen';
+    el.style.cssText = 'position:fixed;inset:0;z-index:5000;background:#0F1E2E;display:flex;align-items:center;justify-content:center;padding:20px;overflow:auto;font-family:Inter,sans-serif';
+    document.body.appendChild(el);
+  }
+  const card = inner => `<div style="background:white;border-radius:18px;max-width:400px;width:100%;padding:28px 24px">
+    <div style="font-size:26px;font-weight:800;margin-bottom:18px"><span style="color:#0D9488">M</span><span style="color:#0F1E2E">avis</span><span style="color:#C4973B">.</span></div>${inner}</div>`;
+  el.innerHTML = card('<div style="color:#64748B">Checking your link…</div>');
+  const info = await authApi('setup?t=' + encodeURIComponent(token), { method:'GET' });
+  const clearUrl = ()=>{ try{ history.replaceState(null,'',location.pathname); }catch(e){} };
+  if(!info.ok){
+    const why = info.reason==='used' ? 'This link has already been used.' : info.reason==='expired' ? 'This link has expired.' : 'This link isn\'t valid.';
+    el.innerHTML = card(`<div style="font-size:19px;font-weight:800;color:#0F1E2E;margin-bottom:8px">${why}</div>
+      <div style="font-size:14px;color:#475569;line-height:1.55;margin-bottom:18px">Please ask your manager to send you a new link.</div>
+      <button class="lf-btn" onclick="document.getElementById('setup-screen').remove();history.replaceState(null,'',location.pathname);authShowLogin()">Go to sign in</button>`);
+    return;
+  }
+  const isPin = info.kind === 'pin';
+  const esc = v => String(v==null?'':v).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  el.innerHTML = card(`
+    <div style="font-size:20px;font-weight:800;color:#0F1E2E;margin-bottom:4px">${info.reset ? 'Choose a new ' + (isPin?'PIN':'password') : 'Welcome, ' + esc(info.first_name) + '!'}</div>
+    <div style="font-size:14px;color:#475569;line-height:1.5;margin-bottom:16px">${esc(info.company)}</div>
+    <div style="background:#F0FDFA;border:1px solid #99F6E4;border-radius:12px;padding:12px 14px;margin-bottom:16px">
+      <div style="font-size:11px;font-weight:800;letter-spacing:.08em;color:#0F766E">YOUR USERNAME</div>
+      <div style="font-size:18px;font-weight:800;color:#0F1E2E;word-break:break-all;margin-top:2px">${esc(info.username)}</div>
+      <div style="font-size:12px;color:#475569;margin-top:4px">Your phone will remember it.</div>
+    </div>
+    <form onsubmit="event.preventDefault();authFinishSetup('${esc(token)}','${info.kind}')">
+      <input type="text" autocomplete="username" value="${esc(info.username)}" style="display:none" readonly>
+      <label class="lf-label" for="setup-1">${isPin ? 'Choose a 6-digit PIN' : 'Choose a password (at least 8 characters)'}</label>
+      <input class="lf-input" id="setup-1" type="password" autocomplete="new-password" ${isPin?'inputmode="numeric" maxlength="6" pattern="[0-9]*"':''} placeholder="${isPin?'••••••':'••••••••'}">
+      <label class="lf-label" for="setup-2">Type it again</label>
+      <input class="lf-input" id="setup-2" type="password" autocomplete="new-password" ${isPin?'inputmode="numeric" maxlength="6" pattern="[0-9]*"':''} placeholder="${isPin?'••••••':'••••••••'}">
+      <div id="setup-error" role="alert" style="display:none;margin:-4px 0 12px;font-size:13px;font-weight:600;color:#DC2626"></div>
+      <button class="lf-btn" type="submit" id="setup-btn">${info.reset ? 'Save and sign in' : 'Create my login'}</button>
+    </form>`);
+  setTimeout(()=>document.getElementById('setup-1')?.focus(), 50);
+}
+window.authFinishSetup = async function(token, kind){
+  const a = document.getElementById('setup-1').value, b = document.getElementById('setup-2').value;
+  const err = m => { const e=document.getElementById('setup-error'); e.textContent=m; e.style.display = m ? 'block' : 'none'; };
+  if(kind==='pin' && !/^\d{6}$/.test(a)) return err('The PIN must be exactly 6 numbers.');
+  if(kind!=='pin' && a.length < 8) return err('The password must be at least 8 characters.');
+  if(a !== b) return err('The two don\'t match. Please type them again.');
+  err('');
+  const btn = document.getElementById('setup-btn'); btn.disabled = true; btn.textContent = 'Saving…';
+  const d = await authApi('setup', { body:{ t: token, secret: a } });
+  if(!d.ok){ btn.disabled = false; btn.textContent = 'Try again'; return err(d.message || 'That didn\'t work. The link may have expired - ask your manager for a new one.'); }
+  await sb.auth.setSession({ access_token: d.session.access_token, refresh_token: d.session.refresh_token });
+  try{ localStorage.setItem('mavis_last_username', d.profile.username); localStorage.removeItem('mavis_logged_in_email'); }catch(e){}
+  try{ history.replaceState(null,'',location.pathname); }catch(e){}
+  document.getElementById('setup-screen')?.remove();
+  await authApplyProfile(d.profile, d.company);
+  authEnterApp();
+  toast('You\'re in ✓ Welcome to Mavis');
+};
+
+// ---- On page load: setup link, saved session, or sign-in screen ----
+window.addEventListener('load', async () => {
+  const setupToken = new URLSearchParams(location.search).get('setup');
+  const ready = await authCheckReady();
+  if(setupToken && ready){ authRunSetup(setupToken); return; }
+  if(ready){
+    try{
+      const { data } = await sb.auth.getSession();
+      const session = data && data.session;
+      if(session){
+        const { data: rows } = await sb.from('profiles').select('*').eq('user_id', session.user.id).limit(1);
+        const prof = rows && rows[0];
+        if(prof && prof.active){
+          const { data: cos } = await sb.from('companies').select('id,code,name,departments').eq('id', prof.company_id).limit(1);
+          await authApplyProfile({ ...prof, has_login:true }, cos && cos[0]);
+          authEnterApp();
+          return;
+        }
+        await sb.auth.signOut();
+      }
+    }catch(e){ console.warn('Session restore failed', e); }
+    authShowLogin();
+    return;
+  }
+  // demo mode (real logins not switched on yet): old auto-restore
   try{
     const savedEmail = localStorage.getItem('mavis_logged_in_email');
-    if(savedEmail){
-      setCurrentUserFromEmail(savedEmail);
-      document.getElementById('login').style.display='none';
-      document.getElementById('app').style.display='flex';
-      quickLinksRender();
-      chatUpdateBadges();
-      nav('home');
-      setTimeout(()=>{ if(typeof evOpenPending==='function') evOpenPending(); }, 600);
-    }
+    if(savedEmail){ setCurrentUserFromEmail(savedEmail); authEnterApp(); }
   }catch(err){}
 });
 
@@ -9614,27 +9842,100 @@ function peopleFullName(p){
 function peopleRender(){
   const el = document.getElementById('people-list');
   if(!el) return;
+  const cnt = document.getElementById('admin-tab-people-count'); if(cnt) cnt.textContent = '(' + PEOPLE.filter(p=>p.active!==false).length + ')';
+  const esc = v => String(v==null?'':v).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  const real = !!myProfile;
   el.innerHTML = PEOPLE.map((p,i) => {
     const role = ADMIN_ROLES.find(r=>r.id===p.role) || {name:'—', color:'#94A3B8'};
-    const initial = p.firstName.charAt(0);
-    const tags = p.departments.map(d => `<span style="font-size:10.5px;font-weight:600;color:#0F1E2E;background:#F1F5F9;padding:3px 9px;border-radius:20px">${d}</span>`).join(' ');
-    return `<div style="display:flex;align-items:center;gap:14px;padding:14px 18px;${i<PEOPLE.length-1?'border-bottom:1px solid #F1F5F9':''}">
-      <div style="width:38px;height:38px;border-radius:50%;background:${role.color};color:white;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px;flex-shrink:0">${initial}</div>
+    const initial = (p.firstName||'?').charAt(0);
+    const tags = (p.departments||[]).map(d => `<span style="font-size:10.5px;font-weight:600;color:#0F1E2E;background:#F1F5F9;padding:3px 9px;border-radius:20px">${esc(d)}</span>`).join(' ');
+    const status = !real ? '' : p.active===false ? '<span style="color:#DC2626">Switched off</span>'
+      : p.hasLogin ? '<span style="color:#16A34A">● Active</span>' : '<span style="color:#D97706">● No login yet</span>';
+    const off = p.active===false;
+    return `<div style="display:flex;align-items:center;gap:14px;padding:14px 18px;${i<PEOPLE.length-1?'border-bottom:1px solid #F1F5F9':''};${off?'opacity:.55':''}">
+      <div style="width:38px;height:38px;border-radius:50%;background:${p.photo?`url('${esc(p.photo)}') center/cover`:role.color};color:white;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px;flex-shrink:0">${p.photo?'':esc(initial)}</div>
       <div style="flex:1;min-width:0">
-        <div style="font-size:13.5px;font-weight:700;color:#0F1E2E">${peopleFullName(p)}</div>
+        <div style="font-size:13.5px;font-weight:700;color:#0F1E2E">${esc(peopleFullName(p))}${p.isMe?' <span style="font-size:11px;color:#0D9488">(you)</span>':''}</div>
+        ${real?`<div style="font-size:11.5px;color:#64748B;margin-top:2px;word-break:break-all">${esc(p.username||'')} · ${status}</div>`:''}
         <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:5px">${tags || '<span style="font-size:11px;color:#CBD5E1;font-style:italic">No department set</span>'}</div>
       </div>
       <div style="font-size:11px;font-weight:700;color:white;background:${role.color};padding:5px 12px;border-radius:20px;flex-shrink:0;white-space:nowrap">${role.name}</div>
-      <button onclick="peopleOpenForm(${p.id})" title="Edit" style="width:32px;height:32px;background:#F1F5F9;border:none;border-radius:8px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0">
-        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#64748B" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+      <button onclick="peopleOpenForm('${p.id}')" title="Edit" style="width:32px;height:32px;background:#F1F5F9;border:none;border-radius:8px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#64748B" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
       </button>
     </div>`;
   }).join('');
 }
 
+// Real People list (profiles table). Replaces the demo list once logins are switched on.
+async function peopleLoadFromSupabase(){
+  if(!myProfile) return;
+  const { data, error } = await sb.from('profiles').select('*').eq('company_id', myProfile.company_id).order('first_name');
+  if(error){ console.warn('People not loaded', error); return; }
+  PEOPLE = (data||[]).map(r=>({ id:r.id, firstName:r.first_name, lastName:r.last_name||'', role:r.role, departments:r.departments||[],
+    photo:r.photo||'', username:r.username, email:r.email||'', active:r.active, hasLogin:!!r.user_id, isMe: r.id===myProfile.id }));
+  if(myCompany && Array.isArray(myCompany.departments) && myCompany.departments.length) PEOPLE_DEPARTMENTS = myCompany.departments.slice();
+  else {
+    const { data: cos } = await sb.from('companies').select('departments').eq('id', myProfile.company_id).limit(1);
+    if(cos && cos[0] && Array.isArray(cos[0].departments) && cos[0].departments.length) PEOPLE_DEPARTMENTS = cos[0].departments.slice();
+  }
+  peopleRender();
+  try{ adminConsoleRender(); }catch(e){}
+  try{ chatSeedDepartmentGroups(); }catch(e){}
+}
+async function peopleApi(body){
+  const { data } = await sb.auth.getSession();
+  const token = data && data.session && data.session.access_token;
+  return authApi('people', { body, token });
+}
+function peopleSetupUrl(token){ return location.origin + location.pathname + '?setup=' + encodeURIComponent(token); }
+// Shows the one-time link + QR for someone to create (or reset) their login.
+function peopleShowInvite(person, token, isReset){
+  const url = peopleSetupUrl(token);
+  const isPin = ['supervisor','teammember','dailyworker'].includes(person.role);
+  const esc = v => String(v==null?'':v).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  let el = document.getElementById('people-invite');
+  if(!el){ el = document.createElement('div'); el.id='people-invite'; el.style.cssText='position:fixed;inset:0;background:rgba(15,30,46,.55);z-index:3000;display:flex;align-items:center;justify-content:center;padding:16px'; el.addEventListener('click',e=>{ if(e.target===el) el.remove(); }); document.body.appendChild(el); }
+  const msg = (isReset ? 'Here is your link to choose a new ' : 'Welcome to Mavis! Here is your link to set up your login. Choose a ') + (isPin?'6-digit PIN':'password') + '. Your username is ' + person.username + '. The link works once and expires in 48 hours: ' + url;
+  el.innerHTML = `<div style="background:white;border-radius:16px;max-width:420px;width:100%;padding:22px;font-family:Inter,sans-serif;max-height:92vh;overflow:auto">
+    <div style="font-size:18px;font-weight:800;color:#0F1E2E">${isReset ? 'New login link' : 'Login link ready'}</div>
+    <div style="font-size:13px;color:#475569;margin:4px 0 14px">For <b style="color:#0F1E2E">${esc(person.firstName)} ${esc(person.lastName||'')}</b>. They'll choose their own ${isPin?'6-digit PIN':'password'}.</div>
+    <div style="background:#F0FDFA;border:1px solid #99F6E4;border-radius:12px;padding:10px 12px;margin-bottom:14px">
+      <div style="font-size:11px;font-weight:800;letter-spacing:.08em;color:#0F766E">USERNAME</div>
+      <div style="font-size:16px;font-weight:800;color:#0F1E2E;word-break:break-all">${esc(person.username)}</div>
+    </div>
+    <div style="font-size:12.5px;font-weight:700;color:#0F1E2E;margin-bottom:6px">In person: they scan this with their phone camera</div>
+    <div id="people-invite-qr" style="display:flex;justify-content:center;padding:10px;background:#F8FAFC;border-radius:12px;margin-bottom:14px"></div>
+    <div style="font-size:12.5px;font-weight:700;color:#0F1E2E;margin-bottom:8px">Or send the link</div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px">
+      <a class="btn btn-navy" style="text-decoration:none" target="_blank" rel="noopener" href="https://wa.me/?text=${encodeURIComponent(msg)}">Send on WhatsApp</a>
+      <button class="btn btn-ghost" id="people-invite-copy">Copy link</button>
+    </div>
+    <div style="font-size:12px;color:#64748B;line-height:1.5;margin-bottom:14px">The link works <b>once</b> and expires in <b>48 hours</b>. You can always make a new one from their profile.</div>
+    <div style="text-align:right"><button class="btn btn-ghost" onclick="document.getElementById('people-invite').remove()">Done</button></div>
+  </div>`;
+  document.getElementById('people-invite-copy').onclick = async ()=>{ try{ await navigator.clipboard.writeText(url); }catch(e){} document.getElementById('people-invite-copy').textContent='Copied ✓'; };
+  try{ new QRCode(document.getElementById('people-invite-qr'), { text:url, width:200, height:200, colorDark:'#0F1E2E', colorLight:'#F8FAFC' }); }
+  catch(e){ document.getElementById('people-invite-qr').innerHTML = '<div style="font-size:12px;color:#94A3B8">QR not available - use the link</div>'; }
+}
+window.peopleResetLogin = async function(id){
+  const p = PEOPLE.find(x=>String(x.id)===String(id)); if(!p) return;
+  const d = await peopleApi({ action:'reset', id });
+  if(!d.ok){ toast(d.message || 'Could not make a link - ' + (d.reason||'please try again')); return; }
+  peopleShowInvite(p, d.token, p.hasLogin);
+};
+window.peopleSetActive = function(id, on){
+  const p = PEOPLE.find(x=>String(x.id)===String(id)); if(!p) return;
+  appConfirmShow({ title: on ? 'Switch back on?' : 'Switch off ' + p.firstName + '?', msg: on ? p.firstName + ' will be able to sign in again.' : p.firstName + ' won\'t be able to sign in any more. Everything they wrote stays.', onOk: async ()=>{
+    const d = await peopleApi({ action: on ? 'reactivate' : 'deactivate', id });
+    if(!d.ok){ toast(d.message || 'Not saved - ' + (d.reason||'please try again')); return; }
+    peopleCloseForm(); await peopleLoadFromSupabase(); toast(on ? 'Switched back on ✓' : 'Switched off');
+  }});
+};
+
 function peopleOpenForm(personId){
   peopleEditingId = personId || null;
-  const p = personId ? PEOPLE.find(x=>x.id===personId) : {firstName:'',lastName:'',role:'teammember',departments:[],photo:''};
+  const p = personId ? PEOPLE.find(x=>String(x.id)===String(personId)) : {firstName:'',lastName:'',role:'teammember',departments:[],photo:'',email:''};
   const wrap = document.getElementById('people-form-wrap');
   if(!wrap) return;
 
@@ -9660,6 +9961,11 @@ function peopleOpenForm(personId){
       </div>
     </div>
     <div style="margin-bottom:16px">
+      <label style="font-size:11px;font-weight:700;color:#64748B;display:block;margin-bottom:5px">Email <span style="font-weight:500">(required for Super Admin, optional for everyone else)</span></label>
+      <input id="people-form-email" type="email" value="${(p.email||'').replace(/"/g,'&quot;')}" placeholder="optional" style="width:100%;padding:9px 10px;border:1.5px solid #E2E8F0;border-radius:8px;font-family:'Inter',sans-serif;font-size:16px;box-sizing:border-box">
+    </div>
+    ${personId && myProfile ? `<div style="margin:-4px 0 16px;font-size:12px;color:#64748B">Username: <b style="color:#0F1E2E">${p.username||''}</b></div>` : ''}
+    <div style="margin-bottom:16px">
       <label style="font-size:11px;font-weight:700;color:#64748B;display:block;margin-bottom:5px">Role</label>
       <select id="people-form-role" style="width:100%;padding:9px 10px;border:1.5px solid #E2E8F0;border-radius:8px;font-family:'Inter',sans-serif;font-size:16px">
         ${ADMIN_ROLES.map(r=>`<option value="${r.id}" ${p.role===r.id?'selected':''}>${r.name}</option>`).join('')}
@@ -9677,10 +9983,11 @@ function peopleOpenForm(personId){
       </div>
     </div>
     <div id="dept-manager-wrap" style="display:none;margin-bottom:18px"></div>
-    <div style="display:flex;gap:10px">
+    <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
       <button onclick="peopleSaveForm()" style="padding:10px 18px;background:#0F1E2E;color:white;border:none;border-radius:8px;font-family:'Inter',sans-serif;font-size:13px;font-weight:700;cursor:pointer">Save</button>
       <button onclick="peopleCloseForm()" style="padding:10px 18px;background:#F1F5F9;color:#64748B;border:none;border-radius:8px;font-family:'Inter',sans-serif;font-size:13px;font-weight:700;cursor:pointer">Cancel</button>
-      ${personId ? `<button onclick="peopleDelete(${personId})" style="padding:10px 18px;background:none;color:#DC2626;border:none;font-family:'Inter',sans-serif;font-size:13px;font-weight:700;cursor:pointer;margin-left:auto">Remove person</button>` : ''}
+      ${personId && myProfile ? `<button onclick="peopleResetLogin('${personId}')" style="padding:10px 14px;background:#F0FDFA;color:#0F766E;border:none;border-radius:8px;font-family:'Inter',sans-serif;font-size:13px;font-weight:700;cursor:pointer">${p.hasLogin ? 'Reset PIN / password' : 'Send login link'}</button>
+      ${p.isMe ? '' : `<button onclick="peopleSetActive('${personId}', ${p.active===false})" style="padding:10px 14px;background:none;color:${p.active===false?'#16A34A':'#DC2626'};border:none;font-family:'Inter',sans-serif;font-size:13px;font-weight:700;cursor:pointer">${p.active===false ? 'Switch back on' : 'Switch off'}</button>`}` : (personId ? `<button onclick="peopleDelete(${personId})" style="padding:10px 18px;background:none;color:#DC2626;border:none;font-family:'Inter',sans-serif;font-size:13px;font-weight:700;cursor:pointer">Delete</button>` : '')}
     </div>
   </div>`;
   peopleFormPhotoData = p.photo || '';
@@ -9767,6 +10074,16 @@ function deptAdd(){
   PEOPLE_DEPARTMENTS.push(name);
   deptManagerRender();
   deptRefreshCheckboxes();
+  deptSaveToCompany();
+}
+// When real logins are on, the department list belongs to the company (shared by everyone).
+async function deptSaveToCompany(){
+  if(!myProfile) return;
+  const d = await peopleApi({ action:'departments', departments: PEOPLE_DEPARTMENTS });
+  if(!d.ok){ toast('Departments not saved - ' + (d.reason||'please try again')); return; }
+  if(myCompany) myCompany.departments = d.departments;
+  const changed = PEOPLE.filter(p=>p._deptChanged);
+  for(const p of changed){ await peopleApi({ action:'update', id:p.id, departments:p.departments, role:p.role }); delete p._deptChanged; }
 }
 
 function deptRename(index){
@@ -9775,7 +10092,7 @@ function deptRename(index){
   if(!newName || newName === oldName) return;
   PEOPLE_DEPARTMENTS[index] = newName;
   // Cascade the rename to every person currently carrying the old department name
-  PEOPLE.forEach(p => { p.departments = p.departments.map(d => d === oldName ? newName : d); });
+  PEOPLE.forEach(p => { if(p.departments.includes(oldName)) p._deptChanged = true; p.departments = p.departments.map(d => d === oldName ? newName : d); });
   if(typeof chatConversations !== 'undefined'){
     const grp = chatConversations.find(c => c.isGroup && c.name === oldName);
     if(grp) grp.name = newName;
@@ -9783,29 +10100,49 @@ function deptRename(index){
   deptManagerRender();
   deptRefreshCheckboxes();
   peopleRender();
+  deptSaveToCompany();
 }
 
 function deptDelete(index){
   const name = PEOPLE_DEPARTMENTS[index];
   if(!confirm('Delete "'+name+'"? This removes it from anyone currently tagged with it.')) return;
   PEOPLE_DEPARTMENTS.splice(index, 1);
-  PEOPLE.forEach(p => { p.departments = p.departments.filter(d => d !== name); });
+  PEOPLE.forEach(p => { if(p.departments.includes(name)) p._deptChanged = true; p.departments = p.departments.filter(d => d !== name); });
   if(typeof chatConversations !== 'undefined'){
     chatConversations = chatConversations.filter(c => !(c.isGroup && c.name === name));
   }
   deptManagerRender();
   deptRefreshCheckboxes();
   peopleRender();
+  deptSaveToCompany();
 }
 
-function peopleSaveForm(){
+async function peopleSaveForm(){
   const firstName = document.getElementById('people-form-first').value.trim();
   const lastName = document.getElementById('people-form-last').value.trim();
   const role = document.getElementById('people-form-role').value;
   const departments = Array.from(document.querySelectorAll('.people-form-dept:checked')).map(c=>c.value);
   const photo = peopleFormPhotoData || '';
+  const email = (document.getElementById('people-form-email')?.value || '').trim();
 
   if(!firstName){ alert('First name is required.'); return; }
+  if(email && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)){ alert('That email address doesn\'t look right.'); return; }
+  if(role==='superadmin' && !email){ alert('A Super Admin needs an email address, so they can never be locked out.'); return; }
+
+  if(myProfile){
+    const body = { first_name:firstName, last_name:lastName, role, departments, email, photo };
+    const d = peopleEditingId ? await peopleApi(Object.assign({ action:'update', id: peopleEditingId }, body))
+                              : await peopleApi(Object.assign({ action:'create' }, body));
+    if(!d.ok){ alert(d.message || ('Not saved: ' + (d.reason==='cannot give that role' || d.reason==='higher role' ? 'you can only manage people below your own role.' : (d.reason || 'please try again')))); return; }
+    const wasNew = !peopleEditingId;
+    peopleCloseForm();
+    await peopleLoadFromSupabase();
+    if(wasNew){
+      const np = PEOPLE.find(x=>x.id===d.profile.id) || { firstName, lastName, role, username: d.profile.username };
+      peopleShowInvite(np, d.token, false);
+    } else toast('Saved ✓');
+    return;
+  }
 
   if(peopleEditingId){
     const p = PEOPLE.find(x=>x.id===peopleEditingId);

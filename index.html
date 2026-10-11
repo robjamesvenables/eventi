@@ -1511,7 +1511,10 @@ textarea.rf-val{resize:vertical;min-height:72px;line-height:1.5}
 
 /* Toast */
 .toast{
-  position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);
+  /* Sits at the bottom of the screen and lets taps pass straight through,
+     so it never covers or blocks what you're editing. */
+  position:fixed;top:auto;bottom:calc(24px + env(safe-area-inset-bottom, 0px));left:50%;transform:translateX(-50%);
+  pointer-events:none;
   background:var(--navy);color:var(--w);
   padding:14px 24px;border-radius:8px;
   font-size:13.5px;font-weight:500;
@@ -1522,6 +1525,7 @@ textarea.rf-val{resize:vertical;min-height:72px;line-height:1.5}
 }
 .toast.on{display:block}
 .toast.show{display:block}
+.toast.anchored{bottom:auto;transform:translate(-50%,-50%)}
 
 /* ── ADMIN ── */
 .admin-card{
@@ -5507,14 +5511,16 @@ function toast(msg, anchorEl){
     const r = anchorEl.getBoundingClientRect();
     t.style.top = (r.top + r.height/2) + 'px';
     t.style.left = (r.left + r.width/2) + 'px';
+    t.classList.add('anchored');
   } else {
     t.style.top = '';
     t.style.left = '';
+    t.classList.remove('anchored');
   }
   t.classList.add('show');
-  const duration = msg.length > 40 ? 8000 : 2800;
+  const duration = msg.length > 40 ? 5000 : 2800;
   clearTimeout(window._toastTimer);
-  window._toastTimer = setTimeout(()=>{ t.classList.remove('show'); t.style.top=''; t.style.left=''; }, duration);
+  window._toastTimer = setTimeout(()=>{ t.classList.remove('show','anchored'); t.style.top=''; t.style.left=''; }, duration);
 }
 
 // A reusable "paused" state for a feature that's built but not ready to show clients yet -
@@ -6389,7 +6395,7 @@ function beoRenderClientUi(){
   if(pill) pill.style.display = beoShare.on ? '' : 'none';
   const btn = document.getElementById('beo-client-btn');
   if(btn){
-    btn.textContent = beoShare.on ? 'Client link ✓' : 'Share with client';
+    btn.textContent = beoShare.on ? 'Share with client ✓' : 'Share with client';
     btn.style.borderColor = beoShare.on ? '#16A34A' : '#EF4444';
     btn.style.color = beoShare.on ? '#15803D' : '#DC2626';
     btn.style.background = beoShare.on ? '#F0FDF4' : 'white';

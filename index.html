@@ -9884,6 +9884,7 @@ let PEOPLE = [
 ];
 let peopleNextId = 14;
 let peopleEditingId = null;
+let peopleSaving = false;
 
 function peopleFullName(p){
   return (p.firstName + ' ' + p.lastName).trim();
@@ -10044,7 +10045,7 @@ function peopleOpenForm(personId){
     </div>
     <div id="dept-manager-wrap" style="display:none;margin-bottom:18px"></div>
     <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
-      <button onclick="peopleSaveForm()" style="padding:10px 18px;background:#0F1E2E;color:white;border:none;border-radius:8px;font-family:'Inter',sans-serif;font-size:13px;font-weight:700;cursor:pointer">Save</button>
+      <button id="people-form-save" onclick="peopleSaveForm()" style="padding:10px 18px;background:#0F1E2E;color:white;border:none;border-radius:8px;font-family:'Inter',sans-serif;font-size:13px;font-weight:700;cursor:pointer">Save</button>
       <button onclick="peopleCloseForm()" style="padding:10px 18px;background:#F1F5F9;color:#64748B;border:none;border-radius:8px;font-family:'Inter',sans-serif;font-size:13px;font-weight:700;cursor:pointer">Cancel</button>
       ${personId && myProfile ? `<button onclick="peopleResetLogin('${personId}')" style="padding:10px 14px;background:#F0FDFA;color:#0F766E;border:none;border-radius:8px;font-family:'Inter',sans-serif;font-size:13px;font-weight:700;cursor:pointer">${p.hasLogin ? 'Reset PIN / password' : 'Send login link'}</button>
       ${p.isMe ? '' : `<button onclick="peopleSetActive('${personId}', ${p.active===false})" style="padding:10px 14px;background:none;color:${p.active===false?'#16A34A':'#DC2626'};border:none;font-family:'Inter',sans-serif;font-size:13px;font-weight:700;cursor:pointer">${p.active===false ? 'Switch back on' : 'Switch off'}</button>`}` : (personId ? `<button onclick="peopleDelete(${personId})" style="padding:10px 18px;background:none;color:#DC2626;border:none;font-family:'Inter',sans-serif;font-size:13px;font-weight:700;cursor:pointer">Delete</button>` : '')}
@@ -10190,14 +10191,27 @@ async function peopleSaveForm(){
   if(role==='superadmin' && !email){ alert('A Super Admin needs an email address, so they can never be locked out.'); return; }
 
   if(myProfile){
+    // Ignore extra clicks while a save is already going (a double-click used to make the
+    // second save think it was adding a NEW person and show a bogus login-link popup).
+    if(peopleSaving) return;
+    peopleSaving = true;
+    const saveBtn = document.getElementById('people-form-save');
+    if(saveBtn){ saveBtn.disabled = true; saveBtn.textContent = 'Saving…'; }
+    const editingId = peopleEditingId;      // fixed at the moment Save was pressed
+    const wasNew = !editingId;
     const body = { first_name:firstName, last_name:lastName, role, departments, email, photo };
-    const d = peopleEditingId ? await peopleApi(Object.assign({ action:'update', id: peopleEditingId }, body))
-                              : await peopleApi(Object.assign({ action:'create' }, body));
-    if(!d.ok){ alert(d.message || ('Not saved: ' + (d.reason==='cannot give that role' || d.reason==='higher role' ? 'you can only manage people below your own role.' : (d.reason || 'please try again')))); return; }
-    const wasNew = !peopleEditingId;
+    let d;
+    try{
+      d = editingId ? await peopleApi(Object.assign({ action:'update', id: editingId }, body))
+                    : await peopleApi(Object.assign({ action:'create' }, body));
+    } finally {
+      peopleSaving = false;
+      if(saveBtn){ saveBtn.disabled = false; saveBtn.textContent = 'Save'; }
+    }
+    if(!d || !d.ok){ alert((d && d.message) || ('Not saved: ' + (d && (d.reason==='cannot give that role' || d.reason==='higher role') ? 'you can only manage people below your own role.' : ((d && d.reason) || 'please try again')))); return; }
     peopleCloseForm();
     await peopleLoadFromSupabase();
-    if(wasNew){
+    if(wasNew && d.token){
       const np = PEOPLE.find(x=>x.id===d.profile.id) || { firstName, lastName, role, username: d.profile.username };
       peopleShowInvite(np, d.token, false);
     } else toast('Saved ✓');

@@ -7,7 +7,7 @@ const crypto = require('crypto');
 const SUPABASE_URL = process.env.SUPABASE_URL || 'https://qjxcpmkiyfrukxicdwkl.supabase.co';
 // New-style keys (sb_secret_… / sb_publishable_…) are preferred; the legacy names still work as a fallback.
 const SERVICE_KEY = process.env.SUPABASE_SECRET_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY || '';
-const ANON_KEY = process.env.SUPABASE_PUBLISHABLE_KEY || process.env.SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFqeGNwbWtpeWZydWt4aWNkd2tsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE5NDkwOTAsImV4cCI6MjA5NzUyNTA5MH0.Wiwtqf1bkokU7H6VauvFyysHcMMi5KV8mgSfwR5NEWc';
+const ANON_KEY = process.env.SUPABASE_PUBLISHABLE_KEY || process.env.SUPABASE_ANON_KEY || 'sb_publishable_bHRgdmEZPalEJSMBBr8prQ_Qhu_h1X9';
 
 // Roles that log in with a 6-digit PIN; everyone above uses a password (8+ characters).
 const PIN_ROLES = ['supervisor', 'teammember', 'dailyworker'];

@@ -2588,7 +2588,7 @@ img.emoji-tw{width:1.15em;height:1.15em;vertical-align:-0.2em;margin:0 1px}
   // Mavis <-> Supabase connection. Anon key is safe to expose client-side (it's the
   // public key by design; row-level security policies do the actual protecting).
   const SUPABASE_URL = 'https://qjxcpmkiyfrukxicdwkl.supabase.co';
-  const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFqeGNwbWtpeWZydWt4aWNkd2tsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE5NDkwOTAsImV4cCI6MjA5NzUyNTA5MH0.Wiwtqf1bkokU7H6VauvFyysHcMMi5KV8mgSfwR5NEWc';
+  const SUPABASE_ANON_KEY = 'sb_publishable_bHRgdmEZPalEJSMBBr8prQ_Qhu_h1X9';
   const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 </script>
 
@@ -5381,9 +5381,12 @@ async function newsWeatherRefresh(isManual){
   const el = document.getElementById('newsweather-list');
   if(isManual && el) el.innerHTML = '<div style="padding:16px;text-align:center;color:#94A3B8;font-size:12px">Refreshing…</div>';
   try{
-    await fetch(SUPABASE_URL+'/functions/v1/smart-task', {
-      headers: { 'Authorization': 'Bearer '+SUPABASE_ANON_KEY }
-    });
+    // New publishable keys are not JWTs: send it as apikey, plus the signed-in user's token if there is one.
+    let tok = '';
+    try { const { data } = await sb.auth.getSession(); tok = (data && data.session && data.session.access_token) || ''; } catch(_){}
+    const h = { apikey: SUPABASE_ANON_KEY };
+    if (tok) h.Authorization = 'Bearer ' + tok;
+    await fetch(SUPABASE_URL+'/functions/v1/smart-task', { headers: h });
   } catch(e){
     console.warn('News refresh failed', e);
   }

@@ -5670,6 +5670,12 @@ function authShowLogin(){
     setTimeout(()=>{ (u && u.value ? document.getElementById('lpwd') : u)?.focus(); }, 50);
   }catch(e){}
 }
+// Demo content (sample events, SOPs, vendors, contacts, vacancies) is only ever added for
+// the Mavis Demo company. A real client's venue starts clean.
+function appIsDemoCompany(){
+  if(!myProfile) return true;                         // old demo mode, no real logins
+  return !!(myCompany && myCompany.code === 'MAVIS');
+}
 // Load all data once per signed-in person (not again if it already started on page open).
 let appDataLoadedFor = null;
 function appLoadAllDataOnce(key){
@@ -6125,7 +6131,7 @@ async function evLoadFromSupabase(){
     if(error) throw error;
     let seeded = false;
     try{ seeded = localStorage.getItem('mavis_events_seeded') === '1'; }catch(e){}
-    if((!data || !data.length) && !seeded && BEO_TEMPLATE){
+    if((!data || !data.length) && !seeded && BEO_TEMPLATE && appIsDemoCompany()){
       const ins = await sb.from('events').insert(evDemoRows()).select();
       if(!ins.error){
         try{ localStorage.setItem('mavis_events_seeded','1'); }catch(e){}
@@ -10546,6 +10552,8 @@ function notetakerReset(){
 function notetakerRenderPastList(){
   const el = document.getElementById('notetaker-past-list');
   if(!el) return;
+  // Sample past meetings are demo content - a real client's venue starts with none.
+  if(!appIsDemoCompany()){ el.innerHTML = '<div style="padding:24px 18px;text-align:center;color:#94A3B8;font-size:13px">No meetings recorded yet</div>'; return; }
   el.innerHTML = NOTETAKER_PAST.map((r,i) => `
     <div onclick="notetakerViewPast(${r.id})" style="padding:16px 18px;cursor:pointer;${i<NOTETAKER_PAST.length-1?'border-bottom:1px solid #F1F5F9':''}">
       <div style="display:flex;align-items:center;justify-content:space-between;gap:10px">
@@ -10881,8 +10889,8 @@ async function vacanciesLoadFromSupabase(){
     let { data, error } = await sb.from('job_vacancies').select('*').order('created_at', { ascending: true });
     if(error) throw error;
 
-    if(!data || data.length === 0){
-      // First run: seed Supabase with the starter vacancies that ship in the app
+    if((!data || data.length === 0) && appIsDemoCompany()){
+      // First run (demo company only): seed Supabase with the starter vacancies that ship in the app
       const seed = vacanciesData.map(v => ({
         title: v.title, department: v.department, date_needed: v.dateNeeded || null,
         description: v.description, requirements: v.requirements || '',
@@ -11228,8 +11236,8 @@ async function sopLoadFromSupabase(){
     let { data: deptRows, error: deptErr } = await sb.from('sop_departments').select('*').order('created_at', { ascending: true });
     if(deptErr) throw deptErr;
 
-    if(!deptRows || deptRows.length === 0){
-      // First run: seed Supabase with the starter departments + SOPs that ship in the app
+    if((!deptRows || deptRows.length === 0) && appIsDemoCompany()){
+      // First run (demo company only): seed Supabase with the starter departments + SOPs that ship in the app
       const seedDepts = sopDepts.map(d => ({ id: d.id, name: d.name, color: d.color, icon_id: iconIdFromSvg(d.icon) }));
       const { data: insertedDepts, error: seedDeptErr } = await sb.from('sop_departments').insert(seedDepts).select();
       if(seedDeptErr) throw seedDeptErr;
@@ -11350,8 +11358,11 @@ function sopAddDept(){
       {label:'Icon', type:'icon', options: ICON_LIBRARY}
     ],
     async onOk([name, color, iconId]){
-      const id = name.trim().toLowerCase().replace(/[^a-z0-9]+/g,'-');
-      if(!id || sopDepts.find(d=>d.id===id)){ toast('Please use a unique department name'); return; }
+      // A short random ending keeps the id unique across every company (ids are shared
+      // database-wide, so two venues both adding "Kitchen" must not clash).
+      const slug = name.trim().toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'');
+      if(!slug || sopDepts.find(d=>(d.name||'').trim().toLowerCase()===name.trim().toLowerCase())){ toast('Please use a unique department name'); return; }
+      const id = slug + '-' + Math.random().toString(36).slice(2,7);
       sopDepts.push({id, name, color, icon: iconSvgFromId(iconId)});
       sopData[id] = [];
       sopRenderDeptList();
@@ -13731,12 +13742,8 @@ function appLoadAllData(){
   businessMetricsLoadFromSupabase();
   stickyLoadMyNotes();
 }
-window.addEventListener('load', async () => {
-  try{
-    const { data } = await sb.auth.getSession();
-    if(data && data.session) appLoadAllDataOnce(data.session.user.id);
-  }catch(e){ console.warn('Early data load skipped', e); }
-});
+// (Data loads from authEnterApp, once the person and their company are known - needed so
+// demo content is only added for the demo company.)
 
 // ── ANNOUNCEMENTS ──
 const announcements = [
@@ -16748,8 +16755,8 @@ async function vendorLoadFromSupabase(){
     let { data: deptRows, error: deptErr } = await sb.from('vendor_departments').select('*').order('created_at', { ascending: true });
     if(deptErr) throw deptErr;
 
-    if(!deptRows || deptRows.length === 0){
-      // First run: seed Supabase with the starter departments + vendors that ship in the app
+    if((!deptRows || deptRows.length === 0) && appIsDemoCompany()){
+      // First run (demo company only): seed Supabase with the starter departments + vendors that ship in the app
       const seedDepts = vendorDepts.map(d => ({ id: d.id, name: d.name, color: d.color, icon_id: iconIdFromSvg(d.icon) }));
       const { data: insertedDepts, error: seedDeptErr } = await sb.from('vendor_departments').insert(seedDepts).select();
       if(seedDeptErr) throw seedDeptErr;
@@ -16850,8 +16857,11 @@ function vendorAddDept(){
       {label:'Icon', type:'icon', options: ICON_LIBRARY}
     ],
     async onOk([name, color, iconId]){
-      const id = name.trim().toLowerCase().replace(/[^a-z0-9]+/g,'-');
-      if(!id || vendorDepts.find(d=>d.id===id)){ toast('Please use a unique department name'); return; }
+      // A short random ending keeps the id unique across every company (ids are shared
+      // database-wide, so two venues both adding "Kitchen" must not clash).
+      const slug = name.trim().toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'');
+      if(!slug || vendorDepts.find(d=>(d.name||'').trim().toLowerCase()===name.trim().toLowerCase())){ toast('Please use a unique department name'); return; }
+      const id = slug + '-' + Math.random().toString(36).slice(2,7);
       vendorDepts.push({id, name, color, icon: iconSvgFromId(iconId)});
       vendorRenderDepts();
       try{
@@ -16981,8 +16991,8 @@ async function customerLoadFromSupabase(){
     let { data, error } = await sb.from('customer_contacts').select('*').order('created_at', { ascending: true });
     if(error) throw error;
 
-    if(!data || data.length === 0){
-      // First run: seed Supabase with the starter contacts that ship in the app
+    if((!data || data.length === 0) && appIsDemoCompany()){
+      // First run (demo company only): seed Supabase with the starter contacts that ship in the app
       const seed = customerData.map(c => ({ name: c.name, company: c.company, phone: c.phone, email: c.email }));
       const { data: inserted, error: seedErr } = await sb.from('customer_contacts').insert(seed).select();
       if(seedErr) throw seedErr;

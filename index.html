@@ -8095,7 +8095,7 @@ async function djSchedCapturePng(htmlContent, filenamePart, button, options){
   const outputMaxHeight = Number(options.outputMaxHeight) > 0 ? Number(options.outputMaxHeight) : 0;
   const captureScale = 1;
   if(typeof window.html2canvas !== 'function'){
-    alert('The image export library did not load. Please refresh the page and try again.');
+    toast('The image export library did not load. Please refresh the page and try again.');
     return;
   }
 
@@ -8161,7 +8161,7 @@ async function djSchedCapturePng(htmlContent, filenamePart, button, options){
     if(typeof toast === 'function') toast('PNG downloaded ✓');
   }catch(err){
     console.error('PNG export failed:', err);
-    alert('PNG export failed. Please refresh the page and try again.');
+    toast('PNG export failed. Please refresh the page and try again.');
   }finally{
     if(exportWrap && exportWrap.parentNode) exportWrap.remove();
     if(button){ button.disabled = false; button.textContent = oldText || 'Save as PNG'; }
@@ -9954,6 +9954,7 @@ async function peopleLoadFromSupabase(){
   else {
     const { data: cos } = await sb.from('companies').select('departments').eq('id', myProfile.company_id).limit(1);
     if(cos && cos[0] && Array.isArray(cos[0].departments) && cos[0].departments.length) PEOPLE_DEPARTMENTS = cos[0].departments.slice();
+    else if(!appIsDemoCompany()) PEOPLE_DEPARTMENTS = ['Management', 'Front of House', 'Kitchen', 'Bar', 'Housekeeping', 'Maintenance'];
   }
   peopleRender();
   try{ adminConsoleRender(); }catch(e){}
@@ -10156,7 +10157,7 @@ function deptAdd(){
   const input = document.getElementById('dept-new-name');
   const name = input.value.trim();
   if(!name) return;
-  if(PEOPLE_DEPARTMENTS.includes(name)){ alert('That department already exists.'); return; }
+  if(PEOPLE_DEPARTMENTS.includes(name)){ toast('That department already exists.'); return; }
   PEOPLE_DEPARTMENTS.push(name);
   deptManagerRender();
   deptRefreshCheckboxes();
@@ -10191,7 +10192,11 @@ function deptRename(index){
 
 function deptDelete(index){
   const name = PEOPLE_DEPARTMENTS[index];
-  if(!confirm('Delete "'+name+'"? This removes it from anyone currently tagged with it.')) return;
+  appConfirmShow({ title:'Delete "' + name + '"?', msg:'This removes it from anyone currently tagged with it.', onOk: () => deptDeleteGo(name) });
+}
+function deptDeleteGo(name){
+  const index = PEOPLE_DEPARTMENTS.indexOf(name);
+  if(index === -1) return;
   PEOPLE_DEPARTMENTS.splice(index, 1);
   PEOPLE.forEach(p => { if(p.departments.includes(name)) p._deptChanged = true; p.departments = p.departments.filter(d => d !== name); });
   if(typeof chatConversations !== 'undefined'){
@@ -10211,9 +10216,9 @@ async function peopleSaveForm(){
   const photo = peopleFormPhotoData || '';
   const email = (document.getElementById('people-form-email')?.value || '').trim();
 
-  if(!firstName){ alert('First name is required.'); return; }
-  if(email && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)){ alert('That email address doesn\'t look right.'); return; }
-  if(role==='superadmin' && !email){ alert('A Super Admin needs an email address, so they can never be locked out.'); return; }
+  if(!firstName){ toast('First name is required.'); return; }
+  if(email && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)){ toast('That email address doesn\'t look right.'); return; }
+  if(role==='superadmin' && !email){ toast('A Super Admin needs an email address, so they can never be locked out.'); return; }
 
   if(myProfile){
     // Ignore extra clicks while a save is already going (a double-click used to make the
@@ -10233,7 +10238,7 @@ async function peopleSaveForm(){
       peopleSaving = false;
       if(saveBtn){ saveBtn.disabled = false; saveBtn.textContent = 'Save'; }
     }
-    if(!d || !d.ok){ alert((d && d.message) || ('Not saved: ' + (d && (d.reason==='cannot give that role' || d.reason==='higher role') ? 'you can only manage people below your own role.' : ((d && d.reason) || 'please try again')))); return; }
+    if(!d || !d.ok){ toast((d && d.message) || ('Not saved: ' + (d && (d.reason==='cannot give that role' || d.reason==='higher role') ? 'you can only manage people below your own role.' : ((d && d.reason) || 'please try again')))); return; }
     peopleCloseForm();
     await peopleLoadFromSupabase();
     if(wasNew && d.token){
@@ -10778,7 +10783,7 @@ function surveyCloseForm(){
 
 async function surveySaveForm(){
   if(!SURVEY_QUESTIONS.every(q => surveyFormRatings[q.id] > 0)){
-    alert('Please rate all five questions before saving.');
+    toast('Please rate all five questions before saving.');
     return;
   }
   const ageRange = document.getElementById('survey-form-age').value;
@@ -18272,7 +18277,7 @@ function analyticsExportPdf(){
 async function analyticsExportImage(){
   const el = document.getElementById('p-analytics');
   if(!el || typeof window.html2canvas !== 'function'){
-    alert('The export library did not load. Please refresh the page and try again.');
+    toast('The export library did not load. Please refresh the page and try again.');
     return;
   }
   toast('Preparing your image…');
@@ -18321,7 +18326,7 @@ async function analyticsExportImage(){
 async function analyticsShareToMavisChat(){
   const el = document.getElementById('p-analytics');
   if(!el || typeof window.html2canvas !== 'function'){
-    alert('The export library did not load. Please refresh the page and try again.');
+    toast('The export library did not load. Please refresh the page and try again.');
     return;
   }
   toast('Preparing your image…');

@@ -5683,7 +5683,26 @@ function appLoadAllDataOnce(key){
   appDataLoadedFor = key;
   appLoadAllData();
 }
+// For a real client: wipe the built-in sample content straight away, so none of it flashes
+// on screen before their own (empty) data arrives.
+function appClearDemoState(){
+  const safe = fn => { try{ fn(); }catch(e){ console.warn('demo clear', e); } };
+  safe(()=>{ kbTeamProjects = []; kbPersonalProjects = [{id:'mytodo', name:'My Tasks'}];
+             Object.keys(kbBoards).forEach(k => delete kbBoards[k]); kbBoards.mytodo = {todo:[], progress:[], done:[]};
+             kbActiveProjectId = 'mytodo'; kbActiveIsTeam = false; });
+  safe(()=>{ faqData = []; });
+  safe(()=>{ announcements.length = 0; momentsData.length = 0; });
+  safe(()=>{ vacanciesData = []; customerData = []; vendorData = []; vendorDepts.length = 0; });
+  safe(()=>{ sopDepts.length = 0; Object.keys(sopData).forEach(k => delete sopData[k]); });
+  safe(()=>{ musicPlaylists = []; quickLinksData = []; });
+  safe(()=>{ kitchenMenusData = []; kitchenRecipesData = []; kitchenAllergensData = []; barMenusData = []; barRecipesData = []; });
+  safe(()=>{ chatConversations = []; try{ localStorage.removeItem(CHAT_LOCAL_STORAGE_KEY); }catch(e){} chatUpdateBadges(); });
+  // One venue, named after the company (multi-venue comes with venue separation)
+  safe(()=>{ VENUES.length = 0; VENUES.push({id:'a', name:(myCompany && myCompany.name) || 'Main venue', tag:'Main venue', main:true, icon:((myCompany && myCompany.name)||'M').charAt(0).toUpperCase()});
+             currentVenue = 'a'; renderVenueSwitcherButton(); renderVenueDropdown(); });
+}
 function authEnterApp(){
+  if(!appIsDemoCompany()) appClearDemoState();
   appLoadAllDataOnce((myProfile && myProfile.user_id) || 'demo');
   const early = document.getElementById('early-app-style'); if(early) early.remove();
   document.getElementById('login').style.display='none';
@@ -16549,8 +16568,8 @@ let faqData = [
   {id:2, dept:'finance', question:'How do I submit an expense claim?', answer:'Fill out the expense form and attach your receipts, then send it to Finance by the 25th of each month for reimbursement in the next pay run.'},
   {id:3, dept:'operations', question:"Where can I find today's reservations?", answer:"Check the Quick Links tab — Today's Reservations for Beach Club and Restaurant are posted there daily."},
   {id:4, dept:'housekeeping', question:"What's the linen delivery schedule?", answer:'Fresh linen is delivered every Monday, Wednesday and Friday morning. Contact the laundry supplier directly for urgent top-ups.'},
-  {id:5, dept:'avit', question:"What's the staff WiFi password?", answer:"LunaStaff2026 — please don't share this outside the team."},
-  {id:6, dept:'avit', question:'How do I connect to the printer?', answer:'Select "Luna-Office-Printer" from your device\'s WiFi printer list. If it doesn\'t appear, ask IT to add your device.'},
+  {id:5, dept:'avit', question:"What's the staff WiFi password?", answer:"StaffWiFi2026 — please don't share this outside the team."},
+  {id:6, dept:'avit', question:'How do I connect to the printer?', answer:'Select "Office-Printer" from your device\'s WiFi printer list. If it doesn\'t appear, ask IT to add your device.'},
 ];
 let faqNextId = 20;
 
@@ -19453,7 +19472,7 @@ function getSavedCardColour(venue, id){
 
 function renderVenueSwitcherButton(){
   const v = VENUES.find(x=>x.id===currentVenue) || VENUES[0];
-  document.getElementById('venue-switcher-ico').textContent = v.name.slice(-1);
+  document.getElementById('venue-switcher-ico').textContent = v.icon || v.name.slice(-1);
   document.getElementById('venue-switcher-name').textContent = v.name;
   document.getElementById('venue-switcher-sub').textContent = v.tag;
   const ico = document.getElementById('venue-switcher-ico');
@@ -19466,7 +19485,7 @@ function renderVenueDropdown(){
   dd.innerHTML = VENUES.map((v,i) => `
     ${v.main && i>0 ? '<div class="venue-dropdown-divider"></div>' : ''}
     <div class="venue-dropdown-item${v.id===currentVenue?' active':''}" onclick="selectVenue('${v.id}')">
-      <div class="venue-dropdown-ico" style="background:${VENUE_BANNER_COLORS[v.id] || VENUE_BANNER_COLORS.a}">${v.name.slice(-1)}</div>
+      <div class="venue-dropdown-ico" style="background:${VENUE_BANNER_COLORS[v.id] || VENUE_BANNER_COLORS.a}">${v.icon || v.name.slice(-1)}</div>
       <div class="venue-dropdown-label">
         <div class="venue-dropdown-title">${v.name}</div>
         <div class="venue-dropdown-tag">${v.tag}</div>

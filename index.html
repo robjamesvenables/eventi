@@ -5690,7 +5690,7 @@ function appClearDemoState(){
   safe(()=>{ kbTeamProjects = []; kbPersonalProjects = [{id:'mytodo', name:'My Tasks'}];
              Object.keys(kbBoards).forEach(k => delete kbBoards[k]); kbBoards.mytodo = {todo:[], progress:[], done:[]};
              kbActiveProjectId = 'mytodo'; kbActiveIsTeam = false; });
-  safe(()=>{ faqData = []; });
+  safe(()=>{ faqData = []; faqDepts.length = 0; });   // companies name their own departments
   safe(()=>{ announcements.length = 0; momentsData.length = 0; });
   safe(()=>{ vacanciesData = []; customerData = []; vendorData = []; vendorDepts.length = 0; });
   safe(()=>{ sopDepts.length = 0; Object.keys(sopData).forEach(k => delete sopData[k]); });
@@ -16576,6 +16576,10 @@ let faqNextId = 20;
 function faqRenderDepts(){
   const grid = document.getElementById('faq-dept-grid');
   if(!grid) return;
+  if(!faqDepts.length){
+    grid.innerHTML = '<div style="text-align:center;padding:40px 20px;color:#94A3B8;background:white;border:1.5px dashed #E2E8F0;border-radius:12px"><div style="font-size:15px;font-weight:700;color:#0F1E2E;margin-bottom:6px">No departments yet</div><div style="font-size:13px">Add your first department to start collecting quick answers for the team.</div></div>';
+    return;
+  }
   grid.innerHTML = faqDepts.map(d=>{
     const count = faqData.filter(f=>f.dept===d.id).length;
     return `

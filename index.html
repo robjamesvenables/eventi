@@ -17785,7 +17785,8 @@ function stickySubscribeBrainstormRealtime(){
       } else if(payload.eventType === 'DELETE'){
         stickyBrainstormNotes = stickyBrainstormNotes.filter(n=>n.id!==payload.old.id);
       }
-      if(stickyActiveTab === 'brainstorm') stickyRenderBoard();
+      // Don't redraw mid-drag, or the note being held would snap back under the pointer.
+      if(stickyActiveTab === 'brainstorm' && !stickyDragState) stickyRenderBoard();
     })
     .subscribe();
 }
@@ -17829,20 +17830,24 @@ function stickyDragStart(e){
   const board = document.getElementById('sticky-board');
   const boardRect = board.getBoundingClientRect();
   el.setPointerCapture(e.pointerId);
-  stickyDragState = { el, boardRect, id: Number(el.dataset.id), startX: e.clientX, startY: e.clientY, moved: false };
+  // Remember where on the note it was grabbed, so it moves with the pointer instead of
+  // jumping its top-left corner under the pointer (that jump was the "jitter" on press).
+  const noteRect = el.getBoundingClientRect();
+  stickyDragState = { el, boardRect, id: Number(el.dataset.id), startX: e.clientX, startY: e.clientY, moved: false,
+    offX: e.clientX - noteRect.left, offY: e.clientY - noteRect.top };
   el.addEventListener('pointermove', stickyDragMove);
   el.addEventListener('pointerup', stickyDragEnd);
 }
 function stickyDragMove(e){
   if(!stickyDragState) return;
-  const { el, boardRect, startX, startY } = stickyDragState;
+  const { el, boardRect, startX, startY, offX, offY } = stickyDragState;
   if(!stickyDragState.moved && (Math.abs(e.clientX-startX) > 5 || Math.abs(e.clientY-startY) > 5)){
     stickyDragState.moved = true;
     el.classList.add('dragging');
   }
   if(!stickyDragState.moved) return;
-  let x = ((e.clientX - boardRect.left) / boardRect.width) * 100;
-  let y = ((e.clientY - boardRect.top) / boardRect.height) * 100;
+  let x = ((e.clientX - offX - boardRect.left) / boardRect.width) * 100;
+  let y = ((e.clientY - offY - boardRect.top) / boardRect.height) * 100;
   x = Math.max(0, Math.min(80, x));
   y = Math.max(0, Math.min(82, y));
   el.style.left = x + '%';

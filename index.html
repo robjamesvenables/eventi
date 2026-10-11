@@ -5650,7 +5650,15 @@ function authShowLogin(){
     setTimeout(()=>{ (u && u.value ? document.getElementById('lpwd') : u)?.focus(); }, 50);
   }catch(e){}
 }
+// Load all data once per signed-in person (not again if it already started on page open).
+let appDataLoadedFor = null;
+function appLoadAllDataOnce(key){
+  if(appDataLoadedFor === key) return;
+  appDataLoadedFor = key;
+  appLoadAllData();
+}
 function authEnterApp(){
+  appLoadAllDataOnce((myProfile && myProfile.user_id) || 'demo');
   const early = document.getElementById('early-app-style'); if(early) early.remove();
   document.getElementById('login').style.display='none';
   document.getElementById('app').style.display='flex';
@@ -5786,7 +5794,11 @@ async function doLogout(){
   try{ localStorage.removeItem('mavis_logged_in_email'); }catch(err){}
   try{ await sb.auth.signOut(); }catch(err){}
   myProfile = null;
-  authShowLogin();
+  // Start completely fresh, so the next person to log in on this device never sees the
+  // previous person's (or previous company's) data still held in the page.
+  try{ localStorage.removeItem(MOMENTS_CACHE_KEY); }catch(err){}
+  appDataLoadedFor = null;
+  location.replace(location.pathname);
 }
 
 // ---- One-time setup / reset link: ?setup=TOKEN ----
@@ -13550,7 +13562,10 @@ function kitchenDeleteAllergenDish(id){
 }
 // ── INIT ──
 window.addEventListener('keydown',e=>{if(e.key==='Enter'&&document.getElementById('login').style.display!=='none')doLogin();});
-window.addEventListener('load', () => {
+// Loads every section's data. Must run AFTER sign-in: since the Stage B lock, the database
+// only answers logged-in people, so loading before login comes back empty. A returning user
+// with a saved session still loads straight away on page open (see the listener below).
+function appLoadAllData(){
   // Every one of these loads a completely separate Supabase table into its own, unrelated
   // piece of state (announcements, dj_stages/bookings, highlights, sandbox, quick links, My
   // Drive, SOPs, suggestions, vendors, customers, vacancies, business metrics) - confirmed
@@ -13595,6 +13610,12 @@ window.addEventListener('load', () => {
   surveyRenderQr();
   businessMetricsLoadFromSupabase();
   stickyLoadMyNotes();
+}
+window.addEventListener('load', async () => {
+  try{
+    const { data } = await sb.auth.getSession();
+    if(data && data.session) appLoadAllDataOnce(data.session.user.id);
+  }catch(e){ console.warn('Early data load skipped', e); }
 });
 
 // ── ANNOUNCEMENTS ──

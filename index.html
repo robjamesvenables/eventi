@@ -5076,7 +5076,7 @@ function analyticsPinGate(pushState){
       async onOk([pin, confirm]){
         if(!/^\d{4}$/.test((pin||'').trim())){ toast('PIN must be exactly 4 digits'); return; }
         if(pin.trim() !== confirm.trim()){ toast('PINs did not match - try again'); return; }
-        const { error } = await sb.from('app_settings').upsert({ key:'analytics_pin', value: pin.trim() }, { onConflict: 'key' });
+        const { error } = await sb.from('app_settings').upsert({ key:'analytics_pin', value: pin.trim() }, { onConflict: 'company_id,key' });
         if(error){ toast('Save failed: ' + (error.message || JSON.stringify(error))); console.warn(error); return; }
         appSettings.analytics_pin = pin.trim();
         toast('PIN set ✓');
@@ -5114,7 +5114,7 @@ function adminChangeAnalyticsPin(){
     async onOk([pin, confirm]){
       if(!/^\d{4}$/.test((pin||'').trim())){ toast('PIN must be exactly 4 digits'); return; }
       if(pin.trim() !== confirm.trim()){ toast('New PINs did not match - try again'); return; }
-      const { error } = await sb.from('app_settings').upsert({ key:'analytics_pin', value: pin.trim() }, { onConflict: 'key' });
+      const { error } = await sb.from('app_settings').upsert({ key:'analytics_pin', value: pin.trim() }, { onConflict: 'company_id,key' });
       if(error){ toast('Save failed: ' + (error.message || JSON.stringify(error))); console.warn(error); return; }
       appSettings.analytics_pin = pin.trim();
       toast('PIN updated ✓');
@@ -7354,7 +7354,7 @@ function calClickDay(dateStr){
     onOk([text, color]){
       calManualEntries[dateStr] = {text, color};
       calRenderMonth();
-      calSave('save entry', sb.from('cal_notes').upsert({ date: dateStr, text, color }, { onConflict: 'date' }));
+      calSave('save entry', sb.from('cal_notes').upsert({ date: dateStr, text, color }, { onConflict: 'company_id,date' }));
       toast('Calendar updated ✓');
     }
   });
@@ -7426,7 +7426,7 @@ function djSchedCurrentActiveStageIds(weekStartKey){
 }
 
 async function djSchedSaveStageWeekConfig(){
-  const { error } = await sb.from('dj_settings').upsert({ key:'stage_week_config', value:JSON.stringify(djStageWeekConfig) });
+  const { error } = await sb.from('dj_settings').upsert({ key:'stage_week_config', value:JSON.stringify(djStageWeekConfig) }, { onConflict:'company_id,key' });
   if(error) console.warn('Entertainment Schedule stage-week settings save failed', error);
 }
 
@@ -7550,7 +7550,7 @@ async function djSchedLoadFromSupabase(){
         toSeed.push({key:'resident_color', value:'#E2E8F0'});
       }
       if(toSeed.length){
-        const { error: seedSettingsErr } = await sb.from('dj_settings').upsert(toSeed);
+        const { error: seedSettingsErr } = await sb.from('dj_settings').upsert(toSeed, { onConflict:'company_id,key' });
         if(seedSettingsErr) console.warn('Entertainment Schedule settings seeding failed', seedSettingsErr);
       }
     }
@@ -7665,7 +7665,7 @@ window.djSchedPickTypeColor = function(type){
     onOk: async function(vals){
       djBookingColors[type] = vals[0];
       djSchedRender();
-      const { error } = await sb.from('dj_settings').upsert({ key: type+'_color', value: vals[0] });
+      const { error } = await sb.from('dj_settings').upsert({ key: type+'_color', value: vals[0] }, { onConflict:'company_id,key' });
       if(error) console.warn('Supabase settings save failed', error);
     }
   });
@@ -8495,7 +8495,7 @@ function mnAutoSave(key){
     };
     mnNotes[key]=entry;
     mnRender();
-    const { error } = await sb.from('meeting_notes').upsert({ date: key, title: entry.title, location: entry.location, attendees: entry.attendees, notes: entry.notes });
+    const { error } = await sb.from('meeting_notes').upsert({ date: key, title: entry.title, location: entry.location, attendees: entry.attendees, notes: entry.notes }, { onConflict:'company_id,date' });
     if(status) status.textContent = error ? 'Save failed - check your connection' : '✓ Saved';
     if(error) console.warn('Meeting note save failed', error);
   },800);
@@ -10709,7 +10709,9 @@ function surveyShareWA(){
 // standalone file (survey-qr.html) rather than a page inside the main logged-in app, since
 // a customer scanning this shouldn't ever hit Mavis's own login screen at all.
 function surveyQrUrl(){
-  return window.location.origin + '/survey-qr.html';
+  // ?c= tells the public survey page which company the answers belong to
+  const code = (typeof myCompany!=='undefined' && myCompany && myCompany.code) ? myCompany.code : '';
+  return window.location.origin + '/survey-qr.html' + (code ? '?c=' + encodeURIComponent(code) : '');
 }
 
 function surveyRenderQr(){

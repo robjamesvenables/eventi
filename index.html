@@ -9910,6 +9910,7 @@ let PEOPLE = [
 let peopleNextId = 14;
 let peopleEditingId = null;
 let peopleSaving = false;
+let peopleFormHome = null;
 
 function peopleFullName(p){
   return (p.firstName + ' ' + p.lastName).trim();
@@ -9918,6 +9919,16 @@ function peopleFullName(p){
 function peopleRender(){
   const el = document.getElementById('people-list');
   if(!el) return;
+  // The edit card may be sitting inside this list (under a person) - lift it out first so
+  // redrawing the list can't wipe it, then put it back under the same person afterwards.
+  const formWrap = document.getElementById('people-form-wrap');
+  const formWasInList = formWrap && el.contains(formWrap);
+  if(formWasInList && peopleFormHome) peopleFormHome.parent.insertBefore(formWrap, peopleFormHome.next);
+  setTimeout(()=>{
+    if(!formWasInList || !formWrap || formWrap.style.display !== 'block' || !peopleEditingId) return;
+    const row = document.querySelector('[data-person-row="' + String(peopleEditingId).replace(/"/g,'') + '"]');
+    if(row) row.after(formWrap);
+  }, 0);
   const cnt = document.getElementById('admin-tab-people-count'); if(cnt) cnt.textContent = '(' + PEOPLE.filter(p=>p.active!==false).length + ')';
   const esc = v => String(v==null?'':v).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const real = !!myProfile;
@@ -9928,7 +9939,7 @@ function peopleRender(){
     const status = !real ? '' : p.active===false ? '<span style="color:#DC2626">Switched off</span>'
       : p.hasLogin ? '<span style="color:#16A34A">● Active</span>' : '<span style="color:#D97706">● No login yet</span>';
     const off = p.active===false;
-    return `<div style="display:flex;align-items:center;gap:14px;padding:14px 18px;${i<PEOPLE.length-1?'border-bottom:1px solid #F1F5F9':''};${off?'opacity:.55':''}">
+    return `<div data-person-row="${esc(p.id)}" style="display:flex;align-items:center;gap:14px;padding:14px 18px;${i<PEOPLE.length-1?'border-bottom:1px solid #F1F5F9':''};${off?'opacity:.55':''}">
       <div style="width:38px;height:38px;border-radius:50%;background:${p.photo?`url('${esc(p.photo)}') center/cover`:role.color};color:white;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px;flex-shrink:0">${p.photo?'':esc(initial)}</div>
       <div style="flex:1;min-width:0">
         <div style="font-size:13.5px;font-weight:700;color:#0F1E2E">${esc(peopleFullName(p))}${p.isMe?' <span style="font-size:11px;color:#0D9488">(you)</span>':''}</div>
@@ -9936,7 +9947,7 @@ function peopleRender(){
         <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:5px">${tags || '<span style="font-size:11px;color:#CBD5E1;font-style:italic">No department set</span>'}</div>
       </div>
       <div style="font-size:11px;font-weight:700;color:white;background:${role.color};padding:5px 12px;border-radius:20px;flex-shrink:0;white-space:nowrap">${role.name}</div>
-      <button onclick="peopleOpenForm('${p.id}')" title="Edit" style="width:32px;height:32px;background:#F1F5F9;border:none;border-radius:8px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0">
+      <button onclick="peopleEditClick('${p.id}')" title="Edit" style="width:32px;height:32px;background:#F1F5F9;border:none;border-radius:8px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0">
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#64748B" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
       </button>
     </div>`;
@@ -10020,8 +10031,23 @@ window.peopleSetActive = function(id, on){
   }});
 };
 
+// Pencil on a person: open their edit card right under their row (click again to close).
+function peopleEditClick(personId){
+  const wrap = document.getElementById('people-form-wrap');
+  if(wrap && wrap.style.display === 'block' && String(peopleEditingId) === String(personId)){ peopleCloseForm(); return; }
+  peopleOpenForm(personId);
+}
 function peopleOpenForm(personId){
   peopleEditingId = personId || null;
+  // Edit opens under the person's row; "+ Add Person" opens at the top as before.
+  (function placeForm(){
+    const w = document.getElementById('people-form-wrap');
+    if(!w) return;
+    if(!peopleFormHome){ peopleFormHome = { parent: w.parentNode, next: w.nextSibling }; }
+    const row = personId ? document.querySelector('[data-person-row="' + String(personId).replace(/"/g,'') + '"]') : null;
+    if(row){ row.after(w); w.style.margin = '0 12px 12px'; }
+    else { peopleFormHome.parent.insertBefore(w, peopleFormHome.next); w.style.margin = '0 0 24px'; }
+  })();
   const p = personId ? PEOPLE.find(x=>String(x.id)===String(personId)) : {firstName:'',lastName:'',role:'teammember',departments:[],photo:'',email:''};
   const wrap = document.getElementById('people-form-wrap');
   if(!wrap) return;
@@ -10078,7 +10104,7 @@ function peopleOpenForm(personId){
     </div>
   </div>`;
   peopleFormPhotoData = p.photo || '';
-  wrap.scrollIntoView({behavior:'smooth', block:'nearest'});
+  setTimeout(()=>{ try{ wrap.scrollIntoView({behavior:'smooth', block:'center'}); }catch(e){} }, 30);
 }
 
 let peopleFormPhotoData = '';

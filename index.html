@@ -9968,12 +9968,22 @@ function peopleShowInvite(person, token, isReset){
   try{ new QRCode(document.getElementById('people-invite-qr'), { text:url, width:200, height:200, colorDark:'#0F1E2E', colorLight:'#F8FAFC' }); }
   catch(e){ document.getElementById('people-invite-qr').innerHTML = '<div style="font-size:12px;color:#94A3B8">QR not available - use the link</div>'; }
 }
-window.peopleResetLogin = async function(id){
+window.peopleResetLogin = function(id){
+  const p = PEOPLE.find(x=>String(x.id)===String(id)); if(!p) return;
+  // Ask first - this button sits next to Save, so it's easy to tap by accident.
+  appConfirmShow({
+    title: p.hasLogin ? 'Reset ' + (p.firstName||'their') + "'s PIN / password?" : 'Make a login link for ' + (p.firstName||'them') + '?',
+    msg: p.hasLogin ? "This makes a one-time link so they can choose a new one. Their current one keeps working until they use the link." : 'This makes a one-time link (valid 48 hours) so they can set up their login.',
+    label: 'Make link',
+    onOk: () => peopleResetLoginGo(id)
+  });
+};
+async function peopleResetLoginGo(id){
   const p = PEOPLE.find(x=>String(x.id)===String(id)); if(!p) return;
   const d = await peopleApi({ action:'reset', id });
   if(!d.ok){ toast(d.message || 'Could not make a link - ' + (d.reason||'please try again')); return; }
   peopleShowInvite(p, d.token, p.hasLogin);
-};
+}
 window.peopleSetActive = function(id, on){
   const p = PEOPLE.find(x=>String(x.id)===String(id)); if(!p) return;
   appConfirmShow({ title: on ? 'Switch back on?' : 'Switch off ' + p.firstName + '?', msg: on ? p.firstName + ' will be able to sign in again.' : p.firstName + ' won\'t be able to sign in any more. Everything they wrote stays.', onOk: async ()=>{

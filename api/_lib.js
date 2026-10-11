@@ -5,8 +5,9 @@
 const crypto = require('crypto');
 
 const SUPABASE_URL = process.env.SUPABASE_URL || 'https://qjxcpmkiyfrukxicdwkl.supabase.co';
-const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
-const ANON_KEY = process.env.SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFqeGNwbWtpeWZydWt4aWNkd2tsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE5NDkwOTAsImV4cCI6MjA5NzUyNTA5MH0.Wiwtqf1bkokU7H6VauvFyysHcMMi5KV8mgSfwR5NEWc';
+// New-style keys (sb_secret_… / sb_publishable_…) are preferred; the legacy names still work as a fallback.
+const SERVICE_KEY = process.env.SUPABASE_SECRET_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY || '';
+const ANON_KEY = process.env.SUPABASE_PUBLISHABLE_KEY || process.env.SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFqeGNwbWtpeWZydWt4aWNkd2tsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE5NDkwOTAsImV4cCI6MjA5NzUyNTA5MH0.Wiwtqf1bkokU7H6VauvFyysHcMMi5KV8mgSfwR5NEWc';
 
 // Roles that log in with a 6-digit PIN; everyone above uses a password (8+ characters).
 const PIN_ROLES = ['supervisor', 'teammember', 'dailyworker'];
@@ -22,10 +23,14 @@ function send(res, code, obj){
   res.setHeader('Cache-Control', 'no-store');
   res.status(code).json(obj);
 }
+// New sb_ keys are not JWTs, so they go in the apikey header only (no Bearer copy).
+function serviceHeaders(){
+  return SERVICE_KEY.startsWith('sb_') ? { apikey: SERVICE_KEY } : { apikey: SERVICE_KEY, Authorization: 'Bearer ' + SERVICE_KEY };
+}
 async function db(path, opts = {}){
   const r = await fetch(SUPABASE_URL + '/rest/v1/' + path, {
     method: opts.method || 'GET',
-    headers: Object.assign({ apikey: SERVICE_KEY, Authorization: 'Bearer ' + SERVICE_KEY, 'Content-Type': 'application/json', Prefer: 'return=representation' }, opts.headers || {}),
+    headers: Object.assign(serviceHeaders(), { 'Content-Type': 'application/json', Prefer: 'return=representation' }, opts.headers || {}),
     body: opts.body ? JSON.stringify(opts.body) : undefined
   });
   const text = await r.text();
@@ -36,7 +41,7 @@ async function db(path, opts = {}){
 async function authAdmin(path, opts = {}){
   const r = await fetch(SUPABASE_URL + '/auth/v1/admin/' + path, {
     method: opts.method || 'GET',
-    headers: { apikey: SERVICE_KEY, Authorization: 'Bearer ' + SERVICE_KEY, 'Content-Type': 'application/json' },
+    headers: Object.assign(serviceHeaders(), { 'Content-Type': 'application/json' }),
     body: opts.body ? JSON.stringify(opts.body) : undefined
   });
   const text = await r.text();

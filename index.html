@@ -1906,7 +1906,8 @@ img.emoji-tw{width:1.15em;height:1.15em;vertical-align:-0.2em;margin:0 1px}
 }
 .announce-card{position:relative;width:100%;background:white;border-radius:14px;overflow:hidden;box-shadow:0 3px 12px rgba(0,0,0,0.08);border:1.5px solid #94A3B8;cursor:pointer;transition:box-shadow 0.2s;display:flex;flex-direction:column}
 .announce-card:hover{box-shadow:0 6px 18px rgba(0,0,0,0.1)}
-.announce-card-img{width:100%;height:auto;max-height:340px;object-fit:cover;display:block;cursor:zoom-in}
+.announce-card-img{width:100%;height:auto;max-height:220px;object-fit:cover;display:block;cursor:zoom-in}
+@media (max-width:640px){ .announce-card-img{max-height:340px} }
 .announce-card-body{padding:14px 16px 16px;display:flex;flex-direction:column;min-width:0}
 .announce-post-hd{display:flex;align-items:center;gap:10px;margin:-14px -16px 12px;padding:12px 16px;background:linear-gradient(135deg,#F1F5F9,#E2E8F0)}
 .announce-post-avatar{width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:white;font-weight:800;font-size:14px;flex-shrink:0}
@@ -3008,6 +3009,10 @@ img.emoji-tw{width:1.15em;height:1.15em;vertical-align:-0.2em;margin:0 1px}
         <div onclick="event.stopPropagation();openMyAccount()" class="profile-menu-item">
           <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#475569" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
           My Account
+        </div>
+        <div id="owner-menu-link" onclick="event.stopPropagation();window.open('/owner.html','_blank')" class="profile-menu-item" style="display:none;color:#B8862F;font-weight:700">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="#C4973B" stroke="#C4973B" stroke-width="1.5" stroke-linejoin="round"><path d="M3 7l4.5 4L12 4l4.5 7L21 7l-2 12H5L3 7z"/></svg>
+          Mavis Owner
         </div>
         <div onclick="event.stopPropagation();openAccountSettings()" class="profile-menu-item">
           <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#475569" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
@@ -5775,6 +5780,22 @@ function appIsDemoCompany(){
   if(!myProfile) return true;                         // old demo mode, no real logins
   return !!(myCompany && myCompany.code === 'MAVIS');
 }
+// Problems people hit are sent to the Mavis owner's Health page (max 5 per visit, no repeats).
+(function errorReporting(){
+  const sent = new Set();
+  const report = (msg) => {
+    try{
+      if(!myProfile || sent.size >= 5) return;
+      msg = String(msg || '').slice(0, 400);
+      if(!msg || sent.has(msg) || /ResizeObserver|Script error\.?$/i.test(msg)) return;
+      sent.add(msg);
+      const page = (document.querySelector('.page.on') || {}).id || '';
+      accountApi({ action:'report_error', message: msg, page: page.replace('p-','') });
+    }catch(e){}
+  };
+  window.addEventListener('error', e => report((e.message || 'Error') + (e.filename ? ' @' + String(e.filename).split('/').pop() + ':' + e.lineno : '')));
+  window.addEventListener('unhandledrejection', e => report('Promise: ' + ((e.reason && (e.reason.message || e.reason)) || 'rejected')));
+})();
 // If someone logs in or out in ANOTHER tab of this browser, this tab's login has changed
 // underneath it (tabs share one login). Reload so the screen always matches who is really
 // signed in - otherwise it could look like one person while acting as another.
@@ -5823,6 +5844,7 @@ function appClearDemoState(){
 }
 function authEnterApp(){
   if(!appIsDemoCompany()) appClearDemoState();
+  if(myProfile){ try{ accountApi({ action:'seen' }); }catch(e){} }
   appLoadAllDataOnce((myProfile && myProfile.user_id) || 'demo');
   const early = document.getElementById('early-app-style'); if(early) early.remove();
   document.getElementById('login').style.display='none';
@@ -5938,7 +5960,11 @@ window.companyRename = function(){
 };
 function ownerPanelRender(){
   const el = document.getElementById('owner-panel');
-  if(!el) return;
+  // Client management moved to its own page (/owner.html). Robbie gets a menu link instead.
+  const link = document.getElementById('owner-menu-link');
+  if(link) link.style.display = (myProfile && myProfile.is_owner) ? 'flex' : 'none';
+  if(el){ el.style.display='none'; el.innerHTML=''; }
+  return;
   if(!myProfile || !myProfile.is_owner){ el.style.display='none'; el.innerHTML=''; return; }
   el.style.display='block';
   el.innerHTML = `<div style="background:#0F1E2E;color:white;border-radius:14px;padding:18px 20px;margin-bottom:20px">
@@ -6053,6 +6079,7 @@ async function doLogin(){
     if(!d.ok){
       if(d.reason==='locked') loginError('Too many wrong tries. Please wait 15 minutes, or ask your manager to reset your PIN.');
       else if(d.reason==='inactive') loginError('This account has been switched off. Please speak to your manager.');
+      else if(d.reason==='paused') loginError('This Mavis account is paused. Please contact Mavis.');
       else if(d.reason==='email shared') loginError('That email is on more than one account. Please type your username instead (e.g. SUNSET-JOHN-SMITH).');
       else if(d.reason==='wrong') loginError('Username or PIN/password not right.' + (d.left>0 && d.left<=3 ? ' ' + d.left + ' tries left before a 15-minute lock.' : ''));
       else loginError('Could not sign in right now. Please check your connection and try again.');

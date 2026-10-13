@@ -1,0 +1,665 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex,nofollow">
+<title>Mavis Owner</title>
+<link rel="icon" type="image/png" href="/favicon-v6.png">
+<meta name="theme-color" content="#0F1E2E">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.9.3/html2pdf.bundle.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+<style>
+:root{--navy:#0F1E2E;--navy2:#1B2F45;--teal:#0D9488;--teal-dk:#0F766E;--teal-lt:#CCFBF1;--gold:#C4973B;--gold2:#E9C46A;--bg:#EEF2F6;--ink:#0F1E2E;--ink2:#475569;--ink3:#94A3B8;--line:#E2E8F0;--red:#DC2626;--amber:#B45309}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);font-family:Inter,system-ui,-apple-system,Segoe UI,Arial,sans-serif;color:var(--ink);-webkit-font-smoothing:antialiased}
+button,input,select,textarea{font:inherit;color:inherit}
+input,select,textarea{font-size:16px}
+.hidden{display:none !important}
+/* login */
+#login{position:fixed;inset:0;background:var(--navy);display:flex;align-items:center;justify-content:center;padding:20px;z-index:50}
+.lcard{background:white;border-radius:18px;padding:28px;width:100%;max-width:380px}
+.brand{font-size:26px;font-weight:800}.brand .m{color:var(--teal)}.brand .d{color:var(--gold)}
+.lbl{display:block;font-size:11.5px;font-weight:700;color:var(--ink2);margin:14px 0 6px}
+.in{width:100%;padding:11px 12px;border:1.5px solid var(--line);border-radius:10px;background:#F8FAFC;outline:none}
+.in:focus{border-color:var(--teal);background:white}
+.err{color:var(--red);font-size:13px;font-weight:600;min-height:18px;margin-top:10px}
+/* layout */
+.app{display:flex;min-height:100vh}
+.side{width:230px;background:var(--navy);color:white;padding:22px 14px;flex-shrink:0;display:flex;flex-direction:column;gap:4px;position:sticky;top:0;height:100vh}
+.brand-sub{font-size:10.5px;font-weight:800;letter-spacing:.14em;color:var(--gold2);padding:0 10px 18px}
+.nav{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;color:rgba(255,255,255,.75);font-size:14px;font-weight:600;cursor:pointer;border:none;background:none;text-align:left;width:100%}
+.nav:hover{background:rgba(255,255,255,.05)}
+.nav.on{background:rgba(255,255,255,.08);color:white;box-shadow:inset 3px 0 0 var(--gold)}
+.nav svg{width:18px;height:18px;flex-shrink:0}
+.nav .count{margin-left:auto;background:var(--red);color:white;font-size:11px;font-weight:800;border-radius:999px;padding:1px 7px}
+.newbtn{margin:14px 6px 0;background:var(--teal);color:white;border:none;border-radius:10px;padding:11px;font-weight:800;font-size:13.5px;cursor:pointer}
+.newbtn:hover{background:var(--teal-dk)}
+.me{margin-top:auto;display:flex;gap:10px;align-items:center;padding:12px 10px;border-top:1px solid rgba(255,255,255,.08)}
+.me a{color:rgba(255,255,255,.55);font-size:11.5px;cursor:pointer;text-decoration:none;display:block;margin-top:2px}
+.av{width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:13px;color:white;flex-shrink:0;background-size:cover;background-position:center}
+.main{flex:1;padding:26px 30px 60px;min-width:0}
+h1{font-size:24px;margin:0}
+.sub{color:var(--ink2);font-size:13px;margin-top:3px}
+.kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;margin:20px 0}
+.kpi{background:white;border-radius:14px;padding:16px 18px;border:1px solid var(--line);min-width:0}
+.kpi .n{font-size:24px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.kpi .l{font-size:12px;color:var(--ink3);font-weight:700;margin-top:2px}
+.kpi.money{background:var(--navy);color:white;border:none}
+.kpi.money .l{color:rgba(255,255,255,.6)}
+.bar{height:6px;border-radius:99px;background:rgba(255,255,255,.15);margin-top:10px;overflow:hidden}
+.bar span{display:block;height:100%;background:var(--teal)}
+.split{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:16px}
+.card{background:white;border-radius:16px;border:1px solid var(--line);padding:18px 20px;min-width:0}
+.card h2{font-size:12px;letter-spacing:.08em;color:var(--ink3);margin:0 0 12px;font-weight:800}
+.alert{display:flex;gap:12px;align-items:center;padding:11px 0;border-bottom:1px solid #F1F5F9}
+.alert:last-child{border:none}
+.dot{width:34px;height:34px;border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:15px}
+.alert b{font-size:13.5px}.alert small{display:block;color:var(--ink2);font-size:12px;margin-top:1px}
+.act{margin-left:auto;padding:7px 12px;border-radius:9px;border:none;font-size:12px;font-weight:800;background:var(--teal-lt);color:var(--teal-dk);white-space:nowrap;cursor:pointer}
+.mini{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid #F1F5F9;font-size:13px}
+.mini:last-child{border:none}
+.empty{color:var(--ink3);font-size:13px;padding:14px 0}
+.pill{font-size:11px;font-weight:800;padding:4px 9px;border-radius:999px;white-space:nowrap;display:inline-block}
+.p-active{background:#DCFCE7;color:#15803D}.p-paused{background:#FEE2E2;color:#B91C1C}.p-trial{background:#E0E7FF;color:#4338CA}.p-due{background:#FEF3C7;color:var(--amber)}.p-draft{background:#F1F5F9;color:#475569}.p-void{background:#F1F5F9;color:#94A3B8;text-decoration:line-through}
+.toolbar{display:flex;gap:8px;align-items:center;margin:18px 0 12px;flex-wrap:wrap}
+.search{flex:1;min-width:220px;background:white;border:1.5px solid var(--line);border-radius:12px;padding:10px 14px;outline:none}
+.chip{padding:8px 13px;border-radius:999px;background:white;border:1.5px solid var(--line);font-size:12.5px;font-weight:700;color:var(--ink2);cursor:pointer}
+.chip.on{background:var(--navy);border-color:var(--navy);color:white}
+.tablewrap{overflow-x:auto}
+table{width:100%;border-collapse:separate;border-spacing:0 8px;min-width:820px}
+th{font-size:11px;letter-spacing:.06em;color:var(--ink3);text-align:left;font-weight:800;padding:0 14px;white-space:nowrap}
+td{background:white;padding:12px 14px;font-size:13.5px;border-top:1px solid var(--line);border-bottom:1px solid var(--line);white-space:nowrap}
+td:first-child{border-left:1px solid var(--line);border-radius:12px 0 0 12px}
+td:last-child{border-right:1px solid var(--line);border-radius:0 12px 12px 0;color:#CBD5E1;width:20px}
+tr.click td{cursor:pointer}
+tr.click:hover td{background:#F8FAFC}
+.cl{display:flex;align-items:center;gap:11px}
+.cl b{display:block;font-size:14px}.cl small{color:var(--ink3);font-size:11.5px;font-weight:700;letter-spacing:.04em}
+.muted{color:var(--ink2)}.warn{color:var(--amber);font-weight:700}.bad{color:var(--red);font-weight:700}.good{color:#15803D;font-weight:700}
+.btn{padding:9px 13px;border-radius:9px;border:1.5px solid var(--line);background:white;font-size:12.5px;font-weight:800;color:var(--ink);cursor:pointer;white-space:nowrap}
+.btn:hover{border-color:#CBD5E1}
+.btn.teal{background:var(--teal);border-color:var(--teal);color:white}
+.btn.navy{background:var(--navy);border-color:var(--navy);color:white}
+.btn.red{color:#B91C1C;border-color:#FECACA;background:#FEF2F2}
+.btn.sm{padding:6px 10px;font-size:12px}
+/* drawer & modal */
+.bg{position:fixed;inset:0;background:rgba(15,30,46,.5);z-index:20;display:flex;justify-content:flex-end}
+.drawer{width:100%;max-width:470px;height:100%;background:#F1F5F9;display:flex;flex-direction:column;box-shadow:-10px 0 40px rgba(0,0,0,.2);animation:inR .18s ease-out}
+@keyframes inR{from{transform:translateX(30px);opacity:0}to{transform:none;opacity:1}}
+.dh{background:var(--navy);color:white;padding:18px 20px;display:flex;gap:14px;align-items:center}
+.dh .av{width:56px;height:56px;font-size:19px;box-shadow:0 0 0 3px rgba(196,151,59,.6)}
+.x{margin-left:auto;width:36px;height:36px;border-radius:10px;border:none;background:rgba(255,255,255,.1);color:white;font-size:20px;cursor:pointer;flex-shrink:0}
+.db{padding:14px;display:flex;flex-direction:column;gap:12px;overflow:auto;flex:1}
+.row{display:flex;justify-content:space-between;align-items:center;gap:10px;font-size:13px;padding:8px 0;border-bottom:1px solid #F1F5F9}
+.row:last-child{border:none}
+.row .in{padding:7px 10px;width:auto;max-width:170px;text-align:right}
+.stepper{display:flex;align-items:center;gap:8px}
+.stepper button{width:30px;height:30px;border-radius:8px;background:#F1F5F9;border:none;font-weight:800;cursor:pointer}
+.note{width:100%;min-height:90px;background:#FFFBEB;border:1px solid #FDE68A;border-radius:10px;padding:10px 12px;font-size:14px;color:#78350F;resize:vertical;outline:none}
+.modal-bg{position:fixed;inset:0;background:rgba(15,30,46,.55);z-index:30;display:flex;align-items:center;justify-content:center;padding:16px}
+.modal{background:white;border-radius:16px;width:100%;max-width:520px;max-height:92vh;overflow:auto;padding:22px}
+.modal h3{margin:0 0 4px;font-size:18px}
+.grid2{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:0 12px}
+.hint{font-size:12px;color:var(--ink2);margin-top:6px;line-height:1.45}
+.preview{margin-top:12px;background:#F0FDFA;border:1px solid #99F6E4;border-radius:10px;padding:10px 12px;font-size:12.5px;color:var(--ink2)}
+.foot{display:flex;gap:10px;justify-content:flex-end;margin-top:18px;flex-wrap:wrap}
+#toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:var(--navy);color:white;padding:12px 18px;border-radius:10px;font-size:13.5px;font-weight:600;z-index:60;box-shadow:0 10px 30px rgba(0,0,0,.25);border-left:3px solid var(--gold);display:none;pointer-events:none;max-width:90vw}
+/* invoice */
+.inv{background:white;width:720px;max-width:100%;border-radius:6px;overflow:hidden;color:var(--ink)}
+.inv-hd{background:var(--navy);color:white;padding:28px 36px;display:flex;justify-content:space-between;align-items:flex-start}
+.inv table{min-width:0;border-spacing:0}
+.inv th{padding:10px 0;border-bottom:2px solid var(--navy);font-size:10.5px}
+.inv td{border:none !important;border-bottom:1px solid var(--line) !important;border-radius:0 !important;padding:14px 0;color:var(--ink) !important;white-space:normal;width:auto !important;background:white}
+@media (max-width:900px){
+  .side{position:fixed;bottom:0;top:auto;left:0;right:0;width:auto;height:auto;flex-direction:row;padding:6px 8px calc(6px + env(safe-area-inset-bottom));z-index:15;gap:2px;justify-content:space-around}
+  .side .brand,.side .brand-sub,.me{display:none}
+  .nav{flex-direction:column;gap:3px;font-size:11px;padding:7px 4px;width:auto;flex:1;align-items:center}
+  .nav.on{box-shadow:inset 0 3px 0 var(--gold)}
+  .nav .count{position:absolute;margin:0 0 0 18px}
+  .newbtn{margin:0;padding:8px 10px;font-size:12px;align-self:center}
+  .main{padding:18px 16px 110px}
+  .kpis{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .split{grid-template-columns:minmax(0,1fr)}
+  .grid2{grid-template-columns:minmax(0,1fr)}
+  .drawer{max-width:none}
+}
+</style>
+</head>
+<body>
+
+<div id="login" class="hidden">
+  <div class="lcard">
+    <div class="brand"><span class="m">M</span>avis<span class="d">.</span></div>
+    <div style="font-size:11px;font-weight:800;letter-spacing:.14em;color:var(--gold);margin-top:2px">OWNER</div>
+    <form onsubmit="event.preventDefault();doLogin()">
+      <label class="lbl">Username</label><input class="in" id="lu" autocomplete="username" placeholder="MAVIS-ROBBIE-VENABLES">
+      <label class="lbl">Password</label><input class="in" id="lp" type="password" autocomplete="current-password">
+      <div class="err" id="lerr"></div>
+      <button class="btn navy" style="width:100%;padding:12px;margin-top:6px" id="lbtn">Sign in</button>
+    </form>
+  </div>
+</div>
+
+<div class="app hidden" id="app">
+  <aside class="side">
+    <div class="brand" style="padding:0 10px 4px"><span class="m">M</span>avis<span class="d">.</span></div>
+    <div class="brand-sub">OWNER</div>
+    <button class="nav" data-p="home" onclick="go('home')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 11l9-8 9 8v10H3z"/></svg>Home</button>
+    <button class="nav" data-p="clients" onclick="go('clients')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18"/></svg>Clients</button>
+    <button class="nav" data-p="money" onclick="go('money')" style="position:relative"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="6" width="20" height="13" rx="2"/><circle cx="12" cy="12.5" r="2.5"/></svg>Money<span class="count hidden" id="money-count"></span></button>
+    <button class="nav" data-p="health" onclick="go('health')" style="position:relative"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>Health<span class="count hidden" id="health-count"></span></button>
+    <button class="newbtn" onclick="newClient()">+ New client</button>
+    <div class="me"><div class="av" style="background:var(--teal)" id="me-av">R</div><div style="font-size:12.5px;font-weight:700"><span id="me-name">Robbie</span><a onclick="signOut()">Sign out</a></div></div>
+  </aside>
+  <main class="main" id="main"></main>
+</div>
+<div id="toast"></div>
+
+<script>
+const SUPABASE_URL = 'https://qjxcpmkiyfrukxicdwkl.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_bHRgdmEZPalEJSMBBr8prQ_Qhu_h1X9';
+const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+let D = { clients:[], invoices:[], errors:[], settings:{} };
+let PAGE = 'home', clientFilter = 'all', clientSearch = '', moneyFilter = 'all';
+
+// ---------- helpers ----------
+const esc = v => String(v==null?'':v).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const $ = id => document.getElementById(id);
+function toast(m){ const t=$('toast'); t.textContent=m; t.style.display='block'; clearTimeout(t._t); t._t=setTimeout(()=>t.style.display='none', 3200); }
+function money(n, cur){ n=Number(n)||0; return cur==='USD' ? '$' + n.toLocaleString('en-US',{maximumFractionDigits:2}) : 'Rp ' + Math.round(n).toLocaleString('en-US'); }
+function moneyShort(n, cur){ n=Number(n)||0; if(cur==='USD') return '$' + (n>=1000 ? (n/1000).toFixed(1)+'k' : n.toFixed(0));
+  return 'Rp ' + (n>=1e9 ? (n/1e9).toFixed(1)+'b' : n>=1e6 ? (n/1e6).toFixed(1).replace(/\.0$/,'')+'m' : n>=1e3 ? Math.round(n/1e3)+'k' : n); }
+function day(d){ if(!d) return '—'; const x=new Date(d); return x.toLocaleDateString('en-GB',{day:'numeric',month:'short'}); }
+function dayLong(d){ if(!d) return '—'; return new Date(d).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'}); }
+function ago(d){ if(!d) return 'Never'; const s=(Date.now()-new Date(d).getTime())/1000;
+  if(s<90) return 'Just now'; if(s<3600) return Math.round(s/60)+' min ago'; if(s<86400) return Math.round(s/3600)+' hr'+(s<7200?'':'s')+' ago';
+  const dd=Math.round(s/86400); return dd===1?'Yesterday':dd+' days ago'; }
+function daysSince(d){ return d ? (Date.now()-new Date(d).getTime())/86400000 : 9999; }
+function daysUntil(d){ if(!d) return null; const t=new Date(); t.setHours(0,0,0,0); return Math.round((new Date(d+'T00:00:00')-t)/86400000); }
+function initials(name){ const w=String(name||'?').trim().split(/\s+/).filter(Boolean); return ((w[0]||'?')[0] + (w[1]?w[1][0]:(w[0]||'').slice(1,2))).toUpperCase(); }
+const PALETTE=['#E76F51','#0D9488','#6D28D9','#B8862F','#2563EB','#DB2777','#16A34A','#7C8AA0','#0891B2','#C2410C'];
+function colourFor(id){ let h=0; String(id).split('').forEach(c=>h=(h*31+c.charCodeAt(0))>>>0); return PALETTE[h%PALETTE.length]; }
+function avatar(c, size){ const s=size||38; return c.logo ? `<div class="av" style="width:${s}px;height:${s}px;background:white url('${esc(c.logo)}') center/cover"></div>` : `<div class="av" style="width:${s}px;height:${s}px;background:${colourFor(c.id)}">${esc(initials(c.name))}</div>`; }
+function bytes(n){ n=Number(n)||0; if(n<1048576) return Math.round(n/1024)+' KB'; if(n<1073741824) return (n/1048576).toFixed(1)+' MB'; return (n/1073741824).toFixed(2)+' GB'; }
+const STORAGE_LIMIT = 25*1073741824;
+function statusOf(c){
+  if(c.status==='paused') return {k:'paused',label:'Paused',cls:'p-paused'};
+  if(c.status==='trial'){ const d=daysUntil(c.trial_ends); return {k:'trial',label: d==null?'Trial': d<0?'Trial ended':'Trial · '+d+' day'+(d===1?'':'s')+' left',cls:'p-trial'}; }
+  if(overdueFor(c.id).length) return {k:'overdue',label:'Overdue',cls:'p-due'};
+  return {k:'active',label:'Active',cls:'p-active'};
+}
+function invState(i){
+  if(i.status==='paid') return {k:'paid',label:'Paid '+day(i.paid_at),cls:'p-active'};
+  if(i.status==='void') return {k:'void',label:'Cancelled',cls:'p-void'};
+  if(i.status==='draft') return {k:'draft',label:'Draft',cls:'p-draft'};
+  const d=daysUntil(i.due); if(d!=null && d<0) return {k:'overdue',label:'Overdue '+(-d)+' day'+(d===-1?'':'s'),cls:'p-paused'};
+  return {k:'sent',label:'Sent · waiting',cls:'p-due'};
+}
+function overdueFor(cid){ return D.invoices.filter(i=>i.company_id===cid && invState(i).k==='overdue'); }
+const clientById = id => D.clients.find(c=>String(c.id)===String(id));
+
+// ---------- server ----------
+async function api(action, body){
+  const { data } = await sb.auth.getSession();
+  const token = data && data.session && data.session.access_token;
+  const r = await fetch('/api/owner', { method:'POST', headers:{'Content-Type':'application/json', Authorization:'Bearer '+(token||'')}, body: JSON.stringify(Object.assign({action}, body||{})) });
+  let d={}; try{ d=await r.json(); }catch(e){} d._status=r.status; return d;
+}
+async function load(){
+  const d = await api('overview');
+  if(d._status===401){ showLogin(); return false; }
+  if(d._status===403){ showLogin('This page is for Mavis only. Signed in with a different account - sign in as the Mavis owner.'); await sb.auth.signOut(); return false; }
+  if(!d.ok){ toast(d.message || 'Could not load - check your connection'); return false; }
+  D = d; $('me-name').textContent = (d.me && d.me.name) || 'Robbie'; $('me-av').textContent = ((d.me && d.me.name)||'R')[0];
+  $('login').classList.add('hidden'); $('app').classList.remove('hidden');
+  const due = D.invoices.filter(i=>['overdue'].includes(invState(i).k)).length;
+  $('money-count').textContent = due; $('money-count').classList.toggle('hidden', !due);
+  const errs = D.errors.filter(e=>daysSince(e.created_at)<1).length;
+  $('health-count').textContent = errs; $('health-count').classList.toggle('hidden', !errs);
+  render();
+  return true;
+}
+function showLogin(msg){ $('app').classList.add('hidden'); $('login').classList.remove('hidden'); $('lerr').textContent = msg||''; setTimeout(()=>$('lu').focus(),50); }
+async function doLogin(){
+  const u=$('lu').value.trim(), p=$('lp').value; if(!u||!p){ $('lerr').textContent='Please type your username and password.'; return; }
+  $('lbtn').disabled=true; $('lbtn').textContent='Signing in…'; $('lerr').textContent='';
+  try{
+    const r = await fetch('/api/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({username:u,secret:p})});
+    const d = await r.json().catch(()=>({}));
+    if(!d.ok){ $('lerr').textContent = d.message || (d.reason==='locked' ? 'Too many wrong tries - wait 15 minutes.' : 'Username or password not right.'); return; }
+    if(!d.profile || !d.profile.is_owner){ $('lerr').textContent='This page is for the Mavis owner only.'; return; }
+    await sb.auth.setSession({ access_token:d.session.access_token, refresh_token:d.session.refresh_token });
+    await load();
+  } finally { $('lbtn').disabled=false; $('lbtn').textContent='Sign in'; }
+}
+async function signOut(){ await sb.auth.signOut(); location.reload(); }
+
+// ---------- navigation ----------
+function go(p){ PAGE=p; closeDrawer(); render(); window.scrollTo(0,0); try{ history.replaceState(null,'','#'+p); }catch(e){} }
+function render(){
+  document.querySelectorAll('.nav').forEach(n=>n.classList.toggle('on', n.dataset.p===PAGE));
+  ({home:renderHome, clients:renderClients, money:renderMoney, health:renderHealth}[PAGE] || renderHome)();
+}
+
+// ---------- HOME ----------
+function monthTotals(){
+  const now=new Date(), m=now.getMonth(), y=now.getFullYear();
+  const inMonth = D.invoices.filter(i=>i.status!=='void' && i.status!=='draft' && (()=>{ const d=new Date(i.issued); return d.getMonth()===m && d.getFullYear()===y; })());
+  const idr = i => i.currency==='USD' ? 0 : Number(i.total)||0;
+  const billed = inMonth.reduce((s,i)=>s+idr(i),0), paid = inMonth.filter(i=>i.status==='paid').reduce((s,i)=>s+idr(i),0);
+  return { billed, paid, due: billed-paid };
+}
+function renderHome(){
+  const live = D.clients.filter(c=>!c.is_mine);
+  const trials = live.filter(c=>c.status==='trial').length;
+  const venues = live.filter(c=>c.status!=='paused').reduce((s,c)=>s+(c.venues_paid||1),0);
+  const staff = live.reduce((s,c)=>s+c.staff,0);
+  const t = monthTotals(); const pct = t.billed ? Math.round(t.paid/t.billed*100) : 0;
+  const h = new Date().getHours(), greet = h<12?'Good morning':h<18?'Good afternoon':'Good evening';
+  // attention list
+  const A=[];
+  D.invoices.filter(i=>invState(i).k==='overdue').forEach(i=>{ const c=clientById(i.company_id); if(c) A.push({ico:'💸',bg:'#FEE2E2',t:`${esc(c.name)} · invoice overdue`,s:`${money(i.total,i.currency)} · ${-daysUntil(i.due)} days late`,btn:'Open invoice',fn:`openInvoice('${i.id}')`}); });
+  live.filter(c=>c.status==='trial' && c.trial_ends && daysUntil(c.trial_ends)<=7).forEach(c=>{ const d=daysUntil(c.trial_ends); A.push({ico:'⏳',bg:'#E0E7FF',t:`${esc(c.name)} · trial ${d<0?'ended':'ends in '+d+' day'+(d===1?'':'s')}`,s:`${c.staff} staff · ${c.active_today} active today`,btn:'Make invoice',fn:`newInvoice('${c.id}')`}); });
+  live.filter(c=>c.status!=='paused' && c.staff>0 && daysSince(c.last_active)>=7).forEach(c=>A.push({ico:'😴',bg:'#FEF3C7',t:`${esc(c.name)} · nobody active for ${c.last_active?Math.floor(daysSince(c.last_active))+' days':'a while'}`,s:'Worth a friendly call - they may need help',btn:'Open',fn:`openClient('${c.id}')`}));
+  live.filter(c=>c.superadmins.length && !c.superadmins.some(a=>a.has_login)).forEach(c=>A.push({ico:'🔑',bg:'#F0FDFA',t:`${esc(c.name)} · Super Admin hasn't logged in yet`,s:'They may not have opened their login link',btn:'Send link',fn:`openClient('${c.id}')`}));
+  live.filter(c=>c.storage_bytes > STORAGE_LIMIT*0.8).forEach(c=>A.push({ico:'🗄️',bg:'#F1F5F9',t:`${esc(c.name)} · storage ${Math.round(c.storage_bytes/STORAGE_LIMIT*100)}%`,s:`${bytes(c.storage_bytes)} of 25 GB`,btn:'Open',fn:`openClient('${c.id}')`}));
+  const errs24 = D.errors.filter(e=>daysSince(e.created_at)<1).length;
+  if(errs24) A.push({ico:'⚠️',bg:'#FEE2E2',t:`${errs24} problem${errs24>1?'s':''} reported in the last 24 hours`,s:'See what broke and for which client',btn:'Health',fn:`go('health')`});
+  const busy = [...live].sort((a,b)=>b.active_today-a.active_today).filter(c=>c.active_today>0).slice(0,5);
+  const now=new Date(); const newThisMonth = live.filter(c=>c.created_at && new Date(c.created_at).getMonth()===now.getMonth() && new Date(c.created_at).getFullYear()===now.getFullYear()).length;
+  $('main').innerHTML = `
+    <h1>${greet}, ${esc((D.me&&D.me.name)||'Robbie')}</h1>
+    <div class="sub">${new Date().toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'long'})} · everything across all your clients</div>
+    <div class="kpis">
+      <div class="kpi"><div class="n">${live.length}</div><div class="l">Clients${trials?' · '+trials+' on trial':''}</div></div>
+      <div class="kpi"><div class="n">${venues}</div><div class="l">Venues paid for</div></div>
+      <div class="kpi"><div class="n">${staff}</div><div class="l">Staff using Mavis</div></div>
+      <div class="kpi money"><div class="n">${moneyShort(t.billed)}</div><div class="l">${new Date().toLocaleDateString('en-GB',{month:'long'})} · ${moneyShort(t.paid)} paid, ${moneyShort(t.due)} due</div><div class="bar"><span style="width:${pct}%"></span></div></div>
+    </div>
+    <div class="split">
+      <div class="card"><h2>NEEDS YOUR ATTENTION</h2>
+        ${A.length ? A.map(a=>`<div class="alert"><div class="dot" style="background:${a.bg}">${a.ico}</div><div style="min-width:0"><b>${a.t}</b><small>${a.s}</small></div><button class="act" onclick="${a.fn}">${a.btn}</button></div>`).join('') : '<div class="empty">All good - nothing needs you right now. ✓</div>'}
+      </div>
+      <div class="card"><h2>MOST ACTIVE TODAY</h2>
+        ${busy.length ? busy.map(c=>`<div class="mini" style="cursor:pointer" onclick="openClient('${c.id}')">${avatar(c,28)}${esc(c.name)}<span class="muted" style="margin-left:auto">${c.active_today} ${c.active_today===1?'person':'people'}</span></div>`).join('') : '<div class="empty">Nobody active yet today.</div>'}
+        <h2 style="margin-top:18px">THIS MONTH</h2>
+        <div class="mini">New clients<span style="margin-left:auto;font-weight:800">${newThisMonth}</span></div>
+        <div class="mini">Problems reported<span style="margin-left:auto;font-weight:800">${D.errors.filter(e=>new Date(e.created_at).getMonth()===now.getMonth()).length}</span></div>
+        <div class="mini">Invoices waiting<span style="margin-left:auto;font-weight:800">${D.invoices.filter(i=>['sent','overdue'].includes(invState(i).k)).length}</span></div>
+      </div>
+    </div>`;
+}
+
+// ---------- CLIENTS ----------
+function renderClients(){
+  const all = D.clients.filter(c=>!c.is_mine);
+  const cnt = k => all.filter(c=>statusOf(c).k===k).length;
+  const q = clientSearch.trim().toLowerCase();
+  const list = all.filter(c => (clientFilter==='all' || statusOf(c).k===clientFilter) && (!q || (c.name+' '+c.code).toLowerCase().includes(q)));
+  const chip = (k,l,n) => `<button class="chip${clientFilter===k?' on':''}" onclick="clientFilter='${k}';renderClients()">${l} ${n}</button>`;
+  $('main').innerHTML = `
+    <h1>Clients</h1>
+    <div class="sub">Tap a client to manage them. You only see summaries - never their events, chats or sales.</div>
+    <div class="toolbar"><input class="search" id="csearch" placeholder="Search by name or Company ID" value="${esc(clientSearch)}" oninput="clientSearch=this.value;renderClientsKeepFocus()">
+      ${chip('all','All',all.length)}${chip('active','Active',cnt('active'))}${chip('trial','Trial',cnt('trial'))}${chip('overdue','Overdue',cnt('overdue'))}${chip('paused','Paused',cnt('paused'))}</div>
+    ${list.length ? `<div class="tablewrap"><table>
+      <tr><th>CLIENT</th><th>STATUS</th><th>VENUES</th><th>STAFF</th><th>LAST ACTIVE</th><th>PRICE / MONTH</th><th>PAID UNTIL</th><th></th></tr>
+      ${list.map(c=>{ const st=statusOf(c); const pu=daysUntil(c.paid_until); return `<tr class="click" onclick="openClient('${c.id}')">
+        <td><div class="cl">${avatar(c)}<div><b>${esc(c.name)}</b><small>${esc(c.code)}</small></div></div></td>
+        <td><span class="pill ${st.cls}">${st.label}</span></td>
+        <td>${c.venues_paid}</td><td>${c.staff}</td>
+        <td class="${daysSince(c.last_active)>=7?'warn':'muted'}">${ago(c.last_active)}</td>
+        <td>${money(c.price*(c.venues_paid||1), c.currency)}</td>
+        <td class="${pu!=null&&pu<0?'bad':'muted'}">${c.paid_until?day(c.paid_until):'—'}</td><td>›</td></tr>`; }).join('')}
+    </table></div>` : `<div class="card empty" style="text-align:center;padding:30px">${all.length?'Nobody matches that.':'No clients yet - tap <b>+ New client</b> to add your first.'}</div>`}`;
+}
+function renderClientsKeepFocus(){ const pos=$('csearch').selectionStart; renderClients(); const i=$('csearch'); i.focus(); i.setSelectionRange(pos,pos); }
+
+// ---------- ONE CLIENT (side panel) ----------
+function closeDrawer(){ const d=$('drawer-bg'); if(d) d.remove(); }
+function openClient(id){
+  const c = clientById(id); if(!c) return;
+  closeDrawer();
+  const st = statusOf(c);
+  const roleNames = {superadmin:'Super Admin',director:'Director',manager:'Manager',supervisor:'Supervisor',teammember:'Team Member',dailyworker:'Daily Worker'};
+  const bg = document.createElement('div'); bg.className='bg'; bg.id='drawer-bg';
+  bg.addEventListener('click', e=>{ if(e.target===bg) closeDrawer(); });
+  const invs = D.invoices.filter(i=>i.company_id===c.id).slice(0,5);
+  bg.innerHTML = `<div class="drawer">
+    <div class="dh">${avatar(c,56)}<div style="min-width:0"><div style="font-size:18px;font-weight:800">${esc(c.name)}</div>
+      <div style="font-size:12px;color:rgba(255,255,255,.65)">Company ID ${esc(c.code)} · client since ${c.created_at?new Date(c.created_at).toLocaleDateString('en-GB',{month:'short',year:'numeric'}):'—'}</div>
+      <span class="pill ${st.cls}" style="margin-top:6px">${st.label}</span></div>
+      <button class="x" onclick="closeDrawer()">×</button></div>
+    <div class="db">
+      <div class="card" style="padding:14px 16px"><h2>SUPER ADMINS</h2>
+        ${c.superadmins.length ? c.superadmins.map(a=>`<div class="row"><span style="min-width:0"><b>${esc(a.name)}</b>${a.active?'':' <span class="pill p-paused">off</span>'}<br>
+          <span class="muted" style="font-size:12px;word-break:break-all">${esc(a.username)} · ${a.has_login ? 'last in ' + ago(a.last_active).toLowerCase() : '<span class="warn">hasn\'t logged in yet</span>'}</span></span>
+          <button class="btn sm" onclick="sendLogin('${a.id}')">Send login link</button></div>`).join('') : '<div class="empty">No Super Admin.</div>'}
+      </div>
+      <div class="card" style="padding:14px 16px"><h2>PLAN</h2>
+        <div class="row">Status<select class="in" onchange="saveClient('${c.id}',{status:this.value})">${['active','trial','paused'].map(s=>`<option value="${s}" ${c.status===s?'selected':''}>${s[0].toUpperCase()+s.slice(1)}</option>`).join('')}</select></div>
+        ${c.status==='trial'?`<div class="row">Trial ends<input class="in" type="date" value="${c.trial_ends||''}" onchange="saveClient('${c.id}',{trial_ends:this.value})"></div>`:''}
+        <div class="row">Venues paid for<div class="stepper"><button onclick="saveClient('${c.id}',{venues_paid:${(c.venues_paid||1)-1}})">−</button><b>${c.venues_paid||1}</b><button onclick="saveClient('${c.id}',{venues_paid:${(c.venues_paid||1)+1}})">+</button></div></div>
+        <div class="row">Price per venue / month<span style="display:flex;gap:6px"><select class="in" style="max-width:80px" onchange="saveClient('${c.id}',{currency:this.value})"><option ${c.currency==='IDR'?'selected':''}>IDR</option><option ${c.currency==='USD'?'selected':''}>USD</option></select><input class="in" inputmode="numeric" value="${Number(c.price).toLocaleString('en-US')}" onchange="saveClient('${c.id}',{price:this.value.replace(/[^0-9.]/g,'')})"></span></div>
+        <div class="row">Monthly total<b>${money(c.price*(c.venues_paid||1), c.currency)}</b></div>
+        <div class="row">Paid until<span style="display:flex;gap:8px;align-items:center"><input class="in" type="date" value="${c.paid_until||''}" onchange="saveClient('${c.id}',{paid_until:this.value})"><button class="btn teal sm" onclick="newInvoice('${c.id}')">Make invoice</button></span></div>
+      </div>
+      <div class="card" style="padding:14px 16px"><h2>USAGE</h2>
+        <div class="row">Staff<span class="muted">${c.staff} · ${Object.entries(c.by_role).map(([r,n])=>n+' '+(roleNames[r]||r)).join(', ')||'—'}</span></div>
+        <div class="row">Active today<span class="muted">${c.active_today}</span></div>
+        <div class="row">Last active<span class="muted">${ago(c.last_active)}</span></div>
+        <div class="row">Files stored<span class="muted">${bytes(c.storage_bytes)} of 25 GB</span></div>
+      </div>
+      <div class="card" style="padding:14px 16px"><h2>INVOICES</h2>
+        ${invs.length ? invs.map(i=>{ const s=invState(i); return `<div class="row" style="cursor:pointer" onclick="openInvoice('${i.id}')"><span><b>${esc(i.number)}</b> <span class="muted">${esc(i.period_label||'')}</span></span><span style="display:flex;gap:8px;align-items:center">${money(i.total,i.currency)} <span class="pill ${s.cls}">${s.label}</span></span></div>`; }).join('') : '<div class="empty">No invoices yet.</div>'}
+      </div>
+      <div class="card" style="padding:14px 16px"><h2>BILL TO</h2>
+        ${[['bill_attn','Contact name'],['bill_email','Email'],['bill_phone','WhatsApp number'],['bill_address','Address']].map(([k,l])=>`<label class="lbl" style="margin-top:8px">${l}</label><input class="in" value="${esc(c[k])}" onchange="saveClient('${c.id}',{${k}:this.value},true)">`).join('')}
+      </div>
+      <div><h2 style="font-size:12px;letter-spacing:.08em;color:var(--ink3);margin:4px 2px 8px">YOUR NOTES (only you see these)</h2>
+        <textarea class="note" placeholder="e.g. Called 12 Oct - wants Inventory. Owner prefers WhatsApp." onchange="saveClient('${c.id}',{notes:this.value},true)">${esc(c.notes)}</textarea></div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;padding-bottom:20px">
+        <button class="btn" onclick="renameClient('${c.id}')">Rename</button>
+        ${c.status==='paused' ? `<button class="btn teal" onclick="pauseClient('${c.id}',false)">Resume client</button>` : `<button class="btn red" onclick="pauseClient('${c.id}',true)">Pause client</button>`}
+      </div>
+    </div></div>`;
+  document.body.appendChild(bg);
+}
+async function saveClient(id, patch, quiet){
+  if(patch.venues_paid!==undefined && patch.venues_paid<1) return;
+  const d = await api('update', Object.assign({company_id:id}, patch));
+  if(!d.ok){ toast(d.message || 'Not saved - please try again'); return; }
+  const c = clientById(id); Object.assign(c, d.company, {price:Number(d.company.price)});
+  toast('Saved ✓');
+  render();
+  if(!quiet) openClient(id);
+}
+function renameClient(id){
+  const c=clientById(id);
+  modal(`<h3>Rename client</h3><div class="hint">Shows across their Mavis straight away. Their Company ID and logins stay the same.</div>
+    <label class="lbl">Venue name</label><input class="in" id="rn" value="${esc(c.name)}" maxlength="60">
+    <div class="foot"><button class="btn" onclick="closeModal()">Cancel</button><button class="btn navy" onclick="saveClient('${id}',{name:$('rn').value});closeModal()">Save</button></div>`);
+}
+function pauseClient(id, pause){
+  const c=clientById(id);
+  modal(pause ? `<h3>Pause ${esc(c.name)}?</h3><div class="hint" style="font-size:13.5px">Everyone at ${esc(c.name)} is logged out and can't get back in, and their data is locked. <b>Nothing is deleted</b> - resume any time and it's all back.</div>
+      <div class="foot"><button class="btn" onclick="closeModal()">Cancel</button><button class="btn red" onclick="closeModal();saveClient('${id}',{status:'paused'})">Pause client</button></div>`
+    : `<h3>Resume ${esc(c.name)}?</h3><div class="hint" style="font-size:13.5px">Their team can log in again straight away, with everything as they left it.</div>
+      <div class="foot"><button class="btn" onclick="closeModal()">Cancel</button><button class="btn teal" onclick="closeModal();saveClient('${id}',{status:'active'})">Resume</button></div>`);
+}
+
+// ---------- login links ----------
+async function sendLogin(profileId){
+  toast('Making link…');
+  const d = await api('send_login', {profile_id: profileId});
+  if(!d.ok){ toast(d.message || 'Could not make a link'); return; }
+  showLoginLink(d.profile, d.token, d.profile.has_login);
+}
+function showLoginLink(p, token, isReset){
+  const url = location.origin + '/?setup=' + encodeURIComponent(token);
+  const msg = (isReset ? 'Here is your link to choose a new password for Mavis. ' : 'Welcome to Mavis! Here is your link to set up your login. ') + 'Your username is ' + p.username + '. The link works once and expires in 48 hours: ' + url;
+  modal(`<h3>${isReset?'New login link':'Login link ready'}</h3><div class="hint">For <b>${esc(p.first_name)} ${esc(p.last_name||'')}</b>. Works once, expires in 48 hours.</div>
+    <div class="preview" style="display:flex;justify-content:space-between;align-items:center;gap:10px"><span><span style="font-size:10.5px;font-weight:800;color:var(--teal-dk);letter-spacing:.06em">USERNAME</span><br><b style="color:var(--ink);font-size:15px;word-break:break-all">${esc(p.username)}</b></span>
+      <button class="btn sm" onclick="copy('${esc(p.username)}',this)">Copy</button></div>
+    <div id="qr" style="display:flex;justify-content:center;padding:14px;background:#F8FAFC;border-radius:12px;margin-top:12px"></div>
+    <div class="foot" style="justify-content:flex-start"><a class="btn teal" style="text-decoration:none" target="_blank" rel="noopener" href="https://wa.me/?text=${encodeURIComponent(msg)}">Send on WhatsApp</a>
+      <button class="btn" onclick="copy('${esc(url)}',this)">Copy link</button><button class="btn" style="margin-left:auto" onclick="closeModal()">Done</button></div>`);
+  try{ new QRCode($('qr'), { text:url, width:190, height:190, colorDark:'#0F1E2E', colorLight:'#F8FAFC' }); }catch(e){ $('qr').textContent='QR not available - use the link'; }
+}
+async function copy(t, btn){ try{ await navigator.clipboard.writeText(t); }catch(e){} if(btn) btn.textContent='Copied ✓'; }
+
+// ---------- NEW CLIENT ----------
+const slug = v => String(v||'').normalize('NFKD').replace(/[̀-ͯ]/g,'').toUpperCase().replace(/[^A-Z0-9]+/g,'-').replace(/^-+|-+$/g,'');
+let codeTouched=false;
+function newClient(){
+  codeTouched=false;
+  modal(`<h3>New client</h3><div class="hint">Creates their own private Mavis and a login link for their Super Admin.</div>
+    <label class="lbl">Venue name</label><input class="in" id="nc-name" placeholder="e.g. South Beach Club" oninput="ncPreview('name')">
+    <label class="lbl">Company ID <span style="color:var(--gold)">· permanent</span></label><input class="in" id="nc-code" maxlength="12" style="text-transform:uppercase" placeholder="e.g. SOUTH" oninput="ncPreview('code')">
+    <div class="hint">Starts everyone's username. Use the company or group, not the venue's brand - it can't be changed later.</div>
+    <div class="grid2"><div><label class="lbl">Super Admin first name</label><input class="in" id="nc-first" oninput="ncPreview()"></div><div><label class="lbl">Surname</label><input class="in" id="nc-last" oninput="ncPreview()"></div></div>
+    <label class="lbl">Super Admin email</label><input class="in" id="nc-email" type="email" placeholder="name@example.com">
+    <div class="preview" id="nc-prev" style="display:none"></div>
+    <div class="grid2"><div><label class="lbl">Price per venue / month</label><div style="display:flex;gap:6px"><select class="in" id="nc-cur" style="width:90px"><option>IDR</option><option>USD</option></select><input class="in" id="nc-price" inputmode="numeric" value="3,200,000"></div></div>
+      <div><label class="lbl">Venues paid for</label><input class="in" id="nc-venues" type="number" min="1" value="1"></div></div>
+    <div class="grid2"><div><label class="lbl">Free trial</label><select class="in" id="nc-trial"><option value="0">No trial - paying now</option><option value="7">7 days</option><option value="14" selected>14 days</option><option value="30">30 days</option></select></div>
+      <div><label class="lbl">Their WhatsApp (for invoices)</label><input class="in" id="nc-phone" placeholder="+62…"></div></div>
+    <div class="err" id="nc-err"></div>
+    <div class="foot"><button class="btn" onclick="closeModal()">Cancel</button><button class="btn teal" id="nc-go" onclick="createClient()">Create client</button></div>`);
+  setTimeout(()=>$('nc-name').focus(),30);
+}
+function ncPreview(which){
+  if(which==='code') codeTouched = !!$('nc-code').value.trim();
+  if(which==='name' && !codeTouched) $('nc-code').value = (slug($('nc-name').value).split('-').filter(w=>!['THE','PT','CV'].includes(w))[0]||'').slice(0,12);
+  const code = slug($('nc-code').value).replace(/-/g,'').slice(0,12), pv=$('nc-prev');
+  if(!code){ pv.style.display='none'; return; }
+  pv.style.display='block';
+  pv.innerHTML = 'Super Admin logs in as <b style="color:var(--ink)">' + ([code, slug($('nc-first').value), slug($('nc-last').value)].filter(Boolean).join('-') || code) + '</b><br>Staff will be <b style="color:var(--ink)">' + code + '-FIRSTNAME-SURNAME</b>';
+}
+let ncConfirmed=false;
+async function createClient(){
+  const v=id=>$(id).value.trim(), err=m=>$('nc-err').textContent=m||'';
+  const body={ name:v('nc-name'), code:slug(v('nc-code')).replace(/-/g,'').slice(0,12), first:v('nc-first'), last:v('nc-last'), email:v('nc-email'),
+    currency:v('nc-cur'), price:v('nc-price').replace(/[^0-9.]/g,''), venues:v('nc-venues'), trial_days:v('nc-trial'), bill_phone:v('nc-phone'), bill_email:v('nc-email'), bill_attn:(v('nc-first')+' '+v('nc-last')).trim() };
+  if(!body.name||!body.code||!body.first||!body.email) return err('Please fill in the venue name, Company ID, Super Admin first name and email.');
+  if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(body.email)) return err("That email doesn't look right.");
+  if(!ncConfirmed){ ncConfirmed=true; err(''); $('nc-go').textContent='Yes, create '+body.code; $('nc-go').classList.replace('teal','navy');
+    $('nc-err').innerHTML='<span style="color:var(--ink)">Check: Company ID <b>'+body.code+'</b> is permanent. Tap again to create.</span>'; return; }
+  ncConfirmed=false; $('nc-go').disabled=true; $('nc-go').textContent='Creating…';
+  const d = await api('create', body);
+  $('nc-go').disabled=false;
+  if(!d.ok){ $('nc-go').textContent='Create client'; $('nc-go').classList.replace('navy','teal'); return err(d.message||'Not created - please try again'); }
+  await load(); showLoginLink(d.profile, d.token, false); toast(body.name+' created ✓');
+}
+
+// ---------- MONEY ----------
+function renderMoney(){
+  const t=monthTotals();
+  const waiting = D.invoices.filter(i=>invState(i).k==='sent'), overdue = D.invoices.filter(i=>invState(i).k==='overdue');
+  const sum = a => a.filter(i=>i.currency!=='USD').reduce((s,i)=>s+Number(i.total||0),0);
+  const list = D.invoices.filter(i => moneyFilter==='all' ? i.status!=='void' : invState(i).k===moneyFilter);
+  const chip = (k,l,n) => `<button class="chip${moneyFilter===k?' on':''}" onclick="moneyFilter='${k}';renderMoney()">${l}${n!=null?' '+n:''}</button>`;
+  $('main').innerHTML = `
+    <h1>Money</h1><div class="sub">${new Date().toLocaleDateString('en-GB',{month:'long',year:'numeric'})} · you collect by bank transfer / QRIS, Mavis keeps the record</div>
+    <div class="kpis">
+      <div class="kpi money"><div class="n">${moneyShort(t.billed)}</div><div class="l">Billed this month</div><div class="bar"><span style="width:${t.billed?Math.round(t.paid/t.billed*100):0}%"></span></div></div>
+      <div class="kpi"><div class="n good">${moneyShort(t.paid)}</div><div class="l">Paid this month</div></div>
+      <div class="kpi"><div class="n warn">${moneyShort(sum(waiting))}</div><div class="l">Waiting · ${waiting.length} invoice${waiting.length===1?'':'s'}</div></div>
+      <div class="kpi"><div class="n bad">${moneyShort(sum(overdue))}</div><div class="l">Overdue · ${overdue.length} invoice${overdue.length===1?'':'s'}</div></div>
+    </div>
+    <div class="toolbar" style="margin-top:0">${chip('all','All')}${chip('draft','Drafts',D.invoices.filter(i=>i.status==='draft').length)}${chip('sent','Waiting',waiting.length)}${chip('overdue','Overdue',overdue.length)}${chip('paid','Paid',D.invoices.filter(i=>i.status==='paid').length)}
+      <span style="margin-left:auto"></span><button class="btn" onclick="openSettings()">⚙ Your details, bank & QRIS</button><button class="btn teal" onclick="newInvoice()">+ New invoice</button></div>
+    ${list.length ? `<div class="tablewrap"><table>
+      <tr><th>INVOICE</th><th>CLIENT</th><th>FOR</th><th>AMOUNT</th><th>DUE</th><th>STATUS</th><th></th><th></th></tr>
+      ${list.map(i=>{ const c=clientById(i.company_id)||{name:'(deleted)'}; const s=invState(i); return `<tr class="click" onclick="openInvoice('${i.id}')">
+        <td><b>${esc(i.number)}</b></td><td>${esc(c.name)}</td><td class="muted">${esc(i.period_label||'')}${i.qty>1?' · '+i.qty+' venues':''}</td>
+        <td><b>${money(i.total,i.currency)}</b></td><td class="${s.k==='overdue'?'bad':'muted'}">${day(i.due)}</td><td><span class="pill ${s.cls}">${s.label}</span></td>
+        <td onclick="event.stopPropagation()">${s.k==='paid' ? `<span class="muted" style="font-size:12px">${esc(i.paid_method||'')}</span>` : s.k==='void' ? '' : `<button class="btn sm" onclick="openInvoice('${i.id}')">${s.k==='draft'?'Send':'Resend'}</button> <button class="btn teal sm" onclick="markPaid('${i.id}')">Mark paid</button>`}</td><td>›</td></tr>`; }).join('')}
+    </table></div>` : `<div class="card empty" style="text-align:center;padding:30px">No invoices here yet.</div>`}`;
+}
+function nextMonthLabel(){ const d=new Date(); d.setDate(1); d.setMonth(d.getMonth()+1); return d.toLocaleDateString('en-GB',{month:'long',year:'numeric'}); }
+function newInvoice(cid){
+  const clients = D.clients.filter(c=>!c.is_mine);
+  if(!clients.length){ toast('Add a client first'); return; }
+  const c0 = clientById(cid) || clients[0];
+  const due = new Date(Date.now()+14*86400000).toISOString().slice(0,10);
+  modal(`<h3>New invoice</h3><div class="hint">Saved as a draft - you can check it before sending.</div>
+    <label class="lbl">Client</label><select class="in" id="ni-c" onchange="niFill()">${clients.map(c=>`<option value="${c.id}" ${c.id===c0.id?'selected':''}>${esc(c.name)}</option>`).join('')}</select>
+    <label class="lbl">For (period)</label><input class="in" id="ni-period" value="${esc(nextMonthLabel())}">
+    <div class="grid2"><div><label class="lbl">Venues</label><input class="in" id="ni-qty" type="number" min="1" oninput="niTotal()"></div><div><label class="lbl">Price per venue</label><input class="in" id="ni-price" inputmode="numeric" oninput="niTotal()"></div></div>
+    <label class="lbl">Due date</label><input class="in" id="ni-due" type="date" value="${due}">
+    <div class="preview" id="ni-total"></div>
+    <div class="foot"><button class="btn" onclick="closeModal()">Cancel</button><button class="btn teal" onclick="createInvoice()">Create invoice</button></div>`);
+  niFill();
+}
+function niFill(){ const c=clientById($('ni-c').value); $('ni-qty').value=c.venues_paid||1; $('ni-price').value=Number(c.price).toLocaleString('en-US'); niTotal(); }
+function niTotal(){ const c=clientById($('ni-c').value); const t=(parseInt($('ni-qty').value,10)||1)*(Number($('ni-price').value.replace(/[^0-9.]/g,''))||0); $('ni-total').innerHTML='Total <b style="color:var(--ink);font-size:15px">'+money(t,c.currency)+'</b>'; }
+async function createInvoice(){
+  const d = await api('invoice_create', { company_id:$('ni-c').value, period_label:$('ni-period').value, qty:$('ni-qty').value, unit_price:$('ni-price').value.replace(/[^0-9.]/g,''), due:$('ni-due').value });
+  if(!d.ok){ toast(d.message||'Not created'); return; }
+  closeModal(); closeDrawer(); await load(); go('money'); openInvoice(d.invoice.id);
+}
+function markPaid(id){
+  const i=D.invoices.find(x=>x.id===id);
+  modal(`<h3>Mark ${esc(i.number)} as paid?</h3><div class="hint">${money(i.total,i.currency)} · this also moves the client's "paid until" date forward.</div>
+    <label class="lbl">How did they pay?</label><div id="pm" style="display:flex;gap:8px;flex-wrap:wrap">${['Bank transfer','QRIS','Cash','Other'].map((m,k)=>`<button class="chip${k===0?' on':''}" onclick="document.querySelectorAll('#pm .chip').forEach(x=>x.classList.remove('on'));this.classList.add('on')">${m}</button>`).join('')}</div>
+    <div class="foot"><button class="btn" onclick="closeModal()">Cancel</button><button class="btn teal" onclick="confirmPaid('${id}')">Mark paid</button></div>`);
+}
+async function confirmPaid(id){
+  const m=(document.querySelector('#pm .chip.on')||{}).textContent||'';
+  const d=await api('invoice_update',{id,status:'paid',paid_method:m});
+  if(!d.ok){ toast(d.message||'Not saved'); return; }
+  closeModal(); closeInvoice(); await load(); toast('Paid ✓');
+}
+async function setInvStatus(id, status, msg){
+  const d=await api('invoice_update',{id,status}); if(!d.ok){ toast(d.message||'Not saved'); return false; }
+  await load(); if(msg) toast(msg); return true;
+}
+
+// ---------- INVOICE view ----------
+function closeInvoice(){ const e=$('inv-bg'); if(e) e.remove(); }
+function invoiceHTML(i){
+  const c=clientById(i.company_id)||{}; const S=D.settings||{}; const B=S.business||{}, K=S.bank||{};
+  const line = (v,ph) => v ? esc(v) : `<span style="color:#CBD5E1">[${ph}]</span>`;
+  return `<div class="inv" id="inv-doc">
+    <div class="inv-hd"><div><div style="font-size:30px;font-weight:800"><span style="color:var(--teal)">M</span>avis<span style="color:var(--gold)">.</span></div><div style="font-size:12px;color:rgba(255,255,255,.6);margin-top:4px">One team. One platform.</div></div>
+      <div style="text-align:right"><div style="font-size:22px;font-weight:800;letter-spacing:.06em;color:var(--gold2)">INVOICE</div><div style="font-size:12.5px;color:rgba(255,255,255,.75);margin-top:6px">${esc(i.number)}<br>Issued ${dayLong(i.issued)}<br><b style="color:white">Due ${dayLong(i.due)}</b></div></div></div>
+    <div style="padding:26px 36px;display:grid;grid-template-columns:1fr 1fr;gap:20px;font-size:13px;line-height:1.55">
+      <div><div style="font-size:10.5px;font-weight:800;letter-spacing:.1em;color:var(--ink3)">FROM</div><b>${line(B.name,'Your business name')}</b><br>${line(B.address,'Address')}${B.tax?'<br>Tax no. '+esc(B.tax):''}${B.email?'<br>'+esc(B.email):''}${B.phone?'<br>'+esc(B.phone):''}</div>
+      <div><div style="font-size:10.5px;font-weight:800;letter-spacing:.1em;color:var(--ink3)">BILL TO</div><b>${esc(c.name||'')}</b>${c.bill_attn?'<br>Attn: '+esc(c.bill_attn):''}${c.bill_address?'<br>'+esc(c.bill_address):''}${c.bill_email?'<br>'+esc(c.bill_email):''}</div></div>
+    <div style="padding:0 36px"><table style="width:100%;font-size:13px">
+      <tr><th style="text-align:left">DESCRIPTION</th><th style="text-align:center">QTY</th><th style="text-align:right">PRICE</th><th style="text-align:right">TOTAL</th></tr>
+      <tr><td><b>${esc(i.description||'Mavis - monthly subscription')}</b><br><span class="muted">${esc(i.period_label||'')} · per venue</span></td><td style="text-align:center">${i.qty}</td><td style="text-align:right">${money(i.unit_price,i.currency)}</td><td style="text-align:right"><b>${money(i.total,i.currency)}</b></td></tr></table>
+      <div style="display:flex;justify-content:flex-end;margin:16px 0 4px"><div style="background:var(--navy);color:white;border-radius:10px;padding:12px 18px;font-size:15px;font-weight:800">${i.status==='paid'?'PAID ✓ &nbsp; ':'Total due &nbsp; '}${money(i.total,i.currency)}</div></div></div>
+    <div style="margin:22px 36px 30px;display:grid;grid-template-columns:1fr auto;gap:20px;align-items:center;background:#F8FAFC;border:1px solid var(--line);border-radius:12px;padding:18px 20px">
+      <div style="font-size:13px;line-height:1.6"><div style="font-size:10.5px;font-weight:800;letter-spacing:.1em;color:var(--ink3)">HOW TO PAY</div>
+        <b>Bank transfer</b> · ${line(K.bank,'Bank')} · ${line(K.number,'Account number')}<br>Account name: ${line(K.name,'Account name')}<br>Please use <b>${esc(i.number)}</b> as the reference.${S.qris?'<br><span class="muted">Or scan the QRIS code →</span>':''}</div>
+      ${S.qris?`<img src="${S.qris}" style="width:120px;height:120px;object-fit:contain;border-radius:8px;background:white;border:1px solid var(--line)">`:''}</div>
+    <div style="padding:14px 36px;border-top:1px solid var(--line);font-size:11.5px;color:var(--ink3);display:flex;justify-content:space-between"><span>Thank you for using Mavis.</span><span>getmavis.co</span></div></div>`;
+}
+function openInvoice(id){
+  const i=D.invoices.find(x=>x.id===id); if(!i) return;
+  closeInvoice(); closeDrawer();
+  const c=clientById(i.company_id)||{}; const s=invState(i);
+  const missing = !(D.settings.business&&D.settings.business.name) || !(D.settings.bank&&D.settings.bank.number);
+  const bg=document.createElement('div'); bg.id='inv-bg'; bg.className='modal-bg'; bg.style.alignItems='flex-start'; bg.style.overflow='auto';
+  bg.addEventListener('click',e=>{ if(e.target===bg) closeInvoice(); });
+  bg.innerHTML=`<div style="width:100%;max-width:760px;margin:10px auto">
+    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:12px;background:white;padding:12px;border-radius:12px">
+      <b style="font-size:16px">${esc(i.number)}</b><span class="pill ${s.cls}">${s.label}</span><span style="margin-left:auto"></span>
+      ${s.k!=='void'?`<button class="btn sm" onclick="invPDF('${id}')">⬇ PDF</button><button class="btn sm" onclick="invEmail('${id}')">✉ Email</button><button class="btn teal sm" onclick="invWhatsApp('${id}')">Send on WhatsApp</button>`:''}
+      ${['draft','sent','overdue'].includes(s.k)?`<button class="btn navy sm" onclick="markPaid('${id}')">Mark paid</button>`:''}
+      ${s.k==='draft'?`<button class="btn red sm" onclick="deleteInvoice('${id}')">Delete</button>`:''}
+      ${['sent','overdue'].includes(s.k)?`<button class="btn sm" onclick="cancelInvoice('${id}')">Cancel invoice</button>`:''}
+      ${s.k==='paid'?`<button class="btn sm" onclick="setInvStatus('${id}','sent','Marked as unpaid').then(()=>openInvoice('${id}'))">Undo paid</button>`:''}
+      <button class="btn sm" onclick="closeInvoice()">Close</button></div>
+    ${missing?`<div class="preview" style="background:#FFFBEB;border-color:#FDE68A;color:#78350F;margin:0 0 12px">Your business and bank details aren't filled in yet - <a style="font-weight:800;cursor:pointer;text-decoration:underline" onclick="closeInvoice();openSettings()">add them</a> so they show on invoices.</div>`:''}
+    <div style="display:flex;justify-content:center">${invoiceHTML(i)}</div></div>`;
+  document.body.appendChild(bg);
+}
+function cancelInvoice(id){
+  const i=D.invoices.find(x=>x.id===id);
+  modal(`<h3>Cancel ${esc(i.number)}?</h3><div class="hint" style="font-size:13.5px">It stays in your records as cancelled, so the numbering never has gaps.</div>
+    <div class="foot"><button class="btn" onclick="closeModal()">Keep it</button><button class="btn red" onclick="closeModal();setInvStatus('${id}','void','Invoice cancelled').then(()=>closeInvoice())">Cancel invoice</button></div>`);
+}
+async function deleteInvoice(id){ const d=await api('invoice_delete',{id}); if(!d.ok){ toast(d.message||'Not deleted'); return; } closeInvoice(); await load(); toast('Draft deleted'); }
+async function invMarkSent(i){ if(i.status==='draft'){ await api('invoice_update',{id:i.id,status:'sent'}); await load(); } }
+async function invPDFBlob(i){
+  const holder=document.createElement('div'); holder.style.cssText='position:absolute;left:0;top:0;width:720px;z-index:-1;opacity:1'; holder.innerHTML=invoiceHTML(i); document.body.appendChild(holder);
+  const el=holder.firstElementChild; const r=el.getBoundingClientRect();
+  try{
+    return await html2pdf().set({ margin:0, filename:i.number+'.pdf', image:{type:'jpeg',quality:0.95},
+      html2canvas:{scale:2,useCORS:true,x:r.left+window.scrollX,y:r.top+window.scrollY,width:r.width,height:r.height,scrollX:0,scrollY:0},
+      jsPDF:{unit:'px',format:[r.width,r.height],orientation:'portrait',hotfixes:['px_scaling']} }).from(el).outputPdf('blob');
+  } finally { holder.remove(); }
+}
+async function invPDF(id){
+  const i=D.invoices.find(x=>x.id===id); toast('Making PDF…');
+  try{
+    const blob=await invPDFBlob(i); const file=new File([blob], i.number+'.pdf', {type:'application/pdf'});
+    if(navigator.canShare && navigator.canShare({files:[file]}) && /Android|iPhone|iPad/i.test(navigator.userAgent)){ await navigator.share({files:[file], title:i.number}); }
+    else { const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=i.number+'.pdf'; document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(a.href),3000); toast('PDF saved ✓'); }
+  }catch(e){ if(e&&e.name==='AbortError') return; console.warn(e); toast('Could not make the PDF - try again'); }
+}
+function invText(i){
+  const c=clientById(i.company_id)||{}; const K=(D.settings&&D.settings.bank)||{};
+  return `Hi ${c.bill_attn ? c.bill_attn.split(' ')[0] : 'there'}, here is your Mavis invoice ${i.number} for ${i.period_label||'this month'}: ${money(i.total,i.currency)}, due ${dayLong(i.due)}.\n\nBank transfer: ${K.bank||''} ${K.number||''} (${K.name||''})\nReference: ${i.number}${D.settings.qris?'\nOr pay by QRIS - the code is on the invoice PDF.':''}\n\nThank you!`;
+}
+async function invWhatsApp(id){
+  const i=D.invoices.find(x=>x.id===id); const c=clientById(i.company_id)||{};
+  const phone=String(c.bill_phone||'').replace(/[^0-9]/g,'').replace(/^0/,'62');
+  window.open('https://wa.me/'+(phone||'')+'?text='+encodeURIComponent(invText(i)),'_blank');
+  await invMarkSent(i); toast('Tip: download the PDF and attach it in WhatsApp');
+}
+async function invEmail(id){
+  const i=D.invoices.find(x=>x.id===id); const c=clientById(i.company_id)||{};
+  location.href='mailto:'+encodeURIComponent(c.bill_email||'')+'?subject='+encodeURIComponent('Mavis invoice '+i.number)+'&body='+encodeURIComponent(invText(i)+'\n\n(Invoice PDF attached)');
+  await invMarkSent(i);
+}
+
+// ---------- SETTINGS (your details, bank, QRIS) ----------
+function openSettings(){
+  const S=D.settings||{}, B=S.business||{}, K=S.bank||{};
+  const f=(id,l,v,ph)=>`<label class="lbl">${l}</label><input class="in" id="${id}" value="${esc(v||'')}" placeholder="${ph||''}">`;
+  modal(`<h3>Your details, bank & QRIS</h3><div class="hint">Shown on every invoice. Ask your accountant what has to appear (e.g. tax number).</div>
+    <div style="font-size:12px;font-weight:800;letter-spacing:.08em;color:var(--ink3);margin-top:16px">YOUR BUSINESS</div>
+    ${f('s-name','Business name',B.name,'e.g. PT Mavis Digital Indonesia')}${f('s-addr','Address',B.address)}
+    <div class="grid2"><div>${f('s-tax','Tax number (optional)',B.tax)}</div><div>${f('s-email','Email (optional)',B.email)}</div></div>${f('s-phone','Phone / WhatsApp (optional)',B.phone)}
+    <div style="font-size:12px;font-weight:800;letter-spacing:.08em;color:var(--ink3);margin-top:16px">BANK</div>
+    <div class="grid2"><div>${f('s-bank','Bank',K.bank,'e.g. BCA')}</div><div>${f('s-num','Account number',K.number)}</div></div>${f('s-acc','Account name',K.name)}
+    <div style="font-size:12px;font-weight:800;letter-spacing:.08em;color:var(--ink3);margin-top:16px">QRIS</div>
+    <div style="display:flex;gap:12px;align-items:center;margin-top:8px"><div id="s-qris-prev" style="width:90px;height:90px;border-radius:10px;border:1.5px dashed var(--line);display:flex;align-items:center;justify-content:center;color:var(--ink3);font-size:11px;background:center/contain no-repeat ${S.qris?`url('${S.qris}')`:''}">${S.qris?'':'No QRIS'}</div>
+      <label class="btn" style="cursor:pointer">Upload QRIS picture<input type="file" accept="image/*" style="display:none" onchange="qrisPicked(this)"></label>${S.qris?'<button class="btn red sm" onclick="window._qris=\'\';$(\'s-qris-prev\').style.backgroundImage=\'none\';$(\'s-qris-prev\').textContent=\'Removed\'">Remove</button>':''}</div>
+    <div class="foot"><button class="btn" onclick="closeModal()">Cancel</button><button class="btn navy" onclick="saveSettings()">Save</button></div>`);
+  window._qris = undefined;
+}
+function qrisPicked(input){
+  const file=input.files&&input.files[0]; if(!file) return;
+  const img=new Image(), url=URL.createObjectURL(file);
+  img.onload=()=>{ const max=700, k=Math.min(1,max/Math.max(img.width,img.height)), c=document.createElement('canvas'); c.width=img.width*k; c.height=img.height*k;
+    const g=c.getContext('2d'); g.fillStyle='#fff'; g.fillRect(0,0,c.width,c.height); g.drawImage(img,0,0,c.width,c.height); window._qris=c.toDataURL('image/png');
+    $('s-qris-prev').style.backgroundImage=`url('${window._qris}')`; $('s-qris-prev').textContent=''; URL.revokeObjectURL(url); };
+  img.src=url;
+}
+async function saveSettings(){
+  const v=id=>$(id).value.trim();
+  const settings={ business:{name:v('s-name'),address:v('s-addr'),tax:v('s-tax'),email:v('s-email'),phone:v('s-phone')}, bank:{bank:v('s-bank'),number:v('s-num'),name:v('s-acc')} };
+  if(window._qris!==undefined) settings.qris=window._qris||null;
+  const d=await api('settings_save',{settings}); if(!d.ok){ toast(d.message||'Not saved'); return; }
+  D.settings=Object.assign({},d.settings); delete D.settings.invoice_counter; closeModal(); toast('Saved ✓'); render();
+}
+
+// ---------- HEALTH ----------
+function renderHealth(){
+  const live=D.clients.filter(c=>!c.is_mine);
+  $('main').innerHTML=`
+    <h1>Health</h1><div class="sub">Problems people hit in Mavis, and storage per client</div>
+    <div class="card" style="margin-top:18px"><div style="display:flex;align-items:center;margin-bottom:10px"><h2 style="margin:0">PROBLEMS REPORTED</h2>${D.errors.length?'<button class="btn sm" style="margin-left:auto" onclick="clearErrors()">Clear all</button>':''}</div>
+      ${D.errors.length ? D.errors.slice(0,100).map(e=>{ const c=clientById(e.company_id)||{name:'?'}; return `<div class="alert"><div class="dot" style="background:#FEE2E2">⚠️</div><div style="min-width:0"><b>${esc(c.name)}</b> <span class="muted" style="font-size:12px">· ${esc(e.username||'')} · ${esc(e.page||'')} · ${ago(e.created_at)}</span><small style="word-break:break-word;font-family:ui-monospace,Menlo,monospace">${esc(e.message)}</small></div></div>`; }).join('') : '<div class="empty">No problems reported. ✓</div>'}
+    </div>
+    <div class="card" style="margin-top:16px"><h2>STORAGE (FILES)</h2>
+      ${live.map(c=>{ const p=Math.min(100,Math.round(c.storage_bytes/STORAGE_LIMIT*100)); return `<div class="mini">${avatar(c,26)}<span style="min-width:120px">${esc(c.name)}</span>
+        <div style="flex:1;height:8px;background:#F1F5F9;border-radius:99px;overflow:hidden"><div style="height:100%;width:${Math.max(p,1)}%;background:${p>85?'var(--red)':p>60?'var(--gold)':'var(--teal)'}"></div></div>
+        <span class="muted" style="min-width:110px;text-align:right">${bytes(c.storage_bytes)}</span></div>`; }).join('') || '<div class="empty">No clients yet.</div>'}
+    </div>`;
+}
+async function clearErrors(){ const d=await api('errors_clear'); if(d.ok){ await load(); toast('Cleared'); } }
+
+// ---------- modal ----------
+function modal(html){ closeModal(); const bg=document.createElement('div'); bg.className='modal-bg'; bg.id='modal-bg'; bg.innerHTML=`<div class="modal">${html}</div>`;
+  bg.addEventListener('click',e=>{ if(e.target===bg) closeModal(); }); document.body.appendChild(bg); }
+function closeModal(){ const m=$('modal-bg'); if(m) m.remove(); ncConfirmed=false; }
+document.addEventListener('keydown',e=>{ if(e.key==='Escape'){ if($('modal-bg')) closeModal(); else if($('inv-bg')) closeInvoice(); else closeDrawer(); } });
+
+// ---------- start ----------
+(async()=>{
+  PAGE = (location.hash||'').slice(1) || 'home';
+  if(!['home','clients','money','health'].includes(PAGE)) PAGE='home';
+  const { data } = await sb.auth.getSession();
+  if(!data || !data.session){ showLogin(); return; }
+  await load();
+})();
+</script>
+</body></html>

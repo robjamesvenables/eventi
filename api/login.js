@@ -29,6 +29,10 @@ module.exports = async (req, res) => {
     };
     if (!p || !p.user_id) return fail();
     if (!p.active) return L.send(res, 403, { ok: false, reason: 'inactive' });
+    if (!p.is_owner) {
+      const st = (await L.db('companies?select=status&id=eq.' + p.company_id).catch(() => []))[0];
+      if (st && st.status === 'paused') return L.send(res, 403, { ok: false, reason: 'paused', message: 'This Mavis account is paused. Please contact Mavis.' });
+    }
     const session = await L.passwordGrant(L.authEmailFor(p.username), secret);
     if (!session) return fail();
     if (att) await L.db('login_attempts?username=eq.' + encodeURIComponent(key), { method: 'DELETE' });

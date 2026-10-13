@@ -46,6 +46,20 @@ module.exports = async (req, res) => {
       return L.send(res, 200, { ok: true, profile: L.publicProfile(p) });
     }
 
+    if (b.action === 'seen') {
+      // "Last active" for the owner page - at most once every 10 minutes per person
+      if (!me.last_seen || Date.now() - new Date(me.last_seen).getTime() > 10 * 60000) {
+        await L.db('profiles?id=eq.' + me.id, { method: 'PATCH', body: { last_seen: new Date().toISOString() } }).catch(() => {});
+      }
+      return L.send(res, 200, { ok: true });
+    }
+
+    if (b.action === 'report_error') {
+      const msg = String(b.message || '').slice(0, 500);
+      if (msg) await L.db('app_errors', { method: 'POST', body: { company_id: me.company_id, username: me.username, page: String(b.page || '').slice(0, 60), message: msg } }).catch(() => {});
+      return L.send(res, 200, { ok: true });
+    }
+
     if (b.action === 'logout_all') {
       await fetch(L.SUPABASE_URL + '/auth/v1/logout?scope=global', { method: 'POST', headers: { apikey: L.ANON_KEY, Authorization: 'Bearer ' + token } });
       return L.send(res, 200, { ok: true });

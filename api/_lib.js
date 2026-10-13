@@ -71,6 +71,10 @@ async function caller(req){
   const rows = await db('profiles?select=*&user_id=eq.' + encodeURIComponent(u.id) + '&limit=1');
   const p = rows && rows[0];
   if (!p || !p.active) return null;
+  if (!p.is_owner) {
+    const co = (await db('companies?select=status&id=eq.' + p.company_id).catch(() => []))[0];
+    if (co && co.status === 'paused') return null;
+  }
   return p;
 }
 function authEmailFor(username){ return username.toLowerCase().replace(/[^a-z0-9-]/g, '') + '@staff.getmavis.app'; }

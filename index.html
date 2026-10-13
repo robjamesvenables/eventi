@@ -1722,6 +1722,13 @@ body.ev-viewonly .beo-viewonly-note{display:inline-flex;align-items:center;gap:6
 .sky-icon{font-size:34px;line-height:1}
 .venue-switcher{position:relative}
 .venue-switcher-btn{display:flex;align-items:center;gap:9px;background:rgba(255,255,255,0.08);border:1.5px solid rgba(255,255,255,0.15);border-radius:10px;padding:9px 14px;cursor:pointer;transition:background 0.15s}
+.sky-banner.banner-light .sky-greeting,.sky-banner.banner-light .venue-switcher-name{color:#0F1E2E}
+.sky-banner.banner-light .sky-date,.sky-banner.banner-light .venue-switcher-sub{color:rgba(15,30,46,.7)}
+.sky-banner.banner-light #sky-greeting-icon{stroke:#0F1E2E}
+.sky-banner.banner-light #installWarnIcon svg{stroke:#7C2D12}
+.sky-banner.banner-light .venue-switcher-btn{background:rgba(15,30,46,.1);border-color:rgba(15,30,46,.22)}
+.sky-banner.banner-light .venue-switcher-chev{color:rgba(15,30,46,.7)}
+.sky-banner.banner-light .venue-switcher-ico{background:#0F1E2E !important;color:#E9C46A !important}
 .venue-switcher-btn:hover{background:rgba(255,255,255,0.14)}
 .venue-switcher-ico{width:26px;height:26px;border-radius:7px;background:#0D9488;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;color:white;flex-shrink:0}
 .home-co-logo{width:60px;height:60px;border-radius:50%;background-size:cover;background-position:center;background-color:white;box-shadow:0 0 0 3px rgba(196,151,59,.7);flex-shrink:0}
@@ -20115,9 +20122,18 @@ function closeVenueDropdown(){
 document.addEventListener('click', closeVenueDropdown);
 
 const VENUE_BANNER_COLORS = {a:'#0F1E2E', b:'#0D9488', c:'#C4973B'};
+// On a light or mid-tone banner (e.g. gold) white text and the gold sun disappear,
+// so switch the header to dark navy text automatically.
+function colourIsLight(hex){
+  const m = /^#?([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i.exec(hex||''); if(!m) return false;
+  const lin = v => { v = parseInt(v,16)/255; return v <= 0.03928 ? v/12.92 : Math.pow((v+0.055)/1.055, 2.4); };
+  const L = 0.2126*lin(m[1]) + 0.7152*lin(m[2]) + 0.0722*lin(m[3]);
+  return (L + 0.05) / 0.05 > 1.05 / (L + 0.05);   // dark text has more contrast than white
+}
 function applyVenueBannerColor(){
   const banner = document.getElementById('sky-banner');
-  if(banner) banner.style.background = VENUE_BANNER_COLORS[currentVenue] || VENUE_BANNER_COLORS.a;
+  const bg = VENUE_BANNER_COLORS[currentVenue] || VENUE_BANNER_COLORS.a;
+  if(banner){ banner.style.background = bg; banner.classList.toggle('banner-light', colourIsLight(bg)); }
 }
 
 function selectVenue(id){

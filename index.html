@@ -2816,7 +2816,7 @@ img.emoji-tw{width:1.15em;height:1.15em;vertical-align:-0.2em;margin:0 1px}
       </form>
       <div id="login-help-link" style="text-align:center;margin-top:16px"><a onclick="loginShowHelp()" style="font-size:13px;color:#0D9488;font-weight:600;cursor:pointer">Forgot username or PIN?</a></div>
       <div id="login-help" style="display:none;margin-top:12px;background:#F8FAFC;border:1px solid #E2E8F0;border-radius:10px;padding:12px 14px;font-size:13px;color:#475569;line-height:1.55">
-        <b style="color:#0F1E2E">Ask your manager.</b> They can see your username in Admin Console and send you a new link to choose a new PIN or password. Your username is usually your company code and name, e.g. <b>LUNA-JOHN-SMITH</b>.
+        <b style="color:#0F1E2E">Ask your manager.</b> They can see your username in Admin Console and send you a new link to choose a new PIN or password. Your username is usually your Company ID and name, e.g. <b>LUNA-JOHN-SMITH</b>.
       </div>
       
       
@@ -5855,7 +5855,7 @@ async function authApplyProfile(profile, company){
   try{ await peopleLoadFromSupabase(); }catch(e){ console.warn(e); }
 }
 // Light role check for now: only people whose role has Admin Console switched on see it.
-// Company box: the name can be changed by a Super Admin; the login code is permanent.
+// Company box: the name can be changed by a Super Admin; the Company ID is permanent.
 function companyCardRender(){
   const el = document.getElementById('company-card'); if(!el) return;
   if(!myProfile || !myCompany || !(myProfile.is_owner || myProfile.role === 'superadmin')){ el.style.display='none'; return; }
@@ -5866,7 +5866,7 @@ function companyCardRender(){
     <div style="flex:1;min-width:0">
       <div style="font-size:11px;font-weight:800;letter-spacing:.08em;color:#94A3B8">YOUR COMPANY</div>
       <div style="font-size:17px;font-weight:800;color:#0F1E2E">${esc(myCompany.name||'')}</div>
-      <div style="font-size:12px;color:#64748B;margin-top:2px;line-height:1.5">Login code <b style="color:#0F1E2E;background:#F1F5F9;padding:1px 7px;border-radius:6px;letter-spacing:.04em">${esc(myCompany.code||'')}</b> · starts everyone's username. Need a different code? <b style="color:#0F766E">Contact Mavis.</b></div>
+      <div style="font-size:12px;color:#64748B;margin-top:2px;line-height:1.5">Company ID <b style="color:#0F1E2E;background:#F1F5F9;padding:1px 7px;border-radius:6px;letter-spacing:.04em">${esc(myCompany.code||'')}</b> · starts everyone's username. Need a different ID? <b style="color:#0F766E">Contact Mavis.</b></div>
     </div>
     <button class="btn btn-ghost" onclick="companyRename()">Rename</button>
   </div>`;
@@ -5874,7 +5874,7 @@ function companyCardRender(){
 window.companyRename = function(){
   appModalShow({
     title: 'Rename your company',
-    sub: 'Shows across Mavis straight away. Usernames stay the same, so nobody needs to log in again.',
+    sub: 'Shows across Mavis straight away. Usernames and the Company ID stay the same, so nobody needs to log in again.',
     fields: [{ label:'Company / venue name', value: (myCompany && myCompany.name) || '', maxlength: 60 }],
     async onOk([name]){
       if(!name) return;
@@ -5908,7 +5908,7 @@ window.ownerNewClientForm = function(){
   const inp = (id, ph, type, extra) => `<input id="${id}" type="${type||'text'}" placeholder="${ph}" ${extra||''} oninput="ownerFormPreview(this.id)" style="width:100%;padding:10px 12px;border:none;border-radius:8px;font-family:Inter,sans-serif;font-size:16px;box-sizing:border-box">`;
   f.innerHTML = `<div style="display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:12px;margin-top:16px">
     <div style="grid-column:1/-1">${lbl('Company / venue name')}${inp('own-name','e.g. South Beach Club')}</div>
-    <div style="grid-column:1/-1">${lbl('Login code <span style="color:#E9C46A">· permanent</span>')}${inp('own-code','e.g. ISLAND','text','maxlength="12"')}
+    <div style="grid-column:1/-1">${lbl('Company ID <span style="color:#E9C46A">· permanent</span>')}${inp('own-code','e.g. ISLAND','text','maxlength="12"')}
       <div style="font-size:12px;color:rgba(255,255,255,.65);margin-top:6px;line-height:1.45">Starts everyone's username. Use the <b style="color:white">company or group</b>, not the venue's brand - it can't be changed later.</div></div>
     <div>${lbl('Super Admin first name')}${inp('own-first','e.g. Made')}</div><div>${lbl('Super Admin surname')}${inp('own-last','e.g. Wirawan')}</div>
     <div style="grid-column:1/-1">${lbl('Super Admin email (required)')}${inp('own-email','name@example.com','email')}</div>
@@ -5943,16 +5943,16 @@ window.ownerCreateClient = async function(){
   if(!body.name || !body.code || !body.boss_first || !body.boss_email) return err('Please fill in company name, code, Super Admin first name and email.');
   if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(body.boss_email)) return err('That email doesn\'t look right.');
   body.code = ownerSlug(body.code).replace(/-/g,'').slice(0,12);
-  if(!body.code) return err('Please type a login code (letters and numbers).');
+  if(!body.code) return err('Please type a Company ID (letters and numbers).');
   if(!window._ownerConfirmed){
-    appConfirmShow({ title:'Create "' + body.name + '"?', msg:'Login code: ' + body.code + ' (permanent - starts everyone\'s username). Super Admin: ' + body.boss_first + ' ' + body.boss_last + ', who logs in as ' + [body.code, ownerSlug(body.boss_first), ownerSlug(body.boss_last)].filter(Boolean).join('-') + '.',
+    appConfirmShow({ title:'Create "' + body.name + '"?', msg:'Company ID: ' + body.code + ' (permanent - starts everyone\'s username). Super Admin: ' + body.boss_first + ' ' + body.boss_last + ', who logs in as ' + [body.code, ownerSlug(body.boss_first), ownerSlug(body.boss_last)].filter(Boolean).join('-') + '.',
       label:'Create client', cancelLabel:'Go back', onOk: ()=>{ window._ownerConfirmed = true; ownerCreateClient(); } });
     return;
   }
   window._ownerConfirmed = false;
   err('Creating…');
   const d = await peopleApi(body);
-  if(!d.ok) return err(d.reason==='code taken' ? 'That company code is already used - pick another.' : 'Not created - ' + (d.reason||'please try again'));
+  if(!d.ok) return err(d.reason==='code taken' ? 'That Company ID is already used - pick another.' : 'Not created - ' + (d.reason||'please try again'));
   document.getElementById('owner-form').innerHTML = '';
   peopleShowInvite({ firstName: d.profile.first_name, lastName: d.profile.last_name, role:'superadmin', username: d.profile.username }, d.token, false);
   toast(body.name + ' created ✓');

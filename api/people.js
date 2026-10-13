@@ -56,7 +56,7 @@ module.exports = async (req, res) => {
         if (!name) return L.send(res, 400, { ok: false, reason: 'missing', message: 'Please type a name.' });
         patch.name = name;
       }
-      if (b.code !== undefined) return L.send(res, 400, { ok: false, reason: 'code fixed', message: 'The company code is permanent.' });
+      if (b.code !== undefined) return L.send(res, 400, { ok: false, reason: 'code fixed', message: 'The Company ID is permanent.' });
       const updated = Object.keys(patch).length ? (await L.db('companies?id=eq.' + companyId, { method: 'PATCH', body: patch }))[0] : co;
       return L.send(res, 200, { ok: true, company: { id: updated.id, code: updated.code, name: updated.name } });
     }

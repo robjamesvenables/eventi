@@ -5896,7 +5896,7 @@ function ownerPanelRender(){
     <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap">
       <div><div style="font-size:11px;font-weight:800;letter-spacing:.12em;color:#5EEAD4">MAVIS OWNER</div>
       <div style="font-size:16px;font-weight:800;margin-top:2px">Set up a new client</div>
-      <div style="font-size:12.5px;color:rgba(255,255,255,.7);margin-top:2px">Creates their company and a login link for their boss (Super Admin).</div></div>
+      <div style="font-size:12.5px;color:rgba(255,255,255,.7);margin-top:2px">Creates their company and a login link for their Super Admin.</div></div>
       <button class="btn" style="background:#0D9488;color:white;border:none" onclick="ownerNewClientForm()">+ New client</button>
     </div>
     <div id="owner-form"></div>
@@ -5910,8 +5910,8 @@ window.ownerNewClientForm = function(){
     <div style="grid-column:1/-1">${lbl('Company / venue name')}${inp('own-name','e.g. South Beach Club')}</div>
     <div style="grid-column:1/-1">${lbl('Login code <span style="color:#E9C46A">· permanent</span>')}${inp('own-code','e.g. ISLAND','text','maxlength="12"')}
       <div style="font-size:12px;color:rgba(255,255,255,.65);margin-top:6px;line-height:1.45">Starts everyone's username. Use the <b style="color:white">company or group</b>, not the venue's brand - it can't be changed later.</div></div>
-    <div>${lbl('Boss first name')}${inp('own-first','e.g. Made')}</div><div>${lbl('Boss surname')}${inp('own-last','e.g. Wirawan')}</div>
-    <div style="grid-column:1/-1">${lbl('Boss email (required)')}${inp('own-email','name@example.com','email')}</div>
+    <div>${lbl('Super Admin first name')}${inp('own-first','e.g. Made')}</div><div>${lbl('Super Admin surname')}${inp('own-last','e.g. Wirawan')}</div>
+    <div style="grid-column:1/-1">${lbl('Super Admin email (required)')}${inp('own-email','name@example.com','email')}</div>
   </div>
   <div id="own-preview" style="margin-top:12px;background:rgba(13,148,136,.15);border:1px solid rgba(94,234,212,.35);border-radius:10px;padding:10px 12px;font-size:12.5px;color:rgba(255,255,255,.85);display:none"></div>
   <div id="own-err" style="color:#FCA5A5;font-size:13px;font-weight:600;margin-top:8px"></div>
@@ -5934,18 +5934,18 @@ window.ownerFormPreview = function(changedId){
   const pv = g('own-preview');
   if(!code){ pv.style.display='none'; return; }
   pv.style.display='block';
-  pv.innerHTML = 'Boss logs in as <b style="color:white">' + (boss || code + '-…') + '</b><br>Staff will be <b style="color:white">' + code + '-FIRSTNAME-SURNAME</b>';
+  pv.innerHTML = 'Super Admin logs in as <b style="color:white">' + (boss || code + '-…') + '</b><br>Staff will be <b style="color:white">' + code + '-FIRSTNAME-SURNAME</b>';
 };
 window.ownerCreateClient = async function(){
   const v = id => (document.getElementById(id)?.value||'').trim();
   const err = m => { document.getElementById('own-err').textContent = m||''; };
   const body = { action:'company', name:v('own-name'), code:v('own-code'), boss_first:v('own-first'), boss_last:v('own-last'), boss_email:v('own-email') };
-  if(!body.name || !body.code || !body.boss_first || !body.boss_email) return err('Please fill in company name, code, boss first name and email.');
+  if(!body.name || !body.code || !body.boss_first || !body.boss_email) return err('Please fill in company name, code, Super Admin first name and email.');
   if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(body.boss_email)) return err('That email doesn\'t look right.');
   body.code = ownerSlug(body.code).replace(/-/g,'').slice(0,12);
   if(!body.code) return err('Please type a login code (letters and numbers).');
   if(!window._ownerConfirmed){
-    appConfirmShow({ title:'Create "' + body.name + '"?', msg:'Login code: ' + body.code + ' (permanent - starts everyone\'s username). Boss: ' + body.boss_first + ' ' + body.boss_last + ', who logs in as ' + [body.code, ownerSlug(body.boss_first), ownerSlug(body.boss_last)].filter(Boolean).join('-') + '.',
+    appConfirmShow({ title:'Create "' + body.name + '"?', msg:'Login code: ' + body.code + ' (permanent - starts everyone\'s username). Super Admin: ' + body.boss_first + ' ' + body.boss_last + ', who logs in as ' + [body.code, ownerSlug(body.boss_first), ownerSlug(body.boss_last)].filter(Boolean).join('-') + '.',
       label:'Create client', cancelLabel:'Go back', onOk: ()=>{ window._ownerConfirmed = true; ownerCreateClient(); } });
     return;
   }

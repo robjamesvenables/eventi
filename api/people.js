@@ -47,7 +47,7 @@ module.exports = async (req, res) => {
     if (b.action === 'company_update') {
       // Rename the company (Super Admin of that company, or the Mavis owner). The code is permanent.
       const companyId = (me.is_owner && b.company_id) ? b.company_id : me.company_id;
-      if (!me.is_owner && me.role !== 'superadmin') return L.send(res, 403, { ok: false, reason: 'not allowed', message: 'Only a Super Admin can rename the company.' });
+      if (!me.is_owner && me.role !== 'superadmin') return L.send(res, 403, { ok: false, reason: 'not allowed', message: 'Only a Super Admin can rename the venue.' });
       const co = (await L.db('companies?select=*&id=eq.' + companyId))[0];
       if (!co) return L.send(res, 404, { ok: false, reason: 'not found' });
       const patch = {};

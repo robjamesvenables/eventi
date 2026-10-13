@@ -10850,9 +10850,9 @@ async function roleSaveSettings(){
 window.roleRename = function(roleId){
   const def = ROLE_DEFAULT_NAMES[roleId] || roleName(roleId);
   appModalShow({
-    title: 'Rename "' + roleName(roleId) + '"',
-    sub: 'Use the word your team uses. Access stays exactly the same. Leave it empty to go back to "' + def + '".',
-    fields: [{ label:'Name', value: ROLE_NAME_OVERRIDES[roleId] || '', placeholder: def, maxlength: 24 }],
+    title: 'Rename this role',
+    sub: 'Use the word your team uses. Who can see what stays exactly the same.',
+    fields: [{ label:'Name', value: roleName(roleId), placeholder: def, maxlength: 24 }],
     async onOk([name]){
       name = (name||'').trim();
       const taken = ADMIN_ROLES.some(r => r.id !== roleId && r.name.toLowerCase() === name.toLowerCase());
@@ -10867,6 +10867,17 @@ window.roleRename = function(roleId){
       toast(name && name !== def ? 'Renamed to "' + name + '" ✓' : 'Back to "' + def + '" ✓');
     }
   });
+  // A clear way back to the original name
+  if(ROLE_NAME_OVERRIDES[roleId]){
+    const box = document.getElementById('appModalFields');
+    const b = document.createElement('button');
+    b.className = 'appModalExtra';
+    b.type = 'button';
+    b.textContent = '↺ Use original name: ' + def;
+    b.style.cssText = 'margin-top:10px;padding:8px 12px;background:#F0FDFA;border:1px solid #99F6E4;border-radius:8px;font-family:Inter,sans-serif;font-size:12.5px;font-weight:700;color:#0F766E;cursor:pointer';
+    b.onclick = () => { const f = document.getElementById('appModalField_0'); f.value = def; document.getElementById('appModalOk').click(); };
+    box.appendChild(b);
+  }
 };
 
 // ── AI NOTETAKER (demo - not yet wired to real recording/transcription/AI) ──

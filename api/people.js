@@ -31,6 +31,19 @@ module.exports = async (req, res) => {
     const b = L.body(req);
     const myRank = me.is_owner ? 99 : (L.ROLE_RANK[me.role] || 0);
     if (myRank < L.MANAGE_MIN_RANK) return L.send(res, 403, { ok: false, reason: 'not allowed' });
+    // Must also have "Admin Console" switched on for their role in this company (same switch the screen uses).
+    if (!me.is_owner && me.role !== 'superadmin') {
+      let allowed = me.role === 'director';                       // default when nothing is saved yet
+      try {
+        const row = (await L.db('app_settings?select=value&key=eq.role_perms&company_id=eq.' + me.company_id))[0];
+        if (row) {
+          let v = row.value; if (typeof v === 'string') v = JSON.parse(v); if (typeof v === 'string') v = JSON.parse(v);
+          const set = v && v[me.role] && v[me.role].adminconsole;
+          if (set !== undefined) allowed = set === 1 || set === true || set === '1';
+        }
+      } catch (e) { /* keep the default */ }
+      if (!allowed) return L.send(res, 403, { ok: false, reason: 'not allowed', message: 'Admin Console is switched off for your role.' });
+    }
 
     if (b.action === 'company') {
       if (!me.is_owner) return L.send(res, 403, { ok: false, reason: 'owner only' });

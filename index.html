@@ -1590,6 +1590,22 @@ textarea.rf-val{resize:vertical;min-height:72px;line-height:1.5}
   .pp-drawer{max-width:none;height:92vh;border-radius:18px 18px 0 0;overflow:hidden;animation:ppUp .2s ease-out}
   @keyframes ppUp{from{transform:translateY(40px);opacity:0}to{transform:none;opacity:1}}
 }
+/* View-only events: hide every editing control and the money boxes */
+body.ev-viewonly [onclick*="beoCreateNew"],
+body.ev-viewonly #p-beo [onclick^="delRow"], body.ev-viewonly #p-beo .del-row,
+body.ev-viewonly #p-beo .add-row-btn, body.ev-viewonly #p-beo [onclick^="addDepartment"],
+body.ev-viewonly #p-beo [onclick^="beoRemoveDept"], body.ev-viewonly #p-beo [onclick^="beoToggleDeptClient"],
+body.ev-viewonly #p-beo [onclick^="deptAddPhotoClick"], body.ev-viewonly #p-beo [onclick^="deptAddLinkClick"],
+body.ev-viewonly #p-beo [onclick*="deptDeleteLink"], body.ev-viewonly #p-beo .dept-toolbar,
+body.ev-viewonly #p-beo [onclick*="rd-item').remove"], body.ev-viewonly #p-beo [onclick^="beoClientShareOpen"],
+body.ev-viewonly #p-beo [onclick^="beoDeleteEvent"], body.ev-viewonly #beo-client-pill,
+body.ev-viewonly #p-beo .beo-stat:has(#stat-rev), body.ev-viewonly #p-beo .beo-stat:has(#stat-cost), body.ev-viewonly #p-beo .beo-stat:has(#stat-profit),
+body.ev-viewonly [onclick^="calAddCalendar"], body.ev-viewonly [onclick*="calAddEventToCalendar"], body.ev-viewonly [onclick*="calOpenImportPicker"],
+body.ev-viewonly [onclick*="calRenameCalendar"], body.ev-viewonly [onclick*="calDeleteCalendar"], body.ev-viewonly [onclick*="calDeleteEntry"]{display:none !important}
+body.ev-viewonly #p-beo .beo-stats{grid-template-columns:1fr !important}
+body.ev-viewonly #p-beo [contenteditable]:empty:before{content:'—' !important;font-style:normal !important}
+.beo-viewonly-note{display:none}
+body.ev-viewonly .beo-viewonly-note{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:700;color:#475569;background:#E2E8F0;padding:6px 12px;border-radius:999px}
 .pin-input{-webkit-text-security:disc;text-security:disc}
 .pin-input::placeholder{color:#CBD5E1;font-weight:400}
 .toast.anchored{bottom:auto;transform:translate(-50%,-50%)}
@@ -4046,6 +4062,7 @@ img.emoji-tw{width:1.15em;height:1.15em;vertical-align:-0.2em;margin:0 1px}
           <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
             <button class="beo-back" onclick="beoBack()">← <span id="beo-back-label">Current Events</span></button>
             <span id="beo-autosave-status" style="font-size:11px;font-weight:600;color:var(--amber)"></span>
+            <span class="beo-viewonly-note">👁 View only</span>
           </div>
           <div class="beo-btns">
             <select id="beo-status" onchange="beoTriggerSave()" title="Event status" style="padding:9px 12px;border:1.5px solid var(--line);border-radius:8px;font-family:'Inter',sans-serif;font-size:13px;font-weight:700;color:var(--navy);background:white;cursor:pointer">
@@ -6495,8 +6512,15 @@ window.beoOpenEvent = async function(id){
   beoCurrentId = ev.id;
   beoApply(ev);
   nav('beo');
-  setTimeout(()=>{ beoInitExtras(); setTimeout(()=>{ beoLoading = false; }, 60); }, 150);
+  setTimeout(()=>{ beoInitExtras(); beoApplyViewOnly(); setTimeout(()=>{ beoLoading = false; }, 60); }, 150);
 };
+// View only: nothing on the plan can be typed into or changed.
+function beoApplyViewOnly(){
+  const page = document.getElementById('p-beo'); if(!page) return;
+  const ro = evViewOnly();
+  page.querySelectorAll('[contenteditable]').forEach(el => el.setAttribute('contenteditable', ro ? 'false' : 'true'));
+  page.querySelectorAll('input, select, textarea').forEach(el => { if(ro) el.setAttribute('disabled',''); else el.removeAttribute('disabled'); });
+}
 function beoApply(ev){
   evCaptureTemplate();
   const plan = ev.plan || {};
@@ -6555,6 +6579,7 @@ function beoFormatMoneyCell(el){
   beoUpdateProfit();
 }
 window.beoCreateNew = async function(){
+  if(evBlockIfViewOnly()) return;
   await beoFlush();
   evCaptureTemplate();
   if(!BEO_TEMPLATE){ toast('Could not start a new plan - please refresh'); return; }
@@ -6585,6 +6610,7 @@ window.beoRemoveDept = function(id){
   }});
 };
 window.beoDeleteEvent = function(){
+  if(evBlockIfViewOnly()) return;
   const ev = evAll.find(e=>String(e.id)===String(beoCurrentId));
   if(!ev) return;
   appConfirmShow({ title:'Delete event', msg:'Delete "' + (ev.name||'Untitled Event') + '" and its whole plan? This cannot be undone.', onOk: async ()=>{
@@ -6699,6 +6725,7 @@ function beoClientPanelEl(){
 }
 window.beoClientShareClose = function(){ const el=document.getElementById('beo-client-panel'); if(el) el.style.display='none'; };
 window.beoClientShareOpen = function(){
+  if(evBlockIfViewOnly()) return;
   if(!beoCurrentId){ toast('Open an event first'); return; }
   const el = beoClientPanelEl();
   const card = (inner)=>`<div style="background:white;border-radius:16px;max-width:440px;width:100%;padding:24px;font-family:'Inter',sans-serif;box-shadow:0 20px 50px rgba(0,0,0,0.25)">${inner}</div>`;
@@ -6879,7 +6906,7 @@ function updateBeoStats(){
 // Real autosave: every change to the open Event Plan is saved to the events table
 // (debounced). "✓ Saved" only shows after Supabase confirms the save.
 function beoTriggerSave(){
-  if(beoLoading || !beoCurrentId) return;
+  if(beoLoading || !beoCurrentId || evViewOnly()) return;
   const status=document.getElementById('beo-autosave-status');
   if(status){status.textContent='Saving…';status.style.color='var(--amber)';}
   clearTimeout(beoAutoSaveTimer);
@@ -7235,6 +7262,7 @@ function calToggleLayer(id, checked){
 }
 
 function calRenameCalendar(id){
+  if(evBlockIfViewOnly()) return;
   const cal = calCalendars.find(c=>c.id===id);
   if(!cal) return;
   appModalShow({
@@ -7250,6 +7278,7 @@ function calRenameCalendar(id){
 }
 
 function calAddCalendar(){
+  if(evBlockIfViewOnly()) return;
   appModalShow({
     title:'Add Calendar',
     fields:[
@@ -7270,6 +7299,7 @@ function calAddCalendar(){
 }
 
 function calDeleteCalendar(id){
+  if(evBlockIfViewOnly()) return;
   const cal = calCalendars.find(c=>c.id===id);
   if(!cal || cal.builtin) return;
   appConfirmShow({title:'Remove Calendar', msg:`Remove "${cal.name}" and all ${(calCustomEvents[id]||[]).length} of its events? This can't be undone.`, onOk:()=>{
@@ -7283,6 +7313,7 @@ function calDeleteCalendar(id){
 }
 
 function calAddEventToCalendar(calId){
+  if(evBlockIfViewOnly()) return;
   const cal = calCalendars.find(c=>c.id===calId);
   if(!cal) return;
   appModalShow({
@@ -7312,6 +7343,7 @@ function calShowCustomEvent(calId, id){
   const e = list.find(x=>x.id===id);
   if(!cal || !e) return;
   const d = new Date(e.date);
+  if(evViewOnly()){ toast(e.name + ' · ' + calDowsFull[d.getDay()] + ' ' + d.getDate() + ' ' + calMonths[d.getMonth()] + ' · ' + e.time + (e.venue ? ' · ' + e.venue : '')); return; }
   appConfirmShow({
     title: e.name,
     msg: `${calDowsFull[d.getDay()]}, ${d.getDate()} ${calMonths[d.getMonth()]} · ${e.time}${e.venue?' · '+e.venue:''} — ${cal.name}`,
@@ -7341,6 +7373,7 @@ function calRenderLayers(){
 }
 
 function calOpenImportPicker(){
+  if(evBlockIfViewOnly()) return;
   const customCals = calCalendars.filter(c=>!c.builtin);
   if(customCals.length===0){ toast('Add a calendar first, then import into it'); return; }
   if(customCals.length===1){
@@ -7602,6 +7635,7 @@ function calRenderDay(){
 let calManualEntries = {};
 
 function calClickDay(dateStr){
+  if(evBlockIfViewOnly()) return;
   const existing = calManualEntries[dateStr];
   appModalShow({
     title: 'Calendar Entry — ' + dateStr,
@@ -7618,6 +7652,7 @@ function calClickDay(dateStr){
   });
 }
 function calDeleteEntry(dateStr){
+  if(evBlockIfViewOnly()) return;
   appConfirmShow({title:'Remove Entry', msg:'Remove this calendar entry?', onOk:()=>{
     delete calManualEntries[dateStr];
     calRenderMonth();
@@ -10065,7 +10100,8 @@ const ADMIN_MODULE_GROUPS = [
     {id:'tasks', name:'Task Board', desc:'View and manage work assigned to them'},
     {id:'inventory', name:'Inventory', desc:'Check and update stock levels'},
     {id:'entertainment', name:'Entertainment Schedule', desc:'View or edit DJ/event bookings'},
-    {id:'calendar', name:'Events & Calendar', desc:'Event plans, past events and the calendar'},
+    {id:'calendar', name:'Events & Calendar', desc:'See event plans, past events and the calendar'},
+    {id:'eventsedit', name:'Edit events', desc:'Create, change and delete event plans and calendar entries'},
     {id:'kitchen', name:'Kitchen', desc:'Kitchen menus, recipes and allergens'},
     {id:'bar', name:'Bar', desc:'Bar menus and recipes'},
     {id:'sops', name:'SOPs & Knowledge Base', desc:'View house procedures and guides'},
@@ -10082,12 +10118,12 @@ const ADMIN_MODULE_GROUPS = [
 
 // Default permission bundle per role - true/false per module id. Editable in the demo.
 let ADMIN_PERMS = {
-  superadmin:  {teamfeed:1,chat:1,suggestions:1,vacancies:1,tasks:1,inventory:1,entertainment:1,calendar:1,sops:1,survey:1,reports:1,directory:1,marketing:1,adminconsole:1,kitchen:1,bar:1,meetings:1},
-  director:    {teamfeed:1,chat:1,suggestions:1,vacancies:1,tasks:1,inventory:1,entertainment:1,calendar:1,sops:1,survey:1,reports:1,directory:1,marketing:1,adminconsole:1,kitchen:1,bar:1,meetings:1},
-  manager:     {teamfeed:1,chat:1,suggestions:1,vacancies:1,tasks:1,inventory:1,entertainment:1,calendar:1,sops:1,survey:1,reports:1,directory:1,marketing:1,adminconsole:0,kitchen:1,bar:1,meetings:1},
-  supervisor:  {teamfeed:1,chat:1,suggestions:1,vacancies:1,tasks:1,inventory:1,entertainment:1,calendar:1,sops:1,survey:1,reports:0,directory:1,marketing:0,adminconsole:0,kitchen:1,bar:1,meetings:1},
-  teammember:  {teamfeed:1,chat:1,suggestions:1,vacancies:1,tasks:1,inventory:1,entertainment:0,calendar:0,sops:1,survey:0,reports:0,directory:0,marketing:0,adminconsole:0,kitchen:1,bar:1,meetings:0},
-  dailyworker: {teamfeed:1,chat:1,suggestions:0,vacancies:1,tasks:1,inventory:0,entertainment:0,calendar:0,sops:1,survey:0,reports:0,directory:0,marketing:0,adminconsole:0,kitchen:1,bar:1,meetings:0},
+  superadmin:  {teamfeed:1,chat:1,suggestions:1,vacancies:1,tasks:1,inventory:1,entertainment:1,calendar:1,sops:1,survey:1,reports:1,directory:1,marketing:1,adminconsole:1,kitchen:1,bar:1,meetings:1,eventsedit:1},
+  director:    {teamfeed:1,chat:1,suggestions:1,vacancies:1,tasks:1,inventory:1,entertainment:1,calendar:1,sops:1,survey:1,reports:1,directory:1,marketing:1,adminconsole:1,kitchen:1,bar:1,meetings:1,eventsedit:1},
+  manager:     {teamfeed:1,chat:1,suggestions:1,vacancies:1,tasks:1,inventory:1,entertainment:1,calendar:1,sops:1,survey:1,reports:1,directory:1,marketing:1,adminconsole:0,kitchen:1,bar:1,meetings:1,eventsedit:1},
+  supervisor:  {teamfeed:1,chat:1,suggestions:1,vacancies:1,tasks:1,inventory:1,entertainment:1,calendar:1,sops:1,survey:1,reports:0,directory:1,marketing:0,adminconsole:0,kitchen:1,bar:1,meetings:1,eventsedit:1},
+  teammember:  {teamfeed:1,chat:1,suggestions:1,vacancies:1,tasks:1,inventory:1,entertainment:0,calendar:1,sops:1,survey:0,reports:0,directory:0,marketing:0,adminconsole:0,kitchen:1,bar:1,meetings:0,eventsedit:0},
+  dailyworker: {teamfeed:1,chat:1,suggestions:0,vacancies:1,tasks:1,inventory:0,entertainment:0,calendar:0,sops:1,survey:0,reports:0,directory:0,marketing:0,adminconsole:0,kitchen:1,bar:1,meetings:0,eventsedit:0},
 };
 
 let PEOPLE_DEPARTMENTS = ['Management', 'GRO', 'Operations', 'Audio Visual', 'IT', 'Engineering', 'Housekeeping', 'Kitchen', 'Bar', 'Sales and Marketing', 'Human Resources'];
@@ -10710,7 +10746,8 @@ async function adminTogglePerm(roleId, moduleId){
 // Each Admin Console switch controls these pages. Pages not listed are open to everyone
 // (Home, My Drive, Sticky Notes, Quick Links, Sandbox).
 const MODULE_PAGES = {
-  calendar: ['cal','dash','past','new','beo'],
+  calendar: ['cal','dash','past','beo'],
+  eventsedit: ['new'],
   entertainment: ['djsched','music'],
   sops: ['sop','sop-dept','faq'],
   reports: ['analytics','reporting','reporting-targets','predictor'],
@@ -10752,6 +10789,8 @@ function roleApplyMenus(){
   });
   const adminLink = document.getElementById('n-admin');
   if(adminLink) adminLink.style.display = (myProfile && !roleCan('adminconsole')) ? 'none' : '';
+  // "+ Create Event Plan" buttons only for people who can edit events
+  document.body.classList.toggle('ev-viewonly', evViewOnly());
   document.querySelectorAll('.sb-section').forEach(sec => {
     let el = sec.nextElementSibling, any = false;
     while(el && !el.classList.contains('sb-section')){
@@ -10760,6 +10799,13 @@ function roleApplyMenus(){
     }
     sec.style.display = any ? '' : 'none';
   });
+}
+// View-only events: can see event plans and the calendar but not change them.
+function evViewOnly(){ return !!myProfile && !roleCan('eventsedit'); }
+function evBlockIfViewOnly(){
+  if(!evViewOnly()) return false;
+  toast("View only - ask a manager to change events");
+  return true;
 }
 // Saved switches (per company) replace the defaults above, keeping defaults for any new switch.
 function roleLoadSavedPerms(){

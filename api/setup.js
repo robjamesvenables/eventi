@@ -9,7 +9,7 @@ module.exports = async (req, res) => {
     if (!inv || inv.used_at || new Date(inv.expires_at) < new Date()) return L.send(res, 410, { ok: false, reason: inv && inv.used_at ? 'used' : 'expired' });
     const p = (await L.db('profiles?select=*&id=eq.' + inv.profile_id))[0];
     if (!p || !p.active) return L.send(res, 410, { ok: false, reason: 'inactive' });
-    const co = (await L.db('companies?select=id,code,name&id=eq.' + p.company_id))[0] || null;
+    const co = (await L.db('companies?select=id,code,name,logo&id=eq.' + p.company_id))[0] || null;
     const kind = L.PIN_ROLES.includes(p.role) ? 'pin' : 'password';
     if (req.method === 'GET') {
       return L.send(res, 200, { ok: true, first_name: p.first_name, username: p.username, kind, company: co ? co.name : '', reset: !!p.user_id });

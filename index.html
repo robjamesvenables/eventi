@@ -1724,6 +1724,9 @@ body.ev-viewonly .beo-viewonly-note{display:inline-flex;align-items:center;gap:6
 .venue-switcher-btn{display:flex;align-items:center;gap:9px;background:rgba(255,255,255,0.08);border:1.5px solid rgba(255,255,255,0.15);border-radius:10px;padding:9px 14px;cursor:pointer;transition:background 0.15s}
 .venue-switcher-btn:hover{background:rgba(255,255,255,0.14)}
 .venue-switcher-ico{width:26px;height:26px;border-radius:7px;background:#0D9488;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;color:white;flex-shrink:0}
+.home-co-logo{width:60px;height:60px;border-radius:50%;background-size:cover;background-position:center;background-color:white;box-shadow:0 0 0 3px rgba(196,151,59,.7);flex-shrink:0}
+@media (max-width:640px){ .home-co-logo{width:46px;height:46px} }
+.venue-switcher-ico.has-logo{width:32px;height:32px;border-radius:50%;background-size:cover;background-position:center;background-color:white;box-shadow:0 0 0 2px rgba(255,255,255,.35)}
 .venue-switcher-name{font-size:13px;font-weight:700;color:white}
 .venue-switcher-sub{font-size:10px;color:rgba(255,255,255,0.5);margin-top:1px}
 .venue-switcher-chev{color:rgba(255,255,255,0.6);transition:transform 0.15s}
@@ -3051,6 +3054,8 @@ img.emoji-tw{width:1.15em;height:1.15em;vertical-align:-0.2em;margin:0 1px}
       <!-- Announcements (now includes the greeting merged into the top) -->
       <div class="sky-banner" id="sky-banner" style="background:#0F1E2E">
         <div class="sky-banner-top" style="margin-bottom:0">
+          <div style="display:flex;align-items:center;gap:16px;min-width:0">
+          <div id="home-co-logo" class="home-co-logo" style="display:none"></div>
           <div>
             <div class="sky-greeting" id="sky-greeting" style="display:flex;align-items:center;gap:8px;position:relative"><svg id="sky-greeting-icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#C4973B" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"></svg><span id="sky-greeting-text">Good morning, John</span>
               <div id="installWarnWrap" style="display:none;position:relative">
@@ -3064,6 +3069,7 @@ img.emoji-tw{width:1.15em;height:1.15em;vertical-align:-0.2em;margin:0 1px}
               </div>
             </div>
             <div class="sky-date" id="home-date-label"></div>
+          </div>
           </div>
           <div class="venue-switcher" id="venue-switcher">
             <div class="venue-switcher-btn" id="venue-switcher-btn" onclick="event.stopPropagation();toggleVenueDropdown()">
@@ -5862,14 +5868,55 @@ function companyCardRender(){
   const esc = v => String(v==null?'':v).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   el.style.display = 'block';
   el.innerHTML = `<div style="background:white;border:1.5px solid #E2E8F0;border-radius:14px;padding:16px 20px;margin-bottom:16px;display:flex;align-items:center;gap:14px;flex-wrap:wrap">
-    <div style="width:42px;height:42px;border-radius:12px;background:#0F1E2E;color:#E9C46A;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:17px;flex-shrink:0">${esc((myCompany.name||'?').charAt(0).toUpperCase())}</div>
+    <label title="${myCompany.logo ? 'Change logo' : 'Add your logo'}" style="width:58px;height:58px;border-radius:50%;flex-shrink:0;cursor:pointer;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:20px;color:#E9C46A;${myCompany.logo ? `background:white url('${esc(myCompany.logo)}') center/cover;box-shadow:0 0 0 3px rgba(196,151,59,.6)` : 'background:#0F1E2E'}">${myCompany.logo ? '' : esc((myCompany.name||'?').charAt(0).toUpperCase())}<input type="file" accept="image/*" style="display:none" onchange="companyLogoPicked(this)"></label>
     <div style="flex:1;min-width:0">
       <div style="font-size:11px;font-weight:800;letter-spacing:.08em;color:#94A3B8">YOUR COMPANY</div>
       <div style="font-size:17px;font-weight:800;color:#0F1E2E">${esc(myCompany.name||'')}</div>
       <div style="font-size:12px;color:#64748B;margin-top:2px;line-height:1.5">Company ID <b style="color:#0F1E2E;background:#F1F5F9;padding:1px 7px;border-radius:6px;letter-spacing:.04em">${esc(myCompany.code||'')}</b> · starts everyone's username. Need a different ID? <b style="color:#0F766E">Contact Mavis.</b></div>
     </div>
-    <button class="btn btn-ghost" onclick="companyRename()">Rename</button>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <label class="btn btn-ghost" style="cursor:pointer">${myCompany.logo ? 'Change logo' : 'Add logo'}<input type="file" accept="image/*" style="display:none" onchange="companyLogoPicked(this)"></label>
+      ${myCompany.logo ? '<button class="btn btn-ghost" style="color:#DC2626" onclick="companyLogoSave(\'\')">Remove logo</button>' : ''}
+      <button class="btn btn-ghost" onclick="companyRename()">Rename</button>
+    </div>
   </div>`;
+}
+// Company logo: cropped to a square (shown as a circle, like Instagram), kept small.
+function companySquareImage(file, size){
+  return new Promise((resolve, reject) => {
+    const url = URL.createObjectURL(file), img = new Image();
+    img.onload = () => {
+      const side = Math.min(img.width, img.height), c = document.createElement('canvas');
+      c.width = c.height = size;
+      const g = c.getContext('2d'); g.fillStyle = '#FFFFFF'; g.fillRect(0,0,size,size);
+      g.drawImage(img, (img.width-side)/2, (img.height-side)/2, side, side, 0, 0, size, size);
+      URL.revokeObjectURL(url); resolve(c.toDataURL('image/jpeg', 0.86));
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('bad image')); };
+    img.src = url;
+  });
+}
+window.companyLogoPicked = async function(input){
+  const file = input.files && input.files[0]; if(!file) return;
+  try{ companyLogoSave(await companySquareImage(file, 360)); }catch(e){ toast('That picture could not be used - try another'); }
+};
+window.companyLogoSave = async function(logo){
+  const d = await peopleApi({ action:'company_update', logo });
+  if(!d.ok){ toast(d.message || 'Logo not saved - please try again'); return; }
+  myCompany.logo = d.company.logo || null;
+  companyCardRender(); companyLogoApply();
+  toast(logo ? 'Logo updated ✓' : 'Logo removed');
+};
+// Show the company logo on the home header and the top-right venue badge.
+function companyLogoApply(){
+  const logo = myCompany && myCompany.logo;
+  const big = document.getElementById('home-co-logo');
+  if(big){ big.style.display = logo ? 'block' : 'none'; if(logo) big.style.backgroundImage = `url('${logo}')`; }
+  const ico = document.getElementById('venue-switcher-ico');
+  if(ico){
+    if(logo && !appIsDemoCompany()){ ico.classList.add('has-logo'); ico.style.backgroundImage = `url('${logo}')`; ico.textContent = ''; }
+    else if(ico.classList.contains('has-logo')){ ico.classList.remove('has-logo'); ico.style.backgroundImage = ''; try{ renderVenueSwitcherButton(); }catch(e){} }
+  }
 }
 window.companyRename = function(){
   appModalShow({
@@ -5964,6 +6011,7 @@ function authApplyRoleVisibility(){
   const link = document.getElementById('n-admin'); if(link) link.style.display = canAdmin ? '' : 'none';
   ownerPanelRender();
   companyCardRender();
+  companyLogoApply();
   roleApplyMenus();
   whoAmIRender();
   // the "DEMO preview" note on Admin Console is no longer true once logins are on
@@ -6105,7 +6153,7 @@ window.addEventListener('load', async () => {
         const { data: rows } = await sb.from('profiles').select('*').eq('user_id', session.user.id).limit(1);
         const prof = rows && rows[0];
         if(prof && prof.active){
-          const { data: cos } = await sb.from('companies').select('id,code,name,departments').eq('id', prof.company_id).limit(1);
+          const { data: cos } = await sb.from('companies').select('*').eq('id', prof.company_id).limit(1);
           await authApplyProfile({ ...prof, has_login:true }, cos && cos[0]);
           authEnterApp();
           return;

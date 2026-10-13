@@ -31,7 +31,7 @@ module.exports = async (req, res) => {
     if (!session) return fail();
     if (att) await L.db('login_attempts?username=eq.' + encodeURIComponent(key), { method: 'DELETE' });
     await L.db('profiles?id=eq.' + p.id, { method: 'PATCH', body: { last_login: new Date().toISOString() } });
-    const co = (await L.db('companies?select=id,code,name&id=eq.' + p.company_id))[0] || null;
+    const co = (await L.db('companies?select=id,code,name,logo&id=eq.' + p.company_id))[0] || null;
     return L.send(res, 200, { ok: true, session, profile: L.publicProfile(p), company: co });
   } catch (e) {
     console.error('login error', e.message);

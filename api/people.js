@@ -57,8 +57,13 @@ module.exports = async (req, res) => {
         patch.name = name;
       }
       if (b.code !== undefined) return L.send(res, 400, { ok: false, reason: 'code fixed', message: 'The Company ID is permanent.' });
+      if (b.logo !== undefined) {
+        const logo = String(b.logo || '');
+        if (logo && (!logo.startsWith('data:image/') || logo.length > 700000)) return L.send(res, 400, { ok: false, reason: 'bad logo', message: 'That picture could not be used - try a smaller one.' });
+        patch.logo = logo || null;
+      }
       const updated = Object.keys(patch).length ? (await L.db('companies?id=eq.' + companyId, { method: 'PATCH', body: patch }))[0] : co;
-      return L.send(res, 200, { ok: true, company: { id: updated.id, code: updated.code, name: updated.name } });
+      return L.send(res, 200, { ok: true, company: { id: updated.id, code: updated.code, name: updated.name, logo: updated.logo || null } });
     }
     if (b.action === 'invites') {
       // Latest unused login link per person in my company -> shows "Invite sent / expired" in People.

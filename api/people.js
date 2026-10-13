@@ -92,8 +92,26 @@ module.exports = async (req, res) => {
       if (b.email !== undefined) patch.email = b.email ? String(b.email).trim().toLowerCase() : null;
       if (b.photo !== undefined) patch.photo = b.photo || null;
       if (wantRole === 'superadmin' && !(patch.email || target.email)) return L.send(res, 400, { ok: false, reason: 'email needed', message: 'A Super Admin needs an email address' });
+      // Optional: make the username match the new name (their PIN/password stays the same).
+      let renamed = false;
+      if (b.rename_username) {
+        const co = (await L.db('companies?select=code&id=eq.' + target.company_id))[0];
+        const first = patch.first_name !== undefined ? patch.first_name : target.first_name;
+        const last = patch.last_name !== undefined ? patch.last_name : target.last_name;
+        const base = [co && co.code, L.slug(first), L.slug(last)].filter(Boolean).join('-');
+        if (base && base !== target.username) {
+          let name = base, n = 2;
+          while ((await L.db('profiles?select=id&username=eq.' + encodeURIComponent(name) + '&id=neq.' + target.id)).length) { name = base + '-' + n; n++; }
+          if (name !== target.username) {
+            if (target.user_id) await L.authAdmin('users/' + target.user_id, { method: 'PUT', body: { email: L.authEmailFor(name), email_confirm: true, user_metadata: { username: name } } });
+            patch.username = name;
+            renamed = true;
+            await L.db('login_attempts?username=eq.' + encodeURIComponent(target.username), { method: 'DELETE' });
+          }
+        }
+      }
       const p = (await L.db('profiles?id=eq.' + target.id, { method: 'PATCH', body: patch }))[0];
-      return L.send(res, 200, { ok: true, profile: L.publicProfile(p) });
+      return L.send(res, 200, { ok: true, profile: L.publicProfile(p), renamed });
     }
     if (b.action === 'reset') {
       await L.db('invites?profile_id=eq.' + target.id + '&used_at=is.null', { method: 'DELETE' });

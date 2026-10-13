@@ -10146,6 +10146,7 @@ let PEOPLE = [
 let peopleNextId = 14;
 let peopleEditingId = null;
 let peopleSaving = false;
+let peopleRenameAsked = false;
 
 function peopleFullName(p){
   return (p.firstName + ' ' + p.lastName).trim();
@@ -10343,6 +10344,7 @@ function peopleEditClick(personId){ peopleOpenForm(personId); }
 // Opens the person panel (side panel on computers, bottom sheet on phones).
 function peopleOpenForm(personId){
   peopleEditingId = personId || null;
+  peopleRenameAsked = false;
   const esc = v => String(v==null?'':v).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const p = personId ? PEOPLE.find(x=>String(x.id)===String(personId)) : {firstName:'',lastName:'',role:'teammember',departments:[],photo:'',email:''};
   if(!p) return;
@@ -10582,6 +10584,25 @@ async function peopleSaveForm(){
   if(email && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)){ toast('That email address doesn\'t look right.'); return; }
   if(role==='superadmin' && !email){ toast('A Super Admin needs an email address, so they can never be locked out.'); return; }
 
+  if(myProfile && peopleEditingId && !peopleRenameAsked){
+    const cur = PEOPLE.find(x=>String(x.id)===String(peopleEditingId));
+    const changed = cur && (cur.firstName.trim().toLowerCase() !== firstName.toLowerCase() || (cur.lastName||'').trim().toLowerCase() !== lastName.toLowerCase());
+    if(changed && cur.username){
+      const code = (myCompany && myCompany.code) || cur.username.split('-')[0];
+      const slug = v => String(v||'').normalize('NFKD').replace(/[\u0300-\u036f]/g,'').toUpperCase().replace(/[^A-Z0-9]+/g,'-').replace(/^-+|-+$/g,'');
+      const proposed = [code, slug(firstName), slug(lastName)].filter(Boolean).join('-');
+      if(proposed !== cur.username){
+        appConfirmShow({
+          title: 'Update their username too?',
+          msg: 'It\'s ' + cur.username + ' now. The new one would be about ' + proposed + '. Their PIN or password stays the same - they just log in with the new username.',
+          label: 'Update username', cancelLabel: 'Keep old one',
+          onOk: ()=>{ peopleRenameAsked = 'yes'; peopleSaveForm(); },
+          onCancel: ()=>{ peopleRenameAsked = 'no'; peopleSaveForm(); }
+        });
+        return;
+      }
+    }
+  }
   if(myProfile){
     // Ignore extra clicks while a save is already going (a double-click used to make the
     // second save think it was adding a NEW person and show a bogus login-link popup).
@@ -10591,7 +10612,8 @@ async function peopleSaveForm(){
     if(saveBtn){ saveBtn.disabled = true; saveBtn.textContent = 'Saving…'; }
     const editingId = peopleEditingId;      // fixed at the moment Save was pressed
     const wasNew = !editingId;
-    const body = { first_name:firstName, last_name:lastName, role, departments, email, photo };
+    const body = { first_name:firstName, last_name:lastName, role, departments, email, photo, rename_username: peopleRenameAsked === 'yes' };
+    peopleRenameAsked = false;
     let d;
     try{
       d = editingId ? await peopleApi(Object.assign({ action:'update', id: editingId }, body))
@@ -10603,6 +10625,11 @@ async function peopleSaveForm(){
     if(!d || !d.ok){ toast((d && d.message) || ('Not saved: ' + (d && (d.reason==='cannot give that role' || d.reason==='higher role') ? 'you can only manage people below your own role.' : ((d && d.reason) || 'please try again')))); return; }
     peopleCloseForm();
     await peopleLoadFromSupabase();
+    if(!wasNew && d.profile && d.renamed){
+      appConfirmShow({ title:'New username: ' + d.profile.username, msg:'Let ' + firstName + ' know - they log in with this from now on. Their PIN or password hasn\'t changed.', label:'Copy username', cancelLabel:'Done',
+        onOk: ()=>{ try{ navigator.clipboard.writeText(d.profile.username); }catch(e){} toast('Copied ✓'); } });
+      return;
+    }
     if(wasNew && d.token){
       if(d.profile && d.profile.id) peopleMarkInvited(d.profile.id);
       const np = PEOPLE.find(x=>x.id===d.profile.id) || { firstName, lastName, role, username: d.profile.username };
@@ -20758,7 +20785,7 @@ document.addEventListener('DOMContentLoaded', initCardColours);
     <div id="appConfirmMsg" style="font-size:13px;color:#64748B;margin-bottom:24px;line-height:1.6"></div>
     <div style="display:flex;gap:10px">
       <button id="appConfirmOk" style="flex:1;padding:12px;background:#EF4444;border:none;border-radius:9px;font-family:'Inter',sans-serif;font-size:14px;font-weight:700;color:white;cursor:pointer">Delete</button>
-      <button onclick="appConfirmClose()" style="padding:12px 20px;background:#F1F5F9;border:none;border-radius:9px;font-family:'Inter',sans-serif;font-size:14px;font-weight:600;color:#64748B;cursor:pointer">Cancel</button>
+      <button id="appConfirmCancel" onclick="appConfirmClose()" style="padding:12px 20px;background:#F1F5F9;border:none;border-radius:9px;font-family:'Inter',sans-serif;font-size:14px;font-weight:600;color:#64748B;cursor:pointer">Cancel</button>
     </div>
   </div>
 </div>
@@ -21702,7 +21729,9 @@ function appModalFilePreview(i){
 function appModalClose(fromPopstate){ document.getElementById('appModal').style.display='none'; if(!fromPopstate) history.back(); }
 
 // ── APP CONFIRM (replaces confirm) ──
-function appConfirmShow({title, msg, label='Delete', onOk}){
+function appConfirmShow({title, msg, label='Delete', onOk, cancelLabel='Cancel', onCancel}){
+  const cb = document.getElementById('appConfirmCancel');
+  if(cb){ cb.textContent = cancelLabel; cb.onclick = ()=>{ appConfirmClose(); if(onCancel) onCancel(); }; }
   document.getElementById('appConfirmTitle').textContent = title;
   document.getElementById('appConfirmMsg').textContent = msg;
   document.getElementById('appConfirmOk').textContent = label;

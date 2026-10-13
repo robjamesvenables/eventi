@@ -10109,6 +10109,7 @@ function peopleShowInvite(person, token, isReset){
     <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px">
       <a class="btn btn-navy" style="text-decoration:none" target="_blank" rel="noopener" href="https://wa.me/?text=${encodeURIComponent(msg)}">Send on WhatsApp</a>
       <button class="btn btn-ghost" id="people-invite-copy">Copy link</button>
+      <button class="btn btn-ghost" id="people-invite-saveqr">Save QR</button>
     </div>
     <div style="font-size:12px;color:#64748B;line-height:1.5;margin-bottom:14px">The link works <b>once</b> and expires in <b>48 hours</b>. You can always make a new one from their profile.</div>
     <div style="text-align:right"><button class="btn btn-ghost" onclick="document.getElementById('people-invite').remove()">Done</button></div>
@@ -10116,6 +10117,43 @@ function peopleShowInvite(person, token, isReset){
   document.getElementById('people-invite-copy').onclick = async ()=>{ try{ await navigator.clipboard.writeText(url); }catch(e){} document.getElementById('people-invite-copy').textContent='Copied ✓'; };
   try{ new QRCode(document.getElementById('people-invite-qr'), { text:url, width:200, height:200, colorDark:'#0F1E2E', colorLight:'#F8FAFC' }); }
   catch(e){ document.getElementById('people-invite-qr').innerHTML = '<div style="font-size:12px;color:#94A3B8">QR not available - use the link</div>'; }
+  document.getElementById('people-invite-saveqr').onclick = () => peopleSaveQr(person, url, isReset);
+}
+// Saves the login QR as a neat picture (name, username, QR, expiry). On phones it opens the
+// share menu so it can go straight to WhatsApp; elsewhere it downloads a PNG.
+async function peopleSaveQr(person, url, isReset){
+  try{
+    const tmp = document.createElement('div');
+    new QRCode(tmp, { text:url, width:420, height:420, colorDark:'#0F1E2E', colorLight:'#FFFFFF', correctLevel: QRCode.CorrectLevel.M });
+    const src = tmp.querySelector('canvas');
+    const W = 600, H = 820, c = document.createElement('canvas'); c.width = W; c.height = H;
+    const g = c.getContext('2d');
+    g.fillStyle = '#FFFFFF'; g.fillRect(0,0,W,H);
+    g.fillStyle = '#0F1E2E'; g.fillRect(0,0,W,110);
+    g.textAlign = 'center';
+    g.font = '800 40px Inter, Arial, sans-serif'; g.fillStyle = '#0D9488'; g.fillText('M', W/2 - 52, 70);
+    g.fillStyle = '#FFFFFF'; g.textAlign = 'left'; g.fillText('avis', W/2 - 30, 70);
+    g.textAlign = 'center'; g.fillStyle = '#0F1E2E';
+    g.font = '800 30px Inter, Arial, sans-serif';
+    g.fillText((isReset ? 'New login for ' : 'Your Mavis login, ') + (person.firstName || ''), W/2, 165);
+    g.font = '600 20px Inter, Arial, sans-serif'; g.fillStyle = '#64748B';
+    g.fillText('Scan with your phone camera', W/2, 200);
+    g.drawImage(src, (W-420)/2, 225, 420, 420);
+    g.font = '700 16px Inter, Arial, sans-serif'; g.fillStyle = '#0F766E'; g.fillText('USERNAME', W/2, 690);
+    g.font = '800 26px Inter, Arial, sans-serif'; g.fillStyle = '#0F1E2E'; g.fillText(person.username || '', W/2, 725);
+    g.font = '500 17px Inter, Arial, sans-serif'; g.fillStyle = '#94A3B8';
+    g.fillText('Works once · expires in 48 hours', W/2, 775);
+    const blob = await new Promise(r => c.toBlob(r, 'image/png'));
+    const name = 'mavis-login-' + String(person.username || 'qr').toLowerCase() + '.png';
+    const file = new File([blob], name, { type:'image/png' });
+    if(navigator.canShare && navigator.canShare({ files:[file] }) && /Android|iPhone|iPad/i.test(navigator.userAgent)){
+      await navigator.share({ files:[file], title:'Mavis login' });
+    } else {
+      const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name;
+      document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(a.href), 2000);
+      toast('QR saved ✓');
+    }
+  }catch(e){ if(e && e.name === 'AbortError') return; console.warn(e); toast('Could not save the QR - please take a screenshot instead'); }
 }
 window.peopleResetLogin = function(id){
   const p = PEOPLE.find(x=>String(x.id)===String(id)); if(!p) return;

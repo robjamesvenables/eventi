@@ -5023,19 +5023,19 @@ img.emoji-tw{width:1.15em;height:1.15em;vertical-align:-0.2em;margin:0 1px}
         <!-- STATS -->
         <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:28px">
           <div style="background:white;border:1.5px solid #E2E8F0;border-radius:12px;padding:16px 18px">
-            <div style="font-size:22px;font-weight:800;color:#0F1E2E">18</div>
+            <div id="admin-stat-team" style="font-size:22px;font-weight:800;color:#0F1E2E">–</div>
             <div style="font-size:11.5px;color:#94A3B8;font-weight:600">Team members</div>
           </div>
           <div style="background:white;border:1.5px solid #E2E8F0;border-radius:12px;padding:16px 18px">
-            <div style="font-size:22px;font-weight:800;color:#0F1E2E">6</div>
+            <div id="admin-stat-tiers" style="font-size:22px;font-weight:800;color:#0F1E2E">–</div>
             <div style="font-size:11.5px;color:#94A3B8;font-weight:600">Role tiers</div>
           </div>
           <div style="background:white;border:1.5px solid #E2E8F0;border-radius:12px;padding:16px 18px">
-            <div style="font-size:22px;font-weight:800;color:#0F1E2E">2</div>
-            <div style="font-size:11.5px;color:#94A3B8;font-weight:600">Pending invites</div>
+            <div id="admin-stat-pending" style="font-size:22px;font-weight:800;color:#0F1E2E">–</div>
+            <div style="font-size:11.5px;color:#94A3B8;font-weight:600">Waiting to log in</div>
           </div>
           <div style="background:white;border:1.5px solid #E2E8F0;border-radius:12px;padding:16px 18px">
-            <div style="font-size:22px;font-weight:800;color:#0F1E2E">1</div>
+            <div id="admin-stat-super" style="font-size:22px;font-weight:800;color:#0F1E2E">–</div>
             <div style="font-size:11.5px;color:#94A3B8;font-weight:600">Super Admins</div>
           </div>
         </div>
@@ -10585,6 +10585,14 @@ function adminConsoleRender(){
     </div>`;
   }).join('');
 
+  // Real counts for this company (these used to be fixed demo numbers)
+  const setStat = (id, v) => { const el = document.getElementById(id); if(el) el.textContent = v; };
+  const activePeople = PEOPLE.filter(p=>p.active!==false);
+  setStat('admin-stat-team', activePeople.length);
+  setStat('admin-stat-tiers', ADMIN_ROLES.length);
+  setStat('admin-stat-pending', myProfile ? activePeople.filter(p=>!p.hasLogin).length : 0);
+  setStat('admin-stat-super', activePeople.filter(p=>p.role==='superadmin').length);
+
   adminRenderEditor();
   peopleRender();
   adminUpdateTabStyles();
@@ -10606,7 +10614,7 @@ function adminUpdateTabStyles(){
   if(rolesBtn) rolesBtn.style.cssText = baseStyle + (adminActiveTab==='roles' ? 'background:#0F1E2E;color:white' : 'background:none;color:#64748B');
   if(peopleBtn) peopleBtn.style.cssText = baseStyle + (adminActiveTab==='people' ? 'background:#0F1E2E;color:white' : 'background:none;color:#64748B');
   const countEl = document.getElementById('admin-tab-people-count');
-  if(countEl) countEl.textContent = '(' + PEOPLE.length + ')';
+  if(countEl) countEl.textContent = '(' + PEOPLE.filter(p=>p.active!==false).length + ')';
 }
 
 function adminSelectRole(roleId){

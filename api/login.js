@@ -12,7 +12,9 @@ module.exports = async (req, res) => {
   try {
     const isEmail = raw.includes('@');
     const q = isEmail ? 'email=eq.' + encodeURIComponent(raw.toLowerCase()) : 'username=eq.' + encodeURIComponent(raw.toUpperCase());
-    const rows = await L.db('profiles?select=*&' + q + '&limit=1');
+    const rows = await L.db('profiles?select=*&' + q + (isEmail ? '&active=eq.true&user_id=not.is.null&limit=2' : '&limit=1'));
+    // One email on more than one account (e.g. the same owner at two venues): ask for the username instead of guessing.
+    if (isEmail && rows.length > 1) return L.send(res, 409, { ok: false, reason: 'email shared', message: 'That email is used on more than one account. Please sign in with your username instead.' });
     const p = rows && rows[0];
     const key = p ? p.username : raw.toUpperCase();
     const att = (await L.db('login_attempts?select=*&username=eq.' + encodeURIComponent(key)))[0];

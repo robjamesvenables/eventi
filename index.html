@@ -10405,7 +10405,17 @@ function peopleOpenForm(personId){
         <div id="dept-manager-wrap" style="display:none;margin-top:12px"></div>
       </div>
       ${loginCard}
-      ${personId && real && !p.isMe ? `<button class="pp-danger" style="color:${p.active===false?'#15803D':'#DC2626'}" onclick="peopleSetActive('${esc(p.id)}', ${p.active===false})">${p.active===false ? 'Switch back on' : 'Switch off ' + esc(p.firstName) + '…'}</button>` : ''}
+      ${personId && real && !p.isMe ? (p.active===false
+        ? `<div class="pp-card" style="border:1.5px solid #BBF7D0">
+            <div class="pp-card-t" style="color:#15803D">SWITCHED OFF</div>
+            <div style="font-size:12.5px;color:#475569;margin-bottom:10px">${esc(p.firstName)} can't log in. Everything they wrote is still here.</div>
+            <button class="pp-send" style="background:#DCFCE7;color:#15803D" onclick="peopleSetActive('${esc(p.id)}', true)">Switch back on</button>
+          </div>`
+        : `<div class="pp-card" style="border:1.5px solid #FEE2E2">
+            <div class="pp-card-t" style="color:#B91C1C">LEAVING THE TEAM?</div>
+            <div style="font-size:12.5px;color:#475569;margin-bottom:10px">Switching ${esc(p.firstName)} off stops them logging in straight away. Their posts and notes stay. You can switch them back on later.</div>
+            <button class="pp-send" style="background:#FEE2E2;color:#B91C1C" onclick="peopleSetActive('${esc(p.id)}', false)">Switch off ${esc(p.firstName)}</button>
+          </div>`) : ''}
       ${personId && !real ? `<button class="pp-danger" style="color:#DC2626" onclick="peopleDelete(${Number(personId)})">Delete</button>` : ''}
     </div>
     <div class="pp-dfoot">

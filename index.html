@@ -5744,6 +5744,27 @@ function appIsDemoCompany(){
   if(!myProfile) return true;                         // old demo mode, no real logins
   return !!(myCompany && myCompany.code === 'MAVIS');
 }
+// If someone logs in or out in ANOTHER tab of this browser, this tab's login has changed
+// underneath it (tabs share one login). Reload so the screen always matches who is really
+// signed in - otherwise it could look like one person while acting as another.
+(function watchLoginChanges(){
+  try{
+    sb.auth.onAuthStateChange((event, session) => {
+      if(!myProfile) return;
+      const uid = session && session.user ? session.user.id : null;
+      if(event === 'SIGNED_OUT' || (uid && myProfile.user_id && uid !== myProfile.user_id)){
+        location.replace(location.pathname);
+      }
+    });
+  }catch(e){ console.warn('login watch not started', e); }
+  // Belt and braces: another tab changing the saved login also shows up as a storage change.
+  window.addEventListener('storage', async ev => {
+    if(!myProfile || !ev.key || !/^sb-.*-auth-token$/.test(ev.key)) return;
+    let uid = null;
+    try{ const v = ev.newValue ? JSON.parse(ev.newValue) : null; uid = v && v.user ? v.user.id : null; }catch(e){}
+    if(uid !== myProfile.user_id) location.replace(location.pathname);
+  });
+})();
 // Load all data once per signed-in person (not again if it already started on page open).
 let appDataLoadedFor = null;
 function appLoadAllDataOnce(key){
@@ -5798,6 +5819,9 @@ function setCurrentUserFromEmail(email){
   setCurrentUserName(cleaned ? cleaned.charAt(0).toUpperCase() + cleaned.slice(1).toLowerCase() : 'there');
 }
 async function authApplyProfile(profile, company){
+  if(profile && !profile.user_id){
+    try{ const { data } = await sb.auth.getSession(); profile.user_id = data && data.session && data.session.user ? data.session.user.id : null; }catch(e){}
+  }
   myProfile = profile; myCompany = company || myCompany;
   setCurrentUserName(profile.first_name);
   try{ accountApplyAvatar(); }catch(e){}

@@ -1726,7 +1726,6 @@ body.ev-viewonly .beo-viewonly-note{display:inline-flex;align-items:center;gap:6
 .venue-switcher-ico{width:26px;height:26px;border-radius:7px;background:#0D9488;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;color:white;flex-shrink:0}
 .home-co-logo{width:60px;height:60px;border-radius:50%;background-size:cover;background-position:center;background-color:white;box-shadow:0 0 0 3px rgba(196,151,59,.7);flex-shrink:0}
 @media (max-width:640px){ .home-co-logo{width:46px;height:46px} }
-.venue-switcher-ico.has-logo{width:32px;height:32px;border-radius:50%;background-size:cover;background-position:center;background-color:white;box-shadow:0 0 0 2px rgba(255,255,255,.35)}
 .venue-switcher-name{font-size:13px;font-weight:700;color:white}
 .venue-switcher-sub{font-size:10px;color:rgba(255,255,255,0.5);margin-top:1px}
 .venue-switcher-chev{color:rgba(255,255,255,0.6);transition:transform 0.15s}
@@ -5912,11 +5911,7 @@ function companyLogoApply(){
   const logo = myCompany && myCompany.logo;
   const big = document.getElementById('home-co-logo');
   if(big){ big.style.display = logo ? 'block' : 'none'; if(logo) big.style.backgroundImage = `url('${logo}')`; }
-  const ico = document.getElementById('venue-switcher-ico');
-  if(ico){
-    if(logo && !appIsDemoCompany()){ ico.classList.add('has-logo'); ico.style.backgroundImage = `url('${logo}')`; ico.textContent = ''; }
-    else if(ico.classList.contains('has-logo')){ ico.classList.remove('has-logo'); ico.style.backgroundImage = ''; try{ renderVenueSwitcherButton(); }catch(e){} }
-  }
+  // (The small top-right badge keeps the company's first letter - a logo is unreadable that small.)
 }
 window.companyRename = function(){
   appModalShow({
@@ -20079,6 +20074,8 @@ function renderVenueSwitcherButton(){
   document.getElementById('venue-switcher-sub').textContent = v.tag;
   const ico = document.getElementById('venue-switcher-ico');
   if(ico) ico.style.background = VENUE_BANNER_COLORS[currentVenue] || VENUE_BANNER_COLORS.a;
+  // Real clients: gold initial with a gold ring, so it shows up on the navy header
+  if(ico && myProfile && !appIsDemoCompany()){ ico.style.background = 'rgba(255,255,255,.08)'; ico.style.color = '#E9C46A'; ico.style.boxShadow = 'inset 0 0 0 1.5px rgba(196,151,59,.7)'; ico.style.borderRadius = '50%'; }
 }
 
 function renderVenueDropdown(){

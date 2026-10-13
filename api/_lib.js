@@ -88,4 +88,4 @@ function publicProfile(p){
     has_login: !!p.user_id, last_login: p.last_login, photo: p.photo || null };
 }
 module.exports = { db, authAdmin, passwordGrant, caller, authEmailFor, slug, newToken, secretOk, publicProfile, send, body,
-  PIN_ROLES, ROLE_RANK, MANAGE_MIN_RANK, SERVICE_KEY };
+  PIN_ROLES, ROLE_RANK, MANAGE_MIN_RANK, SERVICE_KEY, SUPABASE_URL, ANON_KEY };

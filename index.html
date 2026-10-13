@@ -2917,9 +2917,9 @@ img.emoji-tw{width:1.15em;height:1.15em;vertical-align:-0.2em;margin:0 1px}
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.4)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin-left:auto;flex-shrink:0"><polyline points="18 15 12 9 6 15"/></svg>
 
       <div id="profile-menu" style="display:none;position:absolute;bottom:calc(100% + 8px);left:12px;right:12px;background:white;border-radius:12px;box-shadow:0 8px 30px rgba(0,0,0,0.25);overflow:hidden;z-index:50">
-        <div onclick="event.stopPropagation();openEditProfile()" class="profile-menu-item">
+        <div onclick="event.stopPropagation();openMyAccount()" class="profile-menu-item">
           <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#475569" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-          Edit Profile
+          My Account
         </div>
         <div onclick="event.stopPropagation();openAccountSettings()" class="profile-menu-item">
           <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#475569" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
@@ -5732,6 +5732,7 @@ function setCurrentUserFromEmail(email){
 async function authApplyProfile(profile, company){
   myProfile = profile; myCompany = company || myCompany;
   setCurrentUserName(profile.first_name);
+  try{ accountApplyAvatar(); }catch(e){}
   authApplyRoleVisibility();
   try{ await peopleLoadFromSupabase(); }catch(e){ console.warn(e); }
 }
@@ -5974,8 +5975,115 @@ function closeProfileMenu(){
   if(menu) menu.style.display = 'none';
 }
 
-function openEditProfile(){
+// ── MY ACCOUNT: see your login details, change your photo / PIN / password ──
+const ROLE_NAMES = { superadmin:'Super Admin', director:'Director', manager:'Manager', supervisor:'Supervisor', teammember:'Team Member', dailyworker:'Daily Worker' };
+async function accountApi(body){
+  const { data } = await sb.auth.getSession();
+  const token = data && data.session && data.session.access_token;
+  return authApi('account', { body, token });
+}
+function openMyAccount(){
   closeProfileMenu();
+  if(!myProfile){ openEditProfileDemo(); return; }
+  const esc = v => String(v==null?'':v).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  const p = myProfile;
+  const isPin = ['supervisor','teammember','dailyworker'].includes(p.role);
+  const what = isPin ? 'PIN' : 'password';
+  const photo = p.photo || '';
+  const row = (label, value) => `<div style="display:flex;justify-content:space-between;gap:12px;padding:11px 0;border-bottom:1px solid #F1F5F9;font-size:13px"><span style="color:#64748B">${label}</span><span style="font-weight:700;color:#0F1E2E;text-align:right">${value}</span></div>`;
+  let el = document.getElementById('account-modal');
+  if(el) el.remove();
+  el = document.createElement('div'); el.id = 'account-modal';
+  el.style.cssText = 'position:fixed;inset:0;background:rgba(15,30,46,.55);z-index:10000;display:flex;align-items:center;justify-content:center;padding:16px';
+  el.addEventListener('click', e => { if(e.target === el) el.remove(); });
+  el.innerHTML = `<div style="background:white;border-radius:16px;width:100%;max-width:420px;padding:24px;font-family:Inter,sans-serif;max-height:92vh;overflow:auto;box-sizing:border-box">
+    <div style="font-size:18px;font-weight:800;color:#0F1E2E;margin-bottom:16px">My Account</div>
+    <div style="display:flex;align-items:center;gap:14px;margin-bottom:14px">
+      <div id="acct-photo" style="width:64px;height:64px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;color:white;font-size:24px;font-weight:800;background:${photo ? `url('${esc(photo)}') center/cover` : '#0F1E2E'}">${photo ? '' : esc((p.first_name||'?').charAt(0).toUpperCase())}</div>
+      <div style="min-width:0">
+        <div style="font-size:16px;font-weight:800;color:#0F1E2E">${esc(p.first_name)} ${esc(p.last_name||'')}</div>
+        <div style="display:flex;gap:8px;margin-top:6px;flex-wrap:wrap">
+          <label style="padding:6px 12px;background:#F1F5F9;border-radius:7px;font-size:12px;font-weight:700;color:#0F1E2E;cursor:pointer">${photo ? 'Change photo' : 'Add photo'}<input type="file" accept="image/*" style="display:none" onchange="accountPhotoPicked(this)"></label>
+          ${photo ? `<button onclick="accountPhotoSave('')" style="padding:6px 10px;background:none;border:none;font-size:12px;font-weight:700;color:#DC2626;cursor:pointer">Remove</button>` : ''}
+        </div>
+      </div>
+    </div>
+    <div style="background:#F0FDFA;border:1px solid #99F6E4;border-radius:10px;padding:12px 14px;margin-bottom:6px">
+      <div style="font-size:10.5px;font-weight:800;letter-spacing:.08em;color:#0F766E">YOUR USERNAME</div>
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:3px">
+        <div style="font-size:15px;font-weight:800;color:#0F1E2E;word-break:break-all">${esc(p.username)}</div>
+        <button id="acct-copy" onclick="navigator.clipboard&&navigator.clipboard.writeText('${esc(p.username)}');this.textContent='Copied ✓'" style="padding:6px 10px;background:white;border:1px solid #99F6E4;border-radius:7px;font-size:12px;font-weight:700;color:#0F766E;cursor:pointer;flex-shrink:0">Copy</button>
+      </div>
+      <div style="font-size:11.5px;color:#475569;margin-top:4px">You log in with this and your ${what}.${p.email ? ' You can also use your email: ' + esc(p.email) : ''}</div>
+    </div>
+    ${row('Role', esc(ROLE_NAMES[p.role] || p.role))}
+    ${row('Company', esc((myCompany && myCompany.name) || ''))}
+    ${row('Departments', esc((p.departments||[]).join(', ') || '—'))}
+    <div id="acct-change" style="margin-top:16px"></div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:16px">
+      <button id="acct-change-btn" class="btn btn-navy" onclick="accountShowChange()">Change my ${what}</button>
+      <button class="btn btn-ghost" onclick="accountLogoutAll()">Log out of all devices</button>
+      <button class="btn btn-ghost" style="margin-left:auto" onclick="document.getElementById('account-modal').remove()">Done</button>
+    </div>
+  </div>`;
+  document.body.appendChild(el);
+}
+window.accountShowChange = function(){
+  const isPin = ['supervisor','teammember','dailyworker'].includes(myProfile.role);
+  const what = isPin ? 'PIN' : 'password';
+  const inp = (id, label) => `<label style="display:block;font-size:11px;font-weight:700;color:#64748B;margin:10px 0 5px">${label}</label>
+    <input id="${id}" type="password" ${isPin ? 'inputmode="numeric" maxlength="6" pattern="[0-9]*"' : ''} autocomplete="${id==='acct-cur'?'current-password':'new-password'}" style="width:100%;padding:10px 12px;border:1.5px solid #E2E8F0;border-radius:8px;font-family:Inter,sans-serif;font-size:16px;box-sizing:border-box">`;
+  document.getElementById('acct-change').innerHTML = `<div style="background:#F8FAFC;border:1px solid #E2E8F0;border-radius:12px;padding:14px">
+    <div style="font-size:13.5px;font-weight:800;color:#0F1E2E">Change my ${what}</div>
+    <div style="font-size:12px;color:#64748B;margin-top:2px">${isPin ? 'Your PIN is 6 numbers.' : 'At least 8 characters.'} Other devices will be logged out.</div>
+    ${inp('acct-cur', 'Current ' + what)}${inp('acct-new', 'New ' + what)}${inp('acct-new2', 'New ' + what + ' again')}
+    <div id="acct-err" style="color:#DC2626;font-size:12.5px;font-weight:600;min-height:16px;margin-top:8px"></div>
+    <button id="acct-save" class="btn btn-navy" onclick="accountChangeSecret()" style="margin-top:4px">Save new ${what}</button>
+  </div>`;
+  const cb = document.getElementById('acct-change-btn'); if(cb) cb.style.display = 'none';
+  document.getElementById('acct-cur').focus();
+};
+window.accountChangeSecret = async function(){
+  const v = id => document.getElementById(id).value;
+  const err = m => { document.getElementById('acct-err').textContent = m || ''; };
+  const isPin = ['supervisor','teammember','dailyworker'].includes(myProfile.role);
+  if(!v('acct-cur')) return err('Please type your current ' + (isPin?'PIN':'password') + '.');
+  if(isPin ? !/^\d{6}$/.test(v('acct-new')) : v('acct-new').length < 8) return err(isPin ? 'Your new PIN must be exactly 6 numbers.' : 'Your new password must be at least 8 characters.');
+  if(v('acct-new') !== v('acct-new2')) return err("The two new ones don't match - please try again.");
+  const btn = document.getElementById('acct-save'); btn.disabled = true; btn.textContent = 'Saving…'; err('');
+  const d = await accountApi({ action:'change_secret', current: v('acct-cur'), secret: v('acct-new') });
+  btn.disabled = false; btn.textContent = 'Save new ' + (isPin?'PIN':'password');
+  if(!d.ok) return err(d.message || 'Could not change it - please try again.');
+  if(d.session) await sb.auth.setSession({ access_token: d.session.access_token, refresh_token: d.session.refresh_token });
+  document.getElementById('acct-change').innerHTML = `<div style="background:#F0FDF4;border:1px solid #BBF7D0;border-radius:12px;padding:12px 14px;font-size:13px;font-weight:700;color:#15803D">Changed ✓ Use your new ${isPin?'PIN':'password'} next time you log in.</div>`;
+};
+window.accountPhotoPicked = async function(input){
+  const file = input.files && input.files[0]; if(!file) return;
+  try{ accountPhotoSave(await appFileToDataUrl(file)); }catch(e){ toast('Photo upload failed - please try again'); }
+};
+window.accountPhotoSave = async function(photo){
+  const d = await accountApi({ action:'photo', photo });
+  if(!d.ok){ toast(d.message || 'Photo not saved - please try again'); return; }
+  myProfile.photo = photo || null;
+  accountApplyAvatar();
+  try{ peopleLoadFromSupabase(); }catch(e){}
+  toast(photo ? 'Photo updated ✓' : 'Photo removed');
+  openMyAccount();
+};
+window.accountLogoutAll = function(){
+  appConfirmShow({ title:'Log out of all devices?', msg:'You will be logged out everywhere, including this device. Handy if you lose a phone.', label:'Log out all', onOk: async ()=>{
+    await accountApi({ action:'logout_all' });
+    doLogout();
+  }});
+};
+// Show the person's own photo on the sidebar avatar (or their first initial).
+function accountApplyAvatar(){
+  const a = document.getElementById('sb-avatar'); if(!a || !myProfile) return;
+  if(myProfile.photo){ a.style.background = `url('${myProfile.photo}') center/cover`; a.textContent = ''; }
+  else { a.style.background = ''; a.textContent = (myProfile.first_name||'?').charAt(0).toUpperCase(); }
+}
+
+function openEditProfileDemo(){
   const currentName = document.getElementById('sb-uname').textContent;
   appModalShow({
     title: 'Edit Profile',

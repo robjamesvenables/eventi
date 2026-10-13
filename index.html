@@ -6125,7 +6125,7 @@ function openMyAccount(){
       </div>
       <div style="font-size:11.5px;color:#475569;margin-top:4px">You log in with this and your ${what}.${p.email ? ' You can also use your email: ' + esc(p.email) : ''}</div>
     </div>
-    ${row('Role', esc(ROLE_NAMES[p.role] || p.role))}
+    ${row('Role', esc(roleName(p.role)))}
     ${row('Company', esc((myCompany && myCompany.name) || ''))}
     ${row('Departments', esc((p.departments||[]).join(', ') || '—'))}
     <div id="acct-change" style="margin-top:16px"></div>
@@ -10637,7 +10637,8 @@ function adminConsoleRender(){
       return `<div onclick="adminSelectRole('${r.id}')" style="background:linear-gradient(135deg,#0F1E2E 0%,#1B2F45 100%);border:2px solid #C4973B;border-radius:12px;padding:16px;cursor:pointer;box-shadow:${isSelected ? '0 0 0 3px rgba(196,151,59,.35),' : ''}0 6px 18px rgba(15,30,46,.18)">
       <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="#C4973B" stroke="#C4973B" stroke-width="1.5" stroke-linejoin="round" style="flex-shrink:0"><path d="M3 7l4.5 4L12 4l4.5 7L21 7l-2 12H5L3 7z"/></svg>
-        <div style="font-weight:800;font-size:14px;color:white;white-space:nowrap">${r.name}</div>
+        <div style="font-weight:800;font-size:14px;color:white;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${r.name}</div>
+        <button onclick="event.stopPropagation();roleRename('${r.id}')" title="Rename" style="margin-left:auto;width:26px;height:26px;border:none;border-radius:7px;background:rgba(255,255,255,.1);cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#E9C46A" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg></button>
       </div>
       <div style="font-size:11.5px;color:rgba(255,255,255,.65);line-height:1.4;margin-bottom:10px;min-height:32px">${r.desc}</div>
       <div style="display:flex;align-items:center;justify-content:space-between">
@@ -10649,7 +10650,8 @@ function adminConsoleRender(){
     return `<div onclick="adminSelectRole('${r.id}')" style="background:white;border:2px solid ${isSelected ? r.color : '#E2E8F0'};border-radius:12px;padding:16px;cursor:pointer;transition:border-color 0.15s">
       <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
         <div style="width:10px;height:10px;border-radius:50%;background:${r.color};flex-shrink:0"></div>
-        <div style="font-weight:800;font-size:14px;color:#0F1E2E">${r.name}</div>
+        <div style="font-weight:800;font-size:14px;color:#0F1E2E;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${r.name}</div>
+        <button onclick="event.stopPropagation();roleRename('${r.id}')" title="Rename" style="margin-left:auto;width:26px;height:26px;border:none;border-radius:7px;background:#F1F5F9;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#64748B" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg></button>
       </div>
       <div style="font-size:11.5px;color:#94A3B8;line-height:1.4;margin-bottom:10px;min-height:32px">${r.desc}</div>
       <div style="display:flex;align-items:center;justify-content:space-between">
@@ -10747,7 +10749,7 @@ async function adminTogglePerm(roleId, moduleId){
   adminConsoleRender();
   roleApplyMenus();
   if(!myProfile) return; // demo mode: nothing to save
-  const { error } = await sb.from('app_settings').upsert({ key:'role_perms', value: JSON.stringify(ADMIN_PERMS) }, { onConflict:'company_id,key' });
+  const { error } = await roleSaveSettings();
   if(error){
     ADMIN_PERMS[roleId][moduleId] = ADMIN_PERMS[roleId][moduleId] ? 0 : 1; // undo
     adminConsoleRender(); roleApplyMenus();
@@ -10827,7 +10829,45 @@ function roleLoadSavedPerms(){
   if(!saved) return;
   try{ if(typeof saved === 'string') saved = JSON.parse(saved); }catch(e){ return; }
   Object.keys(ADMIN_PERMS).forEach(r => { if(saved[r]) Object.assign(ADMIN_PERMS[r], saved[r]); });
+  roleApplyNames(saved._names || {});
 }
+// Each company can call the six levels whatever they like ("Team Leader", "Casual Staff"...).
+// Only the name changes - the access underneath stays the same.
+const ROLE_DEFAULT_NAMES = {};
+let ROLE_NAME_OVERRIDES = {};
+function roleApplyNames(names){
+  ROLE_NAME_OVERRIDES = Object.assign({}, names || {});
+  ADMIN_ROLES.forEach(r => {
+    if(!(r.id in ROLE_DEFAULT_NAMES)) ROLE_DEFAULT_NAMES[r.id] = r.name;
+    r.name = ROLE_NAME_OVERRIDES[r.id] || ROLE_DEFAULT_NAMES[r.id];
+  });
+}
+function roleName(id){ const r = ADMIN_ROLES.find(x=>x.id===id); return r ? r.name : id; }
+async function roleSaveSettings(){
+  const value = JSON.stringify(Object.assign({}, ADMIN_PERMS, { _names: ROLE_NAME_OVERRIDES }));
+  return sb.from('app_settings').upsert({ key:'role_perms', value }, { onConflict:'company_id,key' });
+}
+window.roleRename = function(roleId){
+  const def = ROLE_DEFAULT_NAMES[roleId] || roleName(roleId);
+  appModalShow({
+    title: 'Rename "' + roleName(roleId) + '"',
+    sub: 'Use the word your team uses. Access stays exactly the same. Leave it empty to go back to "' + def + '".',
+    fields: [{ label:'Name', value: ROLE_NAME_OVERRIDES[roleId] || '', placeholder: def, maxlength: 24 }],
+    async onOk([name]){
+      name = (name||'').trim();
+      const taken = ADMIN_ROLES.some(r => r.id !== roleId && r.name.toLowerCase() === name.toLowerCase());
+      if(name && taken){ toast('Another role already has that name'); return; }
+      const before = Object.assign({}, ROLE_NAME_OVERRIDES);
+      if(name && name !== def) ROLE_NAME_OVERRIDES[roleId] = name; else delete ROLE_NAME_OVERRIDES[roleId];
+      roleApplyNames(ROLE_NAME_OVERRIDES);
+      adminConsoleRender();
+      if(!myProfile){ toast('Renamed ✓'); return; }
+      const { error } = await roleSaveSettings();
+      if(error){ roleApplyNames(before); adminConsoleRender(); toast('Could not save: ' + (error.message || 'please try again')); return; }
+      toast(name && name !== def ? 'Renamed to "' + name + '" ✓' : 'Back to "' + def + '" ✓');
+    }
+  });
+};
 
 // ── AI NOTETAKER (demo - not yet wired to real recording/transcription/AI) ──
 let notetakerState = 'idle'; // idle | recording | processing | result

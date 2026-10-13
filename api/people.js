@@ -4,6 +4,7 @@
 //  reset    { id } -> { link }          new one-time link to choose a new PIN/password
 //  deactivate / reactivate { id }
 //  company  { name, code, boss_first, boss_last, boss_email }  (Mavis owner only) -> new client + boss link
+//  company_update { name, company_id? } -> rename company (Super Admin, or owner for any client). Code is permanent.
 //  invites  {} -> { invites: { profile_id: { sent, expires } } }  latest unused login link per person
 //  departments { departments: [...] }   (Directors and above) -> saves the company's department list
 const L = require('./_lib');
@@ -43,6 +44,22 @@ module.exports = async (req, res) => {
       return L.send(res, 200, { ok: true, company: co, profile: L.publicProfile(p), token });
     }
 
+    if (b.action === 'company_update') {
+      // Rename the company (Super Admin of that company, or the Mavis owner). The code is permanent.
+      const companyId = (me.is_owner && b.company_id) ? b.company_id : me.company_id;
+      if (!me.is_owner && me.role !== 'superadmin') return L.send(res, 403, { ok: false, reason: 'not allowed', message: 'Only a Super Admin can rename the company.' });
+      const co = (await L.db('companies?select=*&id=eq.' + companyId))[0];
+      if (!co) return L.send(res, 404, { ok: false, reason: 'not found' });
+      const patch = {};
+      if (b.name !== undefined) {
+        const name = String(b.name || '').trim().slice(0, 60);
+        if (!name) return L.send(res, 400, { ok: false, reason: 'missing', message: 'Please type a name.' });
+        patch.name = name;
+      }
+      if (b.code !== undefined) return L.send(res, 400, { ok: false, reason: 'code fixed', message: 'The company code is permanent.' });
+      const updated = Object.keys(patch).length ? (await L.db('companies?id=eq.' + companyId, { method: 'PATCH', body: patch }))[0] : co;
+      return L.send(res, 200, { ok: true, company: { id: updated.id, code: updated.code, name: updated.name } });
+    }
     if (b.action === 'invites') {
       // Latest unused login link per person in my company -> shows "Invite sent / expired" in People.
       const ids = (await L.db('profiles?select=id&company_id=eq.' + me.company_id)).map(r => r.id);

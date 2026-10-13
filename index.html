@@ -1530,6 +1530,7 @@ textarea.rf-val{resize:vertical;min-height:72px;line-height:1.5}
 .toast.show{display:block}
 /* ── People (Admin Console) ── */
 .pp-head{background:#0F1E2E;border-radius:16px;padding:20px 22px 16px;color:white;margin-bottom:14px}
+#own-code{text-transform:uppercase}
 .pp-head-top{display:flex;align-items:flex-start;justify-content:space-between;gap:14px;flex-wrap:wrap}
 .pp-head-title{font-size:20px;font-weight:800}
 .pp-head-sub{font-size:12.5px;color:rgba(255,255,255,.65);margin-top:3px;max-width:520px}
@@ -2991,7 +2992,7 @@ img.emoji-tw{width:1.15em;height:1.15em;vertical-align:-0.2em;margin:0 1px}
 
     <div class="sb-bottom" id="sb-bottom-trigger" onclick="toggleProfileMenu(event)" style="cursor:pointer;position:relative">
       <div class="sb-avatar" id="sb-avatar">R</div>
-      <span class="sb-uname" id="sb-uname">Robbie</span>
+      <span class="sb-uname" id="sb-uname-wrap" style="display:flex;flex-direction:column;min-width:0;line-height:1.25"><span id="sb-uname" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Robbie</span><span id="sb-usub" style="font-size:10.5px;font-weight:600;color:rgba(255,255,255,.5);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:none"></span></span>
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.4)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin-left:auto;flex-shrink:0"><polyline points="18 15 12 9 6 15"/></svg>
 
       <div id="profile-menu" style="display:none;position:absolute;bottom:calc(100% + 8px);left:12px;right:12px;background:white;border-radius:12px;box-shadow:0 8px 30px rgba(0,0,0,0.25);overflow:hidden;z-index:50">
@@ -5023,6 +5024,7 @@ img.emoji-tw{width:1.15em;height:1.15em;vertical-align:-0.2em;margin:0 1px}
       </div>
 
       <div id="owner-panel" style="display:none"></div>
+      <div id="company-card" style="display:none"></div>
       <!-- TABS -->
       <div style="display:flex;gap:4px;background:#F1F5F9;padding:4px;border-radius:10px;width:fit-content;margin-bottom:24px">
         <button id="admin-tab-roles" onclick="adminSwitchTab('roles')" style="padding:9px 18px;border:none;border-radius:7px;font-family:'Inter',sans-serif;font-size:13px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:7px">
@@ -5129,7 +5131,7 @@ async function loadAppSettings(){
   } catch(e){
     console.warn('Could not load app settings', e);
   }
-  try{ roleApplyMenus(); if(typeof adminConsoleRender==='function' && document.getElementById('p-admin')?.classList.contains('on')) adminConsoleRender(); }catch(e){}
+  try{ roleApplyMenus(); whoAmIRender(); if(typeof adminConsoleRender==='function' && document.getElementById('p-admin')?.classList.contains('on')) adminConsoleRender(); }catch(e){}
 }
 
 const ANALYTICS_PIN_GRACE_MS = 60 * 60 * 1000; // 1 hour
@@ -5818,6 +5820,13 @@ function authEnterApp(){
   nav('home');
   setTimeout(()=>{ if(typeof evOpenPending==='function') evOpenPending(); }, 400);
 }
+// Bottom-left: full name, then role and company - so it's always clear who's logged in.
+function whoAmIRender(){
+  if(!myProfile) return;
+  const n = document.getElementById('sb-uname'), sub = document.getElementById('sb-usub');
+  if(n) n.textContent = ((myProfile.first_name||'') + ' ' + (myProfile.last_name||'')).trim() || 'You';
+  if(sub){ sub.textContent = roleName(myProfile.role) + (myCompany && myCompany.name ? ' · ' + myCompany.name : ''); sub.style.display = 'block'; }
+}
 function setCurrentUserName(firstName){
   firstName = firstName || 'there';
   currentUserFirstName = firstName;
@@ -5846,6 +5855,38 @@ async function authApplyProfile(profile, company){
   try{ await peopleLoadFromSupabase(); }catch(e){ console.warn(e); }
 }
 // Light role check for now: only people whose role has Admin Console switched on see it.
+// Company box: the name can be changed by a Super Admin; the login code is permanent.
+function companyCardRender(){
+  const el = document.getElementById('company-card'); if(!el) return;
+  if(!myProfile || !myCompany || !(myProfile.is_owner || myProfile.role === 'superadmin')){ el.style.display='none'; return; }
+  const esc = v => String(v==null?'':v).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  el.style.display = 'block';
+  el.innerHTML = `<div style="background:white;border:1.5px solid #E2E8F0;border-radius:14px;padding:16px 20px;margin-bottom:16px;display:flex;align-items:center;gap:14px;flex-wrap:wrap">
+    <div style="width:42px;height:42px;border-radius:12px;background:#0F1E2E;color:#E9C46A;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:17px;flex-shrink:0">${esc((myCompany.name||'?').charAt(0).toUpperCase())}</div>
+    <div style="flex:1;min-width:0">
+      <div style="font-size:11px;font-weight:800;letter-spacing:.08em;color:#94A3B8">YOUR COMPANY</div>
+      <div style="font-size:17px;font-weight:800;color:#0F1E2E">${esc(myCompany.name||'')}</div>
+      <div style="font-size:12px;color:#64748B;margin-top:2px">Login code <b style="color:#0F1E2E">${esc(myCompany.code||'')}</b> · starts everyone's username, can't be changed</div>
+    </div>
+    <button class="btn btn-ghost" onclick="companyRename()">Rename</button>
+  </div>`;
+}
+window.companyRename = function(){
+  appModalShow({
+    title: 'Rename your company',
+    sub: 'Shows across Mavis straight away. Usernames stay the same, so nobody needs to log in again.',
+    fields: [{ label:'Company / venue name', value: (myCompany && myCompany.name) || '', maxlength: 60 }],
+    async onOk([name]){
+      if(!name) return;
+      const d = await peopleApi({ action:'company_update', name });
+      if(!d.ok){ toast(d.message || 'Not saved - please try again'); return; }
+      myCompany.name = d.company.name;
+      companyCardRender(); whoAmIRender();
+      try{ if(!appIsDemoCompany()){ VENUES[0].name = d.company.name; VENUES[0].icon = d.company.name.charAt(0).toUpperCase(); renderVenueSwitcherButton(); renderVenueDropdown(); } }catch(e){}
+      toast('Renamed to "' + d.company.name + '" ✓');
+    }
+  });
+};
 function ownerPanelRender(){
   const el = document.getElementById('owner-panel');
   if(!el) return;
@@ -5863,16 +5904,37 @@ function ownerPanelRender(){
 }
 window.ownerNewClientForm = function(){
   const f = document.getElementById('owner-form'); if(!f) return;
-  const inp = (id, ph, type) => `<input id="${id}" type="${type||'text'}" placeholder="${ph}" style="width:100%;padding:10px 12px;border:none;border-radius:8px;font-family:Inter,sans-serif;font-size:16px;box-sizing:border-box">`;
-  f.innerHTML = `<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px">
-    <div style="grid-column:1/-1">${inp('own-name','Company name, e.g. Sol Cantina')}</div>
-    <div style="grid-column:1/-1">${inp('own-code','Company code, e.g. SOLCANTINA (letters/numbers, used in usernames)')}</div>
-    <div>${inp('own-first','Boss first name')}</div><div>${inp('own-last','Boss surname')}</div>
-    <div style="grid-column:1/-1">${inp('own-email','Boss email (required)','email')}</div>
+  const lbl = t => `<div style="font-size:11px;font-weight:700;color:rgba(255,255,255,.7);margin:0 0 5px">${t}</div>`;
+  const inp = (id, ph, type, extra) => `<input id="${id}" type="${type||'text'}" placeholder="${ph}" ${extra||''} oninput="ownerFormPreview(this.id)" style="width:100%;padding:10px 12px;border:none;border-radius:8px;font-family:Inter,sans-serif;font-size:16px;box-sizing:border-box">`;
+  f.innerHTML = `<div style="display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:12px;margin-top:16px">
+    <div style="grid-column:1/-1">${lbl('Company / venue name')}${inp('own-name','e.g. South Beach Club')}</div>
+    <div style="grid-column:1/-1">${lbl('Login code <span style="color:#E9C46A">· permanent</span>')}${inp('own-code','e.g. ISLAND','text','maxlength="12"')}
+      <div style="font-size:12px;color:rgba(255,255,255,.65);margin-top:6px;line-height:1.45">Starts everyone's username. Use the <b style="color:white">company or group</b>, not the venue's brand - it can't be changed later.</div></div>
+    <div>${lbl('Boss first name')}${inp('own-first','e.g. Made')}</div><div>${lbl('Boss surname')}${inp('own-last','e.g. Wirawan')}</div>
+    <div style="grid-column:1/-1">${lbl('Boss email (required)')}${inp('own-email','name@example.com','email')}</div>
   </div>
+  <div id="own-preview" style="margin-top:12px;background:rgba(13,148,136,.15);border:1px solid rgba(94,234,212,.35);border-radius:10px;padding:10px 12px;font-size:12.5px;color:rgba(255,255,255,.85);display:none"></div>
   <div id="own-err" style="color:#FCA5A5;font-size:13px;font-weight:600;margin-top:8px"></div>
   <div style="display:flex;gap:8px;margin-top:10px"><button class="btn" style="background:#C4973B;color:white;border:none" onclick="ownerCreateClient()">Create client</button>
   <button class="btn" style="background:rgba(255,255,255,.1);color:white;border:none" onclick="document.getElementById('owner-form').innerHTML=''">Cancel</button></div>`;
+  setTimeout(()=>document.getElementById('own-name')?.focus(), 30);
+};
+const ownerSlug = v => String(v||'').normalize('NFKD').replace(/[\u0300-\u036f]/g,'').toUpperCase().replace(/[^A-Z0-9]+/g,'-').replace(/^-+|-+$/g,'');
+let ownerCodeTouched = false;
+window.ownerFormPreview = function(changedId){
+  const g = id => document.getElementById(id);
+  if(changedId === 'own-code') ownerCodeTouched = !!g('own-code').value.trim();
+  // Suggest a code from the name until it's typed by hand (first word, up to 12 letters)
+  if(changedId === 'own-name' && !ownerCodeTouched){
+    const firstWord = ownerSlug(g('own-name').value).split('-').filter(w => !['THE','PT','CV'].includes(w))[0] || '';
+    g('own-code').value = firstWord.slice(0,12);
+  }
+  const code = ownerSlug(g('own-code').value).replace(/-/g,'').slice(0,12);
+  const boss = [code, ownerSlug(g('own-first').value), ownerSlug(g('own-last').value)].filter(Boolean).join('-');
+  const pv = g('own-preview');
+  if(!code){ pv.style.display='none'; return; }
+  pv.style.display='block';
+  pv.innerHTML = 'Boss logs in as <b style="color:white">' + (boss || code + '-…') + '</b><br>Staff will be <b style="color:white">' + code + '-FIRSTNAME-SURNAME</b>';
 };
 window.ownerCreateClient = async function(){
   const v = id => (document.getElementById(id)?.value||'').trim();
@@ -5880,6 +5942,14 @@ window.ownerCreateClient = async function(){
   const body = { action:'company', name:v('own-name'), code:v('own-code'), boss_first:v('own-first'), boss_last:v('own-last'), boss_email:v('own-email') };
   if(!body.name || !body.code || !body.boss_first || !body.boss_email) return err('Please fill in company name, code, boss first name and email.');
   if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(body.boss_email)) return err('That email doesn\'t look right.');
+  body.code = ownerSlug(body.code).replace(/-/g,'').slice(0,12);
+  if(!body.code) return err('Please type a login code (letters and numbers).');
+  if(!window._ownerConfirmed){
+    appConfirmShow({ title:'Create "' + body.name + '"?', msg:'Login code: ' + body.code + ' (permanent - starts everyone\'s username). Boss: ' + body.boss_first + ' ' + body.boss_last + ', who logs in as ' + [body.code, ownerSlug(body.boss_first), ownerSlug(body.boss_last)].filter(Boolean).join('-') + '.',
+      label:'Create client', cancelLabel:'Go back', onOk: ()=>{ window._ownerConfirmed = true; ownerCreateClient(); } });
+    return;
+  }
+  window._ownerConfirmed = false;
   err('Creating…');
   const d = await peopleApi(body);
   if(!d.ok) return err(d.reason==='code taken' ? 'That company code is already used - pick another.' : 'Not created - ' + (d.reason||'please try again'));
@@ -5893,7 +5963,9 @@ function authApplyRoleVisibility(){
   const canAdmin = myProfile.is_owner || !!perms.adminconsole;
   const link = document.getElementById('n-admin'); if(link) link.style.display = canAdmin ? '' : 'none';
   ownerPanelRender();
+  companyCardRender();
   roleApplyMenus();
+  whoAmIRender();
   // the "DEMO preview" note on Admin Console is no longer true once logins are on
   document.querySelectorAll('#p-admin span').forEach(sp=>{ if(/DEMO preview, not yet wired/.test(sp.textContent)) sp.textContent = 'live accounts'; });
 }
@@ -10897,7 +10969,7 @@ window.roleRename = function(roleId){
       const before = Object.assign({}, ROLE_NAME_OVERRIDES);
       if(name && name !== def) ROLE_NAME_OVERRIDES[roleId] = name; else delete ROLE_NAME_OVERRIDES[roleId];
       roleApplyNames(ROLE_NAME_OVERRIDES);
-      adminConsoleRender();
+      adminConsoleRender(); whoAmIRender();
       if(!myProfile){ toast('Renamed ✓'); return; }
       const { error } = await roleSaveSettings();
       if(error){ roleApplyNames(before); adminConsoleRender(); toast('Could not save: ' + (error.message || 'please try again')); return; }

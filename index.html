@@ -10519,8 +10519,13 @@ function peopleOpenForm(personId){
         <div class="pp-card-t">ROLE</div>
         <select id="people-form-role" style="display:none">${ADMIN_ROLES.map(r=>`<option value="${r.id}" ${p.role===r.id?'selected':''}>${r.name}</option>`).join('')}</select>
         ${(() => { const onlySuper = real && personId && p.role==='superadmin' && p.active!==false && PEOPLE.filter(x=>x.role==='superadmin' && x.active!==false).length <= 1;
-          return `<div class="pp-pills" id="people-role-pills">${ADMIN_ROLES.map(r=>{ const locked = onlySuper && r.id!=='superadmin';
+          // Managers/Directors can only give roles below their own (Super Admins and Mavis can give any)
+          const RANK = { superadmin:6, director:5, manager:4, supervisor:3, teammember:2, dailyworker:1 };
+          const canGiveAny = !real || myProfile.is_owner || myProfile.role === 'superadmin';
+          const tooHigh = r => !canGiveAny && RANK[r] >= RANK[myProfile.role] && r !== p.role;
+          return `<div class="pp-pills" id="people-role-pills">${ADMIN_ROLES.map(r=>{ const locked = (onlySuper && r.id!=='superadmin') || tooHigh(r.id);
             return `<button type="button" class="pp-pill pp-rolepill${p.role===r.id?' on':''}" data-role="${r.id}" data-color="${r.color}" ${locked?'disabled':''} style="${p.role===r.id?`background:${r.color};border-color:${r.color}`:''}${locked?';opacity:.4;cursor:not-allowed':''}" onclick="peoplePickRole('${r.id}')">${r.name}</button>`; }).join('')}</div>
+          ${!canGiveAny ? '<div style="font-size:12px;color:#64748B;margin-top:10px">Greyed-out roles are at or above your own - ask a Super Admin to give those.</div>' : ''}
           ${onlySuper ? '<div style="font-size:12px;font-weight:700;color:#B45309;margin-top:10px">🔒 ' + (p.isMe ? 'You\'re' : esc(p.firstName) + ' is') + ' the only Super Admin, so this role can\'t change. Make someone else a Super Admin first.</div>' : ''}`; })()}
         <div id="people-role-desc" style="font-size:12px;color:#64748B;margin-top:10px">${esc(role.desc||'')} · logs in with a ${isPinRole(p.role)?'6-digit PIN':'password'}</div>
       </div>

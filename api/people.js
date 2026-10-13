@@ -4,6 +4,7 @@
 //  reset    { id } -> { link }          new one-time link to choose a new PIN/password
 //  deactivate / reactivate { id }
 //  company  { name, code, boss_first, boss_last, boss_email }  (Mavis owner only) -> new client + boss link
+//  invites  {} -> { invites: { profile_id: { sent, expires } } }  latest unused login link per person
 //  departments { departments: [...] }   (Directors and above) -> saves the company's department list
 const L = require('./_lib');
 
@@ -42,6 +43,15 @@ module.exports = async (req, res) => {
       return L.send(res, 200, { ok: true, company: co, profile: L.publicProfile(p), token });
     }
 
+    if (b.action === 'invites') {
+      // Latest unused login link per person in my company -> shows "Invite sent / expired" in People.
+      const ids = (await L.db('profiles?select=id&company_id=eq.' + me.company_id)).map(r => r.id);
+      if (!ids.length) return L.send(res, 200, { ok: true, invites: {} });
+      const rows = await L.db('invites?select=profile_id,created_at,expires_at&used_at=is.null&profile_id=in.(' + ids.join(',') + ')&order=created_at.desc');
+      const invites = {};
+      rows.forEach(r => { if (!invites[r.profile_id]) invites[r.profile_id] = { sent: r.created_at, expires: r.expires_at }; });
+      return L.send(res, 200, { ok: true, invites });
+    }
     if (b.action === 'departments') {
       if (!me.is_owner && myRank < 5) return L.send(res, 403, { ok: false, reason: 'not allowed' });
       const list = cleanList(b.departments);

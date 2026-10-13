@@ -1553,6 +1553,8 @@ textarea.rf-val{resize:vertical;min-height:72px;line-height:1.5}
 .pp-role{font-size:11px;font-weight:800;color:white;padding:5px 11px;border-radius:999px;white-space:nowrap;flex-shrink:0}
 .pp-send{padding:8px 13px;background:#CCFBF1;color:#0F766E;border:none;border-radius:9px;font-family:'Inter',sans-serif;font-size:12.5px;font-weight:800;cursor:pointer;white-space:nowrap;flex-shrink:0}
 .pp-send:hover{background:#99F6E4}
+.pp-status{font-size:11px;font-weight:800;padding:5px 10px;border-radius:999px;white-space:nowrap;flex-shrink:0}
+@media (max-width:640px){ .pp-status{display:none} }
 .pp-tag-off{font-size:11px;font-weight:800;color:#64748B;background:#E2E8F0;padding:5px 10px;border-radius:999px;flex-shrink:0}
 .pp-chev{color:#CBD5E1;flex-shrink:0}
 .pp-empty{text-align:center;padding:30px 16px;color:#64748B;font-size:13px}
@@ -1562,7 +1564,7 @@ textarea.rf-val{resize:vertical;min-height:72px;line-height:1.5}
 .pp-drawer{width:100%;max-width:460px;height:100%;background:#F1F5F9;display:flex;flex-direction:column;box-shadow:-10px 0 40px rgba(0,0,0,.2);animation:ppIn .18s ease-out}
 @keyframes ppIn{from{transform:translateX(30px);opacity:0}to{transform:none;opacity:1}}
 .pp-dhead{background:#0F1E2E;color:white;padding:18px 20px;display:flex;align-items:center;gap:14px}
-.pp-dhead .pp-av{width:54px;height:54px;font-size:20px;cursor:pointer;position:relative}
+.pp-dhead .pp-av{width:54px;height:54px;font-size:20px;cursor:pointer;position:relative;box-shadow:0 0 0 3px rgba(255,255,255,.28)}
 .pp-dhead-name{font-size:17px;font-weight:800}
 .pp-dhead-sub{font-size:12px;color:rgba(255,255,255,.65);margin-top:2px}
 .pp-x{margin-left:auto;width:36px;height:36px;border-radius:10px;border:none;background:rgba(255,255,255,.1);color:white;font-size:20px;cursor:pointer;flex-shrink:0}
@@ -10116,8 +10118,9 @@ function peopleRender(){
   el.innerHTML = list.map(p => {
     const role = ADMIN_ROLES.find(r=>r.id===p.role) || {name:'—', color:'#94A3B8'};
     const off = p.active===false;
-    const right = off ? '<span class="pp-tag-off">Switched off</span>'
-      : needs(p) ? `<button class="pp-send" onclick="event.stopPropagation();peopleSendLogin('${esc(p.id)}')">Send login</button>` : '';
+    const st = real ? peopleStatus(p) : null;
+    const right = !st || st.key==='active' ? ''
+      : `<span class="pp-status" style="color:${st.color};background:${st.bg}">${st.label}</span>` + (st.action ? `<button class="pp-send" onclick="event.stopPropagation();peopleSendLogin('${esc(p.id)}')">${st.action}</button>` : '');
     return `<div class="pp-row${off?' off':''}" data-person-row="${esc(p.id)}" onclick="peopleOpenForm('${esc(p.id)}')">
       <div class="pp-av" style="background:${p.photo?`url('${esc(p.photo)}') center/cover`:role.color}">${p.photo?'':esc((p.firstName||'?').charAt(0).toUpperCase())}</div>
       <div style="flex:1;min-width:0">
@@ -10149,6 +10152,29 @@ async function peopleLoadFromSupabase(){
   peopleRender();
   try{ adminConsoleRender(); }catch(e){}
   try{ chatSeedDepartmentGroups(); }catch(e){}
+  peopleLoadInvites();
+}
+// Which login links are waiting / expired (managers and above can see this).
+let peopleInvites = {};
+async function peopleLoadInvites(){
+  if(!myProfile || !roleCan('adminconsole') && !['manager','director','superadmin'].includes(myProfile.role) && !myProfile.is_owner) return;
+  try{ const d = await peopleApi({ action:'invites' }); if(d && d.ok){ peopleInvites = d.invites || {}; peopleRender(); } }catch(e){}
+}
+function peopleMarkInvited(id){
+  peopleInvites[id] = { sent: new Date().toISOString(), expires: new Date(Date.now() + 48*3600000).toISOString() };
+  peopleRender();
+}
+// Where someone is with their login: active / invite sent / invite expired / not invited / switched off
+function peopleStatus(p){
+  if(p.active === false) return { key:'off', label:'Switched off', color:'#64748B', bg:'#E2E8F0' };
+  if(p.hasLogin) return { key:'active', label:'Active', color:'#15803D', bg:'#DCFCE7' };
+  const inv = peopleInvites[p.id];
+  if(inv){
+    const left = new Date(inv.expires).getTime() - Date.now();
+    if(left > 0){ const h = Math.max(1, Math.round(left/3600000)); return { key:'sent', label:'Invite sent · ' + h + 'h left', color:'#B45309', bg:'#FEF3C7', action:'Send again' }; }
+    return { key:'expired', label:'Invite expired', color:'#B91C1C', bg:'#FEE2E2', action:'Send again' };
+  }
+  return { key:'none', label:'Not invited yet', color:'#475569', bg:'#F1F5F9', action:'Send login' };
 }
 async function peopleApi(body){
   const { data } = await sb.auth.getSession();
@@ -10241,6 +10267,7 @@ async function peopleResetLoginGo(id){
   toast('Making link…');
   const d = await peopleApi({ action:'reset', id });
   if(!d.ok){ toast(d.message || 'Could not make a link - ' + (d.reason||'please try again')); return; }
+  if(!p.hasLogin) peopleMarkInvited(p.id);
   peopleShowInvite(p, d.token, p.hasLogin);
 }
 window.peopleSetActive = function(id, on){
@@ -10273,10 +10300,15 @@ function peopleOpenForm(personId){
         <div style="font-size:14.5px;font-weight:800;color:#0F1E2E;word-break:break-all">${esc(p.username||'')}</div></div>
         <button class="pp-link" onclick="navigator.clipboard&&navigator.clipboard.writeText('${esc(p.username||'')}');this.textContent='Copied ✓'">Copy</button>
       </div>
-      <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:12px">
-        <div style="font-size:12.5px;font-weight:700;color:${p.active===false?'#DC2626':p.hasLogin?'#15803D':'#B45309'}">${p.active===false?'Switched off':p.hasLogin?'● Can log in':'● Hasn\'t set up their login yet'}</div>
-        ${p.active===false ? '' : `<button class="pp-send" onclick="${p.hasLogin ? `peopleResetLogin('${esc(p.id)}')` : `peopleSendLogin('${esc(p.id)}')`}">${p.hasLogin ? 'Reset ' + (isPinRole(p.role)?'PIN':'password') : 'Send login link'}</button>`}
+      ${p.isMe ? `<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:12px">
+        <div style="font-size:12.5px;font-weight:700;color:#15803D">● This is you - you're logged in</div>
+        <button class="pp-send" onclick="peopleCloseForm();openMyAccount()">My Account</button>
       </div>
+      <div style="font-size:12px;color:#64748B;margin-top:6px">Change your own password in My Account.</div>` : (() => { const st = peopleStatus(p); return `<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:12px;flex-wrap:wrap">
+        <span class="pp-status" style="display:inline-block;color:${st.color};background:${st.bg}">${st.label}</span>
+        ${p.active===false ? '' : `<button class="pp-send" onclick="${p.hasLogin ? `peopleResetLogin('${esc(p.id)}')` : `peopleSendLogin('${esc(p.id)}')`}">${p.hasLogin ? 'Reset ' + (isPinRole(p.role)?'PIN':'password') : (st.action || 'Send login')}</button>`}
+      </div>
+      <div style="font-size:12px;color:#64748B;margin-top:6px">${p.hasLogin ? 'They can log in. A reset gives them a new link to choose a new ' + (isPinRole(p.role)?'PIN':'password') + '.' : 'They\'re added - they just need to open their link and choose a ' + (isPinRole(p.role)?'6-digit PIN':'password') + '. Then they show as Active.'}</div>`; })()}
     </div>` : '';
   bg.innerHTML = `<div class="pp-drawer" role="dialog" aria-label="${personId?'Edit person':'Add person'}">
     <div class="pp-dhead">
@@ -10502,6 +10534,7 @@ async function peopleSaveForm(){
     peopleCloseForm();
     await peopleLoadFromSupabase();
     if(wasNew && d.token){
+      if(d.profile && d.profile.id) peopleMarkInvited(d.profile.id);
       const np = PEOPLE.find(x=>x.id===d.profile.id) || { firstName, lastName, role, username: d.profile.username };
       peopleShowInvite(np, d.token, false);
     } else toast('Saved ✓');

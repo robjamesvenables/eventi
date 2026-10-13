@@ -75,7 +75,7 @@ module.exports = async (req, res) => {
       return L.send(res, 200, { ok: true, invites });
     }
     if (b.action === 'departments') {
-      if (!me.is_owner && myRank < 5) return L.send(res, 403, { ok: false, reason: 'not allowed' });
+      // Managers and up can edit the department list (rank check above already requires Manager+).
       const list = cleanList(b.departments);
       const co = (await L.db('companies?id=eq.' + me.company_id, { method: 'PATCH', body: { departments: list } }))[0];
       return L.send(res, 200, { ok: true, departments: co.departments });

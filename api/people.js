@@ -105,7 +105,14 @@ module.exports = async (req, res) => {
       const token = await makeInvite(p.id, me.id);
       return L.send(res, 200, { ok: true, profile: L.publicProfile(p), token });
     }
+    // Never leave a company without an active Super Admin.
+    const lastSuperAdmin = async () => {
+      if (target.role !== 'superadmin' || target.active === false) return false;
+      const supers = await L.db('profiles?select=id&company_id=eq.' + target.company_id + '&role=eq.superadmin&active=eq.true');
+      return supers.length <= 1;
+    };
     if (b.action === 'update') {
+      if (wantRole !== 'superadmin' && await lastSuperAdmin()) return L.send(res, 400, { ok: false, reason: 'last superadmin', message: (target.id === me.id ? 'You are' : target.first_name + ' is') + ' the only Super Admin. Make someone else a Super Admin first.' });
       const patch = { role: wantRole };
       if (b.first_name !== undefined) patch.first_name = String(b.first_name).trim();
       if (b.last_name !== undefined) patch.last_name = String(b.last_name || '').trim();
@@ -143,6 +150,7 @@ module.exports = async (req, res) => {
     if (b.action === 'deactivate' || b.action === 'reactivate') {
       if (target.id === me.id) return L.send(res, 400, { ok: false, reason: 'yourself' });
       const active = b.action === 'reactivate';
+      if (!active && await lastSuperAdmin()) return L.send(res, 400, { ok: false, reason: 'last superadmin', message: target.first_name + ' is the only Super Admin. Make someone else a Super Admin first.' });
       const p = (await L.db('profiles?id=eq.' + target.id, { method: 'PATCH', body: { active } }))[0];
       if (target.user_id) await L.authAdmin('users/' + target.user_id, { method: 'PUT', body: { ban_duration: active ? 'none' : '876000h' } });
       if (!active) await L.db('invites?profile_id=eq.' + target.id + '&used_at=is.null', { method: 'DELETE' });

@@ -22766,8 +22766,19 @@ document.addEventListener('click', e => {
 });
 window.chat2Copy = function(i){
   const m = CH.view[i]; if(!m || !m.body) return;
-  // Android shows its own "Copied to clipboard" message - don't double it up
-  const done = () => { if(!/Android/i.test(navigator.userAgent)) toast('Copied'); };
+  // A small "Copied" tag pops up just above the message itself
+  const done = () => {
+    const row = document.getElementById('chat-message-' + i);
+    const bub = row && row.querySelector('.chat2-bubble');
+    if(!bub){ toast('Copied'); return; }
+    const tag = document.createElement('div');
+    tag.className = 'chat2-copied ' + (m.sender_id === chat2Me() ? 'right' : 'left');
+    tag.textContent = 'Copied';
+    tag.style.top = (bub.offsetTop - 30) + 'px';
+    row.appendChild(tag);
+    setTimeout(() => tag.classList.add('out'), 1100);
+    setTimeout(() => tag.remove(), 1500);
+  };
   if(navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(m.body).then(done, () => toast('Could not copy'));
   else { const t = document.createElement('textarea'); t.value = m.body; document.body.appendChild(t); t.select(); try{ document.execCommand('copy'); done(); }catch(e){} t.remove(); }
 };
@@ -23110,6 +23121,8 @@ chat2Style.textContent = `
 @media (hover:hover){.chat2-bubble{-webkit-user-select:text;user-select:text}}
 .chat2-tools{display:none}
 .chat2-selected .chat2-bubble{box-shadow:0 0 0 3px rgba(13,148,136,.45)}
+.chat2-copied{position:absolute;z-index:5;background:#0D9488;color:white;font:700 11.5px Inter,sans-serif;padding:5px 11px;border-radius:12px;box-shadow:0 4px 14px rgba(15,30,46,.2);pointer-events:none;animation:chat2Pop .14s ease-out;transition:opacity .35s}
+.chat2-copied.right{right:0}.chat2-copied.left{left:0}.chat2-copied.out{opacity:0}
 .chat2-emoji-pop{position:absolute;bottom:calc(100% - 2px);z-index:5;display:flex;gap:4px;background:white;border-radius:26px;padding:5px 7px;box-shadow:0 6px 24px rgba(15,30,46,.22);animation:chat2Pop .14s ease-out}
 .chat2-emoji-pop.right{right:0}.chat2-emoji-pop.left{left:0}
 .chat2-emoji-pop.below{bottom:auto;top:calc(100% - 22px)}

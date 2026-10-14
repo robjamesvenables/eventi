@@ -28,6 +28,8 @@ function preview(msg){
   return { image: 'Photo', video: 'Video', voice: 'Voice note' }[msg.attachment_type] || ('Document: ' + (msg.attachment_name || 'file'));
 }
 const fullName = p => ((p.first_name || '') + ' ' + (p.last_name || '')).trim();
+// Every outcome is written to the Owner page (Health), so a missed notification can always be explained
+function note(me, text){ return L.db('app_errors', { method: 'POST', body: { company_id: me.company_id, username: me.username, page: 'notify', message: 'Chat notification from ' + (fullName(me) || me.username) + ': ' + text } }).catch(() => {}); }
 const ROLE_COLOURS = { superadmin:'#0F1E2E', director:'#DC2626', manager:'#16A34A', supervisor:'#2563EB', teammember:'#B8862F', dailyworker:'#7C8AA0' };
 const initials = p => (((p.first_name || '?')[0] || '') + ((p.last_name || '')[0] || '')).toUpperCase();
 
@@ -59,16 +61,16 @@ module.exports = async (req, res) => {
     }
     const msg = (await L.db('chat_msgs?select=*&id=eq.' + encodeURIComponent(b.msg_id || '')))[0];
     // only the person who sent it, and only straight after sending
-    if (!msg) return L.send(res, 200, { ok: true, sent: 0, why: 'message not found' });
-    if (String(msg.sender_id) !== String(me.id)) return L.send(res, 200, { ok: true, sent: 0, why: 'not the sender' });
-    if (msg.deleted_at || Date.now() - new Date(msg.created_at).getTime() > 3 * 60000) return L.send(res, 200, { ok: true, sent: 0, why: 'too old' });
+    if (!msg) { await note(me, 'not sent - message not found'); return L.send(res, 200, { ok: true, sent: 0, why: 'message not found' }); }
+    if (String(msg.sender_id) !== String(me.id)) { await note(me, 'not sent - not the sender'); return L.send(res, 200, { ok: true, sent: 0, why: 'not the sender' }); }
+    if (msg.deleted_at || Date.now() - new Date(msg.created_at).getTime() > 3 * 60000) { await note(me, 'not sent - message too old or deleted'); return L.send(res, 200, { ok: true, sent: 0, why: 'too old' }); }
     const thread = (await L.db('chat_threads?select=*&id=eq.' + msg.thread_id))[0];
-    if (!thread || String(thread.company_id) !== String(me.company_id)) return L.send(res, 200, { ok: true, sent: 0, why: 'chat not found' });
+    if (!thread || String(thread.company_id) !== String(me.company_id)) { await note(me, 'not sent - chat not found'); return L.send(res, 200, { ok: true, sent: 0, why: 'chat not found' }); }
 
     const raw = await L.db('rpc/chat_member_ids', { method: 'POST', body: { th: thread.id } });
     const memberIds = (Array.isArray(raw) ? raw : []).map(x => (x && typeof x === 'object') ? Object.values(x)[0] : x);
     const others = memberIds.filter(id => String(id) !== String(me.id));
-    if (!others.length) return L.send(res, 200, { ok: true, sent: 0, why: 'no one else in this chat', raw: JSON.stringify(raw).slice(0, 200) });
+    if (!others.length) { await note(me, 'not sent - no one else in this chat'); return L.send(res, 200, { ok: true, sent: 0, why: 'no one else in this chat', raw: JSON.stringify(raw).slice(0, 200) }); }
     const list = others.map(encodeURIComponent).join(',');
     const [people, prefs, subs] = await Promise.all([
       L.db('profiles?select=id,first_name,last_name,active&id=in.(' + list + ')'),
@@ -103,11 +105,11 @@ module.exports = async (req, res) => {
       }
     }));
     // Record what happened, so missed notifications can be checked on the Owner page (Health)
-    L.db('app_errors', { method: 'POST', body: { company_id: me.company_id, username: me.username, page: 'notify',
-      message: 'Chat notification from ' + (fullName(me) || me.username) + ' in ' + (groupName || 'a direct chat') + ': sent to ' + sent + ' of ' + subs.length + ' device(s) for ' + others.length + ' other person(s)' + (skipped.length ? ' - skipped: ' + skipped.join(', ') : '') + (subs.length ? '' : ' - nobody has notifications turned on') } }).catch(() => {});
+    await note(me, 'in ' + (groupName || 'a direct chat') + ': sent to ' + sent + ' of ' + subs.length + ' device(s) for ' + others.length + ' other person(s)' + (skipped.length ? ' - skipped: ' + skipped.join(', ') : '') + (subs.length ? '' : ' - nobody has notifications turned on'));
     return L.send(res, 200, { ok: true, sent, people: others.length, devices: subs.length, skipped });
   } catch (e) {
     console.error('push error', e.message);
+    try { const me = await L.caller(req); if (me) await note(me, 'FAILED - ' + String(e.message || e).slice(0, 160)); } catch (x) {}
     return L.send(res, 500, { ok: false, why: String(e.message || e).slice(0, 200) });
   }
 };

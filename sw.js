@@ -34,9 +34,15 @@ async function avatar(letters, colour){
   }catch(e){ return '/icon-192-v6.png'; }
 }
 
+// Never let the picture hold up the notification: give it 3 seconds at most
+function within(ms, p){ return Promise.race([p, new Promise(r => setTimeout(() => r(null), ms))]); }
 async function senderPicture(d){
-  if (d.photo) { try { const r = await fetch(d.photo); if (r.ok) return d.photo; } catch (e) {} }
-  return d.who ? avatar(d.who, d.colour) : '/icon-192-v6.png';
+  if (d.photo) {
+    const ok = await within(3000, fetch(d.photo).then(r => r.ok).catch(() => false));
+    if (ok) return new URL(d.photo, self.location.origin).href;
+  }
+  if (d.who) { const a = await within(1500, avatar(d.who, d.colour)); if (a) return a; }
+  return '/icon-192-v6.png';
 }
 
 // A new Chat message arrived while Mavis is closed or in the background
@@ -46,14 +52,21 @@ self.addEventListener('push', (event) => {
   event.waitUntil((async () => {
     // Stay quiet only if the person is looking at that exact chat right now (like WhatsApp Web)
     if (!d.force && d.thread && viewing.thread === d.thread && Date.now() - viewing.at < 45000) return;
-    await self.registration.showNotification(d.title || 'Mavis', {
+    const opts = {
       body: d.body || 'New message',
-      icon: await senderPicture(d),   // who sent it: their photo, or their initials (tests show the Mavis icon)
       badge: '/notify-badge-96.png',   // Android's small top-bar icon: white shape on see-through
       tag: 'chat-' + (d.thread || 'mavis'),     // one notification per chat, updated with the latest message
       renotify: true,
       data: { url: d.url || '/', thread: d.thread || null }
-    });
+    };
+    let icon = null;
+    try { icon = await senderPicture(d); } catch (e) {}
+    try {
+      await self.registration.showNotification(d.title || 'Mavis', icon ? Object.assign({ icon }, opts) : opts);
+    } catch (e) {
+      // if the picture is the problem, show it without one rather than nothing
+      await self.registration.showNotification(d.title || 'Mavis', opts);
+    }
   })());
 });
 

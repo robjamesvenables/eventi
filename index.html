@@ -22578,6 +22578,7 @@ async function chatStart(force){
   pushSubscribe(false).then(() => { try{ chatRenderList(); }catch(e){} });
   chat2OpenFromUrl();
   setTimeout(chat2PreparePics, 1500);
+  setTimeout(chat2PreparePics, 8000);
   chat2Subscribe();
   chat2RefreshAll();
   if(chatActiveId && CH.threads[chatActiveId]) chatRenderMessages();
@@ -23403,13 +23404,22 @@ async function chat2PreparePics(){
   try{
     const reg = navigator.serviceWorker && await navigator.serviceWorker.ready; if(!reg || !reg.active) return;
     const pics = {};
-    Object.values(CH.people).forEach(p => {
+    const loadImg = src => new Promise(res => { const im = new Image(); im.onload = () => res(im); im.onerror = () => res(null); im.src = src; });
+    for(const p of Object.values(CH.people)){
       const c = document.createElement('canvas'); c.width = c.height = 192; const g = c.getContext('2d');
-      g.fillStyle = chat2RoleColor(p.role); g.beginPath(); g.arc(96, 96, 96, 0, Math.PI * 2); g.fill();
-      g.fillStyle = '#FFFFFF'; g.font = '700 76px Inter, sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle';
-      g.fillText(chat2Initials(p.id).slice(0, 2), 96, 100);
-      pics[p.id] = c.toDataURL('image/png');
-    });
+      g.beginPath(); g.arc(96, 96, 96, 0, Math.PI * 2); g.closePath();
+      const im = p.photo ? await loadImg(p.photo) : null;
+      if(im){
+        // their photo, cropped to a circle
+        g.save(); g.clip(); const s = Math.min(im.width, im.height);
+        g.drawImage(im, (im.width - s) / 2, (im.height - s) / 2, s, s, 0, 0, 192, 192); g.restore();
+      } else {
+        g.fillStyle = chat2RoleColor(p.role); g.fill();
+        g.fillStyle = '#FFFFFF'; g.font = '700 76px Inter, sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle';
+        g.fillText(chat2Initials(p.id).slice(0, 2), 96, 100);
+      }
+      pics[p.id] = c.toDataURL('image/jpeg', 0.85);
+    }
     reg.active.postMessage({ type:'pics', pics });
   }catch(e){}
 }

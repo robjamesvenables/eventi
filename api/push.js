@@ -27,6 +27,8 @@ function preview(msg){
   return { image: 'Photo', video: 'Video', voice: 'Voice note' }[msg.attachment_type] || ('Document: ' + (msg.attachment_name || 'file'));
 }
 const fullName = p => ((p.first_name || '') + ' ' + (p.last_name || '')).trim();
+const ROLE_COLOURS = { superadmin:'#0F1E2E', director:'#DC2626', manager:'#16A34A', supervisor:'#2563EB', teammember:'#B8862F', dailyworker:'#7C8AA0' };
+const initials = p => (((p.first_name || '?')[0] || '') + ((p.last_name || '')[0] || '')).toUpperCase();
 
 module.exports = async (req, res) => {
   if (req.method !== 'POST') return L.send(res, 405, { ok: false });
@@ -88,7 +90,7 @@ module.exports = async (req, res) => {
       if (!personBy[pid] || personBy[pid].active === false) { skipped.push('inactive'); return; }
       if (inQuiet(pref, now)) { skipped.push('quiet hours'); return; }
       if (isMuted(pref, thread.id, now) && !mentioned(pid)) { skipped.push('muted'); return; }
-      const payload = JSON.stringify({ title, body: (mentioned(pid) ? '@you · ' : '') + preview(msg), thread: thread.id, url: '/?chat=' + thread.id });
+      const payload = JSON.stringify({ title, body: (mentioned(pid) ? '@you · ' : '') + preview(msg), thread: thread.id, url: '/?chat=' + thread.id, who: initials(me), colour: ROLE_COLOURS[me.role] || '#0D9488' });
       try {
         await webpush.sendNotification({ endpoint: s.endpoint, keys: { p256dh: s.p256dh, auth: s.auth } }, payload, { TTL: 3600, urgency: 'high', topic: String(thread.id).replace(/-/g, '').slice(0, 32) });
         sent++;

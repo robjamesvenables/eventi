@@ -21,6 +21,19 @@ self.addEventListener('message', (event) => {
   if (d.type === 'viewing') viewing = { thread: d.thread || null, at: Date.now() };
 });
 
+// The sender's picture for the notification: their initials on their role colour (like in Chat)
+async function avatar(letters, colour){
+  try{
+    const c = new OffscreenCanvas(192, 192), g = c.getContext('2d');
+    g.fillStyle = colour || '#0D9488'; g.beginPath(); g.arc(96, 96, 96, 0, Math.PI * 2); g.fill();
+    g.fillStyle = '#FFFFFF'; g.font = '700 76px sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle';
+    g.fillText(String(letters || '?').slice(0, 2), 96, 100);
+    const buf = await (await c.convertToBlob({ type: 'image/png' })).arrayBuffer();
+    let bin = ''; new Uint8Array(buf).forEach(b => { bin += String.fromCharCode(b); });
+    return 'data:image/png;base64,' + btoa(bin);
+  }catch(e){ return '/icon-192-v6.png'; }
+}
+
 // A new Chat message arrived while Mavis is closed or in the background
 self.addEventListener('push', (event) => {
   let d = {};
@@ -30,7 +43,7 @@ self.addEventListener('push', (event) => {
     if (!d.force && d.thread && viewing.thread === d.thread && Date.now() - viewing.at < 45000) return;
     await self.registration.showNotification(d.title || 'Mavis', {
       body: d.body || 'New message',
-      // no separate picture: the app's own icon already shows, so there's just one Mavis icon
+      icon: d.who ? await avatar(d.who, d.colour) : '/icon-192-v6.png',   // who sent it (tests show the Mavis icon)
       badge: '/notify-badge-96.png',   // Android's small top-bar icon: white shape on see-through
       tag: 'chat-' + (d.thread || 'mavis'),     // one notification per chat, updated with the latest message
       renotify: true,

@@ -4953,13 +4953,12 @@ img.emoji-tw{width:1.15em;height:1.15em;vertical-align:-0.2em;margin:0 1px}
           <div class="ph-sub">Quick answers by department — or just search</div>
         </div>
         <div style="display:flex;gap:10px">
-          <button class="btn btn-ghost" onclick="faqAddDept()">+ Add Department</button>
-          <button class="btn btn-navy" onclick="faqAdd()">+ Add FAQ</button>
+          <button class="btn btn-navy" id="faq-add-btn" onclick="faqAdd()">+ Add Question</button>
         </div>
       </div>
       <div style="position:relative;margin-bottom:24px">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#94A3B8" stroke-width="2" style="position:absolute;left:14px;top:50%;transform:translateY(-50%)"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-        <input id="faq-search" type="text" placeholder="Search FAQs..." oninput="faqSearchInput(this.value)" style="width:100%;padding:12px 16px 12px 40px;border:1.5px solid #E2E8F0;border-radius:10px;font-family:'Inter',sans-serif;font-size:16px;outline:none;box-sizing:border-box">
+        <input id="faq-search" type="text" placeholder="Search questions and answers…" oninput="faqSearchInput(this.value)" style="width:100%;padding:12px 16px 12px 40px;border:1.5px solid #E2E8F0;border-radius:10px;font-family:'Inter',sans-serif;font-size:16px;outline:none;box-sizing:border-box">
       </div>
       <div id="faq-dept-view">
         <div class="sop-list" id="faq-dept-grid"></div>
@@ -5853,7 +5852,7 @@ function appClearDemoState(){
   safe(()=>{ kbTeamProjects = []; kbPersonalProjects = [{id:'mytodo', name:'My Tasks'}];
              Object.keys(kbBoards).forEach(k => delete kbBoards[k]); kbBoards.mytodo = {todo:[], progress:[], done:[]};
              kbActiveProjectId = 'mytodo'; kbActiveIsTeam = false; });
-  safe(()=>{ faqData = []; faqDepts.length = 0; });   // companies name their own departments
+  safe(()=>{ faqData = []; faqDepts.length = 0; faqLoaded = false; });   // companies name their own departments
   safe(()=>{ announcements.length = 0; momentsData.length = 0; });
   safe(()=>{ vacanciesData = []; customerData = []; vendorData = []; vendorDepts.length = 0; });
   safe(()=>{ sopDepts.length = 0; Object.keys(sopData).forEach(k => delete sopData[k]); });
@@ -17284,206 +17283,240 @@ function quickLinksDelete(id){
 }
 
 // ── KNOWLEDGE BASE ──
-const faqDepts = [
-  {id:'hr', name:'HR', color:'#0F1E2E', icon:iconSvgFromId('hr')},
-  {id:'finance', name:'Finance', color:'#0F1E2E', icon:iconSvgFromId('finance')},
-  {id:'operations', name:'Operations', color:'#0F1E2E', icon:iconSvgFromId('operations')},
-  {id:'housekeeping', name:'Housekeeping', color:'#0F1E2E', icon:iconSvgFromId('housekeeping')},
-  {id:'avit', name:'AV & IT', color:'#0F1E2E', icon:iconSvgFromId('avit')},
+// Saved per company (kb_faqs). Sections = General + the company's own departments (People),
+// so venues never have to set them up twice. Managers and above can add/edit/delete; everyone can read.
+const faqDepts = [];                 // filled by faqRebuildSections()
+let faqData = [];                    // {id, dept, question, answer}
+let faqLoaded = false, faqDbOk = false, faqNextId = 1;
+const FAQ_DEMO = [
+  {dept:'', question:"What's the staff WiFi password?", answer:"StaffWiFi2026 - please don't share this outside the team."},
+  {dept:'', question:'How do I request annual leave?', answer:'Submit your request to your department head at least 2 weeks in advance. Approved leave is usually confirmed within 48 hours.'},
+  {dept:'', question:'How do I submit an expense claim?', answer:'Fill out the expense form and attach your receipts, then send it to Finance by the 25th of each month.'},
+  {dept:'', question:'How do I connect to the printer?', answer:'Select "Office-Printer" from your device\'s printer list. If it doesn\'t appear, ask IT to add your device.'}
 ];
-let faqData = [
-  {id:1, dept:'hr', question:'How do I request annual leave?', answer:'Submit your request to your department head at least 2 weeks in advance. Approved leave is usually confirmed within 48 hours.'},
-  {id:2, dept:'finance', question:'How do I submit an expense claim?', answer:'Fill out the expense form and attach your receipts, then send it to Finance by the 25th of each month for reimbursement in the next pay run.'},
-  {id:3, dept:'operations', question:"Where can I find today's reservations?", answer:"Check the Quick Links tab — Today's Reservations for Beach Club and Restaurant are posted there daily."},
-  {id:4, dept:'housekeeping', question:"What's the linen delivery schedule?", answer:'Fresh linen is delivered every Monday, Wednesday and Friday morning. Contact the laundry supplier directly for urgent top-ups.'},
-  {id:5, dept:'avit', question:"What's the staff WiFi password?", answer:"StaffWiFi2026 — please don't share this outside the team."},
-  {id:6, dept:'avit', question:'How do I connect to the printer?', answer:'Select "Office-Printer" from your device\'s WiFi printer list. If it doesn\'t appear, ask IT to add your device.'},
-];
-let faqNextId = 20;
+function faqEsc(v){ return String(v == null ? '' : v).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function faqCanEdit(){ return !myProfile || ['superadmin','director','manager'].includes(myProfile.role) || myProfile.is_owner; }
+function faqCompanyDepts(){
+  if(myProfile) return (Array.isArray(PEOPLE_DEPARTMENTS) && PEOPLE_DEPARTMENTS.length) ? PEOPLE_DEPARTMENTS : ((myCompany && myCompany.departments) || []);
+  return ['HR', 'Finance', 'Operations', 'Housekeeping', 'AV & IT'];
+}
+function faqIconFor(name){
+  const k = String(name || '').toLowerCase();
+  const guess = k.includes('kitchen') ? 'kitchen' : k.includes('bar') ? 'bar' : k.includes('hr') || k.includes('people') ? 'hr' : k.includes('financ') || k.includes('account') ? 'finance'
+    : k.includes('housekeep') ? 'housekeeping' : k.includes('av') || k.includes('it') || k.includes('audio') ? 'avit' : k.includes('event') ? 'events' : k.includes('oper') || k.includes('front') ? 'operations' : k;
+  return iconSvgFromId(guess);
+}
+function faqRebuildSections(){
+  faqDepts.length = 0;
+  faqDepts.push({ id:'', name:'General', color:'#C4973B', icon:iconSvgFromId('operations') });
+  faqCompanyDepts().forEach(n => faqDepts.push({ id:n, name:n, color:'#0F1E2E', icon:faqIconFor(n) }));
+}
+// A question whose department was deleted shows under General, so nothing is ever lost
+function faqSec(f){ return faqDepts.some(d => d.id && d.id === f.dept) ? f.dept : ''; }
+
+async function faqLoad(force){
+  if(!myProfile){ if(!faqLoaded){ faqData = FAQ_DEMO.map((f, i) => Object.assign({ id:'demo' + i }, f)); faqLoaded = true; } return; }
+  if(faqLoaded && !force) return;
+  const { data, error } = await sb.from('kb_faqs').select('*').order('question');
+  if(error){ console.warn('Knowledge Base not set up yet', error); faqDbOk = false; faqLoaded = true; faqData = []; return; }
+  faqDbOk = true; faqLoaded = true;
+  faqData = (data || []).map(r => ({ id:r.id, dept:r.dept || '', question:r.question, answer:r.answer || '' }));
+  // The Mavis demo company gets a few example questions the first time
+  if(!faqData.length && typeof appIsDemoCompany === 'function' && appIsDemoCompany() && faqCanEdit()){
+    const ins = await sb.from('kb_faqs').insert(FAQ_DEMO).select('*');
+    if(!ins.error) faqData = (ins.data || []).map(r => ({ id:r.id, dept:r.dept || '', question:r.question, answer:r.answer || '' }));
+  }
+}
+async function faqOpenPage(){
+  faqRebuildSections();
+  faqApplyRole();
+  faqRenderDepts();
+  await faqLoad();
+  faqRefreshCurrentView();
+}
+function faqApplyRole(){
+  const add = document.getElementById('faq-add-btn');
+  if(add) add.style.display = faqCanEdit() ? '' : 'none';
+}
 
 function faqRenderDepts(){
   const grid = document.getElementById('faq-dept-grid');
   if(!grid) return;
-  if(!faqDepts.length){
-    grid.innerHTML = '<div style="text-align:center;padding:40px 20px;color:#94A3B8;background:white;border:1.5px dashed #E2E8F0;border-radius:12px"><div style="font-size:15px;font-weight:700;color:#0F1E2E;margin-bottom:6px">No departments yet</div><div style="font-size:13px">Add your first department to start collecting quick answers for the team.</div></div>';
+  if(!faqDepts.length) faqRebuildSections();
+  if(myProfile && faqLoaded && !faqDbOk){
+    grid.innerHTML = '<div style="text-align:center;padding:40px 20px;color:#94A3B8;background:white;border:1.5px dashed #E2E8F0;border-radius:12px"><div style="font-size:15px;font-weight:700;color:#0F1E2E;margin-bottom:6px">Knowledge Base is being set up</div><div style="font-size:13px">Check back soon.</div></div>';
     return;
   }
-  grid.innerHTML = faqDepts.map(d=>{
-    const count = faqData.filter(f=>f.dept===d.id).length;
+  grid.innerHTML = faqDepts.map(d => {
+    const count = faqData.filter(f => faqSec(f) === d.id).length;
     return `
-      <div class="sop-item" onclick="faqOpenDept('${d.id}')">
-        <div class="dept-row-ico" style="background:${d.color};cursor:pointer" onclick="event.stopPropagation();faqEditDept('${d.id}')" title="Edit department">${d.icon}</div>
-        <div style="flex:1"><div class="sop-item-title">${d.name}</div><div class="dept-row-count">${count} FAQ${count===1?'':'s'}</div></div>
-        <span onclick="event.stopPropagation();faqEditDept('${d.id}')" title="Edit department" style="opacity:0.5;cursor:pointer;font-size:13px;margin-right:6px"><svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="2.2"/><circle cx="12" cy="12" r="2.2"/><circle cx="12" cy="19" r="2.2"/></svg></span>
-        <span onclick="event.stopPropagation();faqDeleteDept('${d.id}')" title="Delete department" style="opacity:0.5;cursor:pointer;font-size:16px;line-height:1;margin-right:8px">×</span>
+      <div class="sop-item" onclick="faqOpenDept('${faqEsc(d.id).replace(/'/g, '&#39;')}')">
+        <div class="dept-row-ico" style="background:${d.color}">${d.icon}</div>
+        <div style="flex:1"><div class="sop-item-title">${faqEsc(d.name)}</div><div class="dept-row-count">${count} question${count === 1 ? '' : 's'}</div></div>
         <div class="sop-item-arr">›</div>
       </div>`;
-  }).join('');
+  }).join('') + (myProfile && faqCanEdit() ? `<div style="font-size:12px;color:#94A3B8;padding:10px 4px;line-height:1.5">Sections come from your departments in <b>People</b> - add or rename a department there and it appears here.</div>` : '');
 }
-
-function faqEditDept(id){
-  const d = faqDepts.find(x=>x.id===id);
-  if(!d) return;
-  appModalShow({
-    title:'Edit Department',
-    fields:[
-      {label:'Department name', value:d.name, placeholder:'e.g. Security'},
-      {label:'Colour', type:'color', options: DEPT_COLORS, value:d.color},
-      {label:'Icon', type:'icon', options: ICON_LIBRARY, value: iconIdFromSvg(d.icon)}
-    ],
-    onOk([name, color, iconId]){
-      d.name = name;
-      d.color = color;
-      d.icon = iconSvgFromId(iconId);
-      faqRenderDepts();
-      toast('Department updated ✓');
-    }
-  });
-}
-
-function faqAddDept(){
-  appModalShow({
-    title:'Add Department',
-    fields:[
-      {label:'Department name', placeholder:'e.g. Security'},
-      {label:'Colour', type:'color', options: DEPT_COLORS, value:'#0F1E2E'},
-      {label:'Icon', type:'icon', options: ICON_LIBRARY}
-    ],
-    onOk([name, color, iconId]){
-      const id = name.trim().toLowerCase().replace(/[^a-z0-9]+/g,'-');
-      if(!id || faqDepts.find(d=>d.id===id)){ toast('Please use a unique department name'); return; }
-      faqDepts.push({id, name, color, icon: iconSvgFromId(iconId)});
-      faqRenderDepts();
-      toast('Department added ✓');
-    }
-  });
-}
-
-function faqDeleteDept(id){
-  const d = faqDepts.find(x=>x.id===id);
-  if(!d) return;
-  appConfirmShow({title:'Delete Department', msg:`Delete "${d.name}"? This will permanently remove all its FAQs.`, onOk:()=>{
-    const idx = faqDepts.findIndex(x=>x.id===id);
-    if(idx>-1) faqDepts.splice(idx,1);
-    faqData = faqData.filter(f=>f.dept!==id);
-    faqRenderDepts();
-    toast('Department deleted');
-  }});
-}
+// Old buttons kept working: departments are now managed in People
+function faqAddDept(){ toast('Sections come from your departments - add them in People'); }
+function faqEditDept(){ faqAddDept(); }
+function faqDeleteDept(){ faqAddDept(); }
 
 function faqRenderItems(containerId, items, showDept){
   const el = document.getElementById(containerId);
   if(!el) return;
-  if(items.length===0){
-    el.innerHTML = '<div style="text-align:center;padding:32px;color:#94A3B8;font-size:13px">No FAQs found</div>';
+  if(items.length === 0){
+    el.innerHTML = `<div style="text-align:center;padding:32px;color:#94A3B8;font-size:13px">${containerId === 'faq-search-results' ? 'Nothing found' : 'No questions here yet' + (faqCanEdit() ? ' - tap <b>+ Add Question</b>' : '')}</div>`;
     return;
   }
-  el.innerHTML = items.map(f=>{
-    const deptName = showDept ? '<span style="color:#94A3B8;font-weight:500;font-size:11px"> — ' + ((faqDepts.find(d=>d.id===f.dept)||{}).name||'') + '</span>' : '';
+  const edit = faqCanEdit();
+  el.innerHTML = items.map(f => {
+    const deptName = showDept ? '<span style="color:#94A3B8;font-weight:500;font-size:11px"> — ' + faqEsc((faqDepts.find(d => d.id === faqSec(f)) || {}).name || 'General') + '</span>' : '';
     return `
       <div class="faq-item" onclick="this.classList.toggle('open')">
         <div class="faq-q">
-          <span>${f.question}${deptName}</span>
+          <span>${faqEsc(f.question)}${deptName}</span>
           <span style="display:flex;align-items:center;gap:10px;flex-shrink:0">
-            <span onclick="event.stopPropagation();faqEdit(${f.id})" title="Edit FAQ" style="opacity:0.5;cursor:pointer;font-size:12px"><svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="2.2"/><circle cx="12" cy="12" r="2.2"/><circle cx="12" cy="19" r="2.2"/></svg></span>
-            <span onclick="event.stopPropagation();faqDelete(${f.id})" title="Delete FAQ" style="opacity:0.5;cursor:pointer;font-size:15px;line-height:1">×</span>
+            ${edit ? `<span onclick="event.stopPropagation();faqEdit('${f.id}')" title="Edit" style="opacity:0.5;cursor:pointer;font-size:12px"><svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="2.2"/><circle cx="12" cy="12" r="2.2"/><circle cx="12" cy="19" r="2.2"/></svg></span>
+            <span onclick="event.stopPropagation();faqDelete('${f.id}')" title="Delete" style="opacity:0.5;cursor:pointer;font-size:15px;line-height:1">×</span>` : ''}
             <svg class="faq-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
           </span>
         </div>
-        <div class="faq-a">${f.answer}</div>
+        <div class="faq-a" style="white-space:pre-wrap">${faqEsc(f.answer)}</div>
       </div>`;
   }).join('');
 }
 
 function faqCurrentView(){
-  if(document.getElementById('faq-search-view').style.display==='block') return 'search';
-  if(document.getElementById('faq-detail-view').style.display==='block') return 'detail';
+  if(document.getElementById('faq-search-view').style.display === 'block') return 'search';
+  if(document.getElementById('faq-detail-view').style.display === 'block') return 'detail';
   return 'depts';
 }
-
+let faqOpenSection = null;
 function faqRefreshCurrentView(){
   const view = faqCurrentView();
-  if(view==='search') faqSearchInput(document.getElementById('faq-search').value);
-  else if(view==='detail'){
-    const dept = faqDepts.find(d=>d.name===document.getElementById('faq-detail-title').textContent);
-    if(dept) faqRenderItems('faq-detail-list', faqData.filter(f=>f.dept===dept.id), false);
-  } else faqRenderDepts();
+  if(view === 'search') faqSearchInput(document.getElementById('faq-search').value);
+  else if(view === 'detail' && faqOpenSection !== null) faqRenderItems('faq-detail-list', faqData.filter(f => faqSec(f) === faqOpenSection), false);
+  else faqRenderDepts();
 }
 
+function faqSectionField(value){
+  return {label:'Section', type:'deptpicker', value: value || '__general', options: faqDepts.map(d => Object.assign({}, d, { id: d.id || '__general' }))};
+}
 function faqEdit(id){
-  const f = faqData.find(x=>x.id===id);
-  if(!f) return;
+  const f = faqData.find(x => String(x.id) === String(id));
+  if(!f || !faqCanEdit()) return;
   appModalShow({
-    title:'Edit FAQ',
+    title:'Edit Question',
     fields:[
+      faqSectionField(faqSec(f)),
       {label:'Question', value:f.question, placeholder:'e.g. How do I...?'},
       {label:'Answer', type:'textarea', rows:8, value:f.answer, placeholder:'The answer...'}
     ],
-    onOk([question, answer]){
-      f.question = question; f.answer = answer;
+    async onOk([dept, question, answer]){
+      if(dept === '__general') dept = '';
+      question = String(question || '').trim();
+      if(!question){ toast('Please type the question'); return; }
+      const before = Object.assign({}, f);
+      Object.assign(f, { dept: dept || '', question, answer: answer || '' });
       faqRefreshCurrentView();
-      toast('FAQ updated ✓');
+      if(myProfile){
+        const { error } = await sb.from('kb_faqs').update({ dept:f.dept, question:f.question, answer:f.answer, updated_at:new Date().toISOString() }).eq('id', f.id);
+        if(error){ Object.assign(f, before); faqRefreshCurrentView(); toast('Not saved - please try again'); return; }
+      }
+      toast('Saved ✓');
     }
   });
 }
 
 function faqDelete(id){
-  const f = faqData.find(x=>x.id===id);
-  if(!f) return;
-  appConfirmShow({title:'Delete FAQ', msg:'Delete this FAQ?', onOk:()=>{
-    faqData = faqData.filter(x=>x.id!==id);
+  const f = faqData.find(x => String(x.id) === String(id));
+  if(!f || !faqCanEdit()) return;
+  appConfirmShow({title:'Delete question?', msg:'"' + f.question + '" will be removed for everyone.', label:'Delete', onOk: async () => {
+    faqData = faqData.filter(x => x !== f);
     faqRefreshCurrentView();
-    toast('FAQ deleted');
+    if(myProfile){
+      const { error } = await sb.from('kb_faqs').delete().eq('id', f.id);
+      if(error){ faqData.push(f); faqRefreshCurrentView(); toast('Not deleted - please try again'); return; }
+    }
+    toast('Deleted');
   }});
 }
 
 function faqOpenDept(deptId){
+  faqOpenSection = deptId;
   document.getElementById('faq-search').value = '';
-  document.getElementById('faq-dept-view').style.display='none';
-  document.getElementById('faq-search-view').style.display='none';
-  document.getElementById('faq-detail-view').style.display='block';
-  const dept = faqDepts.find(d=>d.id===deptId);
-  document.getElementById('faq-detail-title').textContent = dept ? dept.name : '';
-  faqRenderItems('faq-detail-list', faqData.filter(f=>f.dept===deptId), false);
+  document.getElementById('faq-dept-view').style.display = 'none';
+  document.getElementById('faq-search-view').style.display = 'none';
+  document.getElementById('faq-detail-view').style.display = 'block';
+  const dept = faqDepts.find(d => d.id === deptId);
+  document.getElementById('faq-detail-title').textContent = dept ? dept.name : 'General';
+  faqRenderItems('faq-detail-list', faqData.filter(f => faqSec(f) === deptId), false);
 }
 
 function faqBackToDepts(){
-  document.getElementById('faq-detail-view').style.display='none';
-  document.getElementById('faq-search-view').style.display='none';
-  document.getElementById('faq-dept-view').style.display='block';
+  faqOpenSection = null;
+  document.getElementById('faq-detail-view').style.display = 'none';
+  document.getElementById('faq-search-view').style.display = 'none';
+  document.getElementById('faq-dept-view').style.display = 'block';
+  faqRenderDepts();
 }
 
 function faqSearchInput(query){
   const q = query.trim().toLowerCase();
   if(!q){
-    document.getElementById('faq-search-view').style.display='none';
-    document.getElementById('faq-detail-view').style.display='none';
-    document.getElementById('faq-dept-view').style.display='block';
+    document.getElementById('faq-search-view').style.display = 'none';
+    if(faqOpenSection !== null){ document.getElementById('faq-detail-view').style.display = 'block'; }
+    else { document.getElementById('faq-detail-view').style.display = 'none'; document.getElementById('faq-dept-view').style.display = 'block'; }
     return;
   }
-  document.getElementById('faq-dept-view').style.display='none';
-  document.getElementById('faq-detail-view').style.display='none';
-  document.getElementById('faq-search-view').style.display='block';
+  document.getElementById('faq-dept-view').style.display = 'none';
+  document.getElementById('faq-detail-view').style.display = 'none';
+  document.getElementById('faq-search-view').style.display = 'block';
   const results = faqData.filter(f => f.question.toLowerCase().includes(q) || f.answer.toLowerCase().includes(q));
   faqRenderItems('faq-search-results', results, true);
 }
 
 function faqAdd(){
+  if(!faqCanEdit()) return;
+  if(myProfile && !faqDbOk){ toast('Knowledge Base is being set up - check back soon'); return; }
+  if(!faqDepts.length) faqRebuildSections();
   appModalShow({
-    title:'Add FAQ',
+    title:'Add Question',
     fields:[
-      {label:'Department', type:'deptpicker', options: faqDepts},
+      faqSectionField(faqOpenSection !== null ? faqOpenSection : ''),
       {label:'Question', placeholder:'e.g. How do I...?'},
       {label:'Answer', type:'textarea', rows:8, placeholder:'The answer...'}
     ],
-    onOk([deptId, question, answer]){
-      const cleanDept = faqDepts.find(d=>d.id===deptId) ? deptId : (faqDepts[0] ? faqDepts[0].id : '');
-      faqData.push({id: faqNextId++, dept: cleanDept, question, answer});
-      faqRenderDepts();
-      toast('FAQ added ✓');
+    async onOk([dept, question, answer]){
+      if(dept === '__general') dept = '';
+      question = String(question || '').trim();
+      if(!question){ toast('Please type the question'); return; }
+      const row = { dept: dept || '', question, answer: answer || '' };
+      if(myProfile){
+        const { data, error } = await sb.from('kb_faqs').insert(row).select('*').single();
+        if(error){ toast('Not saved - please try again'); return; }
+        faqData.push({ id:data.id, dept:data.dept || '', question:data.question, answer:data.answer || '' });
+      } else faqData.push(Object.assign({ id:'local' + (faqNextId++) }, row));
+      faqRefreshCurrentView();
+      toast('Question added ✓');
     }
   });
 }
+// Department renamed in People: Knowledge Base questions follow it
+(function(){
+  const orig = window.deptRename;
+  if(typeof orig !== 'function') return;
+  window.deptRename = function(index){
+    const oldName = PEOPLE_DEPARTMENTS[index];
+    const newName = (document.getElementById('dept-rename-' + index)?.value || '').trim();
+    orig(index);
+    if(myProfile && oldName && newName && oldName !== newName){
+      faqData.forEach(f => { if(f.dept === oldName) f.dept = newName; });
+      sb.rpc('kb_dept_rename', { old_name:oldName, new_name:newName }).then(() => {}, () => {});
+    }
+  };
+})();
 
 // ── VENDOR DIRECTORY ──
 const vendorDepts = [
@@ -20107,7 +20140,7 @@ const _origNavMD = window.nav;
 window.nav = function(id, pushState){
   if(typeof _origNavMD==='function') _origNavMD(id, pushState);
   if(id==='mydrive'){ driveActiveFolder=null; setTimeout(myDriveRender, 50); }
-  if(id==='faq') setTimeout(faqRenderDepts, 0);
+  if(id==='faq') setTimeout(faqOpenPage, 0);
   if(id==='vendors') setTimeout(()=>{
     if(pushState){
       vendorActiveDept=null;

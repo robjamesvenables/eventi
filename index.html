@@ -16578,11 +16578,7 @@ function chatRenderMessages(){
 // into view a moment ago ends up hidden behind the keyboard. Re-scroll on focus (covers the
 // moment the keyboard starts opening) and again on visualViewport resize (covers the keyboard
 // animation actually finishing, plus rotation).
-function chatKeyboardScrollFix(){
-  const wrap = document.getElementById('chat-thread-msgs');
-  if(!wrap) return;
-  setTimeout(()=>{ wrap.scrollTop = wrap.scrollHeight; }, 250);
-}
+function chatKeyboardScrollFix(){}
 if(window.visualViewport){
   window.visualViewport.addEventListener('resize', function(){
     const wrap = document.getElementById('chat-thread-msgs');
@@ -23257,6 +23253,29 @@ window.chatInit = function(){
   if(!window._chatResizeWired){ window.addEventListener('resize', chatSizeCard); window._chatResizeWired = true; }
 };
 
+// ── Keyboard opening on phones: one smooth move, like WhatsApp ──
+// The phone chat screen follows the visible area above the keyboard, so the header stays put,
+// and the messages stay pinned to the bottom while the space shrinks (no second jump).
+(function(){
+  const wrap = document.getElementById('chat-thread-msgs');
+  const pane = document.getElementById('chat-thread-pane');
+  if(!wrap || !pane) return;
+  let stick = true;
+  wrap.addEventListener('scroll', () => { stick = wrap.scrollHeight - wrap.scrollTop - wrap.clientHeight < 60; }, {passive:true});
+  if(window.ResizeObserver) new ResizeObserver(() => { if(stick) wrap.scrollTop = wrap.scrollHeight; }).observe(wrap);
+  const vv = window.visualViewport;
+  if(!vv) return;
+  const fit = () => {
+    if(!pane.classList.contains('mobile-open')){ pane.style.height = ''; pane.style.top = ''; return; }
+    pane.style.height = vv.height + 'px';
+    pane.style.top = vv.offsetTop + 'px';
+    pane.style.bottom = 'auto';
+    if(stick) wrap.scrollTop = wrap.scrollHeight;
+  };
+  vv.addEventListener('resize', fit);
+  vv.addEventListener('scroll', fit);
+  new MutationObserver(fit).observe(pane, {attributes:true, attributeFilter:['class']});
+})();
 window.chatBackToList = function(){
   document.getElementById('chat-thread-pane')?.classList.remove('mobile-open');
   document.getElementById('chat-list-pane')?.classList.remove('mobile-hidden');

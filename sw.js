@@ -36,7 +36,11 @@ async function avatar(letters, colour){
 
 // Never let the picture hold up the notification: give it 3 seconds at most
 function within(ms, p){ return Promise.race([p, new Promise(r => setTimeout(() => r(null), ms))]); }
+// Computers (Windows/Mac) quietly drop notifications that carry a made-up picture, and only show one
+// small picture anyway - so they always get the Mavis icon. Phones get the sender's photo or initials.
+const IS_PHONE = /Android|iPhone|iPad|iPod/i.test(self.navigator.userAgent || '');
 async function senderPicture(d){
+  if (!IS_PHONE) return '/icon-192-v6.png';
   if (d.photo) {
     const ok = await within(3000, fetch(d.photo).then(r => r.ok).catch(() => false));
     if (ok) return new URL(d.photo, self.location.origin).href;

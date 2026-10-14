@@ -566,14 +566,29 @@ function cancelInvoice(id){
 }
 async function deleteInvoice(id){ const d=await api('invoice_delete',{id}); if(!d.ok){ toast(d.message||'Not deleted'); return; } closeInvoice(); await load(); toast('Draft deleted'); }
 async function invMarkSent(i){ if(i.status==='draft'){ await api('invoice_update',{id:i.id,status:'sent'}); await load(); } }
+// The PDF is made inside its own hidden, invoice-sized page, so the size of your screen, scrolling or
+// window layout can never shift or cut it off.
 async function invPDFBlob(i){
-  const holder=document.createElement('div'); holder.style.cssText='position:absolute;left:0;top:0;width:720px;z-index:-1;opacity:1'; holder.innerHTML=invoiceHTML(i); document.body.appendChild(holder);
-  const el=holder.firstElementChild; const r=el.getBoundingClientRect();
+  const f = document.createElement('iframe');
+  f.style.cssText = 'position:fixed;left:0;top:0;width:720px;height:1400px;border:0;opacity:0;pointer-events:none;z-index:-1';
+  document.body.appendChild(f);
   try{
-    return await html2pdf().set({ margin:0, filename:i.number+'.pdf', image:{type:'jpeg',quality:0.95},
-      html2canvas:{scale:2,useCORS:true,x:r.left+window.scrollX,y:r.top+window.scrollY,width:r.width,height:r.height,scrollX:0,scrollY:0},
-      jsPDF:{unit:'px',format:[r.width,r.height],orientation:'portrait',hotfixes:['px_scaling']} }).from(el).outputPdf('blob');
-  } finally { holder.remove(); }
+    const head = [...document.querySelectorAll('link[rel="stylesheet"], style')].map(n => n.outerHTML).join('');
+    const doc = f.contentDocument;
+    doc.open();
+    doc.write('<!doctype html><html><head><meta charset="utf-8">' + head + '<style>html,body{margin:0;padding:0;background:#fff;width:720px;overflow:hidden}</style></head><body>' + invoiceHTML(i) + '</body></html>');
+    doc.close();
+    await new Promise(res => { const s = doc.createElement('script'); s.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.9.3/html2pdf.bundle.min.js'; s.onload = res; s.onerror = res; doc.head.appendChild(s); });
+    try{ await doc.fonts.ready; }catch(e){}
+    await Promise.all([...doc.images].map(im => im.complete ? 0 : new Promise(r => { im.onload = im.onerror = r; })));
+    await new Promise(r => setTimeout(r, 150));
+    const el = doc.body.firstElementChild;
+    const w = Math.ceil(el.getBoundingClientRect().width), hgt = Math.ceil(el.getBoundingClientRect().height);
+    const blob = await f.contentWindow.html2pdf().set({ margin:0, filename:i.number + '.pdf', image:{ type:'jpeg', quality:0.95 },
+      html2canvas:{ scale:2, useCORS:true, x:0, y:0, width:w, height:hgt, scrollX:0, scrollY:0, windowWidth:720, windowHeight:hgt },
+      jsPDF:{ unit:'px', format:[w, hgt], orientation:'portrait', hotfixes:['px_scaling'] } }).from(el).outputPdf('blob');
+    return new Blob([await blob.arrayBuffer()], { type:'application/pdf' });   // copy out before the hidden page is removed
+  } finally { f.remove(); }
 }
 async function invPDF(id){
   const i=D.invoices.find(x=>x.id===id); toast('Making PDF…');

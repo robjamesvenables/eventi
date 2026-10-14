@@ -22766,7 +22766,8 @@ document.addEventListener('click', e => {
 });
 window.chat2Copy = function(i){
   const m = CH.view[i]; if(!m || !m.body) return;
-  const done = () => toast('Copied');
+  // Android shows its own "Copied to clipboard" message - don't double it up
+  const done = () => { if(!/Android/i.test(navigator.userAgent)) toast('Copied'); };
   if(navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(m.body).then(done, () => toast('Could not copy'));
   else { const t = document.createElement('textarea'); t.value = m.body; document.body.appendChild(t); t.select(); try{ document.execCommand('copy'); done(); }catch(e){} t.remove(); }
 };

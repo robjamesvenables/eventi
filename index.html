@@ -23330,12 +23330,29 @@ function notifySettingsHtml(){
     <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:6px">
       <div style="font-size:12.5px;color:${s === 'on' ? '#0F766E' : '#64748B'};font-weight:600">${status}</div>${btn}
     </div>
+    ${s === 'on' ? `<button onclick="pushSendTest()" style="margin-top:8px;border:0;background:none;padding:0;color:#0D9488;font:700 12.5px Inter,sans-serif;cursor:pointer;text-decoration:underline">Send me a test notification</button>` : ''}
     <label style="display:flex;align-items:center;gap:8px;margin-top:12px;font-size:12.5px;font-weight:700;color:#475569;cursor:pointer">
       <input type="checkbox" id="acct-quiet-on" ${quietOn ? 'checked' : ''} onchange="notifyQuietSave()" style="width:16px;height:16px;accent-color:#0D9488"> Quiet hours - no notifications
     </label>
     <div style="display:${quietOn ? 'flex' : 'none'};align-items:center;gap:8px;margin-top:8px;font-size:12.5px;color:#64748B">From ${sel('acct-quiet-from', CH.prefs.quiet_from || '23:00')} to ${sel('acct-quiet-to', CH.prefs.quiet_to || '07:00')}</div>
   </div>`;
 }
+window.pushSendTest = async function(){
+  toast('Sending a test…');
+  await pushSubscribe(false);   // make sure this device is registered to me
+  let r = {};
+  try{
+    const { data } = await sb.auth.getSession();
+    r = await authApi('push', { body:{ test:true }, token: data && data.session && data.session.access_token });
+  }catch(e){ r = { _status: 0 }; }
+  const why = r._status === 404 ? 'The notification sender is not live yet - the latest update may still be building. Try again in 2 minutes.'
+    : r._status === 0 ? 'Could not reach Mavis - check your internet.'
+    : r.reason === 'notifications not switched on yet' ? 'The secret key is missing in Vercel (VAPID_PRIVATE_KEY), or the app was not rebuilt after adding it.'
+    : r.reason === 'no-devices' ? 'This device is not registered yet. Tap Turn on again.'
+    : r.ok ? 'Sent ✓ - it should pop up in a few seconds. If nothing appears, your computer or phone is blocking notifications (Do not disturb / Focus assist, or Chrome notifications off in system settings).'
+    : 'Sending failed (' + ((r.errors || []).join(', ') || r._status) + ').';
+  appConfirmShow({ title: r.ok ? 'Test sent' : 'Test did not send', msg: why, label:'OK', cancelLabel:'Close' });
+};
 window.notifyQuietSave = async function(){
   const on = document.getElementById('acct-quiet-on')?.checked;
   CH.prefs.quiet_from = on ? (document.getElementById('acct-quiet-from')?.value || '23:00') : '';

@@ -36,6 +36,24 @@ module.exports = async (req, res) => {
     const me = await L.caller(req);
     if (!me) return L.send(res, 401, { ok: false });
     const b = L.body(req);
+    // "Send me a test" from My Account: notify only my own devices and say exactly what happened
+    if (b.test) {
+      const subs = await L.db('push_subs?select=*&profile_id=eq.' + encodeURIComponent(me.id));
+      if (!subs.length) return L.send(res, 200, { ok: false, reason: 'no-devices' });
+      webpush.setVapidDetails('mailto:hello@getmavis.co', VAPID_PUBLIC, VAPID_PRIVATE);
+      let sent = 0; const errors = [];
+      for (const s of subs) {
+        try {
+          await webpush.sendNotification({ endpoint: s.endpoint, keys: { p256dh: s.p256dh, auth: s.auth } },
+            JSON.stringify({ title: 'Mavis', body: 'Test notification - it works ✓', force: true, url: '/' }), { TTL: 600, urgency: 'high' });
+          sent++;
+        } catch (e) {
+          errors.push(e.statusCode || e.message);
+          if (e.statusCode === 404 || e.statusCode === 410) await L.db('push_subs?endpoint=eq.' + encodeURIComponent(s.endpoint), { method: 'DELETE' }).catch(() => {});
+        }
+      }
+      return L.send(res, 200, { ok: sent > 0, sent, devices: subs.length, errors });
+    }
     const msg = (await L.db('chat_msgs?select=*&id=eq.' + encodeURIComponent(b.msg_id || '')))[0];
     // only the person who sent it, and only straight after sending
     if (!msg || msg.sender_id !== me.id || msg.deleted_at || Date.now() - new Date(msg.created_at).getTime() > 3 * 60000) return L.send(res, 200, { ok: true, sent: 0 });

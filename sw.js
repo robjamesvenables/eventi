@@ -21,7 +21,7 @@ self.addEventListener('push', (event) => {
   event.waitUntil((async () => {
     // If Mavis is open and on screen, the app shows the message itself - no notification needed
     const wins = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
-    if (wins.some(w => w.visibilityState === 'visible' && w.focused)) return;
+    if (!d.force && wins.some(w => w.visibilityState === 'visible' && w.focused)) return;
     await self.registration.showNotification(d.title || 'Mavis', {
       body: d.body || 'New message',
       icon: '/icon-192-v6.png',

@@ -22488,6 +22488,7 @@ async function chatStart(force){
   (ms.data || []).reverse().forEach(m => { if(keepAtt[m.id]) m.attachment = keepAtt[m.id]; (CH.msgs[m.thread_id] = CH.msgs[m.thread_id] || []).push(m); });
   Object.values(CH.msgs).forEach(arr => arr.sort((x, y) => String(x.created_at).localeCompare(String(y.created_at))));
   CH.ready = true;
+  chat2LoadMarks();
   chat2Subscribe();
   chat2RefreshAll();
   if(chatActiveId && CH.threads[chatActiveId]) chatRenderMessages();
@@ -22804,7 +22805,7 @@ window.chatRenderMessages = function(){
       <div class="chat2-bubble ${mine ? 'mine' : ''}" data-i="${i}" style="padding:${pad};position:relative">
         ${inner}${m.deleted_at || m._tmp ? '' : `<button class="chat2-more-arrow" data-i="${i}" aria-label="Message options"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg></button>`}
       </div>
-      <div style="font-size:10px;color:#94A3B8;margin-top:3px;text-align:${mine ? 'right' : 'left'}">${m.edited_at && !m.deleted_at ? 'Edited · ' : ''}${chat2Time(m.created_at)}${chat2Ticks(m, t)}</div>
+      <div style="font-size:10px;color:#94A3B8;margin-top:3px;text-align:${mine ? 'right' : 'left'}">${CH.marks[m.id] ? `<svg width="11" height="11" viewBox="0 0 24 24" fill="#C4973B" stroke="#C4973B" stroke-width="2" stroke-linejoin="round" style="vertical-align:-1px;margin-right:4px" aria-label="Marked">${CHAT2_FLAG}</svg>` : ''}${m.edited_at && !m.deleted_at ? 'Edited · ' : ''}${chat2Time(m.created_at)}${chat2Ticks(m, t)}</div>
       ${m.deleted_at ? '' : chat2ReactionsHtml(i, m)}
     </div>`;
   });
@@ -22854,16 +22855,17 @@ function chat2RenderActbar(){
     pin:'<path d="M12 17v5"/><path d="M9 10.76V6h6v4.76l2.5 3.74H6.5z"/><path d="M8 2h8"/>',
     info:'<circle cx="12" cy="12" r="9"/><path d="M12 16v-4"/><path d="M12 8h.01"/>',
     edit:'<path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/>',
-    del:'<path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M19 6l-1 14H6L5 6"/>'
+    del:'<path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M19 6l-1 14H6L5 6"/>',
+    mark:CHAT2_FLAG
   };
   const phone = window.innerWidth <= 560;
   const btn = (act, label, red) => `<button class="chat2-act${red ? ' red' : ''}" onclick="event.stopPropagation();chat2Act('${act}')"><svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${ic[act]}</svg><span>${label}</span></button>`;
   bar.innerHTML = `<button class="chat2-act" onclick="event.stopPropagation();chat2ClearSel()" aria-label="Cancel"><svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
     <div class="chat2-act-sel"><div class="chat2-act-who">${chatEscapeHtml(mine ? 'Your message' : chat2Name(m.sender_id))}</div><div class="chat2-act-what">${momentsTwemojiParse(chatEscapeHtml(chat2Preview(m)))}</div></div>
     ${phone
-      ? btn('reply', 'Reply') + btn('fwd', 'Forward') + (m.body ? btn('copy', 'Copy') : '') + (canDel ? btn('del', 'Delete', true) : '')
+      ? btn('reply', 'Reply') + btn('fwd', 'Forward') + btn('mark', CH.marks[m.id] ? 'Unmark' : 'Mark') + (m.body ? btn('copy', 'Copy') : '') + (canDel ? btn('del', 'Delete', true) : '')
         + `<button class="chat2-act" onclick="event.stopPropagation();chat2MoreMenu()" aria-label="More"><svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg></button>`
-      : btn('reply', 'Reply') + btn('fwd', 'Forward') + (m.body ? btn('copy', 'Copy') : '') + btn('pin', 'Pin') + (mine && chatReadReceiptsOn() ? btn('info', 'Info') : '') + (canEdit ? btn('edit', 'Edit') : '') + (canDel ? btn('del', 'Delete', true) : '')}`;
+      : btn('reply', 'Reply') + btn('fwd', 'Forward') + btn('mark', CH.marks[m.id] ? 'Unmark' : 'Mark') + (m.body ? btn('copy', 'Copy') : '') + btn('pin', 'Pin') + (mine && chatReadReceiptsOn() ? btn('info', 'Info') : '') + (canEdit ? btn('edit', 'Edit') : '') + (canDel ? btn('del', 'Delete', true) : '')}`;
   bar.dataset.more = JSON.stringify([['pin','Pin'], mine && chatReadReceiptsOn() && ['info','Message info'], canEdit && ['edit','Edit']].filter(Boolean));
 }
 // Phone: the extra actions (Pin, Info, Edit) sit behind the three dots, like WhatsApp
@@ -22879,7 +22881,7 @@ window.chat2Act = function(act){
   const i = chat2SelIndex();
   chat2ClearSel();
   if(i < 0) return;
-  ({reply:chatReplyTo, fwd:chat2Forward, copy:chat2Copy, pin:chatPinMessage, info:chat2Info, edit:chat2Edit, del:chat2Delete})[act](i);
+  ({reply:chatReplyTo, fwd:chat2Forward, mark:chat2ToggleMark, copy:chat2Copy, pin:chatPinMessage, info:chat2Info, edit:chat2Edit, del:chat2Delete})[act](i);
 };
 (function(){
   const wrap = document.getElementById('chat-thread-msgs');
@@ -23042,6 +23044,76 @@ function chat2MentionKey(e){
   if(e.key === 'Escape'){ e.preventDefault(); e.stopPropagation(); chat2MentionClose(); return true; }
   return false;
 }
+// ── Mark (save for later): a private list of messages to come back to ──
+CH.marks = {}; CH.marksReady = false;
+const CHAT2_FLAG = '<path d="M5 21V4"/><path d="M5 4h11l-2 4 2 4H5"/>';
+async function chat2LoadMarks(){
+  const { data, error } = await sb.from('chat_marks').select('*');
+  if(error){ CH.marksReady = false; return; }
+  CH.marksReady = true; CH.marks = {};
+  (data || []).forEach(r => CH.marks[r.msg_id] = r.created_at);
+  chat2MarkedBtn();
+  if(chatActiveId) chatRenderMessages();
+}
+window.chat2ToggleMark = async function(i){
+  const m = CH.view[i]; if(!m) return;
+  if(!CH.marksReady){ await chat2LoadMarks(); if(!CH.marksReady){ toast('Marking is being set up - check back soon'); return; } }
+  if(CH.marks[m.id]){
+    delete CH.marks[m.id]; chatRenderMessages(); chat2MarkedBtn();
+    const { error } = await sb.from('chat_marks').delete().eq('msg_id', m.id);
+    if(error) toast('Could not unmark - please try again'); else toast('Unmarked');
+  } else {
+    CH.marks[m.id] = new Date().toISOString(); chatRenderMessages(); chat2MarkedBtn();
+    const { error } = await sb.from('chat_marks').insert({ msg_id:m.id });
+    if(error){ delete CH.marks[m.id]; chatRenderMessages(); chat2MarkedBtn(); toast('Could not mark - please try again'); }
+    else toast('Marked - find it under Marked at the top of Chat');
+  }
+};
+function chat2MarkedBtn(){
+  const search = document.getElementById('chat-search'); if(!search) return;
+  let b = document.getElementById('chat2-marked-btn');
+  if(!b){
+    const wrap = search.parentElement;
+    wrap.style.display = 'flex'; wrap.style.gap = '8px'; wrap.style.alignItems = 'center';
+    b = document.createElement('button'); b.id = 'chat2-marked-btn'; b.onclick = chat2ShowMarked; b.setAttribute('aria-label', 'Marked messages');
+    wrap.appendChild(b);
+  }
+  const n = Object.keys(CH.marks).length;
+  b.innerHTML = `<svg width="18" height="18" viewBox="0 0 24 24" fill="${n ? '#C4973B' : 'none'}" stroke="${n ? '#C4973B' : '#64748B'}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${CHAT2_FLAG}</svg>${n ? `<span>${n}</span>` : ''}`;
+  b.title = n ? n + ' marked message' + (n === 1 ? '' : 's') : 'Marked messages';
+}
+window.chat2ShowMarked = function(){
+  const all = [];
+  Object.keys(CH.marks).forEach(id => {
+    for(const tid in CH.msgs){ const m = CH.msgs[tid].find(x => x.id === id); if(m){ all.push(m); break; } }
+  });
+  all.sort((a, b) => String(CH.marks[b.id]).localeCompare(String(CH.marks[a.id])));
+  const missing = Object.keys(CH.marks).length - all.length;
+  const body = all.length ? all.map(m => {
+    const t = CH.threads[m.thread_id];
+    return `<div style="border:1px solid #E2E8F0;border-radius:12px;padding:12px;margin:8px 4px">
+      <div style="display:flex;justify-content:space-between;gap:8px;font-size:11.5px;color:#94A3B8"><span><b style="color:#0F1E2E">${chatEscapeHtml(chat2Name(m.sender_id, true))}</b> · ${chatEscapeHtml(t ? chat2ThreadName(t) : '')}</span><span>${chat2ListTime(m.created_at)}</span></div>
+      <div style="font-size:14px;color:#0F1E2E;margin-top:5px;line-height:1.45;white-space:pre-wrap;word-break:break-word;max-height:66px;overflow:hidden">${m.deleted_at ? '<i style="color:#94A3B8">This message was deleted</i>' : momentsTwemojiParse(chatEscapeHtml(chat2Preview(m)))}</div>
+      <div style="display:flex;gap:8px;margin-top:10px">
+        <button class="chat-preview-secondary" style="flex:1" onclick="chat2MarkGo('${m.thread_id}','${m.id}')">Go to message</button>
+        <button class="chat-preview-send" style="flex:1" onclick="chat2MarkDone('${m.id}')">Done</button>
+      </div>
+    </div>`; }).join('') + (missing > 0 ? `<div style="padding:6px 8px;font-size:12px;color:#94A3B8">${missing} older marked message${missing === 1 ? ' is' : 's are'} not shown.</div>` : '')
+    : `<div style="padding:30px 18px;text-align:center;color:#94A3B8;font-size:13px;line-height:1.6">Nothing marked.<br>Long-press a message${chatIsComputer() ? ' (or right-click it)' : ''} and tap <b>Mark</b> to save it here for later.</div>`;
+  chat2Sheet('Marked', 'Only you can see this list', body);
+};
+window.chat2MarkGo = function(tid, mid){
+  chat2SheetClose();
+  if(!CH.threads[tid]){ toast('That chat is no longer available'); return; }
+  if(chatActiveId !== tid) chatOpenConversation(tid);
+  setTimeout(() => chat2JumpTo(mid), 120);
+};
+window.chat2MarkDone = async function(mid){
+  delete CH.marks[mid]; chat2MarkedBtn(); chat2ShowMarked();
+  if(chatActiveId) chatRenderMessages();
+  const { error } = await sb.from('chat_marks').delete().eq('msg_id', mid);
+  if(error) toast('Could not update - please try again');
+};
 window.chat2Copy = function(i){
   const m = CH.view[i]; if(!m || !m.body) return;
   // A small "Copied" tag pops up just above the message itself
@@ -23487,6 +23559,8 @@ chat2Style.textContent = `
 .chat2-tag{color:#0D9488;font-weight:700}.chat2-bubble.mine .chat2-tag{color:#5EEAD4}
 .chat2-tag.me{background:rgba(196,151,59,.22);color:#8A6418;border-radius:5px;padding:0 3px}.chat2-bubble.mine .chat2-tag.me{color:#F5D58A}
 .chat2-at{background:#C4973B!important;margin-right:4px}
+#chat2-marked-btn{flex-shrink:0;height:38px;min-width:38px;padding:0 9px;border:1.5px solid #E2E8F0;border-radius:9px;background:white;cursor:pointer;display:flex;align-items:center;gap:5px;font:800 12px Inter,sans-serif;color:#8A6418}
+#chat2-marked-btn:hover{background:#FFFBEB;border-color:#F5D58A}
 #chat2-mention{position:absolute;left:16px;bottom:calc(100% + 6px);width:min(340px,calc(100% - 32px));background:white;border-radius:14px;box-shadow:0 10px 34px rgba(15,30,46,.22);overflow:hidden;z-index:30;padding:4px 0}
 .chat2-mention-head{font-size:10.5px;font-weight:800;color:#94A3B8;text-transform:uppercase;letter-spacing:.06em;padding:8px 14px 4px}
 #chat2-mention button{display:flex;width:100%;border:0;background:white;cursor:pointer;text-align:left;padding:0 6px;font-family:Inter,sans-serif}

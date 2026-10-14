@@ -421,6 +421,11 @@ body{margin:0;padding:0;font-family:'Inter',sans-serif;background:var(--bg);colo
 .body-wrap{width:100%;max-width:1500px;margin:0 auto;padding:0 0 100px;box-sizing:border-box;}
 .body-wrap:has(#p-chat.on){max-width:none}  /* Chat uses the whole screen, like WhatsApp */
 @media(max-width:700px){
+  #chat-people-modal,#chat2-sheet{padding:0!important;align-items:stretch!important;inset:auto!important;left:0!important;right:0!important;top:var(--vv-top,0px)!important;height:var(--vv-h,100vh)!important}
+  #chat-people-modal>div,.chat2-sheet-card{width:100%!important;max-height:none!important;height:100%!important;border-radius:0!important}
+  #chat-people-search::-webkit-search-cancel-button,#chat2-fsearch::-webkit-search-cancel-button,#chat2-gsearch::-webkit-search-cancel-button{display:none}
+}
+@media(max-width:700px){
   #p-chat{padding:18px 0 0!important}
   #p-chat .ph{padding:0 18px}
   #chat-card{border:0!important;border-radius:0!important;border-top:1px solid #E2E8F0!important}
@@ -16025,7 +16030,7 @@ window.chatOpenPeopleSelector = function(){
         <div style="padding:14px 16px 10px">
           <div style="position:relative">
             <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#94A3B8" stroke-width="2" stroke-linecap="round" style="position:absolute;left:12px;top:50%;transform:translateY(-50%)"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
-            <input id="chat-people-search" type="text" placeholder="Search people…" oninput="chatRenderPeopleSelector()" style="width:100%;box-sizing:border-box;padding:11px 12px 11px 38px;border:1.5px solid #E2E8F0;border-radius:10px;font-family:Inter,sans-serif;font-size:16px;color:#0F1E2E;outline:none" onfocus="this.style.borderColor='#0D9488';this.style.boxShadow='0 0 0 3px rgba(13,148,136,.10)'" onblur="this.style.borderColor='#E2E8F0';this.style.boxShadow='none'">
+            <input id="chat-people-search" type="search" autocomplete="off" autocorrect="off" spellcheck="false" enterkeyhint="search" name="mavis-people-q" placeholder="Search people…" oninput="chatRenderPeopleSelector()" style="width:100%;box-sizing:border-box;padding:11px 12px 11px 38px;border:1.5px solid #E2E8F0;border-radius:10px;font-family:Inter,sans-serif;font-size:16px;color:#0F1E2E;outline:none" onfocus="this.style.borderColor='#0D9488';this.style.boxShadow='0 0 0 3px rgba(13,148,136,.10)'" onblur="this.style.borderColor='#E2E8F0';this.style.boxShadow='none'">
           </div>
         </div>
         <div id="chat-people-results" style="overflow-y:auto;padding:2px 8px 12px"></div>
@@ -22916,7 +22921,7 @@ window.chat2Forward = async function(i){
   const m = CH.view[i]; if(!m) return;
   if(m.attachment_type && !m.attachment) await chat2FetchOneAtt(m);
   chat2FwdMsg = m; chat2FwdSel = new Set();
-  chat2Sheet('Forward to…', 'Pick one or more chats', `<div style="padding:4px 8px 6px"><input id="chat2-fsearch" placeholder="Search…" oninput="chat2FwdList()" style="width:100%;box-sizing:border-box;padding:9px 12px;border:1.5px solid #E2E8F0;border-radius:10px;font:16px Inter,sans-serif;outline:none"></div><div id="chat2-flist"></div>`,
+  chat2Sheet('Forward to…', 'Pick one or more chats', `<div style="padding:4px 8px 6px"><input id="chat2-fsearch" type="search" autocomplete="off" autocorrect="off" spellcheck="false" enterkeyhint="search" placeholder="Search…" oninput="chat2FwdList()" style="width:100%;box-sizing:border-box;padding:9px 12px;border:1.5px solid #E2E8F0;border-radius:10px;font:16px Inter,sans-serif;outline:none"></div><div id="chat2-flist"></div>`,
     `<span id="chat2-fcount" style="margin-right:auto;font-size:12px;color:#64748B;align-self:center"></span><button class="chat-preview-secondary" onclick="chat2SheetClose()">Cancel</button><button class="chat-preview-send" onclick="chat2FwdSend()">Send</button>`);
   chat2FwdList();
 };
@@ -23189,8 +23194,8 @@ window.chat2GroupEditor = function(tid){
   const t = tid ? CH.threads[tid] : null;
   chat2GroupSel = new Set(t ? chat2MemberIds(t) : [chat2Me()]);
   const body = `<div style="padding:8px 8px 4px"><label style="font-size:12px;font-weight:700;color:#475569">Group name</label>
-      <input id="chat2-gname" maxlength="40" value="${t ? chatEscapeHtml(t.name || '') : ''}" placeholder="e.g. Opening team" style="width:100%;box-sizing:border-box;margin-top:6px;padding:11px 12px;border:1.5px solid #E2E8F0;border-radius:10px;font:16px Inter,sans-serif;outline:none"></div>
-    <div style="padding:10px 8px 4px;display:flex;align-items:center;gap:8px"><input id="chat2-gsearch" placeholder="Search people…" oninput="chat2GroupList()" style="flex:1;min-width:0;padding:9px 12px;border:1.5px solid #E2E8F0;border-radius:10px;font:16px Inter,sans-serif;outline:none"><span id="chat2-gcount" style="font-size:12px;color:#64748B;white-space:nowrap"></span></div>
+      <input id="chat2-gname" autocomplete="off" maxlength="40" value="${t ? chatEscapeHtml(t.name || '') : ''}" placeholder="e.g. Opening team" style="width:100%;box-sizing:border-box;margin-top:6px;padding:11px 12px;border:1.5px solid #E2E8F0;border-radius:10px;font:16px Inter,sans-serif;outline:none"></div>
+    <div style="padding:10px 8px 4px;display:flex;align-items:center;gap:8px"><input id="chat2-gsearch" type="search" autocomplete="off" autocorrect="off" spellcheck="false" enterkeyhint="search" placeholder="Search people…" oninput="chat2GroupList()" style="flex:1;min-width:0;padding:9px 12px;border:1.5px solid #E2E8F0;border-radius:10px;font:16px Inter,sans-serif;outline:none"><span id="chat2-gcount" style="font-size:12px;color:#64748B;white-space:nowrap"></span></div>
     <div id="chat2-glist"></div>`;
   const foot = (t ? `<button class="chat-preview-secondary" style="margin-right:auto;color:#DC2626;border-color:#FCA5A5" onclick="chat2GroupDelete('${t.id}')">Delete group</button>` : '')
     + `<button class="chat-preview-secondary" onclick="chat2SheetClose()">Cancel</button><button class="chat-preview-send" onclick="chat2GroupSave(${t ? `'${t.id}'` : 'null'})">${t ? 'Save' : 'Create group'}</button>`;
@@ -23263,6 +23268,11 @@ window.chatInit = function(){
   if(!window._chatResizeWired){ window.addEventListener('resize', chatSizeCard); window._chatResizeWired = true; }
 };
 
+(function(){
+  const vv = window.visualViewport; if(!vv) return;
+  const set = () => { document.documentElement.style.setProperty('--vv-h', vv.height + 'px'); document.documentElement.style.setProperty('--vv-top', vv.offsetTop + 'px'); };
+  vv.addEventListener('resize', set); vv.addEventListener('scroll', set); set();
+})();
 // ── Keyboard opening on phones: one smooth move, like WhatsApp ──
 // The phone chat screen follows the visible area above the keyboard, so the header stays put,
 // and the messages stay pinned to the bottom while the space shrinks (no second jump).

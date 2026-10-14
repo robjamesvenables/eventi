@@ -5306,7 +5306,7 @@ function nav(id, pushState=true){
   if(id==='kitchen'){kitchenRenderMenus(); kitchenRenderRecipes(); kitchenRenderAllergens(); kitchenRenderLinks();}
   if(id==='bar'){barRenderMenus(); barRenderRecipes();}
   if(id==='customers'){customerRenderList();}
-  if(id==='marketing'){ marketingActiveFolder = null; marketingRender(); }
+  if(id==='marketing'){ marketingActiveFolder = null; marketingRender(); marketingMaybeResign(); }
   if(id==='chat'){ chatInit(); }
   const chatFloatBtn = document.getElementById('chat-float-btn');
   if(chatFloatBtn) chatFloatBtn.style.display = (id==='home') ? 'flex' : 'none';
@@ -15745,11 +15745,32 @@ async function marketingLoadFromSupabase(){
       if(!f) return;
       f.items.push(r.kind==='link'
         ? { id:r.id, type:'link', name:r.name, url:r.url, addedAt:new Date(r.created_at).getTime() }
-        : { id:r.id, type:'file', name:r.name, sizeBytes:Number(r.size_bytes)||0, dataUrl:r.url, path:r.path, fileType:r.file_type||'doc', addedAt:new Date(r.created_at).getTime() });
+        : { id:r.id, type:'file', name:r.name, sizeBytes:Number(r.size_bytes)||0, dataUrl:'', path:r.path, fileType:r.file_type||'doc', addedAt:new Date(r.created_at).getTime() });
     });
+    await marketingSignUrls();
     marketingRender();
   }catch(e){ console.warn('Shared Files not loaded', e); }
 }
+// Files are private: each view uses a short-lived link made just for that person (12 hours for thumbnails,
+// 10 minutes when opening). A link copied out of Mavis stops working.
+async function marketingSignUrls(){
+  const items = []; marketingFolders.forEach(f => (f.items||[]).forEach(i => { if(i.type === 'file' && i.path) items.push(i); }));
+  if(!items.length) return;
+  const { data, error } = await sb.storage.from(MKT_BUCKET).createSignedUrls(items.map(i => i.path), 43200);
+  if(error || !data){ console.warn('Could not prepare file links', error); return; }
+  data.forEach((d, k) => { if(d && d.signedUrl) items[k].dataUrl = d.signedUrl; });
+  marketingSignedAt = Date.now();
+}
+let marketingSignedAt = 0;
+function marketingMaybeResign(){ if(myProfile && Date.now() - marketingSignedAt > 11 * 3600000) marketingSignUrls().then(() => { try{ marketingRender(); }catch(e){} }); }
+window.marketingOpenFile = async function(itemId){
+  let item = null; marketingFolders.forEach(f => (f.items||[]).forEach(i => { if(i.id === itemId) item = i; }));
+  if(!item || !item.path){ toast('File not found'); return; }
+  const w = window.open('', '_blank');   // opened straight away so the browser doesn't block it
+  const { data, error } = await sb.storage.from(MKT_BUCKET).createSignedUrl(item.path, 600);
+  if(error || !data){ if(w) w.close(); toast('Could not open the file - please try again'); return; }
+  if(w) w.location.href = data.signedUrl; else location.href = data.signedUrl;
+};
 function marketingFileKind(file){
   if(file.type.startsWith('image/')) return 'image';
   if(file.type === 'application/pdf') return 'pdf';
@@ -15899,7 +15920,7 @@ function marketingRenderFiles(){
         <div class="myd-file-row-url">${marketingFormatSize(item.sizeBytes)}</div>
       </div>
       <div class="myd-file-row-actions">
-        <button class="btn btn-navy" style="font-size:12px;padding:7px 14px" onclick="window.open('${item.dataUrl}','_blank')">↗ View</button>
+        <button class="btn btn-navy" style="font-size:12px;padding:7px 14px" onclick="marketingOpenFile('${item.id}')">↗ View</button>
         <button class="btn btn-ghost" style="font-size:12px;padding:7px 10px;color:#EF4444;border-color:#FECACA" onclick="marketingDeleteItem(${item.id})">×</button>
       </div>
     </div>`;
@@ -15934,15 +15955,17 @@ window.marketingAddFile = function(){
 async function marketingUploadFile(folder, file){
   toast('Uploading…');
   const safe = file.name.replace(/[^A-Za-z0-9._-]+/g,'_').slice(-80);
-  const path = folder.id + '/' + Date.now() + '-' + safe;
+  // Each company's files live in their own private area: <company>/<folder>/<file>
+  const path = (myProfile ? myProfile.company_id + '/' : '') + folder.id + '/' + Date.now() + '-' + safe;
   try{
     const up = await sb.storage.from(MKT_BUCKET).upload(path, file, { contentType: file.type || undefined, upsert:false });
     if(up.error) throw up.error;
-    const url = sb.storage.from(MKT_BUCKET).getPublicUrl(path).data.publicUrl;
+    const url = '';
+    const signed = await sb.storage.from(MKT_BUCKET).createSignedUrl(path, 43200);
     const kind = marketingFileKind(file);
     const ins = await sb.from('shared_files').insert({ folder: folder.id, kind:'file', name:file.name, url, path, size_bytes:file.size, file_type:kind }).select().single();
     if(ins.error){ await sb.storage.from(MKT_BUCKET).remove([path]); throw ins.error; }
-    folder.items.push({ id:ins.data.id, type:'file', name:file.name, sizeBytes:file.size, dataUrl:url, path, fileType:kind, addedAt:Date.now() });
+    folder.items.push({ id:ins.data.id, type:'file', name:file.name, sizeBytes:file.size, dataUrl:(signed.data && signed.data.signedUrl) || '', path, fileType:kind, addedAt:Date.now() });
     marketingRenderFiles();
     marketingUpdateStorageBar();
     toast('Uploaded ✓');
@@ -15986,9 +16009,10 @@ window.marketingDeleteItem = function(itemId){
   if(!folder) return;
   appConfirmShow({title:'Remove Asset', msg:'Remove this from ' + folder.name + '?', onOk:()=>{
     const item = folder.items.find(i=>i.id===itemId);
-    sb.from('shared_files').delete().eq('id', itemId).then(({error})=>{
+    // Remove the stored file first (allowed while its record still exists), then the record
+    const removeFile = item && item.path ? sb.storage.from(MKT_BUCKET).remove([item.path]) : Promise.resolve();
+    removeFile.then(() => sb.from('shared_files').delete().eq('id', itemId)).then(({error})=>{
       if(error){ console.warn(error); toast('Not removed - check your connection'); return; }
-      if(item && item.path) sb.storage.from(MKT_BUCKET).remove([item.path]);
       folder.items = folder.items.filter(i=>i.id!==itemId);
       marketingRenderFiles();
       marketingUpdateStorageBar();

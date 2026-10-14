@@ -95,7 +95,7 @@ module.exports = async (req, res) => {
       if (isMuted(pref, thread.id, now) && !mentioned(pid)) { skipped.push('muted'); return; }
       const payload = JSON.stringify({ title, body: (mentioned(pid) ? '@you · ' : '') + preview(msg), thread: thread.id, url: '/?chat=' + thread.id, who: initials(me), colour: ROLE_COLOURS[me.role] || '#0D9488', photo: me.photo ? '/api/avatar?p=' + encodeURIComponent(me.id) + '&s=' + avatar.sign(me.id) : null });
       try {
-        await webpush.sendNotification({ endpoint: s.endpoint, keys: { p256dh: s.p256dh, auth: s.auth } }, payload, { TTL: 3600, urgency: 'high' }   // no 'topic': Google treats those as 'can wait' and delays them);
+        await webpush.sendNotification({ endpoint: s.endpoint, keys: { p256dh: s.p256dh, auth: s.auth } }, payload, { TTL: 3600, urgency: 'high' });   // no 'topic': Google treats those as 'can wait' and delays them
         sent++;
       } catch (e) {
         // phone uninstalled the app or turned notifications off - forget that device

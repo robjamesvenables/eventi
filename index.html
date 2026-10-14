@@ -22663,6 +22663,7 @@ window.chatRenderMessages = function(){
       <div id="chat-react-picker-${i}" class="chat2-tools" style="justify-content:${mine ? 'flex-end' : 'flex-start'}">
         ${CHAT_REACTION_EMOJIS.map(r => chatReactionPillHtml(r, `chatToggleReaction(${i},'${r.id}')`)).join('')}
         <button class="chat-action-chip" onclick="chatReplyTo(${i})">Reply</button>
+        ${m.body ? `<button class="chat-action-chip" onclick="chat2Copy(${i})">Copy</button>` : ''}
         <button class="chat-action-chip" onclick="chatPinMessage(${i})">Pin</button>
         ${canEdit ? `<button class="chat-action-chip" onclick="chat2Edit(${i})">Edit</button>` : ''}
         ${mine ? `<button class="chat-action-chip" onclick="chat2Info(${i})">Info</button>` : ''}
@@ -22704,6 +22705,13 @@ window.chatShowMessageTools = function(i){
 window.chatLongPressStart = function(i){
   clearTimeout(chatLongPressTimer);
   chatLongPressTimer = setTimeout(() => { chatShowMessageTools(i); if(navigator.vibrate) navigator.vibrate(10); }, 450);
+};
+window.chat2Copy = function(i){
+  const m = CH.view[i]; if(!m || !m.body) return;
+  document.querySelectorAll('.chat2-tools').forEach(x => x.style.display = 'none');
+  const done = () => toast('Copied');
+  if(navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(m.body).then(done, () => toast('Could not copy'));
+  else { const t = document.createElement('textarea'); t.value = m.body; document.body.appendChild(t); t.select(); try{ document.execCommand('copy'); done(); }catch(e){} t.remove(); }
 };
 window.chat2JumpTo = function(id){
   const i = CH.view.findIndex(m => m.id === id);
@@ -23039,6 +23047,7 @@ chat2Style.textContent = `
 .chat2-bubble{background:#F1F5F9;color:#0F1E2E;border-radius:16px;border-bottom-left-radius:4px;font-size:13.5px;line-height:1.5;-webkit-user-select:none;user-select:none;cursor:default}
 .chat2-bubble.mine{background:#0F1E2E;color:white;border-bottom-left-radius:16px;border-bottom-right-radius:4px}
 .chat2-bubble{width:fit-content;max-width:100%;box-sizing:border-box}.chat2-bubble.mine{margin-left:auto}
+@media (hover:none){#chat-thread-msgs,#chat-thread-msgs *{-webkit-user-select:none!important;user-select:none!important;-webkit-touch-callout:none!important}}
 @media (hover:hover){.chat2-bubble{-webkit-user-select:text;user-select:text}}
 .chat2-tools{display:none;gap:5px;margin-top:5px;flex-wrap:wrap;align-items:center}
 .chat2-day{align-self:center;margin:6px 0 2px}.chat2-day span{background:#F1F5F9;color:#64748B;font-size:10.5px;font-weight:700;padding:4px 10px;border-radius:10px}

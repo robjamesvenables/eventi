@@ -41,10 +41,8 @@ function within(ms, p){ return Promise.race([p, new Promise(r => setTimeout(() =
 const IS_PHONE = /Android|iPhone|iPad|iPod/i.test(self.navigator.userAgent || '');
 async function senderPicture(d){
   if (!IS_PHONE) return '/icon-192-v6.png';
-  if (d.photo) {
-    const ok = await within(3000, fetch(d.photo).then(r => r.ok).catch(() => false));
-    if (ok) return new URL(d.photo, self.location.origin).href;
-  }
+  // (No going online for the photo here: a phone with the screen off can pause that, which held
+  //  notifications back until Mavis was opened. Initials are made on the phone instantly.)
   if (d.who) { const a = await within(1500, avatar(d.who, d.colour)); if (a) return a; }
   return '/icon-192-v6.png';
 }

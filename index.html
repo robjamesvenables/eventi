@@ -22546,6 +22546,7 @@ window.chatOpenThread = function(){ nav('chat'); };
 window.chatOpenConversation = function(id, skipHistory){
   const t = CH.threads[id];
   if(!t) return;
+  if(CH.voice){ CH.voice.audio.pause(); CH.voice = null; }
   chatActiveId = id;
   CH.selId = null;
   chatCancelReply();
@@ -22615,7 +22616,15 @@ function chat2AttachmentHtml(m, mine){
   if(!m.attachment) return `<div style="${gap}padding:18px 26px;border-radius:10px;background:${mine ? 'rgba(255,255,255,.1)' : 'white'};font-size:11.5px;opacity:.75">Loading ${m.attachment_type === 'voice' ? 'voice note' : m.attachment_type}…</div>`;
   if(m.attachment_type === 'image') return `<img src="${m.attachment}" alt="" style="max-width:240px;max-height:320px;border-radius:12px;display:block;${gap}cursor:zoom-in" onclick="event.stopPropagation();recipePhotoZoom(this.src)">`;
   if(m.attachment_type === 'video') return `<video src="${m.attachment}" controls playsinline style="max-width:240px;border-radius:12px;display:block;${gap}"></video>`;
-  if(m.attachment_type === 'voice') return `<div class="chat-voice-note" style="${gap}"><span class="chat-voice-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M19 10v1a7 7 0 0 1-14 0v-1"/><path d="M12 18v4"/></svg></span><audio controls preload="metadata" src="${m.attachment}"></audio></div>`;
+  if(m.attachment_type === 'voice'){
+    const playing = CH.voice && CH.voice.id === m.id && !CH.voice.audio.paused;
+    return `<div class="chat2-voice" data-vid="${m.id}" style="${gap}">
+      <button class="chat2-vplay" onclick="event.stopPropagation();chat2VoicePlay('${m.id}')" aria-label="Play">${playing ? CHAT2_PAUSE : CHAT2_PLAY}</button>
+      <div class="chat2-vbar"><div class="chat2-vfill" style="width:${CH.voice && CH.voice.id === m.id ? CH.voice.pct : 0}%"></div></div>
+      <span class="chat2-vtime">${CH.voice && CH.voice.id === m.id ? CH.voice.label : chat2VoiceLen(m)}</span>
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="opacity:.6;flex-shrink:0"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M19 10v1a7 7 0 0 1-14 0v-1"/><path d="M12 18v4"/></svg>
+    </div>`;
+  }
   return `<a href="${m.attachment}" download="${chatEscapeHtml(m.attachment_name || 'document')}" onclick="event.stopPropagation()" style="display:flex;align-items:center;gap:10px;padding:10px;background:${mine ? 'rgba(255,255,255,.1)' : 'white'};border-radius:10px;min-width:180px;${gap}color:inherit;text-decoration:none"><div style="width:34px;height:34px;border-radius:8px;background:${mine ? 'rgba(255,255,255,.15)' : '#F1F5F9'};display:flex;align-items:center;justify-content:center;flex-shrink:0"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div><div style="min-width:0"><div style="font-size:12.5px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${chatEscapeHtml(m.attachment_name || 'Document')}</div><div style="font-size:10.5px;opacity:.7">Tap to download</div></div></a>`;
 }
 function chat2ReactionsHtml(i, m){
@@ -22755,7 +22764,7 @@ window.chat2Act = function(act){
   const bubbleIndex = e => { const b = e.target.closest('.chat2-bubble'); return b ? Number(b.dataset.i) : -1; };
   wrap.addEventListener('touchstart', e => {
     const i = bubbleIndex(e); clearTimeout(lp.timer);
-    if(i < 0 || e.target.closest('audio,video')) return;
+    if(i < 0) return;
     const t = e.touches[0]; lp.x = t.clientX; lp.y = t.clientY;
     lp.timer = setTimeout(() => { lp.firedAt = Date.now(); chat2Select(i); if(navigator.vibrate) navigator.vibrate(15); }, 380);
   }, {passive:true});
@@ -22767,7 +22776,7 @@ window.chat2Act = function(act){
   wrap.addEventListener('touchcancel', () => clearTimeout(lp.timer));
   wrap.addEventListener('contextmenu', e => {
     const i = bubbleIndex(e);
-    if(i < 0 || e.target.closest('audio,video')) return;
+    if(i < 0) return;
     e.preventDefault();
     if(Date.now() - lp.firedAt > 700) chat2Select(i);
   });
@@ -22782,6 +22791,47 @@ window.chat2Act = function(act){
 document.addEventListener('click', e => {
   if(CH.selId && e.target.isConnected && !e.target.closest('#chat-thread-msgs,#chat2-actbar,#chat2-sheet,#appModal,#appConfirm')) chat2ClearSel();
 });
+// ── Voice notes: Mavis's own player (the phone's built-in one blocks long-press) ──
+const CHAT2_PLAY = '<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M7 4.5v15a1 1 0 0 0 1.5.86l12.5-7.5a1 1 0 0 0 0-1.72L8.5 3.64A1 1 0 0 0 7 4.5z"/></svg>';
+const CHAT2_PAUSE = '<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16" rx="1"/><rect x="14" y="4" width="4" height="16" rx="1"/></svg>';
+CH.voice = null; CH.vlen = {};
+function chat2Clock(s){ s = Math.max(0, Math.round(s || 0)); return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0'); }
+function chat2VoiceLen(m){
+  if(CH.vlen[m.id]) return CH.vlen[m.id];
+  if(m.attachment && !CH.vlen['_' + m.id]){
+    CH.vlen['_' + m.id] = 1;
+    const a = new Audio(); a.preload = 'metadata';
+    a.onloadedmetadata = () => {
+      const fin = () => { if(isFinite(a.duration) && a.duration > 0){ CH.vlen[m.id] = chat2Clock(a.duration); const el = document.querySelector(`.chat2-voice[data-vid="${m.id}"] .chat2-vtime`); if(el && !(CH.voice && CH.voice.id === m.id)) el.textContent = CH.vlen[m.id]; } };
+      if(a.duration === Infinity){ a.currentTime = 1e9; a.ontimeupdate = () => { a.ontimeupdate = null; fin(); a.currentTime = 0; }; } else fin();
+    };
+    a.src = m.attachment;
+  }
+  return 'Voice';
+}
+function chat2VoiceUi(){
+  const v = CH.voice; if(!v) return;
+  const box = document.querySelector(`.chat2-voice[data-vid="${v.id}"]`); if(!box) return;
+  box.querySelector('.chat2-vplay').innerHTML = v.audio.paused ? CHAT2_PLAY : CHAT2_PAUSE;
+  box.querySelector('.chat2-vfill').style.width = v.pct + '%';
+  box.querySelector('.chat2-vtime').textContent = v.label;
+}
+window.chat2VoicePlay = function(id){
+  if(CH.voice && CH.voice.id === id){
+    const a = CH.voice.audio;
+    if(a.paused) a.play().catch(() => toast('Could not play this voice note')); else a.pause();
+    chat2VoiceUi(); return;
+  }
+  if(CH.voice){ CH.voice.audio.pause(); const old = CH.voice.id; CH.voice = null; const b = document.querySelector(`.chat2-voice[data-vid="${old}"]`); if(b){ b.querySelector('.chat2-vplay').innerHTML = CHAT2_PLAY; b.querySelector('.chat2-vfill').style.width = '0%'; b.querySelector('.chat2-vtime').textContent = CH.vlen[old] || 'Voice'; } }
+  const m = (CH.msgs[chatActiveId] || []).find(x => x.id === id);
+  if(!m || !m.attachment){ toast('Voice note still loading - try again in a moment'); return; }
+  const a = new Audio(m.attachment);
+  CH.voice = { id, audio:a, pct:0, label:'0:00' };
+  a.ontimeupdate = () => { if(!CH.voice || CH.voice.audio !== a) return; const d = isFinite(a.duration) ? a.duration : 0; CH.voice.pct = d ? Math.min(100, a.currentTime / d * 100) : 0; CH.voice.label = chat2Clock(a.currentTime); chat2VoiceUi(); };
+  a.onpause = chat2VoiceUi;
+  a.onended = () => { if(!CH.voice || CH.voice.audio !== a) return; CH.voice.pct = 0; CH.voice.label = CH.vlen[id] || chat2Clock(a.duration); chat2VoiceUi(); CH.voice = null; };
+  a.play().then(chat2VoiceUi, () => { toast('Could not play this voice note'); CH.voice = null; });
+};
 window.chat2Copy = function(i){
   const m = CH.view[i]; if(!m || !m.body) return;
   // A small "Copied" tag pops up just above the message itself
@@ -23189,6 +23239,12 @@ chat2Style.textContent = `
 @media (hover:hover){.chat2-bubble{-webkit-user-select:text;user-select:text}}
 .chat2-tools{display:none}
 .chat2-selected .chat2-bubble{box-shadow:0 0 0 3px rgba(13,148,136,.45)}
+.chat2-voice{display:flex;align-items:center;gap:10px;min-width:210px;padding:2px 0}
+.chat2-vplay{width:36px;height:36px;border-radius:50%;border:0;background:#0D9488;color:white;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;padding:0 0 0 2px}
+.chat2-bubble.mine .chat2-vplay{background:white;color:#0F1E2E}
+.chat2-vbar{flex:1;height:4px;border-radius:2px;background:rgba(100,116,139,.3);overflow:hidden}.chat2-bubble.mine .chat2-vbar{background:rgba(255,255,255,.3)}
+.chat2-vfill{height:100%;background:#0D9488;transition:width .2s linear}.chat2-bubble.mine .chat2-vfill{background:white}
+.chat2-vtime{font-size:11.5px;font-variant-numeric:tabular-nums;opacity:.8;min-width:30px}
 .chat2-copied{position:absolute;z-index:5;background:#0D9488;color:white;font:700 11.5px Inter,sans-serif;padding:5px 11px;border-radius:12px;box-shadow:0 4px 14px rgba(15,30,46,.2);pointer-events:none;animation:chat2Pop .14s ease-out;transition:opacity .35s}
 .chat2-copied.right{right:0}.chat2-copied.left{left:0}.chat2-copied.out{opacity:0}
 .chat2-emoji-pop{position:absolute;bottom:calc(100% - 2px);z-index:5;display:flex;gap:4px;background:white;border-radius:26px;padding:5px 7px;box-shadow:0 6px 24px rgba(15,30,46,.22);animation:chat2Pop .14s ease-out}

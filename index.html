@@ -22729,8 +22729,8 @@ window.chatRenderMessages = function(){
     html += `<div id="chat-message-${i}" data-chat-text="${chatEscapeHtml((m.body || chat2Preview(m)).toLowerCase())}" class="chat-msg-row${sel ? ' chat2-selected' : ''}" style="align-self:${mine ? 'flex-end' : 'flex-start'};max-width:78%;position:relative">
       ${nameHtml}
       ${pop}
-      <div class="chat2-bubble ${mine ? 'mine' : ''}" data-i="${i}" style="padding:${pad}">
-        ${inner}
+      <div class="chat2-bubble ${mine ? 'mine' : ''}" data-i="${i}" style="padding:${pad};position:relative">
+        ${inner}${m.deleted_at || m._tmp ? '' : `<button class="chat2-more-arrow" data-i="${i}" aria-label="Message options"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg></button>`}
       </div>
       <div style="font-size:10px;color:#94A3B8;margin-top:3px;text-align:${mine ? 'right' : 'left'}">${m.edited_at && !m.deleted_at ? 'Edited · ' : ''}${chat2Time(m.created_at)}${chat2Ticks(m, t)}</div>
       ${m.deleted_at ? '' : chat2ReactionsHtml(i, m)}
@@ -22836,8 +22836,9 @@ window.chat2Act = function(act){
     if(Date.now() - lp.firedAt < 700) return;
     if(e.target.closest('.chat2-emoji-pop')) return;
     const i = bubbleIndex(e);
+    const arrow = e.target.closest('.chat2-more-arrow');
+    if(arrow){ e.stopPropagation(); chat2Select(Number(arrow.dataset.i)); return; }
     if(CH.selId){ chat2ClearSel(); return; }
-    if(i > -1 && window.matchMedia('(hover:hover)').matches && !e.target.closest('audio,video,a,img,.chat-reply-block')) chat2Select(i);
   });
 })();
 document.addEventListener('click', e => {
@@ -23312,6 +23313,9 @@ chat2Style.textContent = `
 .chat2-bubble{width:fit-content;max-width:100%;box-sizing:border-box}.chat2-bubble.mine{margin-left:auto}
 @media (hover:none){#chat-thread-msgs,#chat-thread-msgs *{-webkit-user-select:none!important;user-select:none!important;-webkit-touch-callout:none!important}}
 @media (hover:hover){.chat2-bubble{-webkit-user-select:text;user-select:text}}
+.chat2-more-arrow{display:none;position:absolute;top:0;right:0;width:40px;height:30px;border-radius:0 16px 0 0;border:0;cursor:pointer;align-items:center;justify-content:flex-end;padding:0 9px 0 0;background:linear-gradient(90deg,rgba(241,245,249,0),#F1F5F9 55%);color:#475569}
+.chat2-bubble.mine .chat2-more-arrow{background:linear-gradient(90deg,transparent,var(--chat-mine,#0F1E2E) 55%);color:white}
+@media (hover:hover){.chat2-bubble:hover .chat2-more-arrow{display:flex}}
 .chat2-tools{display:none}
 .chat2-selected .chat2-bubble{box-shadow:0 0 0 3px rgba(13,148,136,.45)}
 .chat2-prev .chat2-bubble{font-size:calc(15px * var(--chat-scale,1));max-width:85%}

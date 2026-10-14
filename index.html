@@ -22284,7 +22284,8 @@ document.head.appendChild(chatAttachmentPreviewStyle);
    The database decides who can see what (chat_can). Edit within 15 minutes, delete for everyone within 2 days. */
 const CH = { started:false, ready:false, notReady:false, threads:{}, people:{}, members:{}, reads:{}, msgs:{}, attLoaded:{}, view:[], channel:null, reloadTimer:null };
 const CHAT_EDIT_MINS = 15, CHAT_DELETE_HOURS = 48;
-const CHAT_MSG_COLS = 'id,thread_id,sender_id,body,attachment_type,attachment_name,reply_to,reactions,edited_at,deleted_at,created_at';
+let CHAT_MSG_COLS = 'id,thread_id,sender_id,body,attachment_type,attachment_name,reply_to,reactions,edited_at,deleted_at,created_at,forwarded';
+const CHAT_MSG_COLS_OLD = CHAT_MSG_COLS.replace(',forwarded', '');
 
 function chat2Me(){ return myProfile ? myProfile.id : null; }
 function chat2Name(pid, short){
@@ -22385,6 +22386,7 @@ async function chatStart(force){
     sb.from('chat_msgs').select(CHAT_MSG_COLS).gte('created_at', since).order('created_at', {ascending:false}).limit(3000),
     sb.from('profiles').select('*').eq('company_id', myProfile.company_id)
   ]);
+  if(ms.error && /forwarded/.test(ms.error.message || '')){ CHAT_MSG_COLS = CHAT_MSG_COLS_OLD; CH.started = false; return chatStart(true); }
   if(th.error){ CH.notReady = true; console.warn('Chat not set up yet', th.error); chat2RefreshAll(); return; }
   CH.notReady = false;
   CH.people = {}; (pp.data || []).forEach(p => CH.people[p.id] = p);
@@ -22657,7 +22659,8 @@ window.chatRenderMessages = function(){
         const o = msgs.find(x => x.id === m.reply_to);
         reply = `<div class="chat-reply-block" style="cursor:pointer" onclick="event.stopPropagation();chat2JumpTo('${m.reply_to}')"><strong>${o ? chatEscapeHtml(chat2Name(o.sender_id, true)) : 'Message'}</strong><div style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:240px">${o ? momentsTwemojiParse(chatEscapeHtml(chat2Preview(o))) : 'Not available'}</div></div>`;
       }
-      inner = reply + chat2AttachmentHtml(m, mine) + (m.body ? `<span class="chat-message-text" style="white-space:pre-wrap;word-break:break-word">${momentsTwemojiParse(chatEscapeHtml(m.body))}</span>` : '');
+      const fwd = m.forwarded ? `<div style="font-size:11px;font-style:italic;opacity:.7;display:flex;align-items:center;gap:4px;margin-bottom:3px"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 14 20 9 15 4"/><path d="M4 20v-7a4 4 0 0 1 4-4h12"/></svg>Forwarded</div>` : '';
+      inner = fwd + reply + chat2AttachmentHtml(m, mine) + (m.body ? `<span class="chat-message-text" style="white-space:pre-wrap;word-break:break-word">${momentsTwemojiParse(chatEscapeHtml(m.body))}</span>` : '');
     }
     const sel = CH.selId === m.id;
     const pop = sel ? `<div class="chat2-emoji-pop ${mine ? 'right' : 'left'}">${CHAT_REACTION_EMOJIS.map(r => `<button onclick="event.stopPropagation();chatToggleReaction(${i},'${r.id}');chat2ClearSel()" aria-label="${r.label}">${momentsTwemojiParse(r.char)}</button>`).join('')}</div>` : '';
@@ -22713,6 +22716,7 @@ function chat2RenderActbar(){
   const canDel = mine && age < CHAT_DELETE_HOURS * 3600000;
   const ic = {
     reply:'<polyline points="9 14 4 9 9 4"/><path d="M20 20v-7a4 4 0 0 0-4-4H4"/>',
+    fwd:'<polyline points="15 14 20 9 15 4"/><path d="M4 20v-7a4 4 0 0 1 4-4h12"/>',
     copy:'<rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>',
     pin:'<path d="M12 17v5"/><path d="M9 10.76V6h6v4.76l2.5 3.74H6.5z"/><path d="M8 2h8"/>',
     info:'<circle cx="12" cy="12" r="9"/><path d="M12 16v-4"/><path d="M12 8h.01"/>',
@@ -22720,15 +22724,15 @@ function chat2RenderActbar(){
     del:'<path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M19 6l-1 14H6L5 6"/>'
   };
   const btn = (act, label, red) => `<button class="chat2-act${red ? ' red' : ''}" onclick="event.stopPropagation();chat2Act('${act}')"><svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${ic[act]}</svg><span>${label}</span></button>`;
-  bar.innerHTML = `<button class="chat2-act" onclick="event.stopPropagation();chat2ClearSel()" aria-label="Cancel"><svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg><span>Cancel</span></button>
+  bar.innerHTML = `<button class="chat2-act" onclick="event.stopPropagation();chat2ClearSel()" aria-label="Cancel"><svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
     <div style="flex:1"></div>
-    ${btn('reply', 'Reply')}${m.body ? btn('copy', 'Copy') : ''}${btn('pin', 'Pin')}${mine ? btn('info', 'Info') : ''}${canEdit ? btn('edit', 'Edit') : ''}${canDel ? btn('del', 'Delete', true) : ''}`;
+    ${btn('reply', 'Reply')}${btn('fwd', 'Forward')}${m.body ? btn('copy', 'Copy') : ''}${btn('pin', 'Pin')}${mine ? btn('info', 'Info') : ''}${canEdit ? btn('edit', 'Edit') : ''}${canDel ? btn('del', 'Delete', true) : ''}`;
 }
 window.chat2Act = function(act){
   const i = chat2SelIndex();
   chat2ClearSel();
   if(i < 0) return;
-  ({reply:chatReplyTo, copy:chat2Copy, pin:chatPinMessage, info:chat2Info, edit:chat2Edit, del:chat2Delete})[act](i);
+  ({reply:chatReplyTo, fwd:chat2Forward, copy:chat2Copy, pin:chatPinMessage, info:chat2Info, edit:chat2Edit, del:chat2Delete})[act](i);
 };
 (function(){
   const wrap = document.getElementById('chat-thread-msgs');
@@ -22782,6 +22786,54 @@ window.chat2Copy = function(i){
   if(navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(m.body).then(done, () => toast('Could not copy'));
   else { const t = document.createElement('textarea'); t.value = m.body; document.body.appendChild(t); t.select(); try{ document.execCommand('copy'); done(); }catch(e){} t.remove(); }
 };
+// ── Forward ──
+let chat2FwdMsg = null, chat2FwdSel = new Set();
+window.chat2Forward = async function(i){
+  const m = CH.view[i]; if(!m) return;
+  if(m.attachment_type && !m.attachment) await chat2FetchOneAtt(m);
+  chat2FwdMsg = m; chat2FwdSel = new Set();
+  chat2Sheet('Forward to…', 'Pick one or more chats', `<div style="padding:4px 8px 6px"><input id="chat2-fsearch" placeholder="Search…" oninput="chat2FwdList()" style="width:100%;box-sizing:border-box;padding:9px 12px;border:1.5px solid #E2E8F0;border-radius:10px;font:16px Inter,sans-serif;outline:none"></div><div id="chat2-flist"></div>`,
+    `<span id="chat2-fcount" style="margin-right:auto;font-size:12px;color:#64748B;align-self:center"></span><button class="chat-preview-secondary" onclick="chat2SheetClose()">Cancel</button><button class="chat-preview-send" onclick="chat2FwdSend()">Send</button>`);
+  chat2FwdList();
+};
+window.chat2FwdList = function(){
+  const q = (document.getElementById('chat2-fsearch')?.value || '').trim().toLowerCase();
+  const box = on => `<span style="width:22px;height:22px;border-radius:6px;border:2px solid ${on ? '#0D9488' : '#CBD5E1'};background:${on ? '#0D9488' : 'white'};display:flex;align-items:center;justify-content:center;flex-shrink:0">${on ? '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>' : ''}</span>`;
+  const label = s => `<div style="font-size:11px;font-weight:800;color:#94A3B8;text-transform:uppercase;letter-spacing:.05em;padding:10px 8px 2px">${s}</div>`;
+  const groups = Object.values(CH.threads).filter(t => t.kind !== 'direct' && (!q || (t.name || '').toLowerCase().includes(q)))
+    .sort((a, b) => ({all:0, dept:1, group:2}[a.kind] - {all:0, dept:1, group:2}[b.kind]) || String(a.name).localeCompare(String(b.name)));
+  const people = Object.values(CH.people).filter(p => p.active && (!q || chat2Name(p.id).toLowerCase().includes(q)))
+    .sort((a, b) => (a.id === chat2Me()) - (b.id === chat2Me()) || chat2Name(a.id).localeCompare(chat2Name(b.id)));
+  let html = '';
+  if(groups.length) html += label('Groups') + groups.map(t => { const k = 't:' + t.id, on = chat2FwdSel.has(k);
+    return `<div onclick="chat2FwdToggle('${k}')" class="chat2-pick" style="padding:8px">${chat2Avatar(t, 36)}<div style="flex:1;min-width:0;font-size:13.5px;font-weight:700;color:#0F1E2E">${chatEscapeHtml(t.name || 'Group')}</div>${box(on)}</div>`; }).join('');
+  if(people.length) html += label('People') + people.map(p => { const k = 'p:' + p.id, on = chat2FwdSel.has(k);
+    return `<div onclick="chat2FwdToggle('${k}')" class="chat2-pick" style="padding:0">${chat2PersonRow(p.id, box(on)).replace('padding:8px', 'padding:8px;flex:1;min-width:0')}</div>`; }).join('');
+  document.getElementById('chat2-flist').innerHTML = html || `<div style="padding:24px;text-align:center;color:#94A3B8;font-size:13px">Nothing found</div>`;
+  document.getElementById('chat2-fcount').textContent = chat2FwdSel.size ? chat2FwdSel.size + ' picked' : '';
+};
+window.chat2FwdToggle = function(k){ chat2FwdSel.has(k) ? chat2FwdSel.delete(k) : chat2FwdSel.add(k); chat2FwdList(); };
+window.chat2FwdSend = async function(){
+  const m = chat2FwdMsg;
+  if(!m || !chat2FwdSel.size){ toast('Pick at least one chat'); return; }
+  const picks = [...chat2FwdSel];
+  chat2SheetClose();
+  const fields = { body:m.body || null, attachment:m.attachment || null, attachment_type:m.attachment_type || null, attachment_name:m.attachment_name || null, forwarded:true };
+  let ok = 0, last = null;
+  for(const k of picks){
+    let tid = k.slice(2);
+    if(k.startsWith('p:')){
+      const { data, error } = await sb.rpc('chat_direct', {other:tid});
+      if(error || !data) continue;
+      tid = data;
+      if(!CH.threads[tid]) await chat2ReloadThreads();
+    }
+    if(await chat2Send(tid, Object.assign({}, fields))){ ok++; last = tid; }
+  }
+  if(!ok){ toast('Could not forward - please try again'); return; }
+  toast(ok === 1 ? 'Forwarded' : 'Forwarded to ' + ok + ' chats');
+  if(picks.length === 1 && last && last !== chatActiveId) chatOpenConversation(last);
+};
 window.chat2JumpTo = function(id){
   const i = CH.view.findIndex(m => m.id === id);
   const el = document.getElementById('chat-message-' + i);
@@ -22799,7 +22851,9 @@ async function chat2Send(tid, fields){
   if(tid === chatActiveId) chatRenderMessages();
   chat2RefreshAll();
   const payload = { thread_id:tid, sender_id:chat2Me(), body:tmp.body, attachment:tmp.attachment, attachment_type:tmp.attachment_type, attachment_name:tmp.attachment_name, reply_to:tmp.reply_to };
-  const { data, error } = await sb.from('chat_msgs').insert(payload).select(CHAT_MSG_COLS).single();
+  if(tmp.forwarded && CHAT_MSG_COLS !== CHAT_MSG_COLS_OLD) payload.forwarded = true;
+  let { data, error } = await sb.from('chat_msgs').insert(payload).select(CHAT_MSG_COLS).single();
+  if(error && /forwarded/.test(error.message || '')){ CHAT_MSG_COLS = CHAT_MSG_COLS_OLD; delete payload.forwarded; ({ data, error } = await sb.from('chat_msgs').insert(payload).select(CHAT_MSG_COLS).single()); }
   const ti = arr.findIndex(m => m.id === tmp.id);
   if(error){
     console.error('Chat send failed', error);
@@ -23130,7 +23184,8 @@ chat2Style.textContent = `
 .chat2-emoji-pop button:hover{background:#F1F5F9}.chat2-emoji-pop button img{width:26px;height:26px}
 @keyframes chat2Pop{from{transform:scale(.85);opacity:0}to{transform:scale(1);opacity:1}}
 #chat2-actbar{position:absolute;inset:0;background:#0F1E2E;display:flex;align-items:center;gap:2px;padding:0 8px;z-index:6;border-radius:inherit}
-.chat2-act{background:none;border:0;color:white;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:2px;min-width:50px;padding:6px 4px;border-radius:10px;font:600 10px Inter,sans-serif}
+@media(max-width:420px){#chat2-actbar{padding:0 2px;gap:0}.chat2-act{min-width:0!important;flex:0 1 auto;padding:6px 5px!important;font-size:9.5px!important}}
+.chat2-act{background:none;border:0;color:white;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:2px;min-width:46px;padding:6px 2px;border-radius:10px;font:600 10px Inter,sans-serif}
 .chat2-act:hover{background:rgba(255,255,255,.1)}.chat2-act.red{color:#FCA5A5}
 .chat2-day{align-self:center;margin:6px 0 2px}.chat2-day span{background:#F1F5F9;color:#64748B;font-size:10.5px;font-weight:700;padding:4px 10px;border-radius:10px}
 #chat-thread-msgs{justify-content:flex-start!important}#chat-thread-msgs>:first-child{margin-top:auto}

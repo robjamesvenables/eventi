@@ -31,7 +31,7 @@ self.addEventListener('push', (event) => {
     await self.registration.showNotification(d.title || 'Mavis', {
       body: d.body || 'New message',
       icon: '/icon-192-v6.png',
-      badge: '/icon-192-v6.png',
+      badge: '/notify-badge-96.png',   // Android's small top-bar icon: white shape on see-through
       tag: 'chat-' + (d.thread || 'mavis'),     // one notification per chat, updated with the latest message
       renotify: true,
       data: { url: d.url || '/', thread: d.thread || null }

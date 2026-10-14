@@ -5099,6 +5099,7 @@ img.emoji-tw{width:1.15em;height:1.15em;vertical-align:-0.2em;margin:0 1px}
         <div id="admin-role-cards" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:14px;margin-bottom:28px"></div>
 
         <div id="admin-perm-editor" style="display:none;margin-bottom:28px"></div>
+        <div id="admin-chat-settings" style="margin-bottom:28px"></div>
       </div>
 
       <!-- PEOPLE TAB -->
@@ -10879,6 +10880,7 @@ let adminActiveTab = 'roles';
 function adminConsoleRender(){
   const cardsEl = document.getElementById('admin-role-cards');
   if(!cardsEl) return;
+  try{ chatSettingsCardRender(); }catch(e){}
 
   cardsEl.innerHTML = ADMIN_ROLES.map(r => {
     const memberCount = PEOPLE.filter(p=>p.role===r.id).length;
@@ -16703,6 +16705,7 @@ document.documentElement.classList.add(chatIsComputer() ? 'is-computer' : 'is-to
 // Computer: Enter sends, Shift+Enter or Ctrl+Enter = new line (like WhatsApp on a computer).
 // Phone: Enter = new line, only the send button sends (like WhatsApp on a phone).
 window.chatComposerKey = function(e){
+  if(chat2MentionKey(e)) return;
   if(e.key !== 'Enter' || e.isComposing) return;
   e.preventDefault();
   const computer = chatIsComputer();
@@ -16725,6 +16728,7 @@ function chatComposerHtml(text){
 window.chatComposerRender = function(){
   const input = document.getElementById('chat-msg-input');
   if(!input) return;
+  setTimeout(() => { try{ chat2MentionCheck(); }catch(e){} }, 0);
   const text = chatComposerPlainText();
   const parsed = chatComposerHtml(text);
   if(input.innerHTML !== parsed) input.innerHTML = parsed;
@@ -22442,7 +22446,8 @@ function chat2Rebuild(){
     const read = chat2MyRead(t.id);
     const unread = t.id === chatActiveId && document.getElementById('p-chat')?.classList.contains('on') ? 0
       : msgs.filter(m => m.sender_id !== me && !m.deleted_at && m.created_at > read).length;
-    return { id:t.id, kind:t.kind, isGroup:t.kind !== 'direct', name:chat2ThreadName(t), unread, last, lastAt: last ? last.created_at : t.created_at, messages:msgs, sortKey:order[t.kind] };
+    const mentioned = unread > 0 && msgs.some(m => m.sender_id !== me && !m.deleted_at && m.created_at > read && chat2MentionsMe(m.body));
+    return { id:t.id, kind:t.kind, isGroup:t.kind !== 'direct', name:chat2ThreadName(t), unread, mentioned, last, lastAt: last ? last.created_at : t.created_at, messages:msgs, sortKey:order[t.kind] };
   }).filter(c => c.kind !== 'direct' || c.messages.length || c.id === chatActiveId);
   chatConversations.sort((a, b) => String(b.lastAt || '').localeCompare(String(a.lastAt || '')));
 }
@@ -22623,7 +22628,7 @@ window.chatRenderList = function(){
         </div>
         <div style="display:flex;justify-content:space-between;align-items:center;gap:8px">
           <span class="chat-preview-text" style="font-size:12px;color:#64748B;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;line-height:1.35">${prev}</span>
-          ${c.unread ? `<span class="chat2-unread">${c.unread}</span>` : ''}
+          ${c.mentioned ? `<span class="chat2-unread chat2-at" title="You were mentioned">@</span>` : ''}${c.unread ? `<span class="chat2-unread">${c.unread}</span>` : ''}
         </div>
       </div>
     </div>`;
@@ -22663,6 +22668,7 @@ window.chatOpenConversation = function(id, skipHistory){
   if(CH.voice){ CH.voice.audio.pause(); CH.voice = null; }
   chatActiveId = id;
   CH.selId = null;
+  chat2MentionClose();
   chatCancelReply();
   chat2CloseSearchQuiet();
   chat2MarkRead(id);
@@ -22719,6 +22725,7 @@ function chat2Ticks(m, t){
   if(m.sender_id !== chat2Me() || m.deleted_at) return '';
   if(m._failed) return '<span class="chat-status failed" title="Not sent">!</span>';
   if(m._tmp) return '<span class="chat-status pending" title="Sending">✓</span>';
+  if(!chatReadReceiptsOn()) return '<span class="chat-status pending" title="Sent">✓</span>';
   const others = chat2MemberIds(t).filter(id => id !== chat2Me());
   const reads = CH.reads[t.id] || {};
   const allRead = others.length && others.every(id => reads[id] && reads[id] >= m.created_at);
@@ -22783,7 +22790,7 @@ window.chatRenderMessages = function(){
         reply = `<div class="chat-reply-block" style="cursor:pointer" onclick="event.stopPropagation();chat2JumpTo('${m.reply_to}')"><strong>${o ? chatEscapeHtml(chat2Name(o.sender_id, true)) : 'Message'}</strong><div style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:240px">${o ? momentsTwemojiParse(chatEscapeHtml(chat2Preview(o))) : 'Not available'}</div></div>`;
       }
       const fwd = m.forwarded ? `<div style="font-size:11px;font-style:italic;opacity:.7;display:flex;align-items:center;gap:4px;margin-bottom:3px"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 14 20 9 15 4"/><path d="M4 20v-7a4 4 0 0 1 4-4h12"/></svg>Forwarded</div>` : '';
-      inner = fwd + reply + chat2AttachmentHtml(m, mine) + (m.body ? `<span class="chat-message-text" style="white-space:pre-wrap;word-break:break-word">${momentsTwemojiParse(chatEscapeHtml(m.body))}</span>` : '');
+      inner = fwd + reply + chat2AttachmentHtml(m, mine) + (m.body ? `<span class="chat-message-text" style="white-space:pre-wrap;word-break:break-word">${momentsTwemojiParse(chat2Mentions(chatEscapeHtml(m.body)))}</span>` : '');
     }
     const sel = CH.selId === m.id;
     const pop = sel ? `<div class="chat2-emoji-pop ${mine ? 'right' : 'left'}">${CHAT_REACTION_EMOJIS.map(r => `<button onclick="event.stopPropagation();chatToggleReaction(${i},'${r.id}');chat2ClearSel()" aria-label="${r.label}">${momentsTwemojiParse(r.char)}</button>`).join('')}</div>` : '';
@@ -22853,8 +22860,8 @@ function chat2RenderActbar(){
     ${phone
       ? btn('reply', 'Reply') + btn('fwd', 'Forward') + (m.body ? btn('copy', 'Copy') : '') + (canDel ? btn('del', 'Delete', true) : '')
         + `<button class="chat2-act" onclick="event.stopPropagation();chat2MoreMenu()" aria-label="More"><svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg></button>`
-      : btn('reply', 'Reply') + btn('fwd', 'Forward') + (m.body ? btn('copy', 'Copy') : '') + btn('pin', 'Pin') + (mine ? btn('info', 'Info') : '') + (canEdit ? btn('edit', 'Edit') : '') + (canDel ? btn('del', 'Delete', true) : '')}`;
-  bar.dataset.more = JSON.stringify([['pin','Pin'], mine && ['info','Message info'], canEdit && ['edit','Edit']].filter(Boolean));
+      : btn('reply', 'Reply') + btn('fwd', 'Forward') + (m.body ? btn('copy', 'Copy') : '') + btn('pin', 'Pin') + (mine && chatReadReceiptsOn() ? btn('info', 'Info') : '') + (canEdit ? btn('edit', 'Edit') : '') + (canDel ? btn('del', 'Delete', true) : '')}`;
+  bar.dataset.more = JSON.stringify([['pin','Pin'], mine && chatReadReceiptsOn() && ['info','Message info'], canEdit && ['edit','Edit']].filter(Boolean));
 }
 // Phone: the extra actions (Pin, Info, Edit) sit behind the three dots, like WhatsApp
 window.chat2MoreMenu = function(){
@@ -22947,6 +22954,91 @@ window.chat2VoicePlay = function(id){
   a.onended = () => { if(!CH.voice || CH.voice.audio !== a) return; CH.voice.pct = 0; CH.voice.label = CH.vlen[id] || chat2Clock(a.duration); chat2VoiceUi(); CH.voice = null; };
   a.play().then(chat2VoiceUi, () => { toast('Could not play this voice note'); CH.voice = null; });
 };
+// ── Read receipts: one switch for the whole company (Super Admin, in Admin Console) ──
+function chatReadReceiptsOn(){ return (typeof appSettings === 'undefined' || appSettings.chat_read_receipts !== 'off'); }
+function chatSettingsCardRender(){
+  const el = document.getElementById('admin-chat-settings');
+  if(!el) return;
+  if(!myProfile){ el.innerHTML = ''; return; }
+  const boss = myProfile.role === 'superadmin' || myProfile.is_owner;
+  const on = chatReadReceiptsOn();
+  el.innerHTML = `<div style="background:white;border:1.5px solid #E2E8F0;border-radius:12px;padding:16px 18px;display:flex;align-items:center;gap:16px">
+    <div style="width:40px;height:40px;border-radius:10px;background:#F0FDFA;display:flex;align-items:center;justify-content:center;flex-shrink:0"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#0D9488" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="2 12 6 16 13 8"/><polyline points="10 14 12 16 20 7"/></svg></div>
+    <div style="flex:1;min-width:0">
+      <div style="font-size:14px;font-weight:800;color:#0F1E2E">Chat read receipts</div>
+      <div style="font-size:12px;color:#64748B;margin-top:2px;line-height:1.45">${on ? 'On - blue ticks show when a message has been read, and Message info shows who has read it.' : 'Off - nobody sees whether their messages have been read.'}${boss ? '' : ' Only the Super Admin can change this.'}</div>
+    </div>
+    <button ${boss ? 'onclick="chatReadReceiptsToggle()"' : 'disabled'} aria-label="Read receipts" style="width:46px;height:26px;border-radius:13px;border:0;background:${on ? '#0D9488' : '#CBD5E1'};position:relative;cursor:${boss ? 'pointer' : 'not-allowed'};flex-shrink:0;opacity:${boss ? 1 : .6}"><span style="position:absolute;top:3px;left:${on ? 23 : 3}px;width:20px;height:20px;border-radius:50%;background:white;box-shadow:0 1px 3px rgba(0,0,0,.25);transition:left .15s"></span></button>
+  </div>`;
+}
+window.chatReadReceiptsToggle = async function(){
+  const next = chatReadReceiptsOn() ? 'off' : 'on';
+  const { error } = await sb.from('app_settings').upsert({ key:'chat_read_receipts', value:next }, { onConflict:'company_id,key' });
+  if(error){ toast('Could not save - ' + (error.message || 'please try again')); return; }
+  appSettings.chat_read_receipts = next;
+  chatSettingsCardRender();
+  if(chatActiveId) chatRenderMessages();
+  toast(next === 'on' ? 'Read receipts on for everyone' : 'Read receipts off for everyone');
+};
+// ── @mentions (groups only): type @ and pick a person; their name is highlighted, and they get an @ badge ──
+CH.mention = null;
+function chat2MentionsMe(body){
+  if(!body || !myProfile) return false;
+  const n = chat2Name(chat2Me()).toLowerCase();
+  return !!n && body.toLowerCase().includes('@' + n);
+}
+function chat2Mentions(escapedBody){
+  if(escapedBody.indexOf('@') < 0) return escapedBody;
+  const me = chat2Me();
+  const names = Object.values(CH.people).map(p => ({ id:p.id, n:chat2Name(p.id) })).filter(x => x.n && x.n !== 'Former team member')
+    .sort((a, b) => b.n.length - a.n.length);
+  let out = escapedBody;
+  names.forEach(x => {
+    const safe = chatEscapeHtml(x.n).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    out = out.replace(new RegExp('@' + safe + '(?![^<]*</span>)', 'gi'), `<span class="chat2-tag${x.id === me ? ' me' : ''}">@${chatEscapeHtml(x.n)}</span>`);
+  });
+  return out;
+}
+function chat2MentionCheck(){
+  const t = CH.threads[chatActiveId];
+  if(!t || t.kind === 'direct'){ chat2MentionClose(); return; }
+  const text = chatComposerPlainText();
+  const m = text.match(/(^|\s)@([^\s@]{0,20})$/);
+  if(!m){ chat2MentionClose(); return; }
+  const q = m[2].toLowerCase();
+  const list = chat2MemberIds(t).filter(id => id !== chat2Me()).map(id => ({ id, name:chat2Name(id) }))
+    .filter(x => !q || x.name.toLowerCase().split(/\s+/).some(w => w.startsWith(q)))
+    .sort((a, b) => a.name.localeCompare(b.name)).slice(0, 6);
+  if(!list.length){ chat2MentionClose(); return; }
+  CH.mention = { q:m[2], list, idx: CH.mention && CH.mention.q === m[2] ? Math.min(CH.mention.idx, list.length - 1) : 0 };
+  chat2MentionRender();
+}
+function chat2MentionRender(){
+  const row = document.getElementById('chat-input-row'); if(!row || !CH.mention) return;
+  let box = document.getElementById('chat2-mention');
+  if(!box){ box = document.createElement('div'); box.id = 'chat2-mention'; row.appendChild(box); }
+  box.innerHTML = `<div class="chat2-mention-head">Mention someone</div>` + CH.mention.list.map((x, i) =>
+    `<button class="${i === CH.mention.idx ? 'on' : ''}" onmousedown="event.preventDefault()" onclick="chat2MentionPick(${i})">${chat2PersonRow(x.id).replace('padding:8px', 'padding:6px 8px;flex:1;min-width:0')}</button>`).join('');
+}
+window.chat2MentionClose = function(){ CH.mention = null; const b = document.getElementById('chat2-mention'); if(b) b.remove(); };
+window.chat2MentionPick = function(i){
+  const mm = CH.mention; if(!mm || !mm.list[i]) return;
+  const input = document.getElementById('chat-msg-input');
+  const text = chatComposerPlainText();
+  const next = text.slice(0, text.length - mm.q.length - 1) + '@' + mm.list[i].name + ' ';
+  chat2MentionClose();
+  input.innerHTML = chatComposerHtml(next);
+  input.focus();
+  chatComposerCaretToEnd();
+};
+function chat2MentionKey(e){
+  if(!CH.mention) return false;
+  const n = CH.mention.list.length;
+  if(e.key === 'ArrowDown' || e.key === 'ArrowUp'){ e.preventDefault(); CH.mention.idx = (CH.mention.idx + (e.key === 'ArrowDown' ? 1 : n - 1)) % n; chat2MentionRender(); return true; }
+  if(e.key === 'Enter' || e.key === 'Tab'){ e.preventDefault(); chat2MentionPick(CH.mention.idx); return true; }
+  if(e.key === 'Escape'){ e.preventDefault(); e.stopPropagation(); chat2MentionClose(); return true; }
+  return false;
+}
 window.chat2Copy = function(i){
   const m = CH.view[i]; if(!m || !m.body) return;
   // A small "Copied" tag pops up just above the message itself
@@ -23052,6 +23144,7 @@ async function chat2Send(tid, fields){
   return true;
 }
 window.chatSendMessage = async function(){
+  chat2MentionClose();
   const input = document.getElementById('chat-msg-input');
   const text = chatComposerPlainText().trim();
   if(!text || !chatActiveId) return;
@@ -23387,6 +23480,13 @@ chat2Style.textContent = `
 .is-computer .chat2-bubble:hover .chat2-more-arrow{display:flex}
 .chat2-tools{display:none}
 .chat2-selected .chat2-bubble{box-shadow:0 0 0 3px rgba(13,148,136,.45)}
+.chat2-tag{color:#0D9488;font-weight:700}.chat2-bubble.mine .chat2-tag{color:#5EEAD4}
+.chat2-tag.me{background:rgba(196,151,59,.22);color:#8A6418;border-radius:5px;padding:0 3px}.chat2-bubble.mine .chat2-tag.me{color:#F5D58A}
+.chat2-at{background:#C4973B!important;margin-right:4px}
+#chat2-mention{position:absolute;left:16px;bottom:calc(100% + 6px);width:min(340px,calc(100% - 32px));background:white;border-radius:14px;box-shadow:0 10px 34px rgba(15,30,46,.22);overflow:hidden;z-index:30;padding:4px 0}
+.chat2-mention-head{font-size:10.5px;font-weight:800;color:#94A3B8;text-transform:uppercase;letter-spacing:.06em;padding:8px 14px 4px}
+#chat2-mention button{display:flex;width:100%;border:0;background:white;cursor:pointer;text-align:left;padding:0 6px;font-family:Inter,sans-serif}
+#chat2-mention button.on,#chat2-mention button:hover{background:#F0FDFA}
 .chat2-prev .chat2-bubble{font-size:calc(15px * var(--chat-scale,1));max-width:85%}
 @media(max-width:700px){
   #chat-thread-msgs .chat2-bubble{font-size:calc(16.5px * var(--chat-scale,1));line-height:1.42;border-radius:18px}

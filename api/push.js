@@ -56,13 +56,16 @@ module.exports = async (req, res) => {
     }
     const msg = (await L.db('chat_msgs?select=*&id=eq.' + encodeURIComponent(b.msg_id || '')))[0];
     // only the person who sent it, and only straight after sending
-    if (!msg || msg.sender_id !== me.id || msg.deleted_at || Date.now() - new Date(msg.created_at).getTime() > 3 * 60000) return L.send(res, 200, { ok: true, sent: 0 });
+    if (!msg) return L.send(res, 200, { ok: true, sent: 0, why: 'message not found' });
+    if (String(msg.sender_id) !== String(me.id)) return L.send(res, 200, { ok: true, sent: 0, why: 'not the sender' });
+    if (msg.deleted_at || Date.now() - new Date(msg.created_at).getTime() > 3 * 60000) return L.send(res, 200, { ok: true, sent: 0, why: 'too old' });
     const thread = (await L.db('chat_threads?select=*&id=eq.' + msg.thread_id))[0];
-    if (!thread || String(thread.company_id) !== String(me.company_id)) return L.send(res, 200, { ok: true, sent: 0 });
+    if (!thread || String(thread.company_id) !== String(me.company_id)) return L.send(res, 200, { ok: true, sent: 0, why: 'chat not found' });
 
-    const memberIds = (await L.db('rpc/chat_member_ids', { method: 'POST', body: { th: thread.id } })).map(x => typeof x === 'object' ? Object.values(x)[0] : x);
+    const raw = await L.db('rpc/chat_member_ids', { method: 'POST', body: { th: thread.id } });
+    const memberIds = (Array.isArray(raw) ? raw : []).map(x => (x && typeof x === 'object') ? Object.values(x)[0] : x);
     const others = memberIds.filter(id => String(id) !== String(me.id));
-    if (!others.length) return L.send(res, 200, { ok: true, sent: 0 });
+    if (!others.length) return L.send(res, 200, { ok: true, sent: 0, why: 'no one else in this chat', raw: JSON.stringify(raw).slice(0, 200) });
     const list = others.map(encodeURIComponent).join(',');
     const [people, prefs, subs] = await Promise.all([
       L.db('profiles?select=id,first_name,last_name,active&id=in.(' + list + ')'),
@@ -79,12 +82,12 @@ module.exports = async (req, res) => {
     const title = groupName ? (me.first_name || 'Someone') + ' · ' + groupName : (fullName(me) || 'New message');
     webpush.setVapidDetails('mailto:hello@getmavis.co', VAPID_PUBLIC, VAPID_PRIVATE);
 
-    let sent = 0;
+    let sent = 0; const skipped = [];
     await Promise.all(subs.map(async s => {
       const pid = s.profile_id, pref = prefBy[pid];
-      if (!personBy[pid] || personBy[pid].active === false) return;
-      if (inQuiet(pref, now)) return;
-      if (isMuted(pref, thread.id, now) && !mentioned(pid)) return;
+      if (!personBy[pid] || personBy[pid].active === false) { skipped.push('inactive'); return; }
+      if (inQuiet(pref, now)) { skipped.push('quiet hours'); return; }
+      if (isMuted(pref, thread.id, now) && !mentioned(pid)) { skipped.push('muted'); return; }
       const payload = JSON.stringify({ title, body: (mentioned(pid) ? '@you · ' : '') + preview(msg), thread: thread.id, url: '/?chat=' + thread.id });
       try {
         await webpush.sendNotification({ endpoint: s.endpoint, keys: { p256dh: s.p256dh, auth: s.auth } }, payload, { TTL: 3600, urgency: 'high', topic: String(thread.id).replace(/-/g, '').slice(0, 32) });
@@ -93,11 +96,12 @@ module.exports = async (req, res) => {
         // phone uninstalled the app or turned notifications off - forget that device
         if (e.statusCode === 404 || e.statusCode === 410) await L.db('push_subs?endpoint=eq.' + encodeURIComponent(s.endpoint), { method: 'DELETE' }).catch(() => {});
         else console.warn('push failed', e.statusCode, e.body);
+        skipped.push('error ' + (e.statusCode || e.message));
       }
     }));
-    return L.send(res, 200, { ok: true, sent });
+    return L.send(res, 200, { ok: true, sent, people: others.length, devices: subs.length, skipped });
   } catch (e) {
     console.error('push error', e.message);
-    return L.send(res, 500, { ok: false });
+    return L.send(res, 500, { ok: false, why: String(e.message || e).slice(0, 200) });
   }
 };

@@ -22545,6 +22545,7 @@ window.chatOpenConversation = function(id, skipHistory){
   const t = CH.threads[id];
   if(!t) return;
   chatActiveId = id;
+  CH.selId = null;
   chatCancelReply();
   chat2CloseSearchQuiet();
   chat2MarkRead(id);
@@ -22589,6 +22590,7 @@ function chat2RenderHeader(){
       <button id="chat-header-search-btn" class="chat-business-btn" onclick="chatToggleThreadSearch()" data-tooltip="Search this chat"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg></button>
     </div>`;
   chatRenderPinnedBar();
+  chat2RenderActbar();
 }
 function chat2CloseSearchQuiet(){
   const s = document.getElementById('chat-thread-search'); if(s) s.style.display = 'none';
@@ -22657,25 +22659,15 @@ window.chatRenderMessages = function(){
       }
       inner = reply + chat2AttachmentHtml(m, mine) + (m.body ? `<span class="chat-message-text" style="white-space:pre-wrap;word-break:break-word">${momentsTwemojiParse(chatEscapeHtml(m.body))}</span>` : '');
     }
-    const canEdit = mine && !m.deleted_at && !m._tmp && m.body && now - new Date(m.created_at).getTime() < CHAT_EDIT_MINS * 60000;
-    const canDel = mine && !m.deleted_at && !m._tmp && now - new Date(m.created_at).getTime() < CHAT_DELETE_HOURS * 3600000;
-    const tools = m.deleted_at || m._tmp ? '' : `
-      <div id="chat-react-picker-${i}" class="chat2-tools" style="justify-content:${mine ? 'flex-end' : 'flex-start'}">
-        ${CHAT_REACTION_EMOJIS.map(r => chatReactionPillHtml(r, `chatToggleReaction(${i},'${r.id}')`)).join('')}
-        <button class="chat-action-chip" onclick="chatReplyTo(${i})">Reply</button>
-        ${m.body ? `<button class="chat-action-chip" onclick="chat2Copy(${i})">Copy</button>` : ''}
-        <button class="chat-action-chip" onclick="chatPinMessage(${i})">Pin</button>
-        ${canEdit ? `<button class="chat-action-chip" onclick="chat2Edit(${i})">Edit</button>` : ''}
-        ${mine ? `<button class="chat-action-chip" onclick="chat2Info(${i})">Info</button>` : ''}
-        ${canDel ? `<button class="chat-action-chip chat-delete-chip" onclick="chat2Delete(${i})">Delete</button>` : ''}
-      </div>`;
+    const sel = CH.selId === m.id;
+    const pop = sel ? `<div class="chat2-emoji-pop ${mine ? 'right' : 'left'}">${CHAT_REACTION_EMOJIS.map(r => `<button onclick="event.stopPropagation();chatToggleReaction(${i},'${r.id}');chat2ClearSel()" aria-label="${r.label}">${momentsTwemojiParse(r.char)}</button>`).join('')}</div>` : '';
     const pad = m.attachment_type === 'image' && !m.deleted_at ? '6px' : '9px 13px';
-    html += `<div id="chat-message-${i}" data-chat-text="${chatEscapeHtml((m.body || chat2Preview(m)).toLowerCase())}" class="chat-msg-row" style="align-self:${mine ? 'flex-end' : 'flex-start'};max-width:78%;position:relative">
+    html += `<div id="chat-message-${i}" data-chat-text="${chatEscapeHtml((m.body || chat2Preview(m)).toLowerCase())}" class="chat-msg-row${sel ? ' chat2-selected' : ''}" style="align-self:${mine ? 'flex-end' : 'flex-start'};max-width:78%;position:relative">
       ${nameHtml}
-      <div class="chat2-bubble ${mine ? 'mine' : ''}" style="padding:${pad}" oncontextmenu="event.preventDefault();chatShowMessageTools(${i})" onclick="chat2BubbleClick(event,${i})" ontouchstart="chatLongPressStart(${i})" ontouchend="chatLongPressEnd()" ontouchmove="chatLongPressEnd()">
+      ${pop}
+      <div class="chat2-bubble ${mine ? 'mine' : ''}" data-i="${i}" style="padding:${pad}">
         ${inner}
       </div>
-      ${tools}
       <div style="font-size:10px;color:#94A3B8;margin-top:3px;text-align:${mine ? 'right' : 'left'}">${m.edited_at && !m.deleted_at ? 'Edited · ' : ''}${chat2Time(m.created_at)}${chat2Ticks(m, t)}</div>
       ${m.deleted_at ? '' : chat2ReactionsHtml(i, m)}
     </div>`;
@@ -22685,30 +22677,95 @@ window.chatRenderMessages = function(){
   if(atBottom || !wrap.dataset.tid || wrap.dataset.tid !== String(t.id)) wrap.scrollTop = wrap.scrollHeight;
   wrap.dataset.tid = t.id;
 };
-// Desktop: click a bubble to show its tools (phones: long-press)
-window.chat2BubbleClick = function(e, i){
-  if(e.target.closest('audio,video,a,img,.chat-reply-block')) return;
-  if(window.matchMedia('(hover:hover)').matches){
-    const el = document.getElementById('chat-react-picker-' + i);
-    const open = el && el.style.display === 'flex';
-    document.querySelectorAll('.chat2-tools').forEach(x => x.style.display = 'none');
-    if(el && !open) el.style.display = 'flex';
-  }
+// ── Long-press (phone) / click (computer) a message: WhatsApp style ──
+// Emojis float above the message; Reply, Copy, Pin, Info, Edit, Delete go in the top bar.
+CH.selId = null;
+function chat2SelIndex(){ return CH.selId ? CH.view.findIndex(m => m.id === CH.selId) : -1; }
+window.chat2Select = function(i){
+  const m = CH.view[i];
+  if(!m || m._tmp || m.deleted_at) return;
+  CH.selId = m.id;
+  chatRenderMessages();
+  chat2RenderActbar();
+  const row = document.getElementById('chat-message-' + i), pop = row && row.querySelector('.chat2-emoji-pop');
+  const wrap = document.getElementById('chat-thread-msgs');
+  if(pop && wrap && pop.getBoundingClientRect().top < wrap.getBoundingClientRect().top + 4) pop.classList.add('below');
 };
+window.chat2ClearSel = function(){
+  if(!CH.selId) return;
+  CH.selId = null;
+  chatRenderMessages();
+  chat2RenderActbar();
+};
+window.chatShowMessageTools = function(i){ chat2Select(i); };
+window.chatLongPressStart = function(){};
+function chat2RenderActbar(){
+  const head = document.getElementById('chat-thread-header');
+  if(!head) return;
+  head.style.position = 'relative';
+  let bar = document.getElementById('chat2-actbar');
+  const i = chat2SelIndex(), m = CH.view[i];
+  if(!m){ if(bar) bar.remove(); return; }
+  if(!bar){ bar = document.createElement('div'); bar.id = 'chat2-actbar'; }
+  head.appendChild(bar);
+  const mine = m.sender_id === chat2Me(), age = Date.now() - new Date(m.created_at).getTime();
+  const canEdit = mine && m.body && age < CHAT_EDIT_MINS * 60000;
+  const canDel = mine && age < CHAT_DELETE_HOURS * 3600000;
+  const ic = {
+    reply:'<polyline points="9 14 4 9 9 4"/><path d="M20 20v-7a4 4 0 0 0-4-4H4"/>',
+    copy:'<rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>',
+    pin:'<path d="M12 17v5"/><path d="M9 10.76V6h6v4.76l2.5 3.74H6.5z"/><path d="M8 2h8"/>',
+    info:'<circle cx="12" cy="12" r="9"/><path d="M12 16v-4"/><path d="M12 8h.01"/>',
+    edit:'<path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/>',
+    del:'<path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M19 6l-1 14H6L5 6"/>'
+  };
+  const btn = (act, label, red) => `<button class="chat2-act${red ? ' red' : ''}" onclick="event.stopPropagation();chat2Act('${act}')"><svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${ic[act]}</svg><span>${label}</span></button>`;
+  bar.innerHTML = `<button class="chat2-act" onclick="event.stopPropagation();chat2ClearSel()" aria-label="Cancel"><svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg><span>Cancel</span></button>
+    <div style="flex:1"></div>
+    ${btn('reply', 'Reply')}${m.body ? btn('copy', 'Copy') : ''}${btn('pin', 'Pin')}${mine ? btn('info', 'Info') : ''}${canEdit ? btn('edit', 'Edit') : ''}${canDel ? btn('del', 'Delete', true) : ''}`;
+}
+window.chat2Act = function(act){
+  const i = chat2SelIndex();
+  chat2ClearSel();
+  if(i < 0) return;
+  ({reply:chatReplyTo, copy:chat2Copy, pin:chatPinMessage, info:chat2Info, edit:chat2Edit, del:chat2Delete})[act](i);
+};
+(function(){
+  const wrap = document.getElementById('chat-thread-msgs');
+  if(!wrap) return;
+  const lp = {timer:null, x:0, y:0, firedAt:0};
+  const bubbleIndex = e => { const b = e.target.closest('.chat2-bubble'); return b ? Number(b.dataset.i) : -1; };
+  wrap.addEventListener('touchstart', e => {
+    const i = bubbleIndex(e); clearTimeout(lp.timer);
+    if(i < 0 || e.target.closest('audio,video')) return;
+    const t = e.touches[0]; lp.x = t.clientX; lp.y = t.clientY;
+    lp.timer = setTimeout(() => { lp.firedAt = Date.now(); chat2Select(i); if(navigator.vibrate) navigator.vibrate(15); }, 380);
+  }, {passive:true});
+  wrap.addEventListener('touchmove', e => {
+    const t = e.touches[0];
+    if(Math.abs(t.clientX - lp.x) > 12 || Math.abs(t.clientY - lp.y) > 12) clearTimeout(lp.timer);
+  }, {passive:true});
+  wrap.addEventListener('touchend', e => { clearTimeout(lp.timer); if(Date.now() - lp.firedAt < 700 && e.cancelable) e.preventDefault(); });
+  wrap.addEventListener('touchcancel', () => clearTimeout(lp.timer));
+  wrap.addEventListener('contextmenu', e => {
+    const i = bubbleIndex(e);
+    if(i < 0 || e.target.closest('audio,video')) return;
+    e.preventDefault();
+    if(Date.now() - lp.firedAt > 700) chat2Select(i);
+  });
+  wrap.addEventListener('click', e => {
+    if(Date.now() - lp.firedAt < 700) return;
+    if(e.target.closest('.chat2-emoji-pop')) return;
+    const i = bubbleIndex(e);
+    if(CH.selId){ chat2ClearSel(); return; }
+    if(i > -1 && window.matchMedia('(hover:hover)').matches && !e.target.closest('audio,video,a,img,.chat-reply-block')) chat2Select(i);
+  });
+})();
 document.addEventListener('click', e => {
-  if(!e.target.closest('.chat-msg-row')) document.querySelectorAll('.chat2-tools').forEach(x => x.style.display = 'none');
+  if(CH.selId && !e.target.closest('#chat-thread-msgs,#chat2-actbar,#chat2-sheet,#appModal,#appConfirm')) chat2ClearSel();
 });
-window.chatShowMessageTools = function(i){
-  document.querySelectorAll('.chat2-tools').forEach(x => x.style.display = 'none');
-  const el = document.getElementById('chat-react-picker-' + i); if(el) el.style.display = 'flex';
-};
-window.chatLongPressStart = function(i){
-  clearTimeout(chatLongPressTimer);
-  chatLongPressTimer = setTimeout(() => { chatShowMessageTools(i); if(navigator.vibrate) navigator.vibrate(10); }, 450);
-};
 window.chat2Copy = function(i){
   const m = CH.view[i]; if(!m || !m.body) return;
-  document.querySelectorAll('.chat2-tools').forEach(x => x.style.display = 'none');
   const done = () => toast('Copied');
   if(navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(m.body).then(done, () => toast('Could not copy'));
   else { const t = document.createElement('textarea'); t.value = m.body; document.body.appendChild(t); t.select(); try{ document.execCommand('copy'); done(); }catch(e){} t.remove(); }
@@ -23036,6 +23093,7 @@ document.addEventListener('keydown', e => {
   if(e.key !== 'Escape') return;
   const o = document.getElementById('chat2-sheet');
   if(o && o.style.display === 'flex'){ e.stopImmediatePropagation(); chat2SheetClose(); }
+  else if(CH.selId){ e.stopImmediatePropagation(); chat2ClearSel(); }
 }, true);
 
 const chat2Style = document.createElement('style');
@@ -23049,7 +23107,17 @@ chat2Style.textContent = `
 .chat2-bubble{width:fit-content;max-width:100%;box-sizing:border-box}.chat2-bubble.mine{margin-left:auto}
 @media (hover:none){#chat-thread-msgs,#chat-thread-msgs *{-webkit-user-select:none!important;user-select:none!important;-webkit-touch-callout:none!important}}
 @media (hover:hover){.chat2-bubble{-webkit-user-select:text;user-select:text}}
-.chat2-tools{display:none;gap:5px;margin-top:5px;flex-wrap:wrap;align-items:center}
+.chat2-tools{display:none}
+.chat2-selected .chat2-bubble{box-shadow:0 0 0 3px rgba(13,148,136,.45)}
+.chat2-emoji-pop{position:absolute;bottom:calc(100% - 2px);z-index:5;display:flex;gap:4px;background:white;border-radius:26px;padding:5px 7px;box-shadow:0 6px 24px rgba(15,30,46,.22);animation:chat2Pop .14s ease-out}
+.chat2-emoji-pop.right{right:0}.chat2-emoji-pop.left{left:0}
+.chat2-emoji-pop.below{bottom:auto;top:calc(100% - 22px)}
+.chat2-emoji-pop button{width:42px;height:42px;border:0;background:none;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0}
+.chat2-emoji-pop button:hover{background:#F1F5F9}.chat2-emoji-pop button img{width:26px;height:26px}
+@keyframes chat2Pop{from{transform:scale(.85);opacity:0}to{transform:scale(1);opacity:1}}
+#chat2-actbar{position:absolute;inset:0;background:#0F1E2E;display:flex;align-items:center;gap:2px;padding:0 8px;z-index:6;border-radius:inherit}
+.chat2-act{background:none;border:0;color:white;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:2px;min-width:50px;padding:6px 4px;border-radius:10px;font:600 10px Inter,sans-serif}
+.chat2-act:hover{background:rgba(255,255,255,.1)}.chat2-act.red{color:#FCA5A5}
 .chat2-day{align-self:center;margin:6px 0 2px}.chat2-day span{background:#F1F5F9;color:#64748B;font-size:10.5px;font-weight:700;padding:4px 10px;border-radius:10px}
 #chat-thread-msgs{justify-content:flex-start!important}#chat-thread-msgs>:first-child{margin-top:auto}
 #chat2-sheet{display:none;position:fixed;inset:0;z-index:10040;background:rgba(15,30,46,.48);align-items:center;justify-content:center;padding:18px}

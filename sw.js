@@ -64,8 +64,7 @@ self.addEventListener('push', (event) => {
     const opts = {
       body: d.body || 'New message',
       badge: '/notify-badge-96.png',   // Android's small top-bar icon: white shape on see-through
-      tag: 'chat-' + (d.thread || 'mavis'),     // one notification per chat, updated with the latest message
-      renotify: true,
+      tag: 'chat-' + (d.thread || 'mavis') + '-' + Date.now(),   // every message gets its own notification and buzz (the phone groups them)
       data: { url: d.url || '/', thread: d.thread || null }
     };
     let icon = null;

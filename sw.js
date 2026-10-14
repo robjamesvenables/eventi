@@ -30,7 +30,7 @@ self.addEventListener('push', (event) => {
     if (!d.force && d.thread && viewing.thread === d.thread && Date.now() - viewing.at < 45000) return;
     await self.registration.showNotification(d.title || 'Mavis', {
       body: d.body || 'New message',
-      icon: '/icon-192-v6.png',
+      // no separate picture: the app's own icon already shows, so there's just one Mavis icon
       badge: '/notify-badge-96.png',   // Android's small top-bar icon: white shape on see-through
       tag: 'chat-' + (d.thread || 'mavis'),     // one notification per chat, updated with the latest message
       renotify: true,

@@ -1859,7 +1859,9 @@ img.emoji-tw{width:1.15em;height:1.15em;vertical-align:-0.2em;margin:0 1px}
    of outline:none above, since that native ring isn't always a plain CSS outline the usual
    property can suppress. Forcing every focus-related outline/shadow property off directly
    on :focus and :focus-visible is what actually overrides it. */
-.chat-msg-input:focus,.chat-msg-input:focus-visible{outline:none!important;box-shadow:none!important;-webkit-tap-highlight-color:transparent!important}
+.chat-msg-input:focus,.chat-msg-input:focus-visible{outline:none!important;box-shadow:none!important;background:transparent!important;margin:0!important;-webkit-tap-highlight-color:transparent!important}
+.chat-msg-input:focus:empty{padding:0 8px!important}.chat-msg-input:focus:not(:empty){padding:7px 8px!important}
+#chat-composer-shell{height:auto!important;min-height:44px;box-sizing:border-box}
 #chat-composer-shell:focus-within{outline:none!important;box-shadow:none!important}
 .chat-msg-input:empty:before{content:attr(data-placeholder);color:#94A3B8;pointer-events:none}
 .chat-msg-input img.emoji-tw{width:18px!important;height:18px!important;vertical-align:-4px!important;margin:0 1px!important;display:inline-block!important;pointer-events:none;user-select:none}
@@ -4022,7 +4024,7 @@ img.emoji-tw{width:1.15em;height:1.15em;vertical-align:-0.2em;margin:0 1px}
                   </div>
                 </div>
               </div>
-              <div id="chat-msg-input" class="chat-msg-input" contenteditable="true" spellcheck="false" role="textbox" aria-label="Type a message" data-placeholder="Type a message…" oninput="chatComposerRender()" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();chatSendMessage()}" onfocus="chatKeyboardScrollFix()"></div>
+              <div id="chat-msg-input" class="chat-msg-input" contenteditable="true" spellcheck="false" role="textbox" aria-label="Type a message" data-placeholder="Type a message…" oninput="chatComposerRender()" onkeydown="if(event.key==='Enter'){event.preventDefault();chatComposerNewLine()}" onfocus="chatKeyboardScrollFix()"></div>
               <div style="position:relative;display:flex;align-items:center">
                 <button onclick="chatToggleComposeEmoji()" title="Emoji" aria-label="Emoji" style="appearance:none;-webkit-appearance:none;width:32px;height:32px;padding:0;margin:0;border:0!important;border-radius:0!important;background:none!important;box-shadow:none!important;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;color:#64748B;transition:color .15s ease,transform .15s ease" onmouseover="this.style.color='#0D9488';this.style.transform='scale(1.06)'" onmouseout="this.style.color='#64748B';this.style.transform='none'">
                   <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M8.5 14.5s1.3 2 3.5 2 3.5-2 3.5-2"/><path d="M9 9h.01"/><path d="M15 9h.01"/></svg>
@@ -16663,8 +16665,9 @@ function chatComposerPlainText(){
     if(node.nodeType === Node.TEXT_NODE) return node.nodeValue || '';
     if(node.nodeType !== Node.ELEMENT_NODE) return '';
     if(node.tagName === 'IMG' && node.classList.contains('emoji-tw')) return node.getAttribute('alt') || '';
-    if(node.tagName === 'BR') return '\n';
-    return Array.from(node.childNodes).map(read).join('');
+    if(node.tagName === 'BR') return node.hasAttribute('data-tail') ? '' : '\n';
+    const inner = Array.from(node.childNodes).map(read).join('');
+    return node.tagName === 'DIV' ? '\n' + inner : inner;
   }
   return Array.from(input.childNodes).map(read).join('');
 }
@@ -16680,11 +16683,24 @@ function chatComposerCaretToEnd(){
   sel.addRange(range);
 }
 
+// Enter = new line (only the send button sends, like WhatsApp on phones)
+window.chatComposerNewLine = function(){
+  const input = document.getElementById('chat-msg-input');
+  if(!input) return;
+  input.innerHTML = chatComposerHtml(chatComposerPlainText() + '\n');
+  chatComposerCaretToEnd();
+  input.scrollTop = input.scrollHeight;
+};
+function chatComposerHtml(text){
+  const safe = String(text).replace(/[&<>]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+  // a line break at the very end needs an extra (display-only) break to show the new empty line
+  return momentsTwemojiParse(safe) + (text.endsWith('\n') ? '<br data-tail>' : '');
+}
 window.chatComposerRender = function(){
   const input = document.getElementById('chat-msg-input');
   if(!input) return;
   const text = chatComposerPlainText();
-  const parsed = momentsTwemojiParse(text);
+  const parsed = chatComposerHtml(text);
   if(input.innerHTML !== parsed) input.innerHTML = parsed;
   chatComposerCaretToEnd();
 };
@@ -16692,7 +16708,7 @@ window.chatComposerRender = function(){
 window.chatInsertEmoji = function(char){
   const input = document.getElementById('chat-msg-input');
   const text = chatComposerPlainText() + char;
-  input.innerHTML = momentsTwemojiParse(text);
+  input.innerHTML = chatComposerHtml(text);
   input.focus();
   chatComposerCaretToEnd();
   document.getElementById('chat-compose-emoji').style.display = 'none';

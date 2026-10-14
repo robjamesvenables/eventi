@@ -6303,6 +6303,7 @@ function openMyAccount(){
     ${row('Role', esc(roleName(p.role)))}
     ${row('Company', esc((myCompany && myCompany.name) || ''))}
     ${row('Departments', esc((p.departments||[]).join(', ') || '—'))}
+    <div id="acct-notify" style="margin-top:16px">${typeof notifySettingsHtml === 'function' ? notifySettingsHtml() : ''}</div>
     <div id="acct-chatlook" style="margin-top:16px">${chatLookHtml()}</div>
     <div id="acct-change" style="margin-top:16px"></div>
     <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:16px">
@@ -6312,6 +6313,7 @@ function openMyAccount(){
     </div>
   </div>`;
   document.body.appendChild(el);
+  if(typeof pushRefreshState === 'function') pushRefreshState().then(() => { const b = document.getElementById('acct-notify'); if(b) b.innerHTML = notifySettingsHtml(); });
 }
 // ── Chat look: each person picks their text size and bubble colour (saved on this device) ──
 const CHAT_LOOK_KEY = 'mavis_chat_look';
@@ -22572,6 +22574,9 @@ async function chatStart(force){
   Object.values(CH.msgs).forEach(arr => arr.sort((x, y) => String(x.created_at).localeCompare(String(y.created_at))));
   CH.ready = true;
   chat2LoadMarks();
+  chat2LoadPrefs().then(() => chat2RefreshAll());
+  pushSubscribe(false).then(() => { try{ chatRenderList(); }catch(e){} });
+  chat2OpenFromUrl();
   chat2Subscribe();
   chat2RefreshAll();
   if(chatActiveId && CH.threads[chatActiveId]) chatRenderMessages();
@@ -22711,16 +22716,16 @@ window.chatRenderList = function(){
       <div style="flex:1;min-width:0">
         <div style="display:flex;justify-content:space-between;align-items:center;gap:8px">
           <span style="font-size:13.5px;font-weight:700;color:#0F1E2E;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${chatEscapeHtml(c.name)}</span>
-          <span style="font-size:10.5px;color:${c.unread ? '#0D9488' : '#94A3B8'};font-weight:${c.unread ? 700 : 500};flex-shrink:0">${last ? chat2ListTime(last.created_at) : ''}</span>
+          <span style="font-size:10.5px;color:${c.unread && !chat2IsMuted(c.id) ? '#0D9488' : '#94A3B8'};font-weight:${c.unread ? 700 : 500};flex-shrink:0;display:flex;align-items:center;gap:4px">${chat2IsMuted(c.id) ? `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#94A3B8" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-label="Muted">${CHAT2_BELL_OFF}</svg>` : ''}${last ? chat2ListTime(last.created_at) : ''}</span>
         </div>
         <div style="display:flex;justify-content:space-between;align-items:center;gap:8px">
           <span class="chat-preview-text" style="font-size:12px;color:#64748B;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;line-height:1.35">${prev}</span>
-          ${c.mentioned ? `<span class="chat2-unread chat2-at" title="You were mentioned">@</span>` : ''}${c.unread ? `<span class="chat2-unread">${c.unread}</span>` : ''}
+          ${c.mentioned ? `<span class="chat2-unread chat2-at" title="You were mentioned">@</span>` : ''}${c.unread ? `<span class="chat2-unread"${chat2IsMuted(c.id) ? ' style="background:#CBD5E1"' : ''}>${c.unread}</span>` : ''}
         </div>
       </div>
     </div>`;
   };
-  let html = '';
+  let html = q ? '' : chat2PushBanner();
   if(groups.length) html += `<div class="chat2-section">Groups</div>` + groups.map(row).join('');
   html += `<div class="chat2-section">Direct messages</div>`;
   html += directs.length ? directs.map(row).join('') : `<div style="padding:8px 16px 16px;font-size:12px;color:#94A3B8">No direct chats yet - tap <b>+ New Chat</b> to message someone.</div>`;
@@ -22796,6 +22801,7 @@ function chat2RenderHeader(){
       <div style="font-size:11px;color:#94A3B8;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${sub}</div>
     </div>
     <div style="margin-left:auto;display:flex;gap:4px">
+      <button class="chat-business-btn" onclick="chat2MuteMenu()" data-tooltip="${chat2IsMuted(t.id) ? 'Muted - tap to change' : 'Mute notifications'}" aria-label="Mute"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="${chat2IsMuted(t.id) ? '#C4973B' : 'currentColor'}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${chat2IsMuted(t.id) ? CHAT2_BELL_OFF : CHAT2_BELL}</svg></button>
       ${canEdit ? `<button class="chat-business-btn" onclick="chat2GroupEditor('${t.id}')" data-tooltip="Edit group"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg></button>` : ''}
       <button id="chat-header-search-btn" class="chat-business-btn" onclick="chatToggleThreadSearch()" data-tooltip="Search this chat"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg></button>
     </div>`;
@@ -23197,6 +23203,165 @@ window.chat2MarkDone = async function(mid){
   const { error } = await sb.from('chat_marks').delete().eq('msg_id', mid);
   if(error) toast('Could not update - please try again');
 };
+// ── Phone notifications (Chat) ──
+const MAVIS_VAPID = 'BGfKLEwZ6ZDqoozMUz2jqNJonJni6l-sA2FU8yHkUAm5FnnwHb44ZGBlEolJXr4QSZospqPa1_z-N2dMjTtKCJc';
+CH.prefs = { muted:{}, quiet_from:'', quiet_to:'' }; CH.pushState = 'off';
+const CHAT2_BELL_OFF = '<path d="M13.7 21a2 2 0 0 1-3.4 0"/><path d="M18.6 13A17.9 17.9 0 0 1 18 8"/><path d="M6.3 6.3A6 6 0 0 0 6 8c0 7-3 9-3 9h14"/><path d="M18 8a6 6 0 0 0-9.3-5"/><path d="m2 2 20 20"/>';
+const CHAT2_BELL = '<path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.9 1.9 0 0 0 3.4 0"/>';
+function pushSupported(){ return 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window; }
+function pushIsIOS(){ const ua = navigator.userAgent || ''; return /iPhone|iPad|iPod/.test(ua) || (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1); }
+function pushIsInstalled(){ return window.matchMedia('(display-mode: standalone)').matches || navigator.standalone === true; }
+function pushKey(s){ const p = '='.repeat((4 - s.length % 4) % 4); const b = atob((s + p).replace(/-/g, '+').replace(/_/g, '/')); return Uint8Array.from([...b].map(c => c.charCodeAt(0))); }
+async function pushCurrentSub(){ try{ const reg = await navigator.serviceWorker.getRegistration(); return reg ? await reg.pushManager.getSubscription() : null; }catch(e){ return null; } }
+async function pushRefreshState(){
+  if(!pushSupported()) CH.pushState = pushIsIOS() && !pushIsInstalled() ? 'ios-install' : 'unsupported';
+  else if(Notification.permission === 'denied') CH.pushState = 'denied';
+  else if(Notification.permission === 'granted' && await pushCurrentSub()) CH.pushState = 'on';
+  else CH.pushState = 'off';
+  return CH.pushState;
+}
+// Turn notifications on for this device (ask = show the phone's "Allow?" question)
+async function pushSubscribe(ask){
+  if(!pushSupported() || !myProfile) return pushRefreshState();
+  try{
+    if(Notification.permission !== 'granted'){
+      if(!ask) return pushRefreshState();
+      const r = await Notification.requestPermission();
+      if(r !== 'granted') return pushRefreshState();
+    }
+    const reg = await navigator.serviceWorker.ready;
+    let sub = await reg.pushManager.getSubscription();
+    if(!sub) sub = await reg.pushManager.subscribe({ userVisibleOnly:true, applicationServerKey:pushKey(MAVIS_VAPID) });
+    const j = sub.toJSON();
+    const { error } = await sb.rpc('push_register', { ep:j.endpoint, key_p256dh:j.keys.p256dh, key_auth:j.keys.auth, agent:navigator.userAgent });
+    if(error){ console.warn('[push] could not register', error); if(ask) toast('Notifications are being set up - try again soon'); }
+  }catch(e){ console.warn('[push]', e); if(ask) toast('Could not turn on notifications on this device'); }
+  return pushRefreshState();
+}
+window.pushTurnOn = async function(){
+  const s = await pushSubscribe(true);
+  if(s === 'on') toast('Notifications on ✓');
+  else if(s === 'denied') pushBlockedHelp();
+  chatRenderList(); const box = document.getElementById('acct-notify'); if(box) box.innerHTML = notifySettingsHtml();
+};
+function pushBlockedHelp(){
+  appConfirmShow({ title:'Notifications are blocked', msg:'Your browser is blocking notifications for Mavis. Tap the lock or "i" next to the web address (or open Mavis\'s app settings on your phone), set Notifications to Allow, then come back and tap Turn on again.', label:'OK', cancelLabel:'Close' });
+}
+function pushIosHelp(){
+  appConfirmShow({ title:'Notifications on iPhone', msg:'iPhones only allow notifications for apps on the Home Screen. In Safari tap Share (the square with the arrow), then "Add to Home Screen". Open Mavis from the new icon and tap Turn on.', label:'Got it', cancelLabel:'Close' });
+}
+async function pushForgetDevice(){
+  try{ const sub = await pushCurrentSub(); if(sub) await sb.rpc('push_unregister', { ep:sub.endpoint }); }catch(e){}
+}
+// Tell the server a message was sent, so it can notify the others
+async function chat2NotifyServer(msgId){
+  try{
+    const { data } = await sb.auth.getSession();
+    const token = data && data.session && data.session.access_token;
+    if(token) authApi('push', { body:{ msg_id:msgId }, token }).catch(() => {});
+  }catch(e){}
+}
+// Banner at the top of the chat list until notifications are on (or "Not now" for a week)
+function chat2PushBanner(){
+  const s = CH.pushState;
+  if(s === 'on' || s === 'unsupported' || s === 'denied') return '';
+  let until = 0; try{ until = Number(localStorage.getItem('mavis_push_banner_until') || 0); }catch(e){}
+  if(Date.now() < until) return '';
+  const ios = s === 'ios-install';
+  return `<div class="chat2-pushbar">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#0D9488" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0">${CHAT2_BELL}</svg>
+    <div style="flex:1;min-width:0"><div style="font-weight:800;color:#0F1E2E">Get notified of new messages</div><div style="color:#64748B;margin-top:1px">${ios ? 'On iPhone, add Mavis to your Home Screen first.' : 'So you never miss a message from the team.'}</div></div>
+    <div style="display:flex;flex-direction:column;gap:4px;flex-shrink:0">
+      <button class="chat-preview-send" style="padding:7px 12px" onclick="${ios ? 'pushIosHelp()' : 'pushTurnOn()'}">${ios ? 'How' : 'Turn on'}</button>
+      <button onclick="chat2PushLater()" style="border:0;background:none;color:#94A3B8;font:600 11.5px Inter,sans-serif;cursor:pointer">Not now</button>
+    </div>
+  </div>`;
+}
+window.chat2PushLater = function(){ try{ localStorage.setItem('mavis_push_banner_until', String(Date.now() + 7 * 86400000)); }catch(e){} chatRenderList(); };
+
+// ── Mute a chat ──
+function chat2IsMuted(tid){
+  const m = CH.prefs.muted && CH.prefs.muted[tid];
+  return !!m && (m === 'always' || new Date(m) > new Date());
+}
+async function chat2SavePrefs(){
+  const row = { profile_id: chat2Me(), muted: CH.prefs.muted || {}, quiet_from: CH.prefs.quiet_from || null, quiet_to: CH.prefs.quiet_to || null,
+    tz: Intl.DateTimeFormat().resolvedOptions().timeZone || 'Asia/Makassar', updated_at: new Date().toISOString() };
+  const { error } = await sb.from('chat_prefs').upsert(row, { onConflict:'profile_id' });
+  if(error){ console.warn('[prefs]', error); toast('Not saved - please try again'); return false; }
+  return true;
+}
+async function chat2LoadPrefs(){
+  const { data, error } = await sb.from('chat_prefs').select('*').limit(1);
+  if(!error && data && data[0]) CH.prefs = { muted: data[0].muted || {}, quiet_from: data[0].quiet_from || '', quiet_to: data[0].quiet_to || '' };
+}
+window.chat2MuteMenu = function(){
+  const t = CH.threads[chatActiveId]; if(!t) return;
+  const muted = chat2IsMuted(t.id);
+  const opt = (k, l) => `<button class="chat2-pick" style="padding:14px 12px;font-size:14.5px;font-weight:600;color:#0F1E2E" onclick="chat2SetMute('${k}')">${l}</button>`;
+  const m = CH.prefs.muted[t.id];
+  const sub = muted ? (m === 'always' ? 'Muted until you unmute it' : 'Muted until ' + new Date(m).toLocaleString('en-GB', { weekday:'short', hour:'2-digit', minute:'2-digit' })) : 'No notifications from this chat. You still see the messages, and an @mention still gets through.';
+  chat2Sheet(muted ? 'Muted' : 'Mute notifications', sub, (muted ? opt('off', 'Unmute') : '') + opt('8h', 'For 8 hours') + opt('1w', 'For 1 week') + opt('always', 'Always'));
+};
+window.chat2SetMute = async function(k){
+  const tid = chatActiveId; if(!tid) return;
+  const before = Object.assign({}, CH.prefs.muted);
+  if(k === 'off') delete CH.prefs.muted[tid];
+  else CH.prefs.muted[tid] = k === 'always' ? 'always' : new Date(Date.now() + (k === '8h' ? 8 * 3600000 : 7 * 86400000)).toISOString();
+  chat2SheetClose(); chat2RenderHeader(); chat2RefreshAll();
+  if(await chat2SavePrefs()) toast(k === 'off' ? 'Unmuted' : 'Muted');
+  else { CH.prefs.muted = before; chat2RenderHeader(); chat2RefreshAll(); }
+};
+// Muted chats don't add to the red number
+window.chatUnreadTotal = function(){ return chatConversations.reduce((s, c) => s + (chat2IsMuted(c.id) ? 0 : (c.unread || 0)), 0); };
+
+// ── My Account: notifications + quiet hours ──
+function notifySettingsHtml(){
+  const s = CH.pushState;
+  const status = { on:'On for this device ✓', off:'Off on this device', denied:'Blocked by your browser', 'ios-install':'Add Mavis to your Home Screen first', unsupported:'Not available in this browser' }[s] || '';
+  const btn = s === 'off' ? `<button class="btn btn-navy" style="font-size:12px;padding:7px 14px" onclick="pushTurnOn()">Turn on</button>`
+    : s === 'denied' ? `<button class="btn btn-ghost" style="font-size:12px;padding:7px 12px" onclick="pushBlockedHelp()">How to fix</button>`
+    : s === 'ios-install' ? `<button class="btn btn-ghost" style="font-size:12px;padding:7px 12px" onclick="pushIosHelp()">How</button>` : '';
+  const hours = [...Array(24).keys()].map(h => String(h).padStart(2, '0') + ':00');
+  const sel = (id, v) => `<select id="${id}" onchange="notifyQuietSave()" style="padding:7px 8px;border:1.5px solid #E2E8F0;border-radius:8px;font:600 13px Inter,sans-serif;color:#0F1E2E;background:white">${hours.map(x => `<option ${x === v ? 'selected' : ''}>${x}</option>`).join('')}</select>`;
+  const quietOn = !!(CH.prefs.quiet_from && CH.prefs.quiet_to);
+  return `<div style="background:#F8FAFC;border:1px solid #E2E8F0;border-radius:12px;padding:14px">
+    <div style="font-size:13.5px;font-weight:800;color:#0F1E2E">Notifications</div>
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:6px">
+      <div style="font-size:12.5px;color:${s === 'on' ? '#0F766E' : '#64748B'};font-weight:600">${status}</div>${btn}
+    </div>
+    <label style="display:flex;align-items:center;gap:8px;margin-top:12px;font-size:12.5px;font-weight:700;color:#475569;cursor:pointer">
+      <input type="checkbox" id="acct-quiet-on" ${quietOn ? 'checked' : ''} onchange="notifyQuietSave()" style="width:16px;height:16px;accent-color:#0D9488"> Quiet hours - no notifications
+    </label>
+    <div style="display:${quietOn ? 'flex' : 'none'};align-items:center;gap:8px;margin-top:8px;font-size:12.5px;color:#64748B">From ${sel('acct-quiet-from', CH.prefs.quiet_from || '23:00')} to ${sel('acct-quiet-to', CH.prefs.quiet_to || '07:00')}</div>
+  </div>`;
+}
+window.notifyQuietSave = async function(){
+  const on = document.getElementById('acct-quiet-on')?.checked;
+  CH.prefs.quiet_from = on ? (document.getElementById('acct-quiet-from')?.value || '23:00') : '';
+  CH.prefs.quiet_to = on ? (document.getElementById('acct-quiet-to')?.value || '07:00') : '';
+  const box = document.getElementById('acct-notify'); if(box) box.innerHTML = notifySettingsHtml();
+  if(await chat2SavePrefs()) toast(on ? 'Quiet hours saved' : 'Quiet hours off');
+};
+
+// Open a chat from a notification (app already open) or from /?chat=… (app was closed)
+if('serviceWorker' in navigator){
+  navigator.serviceWorker.addEventListener('message', e => {
+    if(e.data && e.data.type === 'open-chat' && e.data.thread && myProfile){ chatStart(); setTimeout(() => chat2OpenFromDash(e.data.thread), 300); }
+  });
+}
+function chat2OpenFromUrl(){
+  let id = null; try{ id = new URLSearchParams(location.search).get('chat'); }catch(e){}
+  if(!id) return;
+  try{ history.replaceState(history.state, '', location.pathname + location.hash); }catch(e){}
+  if(CH.threads[id]) setTimeout(() => chat2OpenFromDash(id), 200);
+}
+// Signing out: stop this device getting the last person's notifications
+(function(){
+  const orig = window.doLogout;
+  if(typeof orig !== 'function') return;
+  window.doLogout = async function(){ await pushForgetDevice(); return orig.apply(this, arguments); };
+})();
 window.chat2Copy = function(i){
   const m = CH.view[i]; if(!m || !m.body) return;
   // A small "Copied" tag pops up just above the message itself
@@ -23292,6 +23457,7 @@ async function chat2Send(tid, fields){
     return false;
   }
   data.attachment = tmp.attachment;
+  chat2NotifyServer(data.id);
   const ri = arr.findIndex(m => m.id === data.id);
   if(ri > -1){ if(ti > -1) arr.splice(ti, 1); }
   else if(ti > -1) arr[ti] = data;
@@ -23642,6 +23808,7 @@ chat2Style.textContent = `
 .chat2-tag{color:#0D9488;font-weight:700}.chat2-bubble.mine .chat2-tag{color:#5EEAD4}
 .chat2-tag.me{background:rgba(196,151,59,.22);color:#8A6418;border-radius:5px;padding:0 3px}.chat2-bubble.mine .chat2-tag.me{color:#F5D58A}
 .chat2-at{background:#C4973B!important;margin-right:4px}
+.chat2-pushbar{display:flex;align-items:center;gap:12px;margin:10px 12px 4px;padding:12px 14px;background:#F0FDFA;border:1px solid #99F6E4;border-radius:12px;font-size:12.5px;line-height:1.4}
 #chat2-marked-btn{flex-shrink:0;height:38px;min-width:38px;padding:0 9px;border:1.5px solid #E2E8F0;border-radius:9px;background:white;cursor:pointer;display:flex;align-items:center;gap:5px;font:800 12px Inter,sans-serif;color:#8A6418}
 #chat2-marked-btn:hover{background:#FFFBEB;border-color:#F5D58A}
 #chat2-mention{position:absolute;left:16px;bottom:calc(100% + 6px);width:min(340px,calc(100% - 32px));background:white;border-radius:14px;box-shadow:0 10px 34px rgba(15,30,46,.22);overflow:hidden;z-index:30;padding:4px 0}

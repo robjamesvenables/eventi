@@ -22490,7 +22490,40 @@ function chat2Subscribe(){
     })
     .on('postgres_changes', {event:'*', schema:'public', table:'chat_threads'}, () => chat2SoonReload())
     .on('postgres_changes', {event:'*', schema:'public', table:'chat_members'}, () => chat2SoonReload())
-    .subscribe();
+    .subscribe(status => { CH.live = status === 'SUBSCRIBED'; console.log('[chat] live connection:', status); });
+  chat2StartPolling();
+}
+// Backup: even if the live connection drops (bad Wi-Fi, phone asleep), check for new messages regularly
+// and straight away when the app comes back to the front.
+function chat2StartPolling(){
+  if(CH.pollTimer) return;
+  const tick = () => { if(document.visibilityState === 'visible') chat2Poll(); };
+  CH.pollTimer = setInterval(tick, 5000);
+  document.addEventListener('visibilitychange', tick);
+  window.addEventListener('focus', tick);
+  window.addEventListener('online', tick);
+}
+async function chat2Poll(){
+  if(!CH.ready || CH.polling || !myProfile) return;
+  CH.polling = true;
+  try{
+    let latest = '1970-01-01';
+    Object.values(CH.msgs).forEach(arr => arr.forEach(m => { if(!m._tmp && m.created_at > latest) latest = m.created_at; }));
+    const [ms, rd] = await Promise.all([
+      sb.from('chat_msgs').select(CHAT_MSG_COLS).gt('created_at', latest).order('created_at', {ascending:true}).limit(200),
+      sb.from('chat_reads').select('*')
+    ]);
+    if(rd.data){
+      let changed = false;
+      rd.data.forEach(r => { const t = CH.reads[r.thread_id] = CH.reads[r.thread_id] || {}; if(t[r.profile_id] !== r.last_read){ t[r.profile_id] = r.last_read; changed = true; } });
+      if(changed && chatActiveId) chatRenderMessages();
+    }
+    if(ms.data && ms.data.length){
+      if(ms.data.some(m => !CH.threads[m.thread_id])) await chat2ReloadThreads();
+      ms.data.forEach(m => chat2Upsert(m, true));
+    }
+  }catch(e){ console.warn('[chat] check failed', e); }
+  CH.polling = false;
 }
 function chat2OnMsg(p){
   const row = p.new;

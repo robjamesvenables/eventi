@@ -22761,6 +22761,7 @@ window.chatOpenConversation = function(id, skipHistory){
   chatActiveId = id;
   CH.selId = null;
   chat2MentionClose();
+  setTimeout(chat2TellViewing, 0);
   chatCancelReply();
   chat2CloseSearchQuiet();
   chat2MarkRead(id);
@@ -23383,6 +23384,18 @@ if('serviceWorker' in navigator){
     if(e.data && e.data.type === 'open-chat' && e.data.thread && myProfile){ chatStart(); setTimeout(() => chat2OpenFromDash(e.data.thread), 300); }
   });
 }
+// Tell the notification helper which chat is on screen and in focus (or none), every 20s and on any change
+function chat2TellViewing(){
+  try{
+    const sw = navigator.serviceWorker && navigator.serviceWorker.controller; if(!sw) return;
+    const onChat = document.visibilityState === 'visible' && document.hasFocus() && document.getElementById('p-chat')?.classList.contains('on')
+      && chatActiveId && (window.innerWidth > 700 || document.getElementById('chat-thread-pane')?.classList.contains('mobile-open'));
+    sw.postMessage({ type:'viewing', thread: onChat ? chatActiveId : null });
+  }catch(e){}
+}
+['focus', 'blur'].forEach(ev => window.addEventListener(ev, chat2TellViewing));
+document.addEventListener('visibilitychange', chat2TellViewing);
+setInterval(chat2TellViewing, 20000);
 function chat2OpenFromUrl(){
   let id = null; try{ id = new URLSearchParams(location.search).get('chat'); }catch(e){}
   if(!id) return;

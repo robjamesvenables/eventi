@@ -15771,6 +15771,28 @@ window.marketingOpenFile = async function(itemId){
   if(error || !data){ if(w) w.close(); toast('Could not open the file - please try again'); return; }
   if(w) w.location.href = data.signedUrl; else location.href = data.signedUrl;
 };
+// Download: the private link is made with "save as this name", so the browser saves it instead of showing it
+window.marketingDownloadFile = async function(itemId){
+  let item = null; marketingFolders.forEach(f => (f.items||[]).forEach(i => { if(String(i.id) === String(itemId)) item = i; }));
+  if(!item || !item.path){ toast('File not found'); return; }
+  const { data, error } = await sb.storage.from(MKT_BUCKET).createSignedUrl(item.path, 600, { download: item.name || true });
+  if(error || !data){ toast('Could not download - please try again'); return; }
+  toast('Downloading…');
+  try{
+    // Fetch it here and save it, so the Mavis page never navigates away
+    const res = await fetch(data.signedUrl);
+    if(!res.ok) throw new Error('HTTP ' + res.status);
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = item.name || 'file';
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 60000);
+  }catch(e){
+    console.warn('Download fell back to a new tab', e);
+    window.open(data.signedUrl, '_blank');
+  }
+};
 function marketingFileKind(file){
   if(file.type.startsWith('image/')) return 'image';
   if(file.type === 'application/pdf') return 'pdf';
@@ -15921,6 +15943,7 @@ function marketingRenderFiles(){
       </div>
       <div class="myd-file-row-actions">
         <button class="btn btn-navy" style="font-size:12px;padding:7px 14px" onclick="marketingOpenFile('${item.id}')">↗ View</button>
+        <button class="btn btn-ghost" style="font-size:12px;padding:7px 12px;display:inline-flex;align-items:center;gap:5px" onclick="marketingDownloadFile('${item.id}')" title="Download"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><polyline points="7 10 12 15 17 10"/><path d="M5 21h14"/></svg>Download</button>
         <button class="btn btn-ghost" style="font-size:12px;padding:7px 10px;color:#EF4444;border-color:#FECACA" onclick="marketingDeleteItem(${item.id})">×</button>
       </div>
     </div>`;

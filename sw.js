@@ -34,6 +34,11 @@ async function avatar(letters, colour){
   }catch(e){ return '/icon-192-v6.png'; }
 }
 
+async function senderPicture(d){
+  if (d.photo) { try { const r = await fetch(d.photo); if (r.ok) return d.photo; } catch (e) {} }
+  return d.who ? avatar(d.who, d.colour) : '/icon-192-v6.png';
+}
+
 // A new Chat message arrived while Mavis is closed or in the background
 self.addEventListener('push', (event) => {
   let d = {};
@@ -43,7 +48,7 @@ self.addEventListener('push', (event) => {
     if (!d.force && d.thread && viewing.thread === d.thread && Date.now() - viewing.at < 45000) return;
     await self.registration.showNotification(d.title || 'Mavis', {
       body: d.body || 'New message',
-      icon: d.who ? await avatar(d.who, d.colour) : '/icon-192-v6.png',   // who sent it (tests show the Mavis icon)
+      icon: await senderPicture(d),   // who sent it: their photo, or their initials (tests show the Mavis icon)
       badge: '/notify-badge-96.png',   // Android's small top-bar icon: white shape on see-through
       tag: 'chat-' + (d.thread || 'mavis'),     // one notification per chat, updated with the latest message
       renotify: true,

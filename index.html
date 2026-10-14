@@ -23258,10 +23258,10 @@ async function chat2NotifyServer(msgId){
   try{
     const { data } = await sb.auth.getSession();
     const token = data && data.session && data.session.access_token;
-    if(!token){ if(myProfile && myProfile.is_owner) toast('Notify: not signed in'); return; }
+    if(!token){ toast('Notify: not signed in'); return; }
     const r = await authApi('push', { body:{ msg_id:msgId }, token });
-    // Owner-only check while we set notifications up - staff never see this
-    if(myProfile && myProfile.is_owner) toast(r.sent ? 'Notified ' + r.sent + ' device' + (r.sent === 1 ? '' : 's') : 'Notify: ' + (r.why || r.reason || ('nobody to notify - ' + (r.people || 0) + ' people, ' + (r.devices || 0) + ' devices' + (r.skipped && r.skipped.length ? ', skipped: ' + r.skipped.join(', ') : ''))) + (r._status && r._status !== 200 ? ' (' + r._status + ')' : ''));
+    // TEMPORARY while setting notifications up - remove once confirmed working
+    toast(r.sent ? 'Notified ' + r.sent + ' device' + (r.sent === 1 ? '' : 's') : 'Notify: ' + (r.why || r.reason || ('nobody to notify - ' + (r.people || 0) + ' people, ' + (r.devices || 0) + ' devices' + (r.skipped && r.skipped.length ? ', skipped: ' + r.skipped.join(', ') : ''))) + (r._status && r._status !== 200 ? ' (' + r._status + ')' : ''));
   }catch(e){}
 }
 // Banner at the top of the chat list until notifications are on (or "Not now" for a week)

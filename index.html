@@ -22577,6 +22577,7 @@ async function chatStart(force){
   chat2LoadPrefs().then(() => chat2RefreshAll());
   pushSubscribe(false).then(() => { try{ chatRenderList(); }catch(e){} });
   chat2OpenFromUrl();
+  setTimeout(chat2PreparePics, 1500);
   chat2Subscribe();
   chat2RefreshAll();
   if(chatActiveId && CH.threads[chatActiveId]) chatRenderMessages();
@@ -23396,6 +23397,22 @@ function chat2TellViewing(){
 document.addEventListener('visibilitychange', chat2TellViewing);
 setInterval(chat2TellViewing, 20000);
 (function(){ const orig = window.nav; if(typeof orig !== 'function') return; window.nav = function(){ const r = orig.apply(this, arguments); setTimeout(chat2TellViewing, 0); return r; }; })();
+// While Mavis is open: make everyone's notification picture (initials on role colour) and hand them to the
+// notification helper, so a locked phone never has to draw anything when a message arrives
+async function chat2PreparePics(){
+  try{
+    const reg = navigator.serviceWorker && await navigator.serviceWorker.ready; if(!reg || !reg.active) return;
+    const pics = {};
+    Object.values(CH.people).forEach(p => {
+      const c = document.createElement('canvas'); c.width = c.height = 192; const g = c.getContext('2d');
+      g.fillStyle = chat2RoleColor(p.role); g.beginPath(); g.arc(96, 96, 96, 0, Math.PI * 2); g.fill();
+      g.fillStyle = '#FFFFFF'; g.font = '700 76px Inter, sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle';
+      g.fillText(chat2Initials(p.id).slice(0, 2), 96, 100);
+      pics[p.id] = c.toDataURL('image/png');
+    });
+    reg.active.postMessage({ type:'pics', pics });
+  }catch(e){}
+}
 function chat2OpenFromUrl(){
   let id = null; try{ id = new URLSearchParams(location.search).get('chat'); }catch(e){}
   if(!id) return;

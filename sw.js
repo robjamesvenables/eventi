@@ -21,30 +21,40 @@ self.addEventListener('message', (event) => {
   if (d.type === 'viewing') viewing = { thread: d.thread || null, at: Date.now() };
 });
 
-// The sender's picture for the notification: their initials on their role colour (like in Chat)
-async function avatar(letters, colour){
-  try{
-    const c = new OffscreenCanvas(192, 192), g = c.getContext('2d');
-    g.fillStyle = colour || '#0D9488'; g.beginPath(); g.arc(96, 96, 96, 0, Math.PI * 2); g.fill();
-    g.fillStyle = '#FFFFFF'; g.font = '700 76px sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle';
-    g.fillText(String(letters || '?').slice(0, 2), 96, 100);
-    const buf = await (await c.convertToBlob({ type: 'image/png' })).arrayBuffer();
-    let bin = ''; new Uint8Array(buf).forEach(b => { bin += String.fromCharCode(b); });
-    return 'data:image/png;base64,' + btoa(bin);
-  }catch(e){ return '/icon-192-v6.png'; }
+// Sender pictures are made by the app while it's open and kept here (on the phone), so when a message
+// arrives on a locked phone there is nothing to draw or download - just pick the ready picture.
+function picDb(){
+  return new Promise((ok, bad) => {
+    const r = indexedDB.open('mavis-notify', 1);
+    r.onupgradeneeded = () => r.result.createObjectStore('pics');
+    r.onsuccess = () => ok(r.result); r.onerror = () => bad(r.error);
+  });
 }
+async function savePics(map){
+  const db = await picDb();
+  await new Promise(res => { const tx = db.transaction('pics', 'readwrite'); const st = tx.objectStore('pics');
+    Object.keys(map || {}).forEach(k => st.put(map[k], k)); tx.oncomplete = res; tx.onerror = res; });
+}
+async function readyPic(id){
+  if (!id) return null;
+  try {
+    const db = await picDb();
+    return await new Promise(res => { const q = db.transaction('pics').objectStore('pics').get(String(id)); q.onsuccess = () => res(q.result || null); q.onerror = () => res(null); });
+  } catch (e) { return null; }
+}
+self.addEventListener('message', (event) => {
+  const d = event.data || {};
+  if (d.type === 'pics' && d.pics) event.waitUntil(savePics(d.pics).catch(() => {}));
+});
 
-// Never let the picture hold up the notification: give it 3 seconds at most
-function within(ms, p){ return Promise.race([p, new Promise(r => setTimeout(() => r(null), ms))]); }
 // Computers (Windows/Mac) quietly drop notifications that carry a made-up picture, and only show one
-// small picture anyway - so they always get the Mavis icon. Phones get the sender's photo or initials.
+// small picture anyway - so they always get the Mavis icon. Phones get the sender's ready-made picture.
 const IS_PHONE = /Android|iPhone|iPad|iPod/i.test(self.navigator.userAgent || '');
+function within(ms, p){ return Promise.race([p, new Promise(r => setTimeout(() => r(null), ms))]); }
 async function senderPicture(d){
   if (!IS_PHONE) return '/icon-192-v6.png';
-  // (No going online for the photo here: a phone with the screen off can pause that, which held
-  //  notifications back until Mavis was opened. Initials are made on the phone instantly.)
-  if (d.who) { const a = await within(1500, avatar(d.who, d.colour)); if (a) return a; }
-  return '/icon-192-v6.png';
+  const pic = await within(800, readyPic(d.from));
+  return pic || '/icon-192-v6.png';
 }
 
 // A new Chat message arrived while Mavis is closed or in the background

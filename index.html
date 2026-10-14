@@ -6282,6 +6282,7 @@ function openMyAccount(){
     ${row('Role', esc(roleName(p.role)))}
     ${row('Company', esc((myCompany && myCompany.name) || ''))}
     ${row('Departments', esc((p.departments||[]).join(', ') || '—'))}
+    <div id="acct-chatlook" style="margin-top:16px">${chatLookHtml()}</div>
     <div id="acct-change" style="margin-top:16px"></div>
     <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:16px">
       <button id="acct-change-btn" class="btn btn-navy" onclick="accountShowChange()">Change my ${what}</button>
@@ -6291,6 +6292,44 @@ function openMyAccount(){
   </div>`;
   document.body.appendChild(el);
 }
+// ── Chat look: each person picks their text size and bubble colour (saved on this device) ──
+const CHAT_LOOK_KEY = 'mavis_chat_look';
+const CHAT_LOOK_SIZES = [['s', 'Small', .9], ['m', 'Medium', 1], ['l', 'Large', 1.15], ['xl', 'Extra large', 1.3]];
+const CHAT_LOOK_COLOURS = [['#0F1E2E', 'Navy'], ['#0D9488', 'Teal'], ['#B8862F', 'Gold'], ['#16A34A', 'Green'], ['#2563EB', 'Blue'], ['#7C3AED', 'Purple'], ['#E11D48', 'Rose']];
+function chatLookGet(){
+  let v = {};
+  try{ v = JSON.parse(localStorage.getItem(CHAT_LOOK_KEY) || '{}') || {}; }catch(e){}
+  return { size: CHAT_LOOK_SIZES.some(s => s[0] === v.size) ? v.size : 'm', colour: CHAT_LOOK_COLOURS.some(c => c[0] === v.colour) ? v.colour : '#0F1E2E' };
+}
+function chatLookApply(){
+  const v = chatLookGet(), sz = CHAT_LOOK_SIZES.find(s => s[0] === v.size);
+  document.documentElement.style.setProperty('--chat-scale', sz[2]);
+  document.documentElement.style.setProperty('--chat-mine', v.colour);
+}
+window.chatLookSet = function(k, val){
+  const v = chatLookGet(); v[k] = val;
+  try{ localStorage.setItem(CHAT_LOOK_KEY, JSON.stringify(v)); }catch(e){}
+  chatLookApply();
+  const box = document.getElementById('acct-chatlook'); if(box) box.innerHTML = chatLookHtml();
+};
+function chatLookHtml(){
+  const v = chatLookGet();
+  const sizes = CHAT_LOOK_SIZES.map(([k, l]) => `<button onclick="chatLookSet('size','${k}')" style="flex:1;padding:8px 4px;border-radius:8px;border:1.5px solid ${v.size === k ? '#0D9488' : '#E2E8F0'};background:${v.size === k ? '#F0FDFA' : 'white'};color:${v.size === k ? '#0F766E' : '#475569'};font:700 12px Inter,sans-serif;cursor:pointer">${l}</button>`).join('');
+  const cols = CHAT_LOOK_COLOURS.map(([c, l]) => `<button onclick="chatLookSet('colour','${c}')" title="${l}" aria-label="${l}" style="width:30px;height:30px;flex-shrink:1;min-width:24px;border-radius:50%;background:${c};border:3px solid ${v.colour === c ? 'white' : 'transparent'};box-shadow:${v.colour === c ? '0 0 0 2.5px ' + c : 'none'};cursor:pointer;padding:0;display:flex;align-items:center;justify-content:center">${v.colour === c ? '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>' : ''}</button>`).join('');
+  return `<div style="background:#F8FAFC;border:1px solid #E2E8F0;border-radius:12px;padding:14px">
+    <div style="font-size:13.5px;font-weight:800;color:#0F1E2E">Chat look</div>
+    <div style="font-size:12px;color:#64748B;margin-top:2px">Just for you, on this device.</div>
+    <div style="font-size:11px;font-weight:700;color:#64748B;margin:12px 0 6px">Text size</div>
+    <div style="display:flex;gap:6px">${sizes}</div>
+    <div style="font-size:11px;font-weight:700;color:#64748B;margin:12px 0 6px">My bubble colour</div>
+    <div style="display:flex;gap:4px;flex-wrap:nowrap;justify-content:space-between;padding:0 3px">${cols}</div>
+    <div class="chat2-prev" style="margin-top:12px;background:white;border:1px solid #E2E8F0;border-radius:10px;padding:12px;display:flex;flex-direction:column;gap:8px">
+      <div class="chat2-bubble" style="padding:.55em .85em;align-self:flex-start">Is the fridge fixed?</div>
+      <div class="chat2-bubble mine" style="padding:.55em .85em;align-self:flex-end">Yes, all sorted 👍</div>
+    </div>
+  </div>`;
+}
+chatLookApply();
 window.accountShowChange = function(){
   const isPin = ['supervisor','teammember','dailyworker'].includes(myProfile.role);
   const what = isPin ? 'PIN' : 'password';
@@ -23232,22 +23271,24 @@ chat2Style.textContent = `
 .chat2-row:hover{background:#F8FAFC}.chat2-row.active{background:#F0FDFA}
 .chat2-section{padding:12px 16px 4px;font-size:11px;font-weight:800;color:#94A3B8;text-transform:uppercase;letter-spacing:.6px}
 .chat2-unread{background:#0D9488;color:white;font-size:10px;font-weight:800;min-width:18px;height:18px;border-radius:9px;display:inline-flex;align-items:center;justify-content:center;padding:0 5px;flex-shrink:0;box-sizing:border-box}
-.chat2-bubble{background:#F1F5F9;color:#0F1E2E;border-radius:16px;border-bottom-left-radius:4px;font-size:13.5px;line-height:1.5;-webkit-user-select:none;user-select:none;cursor:default}
-.chat2-bubble.mine{background:#0F1E2E;color:white;border-bottom-left-radius:16px;border-bottom-right-radius:4px}
+.chat2-bubble{background:#F1F5F9;color:#0F1E2E;border-radius:16px;border-bottom-left-radius:4px;font-size:calc(13.5px * var(--chat-scale,1));line-height:1.5;-webkit-user-select:none;user-select:none;cursor:default}
+.chat2-bubble.mine{background:var(--chat-mine,#0F1E2E);color:white;border-bottom-left-radius:16px;border-bottom-right-radius:4px}
 .chat2-bubble{width:fit-content;max-width:100%;box-sizing:border-box}.chat2-bubble.mine{margin-left:auto}
 @media (hover:none){#chat-thread-msgs,#chat-thread-msgs *{-webkit-user-select:none!important;user-select:none!important;-webkit-touch-callout:none!important}}
 @media (hover:hover){.chat2-bubble{-webkit-user-select:text;user-select:text}}
 .chat2-tools{display:none}
 .chat2-selected .chat2-bubble{box-shadow:0 0 0 3px rgba(13,148,136,.45)}
+.chat2-prev .chat2-bubble{font-size:calc(15px * var(--chat-scale,1));max-width:85%}
 @media(max-width:700px){
-  #chat-thread-msgs .chat2-bubble{font-size:16.5px;line-height:1.42;border-radius:18px}
-  #chat-thread-msgs .chat2-bubble:not([style*="padding:6px"]){padding:10px 15px!important}
+  #chat-thread-msgs .chat2-bubble{font-size:calc(16.5px * var(--chat-scale,1));line-height:1.42;border-radius:18px}
+  #chat-thread-msgs .chat2-bubble:not([style*="padding:6px"]){padding:.6em .9em!important}
   #chat-thread-msgs .chat-msg-row{max-width:84%!important}
   #chat-thread-msgs .chat-msg-row > div[style*="font-size:10px"]{font-size:12px!important}
   #chat-thread-msgs .chat-msg-row > div[style*="font-size:10.5px"]{font-size:12.5px!important}
-  #chat-thread-msgs .chat-reply-block{font-size:13.5px}
+  #chat-thread-msgs .chat-reply-block{font-size:calc(13.5px * var(--chat-scale,1))}
   #chat-thread-msgs .chat2-day span{font-size:12px;padding:5px 12px}
   #chat-msg-input{font-size:17px!important}
+  #chat-msg-input:empty::before{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .chat2-row span[style*="font-size:13.5px"]{font-size:16px!important}
   .chat2-row .chat-preview-text{font-size:14px!important}
   .chat2-row{padding:13px 16px}
@@ -23255,7 +23296,7 @@ chat2Style.textContent = `
 }
 .chat2-voice{display:flex;align-items:center;gap:10px;min-width:210px;padding:2px 0}
 .chat2-vplay{width:36px;height:36px;border-radius:50%;border:0;background:#0D9488;color:white;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;padding:0 0 0 2px}
-.chat2-bubble.mine .chat2-vplay{background:white;color:#0F1E2E}
+.chat2-bubble.mine .chat2-vplay{background:white;color:var(--chat-mine,#0F1E2E)}
 .chat2-vbar{flex:1;height:4px;border-radius:2px;background:rgba(100,116,139,.3);overflow:hidden}.chat2-bubble.mine .chat2-vbar{background:rgba(255,255,255,.3)}
 .chat2-vfill{height:100%;background:#0D9488;transition:width .2s linear}.chat2-bubble.mine .chat2-vfill{background:white}
 .chat2-vtime{font-size:11.5px;font-variant-numeric:tabular-nums;opacity:.8;min-width:30px}

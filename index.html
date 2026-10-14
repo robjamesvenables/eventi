@@ -22497,7 +22497,7 @@ window.chatRenderList = function(){
   const row = c => {
     const t = CH.threads[c.id], act = c.id === chatActiveId, last = c.last;
     const who = last && !last.deleted_at ? (last.sender_id === chat2Me() ? 'You: ' : (c.isGroup ? chatEscapeHtml(chat2Name(last.sender_id, true)) + ': ' : '')) : '';
-    const prev = last ? who + momentsTwemojiParse(chatEscapeHtml(chat2Preview(last))) : (t.kind === 'direct' ? 'Say hello 👋' : chat2MemberIds(t).length + ' members');
+    const prev = last ? who + momentsTwemojiParse(chatEscapeHtml(chat2Preview(last))) : (t.kind === 'direct' ? 'Say hello 👋' : (n => n + (n === 1 ? ' member' : ' members'))(chat2MemberIds(t).length));
     return `<div onclick="chatOpenConversation('${c.id}')" class="chat2-row${act ? ' active' : ''}">
       ${chat2Avatar(t, 40)}
       <div style="flex:1;min-width:0">
@@ -22515,7 +22515,7 @@ window.chatRenderList = function(){
   let html = '';
   if(groups.length) html += `<div class="chat2-section">Groups</div>` + groups.map(row).join('');
   html += `<div class="chat2-section">Direct messages</div>`;
-  html += directs.length ? directs.map(row).join('') : `<div style="padding:8px 16px 16px;font-size:12px;color:#94A3B8">No direct chats yet - tap <b>+</b> to message someone.</div>`;
+  html += directs.length ? directs.map(row).join('') : `<div style="padding:8px 16px 16px;font-size:12px;color:#94A3B8">No direct chats yet - tap <b>+ New Chat</b> to message someone.</div>`;
   list.innerHTML = html;
 };
 

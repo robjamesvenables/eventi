@@ -23158,6 +23158,8 @@ window.chatOpenPeopleSelector = (function(orig){
     if(!myProfile){ toast('Chat works once you\'re signed in'); return; }
     if(!CH.ready){ toast(CH.notReady ? 'Chat is being set up - check back soon' : 'Loading chats…'); return; }
     orig();
+    // Phones: show the list first - the keyboard only opens when they tap Search
+    if(window.matchMedia('(hover:none)').matches) setTimeout(() => document.getElementById('chat-people-search')?.blur(), 60);
   };
 })(window.chatOpenPeopleSelector);
 window.chatRenderPeopleSelector = function(){
@@ -23194,7 +23196,7 @@ window.chat2GroupEditor = function(tid){
     + `<button class="chat-preview-secondary" onclick="chat2SheetClose()">Cancel</button><button class="chat-preview-send" onclick="chat2GroupSave(${t ? `'${t.id}'` : 'null'})">${t ? 'Save' : 'Create group'}</button>`;
   chat2Sheet(t ? 'Edit group' : 'New group', 'Pick who\'s in it - only they will see the messages.', body, foot);
   chat2GroupList();
-  if(!t) setTimeout(() => document.getElementById('chat2-gname')?.focus(), 40);
+  if(!t && window.matchMedia('(hover:hover)').matches) setTimeout(() => document.getElementById('chat2-gname')?.focus(), 40);
 };
 window.chat2GroupList = function(){
   const q = (document.getElementById('chat2-gsearch')?.value || '').trim().toLowerCase();

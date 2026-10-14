@@ -3996,7 +3996,7 @@ img.emoji-tw{width:1.15em;height:1.15em;vertical-align:-0.2em;margin:0 1px}
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#0F1E2E" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
               </button>
             </div>
-            <div id="chat-pinned-bar" onclick="chatJumpToPinned()"><span style="font-size:16px">📌</span><div style="min-width:0;flex:1"><div style="font-size:10px;font-weight:800;color:#A16207;text-transform:uppercase;letter-spacing:.05em">Pinned message</div><div id="chat-pinned-text" style="font-size:12px;color:#475569;white-space:nowrap;overflow:hidden;text-overflow:ellipsis"></div></div><button onclick="event.stopPropagation();chatUnpinMessage()" class="chat-business-btn" title="Unpin">×</button></div>
+            <div id="chat-pinned-bar" onclick="chatJumpToPinned()"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#A16207" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><path d="M12 17v5"/><path d="M9 10.76V6h6v4.76l2.5 3.74H6.5z"/><path d="M8 2h8"/></svg><div style="min-width:0;flex:1"><div style="font-size:10px;font-weight:800;color:#A16207;text-transform:uppercase;letter-spacing:.05em">Pinned message</div><div id="chat-pinned-text" style="font-size:12px;color:#475569;white-space:nowrap;overflow:hidden;text-overflow:ellipsis"></div></div><button onclick="event.stopPropagation();chatUnpinMessage()" class="chat-business-btn" title="Unpin">×</button></div>
             <div id="chat-thread-search" style="display:none;padding:10px 16px;border-bottom:1px solid #E2E8F0;background:#F8FAFC;gap:8px;align-items:center"><input id="chat-thread-search-input" placeholder="Search this conversation…" style="flex:1;padding:8px 10px;border:1.5px solid #CBD5E1;border-radius:8px;font:16px Inter,sans-serif;outline:none" oninput="chatSearchConversation(this.value)"><button class="chat-business-btn" onclick="chatCloseSearch()">×</button></div>
             <div id="chat-thread-msgs" style="flex:1;overflow-y:auto;padding:20px;display:flex;flex-direction:column;justify-content:flex-end;gap:10px"></div>
             <div id="chat-reply-preview"><div style="display:flex;justify-content:space-between;gap:12px"><div><strong id="chat-reply-name">Replying</strong><div id="chat-reply-text" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:520px"></div></div><button onclick="chatCancelReply()" class="chat-business-btn">×</button></div></div>
@@ -22039,7 +22039,7 @@ function chatReplyHtml(m){
 }
 function chatVoiceHtml(m,mine){
   if(m.attachmentType!=='voice') return '';
-  return `<div class="chat-voice-note"><span class="chat-voice-icon">${momentsTwemojiParse('🎙️')}</span><audio controls preload="metadata" src="${m.attachment}"></audio></div>`;
+  return `<div class="chat-voice-note"><span class="chat-voice-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M19 10v1a7 7 0 0 1-14 0v-1"/><path d="M12 18v4"/></svg></span><audio controls preload="metadata" src="${m.attachment}"></audio></div>`;
 }
 
 window.chatRenderMessages = function(){
@@ -22186,7 +22186,7 @@ function chatOpenAttachmentPreview(data){
   document.getElementById('chat-attachment-preview-name').textContent=data.name||'';
   if(data.type==='image') stage.innerHTML=`<img src="${data.url}" alt="Selected photo preview">`;
   else if(data.type==='video') stage.innerHTML=`<video src="${data.url}" controls playsinline></video>`;
-  else stage.innerHTML=`<div class="chat-document-preview"><div class="chat-document-icon">${momentsTwemojiParse('📄')}</div><strong>${chatEscapeHtml(data.name||'Document')}</strong><span>Ready to send</span></div>`;
+  else stage.innerHTML=`<div class="chat-document-preview"><div class="chat-document-icon"><svg width="38" height="38" viewBox="0 0 24 24" fill="none" stroke="#0D9488" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div><strong>${chatEscapeHtml(data.name||'Document')}</strong><span>Ready to send</span></div>`;
   modal.classList.add('open');
 }
 
@@ -22332,7 +22332,7 @@ function chat2Preview(m){
   if(!m) return '';
   if(m.deleted_at) return 'Message deleted';
   if(m.body) return m.body;
-  return {voice:'🎙️ Voice note', video:'🎥 Video', image:'📷 Photo'}[m.attachment_type] || ('📄 ' + (m.attachment_name || 'Document'));
+  return {voice:'Voice note', video:'Video', image:'Photo'}[m.attachment_type] || (m.attachment_name || 'Document');
 }
 function chat2Time(v){ return new Date(v).toLocaleTimeString('en-GB', {hour:'2-digit', minute:'2-digit'}); }
 function chat2ListTime(v){
@@ -22497,7 +22497,7 @@ window.chatRenderList = function(){
   const row = c => {
     const t = CH.threads[c.id], act = c.id === chatActiveId, last = c.last;
     const who = last && !last.deleted_at ? (last.sender_id === chat2Me() ? 'You: ' : (c.isGroup ? chatEscapeHtml(chat2Name(last.sender_id, true)) + ': ' : '')) : '';
-    const prev = last ? who + momentsTwemojiParse(chatEscapeHtml(chat2Preview(last))) : (t.kind === 'direct' ? 'Say hello 👋' : (n => n + (n === 1 ? ' member' : ' members'))(chat2MemberIds(t).length));
+    const prev = last ? who + momentsTwemojiParse(chatEscapeHtml(chat2Preview(last))) : (t.kind === 'direct' ? 'No messages yet' : (n => n + (n === 1 ? ' member' : ' members'))(chat2MemberIds(t).length));
     return `<div onclick="chatOpenConversation('${c.id}')" class="chat2-row${act ? ' active' : ''}">
       ${chat2Avatar(t, 40)}
       <div style="flex:1;min-width:0">
@@ -22611,8 +22611,8 @@ function chat2AttachmentHtml(m, mine){
   if(!m.attachment) return `<div style="${gap}padding:18px 26px;border-radius:10px;background:${mine ? 'rgba(255,255,255,.1)' : 'white'};font-size:11.5px;opacity:.75">Loading ${m.attachment_type === 'voice' ? 'voice note' : m.attachment_type}…</div>`;
   if(m.attachment_type === 'image') return `<img src="${m.attachment}" alt="" style="max-width:240px;max-height:320px;border-radius:12px;display:block;${gap}cursor:zoom-in" onclick="event.stopPropagation();recipePhotoZoom(this.src)">`;
   if(m.attachment_type === 'video') return `<video src="${m.attachment}" controls playsinline style="max-width:240px;border-radius:12px;display:block;${gap}"></video>`;
-  if(m.attachment_type === 'voice') return `<div class="chat-voice-note" style="${gap}"><span class="chat-voice-icon">${momentsTwemojiParse('🎙️')}</span><audio controls preload="metadata" src="${m.attachment}"></audio></div>`;
-  return `<a href="${m.attachment}" download="${chatEscapeHtml(m.attachment_name || 'document')}" onclick="event.stopPropagation()" style="display:flex;align-items:center;gap:10px;padding:10px;background:${mine ? 'rgba(255,255,255,.1)' : 'white'};border-radius:10px;min-width:180px;${gap}color:inherit;text-decoration:none"><div style="font-size:22px">${momentsTwemojiParse('📄')}</div><div style="min-width:0"><div style="font-size:12.5px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${chatEscapeHtml(m.attachment_name || 'Document')}</div><div style="font-size:10.5px;opacity:.7">Tap to download</div></div></a>`;
+  if(m.attachment_type === 'voice') return `<div class="chat-voice-note" style="${gap}"><span class="chat-voice-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M19 10v1a7 7 0 0 1-14 0v-1"/><path d="M12 18v4"/></svg></span><audio controls preload="metadata" src="${m.attachment}"></audio></div>`;
+  return `<a href="${m.attachment}" download="${chatEscapeHtml(m.attachment_name || 'document')}" onclick="event.stopPropagation()" style="display:flex;align-items:center;gap:10px;padding:10px;background:${mine ? 'rgba(255,255,255,.1)' : 'white'};border-radius:10px;min-width:180px;${gap}color:inherit;text-decoration:none"><div style="width:34px;height:34px;border-radius:8px;background:${mine ? 'rgba(255,255,255,.15)' : '#F1F5F9'};display:flex;align-items:center;justify-content:center;flex-shrink:0"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div><div style="min-width:0"><div style="font-size:12.5px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${chatEscapeHtml(m.attachment_name || 'Document')}</div><div style="font-size:10.5px;opacity:.7">Tap to download</div></div></a>`;
 }
 function chat2ReactionsHtml(i, m){
   const r = m.reactions || {};
@@ -22637,7 +22637,7 @@ window.chatRenderMessages = function(){
   const now = Date.now();
   let lastDay = '', html = '';
   if(!msgs.length){
-    html = `<div style="margin:auto;text-align:center;color:#94A3B8;font-size:12.5px;line-height:1.6;padding:20px">${t.kind === 'direct' ? 'No messages yet - say hello 👋' : 'No messages yet in ' + chatEscapeHtml(chat2ThreadName(t)) + '.'}</div>`;
+    html = `<div style="margin:auto;text-align:center;color:#94A3B8;font-size:12.5px;line-height:1.6;padding:20px">${t.kind === 'direct' ? 'No messages yet - say hello' : 'No messages yet in ' + chatEscapeHtml(chat2ThreadName(t)) + '.'}</div>`;
   }
   msgs.forEach((m, i) => {
     const day = new Date(m.created_at).toDateString();
@@ -22648,7 +22648,7 @@ window.chatRenderMessages = function(){
     const nameHtml = showName ? `<div style="font-size:10.5px;font-weight:700;color:${chat2RoleColor(CH.people[m.sender_id]?.role)};margin:0 0 2px 4px">${chatEscapeHtml(chat2Name(m.sender_id))}</div>` : '';
     let inner;
     if(m.deleted_at){
-      inner = `<span style="font-style:italic;opacity:.65">🚫 This message was deleted</span>`;
+      inner = `<span style="font-style:italic;opacity:.65;display:inline-flex;align-items:center;gap:6px"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="m5.7 5.7 12.6 12.6"/></svg>This message was deleted</span>`;
     } else {
       let reply = '';
       if(m.reply_to){

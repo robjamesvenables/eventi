@@ -22723,11 +22723,25 @@ function chat2RenderActbar(){
     edit:'<path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/>',
     del:'<path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M19 6l-1 14H6L5 6"/>'
   };
+  const phone = window.innerWidth <= 560;
   const btn = (act, label, red) => `<button class="chat2-act${red ? ' red' : ''}" onclick="event.stopPropagation();chat2Act('${act}')"><svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${ic[act]}</svg><span>${label}</span></button>`;
   bar.innerHTML = `<button class="chat2-act" onclick="event.stopPropagation();chat2ClearSel()" aria-label="Cancel"><svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
     <div style="flex:1"></div>
-    ${btn('reply', 'Reply')}${btn('fwd', 'Forward')}${m.body ? btn('copy', 'Copy') : ''}${btn('pin', 'Pin')}${mine ? btn('info', 'Info') : ''}${canEdit ? btn('edit', 'Edit') : ''}${canDel ? btn('del', 'Delete', true) : ''}`;
+    ${phone
+      ? btn('reply', 'Reply') + btn('fwd', 'Forward') + (m.body ? btn('copy', 'Copy') : '') + (canDel ? btn('del', 'Delete', true) : '')
+        + `<button class="chat2-act" onclick="event.stopPropagation();chat2MoreMenu()" aria-label="More"><svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg></button>`
+      : btn('reply', 'Reply') + btn('fwd', 'Forward') + (m.body ? btn('copy', 'Copy') : '') + btn('pin', 'Pin') + (mine ? btn('info', 'Info') : '') + (canEdit ? btn('edit', 'Edit') : '') + (canDel ? btn('del', 'Delete', true) : '')}`;
+  bar.dataset.more = JSON.stringify([['pin','Pin'], mine && ['info','Message info'], canEdit && ['edit','Edit']].filter(Boolean));
 }
+// Phone: the extra actions (Pin, Info, Edit) sit behind the three dots, like WhatsApp
+window.chat2MoreMenu = function(){
+  const bar = document.getElementById('chat2-actbar'); if(!bar) return;
+  let menu = document.getElementById('chat2-more');
+  if(menu){ menu.remove(); return; }
+  menu = document.createElement('div'); menu.id = 'chat2-more';
+  menu.innerHTML = JSON.parse(bar.dataset.more || '[]').map(([a, l]) => `<button onclick="event.stopPropagation();document.getElementById('chat2-more').remove();chat2Act('${a}')">${l}</button>`).join('');
+  bar.appendChild(menu);
+};
 window.chat2Act = function(act){
   const i = chat2SelIndex();
   chat2ClearSel();
@@ -23184,7 +23198,10 @@ chat2Style.textContent = `
 .chat2-emoji-pop button:hover{background:#F1F5F9}.chat2-emoji-pop button img{width:26px;height:26px}
 @keyframes chat2Pop{from{transform:scale(.85);opacity:0}to{transform:scale(1);opacity:1}}
 #chat2-actbar{position:absolute;inset:0;background:#0F1E2E;display:flex;align-items:center;gap:2px;padding:0 8px;z-index:6;border-radius:inherit}
-@media(max-width:420px){#chat2-actbar{padding:0 2px;gap:0}.chat2-act{min-width:0!important;flex:0 1 auto;padding:6px 5px!important;font-size:9.5px!important}}
+@media(max-width:560px){#chat2-actbar{padding:0 6px;gap:2px}.chat2-act{min-width:48px;height:48px;justify-content:center}.chat2-act span{display:none}.chat2-act svg{width:24px;height:24px}}
+#chat2-more{position:absolute;right:8px;top:calc(100% + 4px);background:white;border-radius:12px;box-shadow:0 10px 30px rgba(15,30,46,.25);overflow:hidden;min-width:180px;z-index:20}
+#chat2-more button{display:block;width:100%;text-align:left;padding:14px 18px;border:0;background:white;font:600 14.5px Inter,sans-serif;color:#0F1E2E;cursor:pointer}
+#chat2-more button:hover{background:#F8FAFC}
 .chat2-act{background:none;border:0;color:white;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:2px;min-width:46px;padding:6px 2px;border-radius:10px;font:600 10px Inter,sans-serif}
 .chat2-act:hover{background:rgba(255,255,255,.1)}.chat2-act.red{color:#FCA5A5}
 .chat2-day{align-self:center;margin:6px 0 2px}.chat2-day span{background:#F1F5F9;color:#64748B;font-size:10.5px;font-weight:700;padding:4px 10px;border-radius:10px}

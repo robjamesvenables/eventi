@@ -55,7 +55,12 @@ self.addEventListener('push', (event) => {
   try { d = event.data ? event.data.json() : {}; } catch (e) { d = { title: 'Mavis', body: event.data ? event.data.text() : '' }; }
   event.waitUntil((async () => {
     // Stay quiet only if the person is looking at that exact chat right now (like WhatsApp Web)
-    if (!d.force && d.thread && viewing.thread === d.thread && Date.now() - viewing.at < 45000) return;
+    // (double-checked: a Mavis window must really be on screen and in focus right now - so a stale
+    //  "viewing" from a just-closed app can never swallow a notification)
+    if (!d.force && d.thread && viewing.thread === d.thread && Date.now() - viewing.at < 30000) {
+      const wins = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
+      if (wins.some(w => w.visibilityState === 'visible' && w.focused)) return;
+    }
     const opts = {
       body: d.body || 'New message',
       badge: '/notify-badge-96.png',   // Android's small top-bar icon: white shape on see-through

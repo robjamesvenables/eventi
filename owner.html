@@ -212,7 +212,7 @@ async function load(){
   if(d._status===401){ showLogin(); return false; }
   if(d._status===403){ showLogin('This page is for Mavis only. Signed in with a different account - sign in as the Mavis owner.'); await sb.auth.signOut(); return false; }
   if(!d.ok){ toast(d.message || 'Could not load - check your connection'); return false; }
-  D = d; $('me-name').textContent = (d.me && d.me.name) || 'Robbie'; $('me-av').textContent = ((d.me && d.me.name)||'R')[0];
+  D = d; D.notify = (D.errors||[]).filter(e=>e.page==='notify'); D.errors = (D.errors||[]).filter(e=>e.page!=='notify'); $('me-name').textContent = (d.me && d.me.name) || 'Robbie'; $('me-av').textContent = ((d.me && d.me.name)||'R')[0];
   $('login').classList.add('hidden'); $('app').classList.remove('hidden');
   const due = D.invoices.filter(i=>['overdue'].includes(invState(i).k)).length;
   $('money-count').textContent = due; $('money-count').classList.toggle('hidden', !due);
@@ -638,6 +638,9 @@ function renderHealth(){
     <h1>Health</h1><div class="sub">Problems people hit in Mavis, and storage per client</div>
     <div class="card" style="margin-top:18px"><div style="display:flex;align-items:center;margin-bottom:10px"><h2 style="margin:0">PROBLEMS REPORTED</h2>${D.errors.length?'<button class="btn sm" style="margin-left:auto" onclick="clearErrors()">Clear all</button>':''}</div>
       ${D.errors.length ? D.errors.slice(0,100).map(e=>{ const c=clientById(e.company_id)||{name:'?'}; return `<div class="alert"><div class="dot" style="background:#FEE2E2">⚠️</div><div style="min-width:0"><b>${esc(c.name)}</b> <span class="muted" style="font-size:12px">· ${esc(e.username||'')} · ${esc(e.page||'')} · ${ago(e.created_at)}</span><small style="word-break:break-word;font-family:ui-monospace,Menlo,monospace">${esc(e.message)}</small></div></div>`; }).join('') : '<div class="empty">No problems reported. ✓</div>'}
+    </div>
+    <div class="card" style="margin-top:16px"><h2>CHAT NOTIFICATIONS (LATEST)</h2>
+      ${D.notify.length ? D.notify.slice(0,40).map(e=>{ const c=clientById(e.company_id)||{name:'?'}; return `<div class="mini" style="align-items:flex-start"><span class="muted" style="min-width:92px">${new Date(e.created_at).toLocaleString('en-GB',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit',second:'2-digit'})}</span><span style="min-width:0"><b>${esc(c.name)}</b> · ${esc(e.message||'')}</span></div>`; }).join('') : '<div class="empty">No notifications sent yet.</div>'}
     </div>
     <div class="card" style="margin-top:16px"><h2>STORAGE (FILES)</h2>
       ${live.map(c=>{ const p=Math.min(100,Math.round(c.storage_bytes/STORAGE_LIMIT*100)); return `<div class="mini">${avatar(c,26)}<span style="min-width:120px">${esc(c.name)}</span>

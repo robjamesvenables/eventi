@@ -102,6 +102,9 @@ module.exports = async (req, res) => {
         skipped.push('error ' + (e.statusCode || e.message));
       }
     }));
+    // Record what happened, so missed notifications can be checked on the Owner page (Health)
+    L.db('app_errors', { method: 'POST', body: { company_id: me.company_id, username: me.username, page: 'notify',
+      message: 'Chat notification from ' + (fullName(me) || me.username) + ' in ' + (groupName || 'a direct chat') + ': sent to ' + sent + ' of ' + subs.length + ' device(s) for ' + others.length + ' other person(s)' + (skipped.length ? ' - skipped: ' + skipped.join(', ') : '') + (subs.length ? '' : ' - nobody has notifications turned on') } }).catch(() => {});
     return L.send(res, 200, { ok: true, sent, people: others.length, devices: subs.length, skipped });
   } catch (e) {
     console.error('push error', e.message);

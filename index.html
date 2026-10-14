@@ -16692,12 +16692,20 @@ function chatComposerCaretToEnd(){
   sel.addRange(range);
 }
 
+// Computer or phone/tablet? Decided by the device itself, not the screen - touchscreen laptops count as computers.
+function chatIsComputer(){
+  const ua = navigator.userAgent || '';
+  if(/Android|iPhone|iPad|iPod|Mobi|Tablet|Silk|Kindle/i.test(ua)) return false;
+  if(/Macintosh/.test(ua) && navigator.maxTouchPoints > 1) return false; // iPad asking for the desktop site
+  return true;
+}
+document.documentElement.classList.add(chatIsComputer() ? 'is-computer' : 'is-touch');
 // Computer: Enter sends, Shift+Enter or Ctrl+Enter = new line (like WhatsApp on a computer).
 // Phone: Enter = new line, only the send button sends (like WhatsApp on a phone).
 window.chatComposerKey = function(e){
   if(e.key !== 'Enter' || e.isComposing) return;
   e.preventDefault();
-  const computer = window.matchMedia('(hover:hover) and (pointer:fine)').matches;
+  const computer = chatIsComputer();
   if(computer && !e.shiftKey && !e.ctrlKey && !e.metaKey) chatSendMessage();
   else chatComposerNewLine();
 };
@@ -23206,7 +23214,7 @@ window.chatOpenPeopleSelector = (function(orig){
     if(!CH.ready){ toast(CH.notReady ? 'Chat is being set up - check back soon' : 'Loading chats…'); return; }
     orig();
     // Phones: show the list first - the keyboard only opens when they tap Search
-    if(window.matchMedia('(hover:none)').matches) setTimeout(() => document.getElementById('chat-people-search')?.blur(), 60);
+    if(!chatIsComputer()) setTimeout(() => document.getElementById('chat-people-search')?.blur(), 60);
   };
 })(window.chatOpenPeopleSelector);
 window.chatRenderPeopleSelector = function(){
@@ -23243,7 +23251,7 @@ window.chat2GroupEditor = function(tid){
     + `<button class="chat-preview-secondary" onclick="chat2SheetClose()">Cancel</button><button class="chat-preview-send" onclick="chat2GroupSave(${t ? `'${t.id}'` : 'null'})">${t ? 'Save' : 'Create group'}</button>`;
   chat2Sheet(t ? 'Edit group' : 'New group', 'Pick who\'s in it - only they will see the messages.', body, foot);
   chat2GroupList();
-  if(!t && window.matchMedia('(hover:hover)').matches) setTimeout(() => document.getElementById('chat2-gname')?.focus(), 40);
+  if(!t && chatIsComputer()) setTimeout(() => document.getElementById('chat2-gname')?.focus(), 40);
 };
 window.chat2GroupList = function(){
   const q = (document.getElementById('chat2-gsearch')?.value || '').trim().toLowerCase();
@@ -23372,11 +23380,11 @@ chat2Style.textContent = `
 .chat2-bubble{background:#F1F5F9;color:#0F1E2E;border-radius:16px;border-bottom-left-radius:4px;font-size:calc(13.5px * var(--chat-scale,1));line-height:1.5;-webkit-user-select:none;user-select:none;cursor:default}
 .chat2-bubble.mine{background:var(--chat-mine,#0F1E2E);color:white;border-bottom-left-radius:16px;border-bottom-right-radius:4px}
 .chat2-bubble{width:fit-content;max-width:100%;box-sizing:border-box}.chat2-bubble.mine{margin-left:auto}
-@media (hover:none){#chat-thread-msgs,#chat-thread-msgs *{-webkit-user-select:none!important;user-select:none!important;-webkit-touch-callout:none!important}}
-@media (hover:hover){.chat2-bubble{-webkit-user-select:text;user-select:text}}
+.is-touch #chat-thread-msgs,.is-touch #chat-thread-msgs *{-webkit-user-select:none!important;user-select:none!important;-webkit-touch-callout:none!important}
+.is-computer .chat2-bubble{-webkit-user-select:text;user-select:text}
 .chat2-more-arrow{display:none;position:absolute;top:0;right:0;width:40px;height:30px;border-radius:0 16px 0 0;border:0;cursor:pointer;align-items:center;justify-content:flex-end;padding:0 9px 0 0;background:linear-gradient(90deg,rgba(241,245,249,0),#F1F5F9 55%);color:#475569}
 .chat2-bubble.mine .chat2-more-arrow{background:linear-gradient(90deg,transparent,var(--chat-mine,#0F1E2E) 55%);color:white}
-@media (hover:hover){.chat2-bubble:hover .chat2-more-arrow{display:flex}}
+.is-computer .chat2-bubble:hover .chat2-more-arrow{display:flex}
 .chat2-tools{display:none}
 .chat2-selected .chat2-bubble{box-shadow:0 0 0 3px rgba(13,148,136,.45)}
 .chat2-prev .chat2-bubble{font-size:calc(15px * var(--chat-scale,1));max-width:85%}

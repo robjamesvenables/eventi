@@ -22094,7 +22094,7 @@ function appConfirmShow({title, msg, label='Delete', onOk, cancelLabel='Cancel',
   modal.style.display='flex';
   const priorState = history.state || {page:'home'};
   history.pushState(Object.assign({}, priorState, {appConfirmOpen:true}), '', location.hash || '#confirm');
-  document.getElementById('appConfirmOk').onclick = ()=>{ appConfirmClose(); onOk(); };
+  document.getElementById('appConfirmOk').onclick = ()=>{ appConfirmClose(); if(typeof onOk === 'function') onOk(); };
 }
 function appConfirmClose(fromPop){
   document.getElementById('appConfirm').style.display='none';
@@ -23246,10 +23246,10 @@ window.pushTurnOn = async function(){
   chatRenderList(); const box = document.getElementById('acct-notify'); if(box) box.innerHTML = notifySettingsHtml();
 };
 function pushBlockedHelp(){
-  appConfirmShow({ title:'Notifications are blocked', msg:'Your browser is blocking notifications for Mavis. Tap the lock or "i" next to the web address (or open Mavis\'s app settings on your phone), set Notifications to Allow, then come back and tap Turn on again.', label:'OK', cancelLabel:'Close' });
+  appConfirmShow({ title:'Notifications are blocked', msg:'Your browser is blocking notifications for Mavis. Tap the lock or "i" next to the web address (or open Mavis\'s app settings on your phone), set Notifications to Allow, then come back and tap Turn on again.', label:'OK', cancelLabel:'Close', onOk: () => {} });
 }
 function pushIosHelp(){
-  appConfirmShow({ title:'Notifications on iPhone', msg:'iPhones only allow notifications for apps on the Home Screen. In Safari tap Share (the square with the arrow), then "Add to Home Screen". Open Mavis from the new icon and tap Turn on.', label:'Got it', cancelLabel:'Close' });
+  appConfirmShow({ title:'Notifications on iPhone', msg:'iPhones only allow notifications for apps on the Home Screen. In Safari tap Share (the square with the arrow), then "Add to Home Screen". Open Mavis from the new icon and tap Turn on.', label:'Got it', cancelLabel:'Close', onOk: () => {} });
 }
 async function pushForgetDevice(){
   try{ const sub = await pushCurrentSub(); if(sub) await sb.rpc('push_unregister', { ep:sub.endpoint }); }catch(e){}
@@ -23369,7 +23369,7 @@ window.pushSendTest = async function(){
     : 'Sending failed (' + ((r.errors || []).join(', ') || r._status) + ').';
   const d = window.__pushDiag || {};
   const extra = ' — Test 1 (made on this device): ' + (d.local === 'ok' ? 'shown' : 'FAILED: ' + d.local) + '. Test 2 (sent over the internet): ' + (r.ok ? 'sent to ' + r.sent + ' device' + (r.sent === 1 ? '' : 's') : 'not sent') + '. Helper: ' + (d.swUrl === 'none' ? 'not running' : 'running') + ', ' + (d.swVer || '?') + '.';
-  appConfirmShow({ title: r.ok ? 'Test sent' : 'Test did not send', msg: why + extra, label:'OK', cancelLabel:'Close' });
+  appConfirmShow({ title: r.ok ? 'Test sent' : 'Test did not send', msg: why + extra, label:'OK', cancelLabel:'Close', onOk: () => {} });
 };
 window.notifyQuietSave = async function(){
   const on = document.getElementById('acct-quiet-on')?.checked;

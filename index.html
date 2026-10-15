@@ -4961,16 +4961,9 @@ img.emoji-tw{width:1.15em;height:1.15em;vertical-align:-0.2em;margin:0 1px}
     </div>
 
     <!-- REQUESTS (maintenance, housekeeping, anything that needs fixing) -->
-    <div class="page" id="p-requests" style="padding:32px 28px 80px">
-      <div class="ph">
-        <div>
-          <div class="ph-title">Requests</div>
-          <div class="ph-sub">Report anything that needs fixing or doing, and follow it until it's done</div>
-        </div>
-        <button class="btn btn-navy" id="req-new-btn" onclick="reqNew()" style="background:#0D9488;gap:6px"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>New Request</button>
-      </div>
-      <div id="req-filters"></div>
-      <div id="req-list"></div>
+    <div class="page" id="p-requests" style="padding:28px 28px 40px">
+      <div id="req-home"></div>
+      <button id="req-fab" onclick="reqNew()"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.6" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Report something</button>
     </div>
     <div class="page" id="p-request" style="padding:24px 28px 0">
       <div id="req-detail"></div>
@@ -24036,11 +24029,61 @@ document.head.appendChild(chat2Style);
 <script>
 /* ===== MAVIS REQUESTS — report something that needs fixing or doing, follow it until it's done =====
    Who sees what is decided by the database (requests.sql) using three Admin Console switches:
-   requests (report + see your own), requestsmanage (your department's requests), requestsall (every department). */
-const REQ = { started:false, ready:false, notReady:false, list:[], notes:{}, people:{}, openId:null, tab:null, status:'open', dept:'all', channel:null, timer:null, sending:false };
-const REQ_COLS = 'id,ref,title,details,location,dept,priority,status,reported_by,assigned_to,created_at,updated_at,closed_at';
-const REQ_PRI = { urgent:{name:'Urgent', color:'#DC2626', bg:'#FEE2E2'}, normal:{name:'Normal', color:'#D97706', bg:'#FEF3C7'}, low:{name:'Low', color:'#16A34A', bg:'#DCFCE7'} };
-const REQ_STATUS = { open:{name:'New', color:'#B45309', bg:'#FEF3C7'}, progress:{name:'In progress', color:'#1D4ED8', bg:'#DBEAFE'}, closed:{name:'Done', color:'#15803D', bg:'#DCFCE7'} };
+   requests (report + see your own), requestsmanage (your department's requests), requestsall (every department).
+   Look: department tiles to start, a photo on every request, and a Sent → On it → Done tracker (like a delivery app). */
+const REQ = { started:false, ready:false, notReady:false, list:[], notes:{}, people:{}, openId:null, tab:null, dept:'all', channel:null, timer:null, sending:false, noThumb:false, form:null };
+const REQ_COLS_BASE = 'id,ref,title,details,location,dept,priority,status,reported_by,assigned_to,created_at,updated_at,closed_at';
+function reqCols(){ return REQ.noThumb ? REQ_COLS_BASE : REQ_COLS_BASE + ',thumb'; }
+const REQ_URGENCY = [{id:'low', name:'Can wait'}, {id:'normal', name:'Today'}, {id:'urgent', name:'Urgent now'}];
+
+const REQ_ICONS = {
+  wrench:'<path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94z"/>',
+  bed:'<path d="M2 4v16"/><path d="M2 8h18a2 2 0 0 1 2 2v10"/><path d="M2 17h20"/><path d="M6 8v9"/>',
+  fork:'<path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 0 0 2-2V2"/><path d="M7 2v20"/><path d="M21 15V2a5 5 0 0 0-5 5v6c0 1.1.9 2 2 2h3zm0 0v7"/>',
+  glass:'<path d="M8 22h8"/><path d="M7 10h10"/><path d="M12 22V10"/><path d="m5 3 7 7 7-7H5z"/>',
+  screen:'<rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/>',
+  shield:'<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>',
+  bell:'<path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/>',
+  case:'<rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/>',
+  people:'<path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>',
+  megaphone:'<path d="m3 11 18-5v12L3 14v-3z"/><path d="M11.6 16.8a3 3 0 1 1-5.8-1.6"/>',
+  clipboard:'<path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1"/>',
+  music:'<path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/>',
+  leaf:'<path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10Z"/><path d="M2 21c0-3 1.85-5.36 5.08-6C9.5 14.52 12 13 13 12"/>',
+  tag:'<path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/>'
+};
+// Each department gets its own colour + picture, worked out from its name (venues name departments differently)
+const REQ_DEPT_STYLES = [
+  [/engineer|mainten|technic|facilit|repair/i, 'wrench', '#FFF1DC', '#9A5B00', '#C47A00',
+    ['Not working', 'Broken', 'Leaking', 'No power', 'Too hot / cold', 'Light out']],
+  [/housekeep|room|laundry|clean/i, 'bed', '#E3F1FF', '#1D4E89', '#2563EB',
+    ['Needs cleaning', 'Spill', 'Towels needed', 'Bin full', 'Something broken']],
+  [/kitchen|culinary|chef|pastry/i, 'fork', '#FDE7E7', '#9B1C1C', '#DC2626',
+    ['Equipment broken', 'Running out', 'Needs cleaning', 'Leaking', 'Too hot / cold']],
+  [/\bbar\b|beverage|drink/i, 'glass', '#EDE9FE', '#5B21B6', '#7C3AED',
+    ['Equipment broken', 'Running out', 'Ice needed', 'Needs cleaning', 'Glassware needed']],
+  [/\bit\b|\bav\b|audio|visual|tech|network/i, 'screen', '#E0F5F2', '#0F766E', '#0D9488',
+    ['No sound', 'Wi-Fi down', 'Screen not working', 'Printer', 'Card machine']],
+  [/secur|safety/i, 'shield', '#E2E8F0', '#1E293B', '#334155', ['Suspicious person', 'Door / lock', 'Lost property', 'Guest issue']],
+  [/front|gro|guest|reception|recep|concierge|floor|service|foh/i, 'bell', '#FCE7F3', '#9D174D', '#DB2777', ['Guest complaint', 'Booking issue', 'Lost property', 'Needs help']],
+  [/manage|director|office|admin|finance|account/i, 'case', '#EEF2F6', '#334155', '#475569', ['Needs approval', 'Question', 'Something broken']],
+  [/human|\bhr\b|people|staff/i, 'people', '#FEF9C3', '#854D0E', '#CA8A04', ['Uniform', 'Staff issue', 'Roster', 'Question']],
+  [/sales|market|event/i, 'megaphone', '#FFEDD5', '#9A3412', '#EA580C', ['Needs printing', 'Signage', 'Something broken']],
+  [/oper/i, 'clipboard', '#E0E7FF', '#3730A3', '#4F46E5', ['Not working', 'Broken', 'Running out', 'Needs help']],
+  [/music|dj|entertain/i, 'music', '#F3E8FF', '#6B21A8', '#9333EA', ['No sound', 'Equipment broken', 'Needs help']],
+  [/garden|landscape|pool|beach|outdoor/i, 'leaf', '#DCFCE7', '#166534', '#16A34A', ['Needs cleaning', 'Broken', 'Leaking', 'Needs trimming']]
+];
+const REQ_FALLBACK = [['#E0F2FE','#075985','#0284C7'], ['#FEF3C7','#92400E','#D97706'], ['#FCE7F3','#9D174D','#DB2777'], ['#DCFCE7','#166534','#16A34A']];
+function reqDeptStyle(name){
+  const n = String(name || '');
+  const hit = REQ_DEPT_STYLES.find(s => s[0].test(n));
+  if(hit) return { icon:hit[1], bg:hit[2], fg:hit[3], stroke:hit[4], chips:hit[5] };
+  let h = 0; for(const c of n) h = (h * 31 + c.charCodeAt(0)) % 997;
+  const f = REQ_FALLBACK[h % REQ_FALLBACK.length];
+  return { icon:'tag', bg:f[0], fg:f[1], stroke:f[2], chips:['Not working', 'Broken', 'Needs cleaning', 'Running out', 'Needs help'] };
+}
+function reqIcon(name, size, colour, width){ return `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="${colour}" stroke-width="${width || 2}" stroke-linecap="round" stroke-linejoin="round">${REQ_ICONS[name] || REQ_ICONS.tag}</svg>`; }
+const REQ_TICK = s => `<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>`;
 
 function reqEsc(v){ return String(v == null ? '' : v).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
 function reqMe(){ return myProfile ? myProfile.id : 'demo-me'; }
@@ -24071,10 +24114,14 @@ function reqAgo(v){
   const h = Math.round(mins / 60);
   if(h < 24) return h + (h === 1 ? ' hour ago' : ' hours ago');
   const d = Math.round(h / 24);
-  if(d < 7) return d + (d === 1 ? ' day ago' : ' days ago');
+  if(d === 1) return 'yesterday';
+  if(d < 7) return d + ' days ago';
   return new Date(v).toLocaleDateString('en-GB', {day:'numeric', month:'short'});
 }
-function reqPill(o){ return `<span style="font-size:10.5px;font-weight:800;letter-spacing:.3px;padding:3px 9px;border-radius:20px;background:${o.bg};color:${o.color};white-space:nowrap">${o.name}</span>`; }
+function reqDayShort(v){
+  const d = new Date(v), now = new Date();
+  return d.toDateString() === now.toDateString() ? chat2Time(v) : d.toLocaleDateString('en-GB', {day:'numeric', month:'short'}) + ' ' + chat2Time(v);
+}
 
 // ── Loading + live updates ──
 async function reqStart(force){
@@ -24090,32 +24137,33 @@ async function reqStart(force){
 async function reqLoad(){
   if(!REQ.demo && (!myProfile || typeof sb === 'undefined')) return;
   const needPeople = !(typeof CH !== 'undefined' && Object.keys(CH.people).length) && !Object.keys(REQ.people).length;
-  const [rq, pp] = await Promise.all([
-    reqDb().from('requests').select(REQ_COLS).order('created_at', {ascending:false}).limit(500),
+  let [rq, pp] = await Promise.all([
+    reqDb().from('requests').select(reqCols()).order('created_at', {ascending:false}).limit(500),
     needPeople ? reqDb().from('profiles').select('id,first_name,last_name,role,photo,departments,active').eq('company_id', reqCo()) : Promise.resolve({data:null})
   ]);
+  // the small-photo column comes with a later setup step - work without it until then
+  if(rq.error && /thumb/.test(rq.error.message || '') && !REQ.noThumb){ REQ.noThumb = true; rq = await reqDb().from('requests').select(reqCols()).order('created_at', {ascending:false}).limit(500); }
   if(rq.error){ REQ.notReady = true; console.warn('Requests not set up yet', rq.error); reqRenderAll(); return; }
   REQ.notReady = false;
   if(pp.data) pp.data.forEach(p => REQ.people[p.id] = p);
-  REQ.list = rq.data || [];
+  const keep = {}; REQ.list.forEach(r => { if(r.photo) keep[r.id] = r.photo; });
+  REQ.list = (rq.data || []).map(r => { if(keep[r.id]) r.photo = keep[r.id]; return r; });
   REQ.ready = true;
   reqRenderAll();
 }
 function reqSoon(){ clearTimeout(REQ.timer); REQ.timer = setTimeout(async () => { await reqLoad(); if(REQ.openId) reqLoadNotes(REQ.openId); }, 350); }
 function reqSubscribe(){
-  if(REQ.channel) return;
-  if(REQ.demo) return;
+  if(REQ.channel || REQ.demo) return;
   REQ.channel = sb.channel('requests-' + reqMe())
     .on('postgres_changes', {event:'*', schema:'public', table:'requests'}, () => reqSoon())
-    .on('postgres_changes', {event:'*', schema:'public', table:'request_notes'}, p => { if(p.new && p.new.request_id === REQ.openId) reqSoon(); else reqSoon(); })
+    .on('postgres_changes', {event:'*', schema:'public', table:'request_notes'}, () => reqSoon())
     .subscribe();
   // Backup if the live connection drops: check every 15s while Requests is on screen, and on return to the app
-  const tick = () => {
+  setInterval(() => {
     if(document.visibilityState !== 'visible') return;
     const on = document.getElementById('p-requests')?.classList.contains('on') || document.getElementById('p-request')?.classList.contains('on');
     if(on) reqSoon();
-  };
-  setInterval(tick, 15000);
+  }, 15000);
   document.addEventListener('visibilitychange', () => { if(document.visibilityState === 'visible') reqSoon(); });
 }
 function reqRenderAll(){
@@ -24133,108 +24181,221 @@ function reqUpdateBadge(){
   if(sub) sub.textContent = n ? (n + (n === 1 ? ' new request waiting' : ' new requests waiting')) : 'Report it, track it, get it fixed';
 }
 
-// ── List ──
+// ── Pictures + tracker ──
+function reqThumbHtml(r, size){
+  const st = reqDeptStyle(r.dept);
+  const img = r.thumb || r.photo;
+  const urgent = r.priority === 'urgent' && r.status !== 'closed' ? '<span class="req-urg">URGENT</span>' : '';
+  if(img) return `<div class="req-ph" style="width:${size}px;height:${size}px">${urgent}<img src="${img}" alt=""></div>`;
+  return `<div class="req-ph" style="width:${size}px;height:${size}px;background:${st.bg}">${urgent}${reqIcon(st.icon, Math.round(size * .38), st.stroke)}</div>`;
+}
+// When was it picked up? (first "accepted" or "assigned" in its updates)
+function reqOnItAt(r){
+  const n = (REQ.notes[r.id] || []).find(x => x.kind === 'event' && (x.body === 'accepted' || String(x.body).startsWith('assigned:')));
+  return n ? n.created_at : null;
+}
+function reqTracker(r, big){
+  const step = r.status === 'closed' ? 3 : r.status === 'progress' ? 2 : 1;
+  const s = big ? 30 : 20, t = big ? 14 : 11;
+  const dot = i => `<div class="req-dot${step >= i ? ' on' : ''}" style="width:${s}px;height:${s}px">${step >= i ? REQ_TICK(t) : ''}</div>`;
+  const bar = i => `<div class="req-bar${step > i ? ' on' : ''}"></div>`;
+  let l2 = 'On it', l3 = 'Done', l1 = 'Sent';
+  if(big){
+    l1 = 'Sent ' + chat2Time(r.created_at);
+    const at = reqOnItAt(r);
+    if(step >= 2) l2 = (r.assigned_to ? reqName(r.assigned_to, true) + ' on it' : 'On it') + (at ? ' ' + chat2Time(at) : '');
+    if(step === 3 && r.closed_at) l3 = 'Done ' + chat2Time(r.closed_at);
+  }
+  return `<div class="req-track${big ? ' big' : ''}">${dot(1)}${bar(1)}${dot(2)}${bar(2)}${dot(3)}</div>
+    <div class="req-tl${big ? ' big' : ''}"><span class="on">${reqEsc(l1)}</span><span class="${step >= 2 ? 'on' : ''}">${reqEsc(l2)}</span><span class="${step >= 3 ? 'on' : ''}">${reqEsc(l3)}</span></div>`;
+}
+
+// ── Home: department tiles, tabs, request cards ──
 function reqRenderList(){
-  const listEl = document.getElementById('req-list'), filEl = document.getElementById('req-filters');
-  if(!listEl || !filEl) return;
-  const newBtn = document.getElementById('req-new-btn');
-  if(newBtn) newBtn.style.display = REQ.notReady ? 'none' : '';
-  if(REQ.notReady){ filEl.innerHTML = ''; listEl.innerHTML = reqEmpty('Requests is almost ready', 'It needs a one-time setup step on the database first.'); return; }
-  if(!REQ.ready){ filEl.innerHTML = ''; listEl.innerHTML = `<div style="padding:40px 0;text-align:center;color:#94A3B8;font-size:13px">Loading…</div>`; return; }
+  const el = document.getElementById('req-home'); if(!el) return;
+  const fab = document.getElementById('req-fab');
+  if(REQ.notReady){ if(fab) fab.style.display = 'none'; el.innerHTML = reqEmpty('Requests is almost ready', 'It needs a one-time setup step on the database first.'); return; }
+  if(!REQ.ready){ el.innerHTML = `<div style="padding:40px 0;text-align:center;color:#94A3B8;font-size:13px">Loading…</div>`; return; }
+  if(fab) fab.style.display = '';
   const handler = reqIsHandler(), me = reqMe();
-  if(!REQ.tab) REQ.tab = handler ? 'all' : 'mine';
-  if(!handler) REQ.tab = 'mine';
-  const mine = r => r.reported_by === me || r.assigned_to === me;
-  let rows = REQ.list.filter(r => REQ.tab === 'mine' ? mine(r) : true);
+  const tabs = handler ? [['team','For my team'], ['mine','Sent by me'], ['done','Done']] : [['mine','My requests'], ['done','Done']];
+  if(!REQ.tab || !tabs.some(t => t[0] === REQ.tab)) REQ.tab = tabs[0][0];
+  const open = r => r.status !== 'closed';
+  const sets = {
+    team: REQ.list.filter(r => open(r) && (reqCanHandle(r) || r.assigned_to === me)),
+    mine: REQ.list.filter(r => open(r) && r.reported_by === me),
+    done: REQ.list.filter(r => !open(r) && (handler || r.reported_by === me || r.assigned_to === me))
+  };
+  let rows = sets[REQ.tab];
   const depts = [...new Set(rows.map(r => r.dept))].sort();
   if(REQ.dept !== 'all' && !depts.includes(REQ.dept)) REQ.dept = 'all';
   if(REQ.dept !== 'all') rows = rows.filter(r => r.dept === REQ.dept);
-  const openCount = rows.filter(r => r.status !== 'closed').length, closedCount = rows.length - openCount;
-  rows = rows.filter(r => REQ.status === 'open' ? r.status !== 'closed' : r.status === 'closed');
   const pr = {urgent:0, normal:1, low:2};
-  if(REQ.status === 'open') rows.sort((a, b) => (pr[a.priority] - pr[b.priority]) || (a.status === b.status ? 0 : a.status === 'open' ? -1 : 1) || String(b.created_at).localeCompare(String(a.created_at)));
-  else rows.sort((a, b) => String(b.closed_at || b.updated_at).localeCompare(String(a.closed_at || a.updated_at)));
+  if(REQ.tab === 'done') rows = rows.sort((a, b) => String(b.closed_at || b.updated_at).localeCompare(String(a.closed_at || a.updated_at))).slice(0, 60);
+  else rows.sort((a, b) => (pr[a.priority] - pr[b.priority]) || (a.status === b.status ? 0 : a.status === 'open' ? -1 : 1) || String(b.created_at).localeCompare(String(a.created_at)));
+  const waiting = sets.team.filter(r => r.status === 'open').length;
 
-  const seg = (items, cur, fn) => `<div class="req-seg">${items.map(([id, label]) => `<button class="${cur === id ? 'on' : ''}" onclick="${fn}('${id}')">${label}</button>`).join('')}</div>`;
-  filEl.innerHTML = `<div class="req-filterbar">
-      ${handler ? seg([['all','All'],['mine','Mine']], REQ.tab, 'reqSetTab') : ''}
-      ${seg([['open','Open' + (openCount ? ' · ' + openCount : '')],['closed','Done' + (closedCount ? ' · ' + closedCount : '')]], REQ.status, 'reqSetStatus')}
-    </div>
-    ${depts.length > 1 ? `<div class="req-chips">${[['all','All departments'], ...depts.map(d => [d, d])].map(([id, label]) => `<button class="${REQ.dept === id ? 'on' : ''}" onclick="reqSetDept(this.dataset.d)" data-d="${reqEsc(id)}">${reqEsc(label)}</button>`).join('')}</div>` : ''}`;
+  const dl = reqDeptList();
+  const tiles = dl.map(d => {
+    const st = reqDeptStyle(d);
+    return `<button class="req-tile" style="background:${st.bg};color:${st.fg}" onclick="reqNew(this.dataset.d)" data-d="${reqEsc(d)}"><span class="req-tile-ic">${reqIcon(st.icon, 24, st.stroke)}</span>${reqEsc(d)}</button>`;
+  }).join('');
 
-  if(!rows.length){
-    listEl.innerHTML = REQ.status === 'open'
-      ? reqEmpty(REQ.tab === 'mine' ? 'Nothing open' : 'All clear', REQ.tab === 'mine' ? 'Spotted something broken or a job that needs doing? Tap New Request.' : 'No open requests right now.')
-      : reqEmpty('Nothing done yet', 'Finished requests show up here.');
-    return;
-  }
-  listEl.innerHTML = `<div class="req-list">${rows.map(reqCardHtml).join('')}</div>`;
+  el.innerHTML = `
+    <div class="req-hello">What needs doing?</div>
+    <div class="req-hello-sub">${dl.length ? 'Tap a team to send them a request' : 'Add your departments in Admin Console to start sending requests'}</div>
+    ${dl.length ? `<div class="req-tiles">${tiles}</div>` : ''}
+    <div class="req-tabs">${tabs.map(([id, label]) => `<button class="${REQ.tab === id ? 'on' : ''}" onclick="reqSetTab('${id}')">${label}${id === 'team' && waiting ? `<span class="req-cnt">${waiting}</span>` : ''}</button>`).join('')}</div>
+    ${depts.length > 1 ? `<div class="req-chips">${[['all','All'], ...depts.map(d => [d, d])].map(([id, label]) => `<button class="${REQ.dept === id ? 'on' : ''}" onclick="reqSetDept(this.dataset.d)" data-d="${reqEsc(id)}">${reqEsc(label)}</button>`).join('')}</div>` : ''}
+    <div class="req-list">${rows.length ? rows.map(reqCardHtml).join('') : reqEmptyFor(REQ.tab)}</div>`;
+}
+function reqEmptyFor(tab){
+  if(tab === 'team') return reqEmpty('All clear', 'Nothing waiting for your team right now.');
+  if(tab === 'done') return reqEmpty('Nothing done yet', 'Finished requests show up here.');
+  return reqEmpty('Nothing open', 'Spotted something broken, or a job that needs doing? Tap a team above.');
 }
 function reqEmpty(title, sub){
-  return `<div style="text-align:center;padding:56px 16px;color:#94A3B8">
-    <div style="width:56px;height:56px;border-radius:50%;background:#F1F5F9;display:flex;align-items:center;justify-content:center;margin:0 auto 14px"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#94A3B8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94z"/></svg></div>
+  return `<div class="req-empty"><div class="req-empty-ic">${reqIcon('wrench', 24, '#94A3B8')}</div>
     <div style="font-size:15px;font-weight:800;color:#0F1E2E;margin-bottom:4px">${title}</div>
     <div style="font-size:13px;max-width:320px;margin:0 auto;line-height:1.5">${sub}</div></div>`;
 }
 function reqCardHtml(r){
-  const p = REQ_PRI[r.priority] || REQ_PRI.normal, st = REQ_STATUS[r.status] || REQ_STATUS.open;
-  const where = [r.dept, r.location].filter(Boolean).map(reqEsc).join(' · ');
-  return `<button class="req-card" onclick="reqOpen('${r.id}')" style="border-left-color:${p.color}">
-    <div class="req-card-top">
-      <span class="req-ref">#${r.ref}</span>
-      ${r.priority === 'urgent' ? reqPill(p) : ''}
-      <span style="margin-left:auto">${reqPill(st)}</span>
+  const me = reqMe();
+  const quick = r.status === 'open' && reqCanHandle(r) && REQ.tab === 'team';
+  let foot;
+  if(quick) foot = `<div class="req-quick"><button class="go" onclick="event.stopPropagation();reqAccept('${r.id}')">I'm on it</button><button onclick="event.stopPropagation();reqAssign('${r.id}')">Assign</button></div>`;
+  else if(r.status === 'progress' && r.assigned_to) foot = `${reqTracker(r)}`;
+  else if(r.status === 'open') foot = `${reqTracker(r)}`;
+  else foot = `<div class="req-who">${r.assigned_to ? reqAvatar(r.assigned_to, 22) : ''}<span>${r.assigned_to ? 'Done by ' + reqEsc(reqName(r.assigned_to, true)) : 'Done'}${r.closed_at ? ' · ' + reqAgo(r.closed_at) : ''}</span></div>`;
+  const who = r.status === 'progress' && r.assigned_to ? `<div class="req-who" style="margin-top:7px">${reqAvatar(r.assigned_to, 22)}<span>${r.assigned_to === me ? "You're on it" : reqEsc(reqName(r.assigned_to, true)) + ' is on it'}</span></div>`
+    : r.status === 'open' && !quick ? `<div class="req-who wait" style="margin-top:7px"><span>Waiting for ${reqEsc(r.dept)}</span></div>` : '';
+  return `<div class="req-card" onclick="reqOpen('${r.id}')">
+    ${reqThumbHtml(r, 84)}
+    <div class="req-card-body">
+      <div class="req-card-title">${reqEsc(r.title)}</div>
+      <div class="req-card-where">${[r.location, reqAgo(r.created_at)].filter(Boolean).map(reqEsc).join(' · ')}${REQ.tab !== 'mine' || reqIsHandler() ? ` <span class="req-dtag" style="background:${reqDeptStyle(r.dept).bg};color:${reqDeptStyle(r.dept).fg}">${reqEsc(r.dept)}</span>` : ''}</div>
+      ${foot}${r.status === 'closed' ? '' : who}
     </div>
-    <div class="req-card-title">${reqEsc(r.title)}</div>
-    <div class="req-card-where">${where}</div>
-    <div class="req-card-foot">
-      <span>${reqEsc(reqName(r.reported_by, true))} · ${reqAgo(r.created_at)}</span>
-      ${r.assigned_to ? `<span class="req-who">${reqAvatar(r.assigned_to, 20)}${reqEsc(reqName(r.assigned_to, true))}</span>` : (r.status === 'open' ? '<span style="color:#B45309;font-weight:700">Waiting</span>' : '')}
-    </div>
-  </button>`;
+  </div>`;
 }
-function reqSetTab(t){ REQ.tab = t; reqRenderList(); }
-function reqSetStatus(s){ REQ.status = s; reqRenderList(); }
+function reqSetTab(t){ REQ.tab = t; REQ.dept = 'all'; reqRenderList(); }
 function reqSetDept(d){ REQ.dept = d; reqRenderList(); }
 
-// ── New request / edit ──
-function reqNew(){
-  const depts = reqDeptList();
-  if(!depts.length){ toast('Add your departments in Admin Console first'); return; }
-  const mine = reqMyDepts();
-  const guess = depts.find(d => /maint|engineer/i.test(d)) || depts[0];
-  appModalShow({
-    title: 'New Request',
-    sub: 'Say what needs doing - the department gets notified straight away',
-    fields: [
-      {label:"What's the problem?", placeholder:'e.g. Fridge 2 in the bar is not cooling', maxlength:120},
-      {label:'Where?', placeholder:'e.g. Pool bar, Room 4, Kitchen pass', optional:true, maxlength:80},
-      {label:'Send to', type:'pillpicker', options: depts.map(d => ({id:d, name:d})), value: guess},
-      {label:'How urgent?', type:'pillpicker', options:[{id:'low', name:'Low'}, {id:'normal', name:'Normal'}, {id:'urgent', name:'Urgent'}], value:'normal'},
-      {label:'More detail', type:'textarea', rows:3, optional:true, placeholder:'Anything that helps them fix it…'},
-      {label:'Photo', type:'file', optional:true}
-    ],
-    async onOk([title, location, dept, priority, details, photo]){
-      const row = { title, location: location || null, dept, priority, details: details || null, photo: photo || null, reported_by: reqMe(), company_id: reqCo() };
-      const { data, error } = await reqDb().from('requests').insert(row).select(REQ_COLS).single();
-      if(error){ toast('Could not send that request: ' + (error.message || 'please try again')); console.warn(error); return; }
-      REQ.list.unshift(data);
-      toast('Request sent to ' + dept);
-      reqNotify(data.id, 'new');
-      reqRenderAll();
-    }
-  });
+// ── New request: pick a team (if not picked yet) → photo, what, where, how urgent → send ──
+function reqNew(dept){
+  const dl = reqDeptList();
+  if(!dl.length){ toast('Add your departments in Admin Console first'); return; }
+  REQ.form = { dept: dept || null, photo:null, thumb:null, what:'', where:'', otherWhere:false, urgency:'normal' };
+  reqSheetOpen();
+}
+function reqSheetOpen(){
+  let sh = document.getElementById('req-sheet');
+  if(!sh){
+    sh = document.createElement('div'); sh.id = 'req-sheet';
+    sh.onclick = e => { if(e.target === sh) reqSheetClose(); };
+    document.body.appendChild(sh);
+  }
+  sh.style.display = 'flex';
+  document.body.classList.add('req-sheet-open');
+  reqSheetRender();
+}
+function reqSheetClose(){
+  const sh = document.getElementById('req-sheet'); if(sh) sh.style.display = 'none';
+  document.body.classList.remove('req-sheet-open');
+  REQ.form = null;
+}
+function reqRecentPlaces(dept){
+  const seen = new Set(), out = [];
+  const push = l => { const k = String(l || '').trim(); if(k && !seen.has(k.toLowerCase())){ seen.add(k.toLowerCase()); out.push(k); } };
+  REQ.list.filter(r => r.dept === dept).forEach(r => push(r.location));
+  REQ.list.forEach(r => push(r.location));
+  return out.slice(0, 6);
+}
+function reqSheetRender(){
+  const sh = document.getElementById('req-sheet'), f = REQ.form; if(!sh || !f) return;
+  const close = `<button class="req-x" onclick="reqSheetClose()" title="Close">×</button>`;
+  if(!f.dept){
+    sh.innerHTML = `<div class="req-sheet-card"><div class="req-grab"></div>
+      <div class="req-sheet-head"><div class="req-sheet-title">Who is it for?</div>${close}</div>
+      <div class="req-tiles">${reqDeptList().map(d => { const st = reqDeptStyle(d); return `<button class="req-tile" style="background:${st.bg};color:${st.fg}" onclick="reqFormSet('dept', this.dataset.d)" data-d="${reqEsc(d)}"><span class="req-tile-ic">${reqIcon(st.icon, 24, st.stroke)}</span>${reqEsc(d)}</button>`; }).join('')}</div>
+    </div>`;
+    return;
+  }
+  const st = reqDeptStyle(f.dept);
+  const places = reqRecentPlaces(f.dept);
+  const showOther = f.otherWhere || !places.length;
+  sh.innerHTML = `<div class="req-sheet-card"><div class="req-grab"></div>
+    <div class="req-sheet-head">
+      <button class="req-sendto" style="background:${st.bg};color:${st.fg}" onclick="reqFormSet('dept', null)" title="Change team"><span class="req-tile-ic small">${reqIcon(st.icon, 19, st.stroke)}</span>Request to ${reqEsc(f.dept)}<span class="req-change">Change</span></button>
+      ${close}
+    </div>
+    <label class="req-photo-big${f.photo ? ' has' : ''}">
+      ${f.photo ? `<img src="${f.photo}" alt=""><span class="req-photo-redo">Change photo</span>`
+        : `<svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#0D9488" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2Z"/><circle cx="12" cy="13" r="4"/></svg><b>Take a photo</b><span>Shows them exactly what's wrong</span>`}
+      <input type="file" accept="image/*" style="display:none" onchange="reqFormPhoto(this)">
+    </label>
+    <div class="req-lab">What's wrong?</div>
+    <div class="req-pick">${st.chips.map(c => `<button onclick="reqFormChip(this.dataset.c)" data-c="${reqEsc(c)}">${reqEsc(c)}</button>`).join('')}</div>
+    <input id="req-f-what" class="req-inp" maxlength="120" placeholder="e.g. Fridge 2 not cooling" value="${reqEsc(f.what)}" oninput="REQ.form.what=this.value">
+    <div class="req-lab">Where?</div>
+    ${places.length ? `<div class="req-pick">${places.map(p => `<button class="${f.where === p && !f.otherWhere ? 'on' : ''}" onclick="reqFormWhere(this.dataset.p)" data-p="${reqEsc(p)}">${reqEsc(p)}</button>`).join('')}<button class="${f.otherWhere ? 'on' : ''}" onclick="reqFormWhere(null)">+ Other</button></div>` : ''}
+    ${showOther ? `<input id="req-f-where" class="req-inp" maxlength="80" placeholder="e.g. Pool bar, Room 4" value="${reqEsc(f.otherWhere || !places.length ? f.where : '')}" oninput="REQ.form.where=this.value">` : ''}
+    <div class="req-lab">How urgent?</div>
+    <div class="req-urg-row">${REQ_URGENCY.map(u => `<button class="${f.urgency === u.id ? 'on ' + u.id : ''}" onclick="reqFormSet('urgency','${u.id}')">${u.name}</button>`).join('')}</div>
+    <button class="req-send-big" id="req-f-send" onclick="reqFormSend()">Send to ${reqEsc(f.dept)}</button>
+  </div>`;
+}
+function reqFormSet(k, v){ if(!REQ.form) return; reqFormKeep(); REQ.form[k] = v; reqSheetRender(); }
+function reqFormKeep(){ const w = document.getElementById('req-f-what'), p = document.getElementById('req-f-where'); if(w) REQ.form.what = w.value; if(p) REQ.form.where = p.value; }
+function reqFormChip(c){
+  reqFormKeep();
+  const cur = (REQ.form.what || '').trim();
+  REQ.form.what = cur ? (cur.toLowerCase().includes(c.toLowerCase()) ? cur : cur + ' - ' + c.toLowerCase()) : c;
+  reqSheetRender();
+  const w = document.getElementById('req-f-what'); if(w){ w.focus(); w.setSelectionRange(w.value.length, w.value.length); }
+}
+function reqFormWhere(p){
+  reqFormKeep();
+  if(p === null){ REQ.form.otherWhere = true; REQ.form.where = ''; reqSheetRender(); document.getElementById('req-f-where')?.focus(); return; }
+  REQ.form.otherWhere = false; REQ.form.where = REQ.form.where === p ? '' : p; reqSheetRender();
+}
+async function reqFormPhoto(input){
+  const file = input.files && input.files[0]; input.value = '';
+  if(!file) return;
+  reqFormKeep();
+  try{ const r = await appFileToDataUrls(file); REQ.form.photo = r.full; REQ.form.thumb = r.thumb; }
+  catch(e){ toast("That photo couldn't be used - try another"); return; }
+  reqSheetRender();
+}
+async function reqFormSend(){
+  const f = REQ.form; if(!f) return;
+  reqFormKeep();
+  const title = (f.what || '').trim();
+  if(!title){ const w = document.getElementById('req-f-what'); if(w){ w.focus(); w.classList.add('bad'); setTimeout(() => w.classList.remove('bad'), 1400); } toast("Say what's wrong first"); return; }
+  const btn = document.getElementById('req-f-send'); if(btn){ btn.disabled = true; btn.textContent = 'Sending…'; }
+  const row = { title, location:(f.where || '').trim() || null, dept:f.dept, priority:f.urgency, photo:f.photo || null, reported_by:reqMe(), company_id:reqCo() };
+  if(!REQ.noThumb) row.thumb = f.thumb || null;
+  let { data, error } = await reqDb().from('requests').insert(row).select(reqCols()).single();
+  if(error && /thumb/.test(error.message || '')){ REQ.noThumb = true; delete row.thumb; ({ data, error } = await reqDb().from('requests').insert(row).select(reqCols()).single()); }
+  if(error){ if(btn){ btn.disabled = false; btn.textContent = 'Send to ' + f.dept; } toast('Could not send: ' + (error.message || 'please try again')); console.warn(error); return; }
+  if(f.photo) data.photo = f.photo;
+  REQ.list.unshift(data);
+  reqSheetClose();
+  toast('Sent to ' + data.dept);
+  reqNotify(data.id, 'new');
+  REQ.tab = reqIsHandler() && reqCanHandle(data) ? 'team' : 'mine';
+  reqRenderAll();
 }
 function reqEdit(){
   const r = reqGet(REQ.openId); if(!r) return;
   const depts = reqDeptList(); if(!depts.includes(r.dept)) depts.push(r.dept);
   appModalShow({
-    title: 'Edit Request #' + r.ref,
+    title: 'Edit request',
     fields: [
-      {label:"What's the problem?", value: r.title, maxlength:120},
+      {label:"What's wrong?", value: r.title, maxlength:120},
       {label:'Where?', value: r.location || '', optional:true, maxlength:80},
       {label:'Send to', type:'pillpicker', options: depts.map(d => ({id:d, name:d})), value: r.dept},
-      {label:'How urgent?', type:'pillpicker', options:[{id:'low', name:'Low'}, {id:'normal', name:'Normal'}, {id:'urgent', name:'Urgent'}], value: r.priority},
+      {label:'How urgent?', type:'pillpicker', options: REQ_URGENCY, value: r.priority},
       {label:'More detail', type:'textarea', rows:3, optional:true, value: r.details || ''}
     ],
     async onOk([title, location, dept, priority, details]){
@@ -24249,7 +24410,7 @@ function reqEdit(){
   });
 }
 
-// ── Detail ──
+// ── One request: photo on top, tracker, updates like a chat ──
 function reqGet(id){ return REQ.list.find(r => r.id === id); }
 function reqOpen(id){
   REQ.openId = id;
@@ -24269,10 +24430,11 @@ async function reqLoadNotes(id){
 }
 function reqEventText(n){
   const who = reqEsc(reqName(n.author_id, true)), b = n.body || '';
-  if(b === 'accepted') return `${who} accepted this`;
+  const isMe = n.author_id === reqMe();
+  if(b === 'accepted') return isMe ? "You're on it" : `${who} is on it`;
   if(b === 'closed') return `${who} marked this as done`;
   if(b === 'reopened') return `${who} reopened this`;
-  if(b.startsWith('assigned:')) return `${who} assigned this to ${reqEsc(reqName(b.slice(9), true))}`;
+  if(b.startsWith('assigned:')) return `${who} gave this to ${reqEsc(reqName(b.slice(9), true))}`;
   if(b.startsWith('moved:')) return `${who} sent this to ${reqEsc(b.slice(6))}`;
   return reqEsc(b);
 }
@@ -24281,56 +24443,55 @@ function reqRenderDetail(){
   const r = reqGet(REQ.openId);
   const oldInp = document.getElementById('req-note-input');
   const keep = oldInp ? { v: oldInp.value, focus: document.activeElement === oldInp, rid: oldInp.dataset.rid } : null;
-  const back = `<button class="req-back" onclick="nav('requests')"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>Requests</button>`;
-  if(!r){ el.innerHTML = back + (REQ.ready ? reqEmpty('Request not found', 'It may have been deleted, or it isn\'t shared with you.') : '<div style="padding:40px 0;text-align:center;color:#94A3B8">Loading…</div>'); return; }
-  const me = reqMe(), canHandle = reqCanHandle(r), p = REQ_PRI[r.priority] || REQ_PRI.normal, st = REQ_STATUS[r.status] || REQ_STATUS.open;
-  const btn = (label, fn, kind) => `<button class="req-act ${kind || ''}" onclick="${fn}">${label}</button>`;
-  const acts = [];
-  if(r.status !== 'closed'){
-    if(canHandle && r.assigned_to !== me) acts.push(btn('Accept', 'reqAccept()', 'primary'));
-    if(canHandle) acts.push(btn(r.assigned_to ? 'Reassign' : 'Assign', 'reqAssign()'));
-    if(canHandle || r.assigned_to === me || r.reported_by === me) acts.push(btn('Mark as done', 'reqClose()', r.assigned_to === me ? 'primary' : 'done'));
-  } else if(canHandle || r.reported_by === me) acts.push(btn('Reopen', 'reqReopen()'));
+  const backBtn = `<button class="req-hero-btn" style="left:14px" onclick="nav('requests')" title="Back"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#0F1E2E" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg></button>`;
+  if(!r){ el.innerHTML = `<div class="req-hero" style="height:120px;background:#E2E8F0">${backBtn}</div>` + (REQ.ready ? reqEmpty('Request not found', "It may have been deleted, or it isn't shared with you.") : '<div style="padding:40px 0;text-align:center;color:#94A3B8">Loading…</div>'); return; }
+  const me = reqMe(), canHandle = reqCanHandle(r), st = reqDeptStyle(r.dept);
   const canEdit = canHandle || (r.reported_by === me && r.status === 'open');
   const canDelete = reqSeeAll() || (r.reported_by === me && r.status === 'open');
+  const moreBtn = canEdit || canDelete || (canHandle && r.status !== 'closed') ? `<button class="req-hero-btn" style="right:14px" onclick="reqMore(event)" title="More"><svg width="18" height="18" viewBox="0 0 24 24" fill="#0F1E2E"><circle cx="12" cy="5" r="2.2"/><circle cx="12" cy="12" r="2.2"/><circle cx="12" cy="19" r="2.2"/></svg></button>` : '';
+  const img = r.photo || r.thumb;
+  const hero = img
+    ? `<div class="req-hero" onclick="reqZoom('main')"><img src="${img}" alt="">${backBtn}${moreBtn}</div>`
+    : `<div class="req-hero none" style="background:${st.bg}">${reqIcon(st.icon, 64, st.stroke, 1.6)}${backBtn}${moreBtn}</div>`;
+
+  let action = '';
+  if(r.status === 'open' && canHandle) action = `<div class="req-bigacts"><button class="go" onclick="reqAccept()">I'm on it</button><button onclick="reqAssign()">Assign</button></div>`;
+  else if(r.status !== 'closed' && (canHandle || r.assigned_to === me || r.reported_by === me)) action = `<button class="req-donebtn" onclick="reqClose()">${REQ_TICK(18)}Mark as done</button>`;
+  else if(r.status === 'closed' && (canHandle || r.reported_by === me)) action = `<button class="req-reopen" onclick="reqReopen()">Reopen</button>`;
+
   const notes = REQ.notes[r.id] || [];
   const thread = notes.map(n => {
-    if(n.kind === 'event') return `<div class="req-ev"><span>${reqEventText(n)} · ${chat2Time(n.created_at)}</span></div>`;
+    if(n.kind === 'event') return `<div class="req-ev"><span>${n.body === 'closed' || n.body === 'accepted' ? `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>` : ''}${reqEventText(n)} · ${chat2Time(n.created_at)}</span></div>`;
     const mineN = n.author_id === me;
     return `<div class="req-note ${mineN ? 'mine' : ''}">
-      ${mineN ? '' : reqAvatar(n.author_id, 26)}
+      ${mineN ? '' : reqAvatar(n.author_id, 28)}
       <div class="req-bub">
-        ${mineN ? '' : `<div class="req-bub-name">${reqEsc(reqName(n.author_id))}</div>`}
+        ${mineN ? '' : `<div class="req-bub-name">${reqEsc(reqName(n.author_id, true))}</div>`}
         ${n.photo ? `<img src="${n.photo}" alt="" onclick="reqZoom('${n.id}')">` : ''}
         ${n.body ? `<div>${reqEsc(n.body).replace(/\n/g, '<br>')}</div>` : ''}
         <div class="req-bub-time">${reqDayShort(n.created_at)}</div>
       </div></div>`;
   }).join('');
-  el.innerHTML = `${back}
-    <div class="req-detail-card" style="border-top-color:${p.color}">
-      <div class="req-card-top"><span class="req-ref">#${r.ref}</span>${reqPill(p)}<span style="margin-left:auto">${reqPill(st)}</span>
-        ${canEdit || canDelete ? `<button class="req-more" onclick="reqMore(event)" title="More"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="2.2"/><circle cx="12" cy="12" r="2.2"/><circle cx="12" cy="19" r="2.2"/></svg></button>` : ''}
-      </div>
-      <div class="req-detail-title">${reqEsc(r.title)}</div>
-      <div class="req-facts">
-        <div><span>Department</span>${reqEsc(r.dept)}</div>
-        ${r.location ? `<div><span>Where</span>${reqEsc(r.location)}</div>` : ''}
-        <div><span>Reported by</span>${reqEsc(reqName(r.reported_by))} · ${reqAgo(r.created_at)}</div>
-        <div><span>Who's on it</span>${r.assigned_to ? reqEsc(reqName(r.assigned_to)) : '<em style="color:#B45309;font-style:normal;font-weight:700">Nobody yet</em>'}</div>
-      </div>
+
+  el.innerHTML = `${hero}
+    <div class="req-dcard">
+      <div class="req-dmeta">${r.priority === 'urgent' && r.status !== 'closed' ? '<span class="req-urg static">URGENT</span>' : ''}<span class="req-dtag" style="background:${st.bg};color:${st.fg}">${reqEsc(r.dept)}</span><span class="req-refno">#${r.ref}</span></div>
+      <div class="req-dtitle">${reqEsc(r.title)}</div>
+      <div class="req-dsub">${[r.location, 'sent by ' + reqName(r.reported_by, true) + ', ' + reqAgo(r.created_at)].filter(Boolean).map(reqEsc).join(' · ')}</div>
       ${r.details ? `<div class="req-details">${reqEsc(r.details).replace(/\n/g, '<br>')}</div>` : ''}
-      ${r.photo ? `<img class="req-main-photo" src="${r.photo}" alt="" onclick="reqZoom('main')">` : ''}
-      ${acts.length ? `<div class="req-acts">${acts.join('')}</div>` : ''}
+      ${reqTracker(r, true)}
+      <div class="req-thread" id="req-thread">${thread || '<div class="req-nothread">No updates yet</div>'}</div>
     </div>
-    <div class="req-thread-label">Updates</div>
-    <div class="req-thread" id="req-thread">${thread || '<div style="text-align:center;color:#94A3B8;font-size:12.5px;padding:10px 0 4px">No updates yet. Add a note or a photo below.</div>'}</div>
-    <div class="req-composer">
-      <label class="req-cam" title="Add photo"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2Z"/><circle cx="12" cy="13" r="4"/></svg><input type="file" accept="image/*" style="display:none" onchange="reqPickPhoto(this)"></label>
-      <div style="flex:1;min-width:0">
-        <div id="req-photo-preview" style="display:${REQ.photo ? 'flex' : 'none'}">${REQ.photo ? `<img src="${REQ.photo}" alt=""><button onclick="reqClearPhoto()">Remove</button>` : ''}</div>
-        <textarea id="req-note-input" rows="1" placeholder="Add an update…" oninput="this.style.height='auto';this.style.height=Math.min(this.scrollHeight,120)+'px'"></textarea>
+    <div class="req-bottom">
+      ${action}
+      <div class="req-composer">
+        <label class="req-cam" title="Add photo"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2Z"/><circle cx="12" cy="13" r="4"/></svg><input type="file" accept="image/*" style="display:none" onchange="reqPickPhoto(this)"></label>
+        <div style="flex:1;min-width:0">
+          <div id="req-photo-preview" style="display:${REQ.photo ? 'flex' : 'none'}">${REQ.photo ? `<img src="${REQ.photo}" alt=""><button onclick="reqClearPhoto()">Remove</button>` : ''}</div>
+          <textarea id="req-note-input" rows="1" placeholder="Add an update…" oninput="this.style.height='auto';this.style.height=Math.min(this.scrollHeight,120)+'px'"></textarea>
+        </div>
+        <button class="req-send" onclick="reqSendNote()" title="Send"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg></button>
       </div>
-      <button class="req-send" onclick="reqSendNote()" title="Send"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg></button>
     </div>`;
   const inp = document.getElementById('req-note-input');
   if(inp){
@@ -24339,22 +24500,20 @@ function reqRenderDetail(){
     if(keep && keep.rid === r.id && keep.focus) inp.focus({preventScroll:true});
   }
 }
-function reqDayShort(v){
-  const d = new Date(v), now = new Date();
-  return d.toDateString() === now.toDateString() ? chat2Time(v) : d.toLocaleDateString('en-GB', {day:'numeric', month:'short'}) + ' ' + chat2Time(v);
-}
 function reqZoom(which){
   const r = reqGet(REQ.openId); if(!r) return;
-  const src = which === 'main' ? r.photo : ((REQ.notes[r.id] || []).find(n => n.id === which) || {}).photo;
+  const src = which === 'main' ? (r.photo || r.thumb) : ((REQ.notes[r.id] || []).find(n => n.id === which) || {}).photo;
   if(src && typeof recipePhotoZoom === 'function') recipePhotoZoom(src);
 }
 function reqMore(e){
   e.stopPropagation();
   const r = reqGet(REQ.openId); if(!r) return;
-  const me = reqMe();
+  const me = reqMe(), canHandle = reqCanHandle(r);
   const items = [];
-  if(reqCanHandle(r) || (r.reported_by === me && r.status === 'open')) items.push(['Edit request', 'reqEdit()']);
+  if(canHandle && r.status !== 'closed') items.push([r.assigned_to ? 'Give to someone else' : 'Assign to someone', 'reqAssign()']);
+  if(canHandle || (r.reported_by === me && r.status === 'open')) items.push(['Edit request', 'reqEdit()']);
   if(reqSeeAll() || (r.reported_by === me && r.status === 'open')) items.push(['Delete request', 'reqDelete()', true]);
+  if(!items.length) return;
   document.getElementById('req-menu')?.remove();
   const m = document.createElement('div');
   m.id = 'req-menu';
@@ -24371,10 +24530,11 @@ async function reqRpc(fn, args, okText, event){
   if(error){ toast(error.message || 'Something went wrong - please try again'); return false; }
   if(okText) toast(okText);
   if(event) reqNotify(args.rid, event);
-  await reqLoad(); reqLoadNotes(args.rid);
+  await reqLoad();
+  if(REQ.openId === args.rid) reqLoadNotes(args.rid);
   return true;
 }
-function reqAccept(){ reqRpc('request_accept', { rid:REQ.openId }, "You're on it", 'accepted'); }
+function reqAccept(id){ reqRpc('request_accept', { rid:id || REQ.openId }, "You're on it", 'accepted'); }
 function reqClose(){
   appConfirmShow({ title:'Mark as done?', msg:'This closes the request and lets the person who reported it know.', label:'Mark as done', onOk: () => reqRpc('request_close', { rid:REQ.openId }, 'Marked as done', 'closed') });
 }
@@ -24390,31 +24550,32 @@ function reqDelete(){
   }});
 }
 // Assign: people in that department first, then everyone else who handles requests
-async function reqAssign(){
-  const r = reqGet(REQ.openId); if(!r) return;
+async function reqAssign(id){
+  const rid = id || REQ.openId;
+  const r = reqGet(rid); if(!r) return;
   let ids = [];
   try{ const { data } = await reqDb().rpc('req_handler_ids', { d:r.dept }); ids = (data || []).map(x => (x && typeof x === 'object') ? Object.values(x)[0] : x); }catch(e){}
   const all = Object.values((typeof CH !== 'undefined' && Object.keys(CH.people).length) ? CH.people : REQ.people).filter(p => p.active !== false);
   const inDept = all.filter(p => Array.isArray(p.departments) && p.departments.includes(r.dept)).map(p => p.id);
-  const pick = [...new Set([...inDept, ...ids])].filter(id => reqPerson(id));
+  const pick = [...new Set([...inDept, ...ids])].filter(x => reqPerson(x));
   if(!pick.length){ toast('Nobody is in ' + r.dept + ' yet - add people to it in Admin Console'); return; }
   pick.sort((a, b) => reqName(a).localeCompare(reqName(b)));
   document.getElementById('req-assign')?.remove();
   const sheet = document.createElement('div');
   sheet.id = 'req-assign';
   sheet.innerHTML = `<div class="chat2-sheet-card" onclick="event.stopPropagation()">
-    <div style="padding:16px 18px 8px;display:flex;align-items:center;gap:10px"><div style="font-size:16px;font-weight:800;color:#0F1E2E;flex:1">Who should do this?</div>
-      <button onclick="document.getElementById('req-assign').remove()" style="border:0;background:#F1F5F9;border-radius:50%;width:32px;height:32px;cursor:pointer;font-size:18px;color:#64748B">×</button></div>
-    <div style="overflow:auto;padding:4px 8px 14px">${pick.map(id => {
-      const p = reqPerson(id);
-      return `<button class="chat2-pick" onclick="reqAssignTo('${id}')">${reqAvatar(id, 38)}<div style="flex:1;min-width:0"><div style="font-size:14px;font-weight:700;color:#0F1E2E">${reqEsc(reqName(id))}${id === reqMe() ? ' (you)' : ''}</div><div style="font-size:12px;color:#64748B">${reqEsc([roleName(p.role), (p.departments || []).join(', ')].filter(Boolean).join(' · '))}</div></div>${r.assigned_to === id ? '<span style="font-size:11px;font-weight:800;color:#0D9488">ON IT</span>' : ''}</button>`;
+    <div style="padding:16px 18px 8px;display:flex;align-items:center;gap:10px"><div style="font-size:17px;font-weight:800;color:#0F1E2E;flex:1">Who should do this?</div>
+      <button class="req-x" onclick="document.getElementById('req-assign').remove()">×</button></div>
+    <div style="overflow:auto;padding:4px 8px 14px">${pick.map(x => {
+      const p = reqPerson(x);
+      return `<button class="chat2-pick" onclick="reqAssignTo('${rid}','${x}')">${reqAvatar(x, 40)}<div style="flex:1;min-width:0"><div style="font-size:14.5px;font-weight:700;color:#0F1E2E">${reqEsc(reqName(x))}${x === reqMe() ? ' (you)' : ''}</div><div style="font-size:12px;color:#64748B">${reqEsc([roleName(p.role), (p.departments || []).join(', ')].filter(Boolean).join(' · '))}</div></div>${r.assigned_to === x ? '<span style="font-size:11px;font-weight:800;color:#0D9488">ON IT</span>' : ''}</button>`;
     }).join('')}</div></div>`;
   sheet.onclick = () => sheet.remove();
   document.body.appendChild(sheet);
 }
-function reqAssignTo(pid){
+function reqAssignTo(rid, pid){
   document.getElementById('req-assign')?.remove();
-  reqRpc('request_assign', { rid:REQ.openId, person:pid }, 'Assigned to ' + reqName(pid, true), 'assigned');
+  reqRpc('request_assign', { rid, person:pid }, 'Given to ' + reqName(pid, true), 'assigned');
 }
 async function reqPickPhoto(input){
   const f = input.files && input.files[0]; input.value = '';
@@ -24457,11 +24618,14 @@ function reqOpenFromUrl(){
   try{ history.replaceState(history.state, '', location.pathname + location.hash); }catch(e){}
   setTimeout(() => reqOpen(id), 200);
 }
-
+document.addEventListener('keydown', e => { if(e.key === 'Escape' && document.getElementById('req-sheet')?.style.display === 'flex') reqSheetClose(); });
 
 // ── Demo mode (not signed in): sample requests kept on this screen only, so the page can be shown ──
 function reqDb(){ return REQ.demo ? REQ_DEMO_DB : sb; }
 const REQ_DEMO = { requests:[], request_notes:[] };
+function reqDemoPic(svg, from, to){
+  return 'data:image/svg+xml;utf8,' + encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="400" height="400" viewBox="0 0 400 400"><defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="${from}"/><stop offset="1" stop-color="${to}"/></linearGradient></defs><rect width="400" height="400" fill="url(#g)"/>${svg}</svg>`);
+}
 function reqDemoSetup(){
   if(REQ.demo) return;
   REQ.demo = true;
@@ -24469,15 +24633,19 @@ function reqDemoSetup(){
   [['demo-me','You',''],['d1','Wayan','Putra'],['d2','Ayu','Sari'],['d3','Made','Wirawan'],['d4','Kadek','Dewi']].forEach(([id, f, l], i) => {
     REQ.people[id] = { id, first_name:f, last_name:l, role:['superadmin','teammember','manager','supervisor','teammember'][i], departments:[['Engineering'],['Bar'],['Operations'],['Engineering'],['Housekeeping']][i], active:true };
   });
+  const fridge = reqDemoPic('<rect x="130" y="60" width="140" height="280" rx="18" fill="#eceff1" stroke="#546e7a" stroke-width="6"/><line x1="130" y1="160" x2="270" y2="160" stroke="#546e7a" stroke-width="6"/><rect x="242" y="90" width="10" height="40" rx="5" fill="#546e7a"/><rect x="242" y="185" width="10" height="55" rx="5" fill="#546e7a"/>', '#cfd8dc', '#78909c');
+  const bulb = reqDemoPic('<path d="M200 70a75 75 0 0 0-42 137V245h84v-38A75 75 0 0 0 200 70z" fill="#fffde7" stroke="#b08900" stroke-width="7"/><rect x="160" y="258" width="80" height="22" rx="8" fill="#b08900"/><rect x="170" y="290" width="60" height="18" rx="8" fill="#b08900"/>', '#fff3c4', '#f6d365');
+  const cushion = reqDemoPic('<rect x="70" y="170" width="260" height="70" rx="26" fill="#f1f8e9" stroke="#558b2f" stroke-width="7"/><path d="M196 178l18 26-22 18 18 22" stroke="#c62828" stroke-width="9" fill="none" stroke-linecap="round"/><line x1="100" y1="240" x2="90" y2="300" stroke="#558b2f" stroke-width="9"/><line x1="300" y1="240" x2="310" y2="300" stroke="#558b2f" stroke-width="9"/>', '#c8e6c9', '#81c784');
   REQ_DEMO.requests = [
-    {id:'q1', ref:14, title:'Fridge 2 in the bar is not cooling', details:'Started this morning, drinks are warm', location:'Pool bar', dept:'Engineering', priority:'urgent', status:'open', reported_by:'d1', assigned_to:null, created_at:ago(35), updated_at:ago(35)},
-    {id:'q2', ref:13, title:'Sun lounger cushion torn', location:'Beach row B', dept:'Housekeeping', priority:'low', status:'progress', reported_by:'d2', assigned_to:'d4', created_at:ago(60*26), updated_at:ago(60*3)},
-    {id:'q3', ref:12, title:'Flickering light above reception', location:'Lobby', dept:'Engineering', priority:'normal', status:'progress', reported_by:'d2', assigned_to:'d3', created_at:ago(60*5), updated_at:ago(60*2)},
+    {id:'q1', ref:14, title:'Fridge 2 not cooling', details:'Started this morning, drinks are warm', location:'Pool bar', dept:'Engineering', priority:'urgent', status:'open', reported_by:'d1', assigned_to:null, created_at:ago(12), updated_at:ago(12), thumb:fridge, photo:fridge},
+    {id:'q3', ref:12, title:'Light flickering above reception', location:'Lobby', dept:'Engineering', priority:'normal', status:'progress', reported_by:'d2', assigned_to:'d3', created_at:ago(120), updated_at:ago(60), thumb:bulb, photo:bulb},
+    {id:'q2', ref:13, title:'Sun lounger cushion torn', location:'Beach, row B', dept:'Housekeeping', priority:'low', status:'progress', reported_by:'demo-me', assigned_to:'d4', created_at:ago(60*26), updated_at:ago(60*3), thumb:cushion, photo:cushion},
     {id:'q4', ref:10, title:'Toilet blocked in staff room', location:'Back of house', dept:'Engineering', priority:'normal', status:'closed', reported_by:'d4', assigned_to:'d3', created_at:ago(60*50), updated_at:ago(60*30), closed_at:ago(60*30)}
   ];
   REQ_DEMO.request_notes = [
-    {id:'n1', request_id:'q3', author_id:'d3', kind:'event', body:'accepted', created_at:ago(60*4)},
-    {id:'n2', request_id:'q3', author_id:'d3', kind:'note', body:'Needs a new tube, ordered - here tomorrow', created_at:ago(60*2)},
+    {id:'n1', request_id:'q3', author_id:'d3', kind:'event', body:'accepted', created_at:ago(100)},
+    {id:'n2', request_id:'q3', author_id:'d3', kind:'note', body:'Needs a new tube, ordered - here tomorrow', created_at:ago(60)},
+    {id:'n5', request_id:'q2', author_id:'d4', kind:'event', body:'accepted', created_at:ago(60*20)},
     {id:'n3', request_id:'q4', author_id:'d3', kind:'event', body:'accepted', created_at:ago(60*40)},
     {id:'n4', request_id:'q4', author_id:'d3', kind:'event', body:'closed', created_at:ago(60*30)}
   ];
@@ -24517,62 +24685,136 @@ const REQ_DEMO_DB = {
     return Promise.resolve({ data:null, error:null });
   }
 };
+
 const reqStyle = document.createElement('style');
 reqStyle.textContent = `
-#p-requests,#p-request{max-width:860px}
-.req-filterbar{display:flex;gap:10px;flex-wrap:wrap;margin:4px 0 12px}
-.req-seg{display:inline-flex;background:#F1F5F9;border-radius:12px;padding:3px}
-.req-seg button{border:0;background:none;padding:8px 14px;border-radius:9px;font-family:Inter,sans-serif;font-size:13px;font-weight:700;color:#64748B;cursor:pointer}
-.req-seg button.on{background:white;color:#0F1E2E;box-shadow:0 1px 3px rgba(15,30,46,.12)}
-.req-chips{display:flex;gap:8px;overflow-x:auto;padding-bottom:4px;margin-bottom:14px;scrollbar-width:none}
+#p-requests{max-width:860px}
+#p-request{max-width:760px}
+.req-hello{font-size:28px;font-weight:800;letter-spacing:-.6px;color:#0F1E2E}
+.req-hello-sub{font-size:14.5px;color:#475569;margin-top:3px}
+.req-tiles{display:grid;grid-template-columns:repeat(auto-fill,minmax(118px,1fr));gap:10px;margin:16px 0 22px}
+.req-tile{border:0;border-radius:18px;padding:14px 8px 12px;display:flex;flex-direction:column;align-items:center;gap:8px;font-family:Inter,sans-serif;font-size:12.5px;font-weight:800;text-align:center;cursor:pointer;line-height:1.2;transition:transform .12s}
+.req-tile:active{transform:scale(.96)}
+.req-tile-ic{width:46px;height:46px;border-radius:14px;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,.78);flex-shrink:0}
+.req-tile-ic.small{width:34px;height:34px;border-radius:10px}
+.req-tabs{display:flex;background:white;border-radius:14px;padding:4px;margin-bottom:12px;box-shadow:0 1px 3px rgba(15,30,46,.06)}
+.req-tabs button{flex:1;border:0;background:none;padding:10px 4px;border-radius:10px;font-family:Inter,sans-serif;font-size:13.5px;font-weight:700;color:#475569;cursor:pointer;white-space:nowrap}
+.req-tabs button.on{background:#0F1E2E;color:white}
+.req-cnt{display:inline-block;background:#DC2626;color:white;border-radius:9px;font-size:10.5px;padding:1px 6px;margin-left:5px;vertical-align:1px}
+.req-chips{display:flex;gap:8px;overflow-x:auto;padding-bottom:4px;margin-bottom:12px;scrollbar-width:none}
 .req-chips::-webkit-scrollbar{display:none}
 .req-chips button{flex-shrink:0;border:1.5px solid #E2E8F0;background:white;border-radius:20px;padding:7px 13px;font-family:Inter,sans-serif;font-size:12.5px;font-weight:700;color:#64748B;cursor:pointer}
 .req-chips button.on{border-color:#0F1E2E;background:#0F1E2E;color:white}
-.req-list{display:flex;flex-direction:column;gap:10px}
-.req-card{display:block;width:100%;text-align:left;background:white;border:1px solid #E8ECF1;border-left:4px solid #D97706;border-radius:14px;padding:13px 15px;cursor:pointer;font-family:Inter,sans-serif;transition:box-shadow .15s}
-.req-card:hover{box-shadow:0 4px 16px rgba(15,30,46,.07)}
-.req-card-top{display:flex;align-items:center;gap:8px}
-.req-ref{font-size:11.5px;font-weight:800;color:#94A3B8}
-.req-card-title{font-size:15px;font-weight:700;color:#0F1E2E;margin:6px 0 2px;line-height:1.35}
-.req-card-where{font-size:12.5px;color:#64748B;font-weight:600}
-.req-card-foot{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:10px;font-size:12px;color:#94A3B8}
-.req-who{display:flex;align-items:center;gap:6px;color:#475569;font-weight:700}
-.req-back{display:flex;align-items:center;gap:6px;background:none;border:none;cursor:pointer;font-family:Inter,sans-serif;font-size:13px;font-weight:700;color:#64748B;padding:0;margin-bottom:14px}
-.req-detail-card{background:white;border:1px solid #E8ECF1;border-top:4px solid #D97706;border-radius:16px;padding:16px 18px;position:relative}
-.req-more{border:0;background:#F1F5F9;color:#475569;width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;margin-left:4px}
-.req-detail-title{font-size:20px;font-weight:800;color:#0F1E2E;margin:10px 0 12px;line-height:1.3}
-.req-facts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px 18px;font-size:13.5px;color:#0F1E2E;font-weight:600}
-.req-facts span{display:block;font-size:11px;font-weight:700;color:#94A3B8;text-transform:uppercase;letter-spacing:.5px;margin-bottom:2px}
-.req-details{margin-top:14px;font-size:14px;line-height:1.55;color:#334155;background:#F8FAFC;border-radius:10px;padding:11px 13px}
-.req-main-photo{display:block;margin-top:14px;max-width:100%;max-height:320px;border-radius:12px;cursor:zoom-in;object-fit:cover}
-.req-acts{display:flex;gap:8px;flex-wrap:wrap;margin-top:16px}
-.req-act{flex:1;min-width:110px;padding:11px 14px;border-radius:11px;border:1.5px solid #E2E8F0;background:white;font-family:Inter,sans-serif;font-size:13.5px;font-weight:800;color:#0F1E2E;cursor:pointer}
-.req-act.primary{background:#0D9488;border-color:#0D9488;color:white}
-.req-act.done{border-color:#16A34A;color:#15803D}
-.req-thread-label{font-size:11.5px;font-weight:800;color:#C4973B;text-transform:uppercase;letter-spacing:.6px;margin:22px 0 10px}
-.req-thread{display:flex;flex-direction:column;gap:8px;padding-bottom:12px}
-.req-ev{text-align:center}.req-ev span{display:inline-block;background:#F1F5F9;color:#64748B;font-size:11.5px;font-weight:600;padding:5px 11px;border-radius:10px}
-.req-note{display:flex;align-items:flex-end;gap:8px;max-width:85%}
+.req-list{display:flex;flex-direction:column;gap:10px;padding-bottom:90px}
+.req-card{background:white;border-radius:18px;padding:10px;display:flex;gap:12px;box-shadow:0 1px 3px rgba(15,30,46,.07);cursor:pointer;transition:box-shadow .15s}
+.req-card:hover{box-shadow:0 6px 18px rgba(15,30,46,.09)}
+.req-ph{border-radius:13px;flex-shrink:0;overflow:hidden;position:relative;display:flex;align-items:center;justify-content:center}
+.req-ph img{width:100%;height:100%;object-fit:cover;display:block}
+.req-urg{position:absolute;top:5px;left:5px;background:#DC2626;color:white;font-size:9.5px;font-weight:800;padding:3px 6px;border-radius:6px;z-index:1;letter-spacing:.3px}
+.req-urg.static{position:static;font-size:10.5px;padding:4px 8px}
+.req-card-body{flex:1;min-width:0;padding-top:2px}
+.req-card-title{font-size:15.5px;font-weight:700;color:#0F1E2E;line-height:1.3}
+.req-card-where{font-size:12.5px;color:#475569;font-weight:600;margin-top:3px;display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.req-dtag{font-size:10.5px;font-weight:800;padding:2px 8px;border-radius:7px;white-space:nowrap}
+.req-quick{display:flex;gap:8px;margin-top:10px}
+.req-quick button{flex:1;border:0;border-radius:11px;padding:10px 6px;font-family:Inter,sans-serif;font-size:13.5px;font-weight:800;cursor:pointer;background:#F1F5F9;color:#0F1E2E}
+.req-quick button.go{background:#0D9488;color:white}
+.req-who{display:flex;align-items:center;gap:7px;font-size:12.5px;font-weight:700;color:#475569;margin-top:8px}
+.req-who.wait{color:#B45309}
+.req-track{display:flex;align-items:center;margin-top:10px}
+.req-dot{border-radius:50%;background:#E2E8F0;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.req-dot.on{background:#0D9488}
+.req-bar{height:3px;flex:1;background:#E2E8F0;border-radius:2px}
+.req-bar.on{background:#0D9488}
+.req-tl{display:flex;justify-content:space-between;font-size:10.5px;font-weight:700;color:#94A3B8;margin-top:4px;gap:6px}
+.req-tl span:nth-child(2){text-align:center}.req-tl span:last-child{text-align:right}
+.req-tl .on{color:#0D9488}
+.req-track.big{margin-top:16px}.req-tl.big{font-size:12px}
+.req-empty{text-align:center;padding:40px 16px;color:#94A3B8}
+.req-empty-ic{width:56px;height:56px;border-radius:50%;background:#EEF1F4;display:flex;align-items:center;justify-content:center;margin:0 auto 12px}
+#req-fab{position:fixed;bottom:22px;right:28px;z-index:40;border:0;height:56px;padding:0 24px;border-radius:18px;background:#0D9488;color:white;display:none;align-items:center;justify-content:center;gap:10px;font-family:Inter,sans-serif;font-size:16px;font-weight:800;box-shadow:0 10px 26px rgba(13,148,136,.4);cursor:pointer}
+#p-requests.on #req-fab{display:flex}
+/* new request sheet */
+#req-sheet{display:none;position:fixed;inset:0;z-index:10030;background:rgba(15,30,46,.45);align-items:center;justify-content:center;padding:18px}
+.req-sheet-card{width:min(520px,100%);max-height:92vh;overflow-y:auto;background:white;border-radius:24px;padding:14px 18px 20px;box-shadow:0 24px 70px rgba(15,30,46,.3)}
+.req-grab{width:42px;height:5px;border-radius:3px;background:#CBD5E1;margin:0 auto 12px;display:none}
+.req-sheet-head{display:flex;align-items:center;gap:10px;margin-bottom:14px}
+.req-sheet-title{flex:1;font-size:20px;font-weight:800;color:#0F1E2E}
+.req-x{border:0;background:#F1F5F9;border-radius:50%;width:34px;height:34px;cursor:pointer;font-size:20px;color:#64748B;flex-shrink:0;line-height:1}
+.req-sendto{flex:1;border:0;display:flex;align-items:center;gap:10px;border-radius:14px;padding:9px 12px;font-family:Inter,sans-serif;font-weight:800;font-size:14.5px;cursor:pointer;text-align:left}
+.req-change{margin-left:auto;font-size:12px;font-weight:700;opacity:.7}
+.req-photo-big{border:2px dashed #CBD5E1;border-radius:16px;min-height:118px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;color:#475569;font-size:14px;background:#F8FAFC;cursor:pointer;position:relative;overflow:hidden}
+.req-photo-big b{font-weight:800;color:#0F1E2E;margin-top:2px}
+.req-photo-big span{font-size:12px;font-weight:600;color:#94A3B8}
+.req-photo-big.has{border:0;height:190px;background:#0F1E2E}
+.req-photo-big.has img{width:100%;height:100%;object-fit:cover}
+.req-photo-redo{position:absolute;bottom:10px;right:10px;background:rgba(15,30,46,.75);color:white!important;font-size:12px!important;font-weight:700!important;padding:6px 10px;border-radius:9px}
+.req-lab{font-size:13.5px;font-weight:800;color:#0F1E2E;margin:16px 0 8px}
+.req-pick{display:flex;flex-wrap:wrap;gap:8px}
+.req-pick button{border:1.5px solid #E2E8F0;background:white;border-radius:20px;padding:8px 13px;font-family:Inter,sans-serif;font-size:13px;font-weight:700;color:#475569;cursor:pointer}
+.req-pick button.on{border-color:#0D9488;background:#E6F4F2;color:#0D9488}
+.req-inp{width:100%;box-sizing:border-box;border:1.5px solid #E2E8F0;border-radius:13px;padding:12px 14px;font-family:Inter,sans-serif;font-size:16px;color:#0F1E2E;outline:none;margin-top:8px}
+.req-inp:focus{border-color:#0D9488}
+.req-inp.bad{border-color:#DC2626}
+.req-urg-row{display:flex;gap:8px}
+.req-urg-row button{flex:1;border:1.5px solid #E2E8F0;background:white;border-radius:12px;padding:12px 4px;font-family:Inter,sans-serif;font-weight:800;font-size:13.5px;color:#475569;cursor:pointer}
+.req-urg-row button.on{border-color:#0D9488;background:#E6F4F2;color:#0D9488}
+.req-urg-row button.on.urgent{border-color:#DC2626;background:#FEE2E2;color:#B91C1C}
+.req-send-big{width:100%;margin-top:18px;height:54px;border:0;border-radius:16px;background:#0D9488;color:white;font-family:Inter,sans-serif;font-size:16px;font-weight:800;cursor:pointer}
+.req-send-big:disabled{opacity:.6}
+/* one request */
+.req-hero{height:300px;position:relative;overflow:hidden;border-radius:20px;cursor:zoom-in;background:#0F1E2E}
+.req-hero img{width:100%;height:100%;object-fit:cover;display:block}
+.req-hero.none{display:flex;align-items:center;justify-content:center;cursor:default;height:180px}
+.req-hero-btn{position:absolute;top:14px;width:40px;height:40px;border-radius:50%;background:rgba(255,255,255,.94);border:0;display:flex;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 2px 8px rgba(15,30,46,.15)}
+.req-dcard{background:white;border-radius:22px;margin-top:-22px;position:relative;padding:18px 18px 12px}
+.req-dmeta{display:flex;align-items:center;gap:8px}
+.req-refno{font-size:12px;font-weight:700;color:#94A3B8;margin-left:auto}
+.req-dtitle{font-size:22px;font-weight:800;line-height:1.25;margin-top:9px;color:#0F1E2E;letter-spacing:-.3px}
+.req-dsub{font-size:13.5px;color:#475569;font-weight:600;margin-top:4px}
+.req-details{margin-top:12px;font-size:14px;line-height:1.55;color:#334155;background:#F8FAFC;border-radius:12px;padding:11px 13px}
+.req-thread{display:flex;flex-direction:column;gap:9px;padding:18px 0 4px}
+.req-nothread{text-align:center;color:#94A3B8;font-size:12.5px}
+.req-ev{text-align:center}.req-ev span{display:inline-flex;align-items:center;gap:6px;background:#E6F4F2;color:#0F766E;font-size:12px;font-weight:700;padding:6px 12px;border-radius:12px}
+.req-note{display:flex;align-items:flex-end;gap:8px;max-width:88%}
 .req-note.mine{align-self:flex-end;flex-direction:row-reverse}
-.req-bub{background:white;border:1px solid #E8ECF1;border-radius:14px 14px 14px 4px;padding:8px 11px;font-size:14px;color:#0F1E2E;line-height:1.45;min-width:0;overflow-wrap:anywhere}
-.req-note.mine .req-bub{background:var(--chat-mine,#0F1E2E);border-color:transparent;color:white;border-radius:14px 14px 4px 14px}
+.req-bub{background:#F1F5F9;border-radius:16px 16px 16px 4px;padding:9px 12px;font-size:14.5px;color:#0F1E2E;line-height:1.45;min-width:0;overflow-wrap:anywhere}
+.req-note.mine .req-bub{background:var(--chat-mine,#0F1E2E);color:white;border-radius:16px 16px 4px 16px}
 .req-bub-name{font-size:11.5px;font-weight:800;color:#0D9488;margin-bottom:2px}
-.req-bub img{display:block;max-width:240px;max-height:240px;border-radius:9px;margin:2px 0 4px;cursor:zoom-in;object-fit:cover}
+.req-bub img{display:block;max-width:240px;max-height:240px;border-radius:10px;margin:2px 0 4px;cursor:zoom-in;object-fit:cover}
 .req-bub-time{font-size:10.5px;opacity:.55;text-align:right;margin-top:2px}
-.req-composer{position:sticky;bottom:0;display:flex;align-items:flex-end;gap:8px;background:var(--bg,#F5F5F3);padding:10px 0 calc(14px + env(safe-area-inset-bottom));margin-top:4px}
-.req-composer textarea{width:100%;box-sizing:border-box;border:1.5px solid #E2E8F0;border-radius:22px;padding:10px 15px;font-family:Inter,sans-serif;font-size:16px;line-height:1.4;resize:none;outline:none;background:white;display:block;overflow-y:auto;max-height:120px}
+.req-bottom{position:sticky;bottom:0;background:var(--bg,#F5F5F3);padding:10px 0 calc(12px + env(safe-area-inset-bottom));margin-top:6px;z-index:5}
+.req-bigacts{display:flex;gap:8px;margin-bottom:10px}
+.req-bigacts button{flex:1;height:52px;border:0;border-radius:15px;font-family:Inter,sans-serif;font-size:15.5px;font-weight:800;cursor:pointer;background:white;color:#0F1E2E;box-shadow:0 1px 3px rgba(15,30,46,.08)}
+.req-bigacts button.go{flex:2;background:#0D9488;color:white;box-shadow:0 8px 20px rgba(13,148,136,.3)}
+.req-donebtn{width:100%;height:52px;border:0;border-radius:15px;background:#16A34A;color:white;font-family:Inter,sans-serif;font-weight:800;font-size:15.5px;display:flex;align-items:center;justify-content:center;gap:8px;box-shadow:0 8px 20px rgba(22,163,74,.3);cursor:pointer;margin-bottom:10px}
+.req-reopen{width:100%;height:48px;border:1.5px solid #E2E8F0;border-radius:15px;background:white;color:#0F1E2E;font-family:Inter,sans-serif;font-weight:800;font-size:14.5px;cursor:pointer;margin-bottom:10px}
+.req-composer{display:flex;align-items:flex-end;gap:8px}
+.req-composer textarea{width:100%;box-sizing:border-box;border:1.5px solid #E2E8F0;border-radius:22px;padding:11px 15px;font-family:Inter,sans-serif;font-size:16px;line-height:1.4;resize:none;outline:none;background:white;display:block;overflow-y:auto;max-height:120px}
 .req-composer textarea:focus{border-color:#0D9488}
-.req-cam{width:42px;height:42px;border-radius:50%;background:white;border:1.5px solid #E2E8F0;color:#475569;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0}
-.req-send{width:42px;height:42px;border-radius:50%;background:#0D9488;border:0;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0}
+.req-cam{width:44px;height:44px;border-radius:50%;background:white;border:1.5px solid #E2E8F0;color:#475569;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0}
+.req-send{width:44px;height:44px;border-radius:50%;background:#0D9488;border:0;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0}
 #req-photo-preview{align-items:center;gap:10px;margin-bottom:8px}
 #req-photo-preview img{width:56px;height:56px;border-radius:9px;object-fit:cover}
 #req-photo-preview button{border:0;background:none;color:#DC2626;font-family:Inter,sans-serif;font-size:12.5px;font-weight:700;cursor:pointer}
-#req-menu{position:fixed;z-index:10050;background:white;border-radius:12px;box-shadow:0 10px 30px rgba(15,30,46,.2);padding:6px;min-width:170px}
-#req-menu button{display:block;width:100%;text-align:left;border:0;background:none;padding:10px 12px;border-radius:8px;font-family:Inter,sans-serif;font-size:13.5px;font-weight:700;color:#0F1E2E;cursor:pointer}
+#req-menu{position:fixed;z-index:10050;background:white;border-radius:12px;box-shadow:0 10px 30px rgba(15,30,46,.2);padding:6px;min-width:190px}
+#req-menu button{display:block;width:100%;text-align:left;border:0;background:none;padding:11px 12px;border-radius:8px;font-family:Inter,sans-serif;font-size:14px;font-weight:700;color:#0F1E2E;cursor:pointer}
 #req-menu button:hover{background:#F1F5F9}
 #req-assign{position:fixed;inset:0;z-index:10040;background:rgba(15,30,46,.48);display:flex;align-items:center;justify-content:center;padding:18px}
-@media(max-width:600px){#req-assign{padding:0;align-items:flex-end}#req-assign .chat2-sheet-card{width:100%;max-height:85vh;border-radius:16px 16px 0 0}
-  .req-facts{grid-template-columns:1fr 1fr}.req-detail-title{font-size:18px}.req-note{max-width:92%}}
+@media(max-width:600px){
+  .req-tiles{grid-template-columns:repeat(3,1fr)}
+  #req-fab{left:16px;right:16px;bottom:16px}
+  #req-sheet{padding:0;align-items:flex-end}
+  .req-sheet-card{width:100%;max-height:94vh;border-radius:24px 24px 0 0;padding-bottom:calc(20px + env(safe-area-inset-bottom))}
+  .req-grab{display:block}
+  #p-request.page{padding:0 0 0!important}
+  .req-hero{border-radius:0;height:270px}
+  .req-dcard{border-radius:22px 22px 0 0;min-height:calc(100vh - 380px)}
+  .req-bottom{position:fixed;left:0;right:0;bottom:0;margin:0;padding-left:12px;padding-right:12px;background:white;border-top:1px solid #E8ECF1;z-index:30}
+  #req-detail{padding-bottom:150px}
+  body:has(#p-request.on) #chat-float-btn{display:none!important}
+  #req-assign{padding:0;align-items:flex-end}#req-assign .chat2-sheet-card{width:100%;max-height:85vh;border-radius:16px 16px 0 0}
+}
 `;
 document.head.appendChild(reqStyle);
 </script>

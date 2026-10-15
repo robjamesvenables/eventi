@@ -33,6 +33,90 @@ function note(me, text){ return L.db('app_errors', { method: 'POST', body: { com
 const ROLE_COLOURS = { superadmin:'#0F1E2E', director:'#DC2626', manager:'#16A34A', supervisor:'#2563EB', teammember:'#B8862F', dailyworker:'#7C8AA0' };
 const initials = p => (((p.first_name || '?')[0] || '') + ((p.last_name || '')[0] || '')).toUpperCase();
 
+// ── Requests ──
+// POST { request_id, event }  event: new | accepted | assigned | closed | reopened | note
+//   new      -> everyone who handles that department's requests
+//   anything else -> the person who reported it and whoever is on it (and the department, if nobody is on it yet)
+// Only sent straight after the caller really did that thing (checked against the request and its updates).
+const truthy = v => v === 1 || v === '1' || v === true || v === 'true';
+async function requestHandlers(companyId, dept){
+  const [people, setting] = await Promise.all([
+    L.db('profiles?select=id,role,is_owner,departments,active&active=eq.true&company_id=eq.' + encodeURIComponent(companyId)),
+    L.db('app_settings?select=value&key=eq.role_perms&company_id=eq.' + encodeURIComponent(companyId)).catch(() => [])
+  ]);
+  let perms = {};
+  try { const v = setting[0] && setting[0].value; perms = (typeof v === 'string' ? JSON.parse(v) : v) || {}; } catch (e) {}
+  const can = (role, mod, dflt) => { const v = perms[role] && perms[role][mod]; return v === undefined || v === null ? dflt : truthy(v); };
+  return people.filter(p => {
+    if (p.is_owner || p.role === 'superadmin') return true;
+    if (can(p.role, 'requestsall', ['director', 'manager'].includes(p.role))) return true;
+    const depts = Array.isArray(p.departments) ? p.departments : [];
+    return can(p.role, 'requestsmanage', ['director', 'manager', 'supervisor'].includes(p.role)) && depts.includes(dept);
+  }).map(p => p.id);
+}
+async function requestPush(me, b, res){
+  const log = text => L.db('app_errors', { method: 'POST', body: { company_id: me.company_id, username: me.username, page: 'notify', message: 'Request notification from ' + (fullName(me) || me.username) + ': ' + text } }).catch(() => {});
+  const r = (await L.db('requests?select=id,ref,title,dept,location,priority,status,reported_by,assigned_to,company_id,created_at,updated_at&id=eq.' + encodeURIComponent(b.request_id)))[0];
+  if (!r || String(r.company_id) !== String(me.company_id)) { await log('not sent - request not found'); return L.send(res, 200, { ok: true, sent: 0, why: 'request not found' }); }
+  const ev = String(b.event || '');
+  const fresh = t => Date.now() - new Date(t).getTime() < 3 * 60000;
+  // did this person really just do this?
+  let ok = false, noteText = '';
+  if (ev === 'new') ok = (String(r.reported_by) === String(me.id) || fresh(r.updated_at)) && (fresh(r.created_at) || fresh(r.updated_at));
+  else {
+    const notes = await L.db('request_notes?select=kind,body,author_id,created_at&order=created_at.desc&limit=5&request_id=eq.' + encodeURIComponent(r.id));
+    const mine = notes.find(n => String(n.author_id) === String(me.id) && fresh(n.created_at) && (ev === 'note' ? n.kind === 'note' : n.kind === 'event'));
+    ok = !!mine; noteText = mine && mine.kind === 'note' ? (mine.body || 'Photo') : '';
+  }
+  if (!ok) { await log('not sent - nothing new on #' + r.ref); return L.send(res, 200, { ok: true, sent: 0, why: 'nothing new' }); }
+
+  let to = [];
+  if (ev === 'new') to = await requestHandlers(r.company_id, r.dept);
+  else {
+    to = [r.reported_by, r.assigned_to].filter(Boolean);
+    if (!r.assigned_to && (ev === 'note' || ev === 'reopened')) to = to.concat(await requestHandlers(r.company_id, r.dept));
+  }
+  to = [...new Set(to.map(String))].filter(id => id !== String(me.id));
+  if (!to.length) { await log('#' + r.ref + ' ' + ev + ': no one else to tell'); return L.send(res, 200, { ok: true, sent: 0, why: 'no one else to tell' }); }
+
+  const list = to.map(encodeURIComponent).join(',');
+  const [prefs, subs] = await Promise.all([
+    L.db('chat_prefs?select=*&profile_id=in.(' + list + ')').catch(() => []),
+    L.db('push_subs?select=*&profile_id=in.(' + list + ')')
+  ]);
+  const prefBy = {}; prefs.forEach(p => prefBy[p.profile_id] = p);
+  const who = me.first_name || 'Someone';
+  const title = (r.priority === 'urgent' ? 'URGENT · ' : '') + 'Request #' + r.ref + ' · ' + r.dept;
+  const assignee = r.assigned_to && String(r.assigned_to) !== String(me.id)
+    ? ((await L.db('profiles?select=first_name&id=eq.' + encodeURIComponent(r.assigned_to)).catch(() => []))[0] || {}).first_name : null;
+  const what = r.title.length > 90 ? r.title.slice(0, 87) + '…' : r.title;
+  const bodyFor = pid => {
+    if (ev === 'new') return who + ': ' + what + (r.location ? ' (' + r.location + ')' : '');
+    if (ev === 'accepted') return who + ' is on it: ' + what;
+    if (ev === 'assigned') return String(r.assigned_to) === String(pid) ? who + ' asked you to do this: ' + what : who + ' gave this to ' + (assignee || 'someone') + ': ' + what;
+    if (ev === 'closed') return who + ' marked this as done: ' + what;
+    if (ev === 'reopened') return who + ' reopened: ' + what;
+    return who + ': ' + (noteText.length > 120 ? noteText.slice(0, 117) + '…' : noteText);
+  };
+  webpush.setVapidDetails('mailto:hello@getmavis.co', VAPID_PUBLIC, VAPID_PRIVATE);
+  const now = new Date();
+  let sent = 0; const skipped = [];
+  await Promise.all(subs.map(async s => {
+    // urgent requests ignore quiet hours - that's the point of urgent
+    if (r.priority !== 'urgent' && inQuiet(prefBy[s.profile_id], now)) { skipped.push('quiet hours'); return; }
+    const payload = JSON.stringify({ title, body: bodyFor(s.profile_id), thread: 'req-' + r.id, url: '/?request=' + r.id, from: me.id, who: initials(me), colour: ROLE_COLOURS[me.role] || '#0D9488' });
+    try {
+      await webpush.sendNotification({ endpoint: s.endpoint, keys: { p256dh: s.p256dh, auth: s.auth } }, payload, { TTL: 6 * 3600, urgency: 'high' });
+      sent++;
+    } catch (e) {
+      if (e.statusCode === 404 || e.statusCode === 410) await L.db('push_subs?endpoint=eq.' + encodeURIComponent(s.endpoint), { method: 'DELETE' }).catch(() => {});
+      skipped.push('error ' + (e.statusCode || e.message));
+    }
+  }));
+  await log('#' + r.ref + ' ' + ev + ': sent to ' + sent + ' of ' + subs.length + ' device(s) for ' + to.length + ' person(s)' + (skipped.length ? ' - skipped: ' + skipped.join(', ') : ''));
+  return L.send(res, 200, { ok: true, sent, people: to.length, devices: subs.length, skipped });
+}
+
 module.exports = async (req, res) => {
   if (req.method !== 'POST') return L.send(res, 405, { ok: false });
   if (!L.SERVICE_KEY) return L.send(res, 503, { ok: false, reason: 'notset' });
@@ -59,6 +143,7 @@ module.exports = async (req, res) => {
       }
       return L.send(res, 200, { ok: sent > 0, sent, devices: subs.length, errors });
     }
+    if (b.request_id) return await requestPush(me, b, res);
     const msg = (await L.db('chat_msgs?select=*&id=eq.' + encodeURIComponent(b.msg_id || '')))[0];
     // only the person who sent it, and only straight after sending
     if (!msg) { await note(me, 'not sent - message not found'); return L.send(res, 200, { ok: true, sent: 0, why: 'message not found' }); }

@@ -2940,6 +2940,11 @@ img.emoji-tw{width:1.15em;height:1.15em;vertical-align:-0.2em;margin:0 1px}
       <svg class="sb-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
       Task Board
     </button>
+    <button class="sb-link" id="n-requests" onclick="nav('requests')">
+      <svg class="sb-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94z"/></svg>
+      Requests
+      <span id="req-nav-badge" style="display:none;margin-left:auto;background:#EF4444;color:white;font-size:10px;font-weight:800;min-width:18px;height:18px;border-radius:9px;align-items:center;justify-content:center;padding:0 5px">1</span>
+    </button>
     <button class="sb-link" id="n-notes" onclick="nav('notes')">
       <svg class="sb-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
       Meeting Notes
@@ -3304,6 +3309,14 @@ img.emoji-tw{width:1.15em;height:1.15em;vertical-align:-0.2em;margin:0 1px}
           <div class="home-card-ico"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg></div>
           <div class="home-card-title" style="color:white">Task Board</div>
           <div class="home-card-sub" style="color:rgba(255,255,255,0.6)">Drag and drop tasks across your team</div>
+        </div>
+
+        <div class="home-card" id="hcard-requests" onclick="nav('requests')" style="background:#0D9488;border-color:#0D9488;position:relative;overflow:hidden;align-self:start;height:120px">
+          <div class="card-colour-popup" id="cpop-requests"></div>
+          <button class="card-colour-btn" onclick="toggleCardPicker(event,'requests')"><svg width="13" height="13" viewBox="0 0 24 24" fill="white"><circle cx="12" cy="5" r="2.2"/><circle cx="12" cy="12" r="2.2"/><circle cx="12" cy="19" r="2.2"/></svg></button>
+          <div class="home-card-ico"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94z"/></svg></div>
+          <div class="home-card-title" style="color:white">Requests</div>
+          <div class="home-card-sub" style="color:rgba(255,255,255,0.6)" id="hcard-requests-sub">Report it, track it, get it fixed</div>
         </div>
 
         <div class="home-card" id="hcard-notes" onclick="nav('notes')" style="background:#0D9488;border-color:#0D9488;position:relative;overflow:hidden;align-self:start;height:120px">
@@ -4947,7 +4960,22 @@ img.emoji-tw{width:1.15em;height:1.15em;vertical-align:-0.2em;margin:0 1px}
       <div id="sop-doc-body" style="max-width:760px"></div>
     </div>
 
-    <!-- MAINTENANCE -->
+    <!-- REQUESTS (maintenance, housekeeping, anything that needs fixing) -->
+    <div class="page" id="p-requests" style="padding:32px 28px 80px">
+      <div class="ph">
+        <div>
+          <div class="ph-title">Requests</div>
+          <div class="ph-sub">Report anything that needs fixing or doing, and follow it until it's done</div>
+        </div>
+        <button class="btn btn-navy" id="req-new-btn" onclick="reqNew()" style="background:#0D9488;gap:6px"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>New Request</button>
+      </div>
+      <div id="req-filters"></div>
+      <div id="req-list"></div>
+    </div>
+    <div class="page" id="p-request" style="padding:24px 28px 0">
+      <div id="req-detail"></div>
+    </div>
+
     <!-- INVENTORY -->
     <div class="page" id="p-inventory" style="padding:32px 28px 0">
       <div class="ph">
@@ -5309,6 +5337,7 @@ function nav(id, pushState=true){
   page.classList.add('on');
   const sidebarId = (id==='taskboard' || id==='taskboard-personal' || id==='taskboard-team' || id==='kb') ? 'kb'
     : (id==='stickynotes-board') ? 'stickynotes'
+    : (id==='request') ? 'requests'
     : id;
   const nb=document.getElementById('n-'+sidebarId);
   if(nb)nb.classList.add('active');
@@ -5327,6 +5356,7 @@ function nav(id, pushState=true){
   const chatFloatBtn = document.getElementById('chat-float-btn');
   if(chatFloatBtn) chatFloatBtn.style.display = (id==='home') ? 'flex' : 'none';
   if(id==='taskboard'){taskboardRenderRoot();}
+  if(id==='requests'){ reqStart(); reqRenderList(); }
   if(id==='taskboard-personal'){taskboardRenderPersonalTiles();}
   if(id==='taskboard-team'){taskboardRenderTeamTiles();}
   if(id==='inventory'){inventoryRenderAreas(); inventoryRenderList();}
@@ -5889,6 +5919,7 @@ function authEnterApp(){
   quickLinksRender();
   chatUpdateBadges();
   try{ chatStart(); }catch(e){}
+  try{ reqStart(); }catch(e){}
   nav('home');
   setTimeout(()=>{ if(typeof evOpenPending==='function') evOpenPending(); }, 400);
 }
@@ -10327,6 +10358,9 @@ const ADMIN_MODULE_GROUPS = [
   ]},
   {label:'Operations Tools', modules:[
     {id:'tasks', name:'Task Board', desc:'View and manage work assigned to them'},
+    {id:'requests', name:'Requests', desc:'Report a problem and follow their own requests'},
+    {id:'requestsmanage', name:'Handle requests', desc:'Accept, assign and close requests sent to their own department(s)'},
+    {id:'requestsall', name:'See all requests', desc:'See and handle requests for every department'},
     {id:'inventory', name:'Inventory', desc:'Check and update stock levels'},
     {id:'entertainment', name:'Entertainment Schedule', desc:'View or edit DJ/event bookings'},
     {id:'calendar', name:'Events & Calendar', desc:'See event plans, past events and the calendar'},
@@ -10347,12 +10381,12 @@ const ADMIN_MODULE_GROUPS = [
 
 // Default permission bundle per role - true/false per module id. Editable in the demo.
 let ADMIN_PERMS = {
-  superadmin:  {teamfeed:1,chat:1,suggestions:1,vacancies:1,tasks:1,inventory:1,entertainment:1,calendar:1,sops:1,survey:1,reports:1,directory:1,marketing:1,adminconsole:1,kitchen:1,bar:1,meetings:1,eventsedit:1},
-  director:    {teamfeed:1,chat:1,suggestions:1,vacancies:1,tasks:1,inventory:1,entertainment:1,calendar:1,sops:1,survey:1,reports:1,directory:1,marketing:1,adminconsole:1,kitchen:1,bar:1,meetings:1,eventsedit:1},
-  manager:     {teamfeed:1,chat:1,suggestions:1,vacancies:1,tasks:1,inventory:1,entertainment:1,calendar:1,sops:1,survey:1,reports:1,directory:1,marketing:1,adminconsole:0,kitchen:1,bar:1,meetings:1,eventsedit:1},
-  supervisor:  {teamfeed:1,chat:1,suggestions:1,vacancies:1,tasks:1,inventory:1,entertainment:1,calendar:1,sops:1,survey:1,reports:0,directory:1,marketing:0,adminconsole:0,kitchen:1,bar:1,meetings:1,eventsedit:1},
-  teammember:  {teamfeed:1,chat:1,suggestions:1,vacancies:1,tasks:1,inventory:1,entertainment:0,calendar:1,sops:1,survey:0,reports:0,directory:0,marketing:0,adminconsole:0,kitchen:1,bar:1,meetings:0,eventsedit:0},
-  dailyworker: {teamfeed:1,chat:1,suggestions:0,vacancies:1,tasks:1,inventory:0,entertainment:0,calendar:0,sops:1,survey:0,reports:0,directory:0,marketing:0,adminconsole:0,kitchen:1,bar:1,meetings:0,eventsedit:0},
+  superadmin:  {teamfeed:1,chat:1,suggestions:1,vacancies:1,tasks:1,inventory:1,entertainment:1,calendar:1,sops:1,survey:1,reports:1,directory:1,marketing:1,adminconsole:1,kitchen:1,bar:1,meetings:1,eventsedit:1,requests:1,requestsmanage:1,requestsall:1},
+  director:    {teamfeed:1,chat:1,suggestions:1,vacancies:1,tasks:1,inventory:1,entertainment:1,calendar:1,sops:1,survey:1,reports:1,directory:1,marketing:1,adminconsole:1,kitchen:1,bar:1,meetings:1,eventsedit:1,requests:1,requestsmanage:1,requestsall:1},
+  manager:     {teamfeed:1,chat:1,suggestions:1,vacancies:1,tasks:1,inventory:1,entertainment:1,calendar:1,sops:1,survey:1,reports:1,directory:1,marketing:1,adminconsole:0,kitchen:1,bar:1,meetings:1,eventsedit:1,requests:1,requestsmanage:1,requestsall:1},
+  supervisor:  {teamfeed:1,chat:1,suggestions:1,vacancies:1,tasks:1,inventory:1,entertainment:1,calendar:1,sops:1,survey:1,reports:0,directory:1,marketing:0,adminconsole:0,kitchen:1,bar:1,meetings:1,eventsedit:1,requests:1,requestsmanage:1,requestsall:0},
+  teammember:  {teamfeed:1,chat:1,suggestions:1,vacancies:1,tasks:1,inventory:1,entertainment:0,calendar:1,sops:1,survey:0,reports:0,directory:0,marketing:0,adminconsole:0,kitchen:1,bar:1,meetings:0,eventsedit:0,requests:1,requestsmanage:0,requestsall:0},
+  dailyworker: {teamfeed:1,chat:1,suggestions:0,vacancies:1,tasks:1,inventory:0,entertainment:0,calendar:0,sops:1,survey:0,reports:0,directory:0,marketing:0,adminconsole:0,kitchen:1,bar:1,meetings:0,eventsedit:0,requests:1,requestsmanage:0,requestsall:0},
 };
 
 let PEOPLE_DEPARTMENTS = ['Management', 'GRO', 'Operations', 'Audio Visual', 'IT', 'Engineering', 'Housekeeping', 'Kitchen', 'Bar', 'Sales and Marketing', 'Human Resources'];
@@ -11045,6 +11079,7 @@ const MODULE_PAGES = {
   directory: ['vendors','customers'],
   marketing: ['marketing'],
   tasks: ['taskboard','taskboard-team','taskboard-personal','kb'],
+  requests: ['requests','request'],
   chat: ['chat'],
   suggestions: ['suggestions'],
   vacancies: ['vacancies'],
@@ -20314,7 +20349,7 @@ const CARD_COLOURS = [
   {hex:'#C4973B',label:'Gold'},
   {hex:'#EF4444',label:'Red'}
 ];
-const CARD_IDS = ['dash','cal','new','past','kb','notes','sop','kitchen','bar','music','marketing','quicklinks','sandbox','faq','vendors','customers','suggestions','inventory'];
+const CARD_IDS = ['dash','cal','new','past','kb','requests','notes','sop','kitchen','bar','music','marketing','quicklinks','sandbox','faq','vendors','customers','suggestions','inventory'];
 
 // ── VENUE SWITCHER ──
 const VENUES = [
@@ -23433,6 +23468,7 @@ window.notifyQuietSave = async function(){
 // Open a chat from a notification (app already open) or from /?chat=… (app was closed)
 if('serviceWorker' in navigator){
   navigator.serviceWorker.addEventListener('message', e => {
+    if(e.data && e.data.type === 'open-chat' && e.data.thread && myProfile && String(e.data.thread).startsWith('req-')){ reqStart(); setTimeout(() => reqOpen(String(e.data.thread).slice(4)), 300); return; }
     if(e.data && e.data.type === 'open-chat' && e.data.thread && myProfile){ chatStart(); setTimeout(() => chat2OpenFromDash(e.data.thread), 300); }
   });
 }
@@ -23997,6 +24033,486 @@ document.head.appendChild(chat2Style);
 <div id="reactionNamesPopover" style="display:none;position:absolute;z-index:100000;background:#0F1E2E;color:white;border-radius:9px;padding:10px 14px;max-width:220px;font-size:12px;font-weight:600;line-height:1.5;box-shadow:0 8px 20px rgba(0,0,0,0.25)">
   <span id="reactionNamesPopoverList"></span>
 </div>
+<script>
+/* ===== MAVIS REQUESTS — report something that needs fixing or doing, follow it until it's done =====
+   Who sees what is decided by the database (requests.sql) using three Admin Console switches:
+   requests (report + see your own), requestsmanage (your department's requests), requestsall (every department). */
+const REQ = { started:false, ready:false, notReady:false, list:[], notes:{}, people:{}, openId:null, tab:null, status:'open', dept:'all', channel:null, timer:null, sending:false };
+const REQ_COLS = 'id,ref,title,details,location,dept,priority,status,reported_by,assigned_to,created_at,updated_at,closed_at';
+const REQ_PRI = { urgent:{name:'Urgent', color:'#DC2626', bg:'#FEE2E2'}, normal:{name:'Normal', color:'#D97706', bg:'#FEF3C7'}, low:{name:'Low', color:'#16A34A', bg:'#DCFCE7'} };
+const REQ_STATUS = { open:{name:'New', color:'#B45309', bg:'#FEF3C7'}, progress:{name:'In progress', color:'#1D4ED8', bg:'#DBEAFE'}, closed:{name:'Done', color:'#15803D', bg:'#DCFCE7'} };
+
+function reqEsc(v){ return String(v == null ? '' : v).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function reqMe(){ return myProfile ? myProfile.id : null; }
+function reqPerson(pid){ return (typeof CH !== 'undefined' && CH.people[pid]) || REQ.people[pid] || null; }
+function reqName(pid, short){
+  const p = reqPerson(pid);
+  if(!p) return pid ? 'Former team member' : 'Nobody';
+  if(pid === reqMe() && short) return 'You';
+  return short ? (p.first_name || '') : ((p.first_name || '') + ' ' + (p.last_name || '')).trim();
+}
+function reqAvatar(pid, size){
+  const s = size || 28, p = reqPerson(pid);
+  if(p && p.photo) return `<img src="${p.photo}" alt="" style="width:${s}px;height:${s}px;border-radius:50%;object-fit:cover;flex-shrink:0">`;
+  const ini = p ? (((p.first_name || '?')[0] || '') + ((p.last_name || '')[0] || '')).toUpperCase() : '?';
+  const col = (typeof chat2RoleColor === 'function') ? chat2RoleColor(p && p.role) : '#0D9488';
+  return `<div style="width:${s}px;height:${s}px;border-radius:50%;background:${col};color:white;display:flex;align-items:center;justify-content:center;font-size:${Math.round(s*.36)}px;font-weight:800;flex-shrink:0">${ini}</div>`;
+}
+function reqMyDepts(){ return Array.isArray(myProfile && myProfile.departments) ? myProfile.departments : []; }
+function reqSeeAll(){ return roleCan('requestsall'); }
+function reqIsHandler(){ return reqSeeAll() || roleCan('requestsmanage'); }
+function reqCanHandle(r){ return !!r && (reqSeeAll() || (roleCan('requestsmanage') && reqMyDepts().includes(r.dept))); }
+function reqDeptList(){ return (typeof PEOPLE_DEPARTMENTS !== 'undefined' ? PEOPLE_DEPARTMENTS : []).filter(Boolean); }
+function reqAgo(v){
+  const mins = Math.max(0, Math.round((Date.now() - new Date(v).getTime()) / 60000));
+  if(mins < 1) return 'just now';
+  if(mins < 60) return mins + ' min ago';
+  const h = Math.round(mins / 60);
+  if(h < 24) return h + (h === 1 ? ' hour ago' : ' hours ago');
+  const d = Math.round(h / 24);
+  if(d < 7) return d + (d === 1 ? ' day ago' : ' days ago');
+  return new Date(v).toLocaleDateString('en-GB', {day:'numeric', month:'short'});
+}
+function reqPill(o){ return `<span style="font-size:10.5px;font-weight:800;letter-spacing:.3px;padding:3px 9px;border-radius:20px;background:${o.bg};color:${o.color};white-space:nowrap">${o.name}</span>`; }
+
+// ── Loading + live updates ──
+async function reqStart(force){
+  if(!myProfile || typeof sb === 'undefined') return;
+  if(REQ.started && !force) return reqLoad();
+  REQ.started = true;
+  await reqLoad();
+  if(REQ.notReady) return;
+  reqSubscribe();
+  reqOpenFromUrl();
+}
+async function reqLoad(){
+  if(!myProfile || typeof sb === 'undefined') return;
+  const needPeople = !(typeof CH !== 'undefined' && Object.keys(CH.people).length) && !Object.keys(REQ.people).length;
+  const [rq, pp] = await Promise.all([
+    sb.from('requests').select(REQ_COLS).order('created_at', {ascending:false}).limit(500),
+    needPeople ? sb.from('profiles').select('id,first_name,last_name,role,photo,departments,active').eq('company_id', myProfile.company_id) : Promise.resolve({data:null})
+  ]);
+  if(rq.error){ REQ.notReady = true; console.warn('Requests not set up yet', rq.error); reqRenderAll(); return; }
+  REQ.notReady = false;
+  if(pp.data) pp.data.forEach(p => REQ.people[p.id] = p);
+  REQ.list = rq.data || [];
+  REQ.ready = true;
+  reqRenderAll();
+}
+function reqSoon(){ clearTimeout(REQ.timer); REQ.timer = setTimeout(async () => { await reqLoad(); if(REQ.openId) reqLoadNotes(REQ.openId); }, 350); }
+function reqSubscribe(){
+  if(REQ.channel) return;
+  REQ.channel = sb.channel('requests-' + reqMe())
+    .on('postgres_changes', {event:'*', schema:'public', table:'requests'}, () => reqSoon())
+    .on('postgres_changes', {event:'*', schema:'public', table:'request_notes'}, p => { if(p.new && p.new.request_id === REQ.openId) reqSoon(); else reqSoon(); })
+    .subscribe();
+  // Backup if the live connection drops: check every 15s while Requests is on screen, and on return to the app
+  const tick = () => {
+    if(document.visibilityState !== 'visible') return;
+    const on = document.getElementById('p-requests')?.classList.contains('on') || document.getElementById('p-request')?.classList.contains('on');
+    if(on) reqSoon();
+  };
+  setInterval(tick, 15000);
+  document.addEventListener('visibilitychange', () => { if(document.visibilityState === 'visible') reqSoon(); });
+}
+function reqRenderAll(){
+  reqUpdateBadge();
+  if(document.getElementById('p-requests')?.classList.contains('on')) reqRenderList();
+  if(REQ.openId && document.getElementById('p-request')?.classList.contains('on')) reqRenderDetail();
+}
+// Badge: new requests waiting for my department (handlers only)
+function reqWaiting(){ return REQ.list.filter(r => r.status === 'open' && reqCanHandle(r) && r.reported_by !== reqMe()); }
+function reqUpdateBadge(){
+  const n = reqWaiting().length;
+  const b = document.getElementById('req-nav-badge');
+  if(b){ b.textContent = n > 99 ? '99+' : n; b.style.display = n ? 'flex' : 'none'; }
+  const sub = document.getElementById('hcard-requests-sub');
+  if(sub) sub.textContent = n ? (n + (n === 1 ? ' new request waiting' : ' new requests waiting')) : 'Report it, track it, get it fixed';
+}
+
+// ── List ──
+function reqRenderList(){
+  const listEl = document.getElementById('req-list'), filEl = document.getElementById('req-filters');
+  if(!listEl || !filEl) return;
+  const newBtn = document.getElementById('req-new-btn');
+  if(newBtn) newBtn.style.display = REQ.notReady ? 'none' : '';
+  if(REQ.notReady){ filEl.innerHTML = ''; listEl.innerHTML = reqEmpty('Requests is almost ready', 'It needs a one-time setup step on the database first.'); return; }
+  if(!REQ.ready){ filEl.innerHTML = ''; listEl.innerHTML = `<div style="padding:40px 0;text-align:center;color:#94A3B8;font-size:13px">Loading…</div>`; return; }
+  const handler = reqIsHandler(), me = reqMe();
+  if(!REQ.tab) REQ.tab = handler ? 'all' : 'mine';
+  if(!handler) REQ.tab = 'mine';
+  const mine = r => r.reported_by === me || r.assigned_to === me;
+  let rows = REQ.list.filter(r => REQ.tab === 'mine' ? mine(r) : true);
+  const depts = [...new Set(rows.map(r => r.dept))].sort();
+  if(REQ.dept !== 'all' && !depts.includes(REQ.dept)) REQ.dept = 'all';
+  if(REQ.dept !== 'all') rows = rows.filter(r => r.dept === REQ.dept);
+  const openCount = rows.filter(r => r.status !== 'closed').length, closedCount = rows.length - openCount;
+  rows = rows.filter(r => REQ.status === 'open' ? r.status !== 'closed' : r.status === 'closed');
+  const pr = {urgent:0, normal:1, low:2};
+  if(REQ.status === 'open') rows.sort((a, b) => (pr[a.priority] - pr[b.priority]) || (a.status === b.status ? 0 : a.status === 'open' ? -1 : 1) || String(b.created_at).localeCompare(String(a.created_at)));
+  else rows.sort((a, b) => String(b.closed_at || b.updated_at).localeCompare(String(a.closed_at || a.updated_at)));
+
+  const seg = (items, cur, fn) => `<div class="req-seg">${items.map(([id, label]) => `<button class="${cur === id ? 'on' : ''}" onclick="${fn}('${id}')">${label}</button>`).join('')}</div>`;
+  filEl.innerHTML = `<div class="req-filterbar">
+      ${handler ? seg([['all','All'],['mine','Mine']], REQ.tab, 'reqSetTab') : ''}
+      ${seg([['open','Open' + (openCount ? ' · ' + openCount : '')],['closed','Done' + (closedCount ? ' · ' + closedCount : '')]], REQ.status, 'reqSetStatus')}
+    </div>
+    ${depts.length > 1 ? `<div class="req-chips">${[['all','All departments'], ...depts.map(d => [d, d])].map(([id, label]) => `<button class="${REQ.dept === id ? 'on' : ''}" onclick="reqSetDept(this.dataset.d)" data-d="${reqEsc(id)}">${reqEsc(label)}</button>`).join('')}</div>` : ''}`;
+
+  if(!rows.length){
+    listEl.innerHTML = REQ.status === 'open'
+      ? reqEmpty(REQ.tab === 'mine' ? 'Nothing open' : 'All clear', REQ.tab === 'mine' ? 'Spotted something broken or a job that needs doing? Tap New Request.' : 'No open requests right now.')
+      : reqEmpty('Nothing done yet', 'Finished requests show up here.');
+    return;
+  }
+  listEl.innerHTML = `<div class="req-list">${rows.map(reqCardHtml).join('')}</div>`;
+}
+function reqEmpty(title, sub){
+  return `<div style="text-align:center;padding:56px 16px;color:#94A3B8">
+    <div style="width:56px;height:56px;border-radius:50%;background:#F1F5F9;display:flex;align-items:center;justify-content:center;margin:0 auto 14px"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#94A3B8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94z"/></svg></div>
+    <div style="font-size:15px;font-weight:800;color:#0F1E2E;margin-bottom:4px">${title}</div>
+    <div style="font-size:13px;max-width:320px;margin:0 auto;line-height:1.5">${sub}</div></div>`;
+}
+function reqCardHtml(r){
+  const p = REQ_PRI[r.priority] || REQ_PRI.normal, st = REQ_STATUS[r.status] || REQ_STATUS.open;
+  const where = [r.dept, r.location].filter(Boolean).map(reqEsc).join(' · ');
+  return `<button class="req-card" onclick="reqOpen('${r.id}')" style="border-left-color:${p.color}">
+    <div class="req-card-top">
+      <span class="req-ref">#${r.ref}</span>
+      ${r.priority === 'urgent' ? reqPill(p) : ''}
+      <span style="margin-left:auto">${reqPill(st)}</span>
+    </div>
+    <div class="req-card-title">${reqEsc(r.title)}</div>
+    <div class="req-card-where">${where}</div>
+    <div class="req-card-foot">
+      <span>${reqEsc(reqName(r.reported_by, true))} · ${reqAgo(r.created_at)}</span>
+      ${r.assigned_to ? `<span class="req-who">${reqAvatar(r.assigned_to, 20)}${reqEsc(reqName(r.assigned_to, true))}</span>` : (r.status === 'open' ? '<span style="color:#B45309;font-weight:700">Waiting</span>' : '')}
+    </div>
+  </button>`;
+}
+function reqSetTab(t){ REQ.tab = t; reqRenderList(); }
+function reqSetStatus(s){ REQ.status = s; reqRenderList(); }
+function reqSetDept(d){ REQ.dept = d; reqRenderList(); }
+
+// ── New request / edit ──
+function reqNew(){
+  const depts = reqDeptList();
+  if(!depts.length){ toast('Add your departments in Admin Console first'); return; }
+  const mine = reqMyDepts();
+  const guess = depts.find(d => /maint|engineer/i.test(d)) || depts[0];
+  appModalShow({
+    title: 'New Request',
+    sub: 'Say what needs doing - the department gets notified straight away',
+    fields: [
+      {label:"What's the problem?", placeholder:'e.g. Fridge 2 in the bar is not cooling', maxlength:120},
+      {label:'Where?', placeholder:'e.g. Pool bar, Room 4, Kitchen pass', optional:true, maxlength:80},
+      {label:'Send to', type:'pillpicker', options: depts.map(d => ({id:d, name:d})), value: guess},
+      {label:'How urgent?', type:'pillpicker', options:[{id:'low', name:'Low'}, {id:'normal', name:'Normal'}, {id:'urgent', name:'Urgent'}], value:'normal'},
+      {label:'More detail', type:'textarea', rows:3, optional:true, placeholder:'Anything that helps them fix it…'},
+      {label:'Photo', type:'file', optional:true}
+    ],
+    async onOk([title, location, dept, priority, details, photo]){
+      const row = { title, location: location || null, dept, priority, details: details || null, photo: photo || null, reported_by: reqMe(), company_id: myProfile.company_id };
+      const { data, error } = await sb.from('requests').insert(row).select(REQ_COLS).single();
+      if(error){ toast('Could not send that request: ' + (error.message || 'please try again')); console.warn(error); return; }
+      REQ.list.unshift(data);
+      toast('Request sent to ' + dept);
+      reqNotify(data.id, 'new');
+      reqRenderAll();
+    }
+  });
+}
+function reqEdit(){
+  const r = reqGet(REQ.openId); if(!r) return;
+  const depts = reqDeptList(); if(!depts.includes(r.dept)) depts.push(r.dept);
+  appModalShow({
+    title: 'Edit Request #' + r.ref,
+    fields: [
+      {label:"What's the problem?", value: r.title, maxlength:120},
+      {label:'Where?', value: r.location || '', optional:true, maxlength:80},
+      {label:'Send to', type:'pillpicker', options: depts.map(d => ({id:d, name:d})), value: r.dept},
+      {label:'How urgent?', type:'pillpicker', options:[{id:'low', name:'Low'}, {id:'normal', name:'Normal'}, {id:'urgent', name:'Urgent'}], value: r.priority},
+      {label:'More detail', type:'textarea', rows:3, optional:true, value: r.details || ''}
+    ],
+    async onOk([title, location, dept, priority, details]){
+      const moved = dept !== r.dept;
+      const { error } = await sb.rpc('request_update', { rid:r.id, new_title:title, new_details:details || null, new_location:location || null, new_dept:dept, new_priority:priority });
+      if(error){ toast(error.message || 'Could not save'); return; }
+      Object.assign(r, { title, location, dept, priority, details });
+      toast('Saved');
+      if(moved) reqNotify(r.id, 'new');
+      await reqLoad(); reqLoadNotes(r.id);
+    }
+  });
+}
+
+// ── Detail ──
+function reqGet(id){ return REQ.list.find(r => r.id === id); }
+function reqOpen(id){
+  REQ.openId = id;
+  REQ.photo = null;
+  nav('request');
+  reqRenderDetail();
+  reqLoadNotes(id);
+}
+async function reqLoadNotes(id){
+  const [ns, ph] = await Promise.all([
+    sb.from('request_notes').select('*').eq('request_id', id).order('created_at', {ascending:true}),
+    sb.from('requests').select('id,photo').eq('id', id).maybeSingle()
+  ]);
+  if(ns.data) REQ.notes[id] = ns.data;
+  if(ph.data){ const r = reqGet(id); if(r) r.photo = ph.data.photo; }
+  if(REQ.openId === id) reqRenderDetail();
+}
+function reqEventText(n){
+  const who = reqEsc(reqName(n.author_id, true)), b = n.body || '';
+  if(b === 'accepted') return `${who} accepted this`;
+  if(b === 'closed') return `${who} marked this as done`;
+  if(b === 'reopened') return `${who} reopened this`;
+  if(b.startsWith('assigned:')) return `${who} assigned this to ${reqEsc(reqName(b.slice(9), true))}`;
+  if(b.startsWith('moved:')) return `${who} sent this to ${reqEsc(b.slice(6))}`;
+  return reqEsc(b);
+}
+function reqRenderDetail(){
+  const el = document.getElementById('req-detail'); if(!el) return;
+  const r = reqGet(REQ.openId);
+  const oldInp = document.getElementById('req-note-input');
+  const keep = oldInp ? { v: oldInp.value, focus: document.activeElement === oldInp, rid: oldInp.dataset.rid } : null;
+  const back = `<button class="req-back" onclick="nav('requests')"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>Requests</button>`;
+  if(!r){ el.innerHTML = back + (REQ.ready ? reqEmpty('Request not found', 'It may have been deleted, or it isn\'t shared with you.') : '<div style="padding:40px 0;text-align:center;color:#94A3B8">Loading…</div>'); return; }
+  const me = reqMe(), canHandle = reqCanHandle(r), p = REQ_PRI[r.priority] || REQ_PRI.normal, st = REQ_STATUS[r.status] || REQ_STATUS.open;
+  const btn = (label, fn, kind) => `<button class="req-act ${kind || ''}" onclick="${fn}">${label}</button>`;
+  const acts = [];
+  if(r.status !== 'closed'){
+    if(canHandle && r.assigned_to !== me) acts.push(btn('Accept', 'reqAccept()', 'primary'));
+    if(canHandle) acts.push(btn(r.assigned_to ? 'Reassign' : 'Assign', 'reqAssign()'));
+    if(canHandle || r.assigned_to === me || r.reported_by === me) acts.push(btn('Mark as done', 'reqClose()', r.assigned_to === me ? 'primary' : 'done'));
+  } else if(canHandle || r.reported_by === me) acts.push(btn('Reopen', 'reqReopen()'));
+  const canEdit = canHandle || (r.reported_by === me && r.status === 'open');
+  const canDelete = reqSeeAll() || (r.reported_by === me && r.status === 'open');
+  const notes = REQ.notes[r.id] || [];
+  const thread = notes.map(n => {
+    if(n.kind === 'event') return `<div class="req-ev"><span>${reqEventText(n)} · ${chat2Time(n.created_at)}</span></div>`;
+    const mineN = n.author_id === me;
+    return `<div class="req-note ${mineN ? 'mine' : ''}">
+      ${mineN ? '' : reqAvatar(n.author_id, 26)}
+      <div class="req-bub">
+        ${mineN ? '' : `<div class="req-bub-name">${reqEsc(reqName(n.author_id))}</div>`}
+        ${n.photo ? `<img src="${n.photo}" alt="" onclick="reqZoom('${n.id}')">` : ''}
+        ${n.body ? `<div>${reqEsc(n.body).replace(/\n/g, '<br>')}</div>` : ''}
+        <div class="req-bub-time">${reqDayShort(n.created_at)}</div>
+      </div></div>`;
+  }).join('');
+  el.innerHTML = `${back}
+    <div class="req-detail-card" style="border-top-color:${p.color}">
+      <div class="req-card-top"><span class="req-ref">#${r.ref}</span>${reqPill(p)}<span style="margin-left:auto">${reqPill(st)}</span>
+        ${canEdit || canDelete ? `<button class="req-more" onclick="reqMore(event)" title="More"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="2.2"/><circle cx="12" cy="12" r="2.2"/><circle cx="12" cy="19" r="2.2"/></svg></button>` : ''}
+      </div>
+      <div class="req-detail-title">${reqEsc(r.title)}</div>
+      <div class="req-facts">
+        <div><span>Department</span>${reqEsc(r.dept)}</div>
+        ${r.location ? `<div><span>Where</span>${reqEsc(r.location)}</div>` : ''}
+        <div><span>Reported by</span>${reqEsc(reqName(r.reported_by))} · ${reqAgo(r.created_at)}</div>
+        <div><span>Who's on it</span>${r.assigned_to ? reqEsc(reqName(r.assigned_to)) : '<em style="color:#B45309;font-style:normal;font-weight:700">Nobody yet</em>'}</div>
+      </div>
+      ${r.details ? `<div class="req-details">${reqEsc(r.details).replace(/\n/g, '<br>')}</div>` : ''}
+      ${r.photo ? `<img class="req-main-photo" src="${r.photo}" alt="" onclick="reqZoom('main')">` : ''}
+      ${acts.length ? `<div class="req-acts">${acts.join('')}</div>` : ''}
+    </div>
+    <div class="req-thread-label">Updates</div>
+    <div class="req-thread" id="req-thread">${thread || '<div style="text-align:center;color:#94A3B8;font-size:12.5px;padding:10px 0 4px">No updates yet. Add a note or a photo below.</div>'}</div>
+    <div class="req-composer">
+      <label class="req-cam" title="Add photo"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2Z"/><circle cx="12" cy="13" r="4"/></svg><input type="file" accept="image/*" style="display:none" onchange="reqPickPhoto(this)"></label>
+      <div style="flex:1;min-width:0">
+        <div id="req-photo-preview" style="display:${REQ.photo ? 'flex' : 'none'}">${REQ.photo ? `<img src="${REQ.photo}" alt=""><button onclick="reqClearPhoto()">Remove</button>` : ''}</div>
+        <textarea id="req-note-input" rows="1" placeholder="Add an update…" oninput="this.style.height='auto';this.style.height=Math.min(this.scrollHeight,120)+'px'"></textarea>
+      </div>
+      <button class="req-send" onclick="reqSendNote()" title="Send"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg></button>
+    </div>`;
+  const inp = document.getElementById('req-note-input');
+  if(inp){
+    inp.dataset.rid = r.id;
+    if(keep && keep.rid === r.id && keep.v){ inp.value = keep.v; inp.style.height = Math.min(inp.scrollHeight, 120) + 'px'; }
+    if(keep && keep.rid === r.id && keep.focus) inp.focus({preventScroll:true});
+  }
+}
+function reqDayShort(v){
+  const d = new Date(v), now = new Date();
+  return d.toDateString() === now.toDateString() ? chat2Time(v) : d.toLocaleDateString('en-GB', {day:'numeric', month:'short'}) + ' ' + chat2Time(v);
+}
+function reqZoom(which){
+  const r = reqGet(REQ.openId); if(!r) return;
+  const src = which === 'main' ? r.photo : ((REQ.notes[r.id] || []).find(n => n.id === which) || {}).photo;
+  if(src && typeof recipePhotoZoom === 'function') recipePhotoZoom(src);
+}
+function reqMore(e){
+  e.stopPropagation();
+  const r = reqGet(REQ.openId); if(!r) return;
+  const me = reqMe();
+  const items = [];
+  if(reqCanHandle(r) || (r.reported_by === me && r.status === 'open')) items.push(['Edit request', 'reqEdit()']);
+  if(reqSeeAll() || (r.reported_by === me && r.status === 'open')) items.push(['Delete request', 'reqDelete()', true]);
+  document.getElementById('req-menu')?.remove();
+  const m = document.createElement('div');
+  m.id = 'req-menu';
+  m.innerHTML = items.map(([l, fn, red]) => `<button onclick="document.getElementById('req-menu').remove();${fn}" style="${red ? 'color:#DC2626' : ''}">${l}</button>`).join('');
+  const b = e.currentTarget.getBoundingClientRect();
+  m.style.top = (b.bottom + 6) + 'px'; m.style.right = Math.max(12, window.innerWidth - b.right) + 'px';
+  document.body.appendChild(m);
+  setTimeout(() => document.addEventListener('click', function close(){ m.remove(); document.removeEventListener('click', close); }), 0);
+}
+
+// ── Actions ──
+async function reqRpc(fn, args, okText, event){
+  const { error } = await sb.rpc(fn, args);
+  if(error){ toast(error.message || 'Something went wrong - please try again'); return false; }
+  if(okText) toast(okText);
+  if(event) reqNotify(args.rid, event);
+  await reqLoad(); reqLoadNotes(args.rid);
+  return true;
+}
+function reqAccept(){ reqRpc('request_accept', { rid:REQ.openId }, "You're on it", 'accepted'); }
+function reqClose(){
+  appConfirmShow({ title:'Mark as done?', msg:'This closes the request and lets the person who reported it know.', label:'Mark as done', onOk: () => reqRpc('request_close', { rid:REQ.openId }, 'Marked as done', 'closed') });
+}
+function reqReopen(){ reqRpc('request_reopen', { rid:REQ.openId }, 'Reopened', 'reopened'); }
+function reqDelete(){
+  appConfirmShow({ title:'Delete this request?', msg:'It will be removed for everyone, with all its updates.', label:'Delete', onOk: async () => {
+    const { error } = await sb.rpc('request_delete', { rid:REQ.openId });
+    if(error){ toast(error.message || 'Could not delete'); return; }
+    REQ.list = REQ.list.filter(r => r.id !== REQ.openId);
+    REQ.openId = null;
+    toast('Request deleted');
+    nav('requests');
+  }});
+}
+// Assign: people in that department first, then everyone else who handles requests
+async function reqAssign(){
+  const r = reqGet(REQ.openId); if(!r) return;
+  let ids = [];
+  try{ const { data } = await sb.rpc('req_handler_ids', { d:r.dept }); ids = (data || []).map(x => (x && typeof x === 'object') ? Object.values(x)[0] : x); }catch(e){}
+  const all = Object.values((typeof CH !== 'undefined' && Object.keys(CH.people).length) ? CH.people : REQ.people).filter(p => p.active !== false);
+  const inDept = all.filter(p => Array.isArray(p.departments) && p.departments.includes(r.dept)).map(p => p.id);
+  const pick = [...new Set([...inDept, ...ids])].filter(id => reqPerson(id));
+  if(!pick.length){ toast('Nobody is in ' + r.dept + ' yet - add people to it in Admin Console'); return; }
+  pick.sort((a, b) => reqName(a).localeCompare(reqName(b)));
+  document.getElementById('req-assign')?.remove();
+  const sheet = document.createElement('div');
+  sheet.id = 'req-assign';
+  sheet.innerHTML = `<div class="chat2-sheet-card" onclick="event.stopPropagation()">
+    <div style="padding:16px 18px 8px;display:flex;align-items:center;gap:10px"><div style="font-size:16px;font-weight:800;color:#0F1E2E;flex:1">Who should do this?</div>
+      <button onclick="document.getElementById('req-assign').remove()" style="border:0;background:#F1F5F9;border-radius:50%;width:32px;height:32px;cursor:pointer;font-size:18px;color:#64748B">×</button></div>
+    <div style="overflow:auto;padding:4px 8px 14px">${pick.map(id => {
+      const p = reqPerson(id);
+      return `<button class="chat2-pick" onclick="reqAssignTo('${id}')">${reqAvatar(id, 38)}<div style="flex:1;min-width:0"><div style="font-size:14px;font-weight:700;color:#0F1E2E">${reqEsc(reqName(id))}${id === reqMe() ? ' (you)' : ''}</div><div style="font-size:12px;color:#64748B">${reqEsc([roleName(p.role), (p.departments || []).join(', ')].filter(Boolean).join(' · '))}</div></div>${r.assigned_to === id ? '<span style="font-size:11px;font-weight:800;color:#0D9488">ON IT</span>' : ''}</button>`;
+    }).join('')}</div></div>`;
+  sheet.onclick = () => sheet.remove();
+  document.body.appendChild(sheet);
+}
+function reqAssignTo(pid){
+  document.getElementById('req-assign')?.remove();
+  reqRpc('request_assign', { rid:REQ.openId, person:pid }, 'Assigned to ' + reqName(pid, true), 'assigned');
+}
+async function reqPickPhoto(input){
+  const f = input.files && input.files[0]; input.value = '';
+  if(!f) return;
+  try{ REQ.photo = await appFileToDataUrl(f); }catch(e){ toast("That photo couldn't be used - try another"); return; }
+  const pv = document.getElementById('req-photo-preview');
+  if(pv){ pv.style.display = 'flex'; pv.innerHTML = `<img src="${REQ.photo}" alt=""><button onclick="reqClearPhoto()">Remove</button>`; }
+}
+function reqClearPhoto(){ REQ.photo = null; const pv = document.getElementById('req-photo-preview'); if(pv){ pv.style.display = 'none'; pv.innerHTML = ''; } }
+async function reqSendNote(){
+  const inp = document.getElementById('req-note-input');
+  const body = (inp && inp.value || '').trim();
+  if(!body && !REQ.photo) return;
+  if(REQ.sending) return;
+  REQ.sending = true;
+  const rid = REQ.openId;
+  const { error } = await sb.from('request_notes').insert({ request_id:rid, company_id:myProfile.company_id, author_id:reqMe(), kind:'note', body: body || null, photo: REQ.photo || null });
+  REQ.sending = false;
+  if(error){ toast('Could not send: ' + (error.message || 'please try again')); return; }
+  if(inp){ inp.value = ''; inp.style.height = 'auto'; }
+  REQ.photo = null;
+  reqNotify(rid, 'note');
+  await reqLoadNotes(rid);
+  const t = document.getElementById('req-thread'); if(t) t.lastElementChild?.scrollIntoView({block:'nearest'});
+}
+// Tell the server, so the right people get a phone notification
+async function reqNotify(id, event){
+  try{
+    const { data } = await sb.auth.getSession();
+    const token = data && data.session && data.session.access_token;
+    if(!token) return;
+    const r = await authApi('push', { body:{ request_id:id, event }, token });
+    console.log('[push] request ' + event + ': ' + (r.sent ? 'notified ' + r.sent + ' device(s)' : (r.why || r.reason || 'nobody to notify')), r);
+  }catch(e){}
+}
+function reqOpenFromUrl(){
+  let id = null; try{ id = new URLSearchParams(location.search).get('request'); }catch(e){}
+  if(!id) return;
+  try{ history.replaceState(history.state, '', location.pathname + location.hash); }catch(e){}
+  setTimeout(() => reqOpen(id), 200);
+}
+
+const reqStyle = document.createElement('style');
+reqStyle.textContent = `
+#p-requests,#p-request{max-width:860px}
+.req-filterbar{display:flex;gap:10px;flex-wrap:wrap;margin:4px 0 12px}
+.req-seg{display:inline-flex;background:#F1F5F9;border-radius:12px;padding:3px}
+.req-seg button{border:0;background:none;padding:8px 14px;border-radius:9px;font-family:Inter,sans-serif;font-size:13px;font-weight:700;color:#64748B;cursor:pointer}
+.req-seg button.on{background:white;color:#0F1E2E;box-shadow:0 1px 3px rgba(15,30,46,.12)}
+.req-chips{display:flex;gap:8px;overflow-x:auto;padding-bottom:4px;margin-bottom:14px;scrollbar-width:none}
+.req-chips::-webkit-scrollbar{display:none}
+.req-chips button{flex-shrink:0;border:1.5px solid #E2E8F0;background:white;border-radius:20px;padding:7px 13px;font-family:Inter,sans-serif;font-size:12.5px;font-weight:700;color:#64748B;cursor:pointer}
+.req-chips button.on{border-color:#0F1E2E;background:#0F1E2E;color:white}
+.req-list{display:flex;flex-direction:column;gap:10px}
+.req-card{display:block;width:100%;text-align:left;background:white;border:1px solid #E8ECF1;border-left:4px solid #D97706;border-radius:14px;padding:13px 15px;cursor:pointer;font-family:Inter,sans-serif;transition:box-shadow .15s}
+.req-card:hover{box-shadow:0 4px 16px rgba(15,30,46,.07)}
+.req-card-top{display:flex;align-items:center;gap:8px}
+.req-ref{font-size:11.5px;font-weight:800;color:#94A3B8}
+.req-card-title{font-size:15px;font-weight:700;color:#0F1E2E;margin:6px 0 2px;line-height:1.35}
+.req-card-where{font-size:12.5px;color:#64748B;font-weight:600}
+.req-card-foot{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:10px;font-size:12px;color:#94A3B8}
+.req-who{display:flex;align-items:center;gap:6px;color:#475569;font-weight:700}
+.req-back{display:flex;align-items:center;gap:6px;background:none;border:none;cursor:pointer;font-family:Inter,sans-serif;font-size:13px;font-weight:700;color:#64748B;padding:0;margin-bottom:14px}
+.req-detail-card{background:white;border:1px solid #E8ECF1;border-top:4px solid #D97706;border-radius:16px;padding:16px 18px;position:relative}
+.req-more{border:0;background:#F1F5F9;color:#475569;width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;margin-left:4px}
+.req-detail-title{font-size:20px;font-weight:800;color:#0F1E2E;margin:10px 0 12px;line-height:1.3}
+.req-facts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px 18px;font-size:13.5px;color:#0F1E2E;font-weight:600}
+.req-facts span{display:block;font-size:11px;font-weight:700;color:#94A3B8;text-transform:uppercase;letter-spacing:.5px;margin-bottom:2px}
+.req-details{margin-top:14px;font-size:14px;line-height:1.55;color:#334155;background:#F8FAFC;border-radius:10px;padding:11px 13px}
+.req-main-photo{display:block;margin-top:14px;max-width:100%;max-height:320px;border-radius:12px;cursor:zoom-in;object-fit:cover}
+.req-acts{display:flex;gap:8px;flex-wrap:wrap;margin-top:16px}
+.req-act{flex:1;min-width:110px;padding:11px 14px;border-radius:11px;border:1.5px solid #E2E8F0;background:white;font-family:Inter,sans-serif;font-size:13.5px;font-weight:800;color:#0F1E2E;cursor:pointer}
+.req-act.primary{background:#0D9488;border-color:#0D9488;color:white}
+.req-act.done{border-color:#16A34A;color:#15803D}
+.req-thread-label{font-size:11.5px;font-weight:800;color:#C4973B;text-transform:uppercase;letter-spacing:.6px;margin:22px 0 10px}
+.req-thread{display:flex;flex-direction:column;gap:8px;padding-bottom:12px}
+.req-ev{text-align:center}.req-ev span{display:inline-block;background:#F1F5F9;color:#64748B;font-size:11.5px;font-weight:600;padding:5px 11px;border-radius:10px}
+.req-note{display:flex;align-items:flex-end;gap:8px;max-width:85%}
+.req-note.mine{align-self:flex-end;flex-direction:row-reverse}
+.req-bub{background:white;border:1px solid #E8ECF1;border-radius:14px 14px 14px 4px;padding:8px 11px;font-size:14px;color:#0F1E2E;line-height:1.45;min-width:0;overflow-wrap:anywhere}
+.req-note.mine .req-bub{background:var(--chat-mine,#0F1E2E);border-color:transparent;color:white;border-radius:14px 14px 4px 14px}
+.req-bub-name{font-size:11.5px;font-weight:800;color:#0D9488;margin-bottom:2px}
+.req-bub img{display:block;max-width:240px;max-height:240px;border-radius:9px;margin:2px 0 4px;cursor:zoom-in;object-fit:cover}
+.req-bub-time{font-size:10.5px;opacity:.55;text-align:right;margin-top:2px}
+.req-composer{position:sticky;bottom:0;display:flex;align-items:flex-end;gap:8px;background:var(--bg,#F5F5F3);padding:10px 0 calc(14px + env(safe-area-inset-bottom));margin-top:4px}
+.req-composer textarea{width:100%;box-sizing:border-box;border:1.5px solid #E2E8F0;border-radius:22px;padding:10px 15px;font-family:Inter,sans-serif;font-size:16px;line-height:1.4;resize:none;outline:none;background:white;display:block;overflow-y:auto;max-height:120px}
+.req-composer textarea:focus{border-color:#0D9488}
+.req-cam{width:42px;height:42px;border-radius:50%;background:white;border:1.5px solid #E2E8F0;color:#475569;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0}
+.req-send{width:42px;height:42px;border-radius:50%;background:#0D9488;border:0;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0}
+#req-photo-preview{align-items:center;gap:10px;margin-bottom:8px}
+#req-photo-preview img{width:56px;height:56px;border-radius:9px;object-fit:cover}
+#req-photo-preview button{border:0;background:none;color:#DC2626;font-family:Inter,sans-serif;font-size:12.5px;font-weight:700;cursor:pointer}
+#req-menu{position:fixed;z-index:10050;background:white;border-radius:12px;box-shadow:0 10px 30px rgba(15,30,46,.2);padding:6px;min-width:170px}
+#req-menu button{display:block;width:100%;text-align:left;border:0;background:none;padding:10px 12px;border-radius:8px;font-family:Inter,sans-serif;font-size:13.5px;font-weight:700;color:#0F1E2E;cursor:pointer}
+#req-menu button:hover{background:#F1F5F9}
+#req-assign{position:fixed;inset:0;z-index:10040;background:rgba(15,30,46,.48);display:flex;align-items:center;justify-content:center;padding:18px}
+@media(max-width:600px){#req-assign{padding:0;align-items:flex-end}#req-assign .chat2-sheet-card{width:100%;max-height:85vh;border-radius:16px 16px 0 0}
+  .req-facts{grid-template-columns:1fr 1fr}.req-detail-title{font-size:18px}.req-note{max-width:92%}}
+`;
+document.head.appendChild(reqStyle);
+</script>
 </body>
 </html>
 <!-- deploy trigger check 2026-08-04T06:28:40Z -->

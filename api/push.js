@@ -77,7 +77,7 @@ async function requestPush(me, b, res){
     if (!r.assigned_to && (ev === 'note' || ev === 'reopened')) to = to.concat(await requestHandlers(r.company_id, r.dept));
   }
   to = [...new Set(to.map(String))].filter(id => id !== String(me.id));
-  if (!to.length) { await log('#' + r.ref + ' ' + ev + ': no one else to tell'); return L.send(res, 200, { ok: true, sent: 0, why: 'no one else to tell' }); }
+  if (!to.length) { return L.send(res, 200, { ok: true, sent: 0, why: 'no one else to tell' }); }
 
   const list = to.map(encodeURIComponent).join(',');
   const [prefs, subs] = await Promise.all([
@@ -113,7 +113,7 @@ async function requestPush(me, b, res){
       skipped.push('error ' + (e.statusCode || e.message));
     }
   }));
-  await log('#' + r.ref + ' ' + ev + ': sent to ' + sent + ' of ' + subs.length + ' device(s) for ' + to.length + ' person(s)' + (skipped.length ? ' - skipped: ' + skipped.join(', ') : ''));
+  if (sent < subs.length) await log('#' + r.ref + ' ' + ev + ': sent to ' + sent + ' of ' + subs.length + ' device(s) for ' + to.length + ' person(s)' + (skipped.length ? ' - skipped: ' + skipped.join(', ') : ''));
   return L.send(res, 200, { ok: true, sent, people: to.length, devices: subs.length, skipped });
 }
 
@@ -189,8 +189,8 @@ module.exports = async (req, res) => {
         skipped.push('error ' + (e.statusCode || e.message));
       }
     }));
-    // Record what happened, so missed notifications can be checked on the Owner page (Health)
-    await note(me, 'in ' + (groupName || 'a direct chat') + ': sent to ' + sent + ' of ' + subs.length + ' device(s) for ' + others.length + ' other person(s)' + (skipped.length ? ' - skipped: ' + skipped.join(', ') : '') + (subs.length ? '' : ' - nobody has notifications turned on'));
+    // Record problems only (not every message that went through fine), so the Owner page (Health) shows what needs a look
+    if (sent < subs.length || !subs.length) await note(me, 'in ' + (groupName || 'a direct chat') + ': sent to ' + sent + ' of ' + subs.length + ' device(s) for ' + others.length + ' other person(s)' + (skipped.length ? ' - skipped: ' + skipped.join(', ') : '') + (subs.length ? '' : ' - nobody has notifications turned on'));
     return L.send(res, 200, { ok: true, sent, people: others.length, devices: subs.length, skipped });
   } catch (e) {
     console.error('push error', e.message);

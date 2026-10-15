@@ -24043,7 +24043,8 @@ const REQ_PRI = { urgent:{name:'Urgent', color:'#DC2626', bg:'#FEE2E2'}, normal:
 const REQ_STATUS = { open:{name:'New', color:'#B45309', bg:'#FEF3C7'}, progress:{name:'In progress', color:'#1D4ED8', bg:'#DBEAFE'}, closed:{name:'Done', color:'#15803D', bg:'#DCFCE7'} };
 
 function reqEsc(v){ return String(v == null ? '' : v).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
-function reqMe(){ return myProfile ? myProfile.id : null; }
+function reqMe(){ return myProfile ? myProfile.id : 'demo-me'; }
+function reqCo(){ return myProfile ? myProfile.company_id : 'demo'; }
 function reqPerson(pid){ return (typeof CH !== 'undefined' && CH.people[pid]) || REQ.people[pid] || null; }
 function reqName(pid, short){
   const p = reqPerson(pid);
@@ -24058,7 +24059,7 @@ function reqAvatar(pid, size){
   const col = (typeof chat2RoleColor === 'function') ? chat2RoleColor(p && p.role) : '#0D9488';
   return `<div style="width:${s}px;height:${s}px;border-radius:50%;background:${col};color:white;display:flex;align-items:center;justify-content:center;font-size:${Math.round(s*.36)}px;font-weight:800;flex-shrink:0">${ini}</div>`;
 }
-function reqMyDepts(){ return Array.isArray(myProfile && myProfile.departments) ? myProfile.departments : []; }
+function reqMyDepts(){ return myProfile ? (Array.isArray(myProfile.departments) ? myProfile.departments : []) : ['Engineering']; }
 function reqSeeAll(){ return roleCan('requestsall'); }
 function reqIsHandler(){ return reqSeeAll() || roleCan('requestsmanage'); }
 function reqCanHandle(r){ return !!r && (reqSeeAll() || (roleCan('requestsmanage') && reqMyDepts().includes(r.dept))); }
@@ -24077,7 +24078,8 @@ function reqPill(o){ return `<span style="font-size:10.5px;font-weight:800;lette
 
 // ── Loading + live updates ──
 async function reqStart(force){
-  if(!myProfile || typeof sb === 'undefined') return;
+  if(!myProfile){ reqDemoSetup(); return; }
+  if(typeof sb === 'undefined') return;
   if(REQ.started && !force) return reqLoad();
   REQ.started = true;
   await reqLoad();
@@ -24086,11 +24088,11 @@ async function reqStart(force){
   reqOpenFromUrl();
 }
 async function reqLoad(){
-  if(!myProfile || typeof sb === 'undefined') return;
+  if(!REQ.demo && (!myProfile || typeof sb === 'undefined')) return;
   const needPeople = !(typeof CH !== 'undefined' && Object.keys(CH.people).length) && !Object.keys(REQ.people).length;
   const [rq, pp] = await Promise.all([
-    sb.from('requests').select(REQ_COLS).order('created_at', {ascending:false}).limit(500),
-    needPeople ? sb.from('profiles').select('id,first_name,last_name,role,photo,departments,active').eq('company_id', myProfile.company_id) : Promise.resolve({data:null})
+    reqDb().from('requests').select(REQ_COLS).order('created_at', {ascending:false}).limit(500),
+    needPeople ? reqDb().from('profiles').select('id,first_name,last_name,role,photo,departments,active').eq('company_id', reqCo()) : Promise.resolve({data:null})
   ]);
   if(rq.error){ REQ.notReady = true; console.warn('Requests not set up yet', rq.error); reqRenderAll(); return; }
   REQ.notReady = false;
@@ -24102,6 +24104,7 @@ async function reqLoad(){
 function reqSoon(){ clearTimeout(REQ.timer); REQ.timer = setTimeout(async () => { await reqLoad(); if(REQ.openId) reqLoadNotes(REQ.openId); }, 350); }
 function reqSubscribe(){
   if(REQ.channel) return;
+  if(REQ.demo) return;
   REQ.channel = sb.channel('requests-' + reqMe())
     .on('postgres_changes', {event:'*', schema:'public', table:'requests'}, () => reqSoon())
     .on('postgres_changes', {event:'*', schema:'public', table:'request_notes'}, p => { if(p.new && p.new.request_id === REQ.openId) reqSoon(); else reqSoon(); })
@@ -24212,8 +24215,8 @@ function reqNew(){
       {label:'Photo', type:'file', optional:true}
     ],
     async onOk([title, location, dept, priority, details, photo]){
-      const row = { title, location: location || null, dept, priority, details: details || null, photo: photo || null, reported_by: reqMe(), company_id: myProfile.company_id };
-      const { data, error } = await sb.from('requests').insert(row).select(REQ_COLS).single();
+      const row = { title, location: location || null, dept, priority, details: details || null, photo: photo || null, reported_by: reqMe(), company_id: reqCo() };
+      const { data, error } = await reqDb().from('requests').insert(row).select(REQ_COLS).single();
       if(error){ toast('Could not send that request: ' + (error.message || 'please try again')); console.warn(error); return; }
       REQ.list.unshift(data);
       toast('Request sent to ' + dept);
@@ -24236,7 +24239,7 @@ function reqEdit(){
     ],
     async onOk([title, location, dept, priority, details]){
       const moved = dept !== r.dept;
-      const { error } = await sb.rpc('request_update', { rid:r.id, new_title:title, new_details:details || null, new_location:location || null, new_dept:dept, new_priority:priority });
+      const { error } = await reqDb().rpc('request_update', { rid:r.id, new_title:title, new_details:details || null, new_location:location || null, new_dept:dept, new_priority:priority });
       if(error){ toast(error.message || 'Could not save'); return; }
       Object.assign(r, { title, location, dept, priority, details });
       toast('Saved');
@@ -24257,8 +24260,8 @@ function reqOpen(id){
 }
 async function reqLoadNotes(id){
   const [ns, ph] = await Promise.all([
-    sb.from('request_notes').select('*').eq('request_id', id).order('created_at', {ascending:true}),
-    sb.from('requests').select('id,photo').eq('id', id).maybeSingle()
+    reqDb().from('request_notes').select('*').eq('request_id', id).order('created_at', {ascending:true}),
+    reqDb().from('requests').select('id,photo').eq('id', id).maybeSingle()
   ]);
   if(ns.data) REQ.notes[id] = ns.data;
   if(ph.data){ const r = reqGet(id); if(r) r.photo = ph.data.photo; }
@@ -24364,7 +24367,7 @@ function reqMore(e){
 
 // ── Actions ──
 async function reqRpc(fn, args, okText, event){
-  const { error } = await sb.rpc(fn, args);
+  const { error } = await reqDb().rpc(fn, args);
   if(error){ toast(error.message || 'Something went wrong - please try again'); return false; }
   if(okText) toast(okText);
   if(event) reqNotify(args.rid, event);
@@ -24378,7 +24381,7 @@ function reqClose(){
 function reqReopen(){ reqRpc('request_reopen', { rid:REQ.openId }, 'Reopened', 'reopened'); }
 function reqDelete(){
   appConfirmShow({ title:'Delete this request?', msg:'It will be removed for everyone, with all its updates.', label:'Delete', onOk: async () => {
-    const { error } = await sb.rpc('request_delete', { rid:REQ.openId });
+    const { error } = await reqDb().rpc('request_delete', { rid:REQ.openId });
     if(error){ toast(error.message || 'Could not delete'); return; }
     REQ.list = REQ.list.filter(r => r.id !== REQ.openId);
     REQ.openId = null;
@@ -24390,7 +24393,7 @@ function reqDelete(){
 async function reqAssign(){
   const r = reqGet(REQ.openId); if(!r) return;
   let ids = [];
-  try{ const { data } = await sb.rpc('req_handler_ids', { d:r.dept }); ids = (data || []).map(x => (x && typeof x === 'object') ? Object.values(x)[0] : x); }catch(e){}
+  try{ const { data } = await reqDb().rpc('req_handler_ids', { d:r.dept }); ids = (data || []).map(x => (x && typeof x === 'object') ? Object.values(x)[0] : x); }catch(e){}
   const all = Object.values((typeof CH !== 'undefined' && Object.keys(CH.people).length) ? CH.people : REQ.people).filter(p => p.active !== false);
   const inDept = all.filter(p => Array.isArray(p.departments) && p.departments.includes(r.dept)).map(p => p.id);
   const pick = [...new Set([...inDept, ...ids])].filter(id => reqPerson(id));
@@ -24428,7 +24431,7 @@ async function reqSendNote(){
   if(REQ.sending) return;
   REQ.sending = true;
   const rid = REQ.openId;
-  const { error } = await sb.from('request_notes').insert({ request_id:rid, company_id:myProfile.company_id, author_id:reqMe(), kind:'note', body: body || null, photo: REQ.photo || null });
+  const { error } = await reqDb().from('request_notes').insert({ request_id:rid, company_id:reqCo(), author_id:reqMe(), kind:'note', body: body || null, photo: REQ.photo || null });
   REQ.sending = false;
   if(error){ toast('Could not send: ' + (error.message || 'please try again')); return; }
   if(inp){ inp.value = ''; inp.style.height = 'auto'; }
@@ -24440,6 +24443,7 @@ async function reqSendNote(){
 // Tell the server, so the right people get a phone notification
 async function reqNotify(id, event){
   try{
+    if(REQ.demo) return;
     const { data } = await sb.auth.getSession();
     const token = data && data.session && data.session.access_token;
     if(!token) return;
@@ -24454,6 +24458,65 @@ function reqOpenFromUrl(){
   setTimeout(() => reqOpen(id), 200);
 }
 
+
+// ── Demo mode (not signed in): sample requests kept on this screen only, so the page can be shown ──
+function reqDb(){ return REQ.demo ? REQ_DEMO_DB : sb; }
+const REQ_DEMO = { requests:[], request_notes:[] };
+function reqDemoSetup(){
+  if(REQ.demo) return;
+  REQ.demo = true;
+  const ago = m => new Date(Date.now() - m * 60000).toISOString();
+  [['demo-me','You',''],['d1','Wayan','Putra'],['d2','Ayu','Sari'],['d3','Made','Wirawan'],['d4','Kadek','Dewi']].forEach(([id, f, l], i) => {
+    REQ.people[id] = { id, first_name:f, last_name:l, role:['superadmin','teammember','manager','supervisor','teammember'][i], departments:[['Engineering'],['Bar'],['Operations'],['Engineering'],['Housekeeping']][i], active:true };
+  });
+  REQ_DEMO.requests = [
+    {id:'q1', ref:14, title:'Fridge 2 in the bar is not cooling', details:'Started this morning, drinks are warm', location:'Pool bar', dept:'Engineering', priority:'urgent', status:'open', reported_by:'d1', assigned_to:null, created_at:ago(35), updated_at:ago(35)},
+    {id:'q2', ref:13, title:'Sun lounger cushion torn', location:'Beach row B', dept:'Housekeeping', priority:'low', status:'progress', reported_by:'d2', assigned_to:'d4', created_at:ago(60*26), updated_at:ago(60*3)},
+    {id:'q3', ref:12, title:'Flickering light above reception', location:'Lobby', dept:'Engineering', priority:'normal', status:'progress', reported_by:'d2', assigned_to:'d3', created_at:ago(60*5), updated_at:ago(60*2)},
+    {id:'q4', ref:10, title:'Toilet blocked in staff room', location:'Back of house', dept:'Engineering', priority:'normal', status:'closed', reported_by:'d4', assigned_to:'d3', created_at:ago(60*50), updated_at:ago(60*30), closed_at:ago(60*30)}
+  ];
+  REQ_DEMO.request_notes = [
+    {id:'n1', request_id:'q3', author_id:'d3', kind:'event', body:'accepted', created_at:ago(60*4)},
+    {id:'n2', request_id:'q3', author_id:'d3', kind:'note', body:'Needs a new tube, ordered - here tomorrow', created_at:ago(60*2)},
+    {id:'n3', request_id:'q4', author_id:'d3', kind:'event', body:'accepted', created_at:ago(60*40)},
+    {id:'n4', request_id:'q4', author_id:'d3', kind:'event', body:'closed', created_at:ago(60*30)}
+  ];
+  reqLoad();
+}
+const REQ_DEMO_DB = {
+  from(table){
+    const filters = []; let insertRow = null, single = false;
+    const api = {
+      select(){ return api; }, order(){ return api; }, limit(){ return api; },
+      eq(k, v){ filters.push(r => r[k] === v); return api; },
+      single(){ single = true; return api; }, maybeSingle(){ single = true; return api; },
+      insert(r){ insertRow = Object.assign({ id:'x' + Date.now(), created_at:new Date().toISOString(), updated_at:new Date().toISOString() }, r);
+        if(table === 'requests'){ insertRow.ref = 1 + Math.max(0, ...REQ_DEMO.requests.map(x => x.ref)); insertRow.status = 'open'; insertRow.assigned_to = null; REQ_DEMO.requests.unshift(insertRow); }
+        else REQ_DEMO[table].push(insertRow);
+        return api; },
+      then(ok){
+        let data = insertRow ? Object.assign({}, insertRow) : (REQ_DEMO[table] || []).filter(r => filters.every(f => f(r))).map(r => Object.assign({}, r));
+        if(single && Array.isArray(data)) data = data[0] || null;
+        return Promise.resolve({ data, error:null }).then(ok);
+      }
+    };
+    return api;
+  },
+  rpc(fn, a){
+    const r = REQ_DEMO.requests.find(x => x.id === a.rid);
+    const ev = body => REQ_DEMO.request_notes.push({ id:'e' + Date.now(), request_id:a.rid, author_id:'demo-me', kind:'event', body, created_at:new Date().toISOString() });
+    if(fn === 'req_handler_ids') return Promise.resolve({ data:['demo-me','d3'], error:null });
+    if(!r) return Promise.resolve({ data:null, error:{ message:'Not found' } });
+    if(fn === 'request_accept'){ Object.assign(r, { status:'progress', assigned_to:'demo-me' }); ev('accepted'); }
+    if(fn === 'request_assign'){ Object.assign(r, { status:'progress', assigned_to:a.person }); ev('assigned:' + a.person); }
+    if(fn === 'request_close'){ Object.assign(r, { status:'closed', closed_at:new Date().toISOString() }); ev('closed'); }
+    if(fn === 'request_reopen'){ Object.assign(r, { status:r.assigned_to ? 'progress' : 'open', closed_at:null }); ev('reopened'); }
+    if(fn === 'request_update'){ if(a.new_dept !== r.dept) ev('moved:' + a.new_dept); Object.assign(r, { title:a.new_title, details:a.new_details, location:a.new_location, dept:a.new_dept, priority:a.new_priority }); }
+    if(fn === 'request_delete'){ REQ_DEMO.requests = REQ_DEMO.requests.filter(x => x.id !== a.rid); }
+    r.updated_at = new Date().toISOString();
+    return Promise.resolve({ data:null, error:null });
+  }
+};
 const reqStyle = document.createElement('style');
 reqStyle.textContent = `
 #p-requests,#p-request{max-width:860px}

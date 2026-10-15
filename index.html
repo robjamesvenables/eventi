@@ -306,6 +306,9 @@ body{margin:0;padding:0;font-family:'Inter',sans-serif;background:var(--bg);colo
 @media (max-width:700px){
   .an-yoy-inner{min-width:820px}
 }
+@media (max-width:1000px){
+  .an-compare-4{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+}
 @media (max-width:480px){
   .an-top-strip{grid-template-columns:1fr;gap:10px}
   .an-top-box{padding:14px 16px}
@@ -3549,7 +3552,11 @@ img.emoji-tw{width:1.15em;height:1.15em;vertical-align:-0.2em;margin:0 1px}
             <div class="an-top-label" style="color:#94A3B8;font-size:14px">Yesterday</div>
             <div id="an-rev-yesterday-val" class="an-top-val an-top-val-hero" style="color:white">—</div>
           </div>
-          <div style="display:flex;gap:36px;padding-top:20px;border-top:1px solid rgba(255,255,255,0.14)">
+          <div style="display:flex;gap:24px;flex-wrap:wrap;padding-top:20px;border-top:1px solid rgba(255,255,255,0.14)">
+            <div>
+              <div style="font-size:12px;font-weight:700;color:rgba(255,255,255,0.55);margin-bottom:4px">Week to Date</div>
+              <div id="an-rev-wtd-val" style="font-size:19px;font-weight:800;color:white">—</div>
+            </div>
             <div>
               <div style="font-size:12px;font-weight:700;color:rgba(255,255,255,0.55);margin-bottom:4px">Month to Date</div>
               <div id="an-rev-mtd-val" style="font-size:19px;font-weight:800;color:white">—</div>
@@ -3592,11 +3599,16 @@ img.emoji-tw{width:1.15em;height:1.15em;vertical-align:-0.2em;margin:0 1px}
       </div>
 
       <div style="font-size:11.5px;font-weight:700;color:#94A3B8;text-transform:uppercase;letter-spacing:0.6px;margin:0 0 12px">vs Last Year</div>
-      <div class="an-compare-strip" style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;margin-bottom:36px">
+      <div class="an-compare-strip an-compare-4" style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;margin-bottom:36px">
         <div style="background:white;border:1px solid var(--line);border-radius:14px;padding:16px 18px">
           <div style="font-size:12px;font-weight:700;color:#64748B;margin-bottom:6px">Yesterday</div>
           <div id="an-rev-yest-yoy-val" style="font-size:20px;font-weight:800;color:#0F1E2E">—</div>
           <div id="an-rev-yest-yoy-sub" style="font-size:11px;color:#94A3B8;margin-top:4px"></div>
+        </div>
+        <div style="background:white;border:1px solid var(--line);border-radius:14px;padding:16px 18px">
+          <div style="font-size:12px;font-weight:700;color:#64748B;margin-bottom:6px">Week to Date <span id="an-rev-wtd-yoy-days" style="font-weight:600;color:#94A3B8"></span></div>
+          <div id="an-rev-wtd-yoy-val" style="font-size:20px;font-weight:800;color:#0F1E2E">—</div>
+          <div id="an-rev-wtd-yoy-sub" style="font-size:11px;color:#94A3B8;margin-top:4px"></div>
         </div>
         <div style="background:white;border:1px solid var(--line);border-radius:14px;padding:16px 18px">
           <div style="font-size:12px;font-weight:700;color:#64748B;margin-bottom:6px">Month to Date</div>
@@ -3623,14 +3635,15 @@ img.emoji-tw{width:1.15em;height:1.15em;vertical-align:-0.2em;margin:0 1px}
 
       <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px;margin-bottom:36px">
         <div style="background:#0F1E2E;border-radius:14px;padding:16px 18px">
-          <div style="font-size:12px;font-weight:700;color:#94A3B8;margin-bottom:2px">Guests this week</div>
+          <div style="font-size:12px;font-weight:700;color:#94A3B8;margin-bottom:2px">Guests week to date</div>
           <div id="an-covers-week-val" style="font-size:26px;font-weight:800;color:white">—</div>
-          <div id="an-covers-week-delta" style="margin-top:4px"></div>
+          <div id="an-covers-week-delta" style="margin-top:4px;display:flex;flex-direction:column;gap:3px"></div>
         </div>
         <div style="background:white;border:1px solid var(--line);border-radius:14px;padding:16px 18px">
           <div style="font-size:12px;font-weight:700;color:#64748B;margin-bottom:2px">Avg spend / guest</div>
           <div id="an-avgspend-val" style="font-size:20px;font-weight:800;color:#0F1E2E">—</div>
-          <div style="font-size:11px;color:#94A3B8;margin-top:4px">this week</div>
+          <div style="font-size:11px;color:#94A3B8;margin-top:4px">week to date</div>
+          <div id="an-avgspend-delta" style="margin-top:6px;display:flex;flex-direction:column;gap:3px"></div>
         </div>
       </div>
 
@@ -19354,12 +19367,32 @@ function analyticsRender(){
   const revYesterdayLastMonth = bmSum('revenue', lastMonthSameWeekday, lastMonthSameWeekday);
   const revMTDLastMonth = bmSum('revenue', lastMonthStart, lastMonthSameDay);
 
-  // Covers
-  const coversWeek = bmSum('covers_served', weekStart, yesterday);
-  const coversPrevWeek = bmSum('covers_served', prevWeekStart, prevWeekEnd);
+  // Week to Date - Monday of this week up to yesterday (on a Monday, that's the whole of last week).
+  // Compared with the same weekdays last week, and the same weekdays 52 weeks ago (364 days, so
+  // Monday is always matched with a Monday) - how managers compare "this week vs last year".
+  const DAY = 24*60*60*1000;
+  const wtdDays = (yesterdayDate.getDay() + 6) % 7;          // 0 = yesterday was Monday
+  const wtdStartDate = new Date(yesterdayDate.getTime() - wtdDays*DAY);
+  const wtdStart = bmDateStr(wtdStartDate);
+  const wtdLastWeekStart = bmDateStr(new Date(wtdStartDate.getTime() - 7*DAY));
+  const wtdLastWeekEnd = bmDateStr(new Date(yesterdayDate.getTime() - 7*DAY));
+  const wtdLastYearStart = bmDateStr(new Date(wtdStartDate.getTime() - 364*DAY));
+  const wtdLastYearEnd = lastYearSameDay;
+  const revWTD = bmSum('revenue', wtdStart, yesterday);
+  const revWTDLastWeek = bmSum('revenue', wtdLastWeekStart, wtdLastWeekEnd);
+  const revWTDLastYear = bmSum('revenue', wtdLastYearStart, wtdLastYearEnd);
+  const dayName = d => d.toLocaleDateString('en-GB', { weekday:'short' });
+  const wtdLabel = wtdDays ? `(${dayName(wtdStartDate)}–${dayName(yesterdayDate)})` : `(${dayName(wtdStartDate)})`;
 
-  // Avg spend per guest (this week revenue / this week covers)
-  const avgSpend = coversWeek ? revWeek / coversWeek : null;
+  // Covers - week to date, same comparisons
+  const coversWeek = bmSum('covers_served', wtdStart, yesterday);
+  const coversPrevWeek = bmSum('covers_served', wtdLastWeekStart, wtdLastWeekEnd);
+  const coversWeekLastYear = bmSum('covers_served', wtdLastYearStart, wtdLastYearEnd);
+
+  // Avg spend per guest (week to date revenue / week to date covers)
+  const avgSpend = coversWeek ? revWTD / coversWeek : null;
+  const avgSpendLastWeek = coversPrevWeek ? revWTDLastWeek / coversPrevWeek : null;
+  const avgSpendLastYear = coversWeekLastYear ? revWTDLastYear / coversWeekLastYear : null;
 
   // Department spend, this month vs last month
   const depts = ['Operations','Marketing','Finance','Audio Visual','Kitchen','Front of House'];
@@ -19376,6 +19409,8 @@ function analyticsRender(){
   if(revMtdEl) revMtdEl.textContent = revMTD ? bmMoney(revMTD) : '—';
   const revYtdEl = document.getElementById('an-rev-ytd-val');
   if(revYtdEl) revYtdEl.textContent = revYTD ? bmMoney(revYTD) : '—';
+  const revWtdEl = document.getElementById('an-rev-wtd-val');
+  if(revWtdEl) revWtdEl.textContent = revWTD ? bmMoney(revWTD) : '—';
   [revYesterdayEl, revMtdEl, revYtdEl].forEach(anFitTextToBox);
 
   // vs Last Year / vs Last Month strips - blank until there's real prior data to compare against.
@@ -19394,6 +19429,9 @@ function analyticsRender(){
     subEl.textContent = bmMoney(curr) + ' vs ' + bmMoney(prior) + ' ' + label;
   }
   setYoyBox(document.getElementById('an-rev-yest-yoy-val'), document.getElementById('an-rev-yest-yoy-sub'), revYesterday, revYesterdayLastYear);
+  setYoyBox(document.getElementById('an-rev-wtd-yoy-val'), document.getElementById('an-rev-wtd-yoy-sub'), revWTD, revWTDLastYear, 'same days last year');
+  const wtdDaysEl = document.getElementById('an-rev-wtd-yoy-days');
+  if(wtdDaysEl) wtdDaysEl.textContent = wtdLabel;
   setYoyBox(document.getElementById('an-rev-mtd-yoy-val'), document.getElementById('an-rev-mtd-yoy-sub'), revMTD, revMTDLastYear);
   setYoyBox(document.getElementById('an-rev-ytd-yoy-val'), document.getElementById('an-rev-ytd-yoy-sub'), revYTD, revYTDLastYear);
   setYoyBox(document.getElementById('an-rev-yest-mom-val'), document.getElementById('an-rev-yest-mom-sub'), revYesterday, revYesterdayLastMonth, 'last month');
@@ -19409,7 +19447,20 @@ function analyticsRender(){
   const avgSpendValEl = document.getElementById('an-avgspend-val');
   if(avgSpendValEl) avgSpendValEl.textContent = avgSpend ? bmMoney(avgSpend) : '—';
   const coversWeekValEl = document.getElementById('an-covers-week-val');
-  if(coversWeekValEl) setDeltaBox(coversWeekValEl, document.getElementById('an-covers-week-delta'), coversWeek, coversPrevWeek, 'vs last week', v => Math.round(v).toLocaleString('en-US'));
+  // Two comparison lines under a figure: vs last week, and vs the same days last year
+  function setTwoDeltas(el, value, lastWeek, lastYear, onDark){
+    if(!el) return;
+    const cap = onDark ? '#94A3B8' : '#94A3B8';
+    el.innerHTML = [[lastWeek, 'vs last week'], [lastYear, 'vs last year']].map(([prior, txt]) => {
+      const d = value ? bmDeltaHtml(bmDelta(value, prior)) : '';
+      return d ? `<div>${d} <span style="font-size:11px;color:${cap}">${txt}</span></div>` : '';
+    }).join('');
+  }
+  if(coversWeekValEl){
+    coversWeekValEl.textContent = coversWeek ? Math.round(coversWeek).toLocaleString('en-US') : '—';
+    setTwoDeltas(document.getElementById('an-covers-week-delta'), coversWeek, coversPrevWeek, coversWeekLastYear, true);
+  }
+  setTwoDeltas(document.getElementById('an-avgspend-delta'), avgSpend, avgSpendLastWeek, avgSpendLastYear);
 
   // Revenue by month - this year vs last year (the hero chart)
   function bmMonthlyRevenue(year){

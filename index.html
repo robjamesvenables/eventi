@@ -5471,8 +5471,13 @@ function initHome(){
     window._skyInterval = setInterval(updateSkyBanner, 60000);
   }
 
-  newsWeatherLoadWeather();
+  if(!window._weatherLoadedAt || Date.now() - window._weatherLoadedAt > 20*60000) newsWeatherLoadWeather();
   newsWeatherLoadNews();
+  if(!window._weatherInterval){
+    window._weatherInterval = setInterval(function(){
+      if(document.visibilityState === 'visible' && document.getElementById('p-home')?.classList.contains('on')) newsWeatherLoadWeather();
+    }, 30*60000);
+  }
 }
 
 // ── INDUSTRY NEWS & WEATHER (Home Dashboard widget) ──
@@ -5498,11 +5503,15 @@ async function newsWeatherLoadWeather(){
   const el = document.getElementById('newsweather-weather');
   if(!el) return;
   try{
-    const results = await Promise.all(NEWSWEATHER_LOCATIONS.map(async function(loc){
+    // Each city on its own, so one slow or failed city doesn't blank out the others
+    const settled = await Promise.allSettled(NEWSWEATHER_LOCATIONS.map(async function(loc){
       const res = await fetch('https://api.open-meteo.com/v1/forecast?latitude='+loc.lat+'&longitude='+loc.lon+'&current_weather=true');
       const data = await res.json();
       return { name: loc.name, temp: Math.round(data.current_weather.temperature), label: newsWeatherCodeLabel(data.current_weather.weathercode) };
     }));
+    const results = settled.map(function(x, i){ return x.status === 'fulfilled' ? x.value : { name: NEWSWEATHER_LOCATIONS[i].name, temp: '–', label: 'Unavailable' }; });
+    if(settled.every(function(x){ return x.status !== 'fulfilled'; })) throw new Error('no weather');
+    window._weatherLoadedAt = Date.now();
     el.innerHTML = results.map(function(r){
       return '<div style="flex:1;text-align:center;padding:6px 4px;background:#F8FAFC;border-radius:8px">'+
         '<div style="font-size:10.5px;font-weight:700;color:#64748B;text-transform:uppercase;letter-spacing:0.3px">'+r.name+'</div>'+
@@ -5558,10 +5567,14 @@ async function newsWeatherLoadNews(){
     }
     picked.sort(function(a,b){ return new Date(b.pub_date) - new Date(a.pub_date); });
 
+    // Headlines come from outside websites - show them as plain text, and only open real web links
+    const esc = function(v){ return String(v == null ? '' : v).replace(/[&<>"']/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); };
+    const plain = function(v){ const d = document.createElement('div'); d.innerHTML = String(v || '').replace(/<[^>]*>/g, ''); return d.textContent; };
     el.innerHTML = picked.map(function(item){
-      return '<a href="'+item.link+'" target="_blank" rel="noopener" style="display:block;padding:10px 14px;border-bottom:1px solid #F1F5F9;text-decoration:none;color:inherit">'+
-        '<div style="font-size:9.5px;font-weight:700;color:#0D9488;text-transform:uppercase;letter-spacing:0.4px;margin-bottom:3px">'+item.source+'</div>'+
-        '<div style="font-size:12.5px;font-weight:700;color:#0F1E2E;line-height:1.35">'+item.title+'</div>'+
+      const link = /^https?:\/\//i.test(item.link || '') ? item.link : '#';
+      return '<a href="'+esc(link)+'" target="_blank" rel="noopener" style="display:block;padding:10px 14px;border-bottom:1px solid #F1F5F9;text-decoration:none;color:inherit">'+
+        '<div style="font-size:9.5px;font-weight:700;color:#0D9488;text-transform:uppercase;letter-spacing:0.4px;margin-bottom:3px">'+esc(item.source)+'</div>'+
+        '<div style="font-size:12.5px;font-weight:700;color:#0F1E2E;line-height:1.35">'+esc(plain(item.title))+'</div>'+
         '<div style="font-size:10.5px;color:#94A3B8;margin-top:3px">'+newsWeatherTimeAgo(item.pub_date)+'</div>'+
       '</a>';
     }).join('');

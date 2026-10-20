@@ -117,6 +117,97 @@ async function requestPush(me, b, res){
   return L.send(res, 200, { ok: true, sent, people: to.length, devices: subs.length, skipped });
 }
 
+// ── Ordering ──
+// POST { order_id, event }  event: new | hold | answered | approved | rejected | ordered | received | paid | note
+//   new → approvers · hold/approved/rejected/ordered/paid → the person who asked
+//   answered → whoever asked the question · approved → purchasing too · note / received → everyone involved
+async function orderPeople(companyId, mod, dflt){
+  const [people, setting] = await Promise.all([
+    L.db('profiles?select=id,role,is_owner&active=eq.true&company_id=eq.' + encodeURIComponent(companyId)),
+    L.db('app_settings?select=value&key=eq.role_perms&company_id=eq.' + encodeURIComponent(companyId)).catch(() => [])
+  ]);
+  let perms = {};
+  try { const v = setting[0] && setting[0].value; perms = (typeof v === 'string' ? JSON.parse(v) : v) || {}; } catch (e) {}
+  return people.filter(p => {
+    if (p.is_owner || p.role === 'superadmin') return true;
+    const v = perms[p.role] && perms[p.role][mod];
+    return v === undefined || v === null ? dflt.includes(p.role) : truthy(v);
+  }).map(p => p.id);
+}
+async function orderPush(me, b, res){
+  const log = text => L.db('app_errors', { method: 'POST', body: { company_id: me.company_id, username: me.username, page: 'notify', message: 'Order notification from ' + (fullName(me) || me.username) + ': ' + text } }).catch(() => {});
+  const o = (await L.db('orders?select=id,ref,title,kind,urgent,status,total,paid,hold_reason,hold_by,requested_by,approved_by,ordered_by,company_id,created_at&id=eq.' + encodeURIComponent(b.order_id)))[0];
+  if (!o || String(o.company_id) !== String(me.company_id)) return L.send(res, 200, { ok: true, sent: 0, why: 'order not found' });
+  const ev = String(b.event || '');
+  const fresh = t => Date.now() - new Date(t).getTime() < 3 * 60000;
+  // only straight after the caller really did it
+  let ok = false, text = '';
+  if (ev === 'new') ok = String(o.requested_by) === String(me.id) && fresh(o.created_at);
+  else {
+    const notes = await L.db('order_notes?select=kind,body,author_id,created_at&order=created_at.desc&limit=6&order_id=eq.' + encodeURIComponent(o.id));
+    const mine = notes.filter(n => String(n.author_id) === String(me.id) && fresh(n.created_at));
+    ok = mine.length > 0 || ev === 'note';
+    const lastNote = mine.find(n => n.kind === 'note');
+    text = lastNote ? lastNote.body : '';
+    if (ev === 'note' && !lastNote) {
+      const files = await L.db('order_files?select=created_at,added_by&order=created_at.desc&limit=1&order_id=eq.' + encodeURIComponent(o.id)).catch(() => []);
+      ok = !!(files[0] && String(files[0].added_by) === String(me.id) && fresh(files[0].created_at));
+      text = 'added a file';
+    }
+  }
+  if (!ok) return L.send(res, 200, { ok: true, sent: 0, why: 'nothing new' });
+
+  let to = [];
+  const involved = [o.requested_by, o.approved_by, o.ordered_by, o.hold_by].filter(Boolean);
+  if (ev === 'new') to = await orderPeople(o.company_id, 'orderingapprove', ['director', 'manager']);
+  else if (ev === 'answered') to = [o.hold_by || o.approved_by].filter(Boolean);
+  else if (ev === 'approved') to = [o.requested_by].concat(await orderPeople(o.company_id, 'orderingbuy', ['director', 'manager']));
+  else if (['hold', 'rejected', 'ordered', 'paid'].includes(ev)) to = [o.requested_by];
+  else to = involved;
+  if (ev === 'answered' && !to.length) to = await orderPeople(o.company_id, 'orderingapprove', ['director', 'manager']);
+  to = [...new Set(to.map(String))].filter(id => id !== String(me.id));
+  if (!to.length) return L.send(res, 200, { ok: true, sent: 0, why: 'no one else to tell' });
+
+  const list = to.map(encodeURIComponent).join(',');
+  const [prefs, subs] = await Promise.all([
+    L.db('chat_prefs?select=*&profile_id=in.(' + list + ')').catch(() => []),
+    L.db('push_subs?select=*&profile_id=in.(' + list + ')')
+  ]);
+  const prefBy = {}; prefs.forEach(p => prefBy[p.profile_id] = p);
+  const who = me.first_name || 'Someone';
+  const money = v => 'Rp ' + Math.round(Number(v) || 0).toLocaleString('en-US');
+  const what = o.title.length > 80 ? o.title.slice(0, 77) + '…' : o.title;
+  const title = (o.urgent ? 'URGENT · ' : '') + 'Ordering · ' + what;
+  const body = ({
+    new: who + ' needs this' + (Number(o.total) ? ' - ' + money(o.total) : '') + '. Tap to approve.',
+    hold: who + ' put it on hold: ' + (o.hold_reason || 'question') + (text ? ' - "' + text.slice(0, 90) + '"' : ''),
+    answered: who + ' answered' + (text ? ': "' + text.slice(0, 100) + '"' : '') + ' - back to you',
+    approved: who + ' approved it' + (Number(o.total) ? ' (' + money(o.total) + ')' : ''),
+    rejected: who + ' rejected it',
+    ordered: who + ' has ordered it',
+    received: who + ' marked it received',
+    paid: Number(o.paid) >= Number(o.total) && Number(o.total) ? 'Paid in full' : who + ' recorded a payment - ' + money(o.paid) + ' of ' + money(o.total) + ' paid',
+    note: who + ': ' + (text || 'new message').slice(0, 120)
+  })[ev] || who + ' updated it';
+  webpush.setVapidDetails('mailto:hello@getmavis.co', VAPID_PUBLIC, VAPID_PRIVATE);
+  const now = new Date();
+  let sent = 0; const skipped = [];
+  await Promise.all(subs.map(async s => {
+    if (!o.urgent && inQuiet(prefBy[s.profile_id], now)) { skipped.push('quiet hours'); return; }
+    const payload = JSON.stringify({ title, body, thread: 'ord-' + o.id, url: '/?order=' + o.id, from: me.id, who: initials(me), colour: ROLE_COLOURS[me.role] || '#0D9488' });
+    try {
+      await webpush.sendNotification({ endpoint: s.endpoint, keys: { p256dh: s.p256dh, auth: s.auth } }, payload, { TTL: 6 * 3600, urgency: 'high' });
+      sent++;
+    } catch (e) {
+      if (e.statusCode === 404 || e.statusCode === 410) await L.db('push_subs?endpoint=eq.' + encodeURIComponent(s.endpoint), { method: 'DELETE' }).catch(() => {});
+      skipped.push('error ' + (e.statusCode || e.message));
+    }
+  }));
+  if (sent < subs.length) await log(ordRefOf(o) + ' ' + ev + ': sent to ' + sent + ' of ' + subs.length + ' device(s)' + (skipped.length ? ' - skipped: ' + skipped.join(', ') : ''));
+  return L.send(res, 200, { ok: true, sent, people: to.length, devices: subs.length, skipped });
+}
+function ordRefOf(o){ return 'Order #' + o.ref; }
+
 module.exports = async (req, res) => {
   if (req.method !== 'POST') return L.send(res, 405, { ok: false });
   if (!L.SERVICE_KEY) return L.send(res, 503, { ok: false, reason: 'notset' });
@@ -144,6 +235,7 @@ module.exports = async (req, res) => {
       return L.send(res, 200, { ok: sent > 0, sent, devices: subs.length, errors });
     }
     if (b.request_id) return await requestPush(me, b, res);
+    if (b.order_id) return await orderPush(me, b, res);
     const msg = (await L.db('chat_msgs?select=*&id=eq.' + encodeURIComponent(b.msg_id || '')))[0];
     // only the person who sent it, and only straight after sending
     if (!msg) { await note(me, 'not sent - message not found'); return L.send(res, 200, { ok: true, sent: 0, why: 'message not found' }); }

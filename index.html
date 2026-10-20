@@ -2944,6 +2944,11 @@ img.emoji-tw{width:1.15em;height:1.15em;vertical-align:-0.2em;margin:0 1px}
       <svg class="sb-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
       Task Board
     </button>
+    <button class="sb-link" id="n-ordering" onclick="ordOpen()" style="display:none">
+      <svg class="sb-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
+      Ordering
+      <span id="ord-nav-badge" style="display:none;margin-left:auto;background:#EF4444;color:white;font-size:10px;font-weight:800;min-width:18px;height:18px;border-radius:9px;align-items:center;justify-content:center;padding:0 5px">1</span>
+    </button>
     <button class="sb-link" id="n-notes" onclick="nav('notes')">
       <svg class="sb-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
       Meeting Notes
@@ -4968,6 +4973,13 @@ img.emoji-tw{width:1.15em;height:1.15em;vertical-align:-0.2em;margin:0 1px}
     </div>
 
     <!-- REQUESTS (maintenance, housekeeping, anything that needs fixing) -->
+    <div class="page" id="p-ordering" style="padding:28px 28px 40px">
+      <div id="ord-home"></div>
+      <div id="ord-panel"></div>
+    </div>
+    <div class="page" id="p-order" style="padding:20px 20px 0">
+      <div id="ord-detail"></div>
+    </div>
     <div class="page" id="p-requests" style="padding:28px 28px 40px">
       <div id="req-home"></div>
       <button id="req-fab" onclick="reqNew()"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.6" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Report something</button>
@@ -5338,6 +5350,7 @@ function nav(id, pushState=true){
   const sidebarId = (id==='taskboard' || id==='taskboard-personal' || id==='taskboard-team' || id==='kb') ? 'kb'
     : (id==='stickynotes-board') ? 'stickynotes'
     : (id==='request') ? 'requests'
+    : (id==='order') ? 'ordering'
     : id;
   const nb=document.getElementById('n-'+sidebarId);
   if(nb)nb.classList.add('active');
@@ -5357,6 +5370,8 @@ function nav(id, pushState=true){
   if(chatFloatBtn) chatFloatBtn.style.display = (id==='home') ? 'flex' : 'none';
   if(id==='taskboard'){taskboardRenderRoot();}
   if(id==='requests'){ reqStart(); reqRenderList(); }
+  if(id==='ordering'){ ordStart(); ordRender(); }
+  if(id==='order'){ ordRenderDetail(); }
   if(id==='taskboard-personal'){taskboardRenderPersonalTiles();}
   if(id==='taskboard-team'){taskboardRenderTeamTiles();}
   if(id==='inventory'){inventoryRenderAreas(); inventoryRenderList();}
@@ -5933,6 +5948,7 @@ function authEnterApp(){
   chatUpdateBadges();
   try{ chatStart(); }catch(e){}
   try{ reqStart(); }catch(e){}
+  try{ ordApplyVisibility(); ordStart(); }catch(e){}
   nav('home');
   setTimeout(()=>{ if(typeof evOpenPending==='function') evOpenPending(); }, 400);
 }
@@ -10394,12 +10410,12 @@ const ADMIN_MODULE_GROUPS = [
 
 // Default permission bundle per role - true/false per module id. Editable in the demo.
 let ADMIN_PERMS = {
-  superadmin:  {teamfeed:1,chat:1,suggestions:1,vacancies:1,tasks:1,inventory:1,entertainment:1,calendar:1,sops:1,survey:1,reports:1,directory:1,marketing:1,adminconsole:1,kitchen:1,bar:1,meetings:1,eventsedit:1,requests:1,requestsmanage:1,requestsall:1},
-  director:    {teamfeed:1,chat:1,suggestions:1,vacancies:1,tasks:1,inventory:1,entertainment:1,calendar:1,sops:1,survey:1,reports:1,directory:1,marketing:1,adminconsole:1,kitchen:1,bar:1,meetings:1,eventsedit:1,requests:1,requestsmanage:1,requestsall:1},
-  manager:     {teamfeed:1,chat:1,suggestions:1,vacancies:1,tasks:1,inventory:1,entertainment:1,calendar:1,sops:1,survey:1,reports:1,directory:1,marketing:1,adminconsole:0,kitchen:1,bar:1,meetings:1,eventsedit:1,requests:1,requestsmanage:1,requestsall:1},
-  supervisor:  {teamfeed:1,chat:1,suggestions:1,vacancies:1,tasks:1,inventory:1,entertainment:1,calendar:1,sops:1,survey:1,reports:0,directory:1,marketing:0,adminconsole:0,kitchen:1,bar:1,meetings:1,eventsedit:1,requests:1,requestsmanage:1,requestsall:0},
-  teammember:  {teamfeed:1,chat:1,suggestions:1,vacancies:1,tasks:1,inventory:1,entertainment:0,calendar:1,sops:1,survey:0,reports:0,directory:0,marketing:0,adminconsole:0,kitchen:1,bar:1,meetings:0,eventsedit:0,requests:1,requestsmanage:0,requestsall:0},
-  dailyworker: {teamfeed:1,chat:1,suggestions:0,vacancies:1,tasks:1,inventory:0,entertainment:0,calendar:0,sops:1,survey:0,reports:0,directory:0,marketing:0,adminconsole:0,kitchen:1,bar:1,meetings:0,eventsedit:0,requests:1,requestsmanage:0,requestsall:0},
+  superadmin:  {teamfeed:1,chat:1,suggestions:1,vacancies:1,tasks:1,inventory:1,entertainment:1,calendar:1,sops:1,survey:1,reports:1,directory:1,marketing:1,adminconsole:1,kitchen:1,bar:1,meetings:1,eventsedit:1,requests:1,requestsmanage:1,requestsall:1,ordering:1,orderingapprove:1,orderingbuy:1},
+  director:    {teamfeed:1,chat:1,suggestions:1,vacancies:1,tasks:1,inventory:1,entertainment:1,calendar:1,sops:1,survey:1,reports:1,directory:1,marketing:1,adminconsole:1,kitchen:1,bar:1,meetings:1,eventsedit:1,requests:1,requestsmanage:1,requestsall:1,ordering:1,orderingapprove:1,orderingbuy:1},
+  manager:     {teamfeed:1,chat:1,suggestions:1,vacancies:1,tasks:1,inventory:1,entertainment:1,calendar:1,sops:1,survey:1,reports:1,directory:1,marketing:1,adminconsole:0,kitchen:1,bar:1,meetings:1,eventsedit:1,requests:1,requestsmanage:1,requestsall:1,ordering:1,orderingapprove:1,orderingbuy:1},
+  supervisor:  {teamfeed:1,chat:1,suggestions:1,vacancies:1,tasks:1,inventory:1,entertainment:1,calendar:1,sops:1,survey:1,reports:0,directory:1,marketing:0,adminconsole:0,kitchen:1,bar:1,meetings:1,eventsedit:1,requests:1,requestsmanage:1,requestsall:0,ordering:1,orderingapprove:0,orderingbuy:0},
+  teammember:  {teamfeed:1,chat:1,suggestions:1,vacancies:1,tasks:1,inventory:1,entertainment:0,calendar:1,sops:1,survey:0,reports:0,directory:0,marketing:0,adminconsole:0,kitchen:1,bar:1,meetings:0,eventsedit:0,requests:1,requestsmanage:0,requestsall:0,ordering:1,orderingapprove:0,orderingbuy:0},
+  dailyworker: {teamfeed:1,chat:1,suggestions:0,vacancies:1,tasks:1,inventory:0,entertainment:0,calendar:0,sops:1,survey:0,reports:0,directory:0,marketing:0,adminconsole:0,kitchen:1,bar:1,meetings:0,eventsedit:0,requests:1,requestsmanage:0,requestsall:0,ordering:1,orderingapprove:0,orderingbuy:0},
 };
 
 let PEOPLE_DEPARTMENTS = ['Management', 'GRO', 'Operations', 'Audio Visual', 'IT', 'Engineering', 'Housekeeping', 'Kitchen', 'Bar', 'Sales and Marketing', 'Human Resources'];
@@ -11119,6 +11135,7 @@ function rolePageAllowed(pageId){
 // sidebar heading left with nothing under it. Not just hidden visually - removed from the
 // layout, so nothing leaves a gap.
 function roleApplyMenus(){
+  try{ if(typeof ordApplyVisibility === 'function') setTimeout(ordApplyVisibility, 0); }catch(e){}
   Object.keys(PAGE_MODULE).forEach(pg => {
     const allowed = rolePageAllowed(pg);
     document.querySelectorAll(`[onclick*="nav('${pg}')"]`).forEach(el => {
@@ -23481,6 +23498,7 @@ window.notifyQuietSave = async function(){
 // Open a chat from a notification (app already open) or from /?chat=… (app was closed)
 if('serviceWorker' in navigator){
   navigator.serviceWorker.addEventListener('message', e => {
+    if(e.data && e.data.type === 'open-chat' && e.data.thread && myProfile && String(e.data.thread).startsWith('ord-')){ ordStart().then(() => { if(ordGet(String(e.data.thread).slice(4))) ordSelect(String(e.data.thread).slice(4)); }); return; }
     if(e.data && e.data.type === 'open-chat' && e.data.thread && myProfile && String(e.data.thread).startsWith('req-')){ reqStart(); setTimeout(() => reqOpen(String(e.data.thread).slice(4)), 300); return; }
     if(e.data && e.data.type === 'open-chat' && e.data.thread && myProfile){ chatStart(); setTimeout(() => chat2OpenFromDash(e.data.thread), 300); }
   });
@@ -24046,6 +24064,1044 @@ document.head.appendChild(chat2Style);
 <div id="reactionNamesPopover" style="display:none;position:absolute;z-index:100000;background:#0F1E2E;color:white;border-radius:9px;padding:10px 14px;max-width:220px;font-size:12px;font-weight:600;line-height:1.5;box-shadow:0 8px 20px rgba(0,0,0,0.25)">
   <span id="reactionNamesPopoverList"></span>
 </div>
+<script>
+/* ===== MAVIS ORDERING — ask for it, get it approved (or answer questions), order it, pay it (in parts) =====
+   Steps: requested → (on hold ⇄) → approved → ordered → to pay → paid   (or rejected)
+   Permissions: ordering (ask + see own), orderingapprove (approve/ask/reject), orderingbuy (order, pay, pin).
+   Only shown in the MAVIS company until it launches. */
+const ORD = { started:false, ready:false, notReady:false, list:[], items:{}, files:{}, notes:{}, pays:{}, catalog:[], vendors:[], selId:null,
+  tab:'me', kind:'all', stage:null, board:false, channel:null, timer:null, form:null, busy:false };
+const ORD_COLS = 'id,ref,kind,title,dept,supplier,needed_by,note,urgent,pinned,status,hold_from,hold_reason,hold_by,total,paid,requested_by,approved_by,approved_at,ordered_by,ordered_at,sent_via,received_at,paid_at,created_at,updated_at';
+const ORD_KINDS = {
+  everyday:{ name:'Everyday', sub:'Stock & supplies', bg:'#E0F5F2', fg:'#0F766E', stroke:'#0D9488', grad:'linear-gradient(150deg,#E0F5F2,#C8EDE7)',
+    icon:'<circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/>' },
+  fix:{ name:'Fix', sub:'Parts & repairs', bg:'#FFF1DC', fg:'#9A5B00', stroke:'#C47A00', grad:'linear-gradient(150deg,#FFF1DC,#FDE3B6)',
+    icon:'<path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94z"/>' },
+  project:{ name:'Project', sub:'Bigger spends', bg:'#EDE9FE', fg:'#5B21B6', stroke:'#7C3AED', grad:'linear-gradient(150deg,#EDE9FE,#DDD6FE)',
+    icon:'<path d="M12 2l3 7h7l-5.5 4.5L18 21l-6-4-6 4 1.5-7.5L2 9h7z"/>' }
+};
+const ORD_STAGES = [
+  { id:'requested', name:'Requested', dot:'#F59E0B' },
+  { id:'hold', name:'On hold', dot:'#F59E0B' },
+  { id:'approved', name:'Approved', dot:'#0D9488' },
+  { id:'ordered', name:'Ordered', dot:'#2563EB' },
+  { id:'topay', name:'To pay', dot:'#DC2626' },
+  { id:'paid', name:'Paid', dot:'#16A34A' }
+];
+const ORD_TRACK = ['requested', 'approved', 'ordered', 'topay', 'paid'];
+const ORD_HOLD_REASONS = ['Need more quotes', 'Need more detail', 'Need proof / photo', 'Too expensive', 'Check budget', 'Something else'];
+
+// ── Small helpers ──
+function ordEsc(v){ return String(v == null ? '' : v).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function ordMe(){ return myProfile ? myProfile.id : null; }
+function ordVisible(){ return !!(myProfile && typeof appIsDemoCompany === 'function' && appIsDemoCompany()); }
+function ordCanApprove(){ return roleCan('orderingapprove'); }
+function ordCanBuy(){ return roleCan('orderingbuy'); }
+function ordStaff(){ return ordCanApprove() || ordCanBuy(); }
+function ordPerson(pid){ return (typeof CH !== 'undefined' && CH.people[pid]) || ORD.people && ORD.people[pid] || null; }
+function ordName(pid, short){
+  const p = ordPerson(pid);
+  if(!p) return pid ? 'Former team member' : 'Nobody';
+  if(pid === ordMe() && short) return 'You';
+  return short ? (p.first_name || '') : ((p.first_name || '') + ' ' + (p.last_name || '')).trim();
+}
+function ordAvatar(pid, s){
+  s = s || 24; const p = ordPerson(pid);
+  if(p && p.photo) return `<img src="${p.photo}" alt="" style="width:${s}px;height:${s}px;border-radius:50%;object-fit:cover;flex-shrink:0">`;
+  const ini = p ? (((p.first_name || '?')[0] || '') + ((p.last_name || '')[0] || '')).toUpperCase() : '?';
+  const col = typeof chat2RoleColor === 'function' ? chat2RoleColor(p && p.role) : '#0D9488';
+  return `<div style="width:${s}px;height:${s}px;border-radius:50%;background:${col};color:white;display:flex;align-items:center;justify-content:center;font-size:${Math.round(s*.37)}px;font-weight:800;flex-shrink:0">${ini}</div>`;
+}
+function ordIcon(kind, size){ const k = ORD_KINDS[kind] || ORD_KINDS.everyday; return `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="${k.stroke}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${k.icon}</svg>`; }
+function ordMoney(v){ return 'Rp ' + Math.round(Number(v) || 0).toLocaleString('en-US'); }
+function ordShort(v){ v = Number(v) || 0; if(v >= 1e9) return 'Rp ' + (v/1e9).toFixed(1).replace(/\.0$/, '') + 'b'; if(v >= 1e6) return 'Rp ' + (v/1e6).toFixed(1).replace(/\.0$/, '') + 'm'; if(v >= 1e3) return 'Rp ' + Math.round(v/1e3) + 'k'; return 'Rp ' + v; }
+function ordAgo(v){
+  if(!v) return '';
+  const m = Math.max(0, Math.round((Date.now() - new Date(v).getTime()) / 60000));
+  if(m < 1) return 'just now'; if(m < 60) return m + ' min ago';
+  const h = Math.round(m / 60); if(h < 24) return h + (h === 1 ? ' hour ago' : ' hours ago');
+  const d = Math.round(h / 24); if(d === 1) return 'yesterday'; if(d < 7) return d + ' days ago';
+  return new Date(v).toLocaleDateString('en-GB', {day:'numeric', month:'short'});
+}
+function ordTime(v){ return new Date(v).toLocaleTimeString('en-GB', {hour:'2-digit', minute:'2-digit'}); }
+function ordDay(v){ const d = new Date(v); return d.toDateString() === new Date().toDateString() ? ordTime(v) : d.toLocaleDateString('en-GB', {day:'numeric', month:'short'}) + ' ' + ordTime(v); }
+function ordRef(o){ return (['ordered','topay','paid'].includes(o.status) || o.ordered_at ? 'PO-' : 'PR-') + String(o.ref).padStart(4, '0'); }
+function ordGet(id){ return ORD.list.find(o => o.id === id); }
+function ordIsWide(){ return window.innerWidth >= 1100; }
+function ordDb(){ return sb; }
+
+// ── Show / hide the whole feature ──
+function ordApplyVisibility(){
+  const on = ordVisible() && roleCan('ordering');
+  const link = document.getElementById('n-ordering'); if(link) link.style.display = on ? '' : 'none';
+  // Admin Console switches, only where Ordering is switched on
+  if(ordVisible() && typeof ADMIN_MODULE_GROUPS !== 'undefined'){
+    const g = ADMIN_MODULE_GROUPS.find(x => /Operations/.test(x.label));
+    if(g && !g.modules.some(m => m.id === 'ordering')){
+      g.modules.push({id:'ordering', name:'Ordering', desc:'Ask for things to be bought and follow them'},
+        {id:'orderingapprove', name:'Approve orders', desc:'Approve, reject or ask questions on orders'},
+        {id:'orderingbuy', name:'Purchasing', desc:'Place orders, record payments and pin urgent ones'});
+    }
+  }
+  try{ document.querySelectorAll('.sb-section').forEach(sec => { let el = sec.nextElementSibling, any = false; while(el && !el.classList.contains('sb-section')){ if(el.classList.contains('sb-link') && el.style.display !== 'none') any = true; el = el.nextElementSibling; } sec.style.display = any ? '' : 'none'; }); }catch(e){}
+}
+function ordOpen(){
+  if(!ordVisible() || !roleCan('ordering')){ showComingSoon('Ordering'); return; }
+  nav('ordering');
+}
+
+// ── Loading + live updates ──
+async function ordStart(){
+  if(!ordVisible() || typeof sb === 'undefined') return;
+  if(!ORD.started){
+    ORD.started = true; await ordLoad(); if(!ORD.notReady) ordSubscribe(); ordLoadExtras();
+    // opened from a notification
+    let id = null; try{ id = new URLSearchParams(location.search).get('order'); }catch(e){}
+    if(id){ try{ history.replaceState(history.state, '', location.pathname + location.hash); }catch(e){} if(ordGet(id)) setTimeout(() => ordSelect(id), 200); }
+    return;
+  }
+  return ordLoad();
+}
+async function ordLoad(){
+  const [o, it, f] = await Promise.all([
+    sb.from('orders').select(ORD_COLS).order('created_at', {ascending:false}).limit(400),
+    sb.from('order_items').select('id,order_id,name,unit,qty,price,position').order('position', {ascending:true}).limit(4000),
+    sb.from('order_files').select('id,order_id,kind,name,path,url,mime,amount,chosen,added_by,created_at').limit(3000)
+  ]);
+  if(o.error){ ORD.notReady = true; console.warn('Ordering not set up yet', o.error); ordRender(); return; }
+  ORD.notReady = false;
+  ORD.list = o.data || [];
+  ORD.items = {}; (it.data || []).forEach(x => (ORD.items[x.order_id] = ORD.items[x.order_id] || []).push(x));
+  ORD.files = {}; (f.data || []).forEach(x => (ORD.files[x.order_id] = ORD.files[x.order_id] || []).push(x));
+  ORD.ready = true;
+  if(!ORD.people){ ORD.people = {}; }
+  if(!(typeof CH !== 'undefined' && Object.keys(CH.people).length) && !Object.keys(ORD.people).length){
+    const pp = await sb.from('profiles').select('id,first_name,last_name,role,photo,departments,active').eq('company_id', myProfile.company_id);
+    (pp.data || []).forEach(p => ORD.people[p.id] = p);
+  }
+  ordBadge();
+  ordRender();
+  if(ORD.selId) ordLoadDetail(ORD.selId);
+}
+async function ordLoadExtras(){
+  const [c, v] = await Promise.all([
+    sb.from('order_catalog').select('name,unit,last_price,supplier,dept,uses').order('uses', {ascending:false}).limit(1000),
+    sb.from('vendor_items').select('name').limit(500)
+  ]);
+  ORD.catalog = c.data || [];
+  ORD.vendors = [...new Set((v.data || []).map(x => x.name).filter(Boolean))].sort();
+}
+async function ordLoadDetail(id){
+  const [n, p] = await Promise.all([
+    sb.from('order_notes').select('*').eq('order_id', id).order('created_at', {ascending:true}),
+    sb.from('order_payments').select('*').eq('order_id', id).order('created_at', {ascending:true})
+  ]);
+  ORD.notes[id] = n.data || []; ORD.pays[id] = p.data || [];
+  if(ORD.selId === id) ordRenderDetail();
+}
+function ordSoon(){ clearTimeout(ORD.timer); ORD.timer = setTimeout(ordLoad, 350); }
+function ordSubscribe(){
+  if(ORD.channel) return;
+  ORD.channel = sb.channel('ordering-' + ordMe());
+  ['orders','order_notes','order_items','order_files','order_payments'].forEach(t => ORD.channel.on('postgres_changes', {event:'*', schema:'public', table:t}, () => ordSoon()));
+  ORD.channel.subscribe();
+  setInterval(() => { if(document.visibilityState === 'visible' && (document.getElementById('p-ordering')?.classList.contains('on') || document.getElementById('p-order')?.classList.contains('on'))) ordSoon(); }, 20000);
+}
+
+// ── Who needs to do what ──
+function ordNextFor(o){
+  const me = ordMe();
+  if(o.status === 'requested' && ordCanApprove()) return { label:'Approve', fn:`ordApproveAsk('${o.id}')`, tone:'go', text:'Waiting for your OK' };
+  if(o.status === 'hold' && o.requested_by === me) return { label:'Answer', fn:`ordSelect('${o.id}', true)`, tone:'hold', text:'Waiting for your answer' };
+  if(o.status === 'approved' && ordCanBuy()) return { label:'Make order', fn:`ordPlaceAsk('${o.id}')`, tone:'go', text:'Approved - ready to order' };
+  if(o.status === 'ordered' && o.requested_by === me && !o.received_at && !ordCanBuy()) return { label:'Mark received', fn:`ordReceived('${o.id}')`, tone:'go', text:'Ordered - tick when it arrives' };
+  if((o.status === 'ordered' || o.status === 'topay') && ordCanBuy()) return { label:'Record payment', fn:`ordPayAsk('${o.id}')`, tone:'pay', text: o.status === 'topay' ? ordPayText(o) : 'Ordered' + (o.received_at ? ' · received' : '') };
+  return null;
+}
+function ordPayText(o){
+  if(!o.total) return 'Price to confirm';
+  if(!o.paid) return 'Not paid yet';
+  return Math.round(o.paid / o.total * 100) + '% paid · ' + ordShort(o.total - o.paid) + ' left';
+}
+function ordStatusText(o){
+  switch(o.status){
+    case 'requested': return 'Waiting for approval';
+    case 'hold': return 'On hold' + (o.hold_reason ? ': ' + o.hold_reason.toLowerCase() : '');
+    case 'approved': return 'Approved - waiting to be ordered';
+    case 'ordered': return 'Ordered' + (o.received_at ? ' · received' : o.needed_by ? ' · needed ' + new Date(o.needed_by).toLocaleDateString('en-GB', {day:'numeric', month:'short'}) : '');
+    case 'topay': return ordPayText(o);
+    case 'paid': return 'Paid ' + (o.paid_at ? ordAgo(o.paid_at) : '');
+    case 'rejected': return 'Rejected';
+  }
+  return o.status;
+}
+function ordSort(a, b){
+  return (b.pinned - a.pinned) || (b.urgent - a.urgent) || String(b.updated_at || b.created_at).localeCompare(String(a.updated_at || a.created_at));
+}
+function ordBadge(){
+  const n = ORD.list.filter(o => ordNextFor(o)).length;
+  const b = document.getElementById('ord-nav-badge'); if(b){ b.textContent = n > 99 ? '99+' : n; b.style.display = n ? 'flex' : 'none'; }
+}
+
+// ── Tracker ──
+function ordTracker(o, big){
+  const st = o.status === 'hold' ? (o.hold_from || 'requested') : o.status;
+  const idx = ORD_TRACK.indexOf(st);
+  const done = i => o.status === 'paid' ? true : i < idx;
+  const now = i => i === idx && o.status !== 'paid';
+  const hold = o.status === 'hold';
+  const s = big ? 26 : 13;
+  const tick = big ? `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3.5"><polyline points="20 6 9 17 4 12"/></svg>` : '';
+  let h = '<div class="ord-tr' + (big ? ' big' : '') + '">';
+  ORD_TRACK.forEach((x, i) => {
+    if(i) h += `<div class="ord-tb${done(i) || now(i) ? ' on' : ''}"></div>`;
+    h += `<div class="ord-td${done(i) ? ' on' : ''}${now(i) ? (hold ? ' hold' : ' now') : ''}" style="width:${s}px;height:${s}px">${done(i) ? tick : ''}</div>`;
+  });
+  h += '</div>';
+  if(big) h += `<div class="ord-tl-big">${ORD_TRACK.map(x => `<span>${(ORD_STAGES.find(s2 => s2.id === x) || {}).name}</span>`).join('')}</div>`;
+  return h;
+}
+
+// ── Page ──
+function ordRender(){
+  const el = document.getElementById('ord-home'); if(!el) return;
+  if(!ordVisible()){ el.innerHTML = ''; return; }
+  if(ORD.notReady){ el.innerHTML = ordEmpty('Ordering is almost ready', 'It needs a one-time setup step on the database first.'); return; }
+  if(!ORD.ready){ el.innerHTML = '<div style="padding:40px;text-align:center;color:#94A3B8">Loading…</div>'; return; }
+  const me = ordMe();
+  const live = ORD.list.filter(o => ORD.kind === 'all' || o.kind === ORD.kind);
+  const open = live.filter(o => !['paid','rejected'].includes(o.status));
+  const monthStart = new Date(); monthStart.setDate(1); monthStart.setHours(0, 0, 0, 0);
+  const paidMonth = live.filter(o => o.status === 'paid' && o.paid_at && new Date(o.paid_at) >= monthStart);
+  const stageCount = id => { const rows = open.filter(o => o.status === id); return { n:rows.length, sum:rows.reduce((s, o) => s + (id === 'topay' ? (o.total - o.paid) : Number(o.total)), 0) }; };
+
+  const pipe = ORD_STAGES.filter(s => s.id !== 'paid').map(s => { const c = stageCount(s.id); if(s.id === 'hold' && !c.n) return ''; return `<button class="ord-st${ORD.stage === s.id ? ' on' : ''}${s.id === 'hold' ? ' hold' : ''}" onclick="ordSetStage('${s.id}')"><span class="l"><i style="background:${s.dot}"></i>${s.name}</span><span class="v">${c.n}<small>${ordShort(c.sum)}</small></span></button>`; }).join('')
+    + `<button class="ord-st${ORD.stage === 'paid' ? ' on' : ''}" onclick="ordSetTab('paid')"><span class="l"><i style="background:#16A34A"></i>Paid this month</span><span class="v">${paidMonth.length}<small>${ordShort(paidMonth.reduce((s, o) => s + Number(o.paid), 0))}</small></span></button>`;
+
+  const needs = open.filter(o => ordNextFor(o)).sort(ordSort);
+  const others = open.filter(o => !ordNextFor(o)).sort(ordSort);
+  let body;
+  if(ORD.board) body = ordBoardHtml(live);
+  else if(ORD.stage && ORD.stage !== 'paid'){
+    const rows = open.filter(o => o.status === ORD.stage).sort(ordSort);
+    body = `<div class="ord-filterline">Showing <b>${ordEsc((ORD_STAGES.find(s => s.id === ORD.stage) || {}).name)}</b> <button onclick="ordSetStage(null)">Show all</button></div>` + (rows.length ? rows.map(ordRowHtml).join('') : ordEmpty('Nothing here', 'No orders at this step right now.'));
+  } else if(ORD.tab === 'me'){
+    body = (needs.length ? needs.map(ordRowHtml).join('') : ordEmpty('Nothing needs you right now', 'When something is waiting for you, it shows up here.'))
+      + (others.length ? `<div class="ord-sublabel">Waiting on others</div>` + others.map(ordRowHtml).join('') : '');
+  } else if(ORD.tab === 'open'){
+    body = open.length ? open.sort(ordSort).map(ordRowHtml).join('') : ordEmpty('No open orders', 'Tap "I need something" to start one.');
+  } else {
+    const done = live.filter(o => ['paid','rejected'].includes(o.status)).sort((a, b) => String(b.paid_at || b.updated_at).localeCompare(String(a.paid_at || a.updated_at))).slice(0, 80);
+    body = done.length ? done.map(ordRowHtml).join('') : ordEmpty('Nothing paid yet', 'Finished orders show up here.');
+  }
+  const kinds = [['all','All']].concat(Object.entries(ORD_KINDS).map(([k, v]) => [k, v.name]));
+  el.innerHTML = `
+    <div class="ord-top">
+      <div><div class="ord-h1">Ordering</div><div class="ord-sub">Ask for it, get it approved, order it, pay it</div></div>
+      <button class="ord-ghost" onclick="ordToggleBoard()">${ORD.board ? '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>List view' : '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="3" y="3" width="7" height="18" rx="1.5"/><rect x="14" y="3" width="7" height="11" rx="1.5"/></svg>Board view'}</button>
+      <button class="ord-new" onclick="ordNew()"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.8" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg><span>I need something</span></button>
+    </div>
+    <div class="ord-pipe">${pipe}</div>
+    ${ORD.board ? '' : `<div class="ord-tabs">
+      <button class="${ORD.tab === 'me' && !ORD.stage ? 'on' : ''}" onclick="ordSetTab('me')">Needs me${needs.length ? `<span class="c">${needs.length}</span>` : ''}</button>
+      <button class="${ORD.tab === 'open' && !ORD.stage ? 'on' : ''}" onclick="ordSetTab('open')">All open</button>
+      <button class="${ORD.tab === 'paid' && !ORD.stage ? 'on' : ''}" onclick="ordSetTab('paid')">Paid</button>
+      <div class="ord-kinds">${kinds.map(([k, n]) => `<button class="${ORD.kind === k ? 'on' : ''}" onclick="ordSetKind('${k}')">${k === 'all' ? '' : `<i style="background:${ORD_KINDS[k].stroke}"></i>`}${n}</button>`).join('')}</div>
+    </div>`}
+    <div class="${ORD.board ? '' : 'ord-rows'}">${body}</div>`;
+  if(ordIsWide()) ordRenderDetail();
+}
+function ordEmpty(t, s){ return `<div class="ord-empty"><div class="ord-empty-ic">${ordIcon('everyday', 24)}</div><b>${t}</b><span>${s}</span></div>`; }
+function ordRowHtml(o){
+  const k = ORD_KINDS[o.kind] || ORD_KINDS.everyday;
+  const nx = ordNextFor(o);
+  const items = ORD.items[o.id] || [];
+  const meta = [o.dept, o.supplier, items.length ? items.length + (items.length === 1 ? ' item' : ' items') : '', ordName(o.requested_by, true) + ', ' + ordAgo(o.created_at)].filter(Boolean).map(ordEsc).join(' · ');
+  const tag = o.status === 'hold' ? '<span class="ord-tag hold">ON HOLD</span>' : o.status === 'rejected' ? '<span class="ord-tag rej">REJECTED</span>' : o.urgent && o.status !== 'paid' ? '<span class="ord-tag urg">URGENT</span>' : '';
+  const pin = o.pinned && o.status !== 'paid' ? '<svg width="14" height="14" viewBox="0 0 24 24" fill="#C4973B" style="flex-shrink:0"><path d="M16 3l5 5-4 1-4 4 1 5-2 2-4-4-5 5-1-1 5-5-4-4 2-2 5 1 4-4z"/></svg>' : '';
+  const btn = nx ? `<button class="ord-go ${nx.tone}" onclick="event.stopPropagation();${nx.fn}">${nx.label}</button>` : `<button class="ord-go soft" onclick="event.stopPropagation();ordSelect('${o.id}')">Open</button>`;
+  return `<div class="ord-row${ORD.selId === o.id ? ' sel' : ''}${o.urgent && !['paid','rejected'].includes(o.status) ? ' urgent' : ''}" onclick="ordSelect('${o.id}')">
+    <div class="ord-ti" style="background:${k.bg}">${ordIcon(o.kind, 22)}</div>
+    <div class="ord-info"><div class="ord-t"><span class="ord-tt">${ordEsc(o.title)}</span>${tag}${pin}</div><div class="ord-m">${meta}</div></div>
+    <div class="ord-trk">${o.status === 'rejected' ? '' : ordTracker(o)}<div class="ord-tl${o.status === 'hold' ? ' hold' : ''}">${ordEsc(nx ? nx.text : ordStatusText(o))}</div></div>
+    <div class="ord-amt">${o.total ? ordMoney(o.total) : '<span style="color:#94A3B8;font-size:12.5px">Price to confirm</span>'}${o.status === 'topay' && o.total ? `<small>${ordShort(o.total - o.paid)} left</small>` : ''}</div>
+    ${btn}
+  </div>`;
+}
+function ordBoardHtml(list){
+  const cols = ORD_STAGES.filter(s => s.id !== 'hold' || list.some(o => o.status === 'hold'));
+  return `<div class="ord-board">${cols.map(s => {
+    let rows = list.filter(o => o.status === s.id);
+    if(s.id === 'paid') rows = rows.sort((a, b) => String(b.paid_at).localeCompare(String(a.paid_at))).slice(0, 20); else rows.sort(ordSort);
+    const sum = rows.reduce((t, o) => t + Number(s.id === 'topay' ? o.total - o.paid : o.total), 0);
+    return `<div class="ord-col"><div class="ord-ch"><i style="background:${s.dot}"></i>${s.name}<span class="n">${rows.length}</span><span class="t">${ordShort(sum)}</span></div>
+      ${rows.map(o => { const k = ORD_KINDS[o.kind] || ORD_KINDS.everyday; const nx = ordNextFor(o);
+        return `<div class="ord-bcard${o.urgent && s.id !== 'paid' ? ' urgent' : ''}" onclick="ordSelect('${o.id}')">
+          <div class="ord-bt"><span class="ord-kt" style="background:${k.bg};color:${k.fg}">${k.name}</span>${o.pinned ? '<svg width="13" height="13" viewBox="0 0 24 24" fill="#C4973B"><path d="M16 3l5 5-4 1-4 4 1 5-2 2-4-4-5 5-1-1 5-5-4-4 2-2 5 1 4-4z"/></svg>' : ''}<span class="r">${ordRef(o)}</span></div>
+          <div class="ord-bti">${ordEsc(o.title)}</div><div class="ord-bm">${ordEsc([o.dept, o.supplier].filter(Boolean).join(' · '))}</div>
+          <div class="ord-ba">${o.total ? ordMoney(o.total) : 'Price to confirm'}</div>
+          ${s.id === 'topay' ? `<div class="ord-pbar"><i style="width:${o.total ? Math.min(100, o.paid / o.total * 100) : 0}%"></i></div>` : ''}
+          ${nx ? `<button class="ord-go ${nx.tone}" style="width:100%;margin-top:8px" onclick="event.stopPropagation();${nx.fn}">${nx.label}</button>` : ''}
+        </div>`; }).join('') || '<div class="ord-bempty">Nothing here</div>'}
+    </div>`; }).join('')}</div>`;
+}
+function ordSetTab(t){ ORD.tab = t; ORD.stage = null; ORD.board = false; ordRender(); }
+function ordSetKind(k){ ORD.kind = k; ordRender(); }
+function ordSetStage(s){ ORD.stage = ORD.stage === s ? null : s; ORD.board = false; ordRender(); }
+function ordToggleBoard(){ ORD.board = !ORD.board; ORD.stage = null; ordRender(); }
+
+// ── Selecting / detail ──
+function ordSelect(id, focusAnswer){
+  ORD.selId = id;
+  ORD.focus = !!focusAnswer;
+  if(!ordIsWide()) nav('order');
+  ordRender();
+  ordRenderDetail();
+  ordLoadDetail(id);
+}
+function ordRenderDetail(){
+  const wide = ordIsWide();
+  const host = document.getElementById(wide ? 'ord-panel' : 'ord-detail');
+  const other = document.getElementById(wide ? 'ord-detail' : 'ord-panel');
+  if(other) other.innerHTML = '';
+  const page = document.getElementById('p-ordering');
+  if(page) page.classList.toggle('ord-has-panel', wide && !!ORD.selId && !!ordGet(ORD.selId));
+  if(!host) return;
+  const o = ordGet(ORD.selId);
+  const keepInp = document.getElementById('ord-msg');
+  const keep = keepInp ? { v:keepInp.value, f:document.activeElement === keepInp, id:keepInp.dataset.id } : null;
+  if(!o){ host.innerHTML = wide ? '' : `<button class="ord-back" onclick="nav('ordering')">‹ Ordering</button>` + ordEmpty('Order not found', "It may have been deleted, or isn't shared with you."); return; }
+  const me = ordMe(), k = ORD_KINDS[o.kind] || ORD_KINDS.everyday;
+  const items = ORD.items[o.id] || [], files = ORD.files[o.id] || [], notes = ORD.notes[o.id] || [], pays = ORD.pays[o.id] || [];
+  const canEdit = (o.requested_by === me && ['requested','hold'].includes(o.status)) || (ordStaff() && !['paid','rejected'].includes(o.status));
+  const tags = `<span class="ord-ptag" style="color:${k.fg}">${k.name}</span>${o.urgent && !['paid','rejected'].includes(o.status) ? '<span class="ord-ptag" style="background:#DC2626;color:white">URGENT</span>' : ''}${o.status === 'hold' ? '<span class="ord-ptag" style="background:#F59E0B;color:white">ON HOLD</span>' : ''}${o.status === 'rejected' ? '<span class="ord-ptag" style="background:#64748B;color:white">REJECTED</span>' : ''}${o.pinned ? '<span class="ord-ptag" style="color:#B8862F">Pinned</span>' : ''}`;
+  const sub = [o.dept, 'asked by ' + ordName(o.requested_by, true) + ', ' + ordAgo(o.created_at), o.supplier].filter(Boolean).map(ordEsc).join(' · ');
+  const holdBox = o.status === 'hold' ? `<div class="ord-holdbox"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#B45309" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg><div><b>On hold: ${ordEsc(o.hold_reason || 'question')}</b><span>${o.requested_by === me ? ordEsc(ordName(o.hold_by, true)) + ' is waiting for your answer' : 'Waiting for ' + ordEsc(ordName(o.requested_by, true)) + ' to answer'}</span></div></div>` : '';
+  const sig = o.status !== 'requested' && o.approved_by ? `<div class="ord-approved"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#15803D" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>Approved by ${ordEsc(ordName(o.approved_by))} · ${ordDay(o.approved_at)}${o.signature === '1' ? '' : ''}</div>` : '';
+  const itemsHtml = items.length ? items.map(i => `<div class="ord-li"><span>${ordEsc(i.name)}${i.unit ? ` <em>(${ordEsc(i.unit)})</em>` : ''} × ${Number(i.qty).toLocaleString('en-US')}</span><b>${i.price ? ordMoney(i.qty * i.price) : '-'}</b></div>`).join('') + `<div class="ord-li tot"><b>Total</b><b>${o.total ? ordMoney(o.total) : 'Price to confirm'}</b></div>` : '<div class="ord-none">No items yet</div>';
+  const fileIcon = f => { const t = f.url && !f.path ? 'LINK' : /pdf/i.test(f.mime || f.name || '') ? 'PDF' : /word|docx?$/i.test(f.mime || f.name || '') ? 'DOC' : /image|jpe?g|png|heic|webp/i.test(f.mime || f.name || '') ? 'PHOTO' : 'FILE';
+    const c = {LINK:['#EFF6FF','#1D4ED8'], PDF:['#FEF2F2','#B91C1C'], DOC:['#EFF6FF','#1D4ED8'], PHOTO:['#F0FDF4','#15803D'], FILE:['#F1F5F9','#475569']}[t]; return `<div class="ord-fi" style="background:${c[0]};color:${c[1]}">${t}</div>`; };
+  const filesHtml = files.length ? files.map(f => `<div class="ord-file${f.chosen ? ' chosen' : ''}" onclick="ordOpenFile('${f.id}')">${fileIcon(f)}<div class="ord-fn"><b>${ordEsc(f.name || 'File')}</b><span>${ordEsc(f.kind[0].toUpperCase() + f.kind.slice(1))}${f.amount ? ' · ' + ordMoney(f.amount) : ''}${f.chosen ? ' · chosen' : ''}</span></div>${ordStaff() && f.kind === 'quote' ? `<button class="ord-mini" onclick="event.stopPropagation();ordChooseQuote('${f.id}')">${f.chosen ? 'Chosen' : 'Pick'}</button>` : ''}</div>`).join('') : '<div class="ord-none">No quotes or invoices yet</div>';
+  const paysHtml = ['ordered','topay','paid'].includes(o.status) || pays.length ? `<div class="ord-ps"><h4>Payments</h4>
+    <div class="ord-paytop"><span>${ordMoney(o.paid)} of ${o.total ? ordMoney(o.total) : '?'} paid</span><b>${o.total ? Math.round(o.paid / o.total * 100) : 0}%</b></div>
+    <div class="ord-pbar big"><i style="width:${o.total ? Math.min(100, o.paid / o.total * 100) : 0}%"></i></div>
+    ${pays.map(p => `<div class="ord-li"><span>${new Date(p.paid_on || p.created_at).toLocaleDateString('en-GB', {day:'numeric', month:'short'})}${p.method ? ' · ' + ordEsc(p.method) : ''}</span><b>${ordMoney(p.amount)}</b></div>`).join('')}
+  </div>` : '';
+  const thread = notes.map(n => {
+    if(n.kind === 'event') return `<div class="ord-ev"><span>${ordEventText(n)} · ${ordDay(n.created_at)}</span></div>`;
+    const mine = n.author_id === me;
+    return `<div class="ord-note${mine ? ' mine' : ''}">${mine ? '' : ordAvatar(n.author_id, 28)}<div class="ord-bub">${mine ? '' : `<div class="nm">${ordEsc(ordName(n.author_id, true))}</div>`}${ordEsc(n.body).replace(/\n/g, '<br>')}<div class="tm">${ordDay(n.created_at)}</div></div></div>`;
+  }).join('');
+
+  // Bottom buttons for this person at this step
+  let acts = '';
+  if(o.status === 'requested' && ordCanApprove()) acts = `<button class="ord-bb go" style="flex:2" onclick="ordApproveAsk('${o.id}')">Approve</button><button class="ord-bb" onclick="ordHoldAsk('${o.id}')">Ask</button><button class="ord-bb red" onclick="ordRejectAsk('${o.id}')">Reject</button>`;
+  else if(o.status === 'hold' && (o.requested_by === me || ordStaff())) acts = `<button class="ord-bb go" style="flex:1" onclick="ordAnswer('${o.id}')">${o.requested_by === me ? 'Send answer & back to ' + ordEsc(ordName(o.hold_by, true)) : 'Take off hold'}</button>`;
+  else if(o.status === 'approved' && ordCanBuy()) acts = `<button class="ord-bb go" style="flex:2" onclick="ordPlaceAsk('${o.id}')">Make order</button><button class="ord-bb" onclick="ordHoldAsk('${o.id}')">Ask</button>`;
+  else if(['ordered','topay'].includes(o.status) && ordCanBuy()) acts = `<button class="ord-bb pay" style="flex:2" onclick="ordPayAsk('${o.id}')">Record payment</button>${o.status === 'ordered' ? `<button class="ord-bb" onclick="ordToPay('${o.id}')">Invoice in</button>` : ''}<button class="ord-bb" onclick="ordHoldAsk('${o.id}')">Ask</button>`;
+  else if(o.status === 'ordered' && o.requested_by === me && !o.received_at) acts = `<button class="ord-bb go" style="flex:1" onclick="ordReceived('${o.id}')">Mark received</button>`;
+
+  host.innerHTML = `${wide ? '' : `<button class="ord-back" onclick="nav('ordering')"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>Ordering</button>`}
+    <div class="ord-ph" style="background:${o.status === 'hold' ? 'linear-gradient(150deg,#FFF7E6,#FDE68A)' : k.grad}">
+      <div class="ord-ptop">${tags}<span class="ord-pref" style="color:${k.fg}">${ordRef(o)}</span><button class="ord-more" onclick="ordMore(event,'${o.id}')" title="More"><svg width="16" height="16" viewBox="0 0 24 24" fill="#0F1E2E"><circle cx="12" cy="5" r="2.2"/><circle cx="12" cy="12" r="2.2"/><circle cx="12" cy="19" r="2.2"/></svg></button>${wide ? `<button class="ord-more" onclick="ordClose()" title="Close" style="font-size:20px;color:#475569;font-family:Inter,sans-serif">×</button>` : ''}</div>
+      <div class="ord-ptitle">${ordEsc(o.title)}</div>
+      <div class="ord-psub">${sub}</div>
+      ${o.status === 'rejected' ? '' : `<div style="margin-top:14px">${ordTracker(o, true)}</div>`}
+      ${holdBox}
+    </div>
+    <div class="ord-pbody">
+      ${sig}
+      <div class="ord-ps"><h4>Items ${canEdit ? `<button class="ord-link" onclick="ordEditItems('${o.id}')">Edit</button>` : ''}</h4>${itemsHtml}
+        ${o.needed_by ? `<div class="ord-meta">Needed by ${new Date(o.needed_by).toLocaleDateString('en-GB', {weekday:'short', day:'numeric', month:'short'})}</div>` : ''}
+        ${o.note ? `<div class="ord-notebox">${ordEsc(o.note).replace(/\n/g, '<br>')}</div>` : ''}
+        ${o.ordered_at ? `<div class="ord-meta">Ordered by ${ordEsc(ordName(o.ordered_by, true))} ${ordDay(o.ordered_at)}${o.sent_via ? ' by ' + ordEsc(o.sent_via) : ''}${o.received_at ? ' · received ' + ordDay(o.received_at) : ''}</div>` : ''}
+      </div>
+      <div class="ord-ps"><h4>Quotes &amp; invoices <span><button class="ord-link" onclick="ordAddFile('${o.id}')">+ File</button><button class="ord-link" onclick="ordAddLink('${o.id}')">+ Link</button></span></h4>${filesHtml}</div>
+      ${paysHtml}
+      <div class="ord-ps" style="border:0"><h4>Questions &amp; history</h4><div class="ord-thread">${thread || '<div class="ord-none">Nothing yet</div>'}</div></div>
+    </div>
+    <div class="ord-pfoot">
+      <div class="ord-msgrow"><textarea id="ord-msg" data-id="${o.id}" rows="1" placeholder="${o.status === 'hold' && o.requested_by === me ? 'Write your answer…' : 'Write a message…'}" oninput="this.style.height='auto';this.style.height=Math.min(this.scrollHeight,110)+'px'"></textarea><button class="ord-send" onclick="ordSendNote('${o.id}')" title="Send"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg></button></div>
+      ${acts ? `<div class="ord-acts">${acts}</div>` : ''}
+    </div>`;
+  const inp = document.getElementById('ord-msg');
+  if(inp){
+    if(keep && keep.id === o.id && keep.v){ inp.value = keep.v; inp.style.height = Math.min(inp.scrollHeight, 110) + 'px'; }
+    if((keep && keep.id === o.id && keep.f) || ORD.focus){ inp.focus({preventScroll:true}); ORD.focus = false; }
+  }
+  const th = host.querySelector('.ord-pbody'); if(th && ORD.scrollDown){ th.scrollTop = th.scrollHeight; ORD.scrollDown = false; }
+}
+function ordClose(){ ORD.selId = null; ordRender(); ordRenderDetail(); }
+function ordEventText(n){
+  const who = ordEsc(ordName(n.author_id, true)), b = n.body || '';
+  if(b === 'approved') return `${who} approved`;
+  if(b === 'ordered') return `${who} placed the order`;
+  if(b === 'topay') return `${who}: invoice in, ready to pay`;
+  if(b === 'answered') return `${who} answered - back in the queue`;
+  if(b === 'received') return `${who} marked it received`;
+  if(b === 'not received') return `${who} un-ticked received`;
+  if(b.startsWith('hold:')) return `${who} put it on hold: ${ordEsc(b.slice(5))}`;
+  if(b.startsWith('rejected:')) return `${who} rejected it${b.slice(9) ? ': ' + ordEsc(b.slice(9)) : ''}`;
+  if(b.startsWith('paid:')) return `${who} paid ${ordMoney(b.slice(5))}`;
+  if(b === 'pinned:on') return `${who} pinned it`; if(b === 'pinned:off') return `${who} unpinned it`;
+  if(b === 'urgent:on') return `${who} marked it urgent`; if(b === 'urgent:off') return `${who} took off urgent`;
+  return who + ': ' + ordEsc(b);
+}
+function ordMore(e, id){
+  e.stopPropagation();
+  const o = ordGet(id); if(!o) return;
+  const me = ordMe(), items = [];
+  const canEdit = (o.requested_by === me && ['requested','hold'].includes(o.status)) || (ordStaff() && !['paid','rejected'].includes(o.status));
+  if(ordStaff() && !['paid','rejected'].includes(o.status)) items.push([o.pinned ? 'Unpin' : 'Pin to the top', `ordFlag('${id}','pinned',${!o.pinned})`]);
+  if((o.requested_by === me || ordStaff()) && !['paid','rejected'].includes(o.status)) items.push([o.urgent ? 'Not urgent' : 'Mark urgent', `ordFlag('${id}','urgent',${!o.urgent})`]);
+  if(canEdit) items.push(['Edit details', `ordEditDetails('${id}')`]);
+  if(['ordered','topay','paid'].includes(o.status) && (o.requested_by === me || ordStaff())) items.push([o.received_at ? 'Un-tick received' : 'Mark received', `ordReceived('${id}')`]);
+  if(['approved','ordered','topay','paid'].includes(o.status)) items.push(['Order sheet (print / PDF)', `ordPrint('${id}')`]);
+  if(ordStaff() && !['paid','rejected'].includes(o.status) && o.status !== 'requested') items.push(['Reject / cancel', `ordRejectAsk('${id}')`, true]);
+  if((o.requested_by === me && ['requested','hold'].includes(o.status)) || (ordStaff() && !Number(o.paid))) items.push(['Delete', `ordDelete('${id}')`, true]);
+  document.getElementById('ord-menu')?.remove();
+  const m = document.createElement('div'); m.id = 'ord-menu';
+  m.innerHTML = items.map(([l, fn, red]) => `<button onclick="document.getElementById('ord-menu').remove();${fn}" style="${red ? 'color:#DC2626' : ''}">${l}</button>`).join('');
+  const r = e.currentTarget.getBoundingClientRect();
+  m.style.top = (r.bottom + 6) + 'px'; m.style.right = Math.max(12, window.innerWidth - r.right) + 'px';
+  document.body.appendChild(m);
+  setTimeout(() => document.addEventListener('click', function c(){ m.remove(); document.removeEventListener('click', c); }), 0);
+}
+
+// ── Sheets (pop-ups) ──
+function ordSheet(html, wide){
+  let sh = document.getElementById('ord-sheet');
+  if(!sh){ sh = document.createElement('div'); sh.id = 'ord-sheet'; sh.onclick = e => { if(e.target === sh) ordSheetClose(); }; document.body.appendChild(sh); }
+  sh.innerHTML = `<div class="ord-sheet-card${wide ? ' wide' : ''}" onclick="event.stopPropagation()"><div class="ord-grab"></div>${html}</div>`;
+  sh.style.display = 'flex';
+}
+function ordSheetClose(){ const sh = document.getElementById('ord-sheet'); if(sh) sh.style.display = 'none'; ORD.form = null; }
+document.addEventListener('keydown', e => { if(e.key === 'Escape' && document.getElementById('ord-sheet')?.style.display === 'flex') ordSheetClose(); });
+const ORD_X = '<button class="ord-x2" onclick="ordSheetClose()">×</button>';
+
+async function ordRpc(fn, args, ok, ev){
+  if(ORD.busy) return false;
+  ORD.busy = true;
+  const { error } = await sb.rpc(fn, args);
+  ORD.busy = false;
+  if(error){ toast(error.message || 'Something went wrong - please try again'); return false; }
+  if(ok) toast(ok);
+  if(ev) ordNotify(args.oid, ev);
+  await ordLoad();
+  return true;
+}
+// Approve (signature optional)
+function ordApproveAsk(id){
+  const o = ordGet(id); if(!o) return;
+  ordSheet(`<div class="ord-sh"><div class="ord-sht">Approve ${ordRef(o)}?</div>${ORD_X}</div>
+    <div class="ord-shs">${ordEsc(o.title)} · <b>${o.total ? ordMoney(o.total) : 'price to confirm'}</b></div>
+    <label class="ord-sigtog"><input type="checkbox" id="ord-sig-on" onchange="document.getElementById('ord-sigwrap').style.display=this.checked?'block':'none';ordSigInit()"> Add my signature too <span>Optional - "Approved by ${ordEsc(ordName(ordMe()))}" is enough</span></label>
+    <div id="ord-sigwrap" style="display:none"><canvas id="ord-sig" width="440" height="140"></canvas><button class="ord-link" onclick="ordSigInit(true)">Clear</button></div>
+    <button class="ord-big go" onclick="ordApprove('${id}')">Approve</button>`);
+}
+function ordSigInit(clear){
+  const c = document.getElementById('ord-sig'); if(!c) return;
+  const x = c.getContext('2d');
+  if(clear || !c.dataset.ready){ x.fillStyle = '#F8FAFC'; x.fillRect(0, 0, c.width, c.height); x.strokeStyle = '#0F1E2E'; x.lineWidth = 2.4; x.lineCap = 'round'; c.dataset.drawn = ''; }
+  if(c.dataset.ready) return;
+  c.dataset.ready = '1';
+  let down = false;
+  const pos = e => { const r = c.getBoundingClientRect(), t = e.touches ? e.touches[0] : e; return [(t.clientX - r.left) * c.width / r.width, (t.clientY - r.top) * c.height / r.height]; };
+  const start = e => { down = true; const [a, b] = pos(e); x.beginPath(); x.moveTo(a, b); e.preventDefault(); };
+  const move = e => { if(!down) return; const [a, b] = pos(e); x.lineTo(a, b); x.stroke(); c.dataset.drawn = '1'; e.preventDefault(); };
+  const end = () => { down = false; };
+  c.addEventListener('mousedown', start); c.addEventListener('mousemove', move); window.addEventListener('mouseup', end);
+  c.addEventListener('touchstart', start, {passive:false}); c.addEventListener('touchmove', move, {passive:false}); c.addEventListener('touchend', end);
+}
+async function ordApprove(id){
+  const on = document.getElementById('ord-sig-on')?.checked, c = document.getElementById('ord-sig');
+  const sig = on && c && c.dataset.drawn ? c.toDataURL('image/png') : '';
+  ordSheetClose();
+  await ordRpc('order_approve', { oid:id, sig }, 'Approved', 'approved');
+}
+// On hold with a question
+function ordHoldAsk(id){
+  const o = ordGet(id); if(!o) return;
+  ORD.form = { reason: ORD_HOLD_REASONS[0] };
+  ordSheet(`<div class="ord-sh"><div class="ord-sht">Put on hold and ask</div>${ORD_X}</div>
+    <div class="ord-shs">${ordEsc(ordName(o.requested_by, true))} gets a notification and it waits for their answer</div>
+    <div class="ord-pick" id="ord-hold-r">${ORD_HOLD_REASONS.map((r, i) => `<button class="${i ? '' : 'on hold'}" onclick="ORD.form.reason=this.textContent;[...this.parentNode.children].forEach(b=>b.className='');this.className='on hold'">${r}</button>`).join('')}</div>
+    <textarea id="ord-hold-q" class="ord-inp" rows="3" placeholder="Your question…" style="margin-top:12px"></textarea>
+    <button class="ord-big hold" onclick="ordHold('${id}')">Put on hold &amp; send</button>`);
+  setTimeout(() => document.getElementById('ord-hold-q')?.focus(), 60);
+}
+async function ordHold(id){
+  const q = (document.getElementById('ord-hold-q')?.value || '').trim(), r = ORD.form && ORD.form.reason;
+  ordSheetClose();
+  await ordRpc('order_hold', { oid:id, reason:r, question:q }, 'On hold - question sent', 'hold');
+}
+async function ordAnswer(id){
+  const v = (document.getElementById('ord-msg')?.value || '').trim();
+  const o = ordGet(id);
+  if(!v && o && o.requested_by === ordMe()){ toast('Write your answer first'); document.getElementById('ord-msg')?.focus(); return; }
+  const ok = await ordRpc('order_answer', { oid:id, answer:v }, 'Answer sent', 'answered');
+  if(ok){ const m = document.getElementById('ord-msg'); if(m) m.value = ''; }
+}
+function ordRejectAsk(id){
+  const o = ordGet(id); if(!o) return;
+  ordSheet(`<div class="ord-sh"><div class="ord-sht">Reject ${ordRef(o)}?</div>${ORD_X}</div>
+    <div class="ord-shs">${ordEsc(o.title)}</div>
+    <textarea id="ord-rej" class="ord-inp" rows="3" placeholder="Why? (they'll see this)"></textarea>
+    <button class="ord-big red" onclick="ordReject('${id}')">Reject</button>`);
+}
+async function ordReject(id){ const r = (document.getElementById('ord-rej')?.value || '').trim(); ordSheetClose(); await ordRpc('order_reject', { oid:id, reason:r }, 'Rejected', 'rejected'); }
+// Place the order with a supplier, and send it to them
+function ordPlaceAsk(id){
+  const o = ordGet(id); if(!o) return;
+  ORD.form = { via:'WhatsApp' };
+  ordSheet(`<div class="ord-sh"><div class="ord-sht">Make order ${ordRef(o).replace('PR-', 'PO-')}</div>${ORD_X}</div>
+    <div class="ord-shs">${ordEsc(o.title)} · <b>${o.total ? ordMoney(o.total) : 'price to confirm'}</b></div>
+    <div class="ord-lab">Supplier</div>
+    <input id="ord-sup" class="ord-inp" list="ord-vendors" value="${ordEsc(o.supplier || '')}" placeholder="Who are you ordering from?">
+    <datalist id="ord-vendors">${ORD.vendors.map(v => `<option value="${ordEsc(v)}">`).join('')}</datalist>
+    <div class="ord-lab">Sent by</div>
+    <div class="ord-pick">${['WhatsApp','Email','Phone','In person'].map((v, i) => `<button class="${i ? '' : 'on'}" onclick="ORD.form.via=this.textContent;[...this.parentNode.children].forEach(b=>b.className='');this.className='on'">${v}</button>`).join('')}</div>
+    <label class="ord-sigtog" style="margin-top:14px"><input type="checkbox" id="ord-wa" checked> Open WhatsApp with the order written out <span>You pick the supplier's chat and press send</span></label>
+    <button class="ord-big go" onclick="ordPlace('${id}')">Mark as ordered</button>`);
+}
+function ordOrderText(o){
+  const items = ORD.items[o.id] || [];
+  return `Order ${ordRef(o).replace('PR-', 'PO-')} from ${(myCompany && myCompany.name) || 'us'}\n` + items.map(i => `- ${Number(i.qty).toLocaleString('en-US')} × ${i.name}${i.unit ? ' (' + i.unit + ')' : ''}`).join('\n') + (o.needed_by ? `\nNeeded by ${new Date(o.needed_by).toLocaleDateString('en-GB', {weekday:'short', day:'numeric', month:'short'})}` : '') + '\nThank you!';
+}
+async function ordPlace(id){
+  const o = ordGet(id); if(!o) return;
+  const sup = (document.getElementById('ord-sup')?.value || '').trim(), via = ORD.form && ORD.form.via, wa = document.getElementById('ord-wa')?.checked;
+  ordSheetClose();
+  const text = ordOrderText(Object.assign({}, o, { status:'ordered' }));
+  const win = wa && via === 'WhatsApp' ? window.open('', '_blank') : null;
+  const ok = await ordRpc('order_place', { oid:id, sup, via }, 'Ordered', 'ordered');
+  if(win){ if(ok) win.location = 'https://wa.me/?text=' + encodeURIComponent(text); else win.close(); }
+}
+async function ordToPay(id){ await ordRpc('order_to_pay', { oid:id }, 'Moved to To pay', null); }
+async function ordReceived(id){ const o = ordGet(id); await ordRpc('order_received', { oid:id }, o && o.received_at ? 'Un-ticked' : 'Marked received', o && o.received_at ? null : 'received'); }
+async function ordFlag(id, what, val){ await ordRpc('order_flag', { oid:id, what, val }, what === 'pinned' ? (val ? 'Pinned to the top' : 'Unpinned') : (val ? 'Marked urgent' : 'Not urgent'), null); }
+function ordDelete(id){
+  appConfirmShow({ title:'Delete this order?', msg:'It will be removed for everyone, with its files and history.', label:'Delete', onOk: async () => {
+    const { error } = await sb.rpc('order_delete', { oid:id });
+    if(error){ toast(error.message || 'Could not delete'); return; }
+    ORD.selId = null; toast('Deleted');
+    if(!ordIsWide()) nav('ordering');
+    ordLoad();
+  }});
+}
+// Payments: 25 / 50 / 75 / the rest / other amount
+function ordPayAsk(id){
+  const o = ordGet(id); if(!o) return;
+  const left = Math.max(0, Number(o.total) - Number(o.paid));
+  ORD.form = { method:'Transfer', file:null };
+  ordSheet(`<div class="ord-sh"><div class="ord-sht">Record a payment</div>${ORD_X}</div>
+    <div class="ord-shs">${ordEsc(o.title)} · ${ordMoney(o.paid)} of ${o.total ? ordMoney(o.total) : '?'} paid</div>
+    ${o.total ? `<div class="ord-pick" id="ord-pp">${[[25,'25%'],[50,'50%'],[75,'75%'],[0,'The rest']].map(([p, l]) => `<button onclick="ordPayPick(${p ? Math.round(o.total * p / 100) : left},this)">${l}</button>`).join('')}</div>` : ''}
+    <div class="ord-lab">Amount</div>
+    <input id="ord-amt" class="ord-inp" inputmode="numeric" placeholder="e.g. 8,000,000" value="${left ? left.toLocaleString('en-US') : ''}" oninput="const d=this.value.replace(/[^0-9]/g,'');this.value=d?Number(d).toLocaleString('en-US'):''">
+    <div class="ord-lab">How</div>
+    <div class="ord-pick">${['Transfer','Cash','Card','Other'].map((v, i) => `<button class="${i ? '' : 'on'}" onclick="ORD.form.method=this.textContent;[...this.parentNode.children].forEach(b=>b.className='');this.className='on'">${v}</button>`).join('')}</div>
+    <label class="ord-attach" style="margin-top:12px"><span id="ord-paf">+ Receipt photo or transfer slip (optional)</span><input type="file" accept="image/*,application/pdf" style="display:none" onchange="ORD.form.file=this.files[0];document.getElementById('ord-paf').textContent=this.files[0]?this.files[0].name:''"></label>
+    <button class="ord-big pay" onclick="ordPay('${id}')">Record payment</button>`);
+}
+function ordPayPick(v, btn){ const a = document.getElementById('ord-amt'); if(a) a.value = Number(v).toLocaleString('en-US'); [...btn.parentNode.children].forEach(b => b.className = ''); btn.className = 'on'; }
+async function ordPay(id){
+  const amt = Number((document.getElementById('ord-amt')?.value || '').replace(/[^0-9]/g, ''));
+  if(!amt){ toast('Enter an amount'); return; }
+  const f = ORD.form || {};
+  ordSheetClose();
+  let fid = null;
+  if(f.file){ const row = await ordUpload(id, f.file, 'receipt', amt); fid = row && row.id || null; }
+  await ordRpc('order_pay', { oid:id, amt, how:f.method || null, fid }, 'Payment recorded', 'paid');
+}
+
+// ── Files ──
+async function ordUpload(oid, file, kind, amount){
+  if(file.size > 15 * 1024 * 1024){ toast('That file is too big (15MB max)'); return null; }
+  const safe = file.name.replace(/[^a-zA-Z0-9._-]+/g, '_').slice(-80);
+  const path = `${myProfile.company_id}/orders/${oid}/${Date.now()}-${safe}`;
+  let blob = file;
+  try{ if(/^image\//.test(file.type) && !/gif/.test(file.type)){ const d = await appFileToDataUrl(file); blob = await (await fetch(d)).blob(); } }catch(e){}
+  const up = await sb.storage.from(MKT_BUCKET).upload(path, blob, { contentType: blob.type || file.type || undefined, upsert:false });
+  if(up.error){ toast('Upload failed - check your connection'); console.warn(up.error); return null; }
+  const { data, error } = await sb.from('order_files').insert({ order_id:oid, company_id:myProfile.company_id, kind, name:file.name, path, mime:file.type || null, amount:amount || null, added_by:ordMe() }).select('*').single();
+  if(error){ await sb.storage.from(MKT_BUCKET).remove([path]); toast('Could not save the file'); return null; }
+  (ORD.files[oid] = ORD.files[oid] || []).push(data);
+  return data;
+}
+function ordAddFile(oid){
+  ORD.form = { kind:'quote' };
+  ordSheet(`<div class="ord-sh"><div class="ord-sht">Add a file</div>${ORD_X}</div>
+    <div class="ord-shs">A photo of a handwritten quote is fine</div>
+    <div class="ord-pick">${['quote','invoice','receipt','other'].map((v, i) => `<button class="${i ? '' : 'on'}" onclick="ORD.form.kind='${v}';[...this.parentNode.children].forEach(b=>b.className='');this.className='on'">${v[0].toUpperCase() + v.slice(1)}</button>`).join('')}</div>
+    <div class="ord-lab">Amount on it (optional)</div>
+    <input id="ord-famt" class="ord-inp" inputmode="numeric" placeholder="e.g. 3,550,000" oninput="const d=this.value.replace(/[^0-9]/g,'');this.value=d?Number(d).toLocaleString('en-US'):''">
+    <label class="ord-big go" style="display:flex;align-items:center;justify-content:center;cursor:pointer">Choose photo, PDF or Word file<input type="file" accept="image/*,application/pdf,.doc,.docx,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document" style="display:none" onchange="ordAddFileGo('${oid}',this)"></label>`);
+}
+async function ordAddFileGo(oid, input){
+  const f = input.files && input.files[0]; if(!f) return;
+  const amt = Number((document.getElementById('ord-famt')?.value || '').replace(/[^0-9]/g, '')) || null;
+  const kind = (ORD.form && ORD.form.kind) || 'quote';
+  ordSheetClose(); toast('Uploading…');
+  const row = await ordUpload(oid, f, kind, amt);
+  if(row){ toast('Added'); ordNotify(oid, 'note'); ordRenderDetail(); }
+}
+function ordAddLink(oid){
+  ORD.form = { kind:'quote' };
+  ordSheet(`<div class="ord-sh"><div class="ord-sht">Add a link</div>${ORD_X}</div>
+    <div class="ord-pick">${['quote','invoice','other'].map((v, i) => `<button class="${i ? '' : 'on'}" onclick="ORD.form.kind='${v}';[...this.parentNode.children].forEach(b=>b.className='');this.className='on'">${v[0].toUpperCase() + v.slice(1)}</button>`).join('')}</div>
+    <input id="ord-lurl" class="ord-inp" placeholder="https://…" style="margin-top:12px">
+    <input id="ord-lname" class="ord-inp" placeholder="Name (e.g. Supplier website quote)" style="margin-top:8px">
+    <input id="ord-lamt" class="ord-inp" inputmode="numeric" placeholder="Amount (optional)" style="margin-top:8px" oninput="const d=this.value.replace(/[^0-9]/g,'');this.value=d?Number(d).toLocaleString('en-US'):''">
+    <button class="ord-big go" onclick="ordAddLinkGo('${oid}')">Add link</button>`);
+}
+async function ordAddLinkGo(oid){
+  let url = (document.getElementById('ord-lurl')?.value || '').trim();
+  if(!url){ toast('Paste the link first'); return; }
+  if(!/^https?:\/\//i.test(url)) url = 'https://' + url;
+  const name = (document.getElementById('ord-lname')?.value || '').trim() || url.replace(/^https?:\/\//, '').slice(0, 60);
+  const amount = Number((document.getElementById('ord-lamt')?.value || '').replace(/[^0-9]/g, '')) || null;
+  const kind = (ORD.form && ORD.form.kind) || 'quote';
+  ordSheetClose();
+  const { data, error } = await sb.from('order_files').insert({ order_id:oid, company_id:myProfile.company_id, kind, name, url, amount, added_by:ordMe() }).select('*').single();
+  if(error){ toast('Could not add the link'); return; }
+  (ORD.files[oid] = ORD.files[oid] || []).push(data); toast('Added'); ordRenderDetail();
+}
+async function ordOpenFile(fid){
+  let f = null; Object.values(ORD.files).forEach(arr => arr.forEach(x => { if(x.id === fid) f = x; }));
+  if(!f) return;
+  if(f.url && !f.path){ window.open(f.url, '_blank', 'noopener'); return; }
+  const w = window.open('', '_blank');
+  const { data, error } = await sb.storage.from(MKT_BUCKET).createSignedUrl(f.path, 600);
+  if(error || !data){ if(w) w.close(); toast('Could not open that file'); return; }
+  if(w) w.location = data.signedUrl; else window.open(data.signedUrl, '_blank');
+}
+async function ordChooseQuote(fid){
+  let f = null; Object.values(ORD.files).forEach(arr => arr.forEach(x => { if(x.id === fid) f = x; }));
+  if(!f) return;
+  const same = (ORD.files[f.order_id] || []).filter(x => x.kind === 'quote');
+  await Promise.all(same.map(x => sb.from('order_files').update({ chosen: x.id === fid && !f.chosen }).eq('id', x.id)));
+  same.forEach(x => x.chosen = x.id === fid && !f.chosen);
+  ordRenderDetail();
+}
+
+// ── Messages ──
+async function ordSendNote(id){
+  const inp = document.getElementById('ord-msg'); const v = (inp && inp.value || '').trim();
+  if(!v) return;
+  const o = ordGet(id);
+  if(o && o.status === 'hold' && o.requested_by === ordMe()) return ordAnswer(id);
+  const { error } = await sb.from('order_notes').insert({ order_id:id, company_id:myProfile.company_id, author_id:ordMe(), kind:'note', body:v });
+  if(error){ toast('Could not send'); return; }
+  inp.value = ''; inp.style.height = 'auto';
+  ordNotify(id, 'note');
+  ORD.scrollDown = true;
+  ordLoadDetail(id);
+}
+
+// ── New request: type, items (saved for next time), details, files, urgent ──
+function ordNew(){
+  const depts = (typeof PEOPLE_DEPARTMENTS !== 'undefined' ? PEOPLE_DEPARTMENTS : []).filter(Boolean);
+  const mine = Array.isArray(myProfile && myProfile.departments) ? myProfile.departments : [];
+  ORD.form = { mode:'new', kind:'everyday', items:[], title:'', dept: mine[0] || depts[0] || '', supplier:'', needed:'', note:'', urgent:false, files:[], links:[], q:'' };
+  ordFormRender();
+}
+function ordEditItems(id){
+  const o = ordGet(id); if(!o) return;
+  ORD.form = { mode:'items', id, kind:o.kind, items:(ORD.items[id] || []).map(i => ({ id:i.id, name:i.name, unit:i.unit || '', qty:Number(i.qty), price:Number(i.price) || '' })), q:'' };
+  ordFormRender();
+}
+function ordEditDetails(id){
+  const o = ordGet(id); if(!o) return;
+  ORD.form = { mode:'details', id, kind:o.kind, title:o.title, dept:o.dept || '', supplier:o.supplier || '', needed:o.needed_by || '', note:o.note || '' };
+  ordFormRender();
+}
+function ordFormKeep(){
+  const f = ORD.form; if(!f) return;
+  const g = id => document.getElementById(id);
+  if(g('ord-f-title')) f.title = g('ord-f-title').value;
+  if(g('ord-f-sup')) f.supplier = g('ord-f-sup').value;
+  if(g('ord-f-need')) f.needed = g('ord-f-need').value;
+  if(g('ord-f-note')) f.note = g('ord-f-note').value;
+  if(g('ord-f-dept')) f.dept = g('ord-f-dept').value;
+  if(g('ord-f-q')) f.q = g('ord-f-q').value;
+  (f.items || []).forEach((it, i) => {
+    const q = g('ord-iq-' + i), p = g('ord-ip-' + i), u = g('ord-iu-' + i);
+    if(q) it.qty = Number(q.value.replace(/[^0-9.]/g, '')) || 0;
+    if(p) it.price = p.value.replace(/[^0-9]/g, '') ? Number(p.value.replace(/[^0-9]/g, '')) : '';
+    if(u) it.unit = u.value;
+  });
+}
+function ordFormTotal(){ return (ORD.form.items || []).reduce((s, i) => s + (Number(i.qty) || 0) * (Number(i.price) || 0), 0); }
+function ordFormRender(){
+  const f = ORD.form; if(!f) return;
+  const depts = (typeof PEOPLE_DEPARTMENTS !== 'undefined' ? PEOPLE_DEPARTMENTS : []).filter(Boolean);
+  const kinds = Object.entries(ORD_KINDS).map(([k, v]) => `<button class="ord-type${f.kind === k ? ' on' : ''}" style="background:${v.bg};color:${v.fg};${f.kind === k ? 'border-color:' + v.stroke : ''}" onclick="ordFormKeep();ORD.form.kind='${k}';ordFormRender()"><span class="i">${ordIcon(k, 22)}</span>${v.name}<small>${v.sub}</small></button>`).join('');
+  const itemRows = (f.items || []).map((it, i) => `<div class="ord-irow">
+      <div class="ord-in"><b>${ordEsc(it.name)}</b><input id="ord-iu-${i}" class="ord-unit" value="${ordEsc(it.unit || '')}" placeholder="unit e.g. pack, kg"></div>
+      <div class="ord-step"><button onclick="ordStep(${i},-1)">−</button><input id="ord-iq-${i}" inputmode="decimal" value="${it.qty}"><button onclick="ordStep(${i},1)">+</button></div>
+      <input id="ord-ip-${i}" class="ord-price" inputmode="numeric" placeholder="Price each" value="${it.price ? Number(it.price).toLocaleString('en-US') : ''}" oninput="const d=this.value.replace(/[^0-9]/g,'');this.value=d?Number(d).toLocaleString('en-US'):'';ordFormKeep();ordFormTotalShow()">
+      <button class="ord-irm" onclick="ordFormKeep();ORD.form.items.splice(${i},1);ordFormRender()" title="Remove">×</button>
+    </div>`).join('');
+  const itemsBlock = `<div class="ord-lab">What do you need?</div>${itemRows}
+    <div style="position:relative"><input id="ord-f-q" class="ord-inp" placeholder="${f.items.length ? 'Add another item…' : 'Start typing, e.g. napkins'}" value="${ordEsc(f.q || '')}" oninput="ORD.form.q=this.value;ordSuggest()" onkeydown="if(event.key==='Enter'){event.preventDefault();ordAddItem(this.value)}" autocomplete="off"><div id="ord-sugg"></div></div>`;
+  const detailBlock = `<div class="ord-lab">Details</div>
+    <input id="ord-f-title" class="ord-inp" placeholder="${f.mode === 'new' ? 'Short name (optional) - e.g. Bar weekly supplies' : 'Short name'}" value="${ordEsc(f.title || '')}" maxlength="80">
+    <div class="ord-row3">
+      <label><span>Department</span><select id="ord-f-dept"><option value="">-</option>${depts.concat(f.dept && !depts.includes(f.dept) ? [f.dept] : []).map(d => `<option ${d === f.dept ? 'selected' : ''}>${ordEsc(d)}</option>`).join('')}</select></label>
+      <label><span>Supplier</span><input id="ord-f-sup" list="ord-vendors2" value="${ordEsc(f.supplier || '')}" placeholder="If you know it"><datalist id="ord-vendors2">${ORD.vendors.map(v => `<option value="${ordEsc(v)}">`).join('')}</datalist></label>
+      <label><span>Needed by</span><input id="ord-f-need" type="date" value="${ordEsc(f.needed || '')}"></label>
+    </div>
+    <textarea id="ord-f-note" class="ord-inp" rows="2" placeholder="Anything else they should know (optional)" style="margin-top:8px">${ordEsc(f.note || '')}</textarea>`;
+  let html = '';
+  if(f.mode === 'items'){
+    html = `<div class="ord-sh"><div class="ord-sht">Edit items</div>${ORD_X}</div>${itemsBlock}<div class="ord-total" id="ord-ftot"></div><button class="ord-big go" onclick="ordSaveItems()">Save items</button>`;
+  } else if(f.mode === 'details'){
+    html = `<div class="ord-sh"><div class="ord-sht">Edit details</div>${ORD_X}</div><div class="ord-types">${kinds}</div>${detailBlock}<button class="ord-big go" onclick="ordSaveDetails()">Save</button>`;
+  } else {
+    html = `<div class="ord-sh"><div class="ord-sht">I need something</div>${ORD_X}</div>
+      <div class="ord-types">${kinds}</div>
+      ${itemsBlock}
+      ${detailBlock}
+      <div class="ord-lab">Quote or photo</div>
+      <div class="ord-attachrow">
+        <label class="ord-attach">Photo / PDF / Word<input type="file" multiple accept="image/*,application/pdf,.doc,.docx" style="display:none" onchange="ordFormKeep();ORD.form.files.push(...this.files);ordFormRender()"></label>
+        <button class="ord-attach" onclick="ordFormKeep();ORD.form.linkOpen=true;ordFormRender();document.getElementById('ord-f-link')?.focus()">Link</button>
+      </div>
+      ${f.linkOpen ? `<div style="display:flex;gap:8px;margin-top:8px"><input id="ord-f-link" class="ord-inp" placeholder="Paste the link"><button class="ord-mini" style="padding:0 14px" onclick="const v=document.getElementById('ord-f-link').value.trim();ordFormKeep();if(v){ORD.form.links.push(v)}ORD.form.linkOpen=false;ordFormRender()">Add</button></div>` : ''}
+      ${f.files.length || f.links.length ? `<div class="ord-flist">${f.files.map((x, i) => `<span>${ordEsc(x.name)}<button onclick="ordFormKeep();ORD.form.files.splice(${i},1);ordFormRender()">×</button></span>`).join('')}${f.links.map((x, i) => `<span>${ordEsc(x)}<button onclick="ordFormKeep();ORD.form.links.splice(${i},1);ordFormRender()">×</button></span>`).join('')}</div>` : ''}
+      <button class="ord-urgent${f.urgent ? ' on' : ''}" onclick="ordFormKeep();ORD.form.urgent=!ORD.form.urgent;ordFormRender()"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>Urgent<span class="ord-tog"><i></i></span></button>
+      <button class="ord-big go" id="ord-f-send" onclick="ordSubmit()">Send for approval<span id="ord-ftot"></span></button>`;
+  }
+  ordSheet(html, true);
+  ordFormTotalShow();
+  if(f.focusQ){ document.getElementById('ord-f-q')?.focus(); f.focusQ = false; }
+}
+function ordFormTotalShow(){ const t = ordFormTotal(), el = document.getElementById('ord-ftot'); if(el) el.textContent = t ? (ORD.form.mode === 'new' ? ' · ' : 'Total ') + ordShort(t) : ''; }
+function ordStep(i, d){ ordFormKeep(); const it = ORD.form.items[i]; it.qty = Math.max(0, (Number(it.qty) || 0) + d); ordFormRender(); }
+function ordSuggest(){
+  const box = document.getElementById('ord-sugg'); if(!box) return;
+  const q = (ORD.form.q || '').trim().toLowerCase();
+  if(!q){ box.innerHTML = ''; return; }
+  const have = new Set(ORD.form.items.map(i => i.name.toLowerCase()));
+  const hits = ORD.catalog.filter(c => c.name.toLowerCase().includes(q) && !have.has(c.name.toLowerCase())).slice(0, 6);
+  const exact = ORD.catalog.some(c => c.name.toLowerCase() === q);
+  box.innerHTML = `<div class="ord-sugg">${hits.map(c => `<button onclick="ordAddItem(this.dataset.n)" data-n="${ordEsc(c.name)}"><b>${ordEsc(c.name)}</b><span>${ordEsc([c.unit, c.last_price ? 'last ' + ordMoney(c.last_price) : '', 'saved'].filter(Boolean).join(' · '))}</span></button>`).join('')}${exact ? '' : `<button class="new" onclick="ordAddItem(ORD.form.q)">+ Add "${ordEsc(ORD.form.q.trim())}" as a new item</button>`}</div>`;
+}
+function ordAddItem(name){
+  name = String(name || '').trim(); if(!name) return;
+  ordFormKeep();
+  const c = ORD.catalog.find(x => x.name.toLowerCase() === name.toLowerCase());
+  ORD.form.items.push({ name: c ? c.name : name, unit: c && c.unit || '', qty:1, price: c && c.last_price ? Number(c.last_price) : '' });
+  if(c && c.supplier && ORD.form.mode === 'new' && !ORD.form.supplier) ORD.form.supplier = c.supplier;
+  ORD.form.q = ''; ORD.form.focusQ = true;
+  ordFormRender();
+}
+function ordAutoTitle(items){
+  const n = items.map(i => i.name);
+  if(!n.length) return '';
+  return n.length <= 3 ? n.join(', ') : n.slice(0, 2).join(', ') + ' + ' + (n.length - 2) + ' more';
+}
+async function ordSubmit(){
+  ordFormKeep();
+  const f = ORD.form;
+  if((f.q || '').trim()) { ordAddItem(f.q); return toast('Added "' + f.items[f.items.length - 1].name + '" - tap Send again'); }
+  if(!f.items.length){ toast('Add at least one item'); document.getElementById('ord-f-q')?.focus(); return; }
+  const title = (f.title || '').trim() || ordAutoTitle(f.items);
+  const btn = document.getElementById('ord-f-send'); if(btn){ btn.disabled = true; btn.textContent = 'Sending…'; }
+  const { data, error } = await sb.from('orders').insert({ company_id:myProfile.company_id, requested_by:ordMe(), kind:f.kind, title, dept:f.dept || null, supplier:f.supplier.trim() || null, needed_by:f.needed || null, note:f.note.trim() || null, urgent:!!f.urgent }).select(ORD_COLS).single();
+  if(error){ if(btn){ btn.disabled = false; btn.textContent = 'Send for approval'; } toast('Could not send: ' + (error.message || 'please try again')); return; }
+  const rows = f.items.map((i, n) => ({ order_id:data.id, company_id:myProfile.company_id, name:i.name, unit:i.unit || null, qty:Number(i.qty) || 1, price:Number(i.price) || 0, position:n }));
+  const ins = await sb.from('order_items').insert(rows);
+  if(ins.error) toast('Saved, but the items had a problem - open it and check');
+  sb.rpc('order_catalog_save', { items: f.items.map(i => ({ name:i.name, unit:i.unit || '', price: i.price ? String(i.price) : '' })), sup:f.supplier || '', d:f.dept || '' }).then(() => ordLoadExtras());
+  const files = f.files.slice(), links = f.links.slice();
+  ordSheetClose();
+  toast('Sent for approval');
+  for(const file of files) await ordUpload(data.id, file, 'quote', null);
+  for(let u of links){ if(!/^https?:\/\//i.test(u)) u = 'https://' + u; await sb.from('order_files').insert({ order_id:data.id, company_id:myProfile.company_id, kind:'quote', name:u.replace(/^https?:\/\//, '').slice(0, 60), url:u, added_by:ordMe() }); }
+  ordNotify(data.id, 'new');
+  ORD.tab = 'me';
+  await ordLoad();
+}
+async function ordSaveItems(){
+  ordFormKeep();
+  const f = ORD.form, id = f.id;
+  if((f.q || '').trim()){ ordAddItem(f.q); return; }
+  const old = ORD.items[id] || [];
+  const keepIds = new Set(f.items.filter(i => i.id).map(i => i.id));
+  const del = old.filter(i => !keepIds.has(i.id)).map(i => i.id);
+  if(del.length){ const r = await sb.from('order_items').delete().in('id', del); if(r.error){ toast(r.error.message || 'Could not save'); return; } }
+  for(const [n, i] of f.items.entries()){
+    const row = { name:i.name, unit:i.unit || null, qty:Number(i.qty) || 0, price:Number(i.price) || 0, position:n };
+    const r = i.id ? await sb.from('order_items').update(row).eq('id', i.id) : await sb.from('order_items').insert(Object.assign({ order_id:id, company_id:myProfile.company_id }, row));
+    if(r.error){ toast(r.error.message || 'Could not save'); return; }
+  }
+  const o = ordGet(id);
+  sb.rpc('order_catalog_save', { items: f.items.map(i => ({ name:i.name, unit:i.unit || '', price: i.price ? String(i.price) : '' })), sup:(o && o.supplier) || '', d:(o && o.dept) || '' }).then(() => ordLoadExtras());
+  ordSheetClose(); toast('Items saved');
+  await ordLoad();
+}
+async function ordSaveDetails(){
+  ordFormKeep();
+  const f = ORD.form;
+  ordSheetClose();
+  await ordRpc('order_update', { oid:f.id, t:f.title, d:f.dept || null, sup:(f.supplier || '').trim() || null, need:f.needed || null, nt:(f.note || '').trim() || null, k:f.kind }, 'Saved', null);
+}
+
+// ── Order sheet to print / save as PDF ──
+function ordPrint(id){
+  const o = ordGet(id); if(!o) return;
+  const items = ORD.items[id] || [];
+  const w = window.open('', '_blank'); if(!w){ toast('Allow pop-ups to print'); return; }
+  w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>${ordRef(o).replace('PR-', 'PO-')}</title><style>body{font-family:Inter,Arial,sans-serif;color:#0F1E2E;max-width:720px;margin:40px auto;padding:0 24px}h1{font-size:26px;margin:0}table{width:100%;border-collapse:collapse;margin-top:24px}td,th{padding:10px 8px;border-bottom:1px solid #E2E8F0;text-align:left;font-size:14px}th{font-size:11px;text-transform:uppercase;color:#64748B;letter-spacing:.5px}.r{text-align:right}.muted{color:#64748B;font-size:13px}.tot td{font-weight:800;font-size:16px;border:0}</style></head><body>
+    <div style="display:flex;justify-content:space-between;align-items:flex-start"><div><h1>Purchase order</h1><div class="muted">${ordEsc((myCompany && myCompany.name) || '')}</div></div><div style="text-align:right"><b style="font-size:18px">${ordRef(o).replace('PR-', 'PO-')}</b><div class="muted">${new Date(o.ordered_at || Date.now()).toLocaleDateString('en-GB', {day:'numeric', month:'long', year:'numeric'})}</div></div></div>
+    <p style="margin-top:28px"><b>Supplier:</b> ${ordEsc(o.supplier || '-')}<br><b>Department:</b> ${ordEsc(o.dept || '-')}${o.needed_by ? '<br><b>Needed by:</b> ' + new Date(o.needed_by).toLocaleDateString('en-GB', {weekday:'short', day:'numeric', month:'short'}) : ''}<br><b>Approved by:</b> ${ordEsc(ordName(o.approved_by))}${o.approved_at ? ', ' + new Date(o.approved_at).toLocaleDateString('en-GB') : ''}</p>
+    <table><tr><th>Item</th><th class="r">Qty</th><th class="r">Price</th><th class="r">Total</th></tr>${items.map(i => `<tr><td>${ordEsc(i.name)}${i.unit ? ' <span class="muted">(' + ordEsc(i.unit) + ')</span>' : ''}</td><td class="r">${Number(i.qty).toLocaleString('en-US')}</td><td class="r">${i.price ? ordMoney(i.price) : '-'}</td><td class="r">${i.price ? ordMoney(i.qty * i.price) : '-'}</td></tr>`).join('')}<tr class="tot"><td colspan="3">Total</td><td class="r">${ordMoney(o.total)}</td></tr></table>
+    ${o.note ? `<p class="muted" style="margin-top:24px">${ordEsc(o.note)}</p>` : ''}<script>setTimeout(function(){window.print()},300)<\/script></body></html>`);
+  w.document.close();
+}
+
+// ── Phone notifications ──
+async function ordNotify(id, event){
+  try{
+    const { data } = await sb.auth.getSession();
+    const token = data && data.session && data.session.access_token; if(!token) return;
+    const r = await authApi('push', { body:{ order_id:id, event }, token });
+    console.log('[push] order ' + event + ': ' + (r.sent ? 'notified ' + r.sent + ' device(s)' : (r.why || r.reason || 'nobody to notify')));
+  }catch(e){}
+}
+window.addEventListener('resize', () => { if(document.getElementById('p-ordering')?.classList.contains('on')) ordRenderDetail(); });
+
+const ordStyle = document.createElement('style');
+ordStyle.textContent = `
+#p-ordering{max-width:none}
+#p-ordering.ord-has-panel #ord-home{margin-right:410px}
+#ord-panel{display:none}
+#p-ordering.ord-has-panel #ord-panel{display:flex;position:fixed;top:0;right:0;bottom:0;width:400px;background:white;border-left:1px solid #E8ECF1;flex-direction:column;z-index:20;box-shadow:-10px 0 30px rgba(15,30,46,.06)}
+.ord-top{display:flex;align-items:flex-end;gap:10px;margin-bottom:16px;flex-wrap:wrap}
+.ord-h1{font-size:28px;font-weight:800;letter-spacing:-.6px;color:#0F1E2E}
+.ord-sub{font-size:14px;color:#475569;margin-top:3px}
+.ord-ghost{margin-left:auto;height:44px;padding:0 14px;border-radius:14px;background:white;border:1.5px solid #E2E8F0;font-family:Inter,sans-serif;font-weight:700;font-size:13.5px;display:flex;align-items:center;gap:7px;color:#475569;cursor:pointer}
+.ord-new{height:44px;padding:0 18px;border-radius:14px;background:#0D9488;color:white;border:0;font-family:Inter,sans-serif;font-weight:800;font-size:15px;display:flex;align-items:center;gap:8px;box-shadow:0 8px 20px rgba(13,148,136,.3);cursor:pointer}
+.ord-pipe{display:flex;background:white;border-radius:16px;padding:5px;gap:4px;box-shadow:0 1px 3px rgba(15,30,46,.06);margin-bottom:14px;overflow-x:auto;scrollbar-width:none}
+.ord-pipe::-webkit-scrollbar{display:none}
+.ord-st{flex:1;min-width:110px;border:0;background:none;border-radius:11px;padding:8px 12px;text-align:left;cursor:pointer;font-family:Inter,sans-serif}
+.ord-st:hover,.ord-st.on{background:#F1F5F9}
+.ord-st.hold{background:#FFF7E6}
+.ord-st .l{display:flex;align-items:center;gap:6px;font-size:12px;font-weight:700;color:#64748B;white-space:nowrap}
+.ord-st.hold .l{color:#B45309}
+.ord-st .l i{width:8px;height:8px;border-radius:50%}
+.ord-st .v{display:block;font-size:17px;font-weight:800;color:#0F1E2E;margin-top:2px;white-space:nowrap}
+.ord-st .v small{font-size:12px;color:#94A3B8;font-weight:700;margin-left:5px}
+.ord-tabs{display:flex;gap:6px;align-items:center;margin-bottom:12px;flex-wrap:wrap}
+.ord-tabs>button{border:0;background:none;padding:9px 15px;border-radius:12px;font-family:Inter,sans-serif;font-size:13.5px;font-weight:700;color:#475569;cursor:pointer}
+.ord-tabs>button.on{background:#0F1E2E;color:white}
+.ord-tabs .c{display:inline-block;background:#DC2626;color:white;border-radius:9px;font-size:10.5px;padding:1px 6px;margin-left:5px}
+.ord-kinds{margin-left:auto;display:flex;gap:6px;flex-wrap:wrap}
+.ord-kinds button{border:1.5px solid #E2E8F0;background:white;border-radius:20px;padding:6px 11px;font-family:Inter,sans-serif;font-size:12px;font-weight:700;color:#475569;display:flex;align-items:center;gap:6px;cursor:pointer}
+.ord-kinds button.on{border-color:#0F1E2E;background:#0F1E2E;color:white}
+.ord-kinds i{width:8px;height:8px;border-radius:50%}
+.ord-rows{display:flex;flex-direction:column;gap:9px;padding-bottom:40px}
+.ord-row{background:white;border-radius:16px;padding:12px 14px;display:flex;align-items:center;gap:14px;box-shadow:0 1px 3px rgba(15,30,46,.06);position:relative;cursor:pointer}
+.ord-row:hover{box-shadow:0 6px 18px rgba(15,30,46,.09)}
+.ord-row.sel{box-shadow:0 0 0 2px #0D9488,0 8px 22px rgba(13,148,136,.15)}
+.ord-row.urgent:before{content:'';position:absolute;left:0;top:12px;bottom:12px;width:4px;border-radius:0 4px 4px 0;background:#DC2626}
+.ord-ti{width:46px;height:46px;border-radius:13px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.ord-info{flex:1;min-width:0;padding-right:14px}
+.ord-t{display:flex;align-items:center;gap:8px;min-width:0}
+.ord-tt{font-size:15px;font-weight:700;color:#0F1E2E;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.ord-tag{font-size:9.5px;font-weight:800;color:white;padding:2px 6px;border-radius:5px;flex-shrink:0;letter-spacing:.3px}
+.ord-tag.urg{background:#DC2626}.ord-tag.hold{background:#F59E0B}.ord-tag.rej{background:#64748B}
+.ord-m{font-size:12.5px;color:#64748B;font-weight:600;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ord-trk{width:160px;flex-shrink:0}
+.ord-tr{display:flex;align-items:center}
+.ord-td{border-radius:50%;background:#E2E8F0;flex-shrink:0;display:flex;align-items:center;justify-content:center}
+.ord-td.on{background:#0D9488}
+.ord-td.now{background:white;box-shadow:0 0 0 3px #0D9488}
+.ord-td.hold{background:white;box-shadow:0 0 0 3px #F59E0B}
+.ord-tb{flex:1;height:3px;background:#E2E8F0}.ord-tb.on{background:#0D9488}
+.ord-tl{font-size:11.5px;font-weight:700;color:#0D9488;margin-top:5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ord-tl.hold{color:#B45309}
+.ord-tr.big .ord-td{background:rgba(255,255,255,.85)}
+.ord-tr.big .ord-td.on{background:#0D9488}
+.ord-tr.big .ord-td.now,.ord-tr.big .ord-td.hold{background:white}
+.ord-tr.big .ord-tb{background:rgba(255,255,255,.85)}.ord-tr.big .ord-tb.on{background:#0D9488}
+.ord-tl-big{display:flex;justify-content:space-between;font-size:10.5px;font-weight:800;color:#475569;margin-top:5px}
+.ord-amt{width:128px;text-align:right;font-size:15px;font-weight:800;color:#0F1E2E;flex-shrink:0}
+.ord-amt small{display:block;font-size:11px;color:#94A3B8;font-weight:700}
+.ord-go{width:132px;height:40px;border-radius:12px;border:0;background:#0D9488;color:white;font-family:Inter,sans-serif;font-size:13.5px;font-weight:800;flex-shrink:0;cursor:pointer}
+.ord-go.pay{background:#16A34A}.ord-go.hold{background:#F59E0B}.ord-go.soft{background:#F1F5F9;color:#0F1E2E}
+.ord-sublabel{font-size:12px;font-weight:800;color:#94A3B8;margin:12px 4px 2px;letter-spacing:.3px}
+.ord-filterline{font-size:13px;color:#475569;margin:0 4px 4px}
+.ord-filterline button{border:0;background:none;color:#0D9488;font-family:Inter,sans-serif;font-weight:800;font-size:13px;cursor:pointer;margin-left:6px}
+.ord-empty{text-align:center;padding:36px 16px;color:#94A3B8;font-size:13px;display:flex;flex-direction:column;align-items:center;gap:4px}
+.ord-empty b{font-size:15px;color:#0F1E2E}
+.ord-empty-ic{width:56px;height:56px;border-radius:50%;background:#EEF1F4;display:flex;align-items:center;justify-content:center;margin-bottom:8px}
+/* board */
+.ord-board{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(220px,1fr);gap:12px;overflow-x:auto;padding-bottom:30px}
+.ord-col{background:#EDEFF2;border-radius:18px;padding:10px;display:flex;flex-direction:column;gap:9px;min-height:300px}
+.ord-ch{display:flex;align-items:center;gap:8px;padding:2px 4px 6px;font-size:13px;font-weight:800;color:#0F1E2E}
+.ord-ch i{width:8px;height:8px;border-radius:50%}
+.ord-ch .n{background:white;border-radius:10px;padding:1px 8px;font-size:11.5px;color:#475569}
+.ord-ch .t{margin-left:auto;font-size:11.5px;color:#64748B}
+.ord-bcard{background:white;border-radius:14px;padding:11px 12px;box-shadow:0 1px 3px rgba(15,30,46,.07);cursor:pointer}
+.ord-bcard.urgent{box-shadow:0 0 0 2px #DC2626}
+.ord-bt{display:flex;align-items:center;gap:6px;margin-bottom:6px}
+.ord-bt .r{margin-left:auto;font-size:11px;font-weight:700;color:#94A3B8}
+.ord-kt{font-size:10.5px;font-weight:800;padding:3px 8px;border-radius:7px}
+.ord-bti{font-size:14px;font-weight:700;line-height:1.3;color:#0F1E2E}
+.ord-bm{font-size:12px;color:#64748B;font-weight:600;margin-top:2px}
+.ord-ba{font-size:14.5px;font-weight:800;margin-top:7px;color:#0F1E2E}
+.ord-bempty{text-align:center;color:#94A3B8;font-size:12px;padding:20px 0}
+.ord-pbar{height:7px;border-radius:4px;background:#E2E8F0;margin-top:8px;overflow:hidden}
+.ord-pbar i{display:block;height:100%;background:#16A34A;border-radius:4px}
+.ord-pbar.big{height:10px;margin:6px 0 10px}
+/* detail */
+.ord-x{position:absolute;top:12px;right:12px;z-index:3;width:32px;height:32px;border-radius:50%;border:0;background:rgba(255,255,255,.9);font-size:20px;color:#475569;cursor:pointer;display:none}
+.ord-back{display:flex;align-items:center;gap:6px;background:none;border:0;cursor:pointer;font-family:Inter,sans-serif;font-size:13px;font-weight:700;color:#64748B;padding:0;margin-bottom:12px}
+.ord-ph{padding:18px 20px;position:relative;border-radius:0}
+#ord-detail .ord-ph{border-radius:18px 18px 0 0}
+.ord-ptop{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.ord-ptag{background:white;font-size:11px;font-weight:800;padding:4px 9px;border-radius:8px}
+.ord-pref{margin-left:auto;font-size:12px;font-weight:800}
+.ord-more{width:32px;height:32px;border-radius:50%;border:0;background:rgba(255,255,255,.85);display:flex;align-items:center;justify-content:center;cursor:pointer}
+.ord-ptitle{font-size:21px;font-weight:800;margin-top:11px;letter-spacing:-.3px;line-height:1.25;color:#0F1E2E}
+.ord-psub{font-size:13px;color:#475569;font-weight:600;margin-top:4px}
+.ord-holdbox{margin-top:14px;background:white;border-radius:12px;padding:10px 12px;display:flex;gap:10px;align-items:center}
+.ord-holdbox b{display:block;font-size:13px;color:#92400E}.ord-holdbox span{font-size:12px;font-weight:600;color:#475569}
+.ord-pbody{flex:1;overflow-y:auto;background:white}
+#ord-detail .ord-pbody{border-radius:0 0 18px 18px;overflow:visible}
+.ord-approved{display:flex;align-items:center;gap:7px;margin:12px 20px 0;background:#F0FDF4;border-radius:10px;padding:8px 11px;font-size:12.5px;font-weight:700;color:#15803D}
+.ord-ps{padding:14px 20px;border-bottom:1px solid #F1F5F9}
+.ord-ps h4{font-size:12px;font-weight:800;color:#94A3B8;margin:0 0 9px;display:flex;align-items:center;justify-content:space-between;gap:8px}
+.ord-ps h4 span{display:flex;gap:10px}
+.ord-link{border:0;background:none;color:#0D9488;font-family:Inter,sans-serif;font-weight:800;font-size:12.5px;cursor:pointer;padding:0}
+.ord-li{display:flex;justify-content:space-between;gap:10px;font-size:13.5px;font-weight:600;margin-bottom:6px;color:#0F1E2E}
+.ord-li em{font-style:normal;color:#94A3B8;font-size:12px}
+.ord-li b{font-weight:800;white-space:nowrap}
+.ord-li.tot{border-top:1px solid #F1F5F9;padding-top:7px}
+.ord-none{font-size:12.5px;color:#94A3B8}
+.ord-meta{font-size:12px;color:#64748B;font-weight:600;margin-top:8px}
+.ord-notebox{margin-top:8px;background:#F8FAFC;border-radius:10px;padding:9px 11px;font-size:13px;color:#334155;line-height:1.5}
+.ord-file{display:flex;align-items:center;gap:10px;background:#F8FAFC;border-radius:11px;padding:8px 10px;margin-bottom:6px;cursor:pointer;border:1.5px solid transparent}
+.ord-file.chosen{border-color:#16A34A;background:#F0FDF4}
+.ord-fi{width:42px;height:34px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:9.5px;font-weight:800;flex-shrink:0}
+.ord-fn{flex:1;min-width:0}.ord-fn b{display:block;font-size:12.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:#0F1E2E}.ord-fn span{font-size:11.5px;color:#64748B;font-weight:600}
+.ord-mini{border:1.5px solid #E2E8F0;background:white;border-radius:8px;padding:5px 9px;font-family:Inter,sans-serif;font-size:11.5px;font-weight:800;color:#0F1E2E;cursor:pointer}
+.ord-paytop{display:flex;justify-content:space-between;font-size:13.5px;font-weight:800;color:#0F1E2E}.ord-paytop b{color:#15803D}
+.ord-thread{display:flex;flex-direction:column;gap:9px}
+.ord-ev{text-align:center}.ord-ev span{display:inline-block;background:#F1F5F9;color:#475569;font-size:11.5px;font-weight:700;padding:5px 11px;border-radius:11px}
+.ord-note{display:flex;gap:8px;align-items:flex-end;max-width:90%}
+.ord-note.mine{align-self:flex-end;flex-direction:row-reverse}
+.ord-bub{background:#F1F5F9;border-radius:15px 15px 15px 4px;padding:9px 12px;font-size:13.5px;line-height:1.45;color:#0F1E2E;overflow-wrap:anywhere}
+.ord-note.mine .ord-bub{background:#0F1E2E;color:white;border-radius:15px 15px 4px 15px}
+.ord-bub .nm{font-size:11px;font-weight:800;color:#0D9488}
+.ord-bub .tm{font-size:10.5px;opacity:.55;text-align:right;margin-top:2px}
+.ord-pfoot{padding:10px 16px calc(14px + env(safe-area-inset-bottom));border-top:1px solid #F1F5F9;background:white}
+.ord-msgrow{display:flex;gap:8px;align-items:flex-end}
+.ord-msgrow textarea{flex:1;border:1.5px solid #E2E8F0;border-radius:20px;padding:10px 14px;font-family:Inter,sans-serif;font-size:14.5px;resize:none;outline:none;max-height:110px;line-height:1.4}
+.ord-msgrow textarea:focus{border-color:#0D9488}
+.ord-send{width:42px;height:42px;border-radius:50%;background:#0D9488;border:0;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0}
+.ord-acts{display:flex;gap:8px;margin-top:10px}
+.ord-bb{flex:1;height:48px;border-radius:14px;border:0;background:#F1F5F9;color:#0F1E2E;font-family:Inter,sans-serif;font-weight:800;font-size:14.5px;cursor:pointer}
+.ord-bb.go{background:#0D9488;color:white;box-shadow:0 6px 16px rgba(13,148,136,.28)}
+.ord-bb.pay{background:#16A34A;color:white;box-shadow:0 6px 16px rgba(22,163,74,.28)}
+.ord-bb.red{background:#FEF2F2;color:#B91C1C}
+#ord-detail{background:white;border-radius:18px;box-shadow:0 1px 3px rgba(15,30,46,.06)}
+#ord-detail .ord-pfoot{position:sticky;bottom:0;border-radius:0 0 18px 18px}
+#ord-menu{position:fixed;z-index:10060;background:white;border-radius:12px;box-shadow:0 10px 30px rgba(15,30,46,.2);padding:6px;min-width:200px}
+#ord-menu button{display:block;width:100%;text-align:left;border:0;background:none;padding:10px 12px;border-radius:8px;font-family:Inter,sans-serif;font-size:13.5px;font-weight:700;color:#0F1E2E;cursor:pointer}
+#ord-menu button:hover{background:#F1F5F9}
+/* sheets */
+#ord-sheet{display:none;position:fixed;inset:0;z-index:10050;background:rgba(15,30,46,.45);align-items:center;justify-content:center;padding:18px}
+.ord-sheet-card{width:min(460px,100%);max-height:92vh;overflow-y:auto;background:white;border-radius:22px;padding:16px 20px 20px;box-shadow:0 24px 70px rgba(15,30,46,.3)}
+.ord-sheet-card.wide{width:min(560px,100%)}
+.ord-grab{width:42px;height:5px;border-radius:3px;background:#CBD5E1;margin:0 auto 10px;display:none}
+.ord-sh{display:flex;align-items:center;gap:10px;margin-bottom:4px}
+.ord-sht{flex:1;font-size:19px;font-weight:800;color:#0F1E2E}
+.ord-x2{width:34px;height:34px;border-radius:50%;border:0;background:#F1F5F9;font-size:20px;color:#64748B;cursor:pointer;flex-shrink:0}
+.ord-shs{font-size:13.5px;color:#475569;font-weight:600;margin-bottom:14px}
+.ord-lab{font-size:13px;font-weight:800;color:#0F1E2E;margin:14px 0 7px}
+.ord-inp{width:100%;box-sizing:border-box;border:1.5px solid #E2E8F0;border-radius:12px;padding:11px 13px;font-family:Inter,sans-serif;font-size:16px;color:#0F1E2E;outline:none;background:white}
+.ord-inp:focus{border-color:#0D9488}
+textarea.ord-inp{resize:vertical;line-height:1.45}
+.ord-pick{display:flex;flex-wrap:wrap;gap:7px}
+.ord-pick button{border:1.5px solid #E2E8F0;background:white;border-radius:20px;padding:8px 13px;font-family:Inter,sans-serif;font-size:13px;font-weight:700;color:#475569;cursor:pointer}
+.ord-pick button.on{border-color:#0D9488;background:#E6F4F2;color:#0D9488}
+.ord-pick button.on.hold{border-color:#F59E0B;background:#FFF7E6;color:#B45309}
+.ord-big{width:100%;margin-top:16px;height:52px;border:0;border-radius:15px;background:#0D9488;color:white;font-family:Inter,sans-serif;font-size:15.5px;font-weight:800;cursor:pointer;box-sizing:border-box}
+.ord-big.pay{background:#16A34A}.ord-big.hold{background:#F59E0B}.ord-big.red{background:#DC2626}
+.ord-big:disabled{opacity:.6}
+.ord-sigtog{display:flex;flex-wrap:wrap;align-items:center;gap:8px;background:#F0FDF4;border-radius:12px;padding:11px 12px;font-size:13.5px;font-weight:700;color:#15803D;cursor:pointer}
+.ord-sigtog span{width:100%;font-size:12px;color:#475569;font-weight:600;margin-left:24px;margin-top:-4px}
+#ord-sig{width:100%;height:140px;border:1.5px dashed #CBD5E1;border-radius:12px;margin-top:10px;touch-action:none;background:#F8FAFC}
+.ord-types{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:6px}
+.ord-type{border:2px solid transparent;border-radius:16px;padding:11px 6px 9px;display:flex;flex-direction:column;align-items:center;gap:5px;font-family:Inter,sans-serif;font-size:12.5px;font-weight:800;cursor:pointer}
+.ord-type .i{width:38px;height:38px;border-radius:11px;background:rgba(255,255,255,.8);display:flex;align-items:center;justify-content:center}
+.ord-type small{font-size:10.5px;font-weight:600;opacity:.8}
+.ord-irow{display:flex;align-items:center;gap:8px;background:#F8FAFC;border-radius:12px;padding:8px 9px;margin-bottom:6px}
+.ord-in{flex:1;min-width:0}.ord-in b{display:block;font-size:14px;color:#0F1E2E;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ord-unit{border:0;background:none;font-family:Inter,sans-serif;font-size:12px;color:#64748B;padding:0;outline:none;width:100%}
+.ord-step{display:flex;align-items:center;background:white;border:1.5px solid #E2E8F0;border-radius:10px;overflow:hidden;flex-shrink:0}
+.ord-step button{width:28px;height:32px;border:0;background:none;font-size:17px;font-weight:800;color:#0D9488;cursor:pointer}
+.ord-step input{width:38px;border:0;text-align:center;font-family:Inter,sans-serif;font-size:14px;font-weight:800;outline:none;color:#0F1E2E}
+.ord-price{width:104px;border:1.5px solid #E2E8F0;border-radius:10px;padding:7px 8px;font-family:Inter,sans-serif;font-size:13px;outline:none;flex-shrink:0;color:#0F1E2E}
+.ord-irm{width:26px;height:26px;border-radius:50%;border:0;background:#E2E8F0;color:#475569;font-size:15px;cursor:pointer;flex-shrink:0}
+.ord-sugg{position:absolute;left:0;right:0;top:100%;margin-top:4px;background:white;border:1px solid #E2E8F0;border-radius:12px;box-shadow:0 10px 26px rgba(15,30,46,.12);overflow:hidden;z-index:2}
+.ord-sugg button{display:flex;justify-content:space-between;gap:10px;width:100%;border:0;border-bottom:1px solid #F1F5F9;background:white;padding:10px 12px;font-family:Inter,sans-serif;font-size:13.5px;text-align:left;cursor:pointer;color:#0F1E2E}
+.ord-sugg button span{color:#94A3B8;font-size:12px;font-weight:600}
+.ord-sugg button.new{color:#0D9488;font-weight:800;border:0}
+.ord-row3{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:8px}
+.ord-row3 label{border:1.5px solid #E2E8F0;border-radius:12px;padding:7px 10px;display:flex;flex-direction:column;gap:2px;min-width:0}
+.ord-row3 span{font-size:10.5px;font-weight:700;color:#94A3B8}
+.ord-row3 input,.ord-row3 select{border:0;padding:0;font-family:Inter,sans-serif;font-size:14px;font-weight:700;color:#0F1E2E;outline:none;background:none;width:100%;min-width:0}
+.ord-attachrow{display:flex;gap:8px}
+.ord-attach{flex:1;display:block;text-align:center;border:1.5px dashed #CBD5E1;border-radius:12px;padding:11px 6px;font-family:Inter,sans-serif;font-size:12.5px;font-weight:700;color:#475569;background:#F8FAFC;cursor:pointer}
+.ord-flist{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.ord-flist span{display:flex;align-items:center;gap:6px;background:#F1F5F9;border-radius:9px;padding:5px 8px;font-size:12px;font-weight:700;color:#334155;max-width:100%;overflow:hidden}
+.ord-flist button{border:0;background:none;color:#64748B;font-size:15px;cursor:pointer}
+.ord-urgent{display:flex;align-items:center;gap:10px;width:100%;margin-top:14px;border:1.5px solid #FECACA;background:#FEF2F2;border-radius:12px;padding:11px 12px;font-family:Inter,sans-serif;font-size:14px;font-weight:800;color:#B91C1C;cursor:pointer}
+.ord-tog{margin-left:auto;width:40px;height:23px;border-radius:12px;background:#E2E8F0;position:relative;transition:background .15s}
+.ord-tog i{position:absolute;left:3px;top:3px;width:17px;height:17px;border-radius:50%;background:white;transition:left .15s}
+.ord-urgent.on .ord-tog{background:#DC2626}.ord-urgent.on .ord-tog i{left:20px}
+.ord-total{font-size:14px;font-weight:800;text-align:right;margin-top:10px;color:#0F1E2E}
+@media(min-width:1100px){ #p-ordering.ord-has-panel .ord-x{display:block} }
+#p-ordering.ord-has-panel .ord-row{flex-wrap:wrap;gap:10px 12px}
+#p-ordering.ord-has-panel .ord-info{flex:1 1 calc(100% - 200px);padding-right:0}
+#p-ordering.ord-has-panel .ord-amt{width:auto}
+#p-ordering.ord-has-panel .ord-trk{order:5;width:auto;flex:1 1 calc(100% - 150px)}
+#p-ordering.ord-has-panel .ord-go{order:6}
+#p-ordering.ord-has-panel .ord-kinds{margin-left:0}
+@media(max-width:1099px){
+  .ord-row{flex-wrap:wrap;gap:10px 12px}
+  .ord-info{flex:1 1 calc(100% - 200px);padding-right:0}
+  .ord-amt{width:auto}
+  .ord-trk{order:5;width:auto;flex:1 1 100%}
+  .ord-go{order:6;width:100%;height:44px}
+}
+@media(max-width:600px){
+  .ord-ghost span,.ord-ghost{display:none}
+  .ord-new{margin-left:auto}
+  .ord-kinds{margin-left:0;width:100%}
+  .ord-amt{font-size:14px}
+  #ord-sheet{padding:0;align-items:flex-end}
+  .ord-sheet-card,.ord-sheet-card.wide{width:100%;max-height:94vh;border-radius:22px 22px 0 0;padding-bottom:calc(20px + env(safe-area-inset-bottom))}
+  .ord-grab{display:block}
+  .ord-row3{grid-template-columns:1fr 1fr}
+  .ord-row3 label:last-child{grid-column:1 / -1}
+  .ord-irow{flex-wrap:wrap}
+  .ord-in{flex:1 1 100%}
+  .ord-price{flex:1}
+  #p-order.page{padding-left:10px!important;padding-right:10px!important}
+  .ord-info{flex:1 1 0!important}
+  .ord-t{flex-wrap:wrap;gap:4px 8px}
+  .ord-tt{white-space:normal;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+}
+`;
+document.head.appendChild(ordStyle);
+</script>
+
 <script>
 /* ===== MAVIS REQUESTS — report something that needs fixing or doing, follow it until it's done =====
    Who sees what is decided by the database (requests.sql) using three Admin Console switches:

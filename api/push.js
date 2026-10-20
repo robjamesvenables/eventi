@@ -166,6 +166,8 @@ async function orderPush(me, b, res){
   else to = involved;
   if (ev === 'answered' && !to.length) to = await orderPeople(o.company_id, 'orderingapprove', ['director', 'manager']);
   to = [...new Set(to.map(String))].filter(id => id !== String(me.id));
+  // a message on an order nobody has picked up yet goes to the approvers, so it never goes nowhere
+  if (!to.length && (ev === 'note' || ev === 'received')) to = (await orderPeople(o.company_id, 'orderingapprove', ['director', 'manager'])).map(String).filter(id => id !== String(me.id));
   if (!to.length) return L.send(res, 200, { ok: true, sent: 0, why: 'no one else to tell' });
 
   const list = to.map(encodeURIComponent).join(',');

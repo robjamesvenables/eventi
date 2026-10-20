@@ -77,6 +77,31 @@ async function caller(req){
   }
   return p;
 }
+// Login hardening: the password stored in Supabase is never the PIN itself. It is a long code made from the
+// PIN + this person's id + a secret key only the server knows (Vercel env var MAVIS_LOGIN_KEY). So nobody can
+// guess PINs by talking to Supabase directly and skipping the 5-tries lock - only /api/login can sign people in.
+// Without the env var everything works exactly as before (plain PIN/password).
+const LOGIN_KEY = process.env.MAVIS_LOGIN_KEY || '';
+function authSecret(profileId, secret){
+  if (!LOGIN_KEY) return String(secret);
+  return 'mv1.' + crypto.createHmac('sha256', LOGIN_KEY).update(String(profileId) + ':' + String(secret)).digest('base64url');
+}
+// Sign in with a PIN/password. Accounts made before the hardening still have the plain PIN stored:
+// if that works, upgrade them on the spot so next time only the hardened code works.
+async function signInProfile(p, secret){
+  const email = authEmailFor(p.username);
+  if (!LOGIN_KEY) return passwordGrant(email, secret);
+  const hard = await passwordGrant(email, authSecret(p.id, secret));
+  if (hard) return hard;
+  const old = await passwordGrant(email, secret);
+  if (old && p.user_id) {
+    try {
+      await authAdmin('users/' + p.user_id, { method: 'PUT', body: { password: authSecret(p.id, secret) } });
+      return (await passwordGrant(email, authSecret(p.id, secret))) || old;
+    } catch (e) { console.error('login upgrade failed', e.message); }
+  }
+  return old;
+}
 function authEmailFor(username){ return username.toLowerCase().replace(/[^a-z0-9-]/g, '') + '@staff.getmavis.app'; }
 function slug(s){ return String(s || '').normalize('NFKD').replace(/[̀-ͯ]/g, '').toUpperCase().replace(/[^A-Z0-9]+/g, '-').replace(/^-+|-+$/g, ''); }
 function newToken(){ return crypto.randomBytes(24).toString('base64url'); }
@@ -91,5 +116,5 @@ function publicProfile(p){
     departments: p.departments || [], venues: p.venues || [], email: p.email || null, is_owner: !!p.is_owner, active: p.active,
     has_login: !!p.user_id, last_login: p.last_login, photo: p.photo || null };
 }
-module.exports = { db, authAdmin, passwordGrant, caller, authEmailFor, slug, newToken, secretOk, publicProfile, send, body,
+module.exports = { db, authAdmin, passwordGrant, authSecret, signInProfile, caller, authEmailFor, slug, newToken, secretOk, publicProfile, send, body,
   PIN_ROLES, ROLE_RANK, MANAGE_MIN_RANK, SERVICE_KEY, SUPABASE_URL, ANON_KEY };

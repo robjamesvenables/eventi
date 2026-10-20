@@ -20,6 +20,8 @@ async function uniqueUsername(code, first, last){
   while ((await L.db('profiles?select=id&username=eq.' + encodeURIComponent(name))).length) { name = base + '-' + n; n++; }
   return name;
 }
+// A photo must be a real picture (data:image/...) - anything else is dropped.
+function cleanPhoto(v){ const s = String(v || ''); return s && s.startsWith('data:image/') && s.length < 3000000 && !/["'<>\s]/.test(s) ? s : null; }
 function cleanList(v){ return Array.isArray(v) ? v.map(x => String(x).trim()).filter(Boolean).slice(0, 40) : []; }
 
 module.exports = async (req, res) => {
@@ -114,7 +116,7 @@ module.exports = async (req, res) => {
       if (wantRole === 'superadmin' && !b.email) return L.send(res, 400, { ok: false, reason: 'email needed', message: 'A Super Admin needs an email address' });
       const p = (await L.db('profiles', { method: 'POST', body: {
         company_id: companyId, username, first_name: String(b.first_name).trim(), last_name: String(b.last_name || '').trim(), role: wantRole,
-        departments: cleanList(b.departments), venues: cleanList(b.venues), email: b.email ? String(b.email).trim().toLowerCase() : null, photo: b.photo || null } }))[0];
+        departments: cleanList(b.departments), venues: cleanList(b.venues), email: b.email ? String(b.email).trim().toLowerCase() : null, photo: cleanPhoto(b.photo) } }))[0];
       const token = await makeInvite(p.id, me.id);
       return L.send(res, 200, { ok: true, profile: L.publicProfile(p), token });
     }
@@ -132,7 +134,7 @@ module.exports = async (req, res) => {
       if (b.departments !== undefined) patch.departments = cleanList(b.departments);
       if (b.venues !== undefined) patch.venues = cleanList(b.venues);
       if (b.email !== undefined) patch.email = b.email ? String(b.email).trim().toLowerCase() : null;
-      if (b.photo !== undefined) patch.photo = b.photo || null;
+      if (b.photo !== undefined) patch.photo = cleanPhoto(b.photo);
       if (wantRole === 'superadmin' && !(patch.email || target.email)) return L.send(res, 400, { ok: false, reason: 'email needed', message: 'A Super Admin needs an email address' });
       // Optional: make the username match the new name (their PIN/password stays the same).
       let renamed = false;

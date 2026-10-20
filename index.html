@@ -2712,13 +2712,89 @@ img.emoji-tw{width:1.15em;height:1.15em;vertical-align:-0.2em;margin:0 1px}
 #chat-recording-bar{display:none;align-items:center;gap:10px;padding:9px 16px;border-top:1px solid #FECACA;background:#FEF2F2;color:#DC2626;font-size:12px;font-weight:700}
 
 </style>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.3/dist/umd/supabase.js"></script>
 <script>
   // Mavis <-> Supabase connection. Anon key is safe to expose client-side (it's the
   // public key by design; row-level security policies do the actual protecting).
   const SUPABASE_URL = 'https://qjxcpmkiyfrukxicdwkl.supabase.co';
   const SUPABASE_ANON_KEY = 'sb_publishable_bHRgdmEZPalEJSMBBr8prQ_Qhu_h1X9';
   const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+  // ── Safety net: text from the database can never run as code ──
+  // Everything typed into Mavis is stored as plain text, but much of the app builds screens
+  // with innerHTML. So every answer from the database (normal queries, functions and live
+  // updates) has its few "code" characters swapped for look-alikes before the app sees it:
+  // < > become ‹ ›, quotes become curly quotes, \ and ` become harmless look-alikes.
+  // Settings stored as JSON text (app_settings / dj_settings "value") are cleaned inside the JSON.
+  const MV_SAFE_MAP = {'<':'\u2039','>':'\u203A','"':'\u201D',"'":'\u2019','\\':'\u2216','`':'\u02CB'};
+  const MV_SAFE_RX = /[<>"'\\`]/g;
+  const MV_JSON_TABLES = { app_settings:1, dj_settings:1 };
+  function mvSafeStr(s){ return s.indexOf('<')<0 && s.indexOf('>')<0 && s.indexOf('"')<0 && s.indexOf("'")<0 && s.indexOf('\\')<0 && s.indexOf('`')<0 ? s : s.replace(MV_SAFE_RX, c => MV_SAFE_MAP[c]); }
+  function mvClean(v, table, key){
+    if(typeof v === 'string'){
+      if(MV_JSON_TABLES[table] && key === 'value'){
+        const t = v.trim();
+        if((t[0] === '{' && t.slice(-1) === '}') || (t[0] === '[' && t.slice(-1) === ']')){
+          try { return JSON.stringify(mvClean(JSON.parse(v), '', '')); } catch(e){}
+        }
+      }
+      return mvSafeStr(v);
+    }
+    if(Array.isArray(v)){ for(let i = 0; i < v.length; i++) v[i] = mvClean(v[i], table, key); return v; }
+    if(v && typeof v === 'object' && (Object.getPrototypeOf(v) === Object.prototype || Object.getPrototypeOf(v) === null)){
+      Object.keys(v).forEach(k => {
+        const val = mvClean(v[k], table, k);
+        const ck = mvSafeStr(k);
+        if(ck !== k){ delete v[k]; }
+        v[ck] = val;
+      });
+      return v;
+    }
+    return v;
+  }
+  (function(){
+    function wrap(b, table){
+      if(!b || (typeof b !== 'object' && typeof b !== 'function')) return b;
+      return new Proxy(b, { get(t, p){
+        const val = Reflect.get(t, p, t);
+        if(p === 'then' && typeof val === 'function'){
+          return function(ok, bad){
+            return val.call(t, function(res){
+              try { if(res && res.data != null) res.data = mvClean(res.data, table, ''); } catch(e){}
+              return ok ? ok(res) : res;
+            }, bad);
+          };
+        }
+        if(typeof val === 'function' && p !== 'constructor'){
+          return function(){ const r = val.apply(t, arguments); return (r && typeof r.then === 'function') ? wrap(r, table) : r; };
+        }
+        return val;
+      }});
+    }
+    const from0 = sb.from.bind(sb);
+    sb.from = t => wrap(from0(t), t);
+    if(typeof sb.rpc === 'function'){ const rpc0 = sb.rpc.bind(sb); sb.rpc = function(){ return wrap(rpc0.apply(sb, arguments), 'rpc'); }; }
+    if(typeof sb.channel === 'function'){
+      const ch0 = sb.channel.bind(sb);
+      sb.channel = function(){
+        const ch = ch0.apply(sb, arguments);
+        if(ch && typeof ch.on === 'function'){
+          const on0 = ch.on;
+          ch.on = function(type, filter, cb){
+            if(type === 'postgres_changes' && typeof cb === 'function'){
+              const cb0 = cb;
+              cb = function(p){
+                try { const tb = (p && p.table) || ''; if(p && p.new) mvClean(p.new, tb, ''); if(p && p.old) mvClean(p.old, tb, ''); } catch(e){}
+                return cb0.apply(this, arguments);
+              };
+            }
+            return on0.call(this, type, filter, cb);
+          };
+        }
+        return ch;
+      };
+    }
+  })();
 </script>
 
 <style id="chat-voice-twemoji-fix">
@@ -5980,6 +6056,7 @@ async function authApplyProfile(profile, company){
   if(profile && !profile.user_id){
     try{ const { data } = await sb.auth.getSession(); profile.user_id = data && data.session && data.session.user ? data.session.user.id : null; }catch(e){}
   }
+  try { mvClean(profile, 'profiles', ''); if(company) mvClean(company, 'companies', ''); } catch(e){}
   myProfile = profile; myCompany = company || myCompany;
   setCurrentUserName(profile.first_name);
   try{ accountApplyAvatar(); }catch(e){}

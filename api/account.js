@@ -21,7 +21,7 @@ module.exports = async (req, res) => {
         return L.send(res, 429, { ok: false, reason: 'locked', message: 'Too many wrong tries - please wait 15 minutes.' });
       }
       const email = L.authEmailFor(me.username);
-      const check = await L.passwordGrant(email, String(b.current || ''));
+      const check = await L.signInProfile(me, String(b.current || ''));
       if (!check) {
         const fails = (att ? att.fails : 0) + 1;
         await L.db('login_attempts', { method: 'POST', headers: { Prefer: 'resolution=merge-duplicates' },
@@ -32,10 +32,10 @@ module.exports = async (req, res) => {
       const bad = L.secretOk(me.role, b.secret);
       if (bad) return L.send(res, 400, { ok: false, reason: 'weak', message: bad });
       if (String(b.secret) === String(b.current)) return L.send(res, 400, { ok: false, reason: 'same', message: 'Please choose a new one, different from your current one.' });
-      await L.authAdmin('users/' + me.user_id, { method: 'PUT', body: { password: String(b.secret) } });
+      await L.authAdmin('users/' + me.user_id, { method: 'PUT', body: { password: L.authSecret(me.id, String(b.secret)) } });
       // Sign out every OTHER device, then hand this device a fresh session.
       await fetch(L.SUPABASE_URL + '/auth/v1/logout?scope=others', { method: 'POST', headers: { apikey: L.ANON_KEY, Authorization: 'Bearer ' + token } }).catch(() => {});
-      const session = await L.passwordGrant(email, String(b.secret));
+      const session = await L.passwordGrant(email, L.authSecret(me.id, String(b.secret)));
       return L.send(res, 200, { ok: true, session });
     }
 

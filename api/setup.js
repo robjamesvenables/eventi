@@ -21,15 +21,15 @@ module.exports = async (req, res) => {
     const email = L.authEmailFor(p.username);
     let userId = p.user_id;
     if (userId) {
-      await L.authAdmin('users/' + userId, { method: 'PUT', body: { password: secret, ban_duration: 'none' } });
+      await L.authAdmin('users/' + userId, { method: 'PUT', body: { password: L.authSecret(p.id, secret), ban_duration: 'none' } });
     } else {
-      const u = await L.authAdmin('users', { method: 'POST', body: { email, password: secret, email_confirm: true, user_metadata: { username: p.username } } });
+      const u = await L.authAdmin('users', { method: 'POST', body: { email, password: L.authSecret(p.id, secret), email_confirm: true, user_metadata: { username: p.username } } });
       userId = u.id || (u.user && u.user.id);
       await L.db('profiles?id=eq.' + p.id, { method: 'PATCH', body: { user_id: userId } });
     }
     await L.db('invites?token=eq.' + encodeURIComponent(t), { method: 'PATCH', body: { used_at: new Date().toISOString() } });
     await L.db('login_attempts?username=eq.' + encodeURIComponent(p.username), { method: 'DELETE' });
-    const session = await L.passwordGrant(email, secret);
+    const session = await L.passwordGrant(email, L.authSecret(p.id, secret));
     await L.db('profiles?id=eq.' + p.id, { method: 'PATCH', body: { last_login: new Date().toISOString() } });
     const fresh = (await L.db('profiles?select=*&id=eq.' + p.id))[0];
     return L.send(res, 200, { ok: true, session, profile: L.publicProfile(fresh), company: co });

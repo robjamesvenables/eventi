@@ -4655,7 +4655,7 @@ img.emoji-tw{width:1.15em;height:1.15em;vertical-align:-0.2em;margin:0 1px}
           </div>
           <div style="display:grid;grid-template-columns:110px 1fr;border-bottom:1px solid var(--line)">
             <div class="mn-field-lbl">Attendees</div>
-            <input id="mn-attendees" class="mn-field-input" placeholder="e.g. Robbie, Sarah">
+            <input id="mn-attendees" class="mn-field-input" placeholder="e.g. Ayu, Sam">
           </div>
           <textarea id="mn-textarea" class="mn-note-area" placeholder="Notes..."></textarea>
           <div class="mn-panel-footer">
@@ -5181,7 +5181,7 @@ img.emoji-tw{width:1.15em;height:1.15em;vertical-align:-0.2em;margin:0 1px}
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#C4973B" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
           <h1 style="font-size:24px;font-weight:800;color:#0F1E2E;margin:0">Admin Console</h1>
         </div>
-        <div style="font-size:13px;color:#64748B">Manage who's on the team and what they can access — <span style="font-weight:700;color:#C4973B">DEMO preview, not yet wired to real accounts</span></div>
+        <div style="font-size:13px;color:#64748B">Manage who's on the team and what they can access</div>
       </div>
 
       <div style="background:white;border:1.5px solid #E2E8F0;border-radius:12px;padding:16px 18px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;margin-bottom:24px">
@@ -9270,22 +9270,24 @@ function tbProjectTile(p, isTeam){
   </div>`;
 }
 
+// Friendly message for a list that has nothing in it yet
+function mvEmpty(title, sub){
+  return '<div style="grid-column:1/-1;text-align:center;padding:44px 20px;color:#94A3B8"><div style="font-size:14px;font-weight:700;color:#475569;margin-bottom:4px">' + title + '</div><div style="font-size:12.5px">' + sub + '</div></div>';
+}
 function taskboardRenderPersonalTiles(){
   const grid = document.getElementById('tb-personal-grid');
   if(!grid) return;
-  grid.innerHTML = kbPersonalProjects.map(p => tbProjectTile(p, false)).join('');
-  taskboardLoadPersonalFromSupabase().then(()=>{
-    grid.innerHTML = kbPersonalProjects.map(p => tbProjectTile(p, false)).join('');
-  });
+  const draw = () => { grid.innerHTML = kbPersonalProjects.length ? kbPersonalProjects.map(p => tbProjectTile(p, false)).join('') : mvEmpty('No projects yet', 'Tap + New Project to start your first board'); };
+  draw();
+  taskboardLoadPersonalFromSupabase().then(draw);
 }
 
 function taskboardRenderTeamTiles(){
   const grid = document.getElementById('tb-team-grid');
   if(!grid) return;
-  grid.innerHTML = kbTeamProjects.map(p => tbProjectTile(p, true)).join('');
-  taskboardLoadTeamFromSupabase().then(()=>{
-    grid.innerHTML = kbTeamProjects.map(p => tbProjectTile(p, true)).join('');
-  });
+  const draw = () => { grid.innerHTML = kbTeamProjects.length ? kbTeamProjects.map(p => tbProjectTile(p, true)).join('') : mvEmpty('No team projects yet', 'Tap + New Project to start a board the whole team can use'); };
+  draw();
+  taskboardLoadTeamFromSupabase().then(draw);
   taskboardSubscribeTeamRealtime();
 }
 
@@ -10570,7 +10572,7 @@ window.peopleSendLogin = function(id){ peopleResetLoginGo(id); };
 async function peopleLoadFromSupabase(){
   if(!myProfile) return;
   const { data, error } = await sb.from('profiles').select('*').eq('company_id', myProfile.company_id).order('first_name');
-  if(error){ console.warn('People not loaded', error); return; }
+  if(error){ console.warn('People not loaded', error); if(!appIsDemoCompany()){ PEOPLE = []; try{ peopleRender(); adminConsoleRender(); }catch(e){} } return; }
   PEOPLE = (data||[]).map(r=>({ id:r.id, firstName:r.first_name, lastName:r.last_name||'', role:r.role, departments:r.departments||[],
     photo:r.photo||'', username:r.username, email:r.email||'', active:r.active, hasLogin:!!r.user_id, isMe: r.id===myProfile.id }));
   if(myCompany && Array.isArray(myCompany.departments) && myCompany.departments.length) PEOPLE_DEPARTMENTS = myCompany.departments.slice();
@@ -12183,6 +12185,7 @@ function sopRenderDeptList(){
         <div class="sop-item-arr">›</div>
       </div>`;
   }).join('');
+  if(!sopDepts.length) list.innerHTML = mvEmpty('No SOPs yet', 'Tap + Add Department, then add your first SOP inside it');
 }
 
 function sopEditDept(id){
@@ -17796,6 +17799,7 @@ function vendorRenderDepts(){
         <div class="sop-item-arr">›</div>
       </div>`;
   }).join('');
+  if(!vendorDepts.length) grid.innerHTML = mvEmpty('No suppliers yet', 'Tap + Add Department, then add your suppliers inside it');
 }
 
 function vendorEditDept(id){

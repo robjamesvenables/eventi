@@ -24163,12 +24163,24 @@ async function ordStart(){
   return ordLoad();
 }
 async function ordLoad(){
-  const [o, it, f] = await Promise.all([
-    sb.from('orders').select(ORD_COLS).order('created_at', {ascending:false}).limit(400),
-    sb.from('order_items').select('id,order_id,name,unit,qty,price,position').order('position', {ascending:true}).limit(4000),
-    sb.from('order_files').select('id,order_id,kind,name,path,url,mime,amount,chosen,added_by,created_at').limit(3000)
+  // Busy venues raise hundreds a day: load everything still open, plus only the last 35 days of finished ones
+  const since = new Date(Date.now() - 35 * 86400000).toISOString();
+  const [op, dn] = await Promise.all([
+    sb.from('orders').select(ORD_COLS).not('status', 'in', '(paid,rejected)').order('created_at', {ascending:false}).limit(2000),
+    sb.from('orders').select(ORD_COLS).in('status', ['paid','rejected']).gte('updated_at', since).order('updated_at', {ascending:false}).limit(1500)
   ]);
+  const o = { data: (op.data || []).concat(dn.data || []), error: op.error || dn.error };
   if(o.error){ ORD.notReady = true; console.warn('Ordering not set up yet', o.error); ordRender(); return; }
+  // items and files only for the orders on screen, in batches
+  const ids = o.data.map(x => x.id), it = { data:[] }, f = { data:[] };
+  for(let i = 0; i < ids.length; i += 150){
+    const chunk = ids.slice(i, i + 150);
+    const [a1, b1] = await Promise.all([
+      sb.from('order_items').select('id,order_id,name,unit,qty,price,position').in('order_id', chunk).order('position', {ascending:true}),
+      sb.from('order_files').select('id,order_id,kind,name,path,url,mime,amount,chosen,added_by,created_at').in('order_id', chunk)
+    ]);
+    it.data.push(...(a1.data || [])); f.data.push(...(b1.data || []));
+  }
   ORD.notReady = false;
   ORD.list = o.data || [];
   ORD.items = {}; (it.data || []).forEach(x => (ORD.items[x.order_id] = ORD.items[x.order_id] || []).push(x));

@@ -20111,7 +20111,7 @@ const FC_STYLE = `
 .fc-bar{flex:1;height:10px;border-radius:6px;background:#F1F5F9;overflow:hidden}.fc-bar i{display:block;height:100%;border-radius:6px}
 .fc-w .why{font-size:11.5px;font-weight:700;color:#64748B;width:170px;text-align:right}
 .fc-months{display:grid;grid-template-columns:repeat(12,1fr);gap:4px;margin-top:22px}
-.fc-months div{height:34px;border-radius:8px;font-size:10.5px;font-weight:800;display:flex;align-items:flex-end;justify-content:center;padding-bottom:4px;color:#64748B;background:#F1F5F9;position:relative}
+.fc-months div{height:34px;border-radius:8px;font-size:11px;font-weight:800;display:flex;align-items:center;justify-content:center;padding:0;color:#64748B;background:#F1F5F9;position:relative}
 .fc-months .hi{background:#5EEAD4;color:#0F766E}.fc-months .med{background:#FDE68A;color:#92400E}.fc-months .lohi{background:linear-gradient(90deg,#E2E8F0 60%,#5EEAD4 60%);color:#334155}.fc-months .hilo{background:linear-gradient(90deg,#5EEAD4 18%,#E2E8F0 18%);color:#334155}.fc-months .now{outline:2.5px solid #0F1E2E;outline-offset:1px}
 .fc-months .now:after{content:'NOW';position:absolute;top:-17px;font-size:9px;color:#0F1E2E}
 .fc-todo{display:flex;flex-direction:column;gap:8px;margin-top:12px}
@@ -20431,8 +20431,19 @@ function fcDrawChart(){
   const dots = wk.map(col);
   const ctx = cv.getContext('2d');
   const grad = ctx.createLinearGradient(0, 0, 0, 270); grad.addColorStop(0, 'rgba(13,148,136,0.30)'); grad.addColorStop(1, 'rgba(13,148,136,0.02)');
+  // Hovering a day draws a soft rounded box behind both of that day's dots (guests + revenue)
+  const dayBand = { id:'fcDayBand', beforeDatasetsDraw(chart){
+    const act = chart.tooltip && chart.tooltip.getActiveElements ? chart.tooltip.getActiveElements() : [];
+    if(!act.length) return;
+    const x = act[0].element.x, a = chart.chartArea, w = Math.min(64, (a.right - a.left) / wk.length * 0.8);
+    const c = chart.ctx; c.save();
+    c.fillStyle = 'rgba(13,148,136,0.09)'; c.strokeStyle = 'rgba(13,148,136,0.35)'; c.lineWidth = 1.5;
+    const r = 14, l = x - w / 2, t = a.top - 6, h = a.bottom - a.top + 12;
+    c.beginPath(); c.moveTo(l + r, t); c.arcTo(l + w, t, l + w, t + h, r); c.arcTo(l + w, t + h, l, t + h, r); c.arcTo(l, t + h, l, t, r); c.arcTo(l, t, l + w, t, r); c.closePath();
+    c.fill(); c.stroke(); c.restore();
+  } };
   if(fcChart) fcChart.destroy();
-  fcChart = new Chart(cv, {
+  fcChart = new Chart(cv, { plugins: [dayBand],
     type: 'line',
     data: { labels: wk.map(x => fcDayName(x.d) + (x.isToday ? ' (today)' : '')), datasets: [
       { label: 'Guests', data: wk.map(x => x.lyG == null ? null : Math.round(x.lyG)), yAxisID: 'y', borderColor: '#0D9488', backgroundColor: grad, fill: true, tension: 0.38, borderWidth: 3,

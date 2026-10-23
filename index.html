@@ -3801,15 +3801,7 @@ img.emoji-tw{width:1.15em;height:1.15em;vertical-align:-0.2em;margin:0 1px}
         </div>
       </div>
 
-      <div style="font-size:11.5px;font-weight:800;color:#C4973B;text-transform:uppercase;letter-spacing:0.6px;margin:8px 0 12px">Costs</div>
-
-      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px;margin-bottom:36px">
-        <div style="background:white;border:1px solid var(--line);border-radius:14px;padding:16px 18px">
-          <div style="font-size:12px;font-weight:700;color:#64748B;margin-bottom:10px">Department spend this month</div>
-          <div id="an-dept-empty" style="font-size:12px;color:#94A3B8;padding:12px 0">Not yet entered</div>
-          <div style="position:relative;height:0" id="an-dept-chart-wrap"><canvas id="an-dept-chart"></canvas></div>
-        </div>
-      </div>
+      <!-- Department spend removed for launch (parked: budget review) -->
     </div>
 
     <div class="page" id="p-predictor" style="padding:32px 28px 24px">
@@ -3853,11 +3845,7 @@ img.emoji-tw{width:1.15em;height:1.15em;vertical-align:-0.2em;margin:0 1px}
           <div class="rep-card-title">Guests</div>
           <div class="rep-card-sub">Opens the calendar view</div>
         </button>
-        <button onclick="reportingOpenDeptSpend()" class="rep-card">
-          <div class="rep-card-icon" style="background:rgba(196,151,59,0.12);color:#C4973B"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 21H4.6c-.6 0-1.1-.5-1.1-1.1V3"/><rect x="7" y="13" width="3" height="5"/><rect x="12" y="9" width="3" height="9"/><rect x="17" y="5" width="3" height="13"/></svg></div>
-          <div class="rep-card-title">Department Spend</div>
-          <div class="rep-card-sub">Log a month's spend</div>
-        </button>
+        
         <button onclick="reportingOpenCsvUpload()" class="rep-card">
           <div class="rep-card-icon" style="background:rgba(13,148,136,0.1);color:#0D9488"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg></div>
           <div class="rep-card-title">Upload Historical Data</div>
@@ -19708,13 +19696,6 @@ function analyticsRender(){
   const avgSpendLastWeek = coversPrevWeek ? revWTDLastWeek / coversPrevWeek : null;
   const avgSpendLastYear = coversWeekLastYear ? revWTDLastYear / coversWeekLastYear : null;
 
-  // Department spend, this month vs last month
-  const depts = ['Operations','Marketing','Finance','Audio Visual','Kitchen','Front of House'];
-  const deptRows = depts.map(d => {
-    const curr = bmSum('dept_spend', monthStart, todayStr, d);
-    const prev = bmSum('dept_spend', prevMonthStart, prevMonthEnd, d);
-    return { d, curr, prev };
-  }).filter(r => r.curr || r.prev);
 
   // Top strip: Yesterday / Month to Date / Year to Date - plain figures, no comparisons yet
   const revYesterdayEl = document.getElementById('an-rev-yesterday-val');
@@ -19829,40 +19810,6 @@ function analyticsRender(){
     });
   }
 
-  // Department spend - horizontal bar
-  const deptWrap = document.getElementById('an-dept-chart-wrap');
-  const deptEmpty = document.getElementById('an-dept-empty');
-  if(window.anDeptChart) window.anDeptChart.destroy();
-  if(deptRows.length){
-    deptEmpty.style.display = 'none';
-    deptWrap.style.height = Math.max(120, deptRows.length*38) + 'px';
-    const deptLabelPlugin = {
-      id:'deptLabels',
-      afterDatasetsDraw(chart){
-        const { ctx } = chart;
-        const meta = chart.getDatasetMeta(0);
-        meta.data.forEach((bar,i)=>{
-          const val = deptRows[i].curr;
-          ctx.save();
-          ctx.font = '700 11px Inter, sans-serif';
-          ctx.fillStyle = '#0F1E2E';
-          ctx.textAlign = 'left';
-          ctx.textBaseline = 'middle';
-          ctx.fillText((val/1000000).toFixed(1)+'M', bar.x + 6, bar.y);
-          ctx.restore();
-        });
-      }
-    };
-    window.anDeptChart = new Chart(document.getElementById('an-dept-chart'), {
-      type:'bar',
-      data:{ labels: deptRows.map(r=>r.d), datasets:[{ data: deptRows.map(r=>r.curr), backgroundColor:'#C4973B', borderRadius:4, maxBarThickness:22 }] },
-      options:{ indexAxis:'y', responsive:true, maintainAspectRatio:false, layout:{ padding:{ right:44 } }, plugins:{legend:{display:false}, tooltip:{enabled:false}}, scales:{ x:{ grid:{color:'#F1F5F9'}, ticks:{ callback:v=>(v/1000000).toFixed(1)+'M' } }, y:{ grid:{display:false} } } },
-      plugins:[deptLabelPlugin]
-    });
-  } else {
-    deptEmpty.style.display = 'block';
-    deptWrap.style.height = '0px';
-  }
 }
 
 // ── PREDICTOR ── real public holidays (Nager.Date), real weather (Open-Meteo), real

@@ -6701,22 +6701,110 @@ function evBlankPlan(){
   return { details: BEO_TEMPLATE.details, timeline: BEO_TEMPLATE.timeline, depts: evBlankDepts(), photos:{}, links:{} };
 }
 
+// ── Demo only: every department written up for each demo event, so a demo never looks bare.
+// Real customers never see this - it only runs for the demo company. All names are made up.
+const EV_DEMO_PICS = ['Sarah Lim','Putu Ayu','Made Sudarta','Komang Adi','Rizal Pratama','Chef Daniel Reyes','Wayan Arta','Nadia Kusuma','Tom Hughes','Ketut Sari','Nyoman Budi','Dewi Lestari'];
+// Order matches the departments: Events, Guest Relations, Security & H&S, AV, IT, Kitchen, Bar,
+// Creative & Photography, Sales & Marketing, Housekeeping, Engineering, Finance & Cashier
+const EV_DEMO_DEPTS = {
+  'Solaris Beach Festival': [
+    ['Events Manager runs the day from the production office behind the main stage','Full team briefing at 11:30, department heads radio check at 12:45','Client contact: Solaris Events Asia production manager, all requests via Events Team','Hourly capacity check with Security once doors open','Debrief with the client the morning after, 10:00'],
+    ['Wristband exchange at the main gate from 12:30, 6 lanes','Guest list and artist passes at a separate VIP and artist desk','Lost property and info point next to the first aid tent','VIP cabanas: host on each block of 4, welcome drink on arrival','Re-entry not allowed after 20:00'],
+    ['24 guards on site plus 4 from the promoter, bag search at the gate','Capacity capped at 900 including staff, clicker count at every gate','Stage barrier with 4 guards in the pit during headline sets','<strong>Health & Safety:</strong> First aid tent with 2 medics and ambulance on standby · Water station by the bar · Nearest hospital: BIMC Kuta · Evacuation point: main car park'],
+    ['Main stage: line array, 4 subs a side, DJ booth with 3 CDJs and mixer','Lighting rig and LED wall, sunset scene cued for 18:00','Sound check 11:00 to 12:30, volume capped at 100dB at the mixing desk','Backup generator tested at 10:30, on standby all day'],
+    ['Card machines charged and tested by 12:00, 10 units plus 2 spare','Separate staff Wi-Fi so payments never share with guests','Ticket scanning app on 6 phones at the gate, offline mode on'],
+    ['Street-food stalls: tacos, satay, poke bowls and wood-fired pizza','Ready from 13:30, last orders 22:15','Staff meals at 11:00 and 17:00 behind the back-of-house tent','Allergy board at every stall, vegan and gluten-free options marked'],
+    ['3 bars: main, beach and VIP, 18 bartenders in total','Festival menu: 4 cocktails, beer, wine and soft drinks, no glass, cups only','Ice delivery 11:00 and 16:00, 400kg each','Bar closes at 22:30, last call announced from stage'],
+    ['Photographer and videographer from doors to close','Sunset drone shots at 18:00 (permit approved)','Same-night highlights reel for social by 23:30','Branded photo wall at the entrance'],
+    ['Ticket sales 860 of 900, last 40 on the door','Partner logos on the stage screen between sets','Influencer list of 25 at the VIP desk','Post-event email to all ticket buyers within 48 hours'],
+    ['Litter pickers on rotation every 30 minutes across the beach','Toilets checked and restocked every hour','Full beach clean from 23:30, finished by 02:00'],
+    ['Power distribution checked by 10:00, generator on standby','Stage structure signed off by the engineer before doors','Lighting towers on the beach path for exit after dark'],
+    ['Cashless wristbands topped up at 4 kiosks','Float of Rp 20m across the bars, cash count at 19:00 and close','Daily summary to the client by 12:00 next day']
+  ],
+  'Harrison Family Wedding Reception': [
+    ['Wedding coordinator stays with the couple from 15:00','Run-of-day shared with the family and the MC','Rehearsal on the lawn the day before at 16:00','Gifts table and cards collected by the coordinator at the end of the night'],
+    ['Welcome team at the lawn entrance from 16:30','Seating plan board and table cards set by 16:00','Elderly guests seated first, shaded front row','Shuttle back to hotels at 22:30 and 23:45'],
+    ['2 guards at the beach access, guest list only','Children watched by a nanny in the kids corner from 18:00','<strong>Health & Safety:</strong> First aid kit at the bar · Nearest hospital: BIMC Kuta · Evacuation point: main car park'],
+    ['Ceremony mic and speaker on the lawn, sound check 15:30','Speeches mic at the top table, wireless backup','DJ from 21:00, first dance song cued and tested','Fairy lights over the lawn on at sunset'],
+    ['Slideshow of the couple on the screen during dinner, tested at 16:00','Live stream of the ceremony for family overseas'],
+    ['Canapés: 6 kinds during cocktails, 6 pieces per guest','3-course plated dinner: tuna tartare, beef tenderloin or barramundi, chocolate fondant','Wedding cake cut at 21:00, served with coffee','6 vegetarian, 2 gluten-free, 1 nut allergy (table 4)'],
+    ['Signature cocktails named after the couple','Champagne toast at speeches, 1 glass per guest','Free-flow wine and beer until 23:00','Late-night espresso martinis on the dance floor'],
+    ['Photographer from getting-ready to first dance','Golden-hour couple shoot on the beach at 17:45','Florals: white and green, arch on the lawn, centrepieces on 12 tables'],
+    ['Deposit received, final balance due 14 days before','Wedding package upsell: after-party at the bar'],
+    ['Lawn cleared and chairs set by 15:00','Bridal suite prepared with flowers and fruit','Full reset after midnight'],
+    ['Backup power for the lawn lights and sound','Rain plan: ceremony moves to the covered terrace, decision by 13:00'],
+    ['Bar tab capped at Rp 40m, family signs off overruns','Final bill to the family the next morning']
+  ],
+  'Apex Annual Gala': [
+    ['Gala producer leads the show from the side of stage','Run of show printed for all heads, cue calls on radio','Client contact: Apex HR director','Debrief within 24 hours'],
+    ['Red carpet arrival with step-and-repeat banner','Table plan for 32 tables of 10 at the entrance','Award winners seated near the stage aisle'],
+    ['6 guards, ID check for the open bar','Valet with 2 drivers for VIP cars','<strong>Health & Safety:</strong> First aid on site · Nearest hospital: BIMC Kuta · Evacuation point: main car park'],
+    ['Stage with LED backdrop and lectern','Awards stings and walk-up music for 12 awards','2 cameras feeding the side screens','Band set at 22:30 with DJ to follow'],
+    ['Award slides and nominee videos tested at 17:00','Voting results locked by 19:00, envelope backup printed'],
+    ['4-course dinner: burrata, seafood bisque, wagyu or salmon, mango pavlova','Served between awards blocks, 25 minutes per course','Dietary list on every table card'],
+    ['Welcome bubbles on arrival','Open bar for 4 hours, premium spirits','Late bar from 23:00 on the company card'],
+    ['Photographer on the red carpet and at each award handover','Photo booth with branded frames','Gallery shared with the client within 72 hours'],
+    ['Apex branding on menus, screens and table numbers','Sponsor thank-you slide before dinner'],
+    ['Tables dressed in black and gold by 16:00','Restrooms checked every 30 minutes'],
+    ['Stage and truss signed off by 15:00','Air conditioning in the ballroom set to 22°C'],
+    ['Fully paid','Bar overtime billed at close and signed by the client']
+  ],
+  'Sunset Music Series': [
+    ['Events lead on the pool deck from 14:00','Artist liaison greets the band at 15:00','Doors 16:00, close 22:00 sharp'],
+    ['Walk-in guests and reservations at one desk','Daybed bookings: 20 beds with minimum spend','Over-21 wristbands at the bar'],
+    ['4 guards, pool closed to swimming after 18:00','<strong>Health & Safety:</strong> Lifeguard on duty until 18:00 · First aid at the towel desk · Evacuation point: main car park'],
+    ['Live band set-up on the pool stage, sound check 14:30','Volume limit 95dB after 20:00 for neighbours','Sunset DJ between band sets'],
+    ['Card machines at the bar and the daybeds'],
+    ['Sharing menu: sliders, wings, nachos, fruit platters','Kitchen open 16:00 to 21:30'],
+    ['Sunset cocktail special 17:00 to 19:00, 2 for 1','Buckets of beer for daybeds'],
+    ['Photographer at golden hour 17:30 to 18:30','Short video for Instagram the next day'],
+    ['Posted on social 3 weeks ahead, story countdown','Next date announced from stage'],
+    ['Pool deck cleared and loungers set by 15:00','Reset for breakfast by 07:00 next day'],
+    ['Pool lights and stage power checked by 14:00'],
+    ['Fully paid','Daybed minimum spend settled at each bed']
+  ]
+};
+function evDemoDeptsHtml(lists, base){
+  const wrap = document.createElement('div');
+  wrap.innerHTML = base || BEO_TEMPLATE.depts;
+  if(lists) wrap.querySelectorAll('.dept-body').forEach((b, i) => { const l = lists[i]; if(l) b.innerHTML = '<ul>' + l.map(x => '<li>' + evEsc(x).replace('&lt;strong&gt;', '<strong>').replace('&lt;/strong&gt;', '</strong>') + '</li>').join('') + '</ul>'; });
+  wrap.querySelectorAll('.dept-pic-name').forEach((n, i) => { if(!n.textContent.trim() && EV_DEMO_PICS[i]) n.textContent = EV_DEMO_PICS[i]; });
+  return wrap.innerHTML;
+}
+// Demo company only: fill in departments (and owners) on demo events that are still blank.
+async function evDemoTopUp(rows){
+  if(!BEO_TEMPLATE || !appIsDemoCompany()) return;
+  const isDemoName = n => n === 'Horizon Tech Summit 2026 — Welcome Dinner' || EV_DEMO_DEPTS[n];
+  for(const row of rows){
+    if(!isDemoName(row.name)) continue;
+    const plan = row.plan || {};
+    const w = document.createElement('div'); w.innerHTML = plan.depts || '';
+    const bodies = [...w.querySelectorAll('.dept-body')], pics = [...w.querySelectorAll('.dept-pic-name')];
+    const blankBodies = bodies.length && bodies.every(b => /^\s*(Type department notes here…)?\s*$/.test(b.textContent));
+    const blankPics = pics.length && pics.every(n => !n.textContent.trim());
+    if(!blankBodies && !blankPics) continue;
+    const depts = evDemoDeptsHtml(blankBodies ? EV_DEMO_DEPTS[row.name] : null, blankBodies && EV_DEMO_DEPTS[row.name] ? BEO_TEMPLATE.depts : plan.depts);
+    row.plan = Object.assign({}, plan, { depts });
+    try { await sb.from('events').update({ plan: row.plan }).eq('id', row.id); } catch(e){}
+  }
+}
+
 // Demo events, added once when the events table is empty, so a demo never looks bare.
 // All names are made up. Dates are relative to today so current/past stay correct.
 function evDemoRows(){
-  const full = { details: BEO_TEMPLATE.details, depts: BEO_TEMPLATE.depts, photos:{}, links:{},
+  const full = { details: BEO_TEMPLATE.details, depts: evDemoDeptsHtml(null), photos:{}, links:{},
     timeline: evTimelineHtml([['15:00','Venue handover to events team, AV load-in'],['17:00','Sound check and lighting focus'],['18:30','Guest arrival, welcome drinks on the terrace'],['19:30','Welcome speech by the CEO'],['20:00','Dinner service, 3 courses'],['21:30','Live band set'],['23:00','Last orders, event close']]) };
-  const light = (tl)=>({ details: BEO_TEMPLATE.details, depts: evBlankDepts(), photos:{}, links:{}, timeline: evTimelineHtml(tl) });
+  const light = (tl, name)=>({ details: BEO_TEMPLATE.details, depts: evDemoDeptsHtml(EV_DEMO_DEPTS[name]), photos:{}, links:{}, timeline: evTimelineHtml(tl) });
   return [
     { name:'Horizon Tech Summit 2026 — Welcome Dinner', client:'Nexus Global Indonesia', event_date: evDateShift(12), event_time:'18:30 – 23:00', venue:'Main Terrace', pax:180, status:'Deposit paid', revenue:185000000, cost:72000000, plan: full },
     { name:'Solaris Beach Festival', client:'Solaris Events Asia', event_date: evDateShift(34), event_time:'14:00 – 23:00', venue:'Full venue buyout', pax:900, status:'Confirmed', revenue:420000000, cost:190000000,
-      plan: light([['10:00','Stage and production build'],['13:00','Doors open'],['14:00','First DJ set'],['18:00','Sunset headliner'],['23:00','Close']]) },
+      plan: light([['10:00','Stage and production build'],['13:00','Doors open'],['14:00','First DJ set'],['18:00','Sunset headliner'],['23:00','Close']], 'Solaris Beach Festival') },
     { name:'Harrison Family Wedding Reception', client:'The Harrison Family', event_date: evDateShift(58), event_time:'17:00 – 23:30', venue:'Beach Lawn', pax:120, status:'Enquiry', revenue:150000000, cost:65000000,
-      plan: light([['16:00','Ceremony set-up complete'],['17:00','Ceremony on the lawn'],['18:00','Canapés and cocktails'],['19:30','Dinner and speeches'],['21:00','First dance, DJ']]) },
+      plan: light([['16:00','Ceremony set-up complete'],['17:00','Ceremony on the lawn'],['18:00','Canapés and cocktails'],['19:30','Dinner and speeches'],['21:00','First dance, DJ']], 'Harrison Family Wedding Reception') },
     { name:'Apex Annual Gala', client:'Apex Holdings', event_date: evDateShift(-38), event_time:'19:00 – 00:00', venue:'Main Terrace', pax:320, status:'Fully paid', revenue:260000000, cost:118000000,
-      plan: light([['19:00','Arrival drinks'],['20:00','Awards'],['21:00','Dinner'],['22:30','Party']]) },
+      plan: light([['19:00','Arrival drinks'],['20:00','Awards'],['21:00','Dinner'],['22:30','Party']], 'Apex Annual Gala') },
     { name:'Sunset Music Series', client:'Sunset Productions', event_date: evDateShift(-73), event_time:'16:00 – 22:00', venue:'Pool Deck', pax:180, status:'Fully paid', revenue:95000000, cost:41000000,
-      plan: light([['16:00','Doors open'],['17:30','Live set'],['22:00','Close']]) }
+      plan: light([['16:00','Doors open'],['17:30','Live set'],['22:00','Close']], 'Sunset Music Series') }
   ];
 }
 
@@ -6737,6 +6825,7 @@ async function evLoadFromSupabase(){
       try{ localStorage.setItem('mavis_events_seeded','1'); }catch(e){}
     }
     evAll = data || [];
+    if(evAll.length) await evDemoTopUp(evAll);
   }catch(e){
     console.warn('Events not loaded', e);
     evAll = [];

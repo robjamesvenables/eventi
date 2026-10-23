@@ -20403,6 +20403,9 @@ function predictorRenderBody(){
     + `<div class="fc-grid2">${whoCard}${seasonCard}</div>`
     + todoCard;
   if(hasHistory) fcDrawChart();
+  // Phone: the week strip scrolls sideways - start with today in view
+  const wkEl = body.querySelector('.fc-week'), tEl = wkEl && wkEl.querySelector('.fc-day.today');
+  if(wkEl && tEl && wkEl.scrollWidth > wkEl.clientWidth) wkEl.scrollLeft = Math.max(0, tEl.offsetLeft - wkEl.offsetLeft - (wkEl.clientWidth - tEl.offsetWidth) / 2);
 }
 let fcChart = null;
 // This week vs last year: guests (teal, filled) and revenue (blue, dashed) on one graph, each on its own scale.
@@ -20429,7 +20432,7 @@ function fcDrawChart(){
   if(fcChart) fcChart.destroy();
   fcChart = new Chart(cv, { plugins: [dayBand],
     type: 'line',
-    data: { labels: wk.map(x => fcDayName(x.d) + (x.isToday ? ' (today)' : '')), datasets: [
+    data: { labels: wk.map(x => (x.isToday && window.innerWidth > 600) ? fcDayName(x.d) + ' (today)' : fcDayName(x.d)), datasets: [
       { label: 'Guests', data: wk.map(x => x.lyG == null ? null : Math.round(x.lyG)), yAxisID: 'y', borderColor: '#0D9488', backgroundColor: grad, fill: true, tension: 0.38, borderWidth: 3,
         pointRadius: wk.map(x => x.isToday ? 10 : 8), pointHoverRadius: 11, pointBackgroundColor: dots, pointBorderColor: '#fff', pointBorderWidth: 3, spanGaps: true },
       { label: 'Revenue', data: wk.map(x => x.lyR == null ? null : Math.round(x.lyR / 1e5) / 10), yAxisID: 'y1', borderColor: '#378ADD', backgroundColor: '#378ADD', borderDash: [6, 5], fill: false, tension: 0.38, borderWidth: 2.5,
@@ -20446,7 +20449,7 @@ function fcDrawChart(){
             if(x.tyG != null || x.tyR != null) out.push('This year: ' + (x.tyG != null ? Math.round(x.tyG) + ' guests' : '-') + ' · ' + (x.tyR != null ? fcMoney(x.tyR) : '-'));
             return out; } } } },
       scales: { y: { display: false, beginAtZero: true }, y1: { display: false, beginAtZero: true, grid: { drawOnChartArea: false } },
-        x: { grid: { display: false }, border: { display: false }, ticks: { color: (c) => wk[c.index] && wk[c.index].isToday ? '#0D9488' : '#334155', font: { family: 'Inter', size: 13, weight: '800' } } } } }
+        x: { grid: { display: false }, border: { display: false }, ticks: { maxRotation: 0, minRotation: 0, autoSkip: false, color: (c) => wk[c.index] && wk[c.index].isToday ? '#0D9488' : '#334155', font: { family: 'Inter', size: window.innerWidth > 600 ? 13 : 11.5, weight: '800' } } } } }
   });
 }
 

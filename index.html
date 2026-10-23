@@ -4121,7 +4121,7 @@ img.emoji-tw{width:1.15em;height:1.15em;vertical-align:-0.2em;margin:0 1px}
 
       <div id="chat-card" style="background:white;border:1.5px solid #E2E8F0;border-radius:14px;overflow:hidden;display:flex;min-height:420px">
         <!-- Conversation list -->
-        <div id="chat-list-pane" style="width:320px;flex-shrink:0;border-right:1.5px solid #F1F5F9;display:flex;flex-direction:column">
+        <div id="chat-list-pane" style="width:320px;flex-shrink:0;border-right:1.5px solid #F1F5F9;display:flex;flex-direction:column;position:relative">
           <div style="padding:16px;border-bottom:1px solid #F1F5F9">
             <input id="chat-search" type="text" placeholder="Search by name…" style="width:100%;padding:9px 12px;border:1.5px solid #E2E8F0;border-radius:9px;font-family:'Inter',sans-serif;font-size:16px;box-sizing:border-box;outline:none">
           </div>
@@ -22919,7 +22919,7 @@ window.chatRenderList = function(){
     const t = CH.threads[c.id], act = c.id === chatActiveId, last = c.last;
     const who = last && !last.deleted_at ? (last.sender_id === chat2Me() ? 'You: ' : (c.isGroup ? chatEscapeHtml(chat2Name(last.sender_id, true)) + ': ' : '')) : '';
     const prev = last ? who + momentsTwemojiParse(chatEscapeHtml(chat2Preview(last))) : (t.kind === 'direct' ? 'No messages yet' : (n => n + (n === 1 ? ' member' : ' members'))(chat2MemberIds(t).length));
-    return `<div onclick="if(Date.now()-(window._chat2LP||0)<700)return;chatOpenConversation('${c.id}')" data-tid="${c.id}" class="chat2-row${act ? ' active' : ''}">
+    return `<div onclick="if(Date.now()-(window._chat2LP||0)<700)return;if(CH.listSel){chat2ListSelect(null);return;}chatOpenConversation('${c.id}')" data-tid="${c.id}" class="chat2-row${act ? ' active' : ''}${CH.listSel === c.id ? ' sel' : ''}">
       ${chat2Avatar(t, 40)}
       <div style="flex:1;min-width:0">
         <div style="display:flex;justify-content:space-between;align-items:center;gap:8px">
@@ -23013,7 +23013,7 @@ function chat2RenderHeader(){
       <button class="chat-business-btn" onclick="chat2MuteMenu()" data-tooltip="${chat2IsMuted(t.id) ? 'Muted - tap to change' : 'Mute notifications'}" aria-label="Mute"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="${chat2IsMuted(t.id) ? '#C4973B' : 'currentColor'}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${chat2IsMuted(t.id) ? CHAT2_BELL_OFF : CHAT2_BELL}</svg></button>
       ${canEdit ? `<button class="chat-business-btn" onclick="chat2GroupEditor('${t.id}')" data-tooltip="Edit group"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg></button>` : ''}
       <button id="chat-header-search-btn" class="chat-business-btn" onclick="chatToggleThreadSearch()" data-tooltip="Search this chat"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg></button>
-      <button class="chat-business-btn" onclick="chat2ChatMenu()" data-tooltip="More" aria-label="More"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.9"/><circle cx="12" cy="12" r="1.9"/><circle cx="12" cy="19" r="1.9"/></svg></button>
+      <button class="chat-business-btn" onclick="event.stopPropagation();chat2HeaderMenu(this)" data-tooltip="More" aria-label="More"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.9"/><circle cx="12" cy="12" r="1.9"/><circle cx="12" cy="19" r="1.9"/></svg></button>
     </div>`;
   chatRenderPinnedBar();
   chat2RenderActbar();
@@ -23869,12 +23869,10 @@ window.chat2Delete = function(i){
   const m = CH.view[i]; if(!m) return;
   const mine = m.sender_id === chat2Me(), age = Date.now() - new Date(m.created_at).getTime();
   const forAll = mine && !m.deleted_at && age < CHAT_DELETE_HOURS * 3600000;
-  const opt = (k, l, red) => `<button class="chat2-pick" style="padding:14px 12px;font-size:14.5px;font-weight:600;color:${red ? '#DC2626' : '#0F1E2E'}" onclick="chat2DeleteGo(${i},'${k}')">${l}</button>`;
-  chat2Sheet('Delete message?', forAll ? 'Delete for everyone removes it for everyone in this chat. Delete for me only removes it from your screen.' : (mine && !m.deleted_at ? 'It is over 2 days old, so it can only be removed from your screen.' : 'This removes it from your screen only. Everyone else still sees it.'),
-    (forAll ? opt('all', 'Delete for everyone', true) : '') + opt('me', 'Delete for me', !forAll));
+  chat2Dialog('Delete message?', forAll ? '' : (mine && !m.deleted_at ? 'It is over 2 days old, so it can only be deleted for you.' : 'It disappears on your side only.'),
+    (forAll ? [{label:'Delete for everyone', red:true, fn:() => chat2DeleteGo(i, 'all')}] : []).concat([{label:'Delete for me', red:!forAll, fn:() => chat2DeleteGo(i, 'me')}]));
 };
 window.chat2DeleteGo = async function(i, k){
-  chat2SheetClose();
   const m = CH.view[i]; if(!m) return;
   if(k === 'me'){
     const before = (CH.prefs.hidden || []).slice();
@@ -23902,27 +23900,62 @@ async function chat2DeleteForAll(m){
   list.addEventListener('touchstart', e => {
     const r = rowOf(e); clearTimeout(timer); if(!r) return;
     sx = e.touches[0].clientX; sy = e.touches[0].clientY;
-    timer = setTimeout(() => { window._chat2LP = Date.now(); if(navigator.vibrate) navigator.vibrate(15); chat2ChatMenu(r.dataset.tid); }, 450);
+    timer = setTimeout(() => { window._chat2LP = Date.now(); if(navigator.vibrate) navigator.vibrate(15); chat2ListSelect(r.dataset.tid); }, 450);
   }, {passive:true});
   list.addEventListener('touchmove', e => { const t = e.touches[0]; if(Math.abs(t.clientX - sx) > 10 || Math.abs(t.clientY - sy) > 10) clearTimeout(timer); }, {passive:true});
   list.addEventListener('touchend', () => clearTimeout(timer));
   list.addEventListener('touchcancel', () => clearTimeout(timer));
-  list.addEventListener('contextmenu', e => { const r = rowOf(e); if(!r) return; e.preventDefault(); chat2ChatMenu(r.dataset.tid); });
+  list.addEventListener('contextmenu', e => { const r = rowOf(e); if(!r) return; e.preventDefault(); chat2ListSelect(r.dataset.tid); });
 })();
 
 // ── Chat menu (⋮ in the chat header): Clear chat / Delete chat - for me only, like WhatsApp ──
-window.chat2ChatMenu = function(tid){
+// WhatsApp-style small dialog: title, text, and stacked text buttons on the right
+function chat2Dialog(title, msg, buttons){
+  let d = document.getElementById('chat2-dlg');
+  if(!d){ d = document.createElement('div'); d.id = 'chat2-dlg'; document.body.appendChild(d);
+    d.addEventListener('click', e => { if(e.target === d) d.style.display = 'none'; }); }
+  window._chat2DlgBtns = buttons;
+  d.innerHTML = `<div class="chat2-dlg-card"><div class="chat2-dlg-t">${title}</div>${msg ? `<div class="chat2-dlg-m">${msg}</div>` : ''}<div class="chat2-dlg-b">`
+    + buttons.map((b, n) => `<button style="color:${b.red ? '#DC2626' : '#0D9488'}" onclick="document.getElementById('chat2-dlg').style.display='none';(window._chat2DlgBtns[${n}].fn||function(){})()">${b.label}</button>`).join('')
+    + `<button style="color:#64748B" onclick="document.getElementById('chat2-dlg').style.display='none'">Cancel</button></div></div>`;
+  d.style.display = 'flex';
+}
+// Ask before clearing / deleting a chat
+window.chat2ChatMenu = function(tid, k){
   tid = tid || chatActiveId;
   const t = CH.threads[tid]; if(!t) return;
-  const opt = (k, l, red) => `<button class="chat2-pick" style="padding:14px 12px;font-size:14.5px;font-weight:600;color:${red ? '#DC2626' : '#0F1E2E'}" onclick="chat2ClearGo('${k}','${tid}')">${l}</button>`;
+  const name = chatEscapeHtml(chat2ThreadName(t));
+  if(k === 'delete') chat2Dialog('Delete chat with ' + name + '?', 'It disappears from your list. ' + name + ' keeps their copy.', [{label:'Delete chat', red:true, fn:() => chat2ClearGo('delete', tid)}]);
+  else chat2Dialog('Clear this chat?', 'All messages disappear on your side only. Everyone else keeps theirs.', [{label:'Clear chat', red:true, fn:() => chat2ClearGo('clear', tid)}]);
+};
+// ⋮ in the chat header: small dropdown, like WhatsApp
+window.chat2HeaderMenu = function(btn){
+  const t = CH.threads[chatActiveId]; if(!t) return;
+  let m = document.getElementById('chat2-hmenu');
+  if(m){ m.remove(); return; }
+  m = document.createElement('div'); m.id = 'chat2-hmenu';
+  m.innerHTML = `<button onclick="this.parentNode.remove();chat2ChatMenu(null,'clear')">Clear chat</button>` + (t.kind === 'direct' ? `<button onclick="this.parentNode.remove();chat2ChatMenu(null,'delete')">Delete chat</button>` : '');
+  const r = btn.getBoundingClientRect();
+  m.style.top = (r.bottom + 4) + 'px'; m.style.right = Math.max(8, window.innerWidth - r.right) + 'px';
+  document.body.appendChild(m);
+  setTimeout(() => document.addEventListener('click', function f(e){ if(!m.contains(e.target)){ m.remove(); document.removeEventListener('click', f, true); } }, true), 0);
+};
+// Press and hold a chat in the list: it highlights and a bar appears on top (like WhatsApp)
+window.chat2ListSelect = function(tid){
+  CH.listSel = tid || null;
+  const pane = document.getElementById('chat-list-pane');
+  let bar = document.getElementById('chat2-listbar');
+  chatRenderList();
+  if(!tid){ if(bar) bar.remove(); return; }
+  const t = CH.threads[tid]; if(!t){ CH.listSel = null; if(bar) bar.remove(); return; }
+  if(!bar){ bar = document.createElement('div'); bar.id = 'chat2-listbar'; pane.appendChild(bar); }
   const direct = t.kind === 'direct';
-  chat2Sheet(chatEscapeHtml(chat2ThreadName(t)), direct
-      ? 'Clear empties the messages on your side. Delete also removes the chat from your list. The other person keeps their copy, and if they message you again the chat comes back.'
-      : 'Clear empties the messages on your side only. Everyone else in the group keeps theirs.',
-    opt('clear', 'Clear chat', !direct) + (direct ? opt('delete', 'Delete chat', true) : ''));
+  const bin = '<path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M19 6l-1 14H6L5 6"/>';
+  bar.innerHTML = `<button class="chat2-act" onclick="chat2ListSelect(null)" aria-label="Cancel"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
+    <div style="flex:1;min-width:0;color:white;font:700 15px Inter,sans-serif;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${chatEscapeHtml(chat2ThreadName(t))}</div>
+    <button class="chat2-act" onclick="chat2ListSelect(null);chat2ChatMenu('${tid}','${direct ? 'delete' : 'clear'}')" aria-label="${direct ? 'Delete chat' : 'Clear chat'}" title="${direct ? 'Delete chat' : 'Clear chat'}"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${bin}</svg></button>`;
 };
 window.chat2ClearGo = async function(k, tid){
-  chat2SheetClose();
   tid = tid || chatActiveId; if(!tid) return;
   const msgs = CH.msgs[tid] || [];
   const last = msgs.length ? msgs[msgs.length - 1].created_at : new Date().toISOString();
@@ -24216,6 +24249,17 @@ chat2Style.textContent = `
 @media(max-width:560px){.chat2-act-sel{display:none}}
 .chat2-day{align-self:center;margin:6px 0 2px}.chat2-day span{background:#F1F5F9;color:#64748B;font-size:10.5px;font-weight:700;padding:4px 10px;border-radius:10px}
 #chat-thread-msgs{justify-content:flex-start!important}#chat-thread-msgs>:first-child{margin-top:auto}
+#chat2-dlg{display:none;position:fixed;inset:0;z-index:10050;background:rgba(15,30,46,.45);align-items:center;justify-content:center;padding:24px}
+.chat2-dlg-card{background:white;border-radius:18px;width:100%;max-width:340px;padding:22px 22px 10px;box-shadow:0 24px 60px rgba(15,30,46,.3)}
+.chat2-dlg-t{font:700 17px Inter,sans-serif;color:#0F1E2E;line-height:1.35}
+.chat2-dlg-m{font:500 13.5px Inter,sans-serif;color:#64748B;line-height:1.5;margin-top:8px}
+.chat2-dlg-b{display:flex;flex-direction:column;align-items:flex-end;margin-top:14px}
+.chat2-dlg-b button{background:none;border:0;font:700 14.5px Inter,sans-serif;padding:11px 6px;cursor:pointer}
+#chat2-hmenu{position:fixed;z-index:10045;background:white;border-radius:12px;box-shadow:0 10px 30px rgba(15,30,46,.25);overflow:hidden;min-width:180px}
+#chat2-hmenu button{display:block;width:100%;text-align:left;padding:14px 18px;border:0;background:white;font:600 14.5px Inter,sans-serif;color:#0F1E2E;cursor:pointer}
+#chat2-hmenu button:hover{background:#F8FAFC}
+#chat2-listbar{position:absolute;left:0;right:0;top:0;height:69px;background:#0F1E2E;display:flex;align-items:center;gap:4px;padding:0 8px;z-index:6}
+.chat2-row.sel{background:#CCFBF1!important}
 #chat2-sheet{display:none;position:fixed;inset:0;z-index:10040;background:rgba(15,30,46,.48);align-items:center;justify-content:center;padding:18px}
 .chat2-sheet-card{width:min(440px,100%);max-height:min(680px,88vh);background:#fff;border-radius:16px;box-shadow:0 24px 70px rgba(15,30,46,.28);display:flex;flex-direction:column;overflow:hidden}
 .chat2-pick{width:100%;border:0;background:white;border-radius:11px;padding:9px 10px;display:flex;align-items:center;gap:12px;text-align:left;cursor:pointer;font-family:Inter,sans-serif}

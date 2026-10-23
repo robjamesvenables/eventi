@@ -22919,7 +22919,7 @@ window.chatRenderList = function(){
     const t = CH.threads[c.id], act = c.id === chatActiveId, last = c.last;
     const who = last && !last.deleted_at ? (last.sender_id === chat2Me() ? 'You: ' : (c.isGroup ? chatEscapeHtml(chat2Name(last.sender_id, true)) + ': ' : '')) : '';
     const prev = last ? who + momentsTwemojiParse(chatEscapeHtml(chat2Preview(last))) : (t.kind === 'direct' ? 'No messages yet' : (n => n + (n === 1 ? ' member' : ' members'))(chat2MemberIds(t).length));
-    return `<div onclick="chatOpenConversation('${c.id}')" class="chat2-row${act ? ' active' : ''}">
+    return `<div onclick="if(Date.now()-(window._chat2LP||0)<700)return;chatOpenConversation('${c.id}')" data-tid="${c.id}" class="chat2-row${act ? ' active' : ''}">
       ${chat2Avatar(t, 40)}
       <div style="flex:1;min-width:0">
         <div style="display:flex;justify-content:space-between;align-items:center;gap:8px">
@@ -23894,26 +23894,43 @@ async function chat2DeleteForAll(m){
   toast('Deleted for everyone');
 }
 
+// Press and hold a chat in the list (or right-click on a computer) for Clear / Delete, like WhatsApp
+(function(){
+  const list = document.getElementById('chat-conv-list'); if(!list) return;
+  let timer = null, sx = 0, sy = 0;
+  const rowOf = e => e.target.closest && e.target.closest('.chat2-row[data-tid]');
+  list.addEventListener('touchstart', e => {
+    const r = rowOf(e); clearTimeout(timer); if(!r) return;
+    sx = e.touches[0].clientX; sy = e.touches[0].clientY;
+    timer = setTimeout(() => { window._chat2LP = Date.now(); if(navigator.vibrate) navigator.vibrate(15); chat2ChatMenu(r.dataset.tid); }, 450);
+  }, {passive:true});
+  list.addEventListener('touchmove', e => { const t = e.touches[0]; if(Math.abs(t.clientX - sx) > 10 || Math.abs(t.clientY - sy) > 10) clearTimeout(timer); }, {passive:true});
+  list.addEventListener('touchend', () => clearTimeout(timer));
+  list.addEventListener('touchcancel', () => clearTimeout(timer));
+  list.addEventListener('contextmenu', e => { const r = rowOf(e); if(!r) return; e.preventDefault(); chat2ChatMenu(r.dataset.tid); });
+})();
+
 // ── Chat menu (⋮ in the chat header): Clear chat / Delete chat - for me only, like WhatsApp ──
-window.chat2ChatMenu = function(){
-  const t = CH.threads[chatActiveId]; if(!t) return;
-  const opt = (k, l, red) => `<button class="chat2-pick" style="padding:14px 12px;font-size:14.5px;font-weight:600;color:${red ? '#DC2626' : '#0F1E2E'}" onclick="chat2ClearGo('${k}')">${l}</button>`;
+window.chat2ChatMenu = function(tid){
+  tid = tid || chatActiveId;
+  const t = CH.threads[tid]; if(!t) return;
+  const opt = (k, l, red) => `<button class="chat2-pick" style="padding:14px 12px;font-size:14.5px;font-weight:600;color:${red ? '#DC2626' : '#0F1E2E'}" onclick="chat2ClearGo('${k}','${tid}')">${l}</button>`;
   const direct = t.kind === 'direct';
   chat2Sheet(chatEscapeHtml(chat2ThreadName(t)), direct
       ? 'Clear empties the messages on your side. Delete also removes the chat from your list. The other person keeps their copy, and if they message you again the chat comes back.'
       : 'Clear empties the messages on your side only. Everyone else in the group keeps theirs.',
     opt('clear', 'Clear chat', !direct) + (direct ? opt('delete', 'Delete chat', true) : ''));
 };
-window.chat2ClearGo = async function(k){
+window.chat2ClearGo = async function(k, tid){
   chat2SheetClose();
-  const tid = chatActiveId; if(!tid) return;
+  tid = tid || chatActiveId; if(!tid) return;
   const msgs = CH.msgs[tid] || [];
   const last = msgs.length ? msgs[msgs.length - 1].created_at : new Date().toISOString();
   const before = Object.assign({}, CH.prefs.cleared || {});
   // cut at the newest message (server time), so anything sent after this still shows
   CH.prefs.cleared = Object.assign({}, before, { [tid]: String(last) });
   if(!(await chat2SavePrefs())){ CH.prefs.cleared = before; return; }
-  if(k === 'delete'){ chat2CloseThread(); toast('Chat deleted'); }
+  if(k === 'delete'){ if(tid === chatActiveId) chat2CloseThread(); else chat2RefreshAll(); toast('Chat deleted'); }
   else { chatRenderMessages(); chat2RefreshAll(); toast('Chat cleared'); }
 };
 

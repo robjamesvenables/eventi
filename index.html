@@ -2731,7 +2731,48 @@ img.emoji-tw{width:1.15em;height:1.15em;vertical-align:-0.2em;margin:0 1px}
   const MV_SAFE_RX = /[<>"'\\`]/g;
   const MV_JSON_TABLES = { app_settings:1, dj_settings:1 };
   function mvSafeStr(s){ return s.indexOf('<')<0 && s.indexOf('>')<0 && s.indexOf('"')<0 && s.indexOf("'")<0 && s.indexOf('\\')<0 && s.indexOf('`')<0 ? s : s.replace(MV_SAFE_RX, c => MV_SAFE_MAP[c]); }
+  // Event plans are the one place Mavis saves formatted layout (tables, timeline rows, department
+  // notes) - so they can't just have their characters swapped, or the plan shows as raw code.
+  // Instead they go through a strict filter: only ordinary layout tags and attributes survive,
+  // and button actions are kept only if they are one of the plan's own known actions. Anything
+  // else (scripts, frames, unknown actions, javascript: links) is removed.
+  // Plans saved while the swap was wrongly applied (they contain ‹ ›) are turned back first.
+  const MV_UNSAFE_MAP = {'\u2039':'<','\u203A':'>','\u201D':'"','\u2019':"'",'\u2216':'\\','\u02CB':'`'};
+  const MV_HTML_TAGS = /^(TABLE|THEAD|TBODY|TFOOT|TR|TD|TH|COLGROUP|COL|DIV|SPAN|P|BR|HR|B|I|U|S|STRONG|EM|SMALL|SUB|SUP|FONT|UL|OL|LI|H1|H2|H3|H4|H5|H6|LABEL|BUTTON|INPUT|SELECT|OPTION|TEXTAREA|IMG|A|BLOCKQUOTE|PRE|CODE|MARK)$/;
+  const MV_HTML_ATTRS = /^(class|id|style|title|contenteditable|spellcheck|draggable|colspan|rowspan|align|color|placeholder|value|selected|checked|disabled|readonly|multiple|accept|alt|width|height|target|rel|type|src|href|name|for|data-[\w-]+|aria-[\w-]+)$/i;
+  const MV_ACT_FN = '(?:addDepartment|addDetailRow|addRundownRow|beoRemoveDept|beoToggleDeptClient|beoTriggerSave|delRow|deptAddLinkClick|deptAddPhotoClick|deptColor|deptDeleteLink|deptFmt|deptOpenLink|hideToolbar|showToolbar|toast|tog|updateBeoHeader|updateBeoStats|vendorUpload|evShareLink|event\\.stopPropagation|this\\.closest\\(\'[\\w.#-]+\'\\)\\.remove)';
+  const MV_ACT_ARG = "(?:this|event|beoCurrentId|-?\\d+(?:\\.\\d+)?|'[\\w#.\\- ]*')";
+  const MV_ACT_ONE = '(?:' + MV_ACT_FN + '\\((?:' + MV_ACT_ARG + '(?:\\s*,\\s*' + MV_ACT_ARG + ')*)?\\)|this\\.style\\.(?:borderColor|color|background)=\'[\\w#(),.\\- ]*\')';
+  const MV_ACT_RX = new RegExp('^\\s*' + MV_ACT_ONE + '(?:\\s*;\\s*' + MV_ACT_ONE + ')*\\s*;?\\s*$');
+  function mvSafeHtml(html){
+    if(typeof html !== 'string') return html;
+    if(html.indexOf('\u2039') >= 0) html = html.replace(/[\u2039\u203A\u201D\u2019\u2216\u02CB]/g, c => MV_UNSAFE_MAP[c]);
+    const tpl = document.createElement('template'); tpl.innerHTML = html;
+    const walk = node => {
+      [...node.children].forEach(el => {
+        if(!MV_HTML_TAGS.test(el.tagName)){ el.remove(); return; }
+        [...el.attributes].forEach(a => {
+          const n = a.name.toLowerCase(), v = a.value;
+          if(n.startsWith('on')){ if(!MV_ACT_RX.test(v)) el.removeAttribute(a.name); return; }
+          if(!MV_HTML_ATTRS.test(n)){ el.removeAttribute(a.name); return; }
+          if(n === 'href' && !/^(https?:|mailto:|tel:|#)/i.test(v.trim())) el.removeAttribute(a.name);
+          if(n === 'src' && !/^(https:|data:image\/(png|jpe?g|gif|webp);)/i.test(v.trim())) el.removeAttribute(a.name);
+          if(n === 'style' && /expression|javascript:|url\s*\(/i.test(v)) el.removeAttribute(a.name);
+          if(n === 'type' && el.tagName === 'INPUT' && !/^(text|date|time|number|checkbox|radio|file|hidden|color)$/i.test(v)) el.setAttribute('type', 'text');
+        });
+        walk(el);
+      });
+    };
+    walk(tpl.content);
+    return tpl.innerHTML;
+  }
+  const MV_HTML_FIELDS = { events: { plan: ['details', 'timeline', 'depts'] } };
   function mvClean(v, table, key){
+    const hf = MV_HTML_FIELDS[table] && MV_HTML_FIELDS[table][key];
+    if(hf && v && typeof v === 'object' && !Array.isArray(v)){
+      Object.keys(v).forEach(k => { v[k] = hf.includes(k) && typeof v[k] === 'string' ? mvSafeHtml(v[k]) : mvClean(v[k], '', k); });
+      return v;
+    }
     if(typeof v === 'string'){
       if(MV_JSON_TABLES[table] && key === 'value'){
         const t = v.trim();
@@ -6848,6 +6889,7 @@ function beoApply(ev){
   if(det) det.innerHTML = plan.details || blank.details;
   if(rd) rd.innerHTML = plan.timeline || blank.timeline;
   if(dp){ dp.innerHTML = plan.depts || blank.depts; dp.querySelectorAll('.dept-toolbar.show').forEach(t=>t.classList.remove('show')); }
+  if(det){ ['det-name','det-client','det-date-cell','det-time','det-venue','det-pax'].forEach(id => { const all = det.querySelectorAll('[id="' + id + '"]'); for(let n = 1; n < all.length; n++){ const tr = all[n].closest('tr'); if(tr) tr.remove(); } }); }
   deptPhotos = plan.photos || {};
   deptLinks = plan.links || {};
   const setT=(id,v)=>{ const el=document.getElementById(id); if(el) el.textContent = v==null?'':v; };

@@ -20190,7 +20190,11 @@ function predictorRenderBody(){
   const W = predictorData.weather && predictorData.weather.daily ? predictorData.weather.daily : null;
   const hasHistory = businessMetrics.some(m => m.metric_key === 'covers_served' || m.metric_key === 'revenue');
   const covStats = predictorMetricStats('covers_served');
-  const idx = new Map(); businessMetrics.forEach(m => idx.set(m.metric_key + '|' + m.period_date, Number(m.value)));
+  const idx = new Map(); let firstDate = null;
+  businessMetrics.forEach(m => { idx.set(m.metric_key + '|' + m.period_date, Number(m.value)); if((m.metric_key === 'covers_served' || m.metric_key === 'revenue') && (!firstDate || m.period_date < firstDate)) firstDate = m.period_date; });
+  const histMonths = firstDate ? Math.max(1, Math.round((today - new Date(firstDate + 'T12:00:00')) / (30.44 * 864e5))) : 0;
+  const histTxt = histMonths >= 12 ? Math.floor(histMonths / 12) + ' year' + (histMonths >= 24 ? 's' : '') : histMonths + ' month' + (histMonths === 1 ? '' : 's');
+  const fcYearList = ys => ys.length > 1 ? ys.slice(0, -1).join(', ') + ' and ' + ys[ys.length - 1] : String(ys[0] || '');
 
   // ── Build the 7 days ──
   const wxIdx = d => { if(!W || !W.time) return -1; return W.time.indexOf(predictorDateStr(d)); };
@@ -20330,16 +20334,19 @@ function predictorRenderBody(){
     weekBox = `<div class="fc-num"><small>This week so far vs last year</small><b class="${pct >= 0 ? 'fc-up' : 'fc-dn'}">${pct >= 0 ? '+' : ''}${pct}%</b><span>${fcMoney(tySum)} vs ${fcMoney(lySum)}, ${tyDays} day${tyDays === 1 ? '' : 's'}</span></div>`;
   } else {
     let expWeek = 0; days.forEach(x => { if(x.expRev) expWeek += x.expRev; });
-    weekBox = `<div class="fc-num"><small>Expect next 7 days</small><b>${expWeek ? fcMoney(expWeek) : '-'}</b><span>${expWeek ? 'Takings, from the same days in past years' : 'Add past sales to see this'}</span></div>`;
+    weekBox = `<div class="fc-num"><small>Expect next 7 days</small><b>${expWeek ? fcMoney(expWeek) : '-'}</b><span>${expWeek ? 'Takings, from the same days in past years' : hasHistory ? 'Needs a year of your figures' : 'Add past sales to see this'}</span></div>`;
   }
   const nums = `<div class="fc-nums">
-    <div class="fc-num"><small>Expect today</small><b>${t0.expCov != null ? '~' + Math.round(t0.expCov) + ' guests' : '-'}</b><span class="${vsNormal != null && Math.abs(vsNormal) >= 5 ? (vsNormal > 0 ? 'fc-up' : 'fc-dn') : ''}">${vsNormal == null ? 'Add past sales to see this' : Math.abs(vsNormal) < 5 ? 'About a normal ' + fcDayName(t0.d, true) : (vsNormal > 0 ? '▲ ' : '▼ ') + Math.abs(vsNormal) + '% ' + (vsNormal > 0 ? 'busier' : 'quieter') + ' than a normal ' + fcDayName(t0.d, true)}</span></div>
-    <div class="fc-num"><small>Expect in takings</small><b>${t0.expRev != null ? '~' + fcMoney(t0.expRev) : '-'}</b><span>${t0.expRev != null && t0.expCov ? 'About ' + fcMoney(t0.expRev / t0.expCov) + ' per guest' : 'Add past sales to see this'}</span></div>
+    <div class="fc-num"><small>Expect today</small><b>${t0.expCov != null ? '~' + Math.round(t0.expCov) + ' guests' : '-'}</b><span class="${vsNormal != null && Math.abs(vsNormal) >= 5 ? (vsNormal > 0 ? 'fc-up' : 'fc-dn') : ''}">${vsNormal == null ? (hasHistory ? 'Needs a year of your figures' : 'Add past sales to see this') : Math.abs(vsNormal) < 5 ? 'About a normal ' + fcDayName(t0.d, true) : (vsNormal > 0 ? '▲ ' : '▼ ') + Math.abs(vsNormal) + '% ' + (vsNormal > 0 ? 'busier' : 'quieter') + ' than a normal ' + fcDayName(t0.d, true)}</span></div>
+    <div class="fc-num"><small>Expect in takings</small><b>${t0.expRev != null ? '~' + fcMoney(t0.expRev) : '-'}</b><span>${t0.expRev != null && t0.expCov ? 'About ' + fcMoney(t0.expRev / t0.expCov) + ' per guest' : hasHistory ? 'Needs a year of your figures' : 'Add past sales to see this'}</span></div>
     ${weekBox}</div>`;
   // Where the expected figures come from, and a nudge to upload more years
   const yrs = t0.yearList || [];
-  const yrTxt = yrs.length > 1 ? yrs.slice(0, -1).join(', ') + ' and ' + yrs[yrs.length - 1] : String(yrs[0] || '');
-  const basis = hasHistory ? `<div class="fc-basis">${yrs.length ? `"Expect" is the average of this ${fcDayName(t0.d, true)} in <b>${yrTxt}</b>.` : 'No figures for this day in past years yet.'}${yrs.length < FC_YEARS ? ` <a onclick="nav('reporting')">Upload older years in Data Entry</a> to make it sharper.` : ''}</div>` : '';
+  const dn = fcDayName(t0.d, true);
+  const basisTxt = yrs.length > 1 ? `"Expect" is the average of this ${dn} in <b>${fcYearList(yrs)}</b>.`
+    : yrs.length === 1 ? `"Expect" is this ${dn} last year (<b>${yrs[0]}</b>). Only 1 year so far, so treat it as a guide.`
+    : `Mavis has <b>${histTxt}</b> of your figures, so there's no same day last year to compare with yet.`;
+  const basis = hasHistory ? `<div class="fc-basis">${basisTxt}${yrs.length < FC_YEARS ? ` <a onclick="nav('reporting')">Upload older ${yrs.length ? 'years' : 'figures'} in Data Entry</a> to make it sharper.` : ''}</div>` : '';
 
   // ── 7-day strip ──
   const lvlTxt = { spike:['fc-spike','Spike'], busy:['fc-busy','Busy'], normal:['fc-mod','Normal'], quiet:['fc-quiet','Quiet'], none:['fc-none','-'] };
@@ -20411,13 +20418,15 @@ function predictorRenderBody(){
     <div class="fc-todo">${todo.slice(0, 4).map(t => `<div class="fc-td">${fcIc(t.ic[0], t.ic[1], t.ic[2])}<div><b>${t.b}</b><span>${t.s}</span></div></div>`).join('')}</div></div>`;
 
   // ── This week vs last year: smooth lines, guests or revenue ──
-  const wk = weekDays.map(x => ({ d: x.d, g: x.expCov, r: x.expRev, lyG: x.lyCov, lyR: x.lyRev, tyG: x.tyCov, tyR: x.tyRev, kind: x.kind, spikeYears: x.spikeYears, nYears: x.nYears, isToday: x.i === 0, past: x.i < 0 }));
+  const wk = weekDays.map(x => ({ d: x.d, g: x.expCov, r: x.expRev, lyG: x.lyCov, lyR: x.lyRev, tyG: x.tyCov, tyR: x.tyRev, kind: x.kind, spikeYears: x.spikeYears, nYears: x.nYears, yearList: x.yearList, isToday: x.i === 0, past: x.i < 0 }));
+  const weekHasPast = wk.some(x => x.g != null || x.r != null);
   window._fcWeek = wk;
   const sum = (arr, key) => arr.reduce((a, x) => a + (x[key] || 0), 0);
-  const pastDays = wk.filter(x => x.past && x.tyG != null);
+  const pastDays = wk.filter(x => x.past && x.tyG != null && x.g != null);
   const chartSub = pastDays.length ? `${pastDays.length} day${pastDays.length === 1 ? '' : 's'} in: ${Math.round(sum(pastDays, 'tyG'))} guests vs ${Math.round(sum(pastDays, 'g'))} usually` : 'What this week usually looks like';
   const chartCard = `<div class="fc-card"><div class="fc-ct">${fcIc('<path d="M3 3v18h18"/><path d="M7 15l4-4 3 3 5-6"/>', '#E0F5F2', '#0D9488')}This week vs past years<small>${chartSub} · from your Data Entry</small></div>
-    ${hasHistory ? `<div style="position:relative;height:270px;margin-top:14px"><canvas id="fc-week-chart"></canvas></div>
+    ${hasHistory && !weekHasPast ? `<div class="fc-p">Mavis needs at least a year of your figures to compare this week. You have <b>${histTxt}</b> so far. <a style="color:#0D9488;font-weight:800;cursor:pointer;text-decoration:underline" onclick="nav('reporting')">Upload older figures in Data Entry</a>.</div>`
+    : hasHistory ? `<div style="position:relative;height:270px;margin-top:14px"><canvas id="fc-week-chart"></canvas></div>
     <div class="fc-leg"><span><em style="background:#0D9488"></em>Guests (usual)</span><span><em style="background:#378ADD;height:3px;vertical-align:3px"></em>Takings (usual)</span><span><em style="background:#C0524A;border-radius:50%"></em>Spike</span><span><em style="background:#0D9488;border-radius:50%"></em>Busy</span><span><em style="background:#C4973B;border-radius:50%"></em>Normal</span><span style="margin-left:auto;color:#94A3B8">Tap a day to compare with this year</span></div>`
     : `<div class="fc-p">No sales history yet. Add past figures in <b>Data Entry</b> (or upload a spreadsheet) and this chart compares every day with past years.</div>`}</div>`;
 
@@ -20426,7 +20435,7 @@ function predictorRenderBody(){
   body.innerHTML = hero + emptyNote + nums + basis + chartCard + stripCard + storyHtml
     + `<div class="fc-grid2">${whoCard}${seasonCard}</div>`
     + todoCard;
-  if(hasHistory) fcDrawChart();
+  if(hasHistory && weekHasPast) fcDrawChart();
   // Phone: the week strip scrolls sideways - start with today in view
   const wkEl = body.querySelector('.fc-week'), tEl = wkEl && wkEl.querySelector('.fc-day.today');
   if(wkEl && tEl && wkEl.scrollWidth > wkEl.clientWidth) wkEl.scrollLeft = Math.max(0, tEl.offsetLeft - wkEl.offsetLeft - (wkEl.clientWidth - tEl.offsetWidth) / 2);
@@ -20469,8 +20478,16 @@ function fcDrawChart(){
           title: items => { const x = wk[items[0].dataIndex]; return x.d.toLocaleDateString('en-GB', { weekday:'long', day:'numeric', month:'short' }) + (KN[x.kind] ? ' · ' + KN[x.kind] : ''); },
           label: () => '',
           afterBody: items => { const x = wk[items[0].dataIndex]; const out = [];
-            out.push('Usually: ' + (x.g != null ? Math.round(x.g) + ' guests' : '-') + ' · ' + (x.r != null ? fcMoney(x.r) : '-') + (x.nYears > 1 ? ' (' + x.nYears + '-year average)' : ''));
-            if(x.nYears > 1) out.push('Last year: ' + (x.lyG != null ? Math.round(x.lyG) + ' guests' : '-') + ' · ' + (x.lyR != null ? fcMoney(x.lyR) : '-'));
+            const fig = (g, r) => [g != null ? Math.round(g) + ' guests' : '', r != null ? fcMoney(r) : ''].filter(Boolean).join(' · ');
+            const ys = x.yearList || [];
+            if(x.nYears > 1){
+              out.push('Usually ' + fig(x.g, x.r));
+              out.push('(average of ' + (ys.length > 1 ? ys.slice(0, -1).join(', ') + ' and ' + ys[ys.length - 1] : ys[0]) + ')');
+              if(x.lyG != null || x.lyR != null) out.push('Last year: ' + fig(x.lyG, x.lyR));
+            } else if(x.nYears === 1){
+              out.push('Last year: ' + fig(x.g, x.r));
+              out.push('Only 1 year so far, so this is a guide');
+            } else out.push('No figures for this day last year yet');
             if(x.spikeYears >= 2) out.push('Spiked in ' + x.spikeYears + ' of the last ' + x.nYears + ' years');
             if(x.tyG != null || x.tyR != null) out.push('This year: ' + (x.tyG != null ? Math.round(x.tyG) + ' guests' : '-') + ' · ' + (x.tyR != null ? fcMoney(x.tyR) : '-'));
             return out; } } } },

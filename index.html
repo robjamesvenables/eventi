@@ -18544,6 +18544,11 @@ window.csvUploadClose = function(){
   document.getElementById('csvUploadLabel').textContent = 'Choose CSV file';
 };
 
+window.csvExampleDownload = function(){
+  const csv = 'date,revenue,covers\r\n01/01/2025,48500000,212\r\n02/01/2025,39750000,176\r\n03/01/2025,52100000,231\r\n';
+  const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([csv], { type:'text/csv' })); a.download = 'mavis-past-figures-example.csv';
+  document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 500);
+};
 window.csvUploadFileSelected = async function(event){
   const file = event.target.files[0];
   if(!file) return;
@@ -18551,69 +18556,131 @@ window.csvUploadFileSelected = async function(event){
   const text = await file.text();
   const parsed = reportingParseCsv(text);
   csvUploadClose();
-  if(!parsed.rows.length){ toast('No valid rows found in that file - check it has date, revenue, covers columns'); return; }
+  if(!parsed.rows.length){ toast(parsed.errors[0] && !/^Row/.test(parsed.errors[0]) ? parsed.errors[0] : 'No days could be read - check the date, revenue and covers columns'); return; }
   reportingConfirmCsvImport(parsed);
 };
 
+// ── Past figures upload (CSV) ──
+// Built to cope with real exports from POS systems and Excel, and to never save a wrong number:
+//  · headers: date + revenue (or sales / takings / amount) + covers (or guests / pax) - any order, any case
+//  · dates: 2025-01-31, 2025/01/31, 31/01/2025, 31-01-2025, 31.01.2025 (day first, as used in
+//    Indonesia and the UK - switches to month first only if the file clearly uses it, e.g. 01/31/2025)
+//  · amounts: 15000000, 15.000.000, 15,000,000, "Rp 15.000.000", 1.500.000,50 - all read correctly
+//  · quoted cells, Excel's hidden start-of-file mark, and ; separated files
+// Anything that can't be read is skipped and counted, never guessed.
+function csvSplitLine(line, sep){
+  const out = []; let cur = '', q = false;
+  for(let i = 0; i < line.length; i++){
+    const ch = line[i];
+    if(q){ if(ch === '"'){ if(line[i+1] === '"'){ cur += '"'; i++; } else q = false; } else cur += ch; }
+    else if(ch === '"') q = true;
+    else if(ch === sep){ out.push(cur); cur = ''; }
+    else cur += ch;
+  }
+  out.push(cur);
+  return out.map(c => c.trim());
+}
+function csvParseAmount(raw){
+  let t = String(raw == null ? '' : raw).replace(/rp\.?|idr|\s/gi, '').replace(/[^\d.,-]/g, '');
+  if(!t || !/\d/.test(t)) return NaN;
+  const lastDot = t.lastIndexOf('.'), lastCom = t.lastIndexOf(',');
+  const dec = Math.max(lastDot, lastCom);
+  // A separator is a decimal point only if it appears once and has 1-2 digits after it
+  if(dec >= 0){
+    const sepCh = t[dec], after = t.length - dec - 1, count = t.split(sepCh).length - 1;
+    const other = sepCh === '.' ? ',' : '.';
+    if(count === 1 && after >= 1 && after <= 2) t = t.split(other).join('').replace(sepCh, '.');
+    else t = t.replace(/[.,]/g, '');
+  }
+  const n = Number(t);
+  return isFinite(n) ? n : NaN;
+}
+function csvDateParts(raw){
+  const t = String(raw || '').trim().split(/[ T]/)[0];
+  let m = t.match(/^(\d{4})[-\/.](\d{1,2})[-\/.](\d{1,2})$/);
+  if(m) return { y:+m[1], a:+m[2], b:+m[3], ymd:true };
+  m = t.match(/^(\d{1,2})[-\/.](\d{1,2})[-\/.](\d{2}|\d{4})$/);
+  if(m) return { y: m[3].length === 2 ? 2000 + +m[3] : +m[3], a:+m[1], b:+m[2], ymd:false };
+  return null;
+}
+function csvValidDate(y, mo, d){
+  const dt = new Date(y, mo - 1, d);
+  return dt.getFullYear() === y && dt.getMonth() === mo - 1 && dt.getDate() === d ? y + '-' + String(mo).padStart(2,'0') + '-' + String(d).padStart(2,'0') : null;
+}
 function reportingParseCsv(text){
+  text = String(text || '').replace(/^﻿/, '');
   const lines = text.split(/\r?\n/).filter(l => l.trim().length);
-  const header = lines[0].split(',').map(h => h.trim().toLowerCase());
-  const dateIdx = header.indexOf('date');
-  const revenueIdx = header.indexOf('revenue');
-  const coversIdx = header.indexOf('covers');
-  const rows = [];
-  const errors = [];
-  if(dateIdx === -1 || revenueIdx === -1 || coversIdx === -1){
-    return { rows: [], errors: ['CSV must have date, revenue, and covers columns'] };
+  if(!lines.length) return { rows: [], errors: ['The file is empty'] };
+  const sep = (lines[0].split(';').length > lines[0].split(',').length) ? ';' : ',';
+  const header = csvSplitLine(lines[0], sep).map(h => h.toLowerCase().replace(/[^a-z]/g, ''));
+  const find = names => header.findIndex(h => names.includes(h));
+  const dateIdx = find(['date','day','tanggal','businessdate','perioddate']);
+  const revenueIdx = find(['revenue','sales','takings','amount','totalsales','netsales','grosssales','pendapatan','penjualan']);
+  const coversIdx = find(['covers','guests','pax','coversserved','guestcount','tamu']);
+  if(dateIdx === -1 || (revenueIdx === -1 && coversIdx === -1)){
+    return { rows: [], errors: ['The first row needs column names: date, revenue, covers'] };
   }
-  for(let i=1;i<lines.length;i++){
-    const cols = lines[i].split(',');
-    const date = (cols[dateIdx]||'').trim();
-    const revenue = parseFloat(cols[revenueIdx]);
-    const covers = parseFloat(cols[coversIdx]);
-    if(!/^\d{4}-\d{2}-\d{2}$/.test(date) || isNaN(revenue) || isNaN(covers)){
-      errors.push('Row '+(i+1)+' skipped - could not read date/revenue/covers');
-      continue;
-    }
-    rows.push({ date, revenue, covers });
+  // Day-first or month-first? Decide once for the whole file from the dates themselves.
+  const parts = lines.slice(1).map(l => csvDateParts(csvSplitLine(l, sep)[dateIdx]));
+  const monthFirst = parts.some(p => p && !p.ymd && p.b > 12) && !parts.some(p => p && !p.ymd && p.a > 12);
+  const rows = [], errors = [];
+  for(let i = 1; i < lines.length; i++){
+    const cols = csvSplitLine(lines[i], sep), p = parts[i - 1];
+    const date = p ? (p.ymd ? csvValidDate(p.y, p.a, p.b) : monthFirst ? csvValidDate(p.y, p.a, p.b) : csvValidDate(p.y, p.b, p.a)) : null;
+    const revenue = revenueIdx >= 0 ? csvParseAmount(cols[revenueIdx]) : NaN;
+    const covers = coversIdx >= 0 ? csvParseAmount(cols[coversIdx]) : NaN;
+    if(!date){ errors.push('Row ' + (i + 1) + ': date not readable'); continue; }
+    if(isNaN(revenue) && isNaN(covers)){ errors.push('Row ' + (i + 1) + ': no revenue or covers'); continue; }
+    if(revenue < 0 || covers < 0){ errors.push('Row ' + (i + 1) + ': negative number'); continue; }
+    rows.push({ date, revenue: isNaN(revenue) ? null : revenue, covers: isNaN(covers) ? null : Math.round(covers) });
   }
-  return { rows, errors };
+  // The same date twice in one file: keep the last one
+  const byDate = {}; rows.forEach(r => { byDate[r.date] = r; });
+  const uniq = Object.values(byDate);
+  if(uniq.length < rows.length) errors.push((rows.length - uniq.length) + ' repeated date(s) - the last one was used');
+  return { rows: uniq, errors, monthFirst, ambiguous: !monthFirst && parts.some(p => p && !p.ymd) && !parts.some(p => p && !p.ymd && p.a > 12) };
 }
 
 function reportingConfirmCsvImport(parsed){
   const { rows, errors } = parsed;
-  const existingDates = new Set(businessMetrics.filter(m => m.metric_key==='revenue').map(m => m.period_date));
-  const newRows = rows.filter(r => !existingDates.has(r.date));
-  const skipped = rows.length - newRows.length;
+  const have = new Set(businessMetrics.filter(m => m.metric_key === 'revenue' || m.metric_key === 'covers_served').map(m => m.metric_key + '|' + m.period_date));
+  const records = [];
+  rows.forEach(r => {
+    if(r.revenue != null && !have.has('revenue|' + r.date)) records.push({ metric_key:'revenue', period_date:r.date, value:r.revenue });
+    if(r.covers != null && !have.has('covers_served|' + r.date)) records.push({ metric_key:'covers_served', period_date:r.date, value:r.covers });
+  });
+  const newDays = new Set(records.map(x => x.period_date)).size;
   const sorted = [...rows].sort((a,b) => a.date.localeCompare(b.date));
   const from = sorted[0].date, to = sorted[sorted.length-1].date;
-
+  const nice = d => new Date(d + 'T12:00:00').toLocaleDateString('en-GB', { day:'numeric', month:'short', year:'numeric' });
+  const ex = sorted[0];
+  const sample = nice(ex.date) + ': ' + [ex.revenue != null ? evMoney(ex.revenue) : '', ex.covers != null ? ex.covers + ' guests' : ''].filter(Boolean).join(', ');
   appConfirmShow({
-    title: 'Confirm import',
-    msg: `${rows.length} rows read (${from} to ${to}). ${newRows.length} new day${newRows.length!==1?'s':''} will be added, ${skipped} already-logged day${skipped!==1?'s':''} will be skipped.${errors.length ? ' '+errors.length+' row(s) could not be read and were ignored.' : ''}`,
-    label: 'Import '+newRows.length+' days',
-    onOk: () => reportingRunCsvImport(newRows, from, to)
+    title: 'Check before importing',
+    msg: rows.length + ' days read, ' + nice(from) + ' to ' + nice(to) + '. First day reads as ' + sample + ' - if that looks wrong, cancel and check the file. '
+      + newDays + ' day' + (newDays !== 1 ? 's' : '') + ' will be added; days already in Mavis are left as they are.'
+      + (parsed.ambiguous ? ' Dates were read day first (31/01 = 31 January).' : '')
+      + (errors.length ? ' ' + errors.length + ' row(s) skipped: ' + errors.slice(0, 3).join('; ') + (errors.length > 3 ? '…' : '') + '.' : ''),
+    label: newDays ? 'Import ' + newDays + ' days' : 'Nothing new',
+    onOk: () => reportingRunCsvImport(records, from, to, newDays)
   });
 }
 
-async function reportingRunCsvImport(newRows, from, to){
-  if(!newRows.length){ toast('Nothing new to import - every date in that file is already logged'); return; }
-  toast('Importing '+newRows.length+' days…');
-  const batchId = 'csv-'+Date.now();
-  const records = [];
-  newRows.forEach(r => {
-    records.push({ metric_key:'revenue', period_date:r.date, value:r.revenue, upload_batch:batchId });
-    records.push({ metric_key:'covers_served', period_date:r.date, value:r.covers, upload_batch:batchId });
-  });
+async function reportingRunCsvImport(records, from, to, newDays){
+  if(!records.length){ toast('Nothing new to import - every date in that file is already in Mavis'); return; }
+  toast('Importing ' + newDays + ' days…');
+  const batchId = 'csv-' + Date.now();
+  records.forEach(r => { r.upload_batch = batchId; });
   // Insert in batches of 500 rather than one call per row - this can be 1000+ records
-  // for two years of daily data.
-  for(let i=0;i<records.length;i+=500){
-    const chunk = records.slice(i, i+500);
+  // for a few years of daily data.
+  for(let i = 0; i < records.length; i += 500){
+    const chunk = records.slice(i, i + 500);
     const { data, error } = await sb.from('business_metrics').insert(chunk).select();
-    if(error){ toast('Import failed partway through - check your connection and try again'); console.warn('CSV import failed', error); return; }
+    if(error){ toast('Import stopped partway - check your connection and upload the same file again (days already added are skipped)'); console.warn('CSV import failed', error); businessMetricsLoadedAt = 0; return; }
     businessMetrics = businessMetrics.concat(data || chunk);
   }
-  toast('Imported '+newRows.length+' days ✓');
+  businessMetricsLoadedAt = 0;
+  toast('Imported ' + newDays + ' days ✓');
   reportingRenderRecent();
   reportingRenderCsvUploads();
   analyticsRender();
@@ -21735,7 +21802,7 @@ document.addEventListener('DOMContentLoaded', initCardColours);
 <div id="csvUploadOverlay" style="display:none;position:fixed;inset:0;background:rgba(15,30,46,0.6);z-index:10001;align-items:center;justify-content:center;padding:20px" onclick="if(event.target===this)csvUploadClose()">
   <div style="background:white;border-radius:16px;max-width:440px;width:100%;padding:24px">
     <div style="font-size:16px;font-weight:800;color:#0F1E2E;margin-bottom:6px">Upload Historical Data</div>
-    <div style="font-size:12.5px;color:#64748B;margin-bottom:18px;line-height:1.5">A CSV with <b>date, revenue, covers</b> columns - each date not already logged will be added. Existing dates are left untouched.</div>
+    <div style="font-size:12.5px;color:#64748B;margin-bottom:18px;line-height:1.5">One row per day with <b>date, revenue, covers</b> columns (from Excel: File → Save As → CSV). Dates like 31/01/2025 or 2025-01-31 and amounts like 15.000.000 are fine. Days already in Mavis are left untouched. <a onclick="csvExampleDownload()" style="color:#0D9488;font-weight:700;cursor:pointer;text-decoration:underline">Download an example file</a></div>
     <input type="file" id="csvUploadInput" accept=".csv" style="display:none" onchange="csvUploadFileSelected(event)">
     <label onclick="document.getElementById('csvUploadInput').click()" style="display:flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:16px;border:1.5px dashed #CBD5E1;border-radius:10px;font-family:'Inter',sans-serif;font-size:13px;font-weight:700;color:#64748B;cursor:pointer;box-sizing:border-box;margin-bottom:16px">
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>

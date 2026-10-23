@@ -20087,16 +20087,17 @@ const FC_STYLE = `
 .fc-p{font-size:13.5px;color:#475569;line-height:1.55;margin-top:10px;font-weight:500}.fc-p b{color:#0F1E2E}
 .fc-week{display:grid;grid-template-columns:repeat(7,1fr);gap:8px;margin-top:14px;padding-top:8px}
 .fc-day{border-radius:16px;padding:12px 6px;text-align:center;background:#F8FAFC;position:relative}
-.fc-day.today{background:#0F1E2E;color:white;box-shadow:0 10px 24px rgba(15,30,46,.25);transform:translateY(-3px)}
+.fc-day.k-spike{background:#FBEAE8}.fc-day.k-busy{background:#E0F5F2}.fc-day.k-normal{background:#F7EEDC}.fc-day.k-quiet{background:#EEF2F6}
+.fc-day.today{box-shadow:0 0 0 2.5px #0F1E2E,0 10px 22px rgba(15,30,46,.16);transform:translateY(-3px)}
 .fc-day.past{opacity:.62}
-.fc-done{background:#E0F5F2;color:#0F766E}
-.fc-tdy{display:inline-block;font-size:8.5px;font-weight:800;background:#5EEAD4;color:#0F1E2E;border-radius:5px;padding:1px 5px;vertical-align:1px;margin-left:2px}
-.fc-day .n{font-size:12px;font-weight:800;color:#64748B}.fc-day.today .n{color:#5EEAD4}
+.fc-tdy{display:inline-block;font-size:8.5px;font-weight:800;background:#0F1E2E;color:white;border-radius:5px;padding:1px 5px;vertical-align:1px;margin-left:2px}
+.fc-day .n{font-size:12px;font-weight:800;color:#475569}.fc-day.today .n{color:#0F1E2E}
 .fc-day .ico{height:42px;display:flex;align-items:center;justify-content:center;margin:6px 0}
-.fc-day .tp{font-size:16px;font-weight:800}.fc-day .rn{font-size:11px;font-weight:700;color:#3B82F6;margin-top:2px}.fc-day.today .rn{color:#93C5FD}
-.fc-day .lvl{margin-top:8px;font-size:10px;font-weight:800;padding:3px 0;border-radius:8px}
-.fc-busy{background:#FEE2E2;color:#B91C1C}.fc-mod{background:#FEF3C7;color:#92400E}.fc-quiet{background:#E0F2FE;color:#075985}.fc-none{background:#F1F5F9;color:#94A3B8}
-.fc-day.today .fc-none{background:rgba(255,255,255,.12);color:rgba(255,255,255,.6)}
+.fc-day .tp{font-size:16px;font-weight:800}.fc-day .rn{font-size:11px;font-weight:700;color:#3B82F6;margin-top:2px}
+.fc-day .lvl{margin-top:8px;font-size:10px;font-weight:800;padding:3px 2px;border-radius:8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fc-spike{background:#C0524A;color:#fff}.fc-busy{background:#0D9488;color:#fff}.fc-mod{background:#C4973B;color:#fff}.fc-quiet{background:#CBD5E1;color:#334155}.fc-none{background:#F1F5F9;color:#94A3B8}
+.fc-done{background:white;color:#0F1E2E}
+.fc-basis{font-size:12px;font-weight:600;color:#64748B;margin:10px 4px 0;line-height:1.5}.fc-basis a{color:#0D9488;font-weight:800;cursor:pointer;text-decoration:underline}
 .fc-hol{position:absolute;top:-8px;left:50%;transform:translateX(-50%);font-size:9px;font-weight:800;color:white;border-radius:6px;padding:2px 6px;white-space:nowrap;max-width:110%;overflow:hidden;text-overflow:ellipsis}
 .fc-stories{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px;margin-top:14px}
 .fc-st{border-radius:18px;padding:16px}
@@ -20167,31 +20168,54 @@ function fcBigSun(){ return '<svg width="64" height="64" viewBox="0 0 24 24" fil
 function fcIc(path, bg, stroke){ return `<i style="background:${bg}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="${stroke}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">${path}</svg></i>`; }
 function fcMoney(v){ return predictorFmtMoney(v); }
 
+// The same day in each of the last 3 years: same weekday, nearest to the same date (so a Friday
+// is always compared with a Friday). The average of those years is what Mavis "expects" -
+// the more years a venue has uploaded (up to 3), the steadier the figure. Older years are
+// left out on purpose so a venue that has grown isn't dragged down by its early days.
+const FC_YEARS = 3;
+function fcPastYears(key, date, idx){
+  const out = [];
+  for(let n = 1; n <= FC_YEARS; n++){
+    const t = new Date(date); t.setFullYear(t.getFullYear() - n);
+    let diff = (date.getDay() - t.getDay() + 7) % 7; if(diff > 3) diff -= 7;
+    t.setDate(t.getDate() + diff);
+    const v = idx.get(key + '|' + predictorDateStr(t));
+    if(v != null && !isNaN(v)) out.push({ n, y: t.getFullYear(), v });
+  }
+  return { avg: out.length ? out.reduce((a, x) => a + x.v, 0) / out.length : null, years: out };
+}
 function predictorRenderBody(){
   const body = document.getElementById('predictor-body'); if(!body) return;
   const today = new Date(); today.setHours(12, 0, 0, 0);
   const W = predictorData.weather && predictorData.weather.daily ? predictorData.weather.daily : null;
   const hasHistory = businessMetrics.some(m => m.metric_key === 'covers_served' || m.metric_key === 'revenue');
   const covStats = predictorMetricStats('covers_served');
+  const idx = new Map(); businessMetrics.forEach(m => idx.set(m.metric_key + '|' + m.period_date, Number(m.value)));
 
   // ── Build the 7 days ──
   const wxIdx = d => { if(!W || !W.time) return -1; return W.time.indexOf(predictorDateStr(d)); };
   const mkDay = i => {
     const d = new Date(today); d.setDate(d.getDate() + i);
-    const lyCov = predictorHistoricalMetric('covers_served', d);
-    const lyRev = predictorHistoricalMetric('revenue', d);
+    const pc = fcPastYears('covers_served', d, idx), pr = fcPastYears('revenue', d, idx);
+    const expCov = pc.avg, expRev = pr.avg;
+    const ly1 = pc.years.find(y => y.n === 1), lr1 = pr.years.find(y => y.n === 1);
+    const lyCov = ly1 ? ly1.v : null, lyRev = lr1 ? lr1.v : null;
     const idHol = predictorHolidayForDate('ID', d);
     const hols = PREDICTOR_COUNTRIES.map(c => ({ c, h: predictorHolidayForDate(c.code, d) })).filter(x => x.h);
     const schoolStarts = PREDICTOR_COUNTRIES.filter(c => { const y = new Date(d); y.setDate(y.getDate() - 1); return predictorIsSchoolHoliday(c.code, d) && !predictorIsSchoolHoliday(c.code, y); });
-    const bracket = predictorBracketColor(lyCov, covStats);
+    const bracket = predictorBracketColor(expCov, covStats);
     let level = idHol ? 'busy' : bracket === 'high' ? 'busy' : bracket === 'low' ? 'quiet' : bracket === 'mid' ? 'mod' : 'none';
     let spike = null;
     const dow = predictorMetricStatsForDow('covers_served', d.getDay());
-    if(lyCov != null && dow && dow.stdDev > 0){
-      const z = (lyCov - dow.mean) / dow.stdDev;
-      if(Math.abs(z) >= 1.5) spike = { z, pct: Math.round((lyCov - dow.mean) / dow.mean * 100), cov: lyCov };
+    let spikeYears = 0;
+    if(expCov != null && dow && dow.stdDev > 0){
+      const z = (expCov - dow.mean) / dow.stdDev;
+      if(Math.abs(z) >= 1.5) spike = { z, pct: Math.round((expCov - dow.mean) / dow.mean * 100), cov: expCov };
       if(level === 'none') level = z > 0.5 ? 'busy' : z < -0.5 ? 'quiet' : 'mod';
+      spikeYears = pc.years.filter(y => (y.v - dow.mean) / dow.stdDev >= 1.5).length;
     }
+    // Three colours: spike (red), busy / good selling day (teal), normal (gold - includes quieter days)
+    const kind = spike && spike.z > 0 ? 'spike' : level === 'busy' ? 'busy' : (level === 'mod' || level === 'quiet') ? 'normal' : 'none';
     const wi = wxIdx(d);
     // Rain chance = the AVERAGE chance across the day (not the single worst hour), and "wet" only when
     // at least 1mm of actual rain is expected - so a dry day with one possible shower isn't shown as rain.
@@ -20205,8 +20229,9 @@ function predictorRenderBody(){
       if(!wet && Number(code) >= 51) code = mm != null && mm > 0.2 ? 3 : 2;   // a passing drizzle doesn't make it a rainy day
       wx = { code, temp: Math.round(W.temperature_2m_max[wi]), rain, mm, wet, sunset: W.sunset ? W.sunset[wi] : null };
     }
-    const tyRow = businessMetrics.find(r => r.metric_key === 'covers_served' && r.period_date === predictorDateStr(d));
-    return { d, i, lyCov, lyRev, idHol, hols, schoolStarts, level, spike, wx, dowMean: dow ? dow.mean : null, tyCov: tyRow ? Number(tyRow.value) : null };
+    const ds = predictorDateStr(d);
+    const tyCov = idx.has('covers_served|' + ds) ? idx.get('covers_served|' + ds) : null, tyRev = idx.has('revenue|' + ds) ? idx.get('revenue|' + ds) : null;
+    return { d, i, lyCov, lyRev, expCov, expRev, nYears: Math.max(pc.years.length, pr.years.length), yearList: (pc.years.length ? pc.years : pr.years).map(y => y.y), spikeYears, kind, idHol, hols, schoolStarts, level, spike, wx, dowMean: dow ? dow.mean : null, tyCov, tyRev };
   };
   const days = []; for(let i = 0; i < 7; i++) days.push(mkDay(i));
   // This week, Monday to Sunday (for the strip)
@@ -20244,8 +20269,9 @@ function predictorRenderBody(){
   else if(t0.level === 'mod') verdict = 'A <em>steady day</em> ahead.';
   else verdict = 'Here is your <em>week ahead</em>.';
   const story = [];
-  if(t0.lyCov != null || t0.lyRev != null){
-    story.push('Last year this ' + fcDayName(t0.d, true) + ' brought ' + [t0.lyCov != null ? '<b>' + Math.round(t0.lyCov) + ' guests</b>' : '', t0.lyRev != null ? '<b>' + fcMoney(t0.lyRev) + '</b>' : ''].filter(Boolean).join(' and ') + '.');
+  if(t0.expCov != null || t0.expRev != null){
+    const figs = [t0.expCov != null ? '<b>' + Math.round(t0.expCov) + ' guests</b>' : '', t0.expRev != null ? '<b>' + fcMoney(t0.expRev) + '</b>' : ''].filter(Boolean).join(' and ');
+    story.push(t0.nYears > 1 ? 'On this ' + fcDayName(t0.d, true) + ' in past years you averaged ' + figs + '.' : 'Last year this ' + fcDayName(t0.d, true) + ' brought ' + figs + '.');
   }
   if(t0.idHol) story.push('It is <b>' + fcEsc(t0.idHol.localName || t0.idHol.name) + '</b> in Indonesia, so expect domestic visitors.');
   if(lead){
@@ -20264,7 +20290,7 @@ function predictorRenderBody(){
     if(rainy.length) story.push('Rain is likely ' + (rainy.length >= 3 ? '' : 'on ') + '<b>' + rainTxt + '</b>, so plan for covered seating.');
     else if(nextWknd && nextWknd.wx && !nextWknd.wx.wet) story.push(fcDayName(nextWknd.d, true) + ' looks ' + (nextWknd.wx.temp >= 30 ? 'dry and hot' : 'dry') + ' - perfect sunset weather.');
   }
-  if(!story.length) story.push('Holidays, weather and currency are below. Add your past sales in Data Entry and Mavis will compare every day with last year.');
+  if(!story.length) story.push('Holidays, weather and currency are below. Add your past sales in Data Entry and Mavis will compare every day with past years.');
   const chips = [];
   if([5, 6, 0].includes(today.getDay())) chips.push('Weekend');
   if(t0.idHol) chips.push(fcEsc(t0.idHol.localName || t0.idHol.name));
@@ -20297,22 +20323,26 @@ function predictorRenderBody(){
     const ly = predictorHistoricalMetric('revenue', d);
     if(row && ly != null){ tySum += Number(row.value); lySum += ly; tyDays++; }
   }
-  const vsNormal = t0.lyCov != null && t0.dowMean ? Math.round((t0.lyCov - t0.dowMean) / t0.dowMean * 100) : null;
+  const vsNormal = t0.expCov != null && t0.dowMean ? Math.round((t0.expCov - t0.dowMean) / t0.dowMean * 100) : null;
   let weekBox;
   if(tyDays > 0 && lySum > 0){
     const pct = Math.round((tySum - lySum) / lySum * 100);
     weekBox = `<div class="fc-num"><small>This week so far vs last year</small><b class="${pct >= 0 ? 'fc-up' : 'fc-dn'}">${pct >= 0 ? '+' : ''}${pct}%</b><span>${fcMoney(tySum)} vs ${fcMoney(lySum)}, ${tyDays} day${tyDays === 1 ? '' : 's'}</span></div>`;
   } else {
-    let lyWeek = 0; days.forEach(x => { if(x.lyRev) lyWeek += x.lyRev; });
-    weekBox = `<div class="fc-num"><small>Next 7 days last year</small><b>${lyWeek ? fcMoney(lyWeek) : '-'}</b><span>${lyWeek ? 'Revenue over the same 7 days' : 'Add past sales to see this'}</span></div>`;
+    let expWeek = 0; days.forEach(x => { if(x.expRev) expWeek += x.expRev; });
+    weekBox = `<div class="fc-num"><small>Expect next 7 days</small><b>${expWeek ? fcMoney(expWeek) : '-'}</b><span>${expWeek ? 'Takings, from the same days in past years' : 'Add past sales to see this'}</span></div>`;
   }
   const nums = `<div class="fc-nums">
-    <div class="fc-num"><small>Guests today (last year)</small><b>${t0.lyCov != null ? Math.round(t0.lyCov) : '-'}</b><span class="${vsNormal != null ? (vsNormal >= 0 ? 'fc-up' : 'fc-dn') : ''}">${vsNormal != null ? (vsNormal >= 0 ? '▲ ' : '▼ ') + Math.abs(vsNormal) + '% vs a normal ' + fcDayName(t0.d, true) : 'Same day last year'}</span></div>
-    <div class="fc-num"><small>Revenue today (last year)</small><b>${t0.lyRev != null ? fcMoney(t0.lyRev) : '-'}</b><span>${t0.lyRev != null && t0.lyCov ? 'Avg ' + fcMoney(t0.lyRev / t0.lyCov) + ' per guest' : 'Same day last year'}</span></div>
+    <div class="fc-num"><small>Expect today</small><b>${t0.expCov != null ? '~' + Math.round(t0.expCov) + ' guests' : '-'}</b><span class="${vsNormal != null && Math.abs(vsNormal) >= 5 ? (vsNormal > 0 ? 'fc-up' : 'fc-dn') : ''}">${vsNormal == null ? 'Add past sales to see this' : Math.abs(vsNormal) < 5 ? 'About a normal ' + fcDayName(t0.d, true) : (vsNormal > 0 ? '▲ ' : '▼ ') + Math.abs(vsNormal) + '% ' + (vsNormal > 0 ? 'busier' : 'quieter') + ' than a normal ' + fcDayName(t0.d, true)}</span></div>
+    <div class="fc-num"><small>Expect in takings</small><b>${t0.expRev != null ? '~' + fcMoney(t0.expRev) : '-'}</b><span>${t0.expRev != null && t0.expCov ? 'About ' + fcMoney(t0.expRev / t0.expCov) + ' per guest' : 'Add past sales to see this'}</span></div>
     ${weekBox}</div>`;
+  // Where the expected figures come from, and a nudge to upload more years
+  const yrs = t0.yearList || [];
+  const yrTxt = yrs.length > 1 ? yrs.slice(0, -1).join(', ') + ' and ' + yrs[yrs.length - 1] : String(yrs[0] || '');
+  const basis = hasHistory ? `<div class="fc-basis">${yrs.length ? `"Expect" is the average of this ${fcDayName(t0.d, true)} in <b>${yrTxt}</b>.` : 'No figures for this day in past years yet.'}${yrs.length < FC_YEARS ? ` <a onclick="nav('reporting')">Upload older years in Data Entry</a> to make it sharper.` : ''}</div>` : '';
 
   // ── 7-day strip ──
-  const lvlTxt = { busy:['fc-busy','Busy'], mod:['fc-mod','Steady'], quiet:['fc-quiet','Quiet'], none:['fc-none','-'] };
+  const lvlTxt = { spike:['fc-spike','Spike'], busy:['fc-busy','Busy'], normal:['fc-mod','Normal'], quiet:['fc-quiet','Quiet'], none:['fc-none','-'] };
   const strip = weekDays.map(x => {
     let tag = '';
     const sch = x.schoolStarts.find(c => c.code !== 'ID');
@@ -20320,12 +20350,13 @@ function predictorRenderBody(){
     else if(sch) tag = `<div class="fc-hol" style="background:#7C3AED">${sch.code} holidays</div>`;
     else if(x.hols.length) tag = `<div class="fc-hol" style="background:#0D9488" title="${fcEsc(x.hols[0].h.name)} (${x.hols[0].c.name})">${fcEsc(x.hols[0].h.name).slice(0, 14)}</div>`;
     const wxi = x.wx ? fcWx(x.wx.code) : null;
-    return `<div class="fc-day${x.i === 0 ? ' today' : ''}${x.i < 0 ? ' past' : ''}">${tag}<div class="n">${fcDayName(x.d).toUpperCase()}${x.i === 0 ? ' <span class="fc-tdy">TODAY</span>' : ''}</div>
+    return `<div class="fc-day k-${x.kind}${x.i === 0 ? ' today' : ''}${x.i < 0 ? ' past' : ''}">${tag}<div class="n">${fcDayName(x.d).toUpperCase()}${x.i === 0 ? ' <span class="fc-tdy">TODAY</span>' : ''}</div>
       <div class="ico">${wxi ? fcWxIcon(wxi.k) : ''}</div>
       <div class="tp">${x.wx ? x.wx.temp + '°' : '-'}</div><div class="rn">${x.wx ? (x.wx.wet ? (x.wx.mm != null ? Math.round(x.wx.mm) + 'mm rain' : x.wx.rain + '%') : 'Dry') : ''}</div>
-      ${x.i < 0 && x.tyCov != null ? `<div class="lvl fc-done">${Math.round(x.tyCov)} guests</div>` : `<div class="lvl ${lvlTxt[x.level][0]}">${x.spike && x.spike.z > 0 ? 'Spike' : lvlTxt[x.level][1]}</div>`}</div>`;
+      ${x.i < 0 && x.tyCov != null ? `<div class="lvl fc-done">${Math.round(x.tyCov)} ${window.innerWidth > 600 ? 'guests' : 'in'}</div>` : `<div class="lvl ${lvlTxt[x.kind][0]}">${lvlTxt[x.kind][1]}</div>`}</div>`;
   }).join('');
-  const stripCard = `<div class="fc-card"><div class="fc-ct">${fcIc('<path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"/>', '#E0F2FE', '#0284C7')}This week<small>Weather for ${fcEsc(predictorLocation().name)} · busy level from last year's guests</small></div><div class="fc-week">${strip}</div></div>`;
+  const stripCard = `<div class="fc-card"><div class="fc-ct">${fcIc('<path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"/>', '#E0F2FE', '#0284C7')}This week<small>Weather for ${fcEsc(predictorLocation().name)} · colour from the same days in past years</small></div><div class="fc-week">${strip}</div>
+    <div class="fc-leg" style="margin-top:12px"><span><em style="background:#C0524A"></em>Spike</span><span><em style="background:#0D9488"></em>Busy</span><span><em style="background:#C4973B"></em>Normal</span></div></div>`;
 
   // ── Story cards ──
   const stories = [];
@@ -20337,11 +20368,11 @@ function predictorRenderBody(){
     stories.push({ bg:'linear-gradient(140deg,#CCFBF1,#99F6E4)', kc:'#0F766E', tc:'#134E4A', k:'Holiday · ' + fcDayName(nextHol.d, true), h: fcEsc(nextHol.idHol ? (h.localName || h.name) : h.name), p:'A public holiday in ' + fcEsc(cty) + '. ' + (nextHol.idHol ? 'Locals head out - plan staff and stock.' : 'A good reason for a themed special.') });
   }
   const bigSpike = days.filter(x => x.spike && x.spike.z > 0).sort((a, b) => b.spike.z - a.spike.z)[0];
-  if(bigSpike && stories.length < 3) stories.push({ bg:'linear-gradient(140deg,#FEF3C7,#FDE68A)', kc:'#92400E', tc:'#78350F', k:'Spike warning · ' + fcDayName(bigSpike.d, true), h:'+' + bigSpike.spike.pct + '% guests last year', p:Math.round(bigSpike.spike.cov) + ' guests on this ' + fcDayName(bigSpike.d, true) + ' last year, well above normal. Book extra staff and stock up.' });
+  if(bigSpike && stories.length < 3) stories.push({ bg:'linear-gradient(140deg,#FEF3C7,#FDE68A)', kc:'#92400E', tc:'#78350F', k:'Spike warning · ' + fcDayName(bigSpike.d, true), h:'+' + bigSpike.spike.pct + '% above a normal ' + fcDayName(bigSpike.d, true), p:(bigSpike.spikeYears >= 2 ? 'This day spiked in ' + bigSpike.spikeYears + ' of the last ' + bigSpike.nYears + ' years' : 'About ' + Math.round(bigSpike.spike.cov) + ' guests on this day in past years') + '. Book extra staff and stock up.' });
   const rainDays = days.filter(x => x.wx && x.wx.wet);
   if(rainDays.length && stories.length < 3) stories.push({ bg:'linear-gradient(140deg,#E0F2FE,#BAE6FD)', kc:'#075985', tc:'#0C4A6E', k:'Rain · ' + rainDays.slice(0, 2).map(x => x.i === 0 ? 'Today' : fcDayName(x.d, true)).join(' & '), h: rainDays.length > 1 ? 'A wet few days' : 'Rain on the way', p: (rainDays[0].wx.mm != null ? 'About ' + Math.max(1, Math.round(rainDays[0].wx.mm)) + 'mm of rain expected' : rainDays[0].wx.rain + '% chance of rain') + '. Move outdoor plans under cover and push indoor offers.' });
   const dip = days.filter(x => x.spike && x.spike.z < 0).sort((a, b) => a.spike.z - b.spike.z)[0];
-  if(dip && stories.length < 3) stories.push({ bg:'linear-gradient(140deg,#F1F5F9,#E2E8F0)', kc:'#475569', tc:'#334155', k:'Quiet day · ' + fcDayName(dip.d, true), h: Math.abs(dip.spike.pct) + '% fewer guests last year', p:'A good day for training, deep cleaning or a promo to fill seats.' });
+  if(dip && stories.length < 3) stories.push({ bg:'linear-gradient(140deg,#F1F5F9,#E2E8F0)', kc:'#475569', tc:'#334155', k:'Quiet day · ' + fcDayName(dip.d, true), h: Math.abs(dip.spike.pct) + '% fewer guests than normal', p:'A good day for training, deep cleaning or a promo to fill seats.' });
   const nextSeason = predictorNextSeason(today), nextHigh = predictorNextHigh(today);
   const fmtWhen = n => n < 14 ? n + ' day' + (n === 1 ? '' : 's') : Math.round(n / 7) + ' weeks';
   if(nextSeason && nextSeason.days <= 21 && stories.length < 3) stories.push({ bg:'linear-gradient(140deg,#FFEDD5,#FED7AA)', kc:'#9A3412', tc:'#7C2D12', k:'Season · in ' + fmtWhen(nextSeason.days), h: nextSeason.season + ' starts ' + nextSeason.date.toLocaleDateString('en-GB', { day:'numeric', month:'short' }),
@@ -20369,7 +20400,7 @@ function predictorRenderBody(){
   // ── What to do ──
   const todo = [];
   const busyDays = days.filter(x => x.level === 'busy' || (x.spike && x.spike.z > 0));
-  if(busyDays.length) todo.push({ ic:['<circle cx="9" cy="7" r="4"/><path d="M3 21v-2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2"/>', '#FEE2E2', '#DC2626'], b:'Extra staff on ' + busyDays.slice(0, 2).map(x => x.i === 0 ? 'today' : fcDayName(x.d, true)).join(' and '), s: busyDays[0].spike ? 'Last year was well above a normal ' + fcDayName(busyDays[0].d, true) : 'Busier than usual last year' });
+  if(busyDays.length) todo.push({ ic:['<circle cx="9" cy="7" r="4"/><path d="M3 21v-2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2"/>', '#FEE2E2', '#DC2626'], b:'Extra staff on ' + busyDays.slice(0, 2).map(x => x.i === 0 ? 'today' : fcDayName(x.d, true)).join(' and '), s: busyDays[0].spike ? 'Well above a normal ' + fcDayName(busyDays[0].d, true) + ' in past years' : 'Usually a busy day in past years' });
   if(firstSchool) todo.push({ ic:['<path d="M21 8l-9-5-9 5v8l9 5 9-5z"/>', '#FEF3C7', '#B45309'], b:'Stock up before ' + fcDayName(firstSchool.schoolStart.d, true), s:'Families arriving: kids\' menu, juices and easy sharing plates' });
   if(nextHol && !nextHol.idHol) todo.push({ ic:['<path d="M12 2l3 7h7l-5.5 4.5L18 21l-6-4-6 4 1.5-7.5L2 9h7z"/>', '#EDE9FE', '#7C3AED'], b:'A special for ' + fcEsc(nextHol.hols[0].h.name), s: 'More ' + FC_PEOPLE[nextHol.hols[0].c.code] + ' may be around on ' + fcDayName(nextHol.d, true) });
   if(rainDays.length) todo.push({ ic:['<path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"/>', '#E0F2FE', '#0284C7'], b:'Rain plan for ' + rainDays.slice(0, 2).map(x => x.i === 0 ? 'today' : fcDayName(x.d, true)).join(' and '), s:'Covered seating, indoor music and a happy-hour push' });
@@ -20380,28 +20411,19 @@ function predictorRenderBody(){
     <div class="fc-todo">${todo.slice(0, 4).map(t => `<div class="fc-td">${fcIc(t.ic[0], t.ic[1], t.ic[2])}<div><b>${t.b}</b><span>${t.s}</span></div></div>`).join('')}</div></div>`;
 
   // ── This week vs last year: smooth lines, guests or revenue ──
-  const monday = new Date(today); monday.setDate(monday.getDate() - wd);
-  const wk = [];
-  for(let k = 0; k < 7; k++){
-    const d = new Date(monday); d.setDate(d.getDate() + k);
-    const get = key => { const r = businessMetrics.find(x => x.metric_key === key && x.period_date === predictorDateStr(d)); return r ? Number(r.value) : null; };
-    const lyG = predictorHistoricalMetric('covers_served', d), lyR = predictorHistoricalMetric('revenue', d);
-    const dow = predictorMetricStatsForDow('covers_served', d.getDay());
-    const z = lyG != null && dow && dow.stdDev > 0 ? (lyG - dow.mean) / dow.stdDev : 0;
-    wk.push({ d, lyG, lyR, tyG: get('covers_served'), tyR: get('revenue'), spike: z >= 1.5, dip: z <= -1.5, isToday: k === wd, past: k < wd });
-  }
+  const wk = weekDays.map(x => ({ d: x.d, g: x.expCov, r: x.expRev, lyG: x.lyCov, lyR: x.lyRev, tyG: x.tyCov, tyR: x.tyRev, kind: x.kind, spikeYears: x.spikeYears, nYears: x.nYears, isToday: x.i === 0, past: x.i < 0 }));
   window._fcWeek = wk;
   const sum = (arr, key) => arr.reduce((a, x) => a + (x[key] || 0), 0);
   const pastDays = wk.filter(x => x.past && x.tyG != null);
-  const chartSub = pastDays.length ? `${pastDays.length} day${pastDays.length === 1 ? '' : 's'} in: ${Math.round(sum(pastDays, 'tyG'))} guests vs ${Math.round(sum(pastDays, 'lyG'))} last year` : 'Last year\'s week, day by day';
-  const chartCard = `<div class="fc-card"><div class="fc-ct">${fcIc('<path d="M3 3v18h18"/><path d="M7 15l4-4 3 3 5-6"/>', '#E0F5F2', '#0D9488')}This week vs last year<small>${chartSub} · from your Data Entry</small></div>
+  const chartSub = pastDays.length ? `${pastDays.length} day${pastDays.length === 1 ? '' : 's'} in: ${Math.round(sum(pastDays, 'tyG'))} guests vs ${Math.round(sum(pastDays, 'g'))} usually` : 'What this week usually looks like';
+  const chartCard = `<div class="fc-card"><div class="fc-ct">${fcIc('<path d="M3 3v18h18"/><path d="M7 15l4-4 3 3 5-6"/>', '#E0F5F2', '#0D9488')}This week vs past years<small>${chartSub} · from your Data Entry</small></div>
     ${hasHistory ? `<div style="position:relative;height:270px;margin-top:14px"><canvas id="fc-week-chart"></canvas></div>
-    <div class="fc-leg"><span><em style="background:#0D9488"></em>Guests (last year)</span><span><em style="background:#378ADD;height:3px;vertical-align:3px"></em>Revenue (last year)</span><span><em style="background:#B45252;border-radius:50%"></em>Spike</span><span><em style="background:#B7791F;border-radius:50%"></em>Dip</span><span style="margin-left:auto;color:#94A3B8">Tap a day to compare with this year</span></div>`
-    : `<div class="fc-p">No sales history yet. Add past figures in <b>Data Entry</b> (or upload a spreadsheet) and this chart compares every day with last year.</div>`}</div>`;
+    <div class="fc-leg"><span><em style="background:#0D9488"></em>Guests (usual)</span><span><em style="background:#378ADD;height:3px;vertical-align:3px"></em>Takings (usual)</span><span><em style="background:#C0524A;border-radius:50%"></em>Spike</span><span><em style="background:#0D9488;border-radius:50%"></em>Busy</span><span><em style="background:#C4973B;border-radius:50%"></em>Normal</span><span style="margin-left:auto;color:#94A3B8">Tap a day to compare with this year</span></div>`
+    : `<div class="fc-p">No sales history yet. Add past figures in <b>Data Entry</b> (or upload a spreadsheet) and this chart compares every day with past years.</div>`}</div>`;
 
   const emptyNote = hasHistory ? '' : `<div class="fc-empty">Mavis hasn't got your past sales yet, so "busy" and "quiet" are based on holidays and weather only. Add last year's daily revenue and guests in <b>Data Entry</b> to unlock the full forecast.</div>`;
 
-  body.innerHTML = hero + emptyNote + nums + chartCard + stripCard + storyHtml
+  body.innerHTML = hero + emptyNote + nums + basis + chartCard + stripCard + storyHtml
     + `<div class="fc-grid2">${whoCard}${seasonCard}</div>`
     + todoCard;
   if(hasHistory) fcDrawChart();
@@ -20410,14 +20432,14 @@ function predictorRenderBody(){
   if(wkEl && tEl && wkEl.scrollWidth > wkEl.clientWidth) wkEl.scrollLeft = Math.max(0, tEl.offsetLeft - wkEl.offsetLeft - (wkEl.clientWidth - tEl.offsetWidth) / 2);
 }
 let fcChart = null;
-// This week vs last year: guests (teal, filled) and revenue (blue, dashed) on one graph, each on its own scale.
-// Dots are coloured like the rest of Forecast: red = spike, amber = dip, teal = busy, grey = quiet. Hover shows this year too.
+// This week vs past years: the usual guests (teal, filled) and takings (blue, dashed) for each day - the average of
+// the same day over the last 3 years. Dots match the week strip: red = spike, teal = busy, gold = normal.
 function fcDrawChart(){
   const cv = document.getElementById('fc-week-chart'); if(!cv || typeof Chart === 'undefined') return;
   const wk = window._fcWeek || [];
-  const stats = predictorMetricStats('covers_served');
-  const col = x => x.spike ? PREDICTOR_STATUS_COLORS.spike : x.dip ? PREDICTOR_STATUS_COLORS.dip : (() => { const b = predictorBracketColor(x.lyG, stats); return b === 'high' ? PREDICTOR_STATUS_COLORS.high : b === 'low' ? PREDICTOR_STATUS_COLORS.low : b === 'mid' ? '#14B8A6' : '#CBD5E1'; })();
-  const dots = wk.map(col);
+  const KC = { spike:'#C0524A', busy:'#0D9488', normal:'#C4973B', none:'#CBD5E1' };
+  const KN = { spike:'spike', busy:'busy', normal:'normal', none:'' };
+  const dots = wk.map(x => KC[x.kind] || KC.none);
   const ctx = cv.getContext('2d');
   const grad = ctx.createLinearGradient(0, 0, 0, 270); grad.addColorStop(0, 'rgba(13,148,136,0.30)'); grad.addColorStop(1, 'rgba(13,148,136,0.02)');
   // Hovering a day draws a soft rounded box behind both of that day's dots (guests + revenue)
@@ -20435,19 +20457,21 @@ function fcDrawChart(){
   fcChart = new Chart(cv, { plugins: [dayBand],
     type: 'line',
     data: { labels: wk.map(x => (x.isToday && window.innerWidth > 600) ? fcDayName(x.d) + ' (today)' : fcDayName(x.d)), datasets: [
-      { label: 'Guests', data: wk.map(x => x.lyG == null ? null : Math.round(x.lyG)), yAxisID: 'y', borderColor: '#0D9488', backgroundColor: grad, fill: true, tension: 0.38, borderWidth: 3,
+      { label: 'Guests', data: wk.map(x => x.g == null ? null : Math.round(x.g)), yAxisID: 'y', borderColor: '#0D9488', backgroundColor: grad, fill: true, tension: 0.38, borderWidth: 3,
         pointRadius: wk.map(x => x.isToday ? 10 : 8), pointHoverRadius: 11, pointBackgroundColor: dots, pointBorderColor: '#fff', pointBorderWidth: 3, spanGaps: true },
-      { label: 'Revenue', data: wk.map(x => x.lyR == null ? null : Math.round(x.lyR / 1e5) / 10), yAxisID: 'y1', borderColor: '#378ADD', backgroundColor: '#378ADD', borderDash: [6, 5], fill: false, tension: 0.38, borderWidth: 2.5,
+      { label: 'Revenue', data: wk.map(x => x.r == null ? null : Math.round(x.r / 1e5) / 10), yAxisID: 'y1', borderColor: '#378ADD', backgroundColor: '#378ADD', borderDash: [6, 5], fill: false, tension: 0.38, borderWidth: 2.5,
         pointRadius: 6, pointHoverRadius: 9, pointBackgroundColor: dots, pointBorderColor: '#fff', pointBorderWidth: 2.5, spanGaps: true }
     ]},
     options: { responsive: true, maintainAspectRatio: false, interaction: { mode: 'index', intersect: false }, layout: { padding: { top: 12 } },
-      plugins: { legend: { display: false }, tooltip: { backgroundColor: '#0F1E2E', padding: 12, cornerRadius: 12, displayColors: false,
+      plugins: { legend: { display: false }, tooltip: { animation: { duration: 0 }, backgroundColor: '#0F1E2E', padding: 12, cornerRadius: 12, displayColors: false,
         titleFont: { family: 'Inter', weight: '800', size: 13 }, bodyFont: { family: 'Inter', size: 12.5 },
         callbacks: {
-          title: items => { const x = wk[items[0].dataIndex]; return x.d.toLocaleDateString('en-GB', { weekday:'long', day:'numeric', month:'short' }) + (x.spike ? ' · spike' : x.dip ? ' · dip' : ''); },
+          title: items => { const x = wk[items[0].dataIndex]; return x.d.toLocaleDateString('en-GB', { weekday:'long', day:'numeric', month:'short' }) + (KN[x.kind] ? ' · ' + KN[x.kind] : ''); },
           label: () => '',
           afterBody: items => { const x = wk[items[0].dataIndex]; const out = [];
-            out.push('Last year: ' + (x.lyG != null ? Math.round(x.lyG) + ' guests' : '-') + ' · ' + (x.lyR != null ? fcMoney(x.lyR) : '-'));
+            out.push('Usually: ' + (x.g != null ? Math.round(x.g) + ' guests' : '-') + ' · ' + (x.r != null ? fcMoney(x.r) : '-') + (x.nYears > 1 ? ' (' + x.nYears + '-year average)' : ''));
+            if(x.nYears > 1) out.push('Last year: ' + (x.lyG != null ? Math.round(x.lyG) + ' guests' : '-') + ' · ' + (x.lyR != null ? fcMoney(x.lyR) : '-'));
+            if(x.spikeYears >= 2) out.push('Spiked in ' + x.spikeYears + ' of the last ' + x.nYears + ' years');
             if(x.tyG != null || x.tyR != null) out.push('This year: ' + (x.tyG != null ? Math.round(x.tyG) + ' guests' : '-') + ' · ' + (x.tyR != null ? fcMoney(x.tyR) : '-'));
             return out; } } } },
       scales: { y: { display: false, beginAtZero: true }, y1: { display: false, beginAtZero: true, grid: { drawOnChartArea: false } },

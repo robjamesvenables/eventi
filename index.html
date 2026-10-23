@@ -19777,13 +19777,13 @@ async function predictorFetchHolidays(){
 
 async function predictorFetchWeather(){
   // Bali/Denpasar coordinates
-  const cached = predictorCacheGet('wx2', 3 * 3600000);
+  const cached = predictorCacheGet('wx3', 3 * 3600000);
   if(cached) return cached;
   try{
-    const res = await predictorFetch('https://api.open-meteo.com/v1/forecast?latitude=-8.65&longitude=115.22&daily=weathercode,temperature_2m_max,precipitation_probability_max,sunset&timezone=Asia%2FSingapore&forecast_days=8');
+    const res = await predictorFetch('https://api.open-meteo.com/v1/forecast?latitude=-8.65&longitude=115.22&daily=weathercode,temperature_2m_max,precipitation_probability_max,sunset&timezone=Asia%2FSingapore&past_days=7&forecast_days=8');
     if(!res.ok) throw new Error('bad response');
     const d = await res.json();
-    predictorCacheSet('wx2', d);
+    predictorCacheSet('wx3', d);
     return d;
   } catch(e){
     console.warn('Weather fetch failed', e);
@@ -20060,7 +20060,9 @@ const FC_STYLE = `
 .fc-p{font-size:13.5px;color:#475569;line-height:1.55;margin-top:10px;font-weight:500}.fc-p b{color:#0F1E2E}
 .fc-week{display:grid;grid-template-columns:repeat(7,1fr);gap:8px;margin-top:14px;padding-top:8px}
 .fc-day{border-radius:16px;padding:12px 6px;text-align:center;background:#F8FAFC;position:relative}
-.fc-day.today{background:#0F1E2E;color:white}
+.fc-day.today{background:#0F1E2E;color:white;box-shadow:0 10px 24px rgba(15,30,46,.25);transform:translateY(-3px)}
+.fc-day.past{opacity:.62}
+.fc-done{background:#E0F5F2;color:#0F766E}
 .fc-tdy{display:inline-block;font-size:8.5px;font-weight:800;background:#5EEAD4;color:#0F1E2E;border-radius:5px;padding:1px 5px;vertical-align:1px;margin-left:2px}
 .fc-day .n{font-size:12px;font-weight:800;color:#64748B}.fc-day.today .n{color:#5EEAD4}
 .fc-day .ico{height:42px;display:flex;align-items:center;justify-content:center;margin:6px 0}
@@ -20145,8 +20147,8 @@ function predictorRenderBody(){
   const covStats = predictorMetricStats('covers_served');
 
   // ── Build the 7 days ──
-  const days = [];
-  for(let i = 0; i < 7; i++){
+  const wxIdx = d => { if(!W || !W.time) return -1; return W.time.indexOf(predictorDateStr(d)); };
+  const mkDay = i => {
     const d = new Date(today); d.setDate(d.getDate() + i);
     const lyCov = predictorHistoricalMetric('covers_served', d);
     const lyRev = predictorHistoricalMetric('revenue', d);
@@ -20162,9 +20164,15 @@ function predictorRenderBody(){
       if(Math.abs(z) >= 1.5) spike = { z, pct: Math.round((lyCov - dow.mean) / dow.mean * 100), cov: lyCov };
       if(level === 'none') level = z > 0.5 ? 'busy' : z < -0.5 ? 'quiet' : 'mod';
     }
-    const wx = W ? { code: W.weathercode[i], temp: Math.round(W.temperature_2m_max[i]), rain: W.precipitation_probability_max[i], sunset: W.sunset ? W.sunset[i] : null } : null;
-    days.push({ d, i, lyCov, lyRev, idHol, hols, schoolStarts, level, spike, wx, dowMean: dow ? dow.mean : null });
-  }
+    const wi = wxIdx(d);
+    const wx = wi >= 0 && W.weathercode[wi] != null ? { code: W.weathercode[wi], temp: Math.round(W.temperature_2m_max[wi]), rain: W.precipitation_probability_max[wi], sunset: W.sunset ? W.sunset[wi] : null } : null;
+    const tyRow = businessMetrics.find(r => r.metric_key === 'covers_served' && r.period_date === predictorDateStr(d));
+    return { d, i, lyCov, lyRev, idHol, hols, schoolStarts, level, spike, wx, dowMean: dow ? dow.mean : null, tyCov: tyRow ? Number(tyRow.value) : null };
+  };
+  const days = []; for(let i = 0; i < 7; i++) days.push(mkDay(i));
+  // This week, Monday to Sunday (for the strip)
+  const wdNow = (today.getDay() + 6) % 7;
+  const weekDays = []; for(let i = -wdNow; i < 7 - wdNow; i++) weekDays.push(mkDay(i));
   const t0 = days[0];
   const isWeekendSoon = [5, 6].includes(today.getDay()) || (today.getDay() === 4);
   const weekendDays = days.filter(x => [5, 6].includes(x.d.getDay()) && x.i <= 3);
@@ -20266,19 +20274,19 @@ function predictorRenderBody(){
 
   // ── 7-day strip ──
   const lvlTxt = { busy:['fc-busy','Busy'], mod:['fc-mod','Steady'], quiet:['fc-quiet','Quiet'], none:['fc-none','-'] };
-  const strip = days.map(x => {
+  const strip = weekDays.map(x => {
     let tag = '';
     const sch = x.schoolStarts.find(c => c.code !== 'ID');
     if(x.idHol) tag = `<div class="fc-hol" style="background:#DC2626" title="${fcEsc(x.idHol.name)}">${fcEsc(x.idHol.localName || x.idHol.name).slice(0, 16)}</div>`;
     else if(sch) tag = `<div class="fc-hol" style="background:#7C3AED">${sch.code} holidays</div>`;
     else if(x.hols.length) tag = `<div class="fc-hol" style="background:#0D9488" title="${fcEsc(x.hols[0].h.name)} (${x.hols[0].c.name})">${fcEsc(x.hols[0].h.name).slice(0, 14)}</div>`;
     const wxi = x.wx ? fcWx(x.wx.code) : null;
-    return `<div class="fc-day${x.i === 0 ? ' today' : ''}">${tag}<div class="n">${fcDayName(x.d).toUpperCase()}${x.i === 0 ? ' <span class="fc-tdy">TODAY</span>' : ''}</div>
+    return `<div class="fc-day${x.i === 0 ? ' today' : ''}${x.i < 0 ? ' past' : ''}">${tag}<div class="n">${fcDayName(x.d).toUpperCase()}${x.i === 0 ? ' <span class="fc-tdy">TODAY</span>' : ''}</div>
       <div class="ico">${wxi ? fcWxIcon(wxi.k) : ''}</div>
       <div class="tp">${x.wx ? x.wx.temp + '°' : '-'}</div><div class="rn">${x.wx && x.wx.rain != null ? x.wx.rain + '%' : ''}</div>
-      <div class="lvl ${lvlTxt[x.level][0]}">${x.spike && x.spike.z > 0 ? 'Spike' : lvlTxt[x.level][1]}</div></div>`;
+      ${x.i < 0 && x.tyCov != null ? `<div class="lvl fc-done">${Math.round(x.tyCov)} guests</div>` : `<div class="lvl ${lvlTxt[x.level][0]}">${x.spike && x.spike.z > 0 ? 'Spike' : lvlTxt[x.level][1]}</div>`}</div>`;
   }).join('');
-  const stripCard = `<div class="fc-card"><div class="fc-ct">${fcIc('<path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"/>', '#E0F2FE', '#0284C7')}The next 7 days<small>weather, holidays and how busy last year was</small></div><div class="fc-week">${strip}</div></div>`;
+  const stripCard = `<div class="fc-card"><div class="fc-ct">${fcIc('<path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"/>', '#E0F2FE', '#0284C7')}This week<small>Monday to Sunday · weather, holidays and how busy last year was</small></div><div class="fc-week">${strip}</div></div>`;
 
   // ── Story cards ──
   const stories = [];
@@ -20341,9 +20349,8 @@ function predictorRenderBody(){
   const pastDays = wk.filter(x => x.past && x.tyG != null);
   const chartSub = pastDays.length ? `${pastDays.length} day${pastDays.length === 1 ? '' : 's'} in: ${Math.round(sum(pastDays, 'tyG'))} guests vs ${Math.round(sum(pastDays, 'lyG'))} last year` : 'Last year\'s week, day by day';
   const chartCard = `<div class="fc-card"><div class="fc-ct">${fcIc('<path d="M3 3v18h18"/><path d="M7 15l4-4 3 3 5-6"/>', '#E0F5F2', '#0D9488')}This week vs last year<small>${chartSub}</small></div>
-    ${hasHistory ? `<div class="fc-tabs"><button class="on" onclick="fcChartTab(this,'g')">Guests</button><button onclick="fcChartTab(this,'r')">Revenue</button></div>
-    <div style="position:relative;height:260px;margin-top:8px"><canvas id="fc-week-chart"></canvas></div>
-    <div class="fc-leg"><span><em style="background:#0D9488"></em>This year</span><span><em style="background:#CBD5E1"></em>Last year</span><span><em style="background:#EF4444;border-radius:50%"></em>Spike last year</span><span><em style="background:#F59E0B;border-radius:50%"></em>Dip last year</span></div>`
+    ${hasHistory ? `<div style="position:relative;height:270px;margin-top:14px"><canvas id="fc-week-chart"></canvas></div>
+    <div class="fc-leg"><span><em style="background:#0D9488"></em>Guests (last year)</span><span><em style="background:#378ADD;height:3px;vertical-align:3px"></em>Revenue (last year)</span><span><em style="background:#B45252;border-radius:50%"></em>Spike</span><span><em style="background:#B7791F;border-radius:50%"></em>Dip</span><span style="margin-left:auto;color:#94A3B8">Tap a day to compare with this year</span></div>`
     : `<div class="fc-p">No sales history yet. Add past figures in <b>Data Entry</b> (or upload a spreadsheet) and this chart compares every day with last year.</div>`}</div>`;
 
   const emptyNote = hasHistory ? '' : `<div class="fc-empty">Mavis hasn't got your past sales yet, so "busy" and "quiet" are based on holidays and weather only. Add last year's daily revenue and guests in <b>Data Entry</b> to unlock the full forecast.</div>`;
@@ -20351,37 +20358,43 @@ function predictorRenderBody(){
   body.innerHTML = hero + emptyNote + nums + chartCard + stripCard + storyHtml
     + `<div class="fc-grid2">${whoCard}${seasonCard}</div>`
     + todoCard;
-  if(hasHistory) fcDrawChart('g');
+  if(hasHistory) fcDrawChart();
 }
 let fcChart = null;
-window.fcChartTab = function(btn, k){
-  btn.parentNode.querySelectorAll('button').forEach(b => b.classList.toggle('on', b === btn));
-  fcDrawChart(k);
-};
-function fcDrawChart(k){
+// This week vs last year: guests (teal, filled) and revenue (blue, dashed) on one graph, each on its own scale.
+// Dots are coloured like the rest of Forecast: red = spike, amber = dip, teal = busy, grey = quiet. Hover shows this year too.
+function fcDrawChart(){
   const cv = document.getElementById('fc-week-chart'); if(!cv || typeof Chart === 'undefined') return;
   const wk = window._fcWeek || [];
-  const rev = k === 'r';
-  const ly = wk.map(x => { const v = rev ? x.lyR : x.lyG; return v == null ? null : (rev ? Math.round(v / 1e6 * 10) / 10 : Math.round(v)); });
-  const ty = wk.map(x => { const v = rev ? x.tyR : x.tyG; return v == null ? null : (rev ? Math.round(v / 1e6 * 10) / 10 : Math.round(v)); });
+  const stats = predictorMetricStats('covers_served');
+  const col = x => x.spike ? PREDICTOR_STATUS_COLORS.spike : x.dip ? PREDICTOR_STATUS_COLORS.dip : (() => { const b = predictorBracketColor(x.lyG, stats); return b === 'high' ? PREDICTOR_STATUS_COLORS.high : b === 'low' ? PREDICTOR_STATUS_COLORS.low : b === 'mid' ? '#14B8A6' : '#CBD5E1'; })();
+  const dots = wk.map(col);
   const ctx = cv.getContext('2d');
-  const grad = ctx.createLinearGradient(0, 0, 0, 260); grad.addColorStop(0, 'rgba(13,148,136,0.28)'); grad.addColorStop(1, 'rgba(13,148,136,0)');
-  const lyGrad = ctx.createLinearGradient(0, 0, 0, 260); lyGrad.addColorStop(0, 'rgba(148,163,184,0.22)'); lyGrad.addColorStop(1, 'rgba(148,163,184,0)');
-  const dot = wk.map(x => x.spike ? '#EF4444' : x.dip ? '#F59E0B' : '#94A3B8');
+  const grad = ctx.createLinearGradient(0, 0, 0, 270); grad.addColorStop(0, 'rgba(13,148,136,0.30)'); grad.addColorStop(1, 'rgba(13,148,136,0.02)');
   if(fcChart) fcChart.destroy();
   fcChart = new Chart(cv, {
     type: 'line',
-    data: { labels: wk.map(x => fcDayName(x.d) + (x.isToday ? ' · today' : '')), datasets: [
-      { label: 'Last year', data: ly, borderColor: '#94A3B8', backgroundColor: lyGrad, fill: true, tension: 0.4, borderWidth: 2, borderDash: [6, 5], pointRadius: wk.map(x => x.spike || x.dip ? 7 : 4), pointBackgroundColor: dot, pointBorderColor: '#fff', pointBorderWidth: 2, spanGaps: true },
-      { label: 'This year', data: ty, borderColor: '#0D9488', backgroundColor: grad, fill: true, tension: 0.4, borderWidth: 3, pointRadius: 5, pointBackgroundColor: '#0D9488', pointBorderColor: '#fff', pointBorderWidth: 2, spanGaps: false }
+    data: { labels: wk.map(x => fcDayName(x.d) + (x.isToday ? ' (today)' : '')), datasets: [
+      { label: 'Guests', data: wk.map(x => x.lyG == null ? null : Math.round(x.lyG)), yAxisID: 'y', borderColor: '#0D9488', backgroundColor: grad, fill: true, tension: 0.38, borderWidth: 3,
+        pointRadius: wk.map(x => x.isToday ? 10 : 8), pointHoverRadius: 11, pointBackgroundColor: dots, pointBorderColor: '#fff', pointBorderWidth: 3, spanGaps: true },
+      { label: 'Revenue', data: wk.map(x => x.lyR == null ? null : Math.round(x.lyR / 1e5) / 10), yAxisID: 'y1', borderColor: '#378ADD', backgroundColor: '#378ADD', borderDash: [6, 5], fill: false, tension: 0.38, borderWidth: 2.5,
+        pointRadius: 6, pointHoverRadius: 9, pointBackgroundColor: dots, pointBorderColor: '#fff', pointBorderWidth: 2.5, spanGaps: true }
     ]},
-    options: { responsive: true, maintainAspectRatio: false, interaction: { mode: 'index', intersect: false },
-      plugins: { legend: { display: false }, tooltip: { backgroundColor: '#0F1E2E', padding: 10, titleFont: { family: 'Inter', weight: '700' }, bodyFont: { family: 'Inter' },
-        callbacks: { label: c => ' ' + c.dataset.label + ': ' + (c.parsed.y == null ? '-' : rev ? 'Rp ' + c.parsed.y + 'm' : c.parsed.y + ' guests') } } },
-      scales: { y: { beginAtZero: true, grid: { color: '#F1F5F9' }, border: { display: false }, ticks: { color: '#94A3B8', font: { family: 'Inter', size: 11, weight: '600' }, callback: v => rev ? v + 'm' : v } },
-        x: { grid: { display: false }, border: { display: false }, ticks: { color: '#334155', font: { family: 'Inter', size: 12, weight: '700' } } } } }
+    options: { responsive: true, maintainAspectRatio: false, interaction: { mode: 'index', intersect: false }, layout: { padding: { top: 12 } },
+      plugins: { legend: { display: false }, tooltip: { backgroundColor: '#0F1E2E', padding: 12, cornerRadius: 12, displayColors: false,
+        titleFont: { family: 'Inter', weight: '800', size: 13 }, bodyFont: { family: 'Inter', size: 12.5 },
+        callbacks: {
+          title: items => { const x = wk[items[0].dataIndex]; return x.d.toLocaleDateString('en-GB', { weekday:'long', day:'numeric', month:'short' }) + (x.spike ? ' · spike' : x.dip ? ' · dip' : ''); },
+          label: () => '',
+          afterBody: items => { const x = wk[items[0].dataIndex]; const out = [];
+            out.push('Last year: ' + (x.lyG != null ? Math.round(x.lyG) + ' guests' : '-') + ' · ' + (x.lyR != null ? fcMoney(x.lyR) : '-'));
+            if(x.tyG != null || x.tyR != null) out.push('This year: ' + (x.tyG != null ? Math.round(x.tyG) + ' guests' : '-') + ' · ' + (x.tyR != null ? fcMoney(x.tyR) : '-'));
+            return out; } } } },
+      scales: { y: { display: false, beginAtZero: true }, y1: { display: false, beginAtZero: true, grid: { drawOnChartArea: false } },
+        x: { grid: { display: false }, border: { display: false }, ticks: { color: (c) => wk[c.index] && wk[c.index].isToday ? '#0D9488' : '#334155', font: { family: 'Inter', size: 13, weight: '800' } } } } }
   });
 }
+
 
 
 

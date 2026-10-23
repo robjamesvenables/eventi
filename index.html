@@ -19737,9 +19737,26 @@ function predictorDateStr(date){
 // research (multiple independent tourism sources), not a guess: high season is genuinely
 // July-August plus December (Christmas/New Year), the two periods most consistently cited
 // as Bali's actual peak tourist volume - everything else is low season.
+// Bali tourism seasons (three levels), from travel research (Lonely Planet, Bali tourism sites):
+//   High (peak):      1 Jul - 31 Aug, and 20 Dec - 5 Jan (Christmas & New Year)
+//   Medium (shoulder): Apr - Jun, Sep - Oct
+//   Low:              6 Jan - 31 Mar, and 1 Nov - 19 Dec (wettest months)
 function predictorSeason(date){
-  const m = date.getMonth()+1;
-  return (m === 7 || m === 8 || m === 12) ? 'High Season' : 'Low Season';
+  const m = date.getMonth() + 1, d = date.getDate();
+  if(m === 7 || m === 8 || (m === 12 && d >= 20) || (m === 1 && d <= 5)) return 'High Season';
+  if((m >= 4 && m <= 6) || m === 9 || m === 10) return 'Medium Season';
+  return 'Low Season';
+}
+// The next date the season changes, and what it changes to
+function predictorNextSeason(from){
+  const now = predictorSeason(from);
+  for(let k = 1; k <= 400; k++){ const d = new Date(from); d.setDate(d.getDate() + k); const s2 = predictorSeason(d); if(s2 !== now) return { days:k, season:s2, date:d }; }
+  return null;
+}
+// The next time high season starts
+function predictorNextHigh(from){
+  for(let k = 0; k <= 400; k++){ const d = new Date(from); d.setDate(d.getDate() + k); if(predictorSeason(d) === 'High Season') return { days:k, date:d }; }
+  return null;
 }
 
 // Outside data (holidays, weather, currency) is kept on the phone for a while, and any slow
@@ -19775,15 +19792,24 @@ async function predictorFetchHolidays(){
   return results;
 }
 
+// Where the weather is for: the venue's own area. Seminyak by default; a company can save its own
+// with the app setting "forecast_location" = {"name":"Canggu","lat":-8.65,"lon":115.13}.
+function predictorLocation(){
+  let v = null;
+  try{ v = appSettings && appSettings.forecast_location; if(typeof v === 'string') v = JSON.parse(v); }catch(e){ v = null; }
+  if(v && isFinite(v.lat) && isFinite(v.lon)) return { name: String(v.name || 'your area'), lat: Number(v.lat), lon: Number(v.lon), key: Number(v.lat).toFixed(2) + ',' + Number(v.lon).toFixed(2) };
+  return { name:'Seminyak', lat:-8.69, lon:115.16, key:'smk' };
+}
 async function predictorFetchWeather(){
   // Bali/Denpasar coordinates
-  const cached = predictorCacheGet('wx3', 3 * 3600000);
+  const cached = predictorCacheGet('wx4_' + predictorLocation().key, 3 * 3600000);
   if(cached) return cached;
   try{
-    const res = await predictorFetch('https://api.open-meteo.com/v1/forecast?latitude=-8.65&longitude=115.22&daily=weathercode,temperature_2m_max,precipitation_probability_max,sunset&timezone=Asia%2FSingapore&past_days=7&forecast_days=8');
+    const loc = predictorLocation();
+    const res = await predictorFetch('https://api.open-meteo.com/v1/forecast?latitude=' + loc.lat + '&longitude=' + loc.lon + '&daily=weathercode,temperature_2m_max,precipitation_probability_mean,precipitation_probability_max,precipitation_sum,sunset&timezone=Asia%2FMakassar&past_days=7&forecast_days=8');
     if(!res.ok) throw new Error('bad response');
     const d = await res.json();
-    predictorCacheSet('wx3', d);
+    predictorCacheSet('wx4_' + predictorLocation().key, d);
     return d;
   } catch(e){
     console.warn('Weather fetch failed', e);
@@ -20086,7 +20112,7 @@ const FC_STYLE = `
 .fc-w .why{font-size:11.5px;font-weight:700;color:#64748B;width:170px;text-align:right}
 .fc-months{display:grid;grid-template-columns:repeat(12,1fr);gap:4px;margin-top:22px}
 .fc-months div{height:34px;border-radius:8px;font-size:10.5px;font-weight:800;display:flex;align-items:flex-end;justify-content:center;padding-bottom:4px;color:#64748B;background:#F1F5F9;position:relative}
-.fc-months .hi{background:#CCFBF1;color:#0F766E}.fc-months .now{outline:2.5px solid #0F1E2E;outline-offset:1px}
+.fc-months .hi{background:#5EEAD4;color:#0F766E}.fc-months .med{background:#FDE68A;color:#92400E}.fc-months .lohi{background:linear-gradient(90deg,#E2E8F0 60%,#5EEAD4 60%);color:#334155}.fc-months .hilo{background:linear-gradient(90deg,#5EEAD4 18%,#E2E8F0 18%);color:#334155}.fc-months .now{outline:2.5px solid #0F1E2E;outline-offset:1px}
 .fc-months .now:after{content:'NOW';position:absolute;top:-17px;font-size:9px;color:#0F1E2E}
 .fc-todo{display:flex;flex-direction:column;gap:8px;margin-top:12px}
 .fc-td{display:flex;gap:11px;align-items:flex-start;background:#F8FAFC;border-radius:13px;padding:11px 12px}
@@ -20165,7 +20191,18 @@ function predictorRenderBody(){
       if(level === 'none') level = z > 0.5 ? 'busy' : z < -0.5 ? 'quiet' : 'mod';
     }
     const wi = wxIdx(d);
-    const wx = wi >= 0 && W.weathercode[wi] != null ? { code: W.weathercode[wi], temp: Math.round(W.temperature_2m_max[wi]), rain: W.precipitation_probability_max[wi], sunset: W.sunset ? W.sunset[wi] : null } : null;
+    // Rain chance = the AVERAGE chance across the day (not the single worst hour), and "wet" only when
+    // at least 1mm of actual rain is expected - so a dry day with one possible shower isn't shown as rain.
+    let wx = null;
+    if(wi >= 0 && W.weathercode[wi] != null){
+      const mm = W.precipitation_sum ? Number(W.precipitation_sum[wi] || 0) : null;
+      const pm = W.precipitation_probability_mean ? W.precipitation_probability_mean[wi] : null;
+      const rain = pm != null ? Math.round(pm) : (W.precipitation_probability_max ? W.precipitation_probability_max[wi] : null);
+      const wet = mm != null ? (mm >= 1 && (rain == null || rain >= 40)) : rain >= 60;
+      let code = W.weathercode[wi];
+      if(!wet && Number(code) >= 51) code = mm != null && mm > 0.2 ? 3 : 2;   // a passing drizzle doesn't make it a rainy day
+      wx = { code, temp: Math.round(W.temperature_2m_max[wi]), rain, mm, wet, sunset: W.sunset ? W.sunset[wi] : null };
+    }
     const tyRow = businessMetrics.find(r => r.metric_key === 'covers_served' && r.period_date === predictorDateStr(d));
     return { d, i, lyCov, lyRev, idHol, hols, schoolStarts, level, spike, wx, dowMean: dow ? dow.mean : null, tyCov: tyRow ? Number(tyRow.value) : null };
   };
@@ -20219,11 +20256,11 @@ function predictorRenderBody(){
   }
   if(W){
     const nextWknd = days.find(x => x.i > 0 && x.d.getDay() === 6) || days.find(x => x.i > 0 && x.d.getDay() === 5);
-    const rainy = days.filter(x => x.i <= 3 && x.wx && x.wx.rain >= 60);
+    const rainy = days.filter(x => x.i <= 3 && x.wx && x.wx.wet);
     const rainList = rainy.map(x => x.i === 0 ? 'today' : fcDayName(x.d, true));
     const rainTxt = rainy.length >= 3 ? 'most of the next few days (' + fcDayName(rainy[0].d) + ' to ' + fcDayName(rainy[rainy.length - 1].d) + ')' : rainList.join(' and ');
     if(rainy.length) story.push('Rain is likely ' + (rainy.length >= 3 ? '' : 'on ') + '<b>' + rainTxt + '</b>, so plan for covered seating.');
-    else if(nextWknd && nextWknd.wx && nextWknd.wx.rain < 30) story.push(fcDayName(nextWknd.d, true) + ' looks ' + (nextWknd.wx.temp >= 30 ? 'dry and hot' : 'dry') + ' - perfect sunset weather.');
+    else if(nextWknd && nextWknd.wx && !nextWknd.wx.wet) story.push(fcDayName(nextWknd.d, true) + ' looks ' + (nextWknd.wx.temp >= 30 ? 'dry and hot' : 'dry') + ' - perfect sunset weather.');
   }
   if(!story.length) story.push('Holidays, weather and currency are below. Add your past sales in Data Entry and Mavis will compare every day with last year.');
   const chips = [];
@@ -20233,16 +20270,16 @@ function predictorRenderBody(){
   const season = predictorSeason(today);
   chips.push(season);
   const m = today.getMonth() + 1;
-  const rainyWeek = W ? days.filter(x => x.wx && x.wx.rain >= 60).length >= 4 : false;
+  const rainyWeek = W ? days.filter(x => x.wx && x.wx.wet).length >= 4 : false;
   const wet = m >= 11 || m <= 3 || rainyWeek;
   const wetLabel = (m >= 11 || m <= 3) ? 'Wet' : rainyWeek ? 'Turning wet' : 'Dry';
   const wxT = t0.wx ? fcWx(t0.wx.code) : null;
   const sunsetTxt = t0.wx && t0.wx.sunset ? String(t0.wx.sunset).slice(11, 16) : null;
   const heroWx = t0.wx ? `<div class="fc-wx">
-      <div class="fc-wx-big">${wxT.k === 'sun' ? fcBigSun() : fcWxIcon(wxT.k, 64)}<div><div class="fc-wx-t">${t0.wx.temp}°</div><div class="fc-wx-d">${wxT.t} in Bali</div></div></div>
-      <div class="fc-wx-row"><div>Rain<b>${t0.wx.rain != null ? t0.wx.rain + '%' : '-'}</b></div>${sunsetTxt ? `<div>Sunset<b>${sunsetTxt}</b></div>` : ''}<div>Season<b>${wetLabel}</b></div></div>
+      <div class="fc-wx-big">${wxT.k === 'sun' ? fcBigSun() : fcWxIcon(wxT.k, 64)}<div><div class="fc-wx-t">${t0.wx.temp}°</div><div class="fc-wx-d">${wxT.t} in ${fcEsc(predictorLocation().name)}</div></div></div>
+      <div class="fc-wx-row"><div>Rain<b>${t0.wx.mm != null ? (t0.wx.mm < 0.5 ? 'None' : Math.round(t0.wx.mm) + 'mm') : (t0.wx.rain != null ? t0.wx.rain + '%' : '-')}</b></div>${sunsetTxt ? `<div>Sunset<b>${sunsetTxt}</b></div>` : ''}<div>Season<b>${wetLabel}</b></div></div>
     </div>` : `<div class="fc-wx"><div class="fc-wx-d" style="font-size:14px">Weather isn't available right now.</div><div class="fc-wx-row"><div>Season<b>${wet ? 'Wet' : 'Dry'}</b></div><div>Tourism<b>${season.replace(' Season','')}</b></div></div></div>`;
-  const hero = `<div class="fc-hero${t0.wx && t0.wx.rain >= 60 ? ' wet' : ''}"><div class="fc-glow"></div>
+  const hero = `<div class="fc-hero${t0.wx && t0.wx.wet ? ' wet' : ''}"><div class="fc-glow"></div>
     <div style="position:relative"><div class="fc-date">${fcEsc(today.toLocaleDateString('en-GB', { weekday:'long', day:'numeric', month:'long' }))} · ${greet}</div>
       <div class="fc-verdict">${verdict}</div><div class="fc-story">${story.join(' ')}</div>
       <div class="fc-chips">${chips.map(c => `<span class="fc-chip">${c}</span>`).join('')}</div></div>
@@ -20283,10 +20320,10 @@ function predictorRenderBody(){
     const wxi = x.wx ? fcWx(x.wx.code) : null;
     return `<div class="fc-day${x.i === 0 ? ' today' : ''}${x.i < 0 ? ' past' : ''}">${tag}<div class="n">${fcDayName(x.d).toUpperCase()}${x.i === 0 ? ' <span class="fc-tdy">TODAY</span>' : ''}</div>
       <div class="ico">${wxi ? fcWxIcon(wxi.k) : ''}</div>
-      <div class="tp">${x.wx ? x.wx.temp + '°' : '-'}</div><div class="rn">${x.wx && x.wx.rain != null ? x.wx.rain + '%' : ''}</div>
+      <div class="tp">${x.wx ? x.wx.temp + '°' : '-'}</div><div class="rn">${x.wx ? (x.wx.wet ? (x.wx.mm != null ? Math.round(x.wx.mm) + 'mm rain' : x.wx.rain + '%') : 'Dry') : ''}</div>
       ${x.i < 0 && x.tyCov != null ? `<div class="lvl fc-done">${Math.round(x.tyCov)} guests</div>` : `<div class="lvl ${lvlTxt[x.level][0]}">${x.spike && x.spike.z > 0 ? 'Spike' : lvlTxt[x.level][1]}</div>`}</div>`;
   }).join('');
-  const stripCard = `<div class="fc-card"><div class="fc-ct">${fcIc('<path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"/>', '#E0F2FE', '#0284C7')}This week<small>Monday to Sunday · weather, holidays and how busy last year was</small></div><div class="fc-week">${strip}</div></div>`;
+  const stripCard = `<div class="fc-card"><div class="fc-ct">${fcIc('<path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"/>', '#E0F2FE', '#0284C7')}This week<small>Weather for ${fcEsc(predictorLocation().name)} · busy level from last year's guests</small></div><div class="fc-week">${strip}</div></div>`;
 
   // ── Story cards ──
   const stories = [];
@@ -20299,25 +20336,32 @@ function predictorRenderBody(){
   }
   const bigSpike = days.filter(x => x.spike && x.spike.z > 0).sort((a, b) => b.spike.z - a.spike.z)[0];
   if(bigSpike && stories.length < 3) stories.push({ bg:'linear-gradient(140deg,#FEF3C7,#FDE68A)', kc:'#92400E', tc:'#78350F', k:'Spike warning · ' + fcDayName(bigSpike.d, true), h:'+' + bigSpike.spike.pct + '% guests last year', p:Math.round(bigSpike.spike.cov) + ' guests on this ' + fcDayName(bigSpike.d, true) + ' last year, well above normal. Book extra staff and stock up.' });
-  const rainDays = days.filter(x => x.wx && x.wx.rain >= 60);
-  if(rainDays.length && stories.length < 3) stories.push({ bg:'linear-gradient(140deg,#E0F2FE,#BAE6FD)', kc:'#075985', tc:'#0C4A6E', k:'Rain · ' + rainDays.slice(0, 2).map(x => x.i === 0 ? 'Today' : fcDayName(x.d, true)).join(' & '), h: rainDays.length > 1 ? 'A wet few days' : 'Rain on the way', p: rainDays[0].wx.rain + '% chance of rain. Move outdoor plans under cover and push indoor offers.' });
+  const rainDays = days.filter(x => x.wx && x.wx.wet);
+  if(rainDays.length && stories.length < 3) stories.push({ bg:'linear-gradient(140deg,#E0F2FE,#BAE6FD)', kc:'#075985', tc:'#0C4A6E', k:'Rain · ' + rainDays.slice(0, 2).map(x => x.i === 0 ? 'Today' : fcDayName(x.d, true)).join(' & '), h: rainDays.length > 1 ? 'A wet few days' : 'Rain on the way', p: (rainDays[0].wx.mm != null ? 'About ' + Math.max(1, Math.round(rainDays[0].wx.mm)) + 'mm of rain expected' : rainDays[0].wx.rain + '% chance of rain') + '. Move outdoor plans under cover and push indoor offers.' });
   const dip = days.filter(x => x.spike && x.spike.z < 0).sort((a, b) => a.spike.z - b.spike.z)[0];
   if(dip && stories.length < 3) stories.push({ bg:'linear-gradient(140deg,#F1F5F9,#E2E8F0)', kc:'#475569', tc:'#334155', k:'Quiet day · ' + fcDayName(dip.d, true), h: Math.abs(dip.spike.pct) + '% fewer guests last year', p:'A good day for training, deep cleaning or a promo to fill seats.' });
-  const nextHigh = (() => { for(let k = 1; k <= 60; k++){ const d = new Date(today); d.setDate(d.getDate() + k); if(predictorSeason(d) !== season) return k; } return null; })();
-  if(nextHigh && stories.length < 3) stories.push({ bg:'linear-gradient(140deg,#FFEDD5,#FED7AA)', kc:'#9A3412', tc:'#7C2D12', k:'Season · in ' + Math.ceil(nextHigh / 7) + ' weeks', h: season === 'Low Season' ? 'High season is coming' : 'High season ends soon', p: season === 'Low Season' ? 'Time to lock in staff, suppliers and events before the rush.' : 'Make the most of the last busy weeks.' });
+  const nextSeason = predictorNextSeason(today), nextHigh = predictorNextHigh(today);
+  const fmtWhen = n => n < 14 ? n + ' day' + (n === 1 ? '' : 's') : Math.round(n / 7) + ' weeks';
+  if(nextSeason && nextSeason.days <= 21 && stories.length < 3) stories.push({ bg:'linear-gradient(140deg,#FFEDD5,#FED7AA)', kc:'#9A3412', tc:'#7C2D12', k:'Season · in ' + fmtWhen(nextSeason.days), h: nextSeason.season + ' starts ' + nextSeason.date.toLocaleDateString('en-GB', { day:'numeric', month:'short' }),
+    p: nextSeason.season === 'High Season' ? 'Lock in staff, suppliers and events before the rush.' : nextSeason.season === 'Low Season' ? 'Quieter weeks ahead - plan promos and training.' : 'Visitor numbers pick up - time to step up staffing.' });
   const storyHtml = stories.length ? `<div class="fc-stories">${stories.slice(0, 3).map(s => `<div class="fc-st" style="background:${s.bg}"><div class="k" style="color:${s.kc}">${s.k}</div><h4 style="color:#0F1E2E">${s.h}</h4><p style="color:${s.tc}">${s.p}</p></div>`).join('')}</div>` : '';
 
   // ── Who's travelling + season ──
   const maxScore = Math.max(...topWho.map(w => w.score));
-  const whoCard = `<div class="fc-card"><div class="fc-ct">${fcIc('<circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/>', '#CCFBF1', '#0F766E')}Who's likely to travel<small>holidays + currency</small></div>
+  const whoCard = `<div class="fc-card"><div class="fc-ct">${fcIc('<circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/>', '#CCFBF1', '#0F766E')}Who's likely to travel<small>a guide from holidays + exchange rates</small></div>
     <div class="fc-who">${topWho.map(w => `<div class="fc-w"><div class="fc-cc" style="background:${FC_CC_COLORS[w.c.code] || '#475569'}">${w.c.code}</div><div class="nm">${w.c.name.replace('United Kingdom', 'UK').replace('United States', 'USA').replace('South Korea', 'Korea')}</div><div class="fc-bar"><i style="width:${Math.round(w.score / maxScore * 100)}%;background:${FC_CC_COLORS[w.c.code] || '#475569'}"></i></div><div class="why ${w.up ? 'fc-up' : w.dn ? 'fc-dn' : ''}">${w.why}</div></div>`).join('')}</div></div>`;
-  const hiMonths = [7, 8, 12];
-  const weeksTo = nextHigh ? Math.ceil(nextHigh / 7) : null;
-  const seasonText = season === 'Low Season'
-    ? `You're in the <b>low season</b>${weeksTo ? `, with <b>${weeksTo} week${weeksTo === 1 ? '' : 's'}</b> until high season` : ''}. Weekdays lean on locals and short-break visitors, so <b>weekends carry the month</b>. A good time for promos, staff training and deep cleans.`
-    : `It's <b>high season</b>${weeksTo ? ` for about <b>${weeksTo} more week${weeksTo === 1 ? '' : 's'}</b>` : ''}. Expect full weekends and busier weekdays - keep stock and staffing ahead of demand.`;
+  // Season card: the year in three colours (high / medium / low), today marked
+  const monthCls = k => { const mm = k + 1; return mm === 7 || mm === 8 ? 'hi' : mm === 12 ? 'lohi' : mm === 1 ? 'hilo' : (mm >= 4 && mm <= 6) || mm === 9 || mm === 10 ? 'med' : ''; };
+  const hiIn = nextHigh && nextHigh.days > 0 ? fmtWhen(nextHigh.days) : null;
+  const nsTxt = nextSeason ? nextSeason.season.replace(' Season', '').toLowerCase() + ' season from <b>' + nextSeason.date.toLocaleDateString('en-GB', { day:'numeric', month:'long' }) + '</b>' : '';
+  const seasonText = season === 'High Season'
+    ? `It's <b>high season</b>${nextSeason ? ` until ${nextSeason.date.toLocaleDateString('en-GB', { day:'numeric', month:'long' })}` : ''}. Expect full weekends and busier weekdays - keep stock and staffing ahead of demand.`
+    : season === 'Medium Season'
+    ? `It's <b>medium (shoulder) season</b>: steady visitors without the peak crowds. Next up: ${nsTxt}${hiIn ? `, and high season in <b>${hiIn}</b> (${nextHigh.date.toLocaleDateString('en-GB', { day:'numeric', month:'short' })})` : ''}.`
+    : `It's <b>low season</b>, the wettest and quietest stretch, so <b>weekends carry the month</b>.${hiIn ? ` High season starts in <b>${hiIn}</b> (${nextHigh.date.toLocaleDateString('en-GB', { day:'numeric', month:'short' })}).` : ''} A good time for promos, staff training and deep cleans.`;
   const seasonCard = `<div class="fc-card"><div class="fc-ct">${fcIc('<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2"/>', '#FEF3C7', '#B45309')}${season}<small>${wet ? 'wet season' : 'dry season'}</small></div>
-    <div class="fc-months">${['J','F','M','A','M','J','J','A','S','O','N','D'].map((l, k) => `<div class="${hiMonths.includes(k + 1) ? 'hi' : ''}${k + 1 === m ? ' now' : ''}">${l}</div>`).join('')}</div>
+    <div class="fc-months">${['J','F','M','A','M','J','J','A','S','O','N','D'].map((l, k) => `<div class="${monthCls(k)}${k + 1 === m ? ' now' : ''}">${l}</div>`).join('')}</div>
+    <div class="fc-leg" style="margin-top:8px"><span><em style="background:#5EEAD4"></em>High</span><span><em style="background:#FDE68A"></em>Medium</span><span><em style="background:#E2E8F0"></em>Low</span><span style="color:#94A3B8">Peak 20 Dec - 5 Jan</span></div>
     <div class="fc-p">${seasonText}</div></div>`;
 
   // ── What to do ──
@@ -20348,7 +20392,7 @@ function predictorRenderBody(){
   const sum = (arr, key) => arr.reduce((a, x) => a + (x[key] || 0), 0);
   const pastDays = wk.filter(x => x.past && x.tyG != null);
   const chartSub = pastDays.length ? `${pastDays.length} day${pastDays.length === 1 ? '' : 's'} in: ${Math.round(sum(pastDays, 'tyG'))} guests vs ${Math.round(sum(pastDays, 'lyG'))} last year` : 'Last year\'s week, day by day';
-  const chartCard = `<div class="fc-card"><div class="fc-ct">${fcIc('<path d="M3 3v18h18"/><path d="M7 15l4-4 3 3 5-6"/>', '#E0F5F2', '#0D9488')}This week vs last year<small>${chartSub}</small></div>
+  const chartCard = `<div class="fc-card"><div class="fc-ct">${fcIc('<path d="M3 3v18h18"/><path d="M7 15l4-4 3 3 5-6"/>', '#E0F5F2', '#0D9488')}This week vs last year<small>${chartSub} · from your Data Entry</small></div>
     ${hasHistory ? `<div style="position:relative;height:270px;margin-top:14px"><canvas id="fc-week-chart"></canvas></div>
     <div class="fc-leg"><span><em style="background:#0D9488"></em>Guests (last year)</span><span><em style="background:#378ADD;height:3px;vertical-align:3px"></em>Revenue (last year)</span><span><em style="background:#B45252;border-radius:50%"></em>Spike</span><span><em style="background:#B7791F;border-radius:50%"></em>Dip</span><span style="margin-left:auto;color:#94A3B8">Tap a day to compare with this year</span></div>`
     : `<div class="fc-p">No sales history yet. Add past figures in <b>Data Entry</b> (or upload a spreadsheet) and this chart compares every day with last year.</div>`}</div>`;
@@ -20357,8 +20401,24 @@ function predictorRenderBody(){
 
   body.innerHTML = hero + emptyNote + nums + chartCard + stripCard + storyHtml
     + `<div class="fc-grid2">${whoCard}${seasonCard}</div>`
-    + todoCard;
+    + todoCard + fcSourcesCard();
   if(hasHistory) fcDrawChart();
+}
+function fcSourcesCard(){
+  const loc = predictorLocation();
+  const row = (a, b) => `<div style="display:flex;gap:12px;padding:9px 0;border-bottom:1px solid #F1F5F9"><b style="width:170px;flex-shrink:0;font-size:12.5px;color:#0F1E2E">${a}</b><span style="font-size:12.5px;color:#64748B;line-height:1.5">${b}</span></div>`;
+  return `<details class="fc-card" style="cursor:pointer"><summary class="fc-ct" style="list-style:none">${fcIc('<circle cx="12" cy="12" r="9"/><path d="M12 16v-4M12 8h.01"/>', '#F1F5F9', '#475569')}Where this forecast comes from<small>tap to open</small></summary><div style="margin-top:8px">
+    ${row('Busy / Steady / Quiet', 'Your guests on the same weekday last year (52 weeks ago), compared with your normal day. An Indonesian public holiday always counts as busy.')}
+    ${row('Spike / Dip', 'That day last year was far above or below a normal day of the same weekday.')}
+    ${row('Guests, revenue, graph', 'Your own figures from Data Entry (last year, and this year where entered).')}
+    ${row('Weather', 'Open-Meteo forecast for ' + fcEsc(loc.name) + '. Rain chance is the average across the day; a day only counts as rainy when at least 1mm of rain is expected.')}
+    ${row('Wet / Dry', 'Wet season November to March; "Turning wet" when most of the coming week expects rain.')}
+    ${row('High / Medium / Low', 'Bali tourism seasons from Lonely Planet and Bali travel sources: High 1 Jul-31 Aug and 20 Dec-5 Jan; Medium Apr-Jun and Sep-Oct; Low the rest.')}
+    ${row('Public holidays', 'Nager.Date public holiday calendar for 12 countries.')}
+    ${row('School holidays', 'Approximate school holiday dates per country, kept in Mavis.')}
+    ${row('Currency', 'European Central Bank exchange rates: today vs 90 days ago. More than 1% up = strong, down = weak.')}
+    ${row('Who\'s likely to travel', 'A guide built from the holidays and currency above - not booking or arrival data.')}
+  </div></details>`;
 }
 let fcChart = null;
 // This week vs last year: guests (teal, filled) and revenue (blue, dashed) on one graph, each on its own scale.

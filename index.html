@@ -18304,6 +18304,7 @@ async function suggestionLoadFromSupabase(){
 // ── ANALYTICS & REPORTING ──
 let businessMetrics = [];
 
+let businessMetricsLoadedAt = 0;
 async function businessMetricsLoadFromSupabase(){
   try{
     // A Supabase project also enforces its own server-side max-rows cap (defaulting to
@@ -18312,17 +18313,31 @@ async function businessMetricsLoadFromSupabase(){
     // in pages via .range(), looping until a page comes back short of a full page) works
     // regardless of whatever that server-side cap actually is, rather than hoping a single
     // large request gets through uncapped.
-    let all = [];
-    let from = 0;
+    // The first page also says how many rows there are, so the remaining pages load at the same time.
     const pageSize = 1000;
-    while(true){
-      const { data, error } = await sb.from('business_metrics').select('*').order('period_date', { ascending: true }).range(from, from+pageSize-1);
-      if(error) throw error;
-      all = all.concat(data || []);
-      if(!data || data.length < pageSize) break;
-      from += pageSize;
+    const page = from => sb.from('business_metrics').select('*', from === 0 ? { count:'exact' } : undefined).order('period_date', { ascending: true }).order('id', { ascending: true }).range(from, from+pageSize-1);
+    const first = await page(0);
+    if(first.error) throw first.error;
+    let all = first.data || [];
+    const total = typeof first.count === 'number' ? first.count : null;
+    if(total !== null && total > all.length){
+      const rest = [];
+      for(let f = pageSize; f < total; f += pageSize) rest.push(page(f));
+      const res = await Promise.all(rest);
+      for(const r of res){ if(r.error) throw r.error; all = all.concat(r.data || []); }
+    } else if(total === null && all.length === pageSize){
+      // count not available: fall back to one page at a time
+      let from = pageSize;
+      while(true){
+        const { data, error } = await page(from);
+        if(error) throw error;
+        all = all.concat(data || []);
+        if(!data || data.length < pageSize) break;
+        from += pageSize;
+      }
     }
     businessMetrics = all;
+    businessMetricsLoadedAt = Date.now();
     businessMetricsDedupe();
   } catch(e){
     console.warn('Business Metrics table not reachable yet (run the SQL if this is the first load)', e);
@@ -19784,28 +19799,49 @@ function predictorSeason(date){
   return (m === 7 || m === 8 || m === 12) ? 'High Season' : 'Low Season';
 }
 
+// Outside data (holidays, weather, currency) is kept on the phone for a while, and any slow
+// service is given up on after 6 seconds, so Forecast never waits on one slow website.
+function predictorCacheGet(k, maxAgeMs){
+  try{ const v = JSON.parse(localStorage.getItem('mvPred_' + k) || 'null'); if(v && Date.now() - v.t < maxAgeMs) return v.d; }catch(e){}
+  return null;
+}
+function predictorCacheSet(k, d){ try{ localStorage.setItem('mvPred_' + k, JSON.stringify({ t: Date.now(), d })); }catch(e){} }
+function predictorFetch(url){
+  const ctl = typeof AbortController === 'function' ? new AbortController() : null;
+  const timer = setTimeout(() => { if(ctl) ctl.abort(); }, 6000);
+  return fetch(url, ctl ? { signal: ctl.signal } : undefined).finally(() => clearTimeout(timer));
+}
 async function predictorFetchHolidays(){
   const year = new Date().getFullYear();
+  const cached = predictorCacheGet('hol' + year, 7 * 86400000);
+  if(cached) return cached;
   const results = {};
+  let allOk = true;
   await Promise.all(PREDICTOR_COUNTRIES.map(async c => {
     try{
-      const res = await fetch('https://date.nager.at/api/v3/PublicHolidays/'+year+'/'+c.code);
+      const res = await predictorFetch('https://date.nager.at/api/v3/PublicHolidays/'+year+'/'+c.code);
       if(!res.ok) throw new Error('bad response');
       results[c.code] = await res.json();
     } catch(e){
       console.warn('Holiday fetch failed for '+c.code, e);
       results[c.code] = [];
+      allOk = false;
     }
   }));
+  if(allOk) predictorCacheSet('hol' + year, results);
   return results;
 }
 
 async function predictorFetchWeather(){
   // Bali/Denpasar coordinates
+  const cached = predictorCacheGet('wx', 3 * 3600000);
+  if(cached) return cached;
   try{
-    const res = await fetch('https://api.open-meteo.com/v1/forecast?latitude=-8.65&longitude=115.22&daily=weathercode,temperature_2m_max,precipitation_probability_max&timezone=Asia%2FSingapore&forecast_days=8');
+    const res = await predictorFetch('https://api.open-meteo.com/v1/forecast?latitude=-8.65&longitude=115.22&daily=weathercode,temperature_2m_max,precipitation_probability_max&timezone=Asia%2FSingapore&forecast_days=8');
     if(!res.ok) throw new Error('bad response');
-    return await res.json();
+    const d = await res.json();
+    predictorCacheSet('wx', d);
+    return d;
   } catch(e){
     console.warn('Weather fetch failed', e);
     return null;
@@ -19817,11 +19853,13 @@ async function predictorFetchCurrency(){
   const today = predictorDateStr(new Date());
   const past = predictorDateStr(new Date(Date.now() - 90*86400000));
   const codes = [...new Set(PREDICTOR_COUNTRIES.map(c => c.currency))].filter(c => c !== 'IDR');
+  const cached = predictorCacheGet('fx' + today, 86400000);
+  if(cached) return cached;
   const results = {};
   try{
     const [nowRes, pastRes] = await Promise.all([
-      fetch('https://api.frankfurter.dev/v1/'+today+'?base=IDR&symbols='+codes.join(',')),
-      fetch('https://api.frankfurter.dev/v1/'+past+'?base=IDR&symbols='+codes.join(','))
+      predictorFetch('https://api.frankfurter.dev/v1/'+today+'?base=IDR&symbols='+codes.join(',')),
+      predictorFetch('https://api.frankfurter.dev/v1/'+past+'?base=IDR&symbols='+codes.join(','))
     ]);
     const nowData = nowRes.ok ? await nowRes.json() : null;
     const pastData = pastRes.ok ? await pastRes.json() : null;
@@ -19843,6 +19881,7 @@ async function predictorFetchCurrency(){
         results[code] = { pctChange: 0, strength: 'Unknown' };
       }
     });
+    if(Object.values(results).some(r => r.strength !== 'Unknown')) predictorCacheSet('fx' + today, results);
   } catch(e){
     console.warn('Currency fetch failed', e);
   }
@@ -19856,7 +19895,7 @@ async function predictorLoadAll(){
   // from it - this page shouldn't silently depend on the app-init load (or a prior visit to
   // Analytics) having already finished by the time someone opens Predictor directly.
   const [holidays, weather, currency] = await Promise.all([
-    predictorFetchHolidays(), predictorFetchWeather(), predictorFetchCurrency(), businessMetricsLoadFromSupabase()
+    predictorFetchHolidays(), predictorFetchWeather(), predictorFetchCurrency(), (businessMetrics && businessMetrics.length && Date.now() - businessMetricsLoadedAt < 5 * 60000) ? Promise.resolve() : businessMetricsLoadFromSupabase()
   ]);
   predictorData = { holidays, weather, currency, loaded: true };
   document.getElementById('predictor-loading').style.display = 'none';

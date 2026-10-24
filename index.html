@@ -23117,9 +23117,14 @@ async function chatStart(force){
   chat2RefreshAll();
   if(chatActiveId && CH.threads[chatActiveId]) chatRenderMessages();
 }
-async function chat2ReloadThreads(){
-  const [th, mem] = await Promise.all([sb.from('chat_threads').select('*'), sb.from('chat_members').select('*')]);
+async function chat2ReloadThreads(withPeople){
+  // withPeople: also re-read everyone's departments and make sure every department has its chat
+  // (after someone is tagged with a new department in People, its chat appears straight away)
+  if(withPeople){ try{ await sb.rpc('chat_sync'); }catch(e){} }
+  const [th, mem, pp] = await Promise.all([sb.from('chat_threads').select('*'), sb.from('chat_members').select('*'),
+    withPeople && myProfile ? sb.from('profiles').select('*').eq('company_id', myProfile.company_id) : Promise.resolve(null)]);
   if(th.error) return;
+  if(pp && !pp.error && pp.data){ CH.people = {}; pp.data.forEach(p => CH.people[p.id] = p); }
   CH.threads = {}; (th.data || []).forEach(t => CH.threads[t.id] = t);
   CH.members = {}; (mem.data || []).forEach(m => (CH.members[m.thread_id] = CH.members[m.thread_id] || []).push(m.profile_id));
   chat2RefreshAll();
@@ -24446,6 +24451,7 @@ window.chatInit = function(){
   const s = document.getElementById('chat-search');
   if(s) s.oninput = chatRenderList;
   if(!CH.started || CH.notReady) chatStart(true);
+  else chat2ReloadThreads(true);   // pick up department / people changes made since chat was first loaded
   chat2RefreshAll();
   if(chatActiveId && CH.threads[chatActiveId] && window.innerWidth > 700){ chat2MarkRead(chatActiveId); chatRenderMessages(); }
   window.scrollTo(0, 0);

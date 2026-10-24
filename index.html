@@ -1625,6 +1625,8 @@ textarea.rf-val{resize:vertical;min-height:72px;line-height:1.5}
 }
 /* View-only events: hide every editing control and the money boxes */
 body.ev-viewonly [onclick*="beoCreateNew"],
+body.ev-viewonly .pnl-open{display:none!important}
+@media(max-width:700px){.beo-hd-bottom:has(.pnl-open){flex-wrap:wrap}.beo-hd-bottom .pnl-open{width:100%;justify-content:center;margin-top:12px}}
 body.ev-viewonly #p-beo [onclick^="delRow"], body.ev-viewonly #p-beo .del-row,
 body.ev-viewonly #p-beo .add-row-btn, body.ev-viewonly #p-beo [onclick^="addDepartment"],
 body.ev-viewonly #p-beo [onclick^="beoRemoveDept"], body.ev-viewonly #p-beo [onclick^="beoToggleDeptClient"],
@@ -4243,6 +4245,7 @@ img.emoji-tw{width:1.15em;height:1.15em;vertical-align:-0.2em;margin:0 1px}
                 <div class="beo-event-title">Horizon Tech Summit 2026 — Welcome Dinner</div>
               </div>
               <div class="beo-share" id="beo-client-pill" onclick="beoClientShareOpen()" style="display:none">Client link on</div>
+              <button class="pnl-open" onclick="pnlOpen()" style="display:inline-flex;align-items:center;gap:10px;background:linear-gradient(135deg,#14B8A6,#0D9488);color:white;border:0;border-radius:14px;padding:12px 18px;font:800 15px Inter,sans-serif;cursor:pointer;box-shadow:0 8px 22px rgba(13,148,136,.35)"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="3"/><path d="M3 9h18M9 21V9"/></svg><span>P&amp;L<small style="display:block;font-size:10.5px;font-weight:700;opacity:.85;text-align:left">Budget &amp; numbers</small></span></button>
             </div>
           </div>
 
@@ -6765,6 +6768,22 @@ function evDemoDeptsHtml(lists, base){
   wrap.querySelectorAll('.dept-pic-name').forEach((n, i) => { if(!n.textContent.trim() && EV_DEMO_PICS[i]) n.textContent = EV_DEMO_PICS[i]; });
   return wrap.innerHTML;
 }
+const pnlR = (item, qty, unit, actual, status, note) => ({ item, qty, unit, actual, status, note: note || '' });
+const EV_DEMO_PNL = {
+  'Solaris Beach Festival': { cats: [
+    { title:'Ticket sales & bar', income:true, color:'#14B8A6', rows:[pnlR('Tickets - 860 x Rp 450.000', 860, 450000, null, 'c', 'Forecast'), pnlR('Bar & food sales', 1, 33000000, null, 'c', 'Estimate')] },
+    { title:'Sponsors', income:true, color:'#22C55E', rows:[pnlR('Bintang - main sponsor', 1, 25000000, 25000000, 'p', 'Logo on stage screen')] },
+    { title:'Entertainment', income:false, color:'#8B5CF6', rows:[pnlR('DJ John Smith - headliner', 1, 18000000, 18000000, 'p', '2-hour set'), pnlR('DJ 2 - sunset set', 1, 9000000, 9500000, 'c', '+ flights'), pnlR('Magician', 2, 3750000, null, 'q', '2 x 45 min walkabout')] },
+    { title:'Production', income:false, color:'#0EA5E9', rows:[pnlR('Stage rental', 1, 35000000, 32000000, 'c', 'Discount agreed'), pnlR('Sound & lighting', 1, 48000000, null, 'c', ''), pnlR('Generator', 1, 6500000, null, 'q', '')] },
+    { title:'Staff & Security', income:false, color:'#64748B', rows:[pnlR('Extra security guards', 24, 450000, null, 'c', ''), pnlR('Medics & ambulance', 1, 7500000, null, 'q', '')] }
+  ] },
+  'Horizon Tech Summit 2026 — Welcome Dinner': { cats: [
+    { title:'Client package', income:true, color:'#14B8A6', rows:[pnlR('Dinner package - 180 x Rp 950.000', 180, 950000, null, 'c', ''), pnlR('Open bar upgrade', 180, 78000, null, 'c', '')] },
+    { title:'Food & Drink', income:false, color:'#F59E0B', rows:[pnlR('Food cost - 3 courses', 180, 210000, null, 'c', ''), pnlR('Drinks cost', 1, 9500000, null, 'q', '')] },
+    { title:'Entertainment', income:false, color:'#8B5CF6', rows:[pnlR('Live band', 1, 15000000, 15000000, 'p', ''), pnlR('MC', 1, 5000000, null, 'c', '')] },
+    { title:'Décor & Flowers', income:false, color:'#EC4899', rows:[pnlR('Centrepieces', 18, 350000, null, 'c', ''), pnlR('Welcome arch', 1, 4500000, null, 'q', '')] }
+  ] }
+};
 // Demo company only: fill in departments (and owners) on demo events that are still blank.
 async function evDemoTopUp(rows){
   if(!BEO_TEMPLATE || !appIsDemoCompany()) return;
@@ -6776,7 +6795,10 @@ async function evDemoTopUp(rows){
     const bodies = [...w.querySelectorAll('.dept-body')], pics = [...w.querySelectorAll('.dept-pic-name')];
     const blankBodies = bodies.length && bodies.every(b => /^\s*(Type department notes here…)?\s*$/.test(b.textContent));
     const blankPics = pics.length && pics.every(n => !n.textContent.trim());
-    if(!blankBodies && !blankPics) continue;
+    const needPnl = EV_DEMO_PNL[row.name] && !(plan.pnl && Array.isArray(plan.pnl.cats));
+    if(!blankBodies && !blankPics && !needPnl){ continue; }
+    if(!blankBodies && !blankPics){ row.plan = Object.assign({}, plan, { pnl: EV_DEMO_PNL[row.name] }); try { await sb.from('events').update({ plan: row.plan }).eq('id', row.id); } catch(e){} continue; }
+    if(needPnl) plan.pnl = EV_DEMO_PNL[row.name];
     const depts = evDemoDeptsHtml(blankBodies ? EV_DEMO_DEPTS[row.name] : null, blankBodies && EV_DEMO_DEPTS[row.name] ? BEO_TEMPLATE.depts : plan.depts);
     row.plan = Object.assign({}, plan, { depts });
     try { await sb.from('events').update({ plan: row.plan }).eq('id', row.id); } catch(e){}
@@ -6964,6 +6986,301 @@ function beoApplyViewOnly(){
   page.querySelectorAll('[contenteditable]').forEach(el => el.setAttribute('contenteditable', ro ? 'false' : 'true'));
   page.querySelectorAll('input, select, textarea').forEach(el => { if(ro) el.setAttribute('disabled',''); else el.removeAttribute('disabled'); });
 }
+// ── EVENT P&L: budget & number crunching, opened from the big P&L button on an event plan ──
+// Saved inside the event's plan (plan.pnl). Categories (Entertainment, Sponsors…) each hold an
+// Excel-style grid. Money in adds, money out subtracts. The header Revenue / Vendor Costs / Net
+// Profit fill themselves in from it. Hidden from the client page (client_view never includes it).
+let beoPnl = null, PNL = { cats: [], sel: null, editing: null };
+const PNL_COLORS = ['#14B8A6','#8B5CF6','#0EA5E9','#EC4899','#F59E0B','#C4973B','#64748B','#22C55E','#EF4444'];
+const PNL_STATUS = { q:'Quote', c:'Confirmed', p:'Paid' };
+const PNL_COLS = [['item','Item','text'],['qty','Qty','num','r'],['unit','Unit cost','num','r'],['budget','Budget','calc','r'],['actual','Actual','num','r'],['diff','Difference','calc','r'],['status','Status','status'],['note','Notes','text']];
+const pnlBlank = () => ({ item:'', qty:null, unit:null, actual:null, status:'q', note:'' });
+const pnlFmt = v => (v == null || v === '' || isNaN(v)) ? '' : Math.round(v).toLocaleString('id-ID');
+const pnlRp = v => 'Rp ' + pnlFmt(v || 0);
+const pnlShort = v => { const a = Math.abs(v), s = v < 0 ? '-' : ''; return s + (a >= 1e9 ? (a/1e9).toFixed(2).replace(/\.?0+$/,'') + 'B' : a >= 1e6 ? (a/1e6).toFixed(1).replace(/\.0$/,'') + 'M' : pnlFmt(a)); };
+const pnlBig = v => window.innerWidth <= 700 ? 'Rp ' + pnlShort(v) : pnlRp(v);
+const pnlNum = t => { const s = String(t).replace(/rp|idr|\s/gi,''); if(!/\d/.test(s)) return null; const n = Number(s.replace(/[.,](?=\d{3}(\D|$))/g,'').replace(',','.')); return isFinite(n) ? n : null; };
+const pnlEsc = t => String(t == null ? '' : t).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const pnlBud = r => (r.qty == null && r.unit == null) ? 0 : (Number(r.qty == null ? 1 : r.qty) || 0) * (Number(r.unit) || 0);
+const pnlEff = r => r.actual == null || r.actual === '' ? pnlBud(r) : Number(r.actual) || 0;
+const pnlDif = (r, inc) => r.actual == null || r.actual === '' ? null : (inc ? r.actual - pnlBud(r) : pnlBud(r) - r.actual);
+function pnlTotals(cats){
+  const T = { inB:0, inA:0, outB:0, outA:0, unpaid:0 };
+  (cats || []).forEach(c => (c.rows || []).forEach(r => { const b = pnlBud(r), a = pnlEff(r); if(c.income){ T.inB += b; T.inA += a; } else { T.outB += b; T.outA += a; if(r.status !== 'p') T.unpaid += a; } }));
+  return T;
+}
+function pnlHasData(p){ return !!(p && Array.isArray(p.cats) && p.cats.some(c => (c.rows || []).some(r => pnlBud(r) || r.actual))); }
+// Header numbers come from the P&L once it has figures
+function pnlSyncHeader(){
+  if(!pnlHasData(beoPnl)) return;
+  const T = pnlTotals(beoPnl.cats);
+  const set = (id, v) => { const el = document.getElementById(id); if(el) el.textContent = evMoney(v); };
+  set('stat-rev', T.inA); set('stat-cost', T.outA);
+  if(typeof beoUpdateProfit === 'function') beoUpdateProfit();
+}
+function pnlDefault(){
+  return { cats: [
+    { title:'Ticket sales & income', income:true, color:'#14B8A6', rows:[pnlBlank(), pnlBlank()] },
+    { title:'Entertainment', income:false, color:'#8B5CF6', rows:[pnlBlank(), pnlBlank(), pnlBlank(), pnlBlank(), pnlBlank()] }
+  ] };
+}
+function pnlEnsureUi(){
+  if(document.getElementById('pnl-ov')) return;
+  const st = document.createElement('style');
+  st.textContent = `
+.pnl-open{display:inline-flex;align-items:center;gap:10px;background:linear-gradient(135deg,#14B8A6,#0D9488);color:white;border:0;border-radius:14px;padding:12px 18px;font:800 15px Inter,sans-serif;cursor:pointer;box-shadow:0 8px 22px rgba(13,148,136,.35);white-space:nowrap;flex:none}
+.pnl-open small{display:block;font-size:10.5px;font-weight:700;opacity:.85;text-align:left}
+body.ev-viewonly .pnl-open{display:none!important}
+#pnl-ov{position:fixed;inset:0;background:rgba(15,30,46,.55);display:none;align-items:center;justify-content:center;z-index:10050;padding:20px}
+#pnl-ov.on{display:flex}
+.pnl-pop{background:#F7F8FA;width:min(1180px,94vw);height:min(90vh,980px);border-radius:22px;display:flex;flex-direction:column;overflow:hidden;box-shadow:0 30px 80px rgba(0,0,0,.35);font-family:Inter,sans-serif;color:#0F1E2E}
+.pnl-top{background:#0F1E2E;color:white;padding:18px 24px 16px;flex:none}
+.pnl-top .r1{display:flex;align-items:center;gap:12px}
+.pnl-top small{color:#5EEAD4;font-weight:800;letter-spacing:2px;font-size:11px}
+.pnl-top h2{margin:2px 0 0;font-size:21px;letter-spacing:-.3px}
+.pnl-x{margin-left:auto;width:38px;height:38px;border-radius:50%;border:0;background:rgba(255,255,255,.1);color:white;font-size:20px;cursor:pointer;flex:none}
+.pnl-sum{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:14px}
+.pnl-tile{border-radius:12px;padding:10px 14px;background:rgba(255,255,255,.06)}
+.pnl-tile small{font-size:10px;color:#94A3B8;letter-spacing:1px}
+.pnl-tile b{display:block;font-size:19px;margin-top:2px}
+.pnl-tile em{font-style:normal;font-size:11px;color:#94A3B8;font-weight:600}
+.pnl-body{flex:1;overflow:auto;padding:18px 24px 30px}
+.pnl-hint{font-size:11.5px;color:#94A3B8;font-weight:600;margin:0 2px 12px}
+.pnl-cat{background:white;border:1px solid #DDE2E9;border-radius:14px;margin-bottom:14px;overflow:hidden}
+.pnl-cath{display:flex;align-items:center;gap:10px;padding:11px 14px;border-bottom:1px solid #E6EAF0}
+.pnl-dot{width:12px;height:12px;border-radius:4px;flex:none}
+.pnl-t{font-size:15px;font-weight:800;outline:none;border-radius:6px;padding:2px 6px;margin:-2px -6px;min-width:60px}
+.pnl-t:focus{background:#FFFDF5;box-shadow:0 0 0 2px #0D9488}
+.pnl-t:empty::before{content:'Type a name…';color:#CBD5E1}
+.pnl-kind{font-size:10.5px;font-weight:800;letter-spacing:.6px;border-radius:20px;padding:3px 9px;cursor:pointer;border:0}
+.pnl-kind.out{background:#FBEAE8;color:#A43F38}.pnl-kind.in{background:#E0F5F2;color:#0F766E}
+.pnl-sub{margin-left:auto;font-weight:800;font-size:14px}
+.pnl-del{border:0;background:none;color:#CBD5E1;font-size:18px;cursor:pointer;width:26px;height:26px;border-radius:6px}
+.pnl-del:hover{background:#FBEAE8;color:#C0524A}
+.pnl-gw{overflow-x:auto}
+table.pnl-g{border-collapse:separate;border-spacing:0;width:100%;min-width:900px;font-size:13.5px;table-layout:fixed}
+.pnl-g th,.pnl-g td{border-right:1px solid #E6EAF0;border-bottom:1px solid #E6EAF0;height:38px;padding:0 10px;white-space:nowrap;position:relative;overflow:hidden;text-overflow:ellipsis}
+.pnl-g th:last-child,.pnl-g td:last-child{border-right:0}
+.pnl-g th{background:#FAFBFC;font-size:10px;font-weight:800;letter-spacing:.9px;text-transform:uppercase;color:#7B8798;text-align:left;height:30px}
+.pnl-g .r{text-align:right}
+.pnl-g td{background:white;cursor:cell;font-variant-numeric:tabular-nums}
+.pnl-g td.calc{background:#FAFBFC;font-weight:700;color:#334155;cursor:default}
+.pnl-g td.sel{box-shadow:inset 0 0 0 2px #0D9488;overflow:visible}
+.pnl-g td input,.pnl-g td select{position:absolute;inset:0;width:100%;height:100%;border:0;outline:0;font:inherit;padding:0 10px;background:#FFFDF5;box-shadow:inset 0 0 0 2px #0D9488;text-align:inherit}
+.pnl-g tr.st td{background:#F6F8FA;font-weight:800;cursor:default;border-bottom:0}
+.pnl-rd{position:absolute;right:4px;top:50%;transform:translateY(-50%);border:0;background:none;color:#CBD5E1;cursor:pointer;font-size:15px;width:22px;height:22px;border-radius:6px;display:none}
+.pnl-g tr:hover .pnl-rd{display:block}
+.pnl-addr{padding:8px 14px;font-size:12.5px;font-weight:700;color:#94A3B8;cursor:pointer}
+.pnl-addr:hover{color:#0D9488}
+.pnl-pos{color:#0F766E}.pnl-neg{color:#C0524A}.pnl-mut{color:#A3AEBD;font-weight:600}
+.pnl-pill{font-size:11px;font-weight:800;border-radius:20px;padding:3px 9px}
+.pnl-p-q{background:#F1F5F9;color:#475569}.pnl-p-c{background:#F7EEDC;color:#8A6420}.pnl-p-p{background:#E0F5F2;color:#0F766E}
+.pnl-addcat{border:1.5px dashed #CBD5E1;border-radius:14px;padding:14px;background:white;margin-bottom:16px}
+.pnl-addcat b{display:block;font-size:12px;color:#475569;margin-bottom:9px}
+.pnl-chips{display:flex;flex-wrap:wrap;gap:7px}
+.pnl-chip{border:1.5px solid #E6EAF0;background:white;border-radius:20px;padding:7px 13px;font:700 12.5px Inter,sans-serif;color:#475569;cursor:pointer}
+.pnl-chip:hover{border-color:#0D9488;color:#0D9488}
+.pnl-chip.in{border-color:#99F6E4;color:#0F766E}.pnl-chip.oth{border-style:dashed;border-color:#0D9488;color:#0D9488}
+.pnl-grand{background:white;border:1px solid #DDE2E9;border-radius:14px;overflow:hidden}
+.pnl-grand .l{display:flex;justify-content:space-between;align-items:center;padding:12px 16px;border-bottom:1px solid #E6EAF0;font-weight:700;font-size:14px}
+.pnl-grand .l.pr{background:#0F1E2E;color:white;font-size:17px;font-weight:800;border:0}
+.pnl-foot{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-top:14px;font-size:12px;color:#94A3B8;font-weight:600}
+.pnl-btn{border:1.5px solid #E6EAF0;background:white;border-radius:10px;padding:8px 13px;font:700 12.5px Inter,sans-serif;color:#0F1E2E;cursor:pointer}
+@media(max-width:700px){
+ .beo-hd-bottom:has(.pnl-open){flex-wrap:wrap}.pnl-open{width:100%;justify-content:center;margin-top:10px}
+ #pnl-ov{padding:0}.pnl-pop{width:100vw;height:100%;border-radius:0}
+ .pnl-top{padding:14px 16px}.pnl-sum{grid-template-columns:1fr 1fr}.pnl-tile b{font-size:16px}
+ .pnl-body{padding:14px 10px 24px}.pnl-hint{display:none}
+ .pnl-g td.c0,.pnl-g th.c0{position:sticky;left:0;z-index:1;box-shadow:2px 0 0 #E6EAF0}
+ table.pnl-g{min-width:1000px}
+ .pnl-cath{flex-wrap:wrap;row-gap:6px}.pnl-t{flex:1 1 calc(100% - 60px)}.pnl-del{order:1}.pnl-kind{order:2;margin-left:22px}.pnl-sub{order:3}
+}`;
+  document.head.appendChild(st);
+  const ov = document.createElement('div'); ov.id = 'pnl-ov';
+  ov.innerHTML = `<div class="pnl-pop"><div class="pnl-top"><div class="r1"><div><small id="pnl-ev">P&amp;L</small><h2>Budget &amp; number crunching</h2></div><button class="pnl-x" onclick="pnlClose()" title="Close">×</button></div>
+    <div class="pnl-sum"><div class="pnl-tile"><small>MONEY IN</small><b id="pnl-s-in" style="color:#2DD4BF">-</b><em id="pnl-s-in2"></em></div><div class="pnl-tile"><small>MONEY OUT</small><b id="pnl-s-out" style="color:#F87171">-</b><em id="pnl-s-out2"></em></div><div class="pnl-tile"><small>PROFIT</small><b id="pnl-s-pr" style="color:#4ADE80">-</b><em id="pnl-s-pr2"></em></div><div class="pnl-tile"><small>VS BUDGET</small><b id="pnl-s-v">-</b><em id="pnl-s-v2"></em></div></div></div>
+    <div class="pnl-body" id="pnl-body"><div class="pnl-hint">Works like Excel: click a cell and type · Enter goes down · Tab goes right · arrows to move · Ctrl+V pastes rows from Excel · grey columns work themselves out</div>
+    <div id="pnl-cats"></div>
+    <div class="pnl-addcat"><b>+ ADD A CATEGORY</b><div class="pnl-chips">${['Entertainment','Production','Décor & Flowers','Food & Drink','Marketing','Staff & Security'].map(n => `<button class="pnl-chip" onclick="pnlAddCat('${n}')">${n.replace('&','&amp;')}</button>`).join('')}<button class="pnl-chip in" onclick="pnlAddCat('Sponsors', true)">+ Sponsors (money in)</button><button class="pnl-chip oth" onclick="pnlAddCat('', false, true)">+ Other… (name it yourself)</button></div></div>
+    <div class="pnl-grand" id="pnl-grand"></div>
+    <div class="pnl-foot"><span>Hidden from the client page · saves automatically <span id="pnl-saved"></span></span><span style="display:flex;gap:8px"><button class="pnl-btn" onclick="pnlCopyFrom()">Copy from another event</button><button class="pnl-btn" onclick="pnlDownload()">Download Excel</button></span></div></div></div>`;
+  ov.addEventListener('mousedown', e => { if(e.target === ov) pnlClose(); });
+  document.body.appendChild(ov);
+  const C = document.getElementById('pnl-cats');
+  C.addEventListener('mousedown', e => {
+    const t = e.target.closest('td[data-c]'); if(!t || e.target.closest('input,select,.pnl-rd')) return;
+    const s = +t.dataset.s, r = +t.dataset.r, c = +t.dataset.c; e.preventDefault();
+    if(PNL.sel && PNL.sel.s === s && PNL.sel.r === r && PNL.sel.c === c && !PNL.editing){ pnlEdit(); return; }
+    if(PNL.editing) PNL.editing.blur();
+    if(document.activeElement && document.activeElement !== document.body) document.activeElement.blur();
+    pnlSelect(s, r, c);
+  });
+  C.addEventListener('dblclick', e => { if(e.target.closest('td[data-c]') && !PNL.editing) pnlEdit(); });
+  document.addEventListener('keydown', pnlKey);
+  document.addEventListener('paste', pnlPaste);
+}
+function pnlRender(){
+  const ro = typeof evViewOnly === 'function' && evViewOnly();
+  let h = '';
+  PNL.cats.forEach((c, si) => {
+    const subB = c.rows.reduce((s, r) => s + pnlBud(r), 0), subA = c.rows.reduce((s, r) => s + pnlEff(r), 0);
+    const d = c.income ? subA - subB : subB - subA;
+    h += `<div class="pnl-cat"><div class="pnl-cath"><i class="pnl-dot" style="background:${c.color}"></i>
+      <span class="pnl-t" contenteditable="${ro ? 'false' : 'true'}" data-s="${si}" onblur="pnlTitle(${si}, this.textContent)" onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur()}">${pnlEsc(c.title)}</span>
+      <button class="pnl-kind ${c.income ? 'in' : 'out'}" onclick="pnlKind(${si})" title="Tap to switch">${c.income ? '▲ MONEY IN' : '▼ MONEY OUT'}</button>
+      <span class="pnl-sub ${c.income ? 'pnl-pos' : ''}">${c.income ? '+' : '−'} ${pnlBig(subA)}</span>
+      <button class="pnl-del" title="Remove category" onclick="pnlDelCat(${si})">×</button></div>
+      <div class="pnl-gw"><table class="pnl-g"><thead><tr>${PNL_COLS.map((col, ci) => `<th class="${col[3] || ''} ${ci === 0 ? 'c0' : ''}" style="width:${['25%','6%','11%','11%','11%','10%','11%','15%'][ci]}">${col[1]}</th>`).join('')}</tr></thead><tbody>`;
+    c.rows.forEach((r, ri) => {
+      h += '<tr>' + PNL_COLS.map((col, ci) => `<td class="${col[3] || ''} ${col[2] === 'calc' ? 'calc' : ''} ${ci === 0 ? 'c0' : ''}" data-s="${si}" data-r="${ri}" data-c="${ci}">${pnlCell(r, ci, c.income)}${ci === PNL_COLS.length - 1 ? `<button class="pnl-rd" title="Delete row" onclick="event.stopPropagation();pnlDelRow(${si},${ri})">×</button>` : ''}</td>`).join('') + '</tr>';
+    });
+    h += `<tr class="st"><td class="c0">Subtotal</td><td></td><td></td><td class="r">${pnlFmt(subB)}</td><td class="r">${pnlFmt(subA)}</td><td class="r">${d === 0 ? '<span class="pnl-mut">0</span>' : `<span class="${d > 0 ? 'pnl-pos' : 'pnl-neg'}">${d > 0 ? '+' : '−'}${pnlFmt(Math.abs(d))}</span>`}</td><td></td><td></td></tr></tbody></table></div><div class="pnl-addr" onclick="pnlAddRow(${si})">+ Add row</div></div>`;
+  });
+  document.getElementById('pnl-cats').innerHTML = h;
+  pnlTotalsUi();
+  if(PNL.sel) pnlSelect(PNL.sel.s, PNL.sel.r, PNL.sel.c, true);
+}
+function pnlCell(r, ci, inc){
+  const [k,, t] = PNL_COLS[ci];
+  if(k === 'budget') return pnlFmt(pnlBud(r));
+  if(k === 'diff'){ const d = pnlDif(r, inc); return d == null ? '' : d === 0 ? '<span class="pnl-mut">0</span>' : `<span class="${d > 0 ? 'pnl-pos' : 'pnl-neg'}">${d > 0 ? '+' : '−'}${pnlFmt(Math.abs(d))}</span>`; }
+  if(k === 'actual' && (r.actual == null || r.actual === '')) return pnlBud(r) ? `<span class="pnl-mut" title="No final figure yet - the budget is used">${pnlFmt(pnlBud(r))}</span>` : '';
+  if(t === 'num') return pnlFmt(r[k]);
+  if(t === 'status') return r.item || pnlBud(r) ? `<span class="pnl-pill pnl-p-${PNL_STATUS[r.status] ? r.status : 'q'}">${PNL_STATUS[r.status] || 'Quote'}</span>` : '';
+  return pnlEsc(r[k]);
+}
+function pnlTotalsUi(){
+  const T = pnlTotals(PNL.cats), pr = T.inA - T.outA, m = T.inA ? Math.round(pr / T.inA * 100) : 0;
+  const set = (id, v) => { const el = document.getElementById(id); if(el) el.textContent = v; };
+  set('pnl-s-in', pnlBig(T.inA)); set('pnl-s-in2', PNL.cats.filter(c => c.income).length + ' categories');
+  set('pnl-s-out', pnlBig(T.outA)); set('pnl-s-out2', 'Still to pay ' + pnlBig(T.unpaid));
+  set('pnl-s-pr', pnlBig(pr)); set('pnl-s-pr2', m + '% margin');
+  const over = T.outA - T.outB; set('pnl-s-v', over ? pnlBig(Math.abs(over)) : 'On budget');
+  set('pnl-s-v2', over > 0 ? 'over budget on costs' : over < 0 ? 'under budget on costs' : 'costs match the budget');
+  document.getElementById('pnl-s-v').style.color = over > 0 ? '#F87171' : '#4ADE80';
+  document.getElementById('pnl-s-pr').style.color = pr < 0 ? '#F87171' : '#4ADE80';
+  document.getElementById('pnl-grand').innerHTML = PNL.cats.map(c => `<div class="l"><span style="color:#475569">${pnlEsc(c.title || 'Untitled')}</span><span class="${c.income ? 'pnl-pos' : ''}">${c.income ? '+' : '−'} ${pnlRp(c.rows.reduce((s, r) => s + pnlEff(r), 0))}</span></div>`).join('')
+    + `<div class="l"><b>Total money in</b><b class="pnl-pos">${pnlRp(T.inA)}</b></div><div class="l"><b>Total money out</b><b>${pnlRp(T.outA)}</b></div>`
+    + `<div class="l pr"><span style="color:#5EEAD4">PROFIT · ${m}% margin</span><span style="color:${pr < 0 ? '#F87171' : '#4ADE80'}">${pnlRp(pr)}</span></div>`;
+}
+function pnlTd(){ const s = PNL.sel; return s && document.querySelector(`#pnl-cats td[data-s="${s.s}"][data-r="${s.r}"][data-c="${s.c}"]`); }
+function pnlSelect(s, r, c, quiet){
+  PNL.sel = { s, r, c }; document.querySelectorAll('#pnl-cats td.sel').forEach(x => x.classList.remove('sel'));
+  const t = pnlTd(); if(t){ t.classList.add('sel'); if(!quiet) t.scrollIntoView({ block:'nearest', inline:'nearest' }); }
+}
+function pnlMove(dr, dc){
+  if(!PNL.sel) return; let { s, r, c } = PNL.sel;
+  c += dc; if(c >= PNL_COLS.length){ c = 0; dr = 1; } if(c < 0){ c = PNL_COLS.length - 1; dr = -1; }
+  r += dr;
+  if(r >= PNL.cats[s].rows.length){ if(s < PNL.cats.length - 1){ s++; r = 0; } else r = PNL.cats[s].rows.length - 1; }
+  if(r < 0){ if(s > 0){ s--; r = PNL.cats[s].rows.length - 1; } else r = 0; }
+  pnlSelect(s, Math.max(0, r), c);
+}
+function pnlEdit(initial){
+  if(!PNL.sel || (typeof evViewOnly === 'function' && evViewOnly())) return;
+  const col = PNL_COLS[PNL.sel.c]; if(col[2] === 'calc') return;
+  const r = PNL.cats[PNL.sel.s].rows[PNL.sel.r], t = pnlTd(); if(!t) return;
+  let el;
+  if(col[2] === 'status'){ el = document.createElement('select'); el.innerHTML = Object.entries(PNL_STATUS).map(([v, l]) => `<option value="${v}" ${r.status === v ? 'selected' : ''}>${l}</option>`).join(''); el.onchange = () => pnlCommit(el.value); }
+  else { el = document.createElement('input'); if(col[2] === 'num') el.inputMode = 'decimal'; el.value = initial != null ? initial : (r[col[0]] == null ? '' : r[col[0]]); }
+  PNL.editing = el; t.appendChild(el); el.focus(); if(el.select && initial == null) el.select();
+  el.addEventListener('keydown', e => {
+    if(e.key === 'Enter'){ e.preventDefault(); pnlCommit(el.value); pnlMove(1, 0); }
+    else if(e.key === 'Tab'){ e.preventDefault(); pnlCommit(el.value); pnlMove(0, e.shiftKey ? -1 : 1); }
+    else if(e.key === 'Escape'){ e.preventDefault(); PNL.editing = null; pnlRender(); }
+    e.stopPropagation();
+  });
+  el.addEventListener('blur', () => { if(PNL.editing === el) pnlCommit(el.value); });
+}
+function pnlSet(r, col, v){
+  if(col[2] === 'num') r[col[0]] = v === '' ? null : pnlNum(v);
+  else if(col[2] === 'status'){ const x = String(v).trim().toLowerCase(); r.status = PNL_STATUS[v] ? v : x.startsWith('p') ? 'p' : x.startsWith('c') ? 'c' : 'q'; }
+  else if(col[2] !== 'calc') r[col[0]] = String(v).slice(0, 300);
+}
+function pnlCommit(v){ const k = PNL.sel; PNL.editing = null; pnlSet(PNL.cats[k.s].rows[k.r], PNL_COLS[k.c], v); pnlRender(); pnlSave(); }
+function pnlKey(e){
+  const ov = document.getElementById('pnl-ov'); if(!ov || !ov.classList.contains('on')) return;
+  const ae = document.activeElement, inText = ae && (ae.isContentEditable || ae.tagName === 'BUTTON');
+  if(e.key === 'Escape' && !PNL.editing && !(ae && ae.isContentEditable)){ pnlClose(); return; }
+  if(PNL.editing || !PNL.sel || inText) return;
+  const k = e.key;
+  if(k === 'ArrowDown'){ e.preventDefault(); pnlMove(1, 0); }
+  else if(k === 'ArrowUp'){ e.preventDefault(); pnlMove(-1, 0); }
+  else if(k === 'ArrowRight'){ e.preventDefault(); pnlMove(0, 1); }
+  else if(k === 'ArrowLeft'){ e.preventDefault(); pnlMove(0, -1); }
+  else if(k === 'Tab'){ e.preventDefault(); pnlMove(0, e.shiftKey ? -1 : 1); }
+  else if(k === 'Enter' || k === 'F2'){ e.preventDefault(); pnlEdit(); }
+  else if((k === 'Delete' || k === 'Backspace') && !(typeof evViewOnly === 'function' && evViewOnly())){ const col = PNL_COLS[PNL.sel.c]; if(col[2] !== 'calc'){ e.preventDefault(); const r = PNL.cats[PNL.sel.s].rows[PNL.sel.r]; r[col[0]] = col[2] === 'num' ? null : col[2] === 'status' ? 'q' : ''; pnlRender(); pnlSave(); } }
+  else if(k.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey){ e.preventDefault(); pnlEdit(k); }
+}
+function pnlPaste(e){
+  const ov = document.getElementById('pnl-ov'); if(!ov || !ov.classList.contains('on') || PNL.editing || !PNL.sel) return;
+  if(typeof evViewOnly === 'function' && evViewOnly()) return;
+  const text = (e.clipboardData || window.clipboardData).getData('text'); if(!text) return;
+  e.preventDefault();
+  const lines = text.replace(/\r/g, '').split('\n').filter(l => l.trim().length), c = PNL.cats[PNL.sel.s];
+  lines.slice(0, 200).forEach((line, li) => {
+    const ri = PNL.sel.r + li; if(!c.rows[ri]) c.rows.push(pnlBlank());
+    let ci = PNL.sel.c; line.split('\t').forEach(v => { while(PNL_COLS[ci] && PNL_COLS[ci][2] === 'calc') ci++; if(PNL_COLS[ci]) pnlSet(c.rows[ri], PNL_COLS[ci], v.trim()); ci++; });
+  });
+  pnlRender(); pnlSave(); toast('Pasted ' + lines.length + ' row' + (lines.length > 1 ? 's' : ''));
+}
+window.pnlTitle = function(si, v){ if(!PNL.cats[si]) return; PNL.cats[si].title = String(v || '').trim().slice(0, 80); pnlTotalsUi(); pnlSave(); };
+window.pnlKind = function(si){ if(evViewOnly && evViewOnly()) return; PNL.cats[si].income = !PNL.cats[si].income; pnlRender(); pnlSave(); };
+window.pnlAddRow = function(si){ if(evViewOnly && evViewOnly()) return; PNL.cats[si].rows.push(pnlBlank()); pnlRender(); pnlSelect(si, PNL.cats[si].rows.length - 1, 0); pnlEdit(''); };
+window.pnlDelRow = function(si, ri){ if(evViewOnly && evViewOnly()) return; PNL.cats[si].rows.splice(ri, 1); if(!PNL.cats[si].rows.length) PNL.cats[si].rows.push(pnlBlank()); PNL.sel = null; pnlRender(); pnlSave(); };
+window.pnlAddCat = function(title, income, focusTitle){
+  if(evViewOnly && evViewOnly()) return;
+  const used = PNL.cats.map(c => c.color), color = PNL_COLORS.find(c => !used.includes(c)) || PNL_COLORS[PNL.cats.length % PNL_COLORS.length];
+  PNL.cats.push({ title, income:!!income, color, rows:[pnlBlank(), pnlBlank(), pnlBlank(), pnlBlank(), pnlBlank()] });
+  const si = PNL.cats.length - 1; PNL.sel = null; pnlRender(); pnlSave();
+  const blocks = document.querySelectorAll('.pnl-cat'); if(blocks[si]) blocks[si].scrollIntoView({ block:'center', behavior:'smooth' });
+  if(focusTitle){ const t = document.querySelector(`.pnl-t[data-s="${si}"]`); if(t) t.focus(); } else pnlSelect(si, 0, 0);
+};
+window.pnlDelCat = function(si){
+  if(evViewOnly && evViewOnly()) return;
+  const c = PNL.cats[si];
+  appConfirmShow({ title:'Remove "' + (c.title || 'Untitled') + '"?', msg:'Its lines are removed from this event\'s P&L.', label:'Remove', onOk: () => { PNL.cats.splice(si, 1); PNL.sel = null; pnlRender(); pnlSave(); } });
+};
+let pnlSaveTimer = null;
+function pnlSave(){
+  beoPnl = { cats: JSON.parse(JSON.stringify(PNL.cats)) };
+  pnlSyncHeader();
+  clearTimeout(pnlSaveTimer);
+  pnlSaveTimer = setTimeout(() => { if(typeof beoTriggerSave === 'function') beoTriggerSave(); const el = document.getElementById('pnl-saved'); if(el) el.textContent = '· saved ' + new Date().toLocaleTimeString('en-GB', { hour:'2-digit', minute:'2-digit' }); }, 400);
+}
+window.pnlOpen = function(){
+  pnlEnsureUi();
+  if(document.activeElement) document.activeElement.blur();
+  PNL.cats = JSON.parse(JSON.stringify((beoPnl && Array.isArray(beoPnl.cats) && beoPnl.cats.length) ? beoPnl.cats : pnlDefault().cats));
+  PNL.sel = null; PNL.editing = null;
+  const name = (document.querySelector('.beo-event-title') || {}).textContent || '';
+  document.getElementById('pnl-ev').textContent = 'P&L · ' + name.toUpperCase();
+  document.getElementById('pnl-ov').classList.add('on'); document.body.style.overflow = 'hidden';
+  pnlRender();
+};
+window.pnlClose = function(){ if(PNL.editing) PNL.editing.blur(); const ov = document.getElementById('pnl-ov'); if(ov) ov.classList.remove('on'); document.body.style.overflow = ''; };
+// Copy the categories and lines from another event (actual figures and statuses are cleared)
+window.pnlCopyFrom = function(){
+  const others = (evAll || []).filter(e => String(e.id) !== String(beoCurrentId) && e.plan && pnlHasData(e.plan.pnl));
+  if(!others.length){ toast('No other event has a P&L yet'); return; }
+  appModalShow({ title:'Copy a P&L', sub:'Its categories and lines are added here. Actual figures are left blank.', fields:[{ label:'From event', type:'pillpicker', options: others.map(e => ({ id:String(e.id), name:e.name })), value:String(others[0].id) }],
+    onOk([id]){ const ev = others.find(e => String(e.id) === String(id)); if(!ev) return;
+      ev.plan.pnl.cats.forEach(c => PNL.cats.push({ title:c.title, income:!!c.income, color:c.color || '#64748B', rows:(c.rows || []).map(r => ({ item:r.item, qty:r.qty, unit:r.unit, actual:null, status:'q', note:r.note || '' })) }));
+      PNL.cats = PNL.cats.filter(c => c.rows.some(r => r.item || pnlBud(r)) || c.title);
+      pnlRender(); pnlSave(); toast('Copied from ' + ev.name); } });
+};
+// Download as a spreadsheet file (opens in Excel / Google Sheets)
+window.pnlDownload = function(){
+  const q = v => { const s = String(v == null ? '' : v); return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s; };
+  const out = [['Category','In/Out','Item','Qty','Unit cost','Budget','Actual','Difference','Status','Notes']];
+  PNL.cats.forEach(c => c.rows.filter(r => r.item || pnlBud(r) || r.actual).forEach(r => out.push([c.title, c.income ? 'In' : 'Out', r.item, r.qty, r.unit, pnlBud(r), r.actual == null ? '' : r.actual, pnlDif(r, c.income) == null ? '' : pnlDif(r, c.income), PNL_STATUS[r.status] || '', r.note])));
+  const T = pnlTotals(PNL.cats); out.push([]); out.push(['Total money in','','','','',T.inB,T.inA]); out.push(['Total money out','','','','',T.outB,T.outA]); out.push(['Profit','','','','',T.inB - T.outB,T.inA - T.outA]);
+  const name = ((document.querySelector('.beo-event-title') || {}).textContent || 'event').replace(/[^\w -]/g, '').trim() || 'event';
+  const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob(['﻿' + out.map(r => r.map(q).join(',')).join('\r\n')], { type:'text/csv' })); a.download = name + ' - P&L.csv';
+  document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 500);
+};
+
 function beoApply(ev){
   evCaptureTemplate();
   const plan = ev.plan || {};
@@ -6975,6 +7292,7 @@ function beoApply(ev){
   if(det){ ['det-name','det-client','det-date-cell','det-time','det-venue','det-pax'].forEach(id => { const all = det.querySelectorAll('[id="' + id + '"]'); for(let n = 1; n < all.length; n++){ const tr = all[n].closest('tr'); if(tr) tr.remove(); } }); }
   deptPhotos = plan.photos || {};
   deptLinks = plan.links || {};
+  beoPnl = plan.pnl && Array.isArray(plan.pnl.cats) ? plan.pnl : null;
   const setT=(id,v)=>{ const el=document.getElementById(id); if(el) el.textContent = v==null?'':v; };
   setT('det-name', (ev.name && ev.name!=='Untitled Event') ? ev.name : '');
   if(!document.getElementById('det-client') && det){
@@ -6997,6 +7315,7 @@ function beoApply(ev){
   setT('stat-rev', ev.revenue!=null ? evMoney(ev.revenue) : '—');
   setT('stat-cost', ev.cost!=null ? evMoney(ev.cost) : '—');
   beoUpdateProfit();
+  pnlSyncHeader();
   const st=document.getElementById('beo-status'); if(st) st.value = EV_STATUSES.includes(ev.status) ? ev.status : 'Enquiry';
   beoLoadShare(ev);
   const bl=document.getElementById('beo-back-label'); if(bl) bl.textContent = evIsPast(ev) ? 'Past Events' : 'Current Events';
@@ -7085,7 +7404,7 @@ function beoCollect(){
     status: document.getElementById('beo-status')?.value || 'Enquiry',
     revenue: evParseMoney(txt('stat-rev')),
     cost: evParseMoney(txt('stat-cost')),
-    plan: { details: document.getElementById('ft-details').innerHTML, timeline: document.getElementById('rd-list').innerHTML, depts: dp.innerHTML, photos: deptPhotos, links: deptLinks },
+    plan: { details: document.getElementById('ft-details').innerHTML, timeline: document.getElementById('rd-list').innerHTML, depts: dp.innerHTML, photos: deptPhotos, links: deptLinks, pnl: beoPnl },
     share_settings: beoShare.settings,
     client_view: beoBuildClientView(),
     updated_at: new Date().toISOString()

@@ -23669,7 +23669,8 @@ window.chatRenderList = function(){
   if(!CH.ready){ list.innerHTML = `<div style="padding:30px 18px;text-align:center;color:#94A3B8;font-size:12.5px">Loading…</div>`; return; }
   const q = (document.getElementById('chat-search')?.value || '').trim().toLowerCase();
   const rows = chatConversations.filter(c => !q || c.name.toLowerCase().includes(q));
-  const groups = rows.filter(c => c.isGroup).sort((a, b) => a.sortKey - b.sortKey || String(b.lastAt || '').localeCompare(String(a.lastAt || '')));
+  // Everyone first, then departments A-Z (fixed, easy to find), then made groups by newest message
+  const groups = rows.filter(c => c.isGroup).sort((a, b) => a.sortKey - b.sortKey || (a.kind === 'dept' ? String(a.name).localeCompare(String(b.name)) : String(b.lastAt || '').localeCompare(String(a.lastAt || ''))));
   const directs = rows.filter(c => !c.isGroup);
   const row = c => {
     const t = CH.threads[c.id], act = c.id === chatActiveId, last = c.last;

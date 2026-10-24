@@ -1626,6 +1626,10 @@ textarea.rf-val{resize:vertical;min-height:72px;line-height:1.5}
 /* View-only events: hide every editing control and the money boxes */
 body.ev-viewonly [onclick*="beoCreateNew"],
 body.ev-viewonly .pnl-open{display:none!important}
+.beo .beo-stat-val[contenteditable]{font-weight:800!important;letter-spacing:-.4px}
+/* Revenue / Vendor costs / Net profit filled in by the P&L: not typed by hand */
+.beo-stat.pnl-auto .beo-stat-val{pointer-events:none;border-bottom-color:transparent!important}
+.beo-stat.pnl-auto .beo-stat-lbl::after{content:' · from P&L';color:#5EEAD4}
 @media(max-width:700px){.beo-hd-bottom:has(.pnl-open){flex-wrap:wrap}.beo-hd-bottom .pnl-open{width:100%;justify-content:center;margin-top:12px}}
 body.ev-viewonly #p-beo [onclick^="delRow"], body.ev-viewonly #p-beo .del-row,
 body.ev-viewonly #p-beo .add-row-btn, body.ev-viewonly #p-beo [onclick^="addDepartment"],
@@ -7016,7 +7020,9 @@ function pnlSyncButton(){
 }
 function pnlSyncHeader(){
   pnlSyncButton();
-  if(!pnlHasData(beoPnl) || beoPnl.mode === 'link') return;
+  const auto = pnlHasData(beoPnl) && beoPnl.mode !== 'link';
+  ['stat-rev','stat-cost','stat-profit'].forEach(id => { const el = document.getElementById(id), box = el && el.closest('.beo-stat'); if(box) box.classList.toggle('pnl-auto', auto); });
+  if(!auto) return;
   const T = pnlTotals(beoPnl.cats);
   const set = (id, v) => { const el = document.getElementById(id); if(el) el.textContent = evMoney(v); };
   set('stat-rev', T.inA); set('stat-cost', T.outA);

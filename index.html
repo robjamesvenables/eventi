@@ -20267,34 +20267,31 @@ const PREDICTOR_COUNTRIES = [
 // refreshed occasionally by hand rather than needing a live feed (a genuine gap: no free,
 // structured API covers this for most of these countries, confirmed after real research).
 // Month/day only, applied to whichever year is being checked.
+// School holidays - real dates by year, never guessed:
+//  AU = Western Australia (Perth, Bali's biggest Aussie market) - official, WA Department of Education
+//  SG = official, Ministry of Education (MOE)
+//  GB = England, typical dates (each council differs by a few days) - shown as "typical"
+//  ID = Indonesia, typical national pattern (each province differs) - shown as "typical"
+// Other countries (US, India, China, Korea, Europe) vary by region, so no school holidays are shown for
+// them - their public holidays still come live from Nager.Date. ADD NEXT YEAR'S DATES EACH DECEMBER.
 const PREDICTOR_SCHOOL_HOLIDAYS = {
-  AU: [{from:[12,14],to:[1,28]},{from:[4,4],to:[4,20]},{from:[7,4],to:[7,20]},{from:[9,26],to:[10,10]}],
-  ID: [{from:[6,15],to:[7,14]},{from:[12,20],to:[1,3]}],
-  GB: [{from:[7,22],to:[9,3]},{from:[12,20],to:[1,3]},{from:[3,28],to:[4,13]}],
-  US: [{from:[6,1],to:[8,25]},{from:[11,23],to:[11,30]},{from:[12,20],to:[1,2]}],
-  FR: [{from:[7,5],to:[8,31]},{from:[12,20],to:[1,4]},{from:[4,5],to:[4,20]}],
-  DE: [{from:[6,25],to:[8,5]},{from:[12,22],to:[1,5]},{from:[3,29],to:[4,10]}],
-  NL: [{from:[7,12],to:[8,23]},{from:[12,22],to:[1,5]},{from:[4,26],to:[5,4]}],
-  CN: [{from:[7,1],to:[8,31]},{from:[1,20],to:[2,10]}],
-  IN: [{from:[5,1],to:[6,15]},{from:[10,18],to:[10,25]},{from:[12,20],to:[1,2]}],
-  KR: [{from:[7,20],to:[8,20]},{from:[12,20],to:[2,5]}],
-  SG: [{from:[3,9],to:[3,17]},{from:[5,25],to:[6,22]},{from:[9,7],to:[9,15]},{from:[11,16],to:[12,31]}],
-  MY: [{from:[3,9],to:[3,17]},{from:[5,25],to:[6,22]},{from:[9,7],to:[9,15]},{from:[11,16],to:[12,31]}]
+  AU: { label:'WA', official:true, w:[['2025-12-18','2026-02-01'],['2026-04-03','2026-04-19'],['2026-07-04','2026-07-19'],['2026-09-26','2026-10-11'],['2026-12-18','2027-01-31'],['2027-04-10','2027-04-25'],['2027-07-03','2027-07-18'],['2027-09-25','2027-10-10'],['2027-12-17','2028-01-31']] },
+  SG: { official:true, w:[['2026-03-14','2026-03-22'],['2026-05-30','2026-06-28'],['2026-09-05','2026-09-13'],['2026-11-21','2026-12-31'],['2027-03-13','2027-03-21'],['2027-05-29','2027-06-27'],['2027-09-04','2027-09-12'],['2027-11-20','2027-12-31']] },
+  GB: { label:'UK', official:false, w:[['2025-12-20','2026-01-04'],['2026-02-14','2026-02-22'],['2026-03-28','2026-04-12'],['2026-05-23','2026-05-31'],['2026-07-22','2026-09-02'],['2026-10-24','2026-11-01'],['2026-12-19','2027-01-03'],['2027-02-13','2027-02-21'],['2027-03-27','2027-04-11'],['2027-05-29','2027-06-06'],['2027-07-21','2027-09-01'],['2027-10-23','2027-10-31'],['2027-12-18','2028-01-03']] },
+  ID: { official:false, w:[['2025-12-20','2026-01-04'],['2026-06-27','2026-07-12'],['2026-12-19','2027-01-03'],['2027-06-26','2027-07-11'],['2027-12-18','2028-01-02']] }
 };
-
+function predictorIsSchoolHoliday(countryCode, date){
+  const c = PREDICTOR_SCHOOL_HOLIDAYS[countryCode]; if(!c) return false;
+  const ds = predictorDateStr(date);
+  return c.w.some(([a, b]) => ds >= a && ds <= b);
+}
 let predictorData = { holidays:{}, weather:null, currency:{}, loaded:false };
 
-function predictorDateInWindow(date, win){
-  const md = (date.getMonth()+1) * 100 + date.getDate();
-  const from = win.from[0]*100 + win.from[1];
-  const to = win.to[0]*100 + win.to[1];
-  return from <= to ? (md >= from && md <= to) : (md >= from || md <= to); // handles windows crossing New Year
-}
-
-function predictorIsSchoolHoliday(countryCode, date){
-  const windows = PREDICTOR_SCHOOL_HOLIDAYS[countryCode];
-  if(!windows) return false;
-  return windows.some(w => predictorDateInWindow(date, w));
+// "WA school holidays", "UK school holidays (typical)" - say exactly what it is
+function predictorSchoolLabel(code, short){
+  const c = PREDICTOR_SCHOOL_HOLIDAYS[code] || {};
+  const who = c.label ? c.label : short ? code : (FC_ADJ[code] || code);
+  return who + ' school holidays' + (c.official ? '' : ' (typical)');
 }
 
 // A local-date-based YYYY-MM-DD string, not toISOString() - that method always converts
@@ -20851,8 +20848,8 @@ function predictorRenderBody(){
   if(t0.idHol) story.push('It is <b>' + fcEsc(t0.idHol.localName || t0.idHol.name) + '</b> in Indonesia, so expect domestic visitors.');
   if(lead){
     const bits = [];
-    if(lead.schoolStart) bits.push(FC_ADJ[lead.c.code] + ' school holidays start on <b>' + fcDayName(lead.schoolStart.d, true) + '</b>');
-    else if(lead.school) bits.push(FC_ADJ[lead.c.code] + ' school holidays are on');
+    if(lead.schoolStart) bits.push(predictorSchoolLabel(lead.c.code) + ' start on <b>' + fcDayName(lead.schoolStart.d, true) + '</b>');
+    else if(lead.school) bits.push(predictorSchoolLabel(lead.c.code) + ' are on');
     else if(lead.holDays.length) bits.push('there is a ' + FC_ADJ[lead.c.code] + ' public holiday on ' + fcDayName(lead.holDays[0].d, true));
     if(lead.cur.strength === 'Strong') bits.push('the ' + lead.c.currency + ' is strong');
     if(bits.length) story.push(bits.join(' and ').replace(/^./, m => m.toUpperCase()) + ', so expect <b>more ' + FC_PEOPLE[lead.c.code] + '</b>.');
@@ -20869,7 +20866,7 @@ function predictorRenderBody(){
   const chips = [];
   if([5, 6, 0].includes(today.getDay())) chips.push('Weekend');
   if(t0.idHol) chips.push(fcEsc(t0.idHol.localName || t0.idHol.name));
-  who.filter(w => w.school && w.c.code !== 'ID').slice(0, 2).forEach(w => chips.push(w.c.code + ' school holidays' + (w.schoolStart ? ' from ' + fcDayName(w.schoolStart.d) : '')));
+  who.filter(w => w.school && w.c.code !== 'ID').slice(0, 2).forEach(w => chips.push(predictorSchoolLabel(w.c.code, true) + (w.schoolStart ? ' from ' + fcDayName(w.schoolStart.d) : '')));
   const season = predictorSeason(today);
   chips.push(season);
   const m = today.getMonth() + 1;
@@ -20939,7 +20936,7 @@ function predictorRenderBody(){
   // ── Story cards ──
   const stories = [];
   const firstSchool = who.find(w => w.schoolStart && w.c.code !== 'ID');
-  if(firstSchool) stories.push({ bg:'linear-gradient(140deg,#EDE9FE,#E0E7FF)', kc:'#6D28D9', tc:'#3730A3', k:'Heads up · ' + fcDayName(firstSchool.schoolStart.d, true), h: FC_ADJ[firstSchool.c.code] + ' school holidays begin', p:'Families travel in the first few days. Expect more ' + FC_PEOPLE[firstSchool.c.code] + ' from ' + fcDayName(firstSchool.schoolStart.d, true) + '.' });
+  if(firstSchool) stories.push({ bg:'linear-gradient(140deg,#EDE9FE,#E0E7FF)', kc:'#6D28D9', tc:'#3730A3', k:'Heads up · ' + fcDayName(firstSchool.schoolStart.d, true), h: predictorSchoolLabel(firstSchool.c.code).replace(/^./, m => m.toUpperCase()) + ' begin', p:'Families travel in the first few days. Expect more ' + FC_PEOPLE[firstSchool.c.code] + ' from ' + fcDayName(firstSchool.schoolStart.d, true) + '.' });
   const nextHol = days.find(x => x.i > 0 && (x.idHol || x.hols.length));
   if(nextHol && stories.length < 3){
     const h = nextHol.idHol || nextHol.hols[0].h, cty = nextHol.idHol ? 'Indonesia' : nextHol.hols[0].c.name;
@@ -21003,7 +21000,8 @@ function predictorRenderBody(){
 
   const emptyNote = hasHistory ? '' : `<div class="fc-empty">Mavis hasn't got your past sales yet, so "busy" and "quiet" are based on holidays and weather only. Add last year's daily revenue and guests in <b>Data Entry</b> to unlock the full forecast.</div>`;
 
-  body.innerHTML = hero + emptyNote + nums + basis + chartCard + stripCard + storyHtml
+  const guide = `<div class="fc-basis" style="display:flex;gap:7px;align-items:flex-start;margin-top:10px"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#94A3B8" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="flex:none;margin-top:2px"><circle cx="12" cy="12" r="9"/><path d="M12 8h.01M11 12h1v5h1"/></svg><span><b>A guide, not a guarantee.</b> Based on your past figures, the weather forecast and official holiday calendars. Things like private bookings or a last-minute storm can change the day.</span></div>`;
+  body.innerHTML = hero + guide + emptyNote + nums + basis + chartCard + stripCard + storyHtml
     + `<div class="fc-grid2">${whoCard}${seasonCard}</div>`
     + todoCard;
   if(hasHistory && weekHasPast) fcDrawChart();

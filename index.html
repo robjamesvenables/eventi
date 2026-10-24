@@ -7011,8 +7011,12 @@ function pnlTotals(cats){
 }
 function pnlHasData(p){ return !!(p && Array.isArray(p.cats) && p.cats.some(c => (c.rows || []).some(r => pnlBud(r) || r.actual))); }
 // Header numbers come from the P&L once it has figures
+function pnlSyncButton(){
+  const sm = document.querySelector('.pnl-open small'); if(sm) sm.textContent = beoPnl && beoPnl.mode === 'link' ? 'Your own spreadsheet' : 'Budget & numbers';
+}
 function pnlSyncHeader(){
-  if(!pnlHasData(beoPnl)) return;
+  pnlSyncButton();
+  if(!pnlHasData(beoPnl) || beoPnl.mode === 'link') return;
   const T = pnlTotals(beoPnl.cats);
   const set = (id, v) => { const el = document.getElementById(id); if(el) el.textContent = evMoney(v); };
   set('stat-rev', T.inA); set('stat-cost', T.outA);
@@ -7085,6 +7089,11 @@ table.pnl-g{border-collapse:separate;border-spacing:0;width:100%;min-width:900px
 .pnl-grand .l{display:flex;justify-content:space-between;align-items:center;padding:12px 16px;border-bottom:1px solid #E6EAF0;font-weight:700;font-size:14px}
 .pnl-grand .l.pr{background:#0F1E2E;color:white;font-size:17px;font-weight:800;border:0}
 .pnl-foot{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-top:14px;font-size:12px;color:#94A3B8;font-weight:600}
+.pnl-mbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;background:white;border:1px solid #DDE2E9;border-radius:12px;padding:10px 14px;margin-bottom:14px;font-size:13px;font-weight:600;color:#475569}
+.pnl-mbar button{margin-left:auto}
+.pnl-link{background:white;border:1px solid #DDE2E9;border-radius:16px;padding:26px;text-align:center;max-width:560px;margin:30px auto}
+.pnl-link h3{margin:12px 0 4px;font-size:19px}.pnl-link p{margin:0 0 18px;color:#64748B;font-size:13px;word-break:break-all}
+.pnl-link a.go{display:inline-flex;gap:8px;align-items:center;background:#0D9488;color:white;text-decoration:none;font-weight:800;font-size:15px;padding:13px 22px;border-radius:12px}
 .pnl-btn{border:1.5px solid #E6EAF0;background:white;border-radius:10px;padding:8px 13px;font:700 12.5px Inter,sans-serif;color:#0F1E2E;cursor:pointer}
 @media(max-width:700px){
  .beo-hd-bottom:has(.pnl-open){flex-wrap:wrap}.pnl-open{width:100%;justify-content:center;margin-top:10px}
@@ -7100,9 +7109,10 @@ table.pnl-g{border-collapse:separate;border-spacing:0;width:100%;min-width:900px
   ov.innerHTML = `<div class="pnl-pop"><div class="pnl-top"><div class="r1"><div><small id="pnl-ev">P&amp;L</small><h2>Budget &amp; number crunching</h2></div><button class="pnl-x" onclick="pnlClose()" title="Close">×</button></div>
     <div class="pnl-sum"><div class="pnl-tile"><small>MONEY IN</small><b id="pnl-s-in" style="color:#2DD4BF">-</b><em id="pnl-s-in2"></em></div><div class="pnl-tile"><small>MONEY OUT</small><b id="pnl-s-out" style="color:#F87171">-</b><em id="pnl-s-out2"></em></div><div class="pnl-tile"><small>PROFIT</small><b id="pnl-s-pr" style="color:#4ADE80">-</b><em id="pnl-s-pr2"></em></div><div class="pnl-tile"><small>VS BUDGET</small><b id="pnl-s-v">-</b><em id="pnl-s-v2"></em></div></div></div>
     <div class="pnl-body" id="pnl-body"><div class="pnl-hint">Works like Excel: click a cell and type · Enter goes down · Tab goes right · arrows to move · Ctrl+V pastes rows from Excel · grey columns work themselves out</div>
-    <div id="pnl-cats"></div>
+    <div id="pnl-mode"></div>
+    <div id="pnl-mavis"><div id="pnl-cats"></div>
     <div class="pnl-addcat"><b>+ ADD A CATEGORY</b><div class="pnl-chips">${['Entertainment','Production','Décor & Flowers','Food & Drink','Marketing','Staff & Security'].map(n => `<button class="pnl-chip" onclick="pnlAddCat('${n}')">${n.replace('&','&amp;')}</button>`).join('')}<button class="pnl-chip in" onclick="pnlAddCat('Sponsors', true)">+ Sponsors (money in)</button><button class="pnl-chip oth" onclick="pnlAddCat('', false, true)">+ Other… (name it yourself)</button></div></div>
-    <div class="pnl-grand" id="pnl-grand"></div>
+    <div class="pnl-grand" id="pnl-grand"></div></div>
     <div class="pnl-foot"><span>Hidden from the client page · saves automatically <span id="pnl-saved"></span></span><span style="display:flex;gap:8px"><button class="pnl-btn" onclick="pnlCopyFrom()">Copy from another event</button><button class="pnl-btn" onclick="pnlDownload()">Download Excel</button></span></div></div></div>`;
   ov.addEventListener('mousedown', e => { if(e.target === ov) pnlClose(); });
   document.body.appendChild(ov);
@@ -7137,6 +7147,7 @@ function pnlRender(){
     h += `<tr class="st"><td class="c0">Subtotal</td><td></td><td></td><td class="r">${pnlFmt(subB)}</td><td class="r">${pnlFmt(subA)}</td><td class="r">${d === 0 ? '<span class="pnl-mut">0</span>' : `<span class="${d > 0 ? 'pnl-pos' : 'pnl-neg'}">${d > 0 ? '+' : '−'}${pnlFmt(Math.abs(d))}</span>`}</td><td></td><td></td></tr></tbody></table></div><div class="pnl-addr" onclick="pnlAddRow(${si})">+ Add row</div></div>`;
   });
   document.getElementById('pnl-cats').innerHTML = h;
+  pnlModeUi();
   pnlTotalsUi();
   if(PNL.sel) pnlSelect(PNL.sel.s, PNL.sel.r, PNL.sel.c, true);
 }
@@ -7149,6 +7160,35 @@ function pnlCell(r, ci, inc){
   if(t === 'status') return r.item || pnlBud(r) ? `<span class="pnl-pill pnl-p-${PNL_STATUS[r.status] ? r.status : 'q'}">${PNL_STATUS[r.status] || 'Quote'}</span>` : '';
   return pnlEsc(r[k]);
 }
+function pnlModeUi(){
+  const link = PNL.mode === 'link' && PNL.link && /^https:\/\//i.test(PNL.link.url || '');
+  const ro = typeof evViewOnly === 'function' && evViewOnly();
+  document.getElementById('pnl-mavis').style.display = link ? 'none' : '';
+  document.querySelector('.pnl-sum').style.display = link ? 'none' : '';
+  document.querySelector('.pnl-hint').style.display = link ? 'none' : '';
+  const fb = document.querySelector('.pnl-foot span:last-child'); if(fb) fb.style.display = link ? 'none' : 'flex';
+  const m = document.getElementById('pnl-mode');
+  if(link){
+    let host = ''; try{ host = new URL(PNL.link.url).hostname.replace(/^www\./, ''); }catch(e){}
+    m.innerHTML = `<div class="pnl-link"><svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="#0D9488" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="3"/><path d="M3 9h18M3 15h18M9 3v18"/></svg>
+      <h3>${pnlEsc(PNL.link.name || 'Budget spreadsheet')}</h3><p>This event's P&amp;L is kept in your own spreadsheet${host ? ' (' + pnlEsc(host) + ')' : ''}.</p>
+      <a class="go" href="${pnlEsc(PNL.link.url)}" target="_blank" rel="noopener">Open spreadsheet ↗</a>
+      ${ro ? '' : `<div style="margin-top:16px;display:flex;gap:8px;justify-content:center;flex-wrap:wrap"><button class="pnl-btn" onclick="pnlUseLink()">Change link</button><button class="pnl-btn" onclick="pnlUseMavis()">Use the Mavis P&amp;L instead</button></div>`}</div>`;
+  } else {
+    m.innerHTML = ro ? '' : `<div class="pnl-mbar"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#0D9488" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.7 1.7"/><path d="M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.7-1.7"/></svg>Prefer Google Sheets or Excel? You can link your own spreadsheet instead.<button class="pnl-btn" onclick="pnlUseLink()">Use my own spreadsheet</button></div>`;
+  }
+}
+window.pnlUseLink = function(){
+  appModalShow({ title:'Link your spreadsheet', sub:'Paste the share link from Google Sheets, Excel online or similar. The P&L button will open it.',
+    fields:[{ label:'Name', placeholder:'e.g. NYE 2026 budget', value:(PNL.link && PNL.link.name) || '' }, { label:'Link', placeholder:'https://docs.google.com/spreadsheets/…', value:(PNL.link && PNL.link.url) || '' }],
+    onOk([name, url]){
+      url = String(url || '').trim();
+      if(!/^https:\/\/[^\s<>"']+$/i.test(url)){ toast('Paste a full link starting with https://'); return; }
+      PNL.link = { name: String(name || '').trim().slice(0, 80) || 'Budget spreadsheet', url: url.slice(0, 600) }; PNL.mode = 'link';
+      pnlRender(); pnlSave(); toast('Spreadsheet linked');
+    } });
+};
+window.pnlUseMavis = function(){ PNL.mode = 'mavis'; pnlRender(); pnlSave(); };
 function pnlTotalsUi(){
   const T = pnlTotals(PNL.cats), pr = T.inA - T.outA, m = T.inA ? Math.round(pr / T.inA * 100) : 0;
   const set = (id, v) => { const el = document.getElementById(id); if(el) el.textContent = v; };
@@ -7244,7 +7284,7 @@ window.pnlDelCat = function(si){
 };
 let pnlSaveTimer = null;
 function pnlSave(){
-  beoPnl = { cats: JSON.parse(JSON.stringify(PNL.cats)) };
+  beoPnl = { cats: JSON.parse(JSON.stringify(PNL.cats)), mode: PNL.mode || 'mavis', link: PNL.link || null };
   pnlSyncHeader();
   clearTimeout(pnlSaveTimer);
   pnlSaveTimer = setTimeout(() => { if(typeof beoTriggerSave === 'function') beoTriggerSave(); const el = document.getElementById('pnl-saved'); if(el) el.textContent = '· saved ' + new Date().toLocaleTimeString('en-GB', { hour:'2-digit', minute:'2-digit' }); }, 400);
@@ -7254,6 +7294,7 @@ window.pnlOpen = function(){
   if(document.activeElement) document.activeElement.blur();
   PNL.cats = JSON.parse(JSON.stringify((beoPnl && Array.isArray(beoPnl.cats) && beoPnl.cats.length) ? beoPnl.cats : pnlDefault().cats));
   PNL.sel = null; PNL.editing = null;
+  PNL.mode = (beoPnl && beoPnl.mode) || 'mavis'; PNL.link = (beoPnl && beoPnl.link) || null;
   const name = (document.querySelector('.beo-event-title') || {}).textContent || '';
   document.getElementById('pnl-ev').textContent = 'P&L · ' + name.toUpperCase();
   document.getElementById('pnl-ov').classList.add('on'); document.body.style.overflow = 'hidden';

@@ -1626,7 +1626,9 @@ textarea.rf-val{resize:vertical;min-height:72px;line-height:1.5}
 }
 /* View-only events: hide every editing control and the money boxes */
 body.ev-viewonly [onclick*="beoCreateNew"],
-body.ev-viewonly .pnl-open{display:none!important}
+body.ev-viewonly .pnl-open,body.ev-viewonly .pnl-pdf-top{display:none!important}
+/* The event PDF never shows money - the numbers have their own PDF */
+.pdf-export-mode .beo-stat:has(#stat-rev),.pdf-export-mode .beo-stat:has(#stat-cost),.pdf-export-mode .beo-stat:has(#stat-profit){display:none!important}
 .beo .beo-stat-val[contenteditable]{font-weight:800!important;letter-spacing:-.4px}
 /* Revenue / Vendor costs / Net profit filled in by the P&L: not typed by hand */
 .beo-stat.pnl-auto .beo-stat-val{pointer-events:none;border-bottom-color:transparent!important}
@@ -2694,7 +2696,7 @@ img.emoji-tw{width:1.15em;height:1.15em;vertical-align:-0.2em;margin:0 1px}
 .pdf-export-mode .beo .beo-stat-val{font-size:15px !important;white-space:nowrap}
 .pdf-export-mode #det-date{display:none !important}
 .pdf-export-mode #det-date-pdf{display:inline !important}
-.pdf-export-mode #beo-client-pill{display:none !important}
+.pdf-export-mode #beo-client-pill,.pdf-export-mode .pnl-open{display:none !important}
 
 /* ── DJ SCHEDULE PRINT/PDF EXPORT ── */
 @media print{
@@ -4221,7 +4223,8 @@ img.emoji-tw{width:1.15em;height:1.15em;vertical-align:-0.2em;margin:0 1px}
             </select>
             <button class="btn btn-ghost" onclick="evShareLink(beoCurrentId)">Share with team</button>
             <button class="btn btn-ghost" onclick="beoClientShareOpen()" id="beo-client-btn" style="color:var(--teal);border-color:#99F6E4">Share with client</button>
-            <button class="btn btn-ghost" onclick="exportEventPlanPDF()">⬇ PDF</button>
+            <button class="btn btn-ghost" onclick="exportEventPlanPDF()" title="The event plan - no money in it, safe to send" style="display:inline-flex;align-items:center;gap:7px"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M8 13h8M8 17h5"/></svg>PDF Event</button>
+            <button class="btn btn-ghost pnl-pdf-top" onclick="pnlPdf()" title="The P&amp;L numbers - internal only" style="display:inline-flex;align-items:center;gap:7px;border-color:#0D9488;color:#0D9488"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M7 15l4-4 3 3 5-6"/></svg>PDF Numbers</button>
             <button class="btn btn-ghost" onclick="beoDeleteEvent()" style="color:#EF4444;border-color:#FECACA">Delete</button>
           </div>
         </div>
@@ -7120,7 +7123,7 @@ table.pnl-g{border-collapse:separate;border-spacing:0;width:100%;min-width:900px
     <div id="pnl-mavis"><div id="pnl-cats"></div>
     <div class="pnl-addcat"><b>+ ADD A CATEGORY</b><div class="pnl-chips">${['Entertainment','Production','Décor & Flowers','Food & Drink','Marketing','Staff & Security'].map(n => `<button class="pnl-chip" onclick="pnlAddCat('${n}')">${n.replace('&','&amp;')}</button>`).join('')}<button class="pnl-chip in" onclick="pnlAddCat('Sponsors', true)">+ Sponsors (money in)</button><button class="pnl-chip oth" onclick="pnlAddCat('', false, true)">+ Other… (name it yourself)</button></div></div>
     <div class="pnl-grand" id="pnl-grand"></div></div>
-    <div class="pnl-foot"><span>Hidden from the client page · saves automatically <span id="pnl-saved"></span></span><span style="display:flex;gap:8px"><button class="pnl-btn" onclick="pnlCopyFrom()">Copy from another event</button><button class="pnl-btn" onclick="pnlDownload()">Download Excel</button></span></div></div></div>`;
+    <div class="pnl-foot"><span>Hidden from the client page · saves automatically <span id="pnl-saved"></span></span><span style="display:flex;gap:8px"><button class="pnl-btn" onclick="pnlCopyFrom()">Copy from another event</button><button class="pnl-btn" onclick="pnlPdf()">Download PDF</button><button class="pnl-btn" onclick="pnlDownload()">Download Excel</button></span></div></div></div>`;
   ov.addEventListener('mousedown', e => { if(e.target === ov) pnlClose(); });
   // Clicking anywhere that isn't a cell drops the highlight, like clicking off a cell in Excel
   ov.addEventListener('mousedown', e => { if(e.target.closest('#pnl-cats td[data-c]')) return; const clear = () => { PNL.sel = null; document.querySelectorAll('#pnl-cats td.sel').forEach(x => x.classList.remove('sel')); }; if(PNL.editing) setTimeout(clear, 0); else clear(); }, true);
@@ -7320,6 +7323,39 @@ window.pnlCopyFrom = function(){
       ev.plan.pnl.cats.forEach(c => PNL.cats.push({ title:c.title, income:!!c.income, color:c.color || '#64748B', rows:(c.rows || []).map(r => ({ item:r.item, qty:r.qty, unit:r.unit, actual:null, status:'q', note:r.note || '' })) }));
       PNL.cats = PNL.cats.filter(c => c.rows.some(r => r.item || pnlBud(r)) || c.title);
       pnlRender(); pnlSave(); toast('Copied from ' + ev.name); } });
+};
+// Download a clean, printable P&L report as a PDF (A4 landscape)
+window.pnlPdf = function(){
+  if(typeof html2pdf === 'undefined'){ toast('PDF library failed to load - check your connection and try again'); return; }
+  const open = document.getElementById('pnl-ov') && document.getElementById('pnl-ov').classList.contains('on');
+  if(!open){ PNL.cats = beoPnl && Array.isArray(beoPnl.cats) ? JSON.parse(JSON.stringify(beoPnl.cats)) : []; }
+  if(beoPnl && beoPnl.mode === 'link' && !open){ toast('This event uses its own spreadsheet - open P&L to get to it'); return; }
+  if(!pnlHasData({ cats: PNL.cats })){ toast('No numbers yet - open P&L to add them'); return; }
+  const T = pnlTotals(PNL.cats), pr = T.inA - T.outA, m = T.inA ? Math.round(pr / T.inA * 100) : 0;
+  const name = ((document.querySelector('.beo-event-title') || {}).textContent || 'Event').trim();
+  const dateTxt = (document.querySelectorAll('.beo-hd-date')[1] || {}).textContent || '';
+  const venue = (document.getElementById('beo-brand-name') || {}).textContent || '';
+  const td = 'padding:6px 8px;border-bottom:1px solid #E6EAF0;font-size:10.5px', r = 'text-align:right;font-variant-numeric:tabular-nums';
+  let h = `<div style="font-family:Inter,sans-serif;color:#0F1E2E;padding:4px 2px">
+    <div style="background:#0F1E2E;color:white;border-radius:10px;padding:14px 18px;display:flex;justify-content:space-between;align-items:flex-end">
+      <div><div style="font-size:9px;letter-spacing:2px;color:#5EEAD4;font-weight:800">P&amp;L · BUDGET</div><div style="font-size:20px;font-weight:800;margin-top:3px">${pnlEsc(name)}</div><div style="font-size:10.5px;color:#CBD5E1;margin-top:3px">${pnlEsc([venue, dateTxt].filter(Boolean).join(' · '))}</div></div>
+      <div style="text-align:right;font-size:10px;color:#94A3B8">Printed ${new Date().toLocaleDateString('en-GB', { day:'numeric', month:'short', year:'numeric' })}<br>Internal - not for clients</div></div>
+    <div style="display:flex;gap:8px;margin:10px 0 12px">${[['MONEY IN', pnlRp(T.inA), '#0F766E'], ['MONEY OUT', pnlRp(T.outA), '#A43F38'], ['PROFIT · ' + m + '% margin', pnlRp(pr), pr < 0 ? '#A43F38' : '#15803D'], ['STILL TO PAY', pnlRp(T.unpaid), '#8A6420']].map(x => `<div style="flex:1;background:#F6F8FA;border-radius:8px;padding:8px 10px"><div style="font-size:8.5px;font-weight:800;letter-spacing:1px;color:#7B8798">${x[0]}</div><div style="font-size:14px;font-weight:800;color:${x[2]};margin-top:2px">${x[1]}</div></div>`).join('')}</div>`;
+  PNL.cats.forEach(c => {
+    const rows = c.rows.filter(x => x.item || pnlBud(x) || x.actual); if(!rows.length) return;
+    const subB = rows.reduce((s, x) => s + pnlBud(x), 0), subA = rows.reduce((s, x) => s + pnlEff(x), 0);
+    h += `<table style="width:100%;border-collapse:collapse;margin-bottom:10px;page-break-inside:avoid"><tr><td colspan="8" style="padding:7px 8px;font-size:12px;font-weight:800;border-bottom:2px solid ${c.color || '#64748B'}">${pnlEsc(c.title || 'Untitled')} <span style="font-size:9px;font-weight:800;color:${c.income ? '#0F766E' : '#A43F38'}">${c.income ? '▲ MONEY IN' : '▼ MONEY OUT'}</span></td></tr>
+      <tr style="background:#FAFBFC;color:#7B8798;font-size:8.5px;font-weight:800;letter-spacing:.8px">${['ITEM','QTY','UNIT COST','BUDGET','ACTUAL','DIFFERENCE','STATUS','NOTES'].map((x, i) => `<td style="${td};font-size:8.5px;${[1,2,3,4,5].includes(i) ? r : ''}">${x}</td>`).join('')}</tr>`
+      + rows.map(x => { const d = pnlDif(x, c.income); return `<tr><td style="${td};width:26%">${pnlEsc(x.item)}</td><td style="${td};${r}">${pnlFmt(x.qty)}</td><td style="${td};${r}">${pnlFmt(x.unit)}</td><td style="${td};${r};font-weight:700">${pnlFmt(pnlBud(x))}</td><td style="${td};${r}${x.actual == null ? ';color:#A3AEBD' : ''}">${pnlFmt(pnlEff(x))}</td><td style="${td};${r};color:${d == null || d === 0 ? '#A3AEBD' : d > 0 ? '#0F766E' : '#C0524A'}">${d == null ? '' : d === 0 ? '0' : (d > 0 ? '+' : '−') + pnlFmt(Math.abs(d))}</td><td style="${td}">${PNL_STATUS[x.status] || ''}</td><td style="${td};color:#475569">${pnlEsc(x.note)}</td></tr>`; }).join('')
+      + `<tr style="background:#F6F8FA;font-weight:800"><td style="${td}">Subtotal</td><td style="${td}"></td><td style="${td}"></td><td style="${td};${r}">${pnlFmt(subB)}</td><td style="${td};${r}">${pnlFmt(subA)}</td><td colspan="3" style="${td}"></td></tr></table>`;
+  });
+  h += `<table style="width:100%;border-collapse:collapse;margin-top:6px;page-break-inside:avoid"><tr><td style="${td};font-weight:800">Total money in</td><td style="${td};${r};font-weight:800;color:#0F766E">${pnlRp(T.inA)}</td></tr><tr><td style="${td};font-weight:800">Total money out</td><td style="${td};${r};font-weight:800">${pnlRp(T.outA)}</td></tr>
+    <tr style="background:#0F1E2E;color:white"><td style="padding:9px 8px;font-weight:800;font-size:12px;color:#5EEAD4">PROFIT · ${m}% margin</td><td style="padding:9px 8px;${r};font-weight:800;font-size:13px;color:${pr < 0 ? '#F87171' : '#4ADE80'}">${pnlRp(pr)}</td></tr></table>
+    <div style="font-size:8.5px;color:#94A3B8;margin-top:8px">Grey actual figures = no final bill yet, the budget is used.</div></div>`;
+  const box = document.createElement('div'); box.style.cssText = 'position:fixed;left:-10000px;top:0;width:1060px;background:white'; box.innerHTML = h; document.body.appendChild(box);
+  toast('Preparing your PDF…');
+  html2pdf().set({ margin:8, filename:(name.replace(/[^\w -]/g, '').trim() || 'event') + ' - P&L.pdf', image:{ type:'jpeg', quality:0.95 }, html2canvas:{ scale:2, backgroundColor:'#ffffff' }, jsPDF:{ unit:'mm', format:'a4', orientation:'landscape' }, pagebreak:{ mode:['css','legacy'], avoid:['table','tr'] } })
+    .from(box.firstElementChild).save().then(() => { box.remove(); toast('PDF downloaded ✓'); }).catch(e => { box.remove(); toast('PDF failed - please try again'); console.error(e); });
 };
 // Download as a spreadsheet file (opens in Excel / Google Sheets)
 window.pnlDownload = function(){

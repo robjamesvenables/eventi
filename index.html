@@ -23425,6 +23425,9 @@ function chat2Initials(pid){ const p = CH.people[pid]; return p ? chatPersonInit
 function chat2RoleColor(role){ const r = (typeof ADMIN_ROLES !== 'undefined') && ADMIN_ROLES.find(x => x.id === role); return r ? r.color : '#0D9488'; }
 function chat2Depts(p){ return Array.isArray(p && p.departments) ? p.departments : []; }
 function chat2IsManager(){ return !!myProfile && (['superadmin','director','manager'].includes(myProfile.role) || myProfile.is_owner); }
+// WhatsApp-style groups: Supervisors and above can make them; the person who made it (or a Manager+) runs it
+function chat2CanMakeGroup(){ return !!myProfile && (['superadmin','director','manager','supervisor'].includes(myProfile.role) || myProfile.is_owner); }
+function chat2CanRunGroup(t){ return !!t && t.kind === 'group' && (chat2IsManager() || String(t.created_by) === String(chat2Me())); }
 function chat2PersonSub(pid){ const p = CH.people[pid]; if(!p) return ''; return [roleName(p.role), chat2Depts(p).join(', ')].filter(Boolean).join(' · '); }
 
 function chat2MemberIds(t){
@@ -23752,7 +23755,7 @@ function chat2RenderHeader(){
   const n = chat2MemberIds(t).length;
   const sub = t.kind === 'direct' ? chatEscapeHtml(chat2PersonSub(chat2Other(t)))
     : (t.kind === 'all' ? 'Everyone in ' + chatEscapeHtml((myCompany && myCompany.name) || 'the team') + ' · ' : t.kind === 'dept' ? 'Department · ' : '') + n + (n === 1 ? ' member' : ' members');
-  const canEdit = t.kind === 'group' && chat2IsManager();
+  const canEdit = chat2CanRunGroup(t);
   h.innerHTML = `
     <button id="chat-thread-mobile-back" onclick="history.back()" style="display:none;background:none;border:none;cursor:pointer;padding:4px;margin-right:2px;flex-shrink:0">
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#0F1E2E" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
@@ -24765,7 +24768,8 @@ window.chat2ShowMembers = function(){
   const ids = chat2MemberIds(t).sort((a, b) => chat2Name(a).localeCompare(chat2Name(b)));
   const how = t.kind === 'all' ? 'Everyone in the company is in this group automatically.'
     : t.kind === 'dept' ? 'Everyone tagged ' + chatEscapeHtml(t.name) + ' in People is in this group automatically.' : ids.length + ' members';
-  const foot = t.kind === 'group' && chat2IsManager() ? `<button class="chat-preview-send" onclick="chat2SheetClose();chat2GroupEditor('${t.id}')">Edit group</button>` : '';
+  const leave = t.kind === 'group' ? `<button class="chat-preview-secondary" style="margin-right:auto;color:#DC2626;border-color:#FCA5A5" onclick="chat2GroupLeave('${t.id}')">Leave group</button>` : '';
+  const foot = leave + (chat2CanRunGroup(t) ? `<button class="chat-preview-send" onclick="chat2SheetClose();chat2GroupEditor('${t.id}')">Edit group</button>` : '');
   chat2Sheet(chatEscapeHtml(chat2ThreadName(t)), how, ids.map(id => chat2PersonRow(id)).join('') || `<div style="padding:14px 8px;color:#94A3B8;font-size:12.5px">Nobody yet.</div>`, foot);
 };
 
@@ -24786,7 +24790,7 @@ window.chatRenderPeopleSelector = function(){
   const people = Object.values(CH.people).filter(p => p.active && p.id !== chat2Me())
     .filter(p => !q || ((p.first_name || '') + ' ' + (p.last_name || '') + ' ' + roleName(p.role) + ' ' + chat2Depts(p).join(' ')).toLowerCase().includes(q))
     .sort((a, b) => chat2Name(a.id).localeCompare(chat2Name(b.id)));
-  const newGroup = chat2IsManager() && !q ? `<button onclick="chatClosePeopleSelector();chat2GroupEditor(null)" class="chat2-pick" style="border-bottom:1px solid #F1F5F9;border-radius:11px 11px 0 0">
+  const newGroup = chat2CanMakeGroup() && !q ? `<button onclick="chatClosePeopleSelector();chat2GroupEditor(null)" class="chat2-pick" style="border-bottom:1px solid #F1F5F9;border-radius:11px 11px 0 0">
       <div style="width:40px;height:40px;border-radius:50%;background:#0D9488;display:flex;align-items:center;justify-content:center;flex-shrink:0"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></div>
       <div style="flex:1;font-size:13.5px;font-weight:750;color:#0D9488">New group</div></button>` : '';
   if(!people.length){ results.innerHTML = newGroup + `<div style="padding:30px 18px;text-align:center;color:#94A3B8;font-size:13px">${q ? 'Nobody found' : 'Nobody else is in your team yet - add people in People.'}</div>`; return; }
@@ -24837,6 +24841,16 @@ window.chat2GroupSave = async function(tid){
   await chat2ReloadThreads();
   toast(tid ? 'Group saved' : 'Group created');
   chatOpenConversation(data, !!tid);
+};
+window.chat2GroupLeave = function(tid){
+  const t = CH.threads[tid]; if(!t) return;
+  chat2Dialog('Leave "' + chatEscapeHtml(t.name || 'group') + '"?', 'You stop getting its messages. Someone in the group can add you back.', [{ label:'Leave group', red:true, fn: async () => {
+    const { error } = await sb.rpc('chat_group_leave', { th: tid });
+    if(error){ toast(/function|exist/i.test(error.message || '') ? 'Leaving groups needs a quick database update first' : (error.message || 'Could not leave the group')); return; }
+    chat2SheetClose(); delete CH.threads[tid]; delete CH.msgs[tid];
+    if(chatActiveId === tid) chat2CloseThread(); else chat2RefreshAll();
+    toast('You left the group');
+  } }]);
 };
 window.chat2GroupDelete = function(tid){
   const t = CH.threads[tid]; if(!t) return;

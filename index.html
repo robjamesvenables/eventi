@@ -1820,6 +1820,15 @@ body.ev-nomoney .dash-hero .ev-money{display:none!important}
 .kbd-del{display:inline-flex;align-items:center;gap:6px;border:0;background:none;color:#DC2626;font:700 13px Inter,sans-serif;cursor:pointer;padding:8px 10px;border-radius:9px}
 .kbd-del:hover{background:#FEF2F2}
 #p-kb .kanban-card{cursor:pointer}
+.kb-due{display:inline-flex;align-items:center;gap:5px;font-size:11.5px;font-weight:700;color:#475569;background:#F1F5F9;border-radius:7px;padding:3px 8px}
+.kb-due.soon{color:#8A6420;background:#F7EEDC}
+.kb-due.late{color:white;background:#DC2626}
+.kb-due.done{color:#94A3B8;background:#F1F5F9}
+.kbd-due{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.kbd-due input{border:1.5px solid #E2E8F0;border-radius:10px;padding:9px 12px;font:600 14px Inter,sans-serif;color:#0F1E2E;background:white}
+.kbd-due input:focus{outline:none;border-color:#0D9488}
+.kbd-clear{border:0;background:none;color:#64748B;font:700 12.5px Inter,sans-serif;cursor:pointer;text-decoration:underline;padding:4px}
+.kbd-hint{font-size:12px;color:#94A3B8;font-weight:600}
 @media(max-width:700px){#kb-detail{padding:0;align-items:stretch}.kbd{max-width:none;max-height:none;height:100%;border-radius:0}.kbd-top{padding-top:max(12px,env(safe-area-inset-top))}.kbd-foot{padding-bottom:max(12px,env(safe-area-inset-bottom))}}
 #kb-tabs{display:none}
 @media(min-width:901px){
@@ -10360,7 +10369,7 @@ function taskboardApplyPersonalCard(row){
   });
   if(row.deleted) return;
   const targetCol = board[row.col] ? row.col : 'todo';
-  board[targetCol].push({ dbId: row.id, id: row.id, title: row.title, description: row.description || '', assignee: row.assignee || 'Unassigned', photos: row.photos || [], createdAt: new Date(row.created_at).getTime() });
+  board[targetCol].push({ dbId: row.id, id: row.id, title: row.title, description: row.description || '', assignee: row.assignee || 'Unassigned', photos: row.photos || [], dueDate: row.due_date || '', createdAt: new Date(row.created_at).getTime() });
   board[targetCol].sort((a,b) => (a.createdAt||0) - (b.createdAt||0));
 }
 
@@ -10398,7 +10407,7 @@ function taskboardApplyTeamCard(row){
   });
   if(row.deleted) return;
   const targetCol = board[row.col] ? row.col : 'todo';
-  board[targetCol].push({ dbId: row.id, id: row.id, title: row.title, description: row.description || '', assignee: row.assignee || 'Unassigned', photos: row.photos || [], createdAt: new Date(row.created_at).getTime() });
+  board[targetCol].push({ dbId: row.id, id: row.id, title: row.title, description: row.description || '', assignee: row.assignee || 'Unassigned', photos: row.photos || [], dueDate: row.due_date || '', createdAt: new Date(row.created_at).getTime() });
   board[targetCol].sort((a,b) => (a.createdAt||0) - (b.createdAt||0));
 }
 
@@ -10410,6 +10419,7 @@ function taskboardSubscribeTeamRealtime(){
       const row = payload.eventType === 'DELETE' ? {...payload.old, deleted:true} : payload.new;
       taskboardApplyTeamCard(row);
       if(kbActiveIsTeam && kbActiveProjectId === 'team-'+row.project_id) kbRender();
+      if(typeof kbOpenId !== 'undefined' && kbOpenId === row.id){ const ae = document.activeElement; if(!(ae && ae.closest && ae.closest('#kb-detail'))) kbDetailRender(); }
       if(document.getElementById('p-taskboard-team').style.display !== 'none') taskboardRenderTeamTiles();
     })
     .subscribe();
@@ -10507,6 +10517,7 @@ function kbRender(){
         <div class="kanban-card-title" style="pointer-events:none">${colId==='done'?'<span class="kb-tick"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span>':''}${card.title}</div>
         ${card.description && card.description.trim() ? `<div class="kb-desc" style="font-size:12px;color:#64748B;line-height:1.4;margin-top:4px;pointer-events:none;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;white-space:pre-line;overflow-wrap:anywhere">${card.description.trim().replace(/\n\s*\n+/g,'\n').replace(/</g,'&lt;')}</div>` : ''}
         ${photoThumbStrip(card.photos, ()=>card.photos, ()=>kbCardPhotosChanged(card))}
+        ${card.dueDate ? `<div style="margin-top:8px;pointer-events:none">${kbDueChip(card.dueDate, colId==='done')}</div>` : ''}
         <div class="kanban-card-meta" style="margin-top:10px;display:flex;align-items:center;gap:6px">
           ${kbAvatar(card.assignee)}
           <div class="kb-acts" onmousedown="event.stopPropagation()" ontouchstart="event.stopPropagation()">
@@ -10711,6 +10722,24 @@ function kbAvatar(name){
   const esc = v => v.replace(/&/g,'&amp;').replace(/</g,'&lt;');
   return `<span class="kb-who"><span class="kb-av" style="background:${pal[h % pal.length]}">${esc(ini)}</span><span class="kb-nm">${esc(n)}</span></span>`;
 }
+// Due date chip on a task card: "Due Fri 30 Oct", "Due today", or red "Late" (not on Done tasks)
+function kbDueInfo(d, done){
+  if(!d) return null;
+  const t = new Date(); t.setHours(0,0,0,0);
+  const due = new Date(d + 'T00:00:00'); if(isNaN(due)) return null;
+  const days = Math.round((due - t) / 86400000);
+  let txt, cls = '';
+  if(days === 0){ txt = 'Due today'; cls = 'soon'; }
+  else if(days === 1){ txt = 'Due tomorrow'; cls = 'soon'; }
+  else if(days < 0){ txt = days === -1 ? 'Late · 1 day' : 'Late · ' + (-days) + ' days'; cls = 'late'; }
+  else txt = 'Due ' + due.toLocaleDateString('en-GB', { weekday:'short', day:'numeric', month:'short' });
+  if(done){ txt = 'Due ' + due.toLocaleDateString('en-GB', { day:'numeric', month:'short' }); cls = 'done'; }
+  return { txt, cls };
+}
+function kbDueChip(d, done){
+  const i = kbDueInfo(d, done); if(!i) return '';
+  return `<span class="kb-due ${i.cls}"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>${i.txt}</span>`;
+}
 // The card's ⋮ menu: edit, photo, move back, delete
 window.kbCardMenu = function(btn, cardId, colId){
   let m = document.getElementById('kb-menu');
@@ -10739,7 +10768,8 @@ async function kbCardSave(card, fields){
   Object.assign(card, fields);
   kbRender();
   if(!card.dbId) return;
-  const { error } = await sb.from(kbActiveIsTeam ? 'task_cards' : 'personal_task_cards').update(fields).eq('id', card.dbId);
+  const db = Object.assign({}, fields); if('dueDate' in db){ db.due_date = db.dueDate || null; delete db.dueDate; }
+  const { error } = await sb.from(kbActiveIsTeam ? 'task_cards' : 'personal_task_cards').update(db).eq('id', card.dbId);
   if(error){ toast('Not saved - check your connection'); console.warn(error); }
 }
 window.kbOpenCard = function(id){
@@ -10774,6 +10804,8 @@ function kbDetailRender(){
       <div class="kbd-st">${['todo','progress','done'].map(c => `<button class="${c===col?'on':''}" style="--sc:${clr(c)}" onclick="kbDetailMove('${c}')">${c===col?ic('<path d="M20 6 9 17l-5-5"/>',13):''}${esc(nm(c))}</button>`).join('')}</div>
       <div class="kbd-lbl">ASSIGNED TO</div>
       <div class="kbd-who">${kbAvatar(card.assignee)}<input id="kbd-asg" value="${esc(/^unassigned$/i.test(card.assignee||'')?'':card.assignee)}" placeholder="Type a name" maxlength="60"></div>
+      <div class="kbd-lbl">DUE DATE</div>
+      <div class="kbd-due"><input type="date" id="kbd-due" value="${esc(card.dueDate)}">${card.dueDate ? kbDueChip(card.dueDate, col==='done') + `<button type="button" class="kbd-clear" onclick="kbDetailDue('')">Remove</button>` : '<span class="kbd-hint">Optional</span>'}</div>
       <div class="kbd-lbl">DESCRIPTION</div>
       <textarea id="kbd-desc" class="kbd-desc" placeholder="Add more detail - tap here and type">${esc(card.description)}</textarea>
       <div class="kbd-lbl">PHOTOS${photos.length ? ' · ' + photos.length : ''}</div>
@@ -10788,6 +10820,7 @@ function kbDetailRender(){
   const saved = () => { const sv = document.getElementById('kbd-saved'); if(sv){ sv.textContent = 'Saved ✓'; clearTimeout(sv._t); sv._t = setTimeout(() => { sv.textContent = 'Changes save by themselves'; }, 1800); } };
   t.addEventListener('keydown', e => { if(e.key === 'Enter'){ e.preventDefault(); t.blur(); } });
   a.addEventListener('keydown', e => { if(e.key === 'Enter'){ e.preventDefault(); a.blur(); } });
+  const du = document.getElementById('kbd-due'); du.addEventListener('change', () => kbDetailDue(du.value));
   t.addEventListener('blur', () => { const v = t.value.replace(/\s+/g,' ').trim(); if(!v){ t.value = card.title; toast('A task needs a title'); return; } if(v !== card.title){ kbCardSave(card, { title: v }); saved(); } });
   d.addEventListener('blur', () => { const v = d.value.replace(/\s+$/,''); if(v !== (card.description||'')){ kbCardSave(card, { description: v }); saved(); } });
   a.addEventListener('blur', () => { const v = a.value.trim() || 'Unassigned'; if(v !== card.assignee){ kbCardSave(card, { assignee: v }); saved(); const w = document.querySelector('.kbd-who .kb-who'); if(w) w.outerHTML = kbAvatar(v); } });
@@ -10800,6 +10833,12 @@ window.kbDetailPhoto = function(i, el){
     () => { const g = kbFindCard(id); if(!g.card.photos) g.card.photos = []; return g.card.photos; },
     () => { const g = kbFindCard(id); if(g){ kbCardPhotosChanged(g.card); if(kbOpenId === id) kbDetailRender(); } });
   photoLightboxOpen(i, el);
+};
+window.kbDetailDue = function(v){
+  const f = kbFindCard(kbOpenId); if(!f) return;
+  if((f.card.dueDate||'') === (v||'')) return;
+  kbCardSave(f.card, { dueDate: v || '' }); kbDetailRender();
+  const sv = document.getElementById('kbd-saved'); if(sv){ sv.textContent = 'Saved ✓'; setTimeout(() => { if(sv.isConnected) sv.textContent = 'Changes save by themselves'; }, 1800); }
 };
 window.kbDetailAddPhoto = function(){
   const id = kbOpenId;

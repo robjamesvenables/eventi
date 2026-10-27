@@ -1818,6 +1818,8 @@ body.ev-nomoney .dash-hero .ev-money{display:none!important}
 .kbd-addph:hover{border-color:#0D9488;color:#0D9488}
 .kbd-foot{display:flex;align-items:center;justify-content:space-between;padding:12px 22px;border-top:1px solid #EEF1F5;flex:none}
 .kbd-saved{font-size:12px;color:#94A3B8;font-weight:600}
+.kbd-by{font-size:12.5px;color:#475569;font-weight:600;margin-bottom:2px}.kbd-by b{color:#0F1E2E}
+.kbd-who .kb-who{flex:none}
 .kbd-del{display:inline-flex;align-items:center;gap:6px;border:0;background:none;color:#DC2626;font:700 13px Inter,sans-serif;cursor:pointer;padding:8px 10px;border-radius:9px}
 .kbd-del:hover{background:#FEF2F2}
 #p-kb .kanban-card{cursor:pointer}
@@ -10315,7 +10317,7 @@ function taskboardApplyPersonalCard(row){
   });
   if(row.deleted) return;
   const targetCol = board[row.col] ? row.col : 'todo';
-  board[targetCol].push({ dbId: row.id, id: row.id, title: row.title, description: row.description || '', assignee: row.assignee || 'Unassigned', photos: row.photos || [], dueDate: row.due_date || '', createdAt: new Date(row.created_at).getTime() });
+  board[targetCol].push({ dbId: row.id, id: row.id, title: row.title, description: row.description || '', assignee: row.assignee || 'Unassigned', photos: row.photos || [], dueDate: row.due_date || '', createdBy: row.created_by_name || '', createdAt: new Date(row.created_at).getTime() });
   board[targetCol].sort((a,b) => (a.createdAt||0) - (b.createdAt||0));
 }
 
@@ -10353,7 +10355,7 @@ function taskboardApplyTeamCard(row){
   });
   if(row.deleted) return;
   const targetCol = board[row.col] ? row.col : 'todo';
-  board[targetCol].push({ dbId: row.id, id: row.id, title: row.title, description: row.description || '', assignee: row.assignee || 'Unassigned', photos: row.photos || [], dueDate: row.due_date || '', createdAt: new Date(row.created_at).getTime() });
+  board[targetCol].push({ dbId: row.id, id: row.id, title: row.title, description: row.description || '', assignee: row.assignee || 'Unassigned', photos: row.photos || [], dueDate: row.due_date || '', createdBy: row.created_by_name || '', createdAt: new Date(row.created_at).getTime() });
   board[targetCol].sort((a,b) => (a.createdAt||0) - (b.createdAt||0));
 }
 
@@ -10759,7 +10761,7 @@ function kbDetailRender(){
       <div class="kbd-ph">${photos.map((src, i) => `<img src="${src}" onclick="kbDetailPhoto(${i},this)">`).join('')}
         <button class="kbd-addph" onclick="kbDetailAddPhoto()">${ic('<path d="M12 5v14M5 12h14"/>',18)}<span>Add photo</span></button></div>
     </div>
-    <div class="kbd-foot"><span class="kbd-saved" id="kbd-saved">Changes save by themselves</span><button class="kbd-del" onclick="kbDelete(${card.id},'${col}')">${ic('<path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>',14)}Delete</button></div>
+    <div class="kbd-foot"><div style="min-width:0"><div class="kbd-by">${(card.createdBy || card.createdAt) ? 'Added' + (card.createdBy ? ' by <b>' + esc(card.createdBy) + '</b>' : '') + (card.createdAt ? ' · ' + new Date(card.createdAt).toLocaleDateString('en-GB', { day:'numeric', month:'short', year:'numeric' }) : '') : ''}</div><span class="kbd-saved" id="kbd-saved">Changes save by themselves</span></div><button class="kbd-del" onclick="kbDelete(${card.id},'${col}')">${ic('<path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>',14)}Delete</button></div>
   </div>`;
   const grow = el => { el.style.height = 'auto'; el.style.height = el.scrollHeight + 'px'; };
   const t = document.getElementById('kbd-title'), d = document.getElementById('kbd-desc'), a = document.getElementById('kbd-asg');
@@ -10869,15 +10871,22 @@ window.addKanbanCard = function(colSelector){
     ],
     async onOk([title, description]){
       const me = (typeof currentUserFirstName !== 'undefined' && currentUserFirstName) ? currentUserFirstName : 'John';
+      const byName = (myProfile && ((myProfile.first_name||'') + ' ' + (myProfile.last_name||'')).trim()) || me;
+      // Save who added it; if the database isn't updated yet, save without it rather than fail
+      const addCard = async (table, row) => {
+        let r = await sb.from(table).insert([Object.assign({ created_by_name: byName }, row)]).select().single();
+        if(r.error && /created_by/i.test(r.error.message||'')) r = await sb.from(table).insert([row]).select().single();
+        return r;
+      };
       if(kbActiveIsTeam){
         const proj = kbTeamProjects.find(p=>p.id===kbActiveProjectId);
-        const { data, error } = await sb.from('task_cards').insert([{ project_id: proj.dbId, col: colId, title, description: description||'', assignee: me }]).select().single();
+        const { data, error } = await addCard('task_cards', { project_id: proj.dbId, col: colId, title, description: description||'', assignee: me });
         if(error){ toast('Save failed - try again'); console.warn(error); return; }
         taskboardApplyTeamCard(data);
         kbRender();
       } else {
         const proj = kbPersonalProjects.find(p=>p.id===kbActiveProjectId);
-        const { data, error } = await sb.from('personal_task_cards').insert([{ project_id: proj.dbId, col: colId, title, description: description||'', assignee: me }]).select().single();
+        const { data, error } = await addCard('personal_task_cards', { project_id: proj.dbId, col: colId, title, description: description||'', assignee: me });
         if(error){ toast('Save failed - try again'); console.warn(error); return; }
         taskboardApplyPersonalCard(data);
         kbRender();

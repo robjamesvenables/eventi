@@ -1639,8 +1639,6 @@ textarea.rf-val{resize:vertical;min-height:72px;line-height:1.5}
 /* View-only events: hide every editing control and the money boxes */
 body.ev-viewonly [onclick*="beoCreateNew"],
 body.ev-viewonly .pnl-open,body.ev-viewonly .pnl-pdf-top{display:none!important}
-/* Dashboard greeting: same fade + gold glow (glow painted in the background, so pop-ups inside are never clipped) */
-#sky-banner{background:radial-gradient(circle at 94% -10%,rgba(233,196,106,.30),transparent 34%),linear-gradient(120deg,#0F1E2E 0%,#1E3A5F 60%,#0F766E 140%)!important}
 /* ── One banner style for every page title (Dashboard and Chat keep their own layout) ── */
 .page:not(#p-home):not(#p-chat) > .ph{background:linear-gradient(120deg,#0F1E2E,#1E3A5F 60%,#0F766E 140%);border-radius:20px;padding:20px 24px;margin-bottom:16px!important;position:relative;overflow:hidden;align-items:center}
 .page:not(#p-home):not(#p-chat) > .ph::after{content:'';position:absolute;right:-60px;top:-70px;width:240px;height:240px;border-radius:50%;background:radial-gradient(circle,rgba(233,196,106,.28),transparent 70%);pointer-events:none}
@@ -21600,7 +21598,10 @@ function colourIsLight(hex){
 function applyVenueBannerColor(){
   const banner = document.getElementById('sky-banner');
   const bg = VENUE_BANNER_COLORS[currentVenue] || VENUE_BANNER_COLORS.a;
-  if(banner){ banner.style.background = bg; banner.classList.toggle('banner-light', colourIsLight(bg)); }
+  // Each venue keeps its own colour, with the same fade + soft glow as the page banners
+  const fade = { a:'linear-gradient(120deg,#0F1E2E 0%,#1E3A5F 60%,#0F766E 140%)', b:'linear-gradient(120deg,#0B6E66 0%,#0D9488 60%,#2DB3A6 140%)', c:'linear-gradient(120deg,#A07A2C 0%,#C4973B 60%,#E2BE6E 140%)' }[currentVenue] || null;
+  const glow = 'radial-gradient(circle at 94% -10%,rgba(255,255,255,.18),transparent 34%)';
+  if(banner){ banner.style.background = fade ? glow + ',' + fade : bg; banner.classList.toggle('banner-light', colourIsLight(bg)); }
 }
 
 function selectVenue(id){

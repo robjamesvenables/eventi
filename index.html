@@ -18514,6 +18514,7 @@ async function quickLinksLoadFromSupabase(){
         url: row.url,
         type: quickLinksDetectType(row.url),
         by: row.by_name,
+        createdBy: row.created_by || '',
         meta: 'Added by ' + row.by_name + ' · ' + dateLabel,
         createdAt
       });
@@ -18599,8 +18600,8 @@ function quickLinksRender(){
         <div class="ql-who">${f.by ? f.by + ' · ' : ''}${ago(f.createdAt)}</div>
         <div class="ql-acts"><button class="ql-open" onclick="window.open('${f.url}','_blank')">Open ↗</button>
           <button class="ql-mini" title="Copy link" onclick="navigator.clipboard.writeText('${f.url}');toast('Copied ✓')"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v1"/></svg></button>
-          <button class="ql-mini" title="Edit" onclick="quickLinksEdit(${f.id})"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.85 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg></button>
-          <button class="ql-mini del" title="Delete" onclick="quickLinksDelete(${f.id})"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/></svg></button></div></div>
+          ${quickLinksCanEdit(f) ? `<button class="ql-mini" title="Edit" onclick="quickLinksEdit(${f.id})"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.85 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg></button>
+          <button class="ql-mini del" title="Delete" onclick="quickLinksDelete(${f.id})"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/></svg></button>` : ''}</div></div>
     </div>`;
   }).join('') + '</div>';
 }
@@ -18622,6 +18623,7 @@ function quickLinksAdd(){
         quickLinksData.unshift({
           id: data.id,
           dbId: data.id,
+          createdBy: data.created_by || (myProfile && myProfile.user_id) || '',
           name, url, type, by,
           meta: 'Added by ' + by + ' · Today',
           createdAt: Date.now()
@@ -18642,7 +18644,13 @@ function quickLinksAdd(){
   });
 }
 
-// Edit a link's name or address (everyone can, same as adding)
+// Rules: everyone can see and add; only whoever added a link, or Managers and above, can edit or delete it
+function quickLinksCanEdit(f){
+  if(!myProfile) return true;   // demo
+  if(myProfile.is_owner || ['superadmin','director','manager'].includes(myProfile.role)) return true;
+  return !!f.createdBy && String(f.createdBy) === String(myProfile.user_id);
+}
+// Edit a link's name or address
 function quickLinksEdit(id){
   const link = quickLinksData.find(f=>f.id===id); if(!link) return;
   appModalShow({
@@ -18668,13 +18676,14 @@ function quickLinksEdit(id){
 function quickLinksDelete(id){
   appConfirmShow({title:'Remove Quick Link', msg:'Remove this link for everyone? This cannot be undone.', onOk: async ()=>{
     const link = quickLinksData.find(f=>f.id===id);
+    const before = quickLinksData.slice();
     quickLinksData = quickLinksData.filter(f=>f.id!==id);
     quickLinksRender();
-    toast('Removed');
     if(link && link.dbId){
-      const { error } = await sb.from('quick_links').delete().eq('id', link.dbId);
-      if(error) console.warn('Could not delete quick link from Supabase', error);
+      const { data, error } = await sb.from('quick_links').delete().eq('id', link.dbId).select();
+      if(error || !data || !data.length){ quickLinksData = before; quickLinksRender(); toast('Not removed - only whoever added it, or a manager, can remove it'); if(error) console.warn(error); return; }
     }
+    toast('Removed');
   }});
 }
 

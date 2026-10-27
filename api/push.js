@@ -117,6 +117,44 @@ async function requestPush(me, b, res){
   return L.send(res, 200, { ok: true, sent, people: to.length, devices: subs.length, skipped });
 }
 
+// ── Task Board ──
+// POST { task_id }  - straight after someone gives a team task to a person: tell that person
+async function taskPush(me, b, res){
+  const log = text => L.db('app_errors', { method: 'POST', body: { company_id: me.company_id, username: me.username, page: 'notify', message: 'Task notification from ' + (fullName(me) || me.username) + ': ' + text } }).catch(() => {});
+  const c = (await L.db('task_cards?select=id,title,project_id,assigned_to,assigned_by,assigned_at&id=eq.' + encodeURIComponent(b.task_id)))[0];
+  if (!c) return L.send(res, 200, { ok: true, sent: 0, why: 'task not found' });
+  // only the person who just gave it out, and only straight away
+  if (String(c.assigned_by) !== String(me.id) || !c.assigned_at || Date.now() - new Date(c.assigned_at).getTime() > 3 * 60000) return L.send(res, 200, { ok: true, sent: 0, why: 'nothing new' });
+  if (!c.assigned_to || String(c.assigned_to) === String(me.id)) return L.send(res, 200, { ok: true, sent: 0, why: 'no one else to tell' });
+  const person = (await L.db('profiles?select=id,company_id,active&id=eq.' + encodeURIComponent(c.assigned_to)))[0];
+  if (!person || String(person.company_id) !== String(me.company_id) || person.active === false) return L.send(res, 200, { ok: true, sent: 0, why: 'person not found' });
+  const [proj, prefs, subs] = await Promise.all([
+    L.db('task_projects?select=name&id=eq.' + encodeURIComponent(c.project_id)).catch(() => []),
+    L.db('chat_prefs?select=*&profile_id=eq.' + encodeURIComponent(person.id)).catch(() => []),
+    L.db('push_subs?select=*&profile_id=eq.' + encodeURIComponent(person.id))
+  ]);
+  if (!subs.length) return L.send(res, 200, { ok: true, sent: 0, why: 'notifications not turned on' });
+  const what = String(c.title || 'a task'); const short = what.length > 100 ? what.slice(0, 97) + '…' : what;
+  const title = 'Task' + (proj[0] && proj[0].name ? ' · ' + proj[0].name : '');
+  const body = (me.first_name || 'Someone') + ' gave you a task: ' + short;
+  webpush.setVapidDetails('mailto:hello@getmavis.co', VAPID_PUBLIC, VAPID_PRIVATE);
+  const now = new Date();
+  let sent = 0; const skipped = [];
+  await Promise.all(subs.map(async s => {
+    if (inQuiet(prefs[0], now)) { skipped.push('quiet hours'); return; }
+    const payload = JSON.stringify({ title, body, thread: 'task-' + c.id, url: '/?task=' + c.id, from: me.id, who: initials(me), colour: ROLE_COLOURS[me.role] || '#0D9488' });
+    try {
+      await webpush.sendNotification({ endpoint: s.endpoint, keys: { p256dh: s.p256dh, auth: s.auth } }, payload, { TTL: 6 * 3600, urgency: 'high' });
+      sent++;
+    } catch (e) {
+      if (e.statusCode === 404 || e.statusCode === 410) await L.db('push_subs?endpoint=eq.' + encodeURIComponent(s.endpoint), { method: 'DELETE' }).catch(() => {});
+      skipped.push('error ' + (e.statusCode || e.message));
+    }
+  }));
+  if (sent < subs.length) await log('task "' + short + '": sent to ' + sent + ' of ' + subs.length + ' device(s)' + (skipped.length ? ' - skipped: ' + skipped.join(', ') : ''));
+  return L.send(res, 200, { ok: true, sent, devices: subs.length, skipped });
+}
+
 // ── Ordering ──
 // POST { order_id, event }  event: new | hold | answered | approved | rejected | ordered | received | paid | note
 //   new → approvers · hold/approved/rejected/ordered/paid → the person who asked
@@ -238,6 +276,7 @@ module.exports = async (req, res) => {
     }
     if (b.request_id) return await requestPush(me, b, res);
     if (b.order_id) return await orderPush(me, b, res);
+    if (b.task_id) return await taskPush(me, b, res);
     const msg = (await L.db('chat_msgs?select=*&id=eq.' + encodeURIComponent(b.msg_id || '')))[0];
     // only the person who sent it, and only straight after sending
     if (!msg) { await note(me, 'not sent - message not found'); return L.send(res, 200, { ok: true, sent: 0, why: 'message not found' }); }

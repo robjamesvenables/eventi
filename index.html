@@ -1823,6 +1823,22 @@ body.ev-nomoney .dash-hero .ev-money{display:none!important}
 .kbd-del{display:inline-flex;align-items:center;gap:6px;border:0;background:none;color:#DC2626;font:700 13px Inter,sans-serif;cursor:pointer;padding:8px 10px;border-radius:9px}
 .kbd-del:hover{background:#FEF2F2}
 #p-kb .kanban-card{cursor:pointer}
+.kbd-pickwrap{position:relative}
+.kbd-pick{display:flex;align-items:center;gap:10px;width:100%;border:1.5px solid #E2E8F0;background:white;border-radius:10px;padding:8px 12px;cursor:pointer;font:600 14px Inter,sans-serif;color:#0F1E2E;text-align:left}
+.kbd-pick:hover{border-color:#CBD5E1}
+.kbd-pick .kb-nm{display:inline!important;font-size:14px;color:#0F1E2E}
+.kbd-pick-none{color:#94A3B8;font-weight:600;padding:3px 0}
+.kbd-chev{margin-left:auto;color:#94A3B8;flex:none}
+.kbd-pick-list{display:none;position:absolute;left:0;right:0;top:calc(100% + 6px);background:white;border-radius:12px;box-shadow:0 14px 36px rgba(15,30,46,.22);padding:8px;z-index:5}
+.kbd-pick-list input{width:100%;box-sizing:border-box;border:1.5px solid #E2E8F0;border-radius:9px;padding:9px 11px;font:500 14px Inter,sans-serif;margin-bottom:6px}
+.kbd-pick-list input:focus{outline:none;border-color:#0D9488}
+.kbp-list{max-height:240px;overflow-y:auto}
+.kbp-row{display:flex;align-items:center;gap:8px;width:100%;border:0;background:none;padding:8px;border-radius:9px;cursor:pointer;text-align:left}
+.kbp-row:hover{background:#F1F5F9}.kbp-row.on{background:#E0F5F2}
+.kbp-row .kb-nm{display:inline!important;color:#0F1E2E;font-size:13.5px}
+.kbp-role{margin-left:auto;font-size:11px;color:#94A3B8;font-weight:700;white-space:nowrap}
+.kbp-empty{padding:12px;color:#94A3B8;font-size:13px;text-align:center}
+
 .kb-due{display:inline-flex;align-items:center;gap:5px;font-size:11.5px;font-weight:700;color:#475569;background:#F1F5F9;border-radius:7px;padding:3px 8px}
 .kb-due.soon{color:#8A6420;background:#F7EEDC}
 .kb-due.late{color:white;background:#DC2626}
@@ -6320,6 +6336,7 @@ function appClearDemoState(){
              currentVenue = 'a'; renderVenueSwitcherButton(); renderVenueDropdown(); });
 }
 function authEnterApp(){
+  setTimeout(() => { try{ kbOpenFromUrl(); }catch(e){} }, 900);
   if(!appIsDemoCompany()) appClearDemoState();
   if(myProfile){ try{ accountApi({ action:'seen' }); }catch(e){} }
   appLoadAllDataOnce((myProfile && myProfile.user_id) || 'demo');
@@ -10317,7 +10334,7 @@ function taskboardApplyPersonalCard(row){
   });
   if(row.deleted) return;
   const targetCol = board[row.col] ? row.col : 'todo';
-  board[targetCol].push({ dbId: row.id, id: row.id, title: row.title, description: row.description || '', assignee: row.assignee || 'Unassigned', photos: row.photos || [], dueDate: row.due_date || '', createdBy: row.created_by_name || '', createdAt: new Date(row.created_at).getTime() });
+  board[targetCol].push({ dbId: row.id, id: row.id, title: row.title, description: row.description || '', assignee: row.assignee || 'Unassigned', photos: row.photos || [], dueDate: row.due_date || '', createdBy: row.created_by_name || '', assignedTo: row.assigned_to || '', createdAt: new Date(row.created_at).getTime() });
   board[targetCol].sort((a,b) => (a.createdAt||0) - (b.createdAt||0));
 }
 
@@ -10355,7 +10372,7 @@ function taskboardApplyTeamCard(row){
   });
   if(row.deleted) return;
   const targetCol = board[row.col] ? row.col : 'todo';
-  board[targetCol].push({ dbId: row.id, id: row.id, title: row.title, description: row.description || '', assignee: row.assignee || 'Unassigned', photos: row.photos || [], dueDate: row.due_date || '', createdBy: row.created_by_name || '', createdAt: new Date(row.created_at).getTime() });
+  board[targetCol].push({ dbId: row.id, id: row.id, title: row.title, description: row.description || '', assignee: row.assignee || 'Unassigned', photos: row.photos || [], dueDate: row.due_date || '', createdBy: row.created_by_name || '', assignedTo: row.assigned_to || '', createdAt: new Date(row.created_at).getTime() });
   board[targetCol].sort((a,b) => (a.createdAt||0) - (b.createdAt||0));
 }
 
@@ -10752,7 +10769,7 @@ function kbDetailRender(){
       <div class="kbd-lbl">STATUS</div>
       <div class="kbd-st">${['todo','progress','done'].map(c => `<button class="${c===col?'on':''}" style="--sc:${clr(c)}" onclick="kbDetailMove('${c}')">${c===col?ic('<path d="M20 6 9 17l-5-5"/>',13):''}${esc(nm(c))}</button>`).join('')}</div>
       ${kbActiveIsTeam ? `<div class="kbd-lbl">ASSIGNED TO</div>
-      <div class="kbd-who">${kbAvatar(card.assignee)}<input id="kbd-asg" value="${esc(/^unassigned$/i.test(card.assignee||'')?'':card.assignee)}" placeholder="Type a name" maxlength="60"></div>` : ''}
+      <div class="kbd-pickwrap"><button type="button" class="kbd-pick" onclick="kbPickOpen()">${/^unassigned$/i.test(card.assignee||'') ? '<span class="kbd-pick-none">Pick someone</span>' : kbAvatar(card.assignee)}<svg class="kbd-chev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg></button><div id="kbd-pick-list" class="kbd-pick-list"></div></div>` : ''}
       <div class="kbd-lbl">DUE DATE</div>
       <div class="kbd-due"><input type="date" id="kbd-due" value="${esc(card.dueDate)}">${card.dueDate ? kbDueChip(card.dueDate, col==='done') + `<button type="button" class="kbd-clear" onclick="kbDetailDue('')">Remove</button>` : '<span class="kbd-hint">Optional</span>'}</div>
       <div class="kbd-lbl">DESCRIPTION</div>
@@ -10799,6 +10816,75 @@ window.kbDetailMove = function(toCol){
   const a = document.activeElement; if(a && a.closest && a.closest('#kb-detail')) a.blur();
   kbMove(f.card.id, f.col, toCol); kbDetailRender();
 };
+
+// Team tasks: "Assigned to" is picked from your staff (no typing), and that person gets told
+let kbStaff = null;
+async function kbStaffLoad(){
+  if(kbStaff) return kbStaff;
+  try{
+    if(!myProfile || !myProfile.company_id) return (kbStaff = []);
+    const { data, error } = await sb.from('profiles').select('id,first_name,last_name,role,active').eq('company_id', myProfile.company_id).order('first_name');
+    if(error) throw error;
+    kbStaff = (data || []).filter(p => p.active !== false).map(p => ({ id: p.id, name: ((p.first_name||'') + ' ' + (p.last_name||'')).trim() || 'No name', role: p.role }));
+  }catch(e){ console.warn('Staff list not loaded', e); kbStaff = []; }
+  return kbStaff;
+}
+window.kbPickOpen = async function(){
+  const box = document.getElementById('kbd-pick-list'); if(!box) return;
+  if(box.style.display === 'block'){ box.style.display = 'none'; return; }
+  box.style.display = 'block';
+  box.innerHTML = '<div class="kbp-empty">Loading your team…</div>';
+  if(!window._kbpOut){ window._kbpOut = 1; document.addEventListener('click', e => { const l = document.getElementById('kbd-pick-list'); if(l && l.style.display === 'block' && !e.target.closest('.kbd-pickwrap')) l.style.display = 'none'; }); }
+  const staff = await kbStaffLoad();
+  const f = kbFindCard(kbOpenId); if(!f) return;
+  const cur = f.card.assignedTo || '';
+  const esc = v => String(v||'').replace(/&/g,'&amp;').replace(/</g,'&lt;');
+  const row = p => `<button type="button" class="kbp-row${String(p.id)===String(cur)?' on':''}" data-n="${esc(p.name.toLowerCase())}" onclick="kbPickSet('${p.id}')">${kbAvatar(p.name)}<span class="kbp-role">${esc(typeof roleName==='function' ? roleName(p.role) : (p.role||''))}</span></button>`;
+  box.innerHTML = `<input id="kbp-q" placeholder="Search your team" autocomplete="off">
+    <div class="kbp-list">${staff.length ? staff.map(row).join('') : '<div class="kbp-empty">No team members found</div>'}
+    <button type="button" class="kbp-row kbp-none" data-n="nobody" onclick="kbPickSet('')"><span class="kb-who"><span class="kb-av" style="background:#CBD5E1">–</span><span class="kb-nm">Nobody</span></span></button></div>`;
+  const q = document.getElementById('kbp-q');
+  q.addEventListener('input', () => { const v = q.value.trim().toLowerCase(); box.querySelectorAll('.kbp-row').forEach(r => { r.style.display = !v || r.dataset.n.includes(v) ? '' : 'none'; }); });
+  if(window.matchMedia('(hover:hover)').matches) q.focus();
+};
+window.kbPickSet = async function(id){
+  const f = kbFindCard(kbOpenId); if(!f) return;
+  const card = f.card;
+  const p = id ? (kbStaff || []).find(x => String(x.id) === String(id)) : null;
+  const name = p ? p.name : 'Unassigned';
+  if(String(card.assignedTo||'') === String(id||'') && card.assignee === name){ document.getElementById('kbd-pick-list').style.display = 'none'; return; }
+  Object.assign(card, { assignee: name, assignedTo: id || '' });
+  kbRender(); kbDetailRender();
+  const sv = document.getElementById('kbd-saved'); if(sv){ sv.textContent = 'Saved ✓'; setTimeout(() => { if(sv.isConnected) sv.textContent = 'Changes save by themselves'; }, 1800); }
+  if(!card.dbId || !kbActiveIsTeam) return;
+  const full = { assignee: name, assigned_to: id || null, assigned_by: id ? (myProfile && myProfile.id) || null : null, assigned_at: id ? new Date().toISOString() : null };
+  let { error } = await sb.from('task_cards').update(full).eq('id', card.dbId);
+  if(error && /assigned_/i.test(error.message||'')) ({ error } = await sb.from('task_cards').update({ assignee: name }).eq('id', card.dbId)); // database not updated yet
+  if(error){ toast('Not saved - check your connection'); console.warn(error); return; }
+  if(id && myProfile && String(id) !== String(myProfile.id)){
+    toast(p.name.split(' ')[0] + ' will get a notification');
+    try{
+      const { data } = await sb.auth.getSession();
+      const token = data && data.session && data.session.access_token;
+      if(token){ const r = await authApi('push', { body:{ task_id: card.dbId }, token }); console.log('[push] task: ' + (r.sent ? 'notified ' + r.sent + ' device(s)' : (r.why || 'nobody to notify')), r); }
+    }catch(e){}
+  }
+};
+// Tapping a task notification opens that task
+async function kbOpenFromUrl(){
+  let id = null; try{ id = new URLSearchParams(location.search).get('task'); }catch(e){}
+  if(!id) return;
+  try{ history.replaceState(history.state, '', location.pathname + location.hash); }catch(e){}
+  await taskboardLoadTeamFromSupabase();
+  for(const proj of kbTeamProjects){
+    const b = kbBoards[proj.id]; if(!b) continue;
+    for(const col of ['todo','progress','done']){
+      const c = (b[col]||[]).find(x => String(x.dbId) === String(id));
+      if(c){ taskboardOpenProject(proj.id, true); setTimeout(() => kbOpenCard(c.id), 150); return; }
+    }
+  }
+  toast('That task has been removed');
+}
 
 // Phone: tabs above the board jump straight to a column
 function kbTabsRender(){

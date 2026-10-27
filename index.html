@@ -10823,9 +10823,11 @@ async function kbStaffLoad(){
   if(kbStaff) return kbStaff;
   try{
     if(!myProfile || !myProfile.company_id) return (kbStaff = []);
-    const { data, error } = await sb.from('profiles').select('id,first_name,last_name,role,active').eq('company_id', myProfile.company_id).order('first_name');
+    const { data, error } = await sb.from('profiles').select('id,first_name,last_name,role,active,is_owner').eq('company_id', myProfile.company_id).order('first_name');
     if(error) throw error;
-    kbStaff = (data || []).filter(p => p.active !== false).map(p => ({ id: p.id, name: ((p.first_name||'') + ' ' + (p.last_name||'')).trim() || 'No name', role: p.role }));
+    // Only people whose role can open the Task Board (Admin Console > roles > Task Board)
+    const canTasks = p => { if(p.is_owner || p.role === 'superadmin') return true; const pr = (typeof ADMIN_PERMS !== 'undefined' && ADMIN_PERMS[p.role]) || null; return !pr || !('tasks' in pr) || !!pr.tasks; };
+    kbStaff = (data || []).filter(p => p.active !== false && canTasks(p)).map(p => ({ id: p.id, name: ((p.first_name||'') + ' ' + (p.last_name||'')).trim() || 'No name', role: p.role }));
   }catch(e){ console.warn('Staff list not loaded', e); kbStaff = []; }
   return kbStaff;
 }

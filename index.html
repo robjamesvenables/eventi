@@ -13531,12 +13531,20 @@ function vacancyCardHtml(v){
   </div>`;
 }
 
+// Department is picked from your company's own departments (set up in People), not typed
+function vacDeptOptions(current){
+  const list = (typeof faqCompanyDepts === 'function' ? faqCompanyDepts() : []).map(String).filter(Boolean);
+  const names = [...new Set(list.concat(['Front of House','Kitchen','Bar']).filter((n, i, a) => list.length ? list.includes(n) : true))];
+  if(current && !names.includes(current)) names.push(current);
+  if(!names.includes('Other')) names.push('Other');
+  return names.map(n => ({ id: n, name: n }));
+}
 window.vacancyAdd = function(){
   appModalShow({
     title:'Add Vacancy',
     fields:[
       {label:'Job title', placeholder:'e.g. Front of House Supervisor'},
-      {label:'Department', placeholder:'e.g. Front of House, Kitchen'},
+      {label:'Department', type:'pillpicker', options: vacDeptOptions(), value: vacDeptOptions()[0].id},
       {label:'Date needed', type:'date'},
       {label:'Description', type:'textarea', rows:6, placeholder:'What the role involves, who they\'d be working with...'},
       {label:'Requirements (optional)', type:'textarea', rows:4, optional:true, placeholder:'Experience, language, availability...'}
@@ -13568,7 +13576,7 @@ window.vacancyEdit = function(id){
     title:'Edit Vacancy',
     fields:[
       {label:'Job title', value:v.title},
-      {label:'Department', value:v.department},
+      {label:'Department', type:'pillpicker', options: vacDeptOptions(v.department), value: v.department || vacDeptOptions()[0].id},
       {label:'Date needed', type:'date', value:v.dateNeeded},
       {label:'Description', type:'textarea', rows:6, value:v.description},
       {label:'Requirements (optional)', type:'textarea', rows:4, value:v.requirements||'', optional:true}

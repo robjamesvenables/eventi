@@ -2109,7 +2109,7 @@ body.ev-nomoney .dash-hero .ev-money{display:none!important}
 .sop-search input{flex:1;min-width:0;border:0;outline:none;font:500 15px Inter,sans-serif;color:#0F1E2E;padding:13px 0;background:none}
 .sop-search:focus-within{box-shadow:0 0 0 2px #0D9488}
 #p-faq > .ph,#p-vendors > .ph{flex-wrap:wrap;row-gap:0}
-.vd-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:12px}
+.vd-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:12px;align-items:start}
 .vd-c{background:white;border-radius:16px;padding:16px;box-shadow:0 1px 3px rgba(15,30,46,.07);display:flex;flex-direction:column;min-width:0}
 .vd-top{display:flex;gap:12px;align-items:flex-start}
 .vd-av{width:44px;height:44px;border-radius:12px;color:white;font:800 15px Inter,sans-serif;display:flex;align-items:center;justify-content:center;flex:none}
@@ -19939,8 +19939,11 @@ const vdEmailIn = s => { const m = String(s || '').match(/[^\s@·,;]+@[^\s@·,;]
 function vdFromRow(row){
   const legacy = vendorDepts.find(d => d.id === row.dept_id);
   const depts = Array.isArray(row.depts) && row.depts.length ? row.depts : (legacy ? [legacy.name] : []);
+  const phone = row.phone || vdPhoneIn(row.contact), email = row.email || vdEmailIn(row.contact);
+  // An old contact line that isn't a phone or email (e.g. "ask for Made") becomes the note, so it can still be seen and edited
+  const leftover = !phone && !email && !row.notes ? String(row.contact || '').trim() : '';
   return { id: row.id, dbId: row.id, name: row.name || '', supplies: row.supplies || '', contactName: row.contact_name || '', contactRole: row.contact_role || '',
-    phone: row.phone || vdPhoneIn(row.contact), email: row.email || vdEmailIn(row.contact), notes: row.notes || '', depts, contact: row.contact || '' };
+    phone, email, notes: row.notes || leftover, depts, contact: row.contact || '' };
 }
 
 async function vendorLoadFromSupabase(){
@@ -20005,7 +20008,7 @@ function vdWaNumber(p){
 }
 function vdCardHtml(v, showDepts){
   const id = vdEsc(JSON.stringify(v.id));
-  const words = v.name.split(/\s+/).filter(Boolean);
+  const words = v.name.split(/\s+/).map(w => w.replace(/[^A-Za-z0-9]/g, '')).filter(Boolean);
   const ini = ((words[0] || '?')[0] + (words[1] ? words[1][0] : '')).toUpperCase();
   let h = 0; for(const c of v.name) h = (h * 31 + c.charCodeAt(0)) >>> 0;
   const bg = ['#0F1E2E','#0D9488','#C4973B','#1E3A5F'][h % 4];
@@ -20018,7 +20021,6 @@ function vdCardHtml(v, showDepts){
     ${v.contactName ? `<div class="vd-who">${vdSvg('user', 15)}${vdEsc(v.contactName)}${v.contactRole ? `<span>· ${vdEsc(v.contactRole)}</span>` : ''}</div>` : ''}
     ${(showDepts || v.depts.length > 1) && v.depts.length ? `<div class="vd-tags">${v.depts.map(n => `<span>${vdEsc(n)}</span>`).join('')}</div>` : ''}
     ${v.notes ? `<div class="vd-note">${vdSvg('note', 15)}<span>${vdEsc(v.notes)}</span></div>` : ''}
-    ${!v.phone && !v.email && v.contact ? `<div class="vd-sup" style="margin-top:8px">${vdEsc(v.contact)}</div>` : ''}
     <div class="vd-acts">${btns}</div>
   </div>`;
 }

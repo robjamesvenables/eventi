@@ -10293,7 +10293,9 @@ window.mnSendToAttendees = function(){
   const to = m.attendeeIds.filter(id => String(id) !== String(me));
   if(!to.length){ toast('Add who was there first'); return; }
   if(typeof chat2Send !== 'function' || !myProfile){ toast('Chat is not available here'); return; }
-  appConfirmShow({ title: 'Send to attendees', msg: 'Send these notes to ' + to.length + ' ' + (to.length === 1 ? 'person' : 'people') + ' in Mavis Chat?', onOk: async () => {
+  const who = to.map(id => ((mnStaff||[]).find(p => String(p.id) === String(id)) || {}).name).filter(Boolean).map(n => n.split(' ')[0]);
+  const list = who.length > 1 ? who.slice(0, -1).join(', ') + ' and ' + who[who.length-1] : (who[0] || to.length + ' people');
+  appConfirmShow({ title: 'Send to attendees', label: 'Send', msg: 'Send these notes and action points to ' + list + '? Each person gets them as a message in their Mavis Chat with you.', onOk: async () => {
     const body = mnText(m, false);
     let ok = 0;
     for(const pid of to){
@@ -24062,6 +24064,8 @@ function appConfirmShow({title, msg, label='Delete', onOk, cancelLabel='Cancel',
   document.getElementById('appConfirmTitle').textContent = title;
   document.getElementById('appConfirmMsg').textContent = msg;
   document.getElementById('appConfirmOk').textContent = label;
+  // Red only for things that remove something; everything else (Send, Copy...) is navy
+  document.getElementById('appConfirmOk').style.background = /delete|remove|log ?out|clear|discard|reset/i.test(label) ? '#EF4444' : '#0F1E2E';
   const modal = document.getElementById('appConfirm');
   modal.style.display='flex';
   const priorState = history.state || {page:'home'};

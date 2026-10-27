@@ -23241,37 +23241,84 @@ async function sandboxAddItem(type, content, title){
   sandboxRender();
 }
 
+// Edit anything in Sandbox: title + the thing itself (note text, link, photo, voice)
+let sandboxReplaceId = null;
 function sandboxEditItem(id){
   const item = sandboxItems.find(x=>x.id===id);
   if(!item) return;
-  const isNote = item.type === 'note';
-  const isLink = item.type === 'link';
-  const isTextType = isNote || isLink;
-  appModalShow({
-    title: 'Edit ' + (item.type==='note'?'Note':item.type==='link'?'Link':item.type==='photo'?'Photo':'Voice Note'),
-    fields: isTextType
-      ? [
-          {label:'Title', placeholder:'Optional', optional:true, value: item.title||''},
-          {label: isNote?'Note':'URL', type: isNote?'textarea':undefined, rows: isNote?6:undefined, value: item.content}
-        ]
-      : [{label:'Title', placeholder:'Optional', optional:true, value: item.title||''}],
-    async onOk(vals){
-      const title = (vals[0]||'').trim();
-      const content = isTextType ? vals[1] : item.content;
-      if(isTextType && (!content || !content.trim())) return;
-      item.title = title;
-      item.content = content;
-      sandboxRender();
-      if(item.dbId){
-        const update = { title };
-        if(isTextType) update.content = content;
-        const { error } = await sb.from('sandbox_items').update(update).eq('id', item.dbId);
-        if(error){ toast('Save failed - try again'); console.warn(error); return; }
-      }
-      toast('Updated ✓');
-    }
-  });
+  const kind = ({note:'Note',voice:'Voice Note',photo:'Photo',link:'Link'})[item.type] || 'Item';
+  let o = document.getElementById('sbx-ed');
+  if(!o){ o = document.createElement('div'); o.id = 'sbx-ed'; document.body.appendChild(o);
+    o.addEventListener('click', e => { if(e.target === o) o.style.display = 'none'; }); }
+  o.style.cssText = 'position:fixed;inset:0;background:rgba(15,30,46,.55);z-index:10004;display:flex;align-items:center;justify-content:center;padding:16px';
+  const esc = v => String(v||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;');
+  const lab = t => `<div style="font-size:10.5px;font-weight:800;letter-spacing:1px;color:#94A3B8;margin:14px 0 6px">${t}</div>`;
+  const inp = 'width:100%;box-sizing:border-box;border:1.5px solid #E2E8F0;border-radius:10px;padding:11px 13px;font:500 14px Inter,sans-serif;color:#0F1E2E;outline:none';
+  const sbtn = 'display:inline-flex;align-items:center;gap:6px;border:1.5px solid #E2E8F0;background:#F8FAFC;color:#0F1E2E;border-radius:9px;padding:8px 12px;font:700 12.5px Inter,sans-serif;cursor:pointer';
+  const ic = p => `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${p}</svg>`;
+  let body = '';
+  if(item.type === 'note') body = lab('NOTE') + `<textarea id="sbx-ed-c" rows="7" style="${inp};resize:vertical;line-height:1.5">${esc(item.content)}</textarea>`;
+  else if(item.type === 'link') body = lab('LINK') + `<input id="sbx-ed-c" style="${inp}" value="${esc(item.content)}" placeholder="https://...">`;
+  else if(item.type === 'photo') body = lab('PHOTO') + `<div style="background:#F1F5F9;border-radius:10px;padding:8px;text-align:center"><img id="sbx-ed-img" src="${item.content}" style="max-width:100%;max-height:220px;border-radius:8px;display:inline-block"></div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px">
+      <button type="button" style="${sbtn}" onclick="sbxEdRotate(-1)">${ic('<path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/>')}Rotate left</button>
+      <button type="button" style="${sbtn}" onclick="sbxEdRotate(1)">${ic('<path d="M21 12a9 9 0 1 1-3-6.7L21 8"/><path d="M21 3v5h-5"/>')}Rotate right</button>
+      <label style="${sbtn}">${ic('<path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2Z"/><circle cx="12" cy="13" r="4"/>')}Change photo<input type="file" accept="image/*" style="display:none" onchange="sbxEdSwap(this)"></label>
+    </div>`;
+  else if(item.type === 'voice') body = lab('VOICE NOTE') + `<audio controls src="${item.content}" style="width:100%"></audio>
+    <button type="button" style="${sbtn};margin-top:10px" onclick="sbxEdReRecord(${item.id})">${ic('<path d="M12 2a3 3 0 0 0-3 3v6a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v1a7 7 0 0 1-14 0v-1M12 18v4"/>')}Record again</button>`;
+  o.innerHTML = `<div style="background:white;border-radius:16px;padding:22px;width:100%;max-width:440px;max-height:calc(100vh - 32px);overflow:auto;box-shadow:0 20px 60px rgba(15,30,46,.3);font-family:Inter,sans-serif">
+    <div style="font-size:16px;font-weight:800;color:#0F1E2E">Edit ${kind}</div>
+    ${lab('TITLE')}<input id="sbx-ed-t" style="${inp}" value="${esc(item.title)}" placeholder="Optional">
+    ${body}
+    <div style="display:flex;gap:10px;margin-top:20px">
+      <button type="button" id="sbx-ed-ok" style="flex:1;background:#0F1E2E;color:white;border:0;border-radius:10px;padding:12px;font:800 14px Inter,sans-serif;cursor:pointer">Save</button>
+      <button type="button" style="background:#F1F5F9;color:#334155;border:0;border-radius:10px;padding:12px 18px;font:700 14px Inter,sans-serif;cursor:pointer" onclick="document.getElementById('sbx-ed').style.display='none'">Cancel</button>
+    </div></div>`;
+  o.dataset.photo = item.type === 'photo' ? item.content : '';
+  document.getElementById('sbx-ed-ok').onclick = async () => {
+    const title = document.getElementById('sbx-ed-t').value.trim();
+    let content = item.content;
+    if(item.type === 'note' || item.type === 'link'){
+      content = document.getElementById('sbx-ed-c').value;
+      if(!content.trim()){ toast(item.type === 'note' ? 'The note is empty' : 'Add the link first'); return; }
+    } else if(item.type === 'photo') content = o.dataset.photo || item.content;
+    o.style.display = 'none';
+    await sandboxSaveEdit(item, { title, content });
+  };
 }
+async function sandboxSaveEdit(item, changes){
+  const before = { title: item.title, content: item.content };
+  Object.assign(item, changes);
+  sandboxRender();
+  if(item.dbId){
+    const { error } = await sb.from('sandbox_items').update(changes).eq('id', item.dbId);
+    if(error){ Object.assign(item, before); sandboxRender(); toast('Save failed - try again'); console.warn(error); return; }
+  }
+  toast('Updated ✓');
+}
+window.sbxEdRotate = function(dir){
+  const o = document.getElementById('sbx-ed'), im = new Image();
+  im.onload = () => {
+    const c = document.createElement('canvas'); c.width = im.height; c.height = im.width;
+    const x = c.getContext('2d'); x.translate(c.width/2, c.height/2); x.rotate(dir * Math.PI/2); x.drawImage(im, -im.width/2, -im.height/2);
+    o.dataset.photo = c.toDataURL('image/jpeg', 0.88);
+    document.getElementById('sbx-ed-img').src = o.dataset.photo;
+  };
+  im.src = o.dataset.photo;
+};
+window.sbxEdSwap = async function(el){
+  const f = el.files && el.files[0]; if(!f) return;
+  const url = await appFileToDataUrl(f);
+  document.getElementById('sbx-ed').dataset.photo = url;
+  document.getElementById('sbx-ed-img').src = url;
+};
+window.sbxEdReRecord = function(id){
+  document.getElementById('sbx-ed').style.display = 'none';
+  sandboxReplaceId = id;
+  toast('Recording - tap Stop Recording when done');
+  sandboxToggleVoice();
+};
 
 function sandboxDelete(id){
   appConfirmShow({title:'Delete Item', msg:'Remove this from Sandbox?', onOk: async ()=>{
@@ -23343,7 +23390,7 @@ async function sandboxToggleVoice(){
     sandboxMediaRecorder.onstop = async ()=>{
       clearInterval(sandboxRecordTimer);
       status.style.display = 'none';
-      btn.textContent = '🎙️ Voice Note';
+      btn.innerHTML = btn.dataset.orig || 'Voice Note';
       stream.getTracks().forEach(t=>t.stop());
       const blob = new Blob(sandboxRecordingChunks, {type:'audio/webm'});
       const dataUrl = await new Promise(res=>{
@@ -23351,8 +23398,12 @@ async function sandboxToggleVoice(){
         reader.onload = ()=>res(reader.result);
         reader.readAsDataURL(blob);
       });
-      await sandboxAddItem('voice', dataUrl);
+      const rid = sandboxReplaceId; sandboxReplaceId = null;
+      const rit = rid != null && sandboxItems.find(x => x.id === rid);
+      if(rit) await sandboxSaveEdit(rit, { title: rit.title, content: dataUrl });
+      else await sandboxAddItem('voice', dataUrl);
     };
+    if(!btn.dataset.orig) btn.dataset.orig = btn.innerHTML;
     sandboxMediaRecorder.start();
     sandboxRecordStart = Date.now();
     btn.textContent = '⏹ Stop Recording';
@@ -23362,6 +23413,7 @@ async function sandboxToggleVoice(){
       status.textContent = `🔴 Recording... ${String(Math.floor(secs/60)).padStart(2,'0')}:${String(secs%60).padStart(2,'0')}`;
     }, 250);
   } catch(err){
+    sandboxReplaceId = null;
     toast('Microphone access denied or unavailable');
   }
 }

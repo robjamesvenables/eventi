@@ -1792,6 +1792,35 @@ body.ev-nomoney .dash-hero .ev-money{display:none!important}
 #kb-menu button{display:flex;align-items:center;gap:10px;width:100%;border:0;background:none;padding:10px 12px;border-radius:8px;font:600 13.5px Inter,sans-serif;color:#0F1E2E;cursor:pointer;text-align:left}
 #kb-menu button:hover{background:#F1F5F9}
 #kb-menu button.red{color:#DC2626}#kb-menu button.red:hover{background:#FEF2F2}
+#kb-detail{display:none;position:fixed;inset:0;background:rgba(15,30,46,.55);z-index:10000;align-items:center;justify-content:center;padding:20px}
+.kbd{background:white;width:100%;max-width:620px;max-height:calc(100vh - 40px);border-radius:18px;display:flex;flex-direction:column;overflow:hidden;box-shadow:0 24px 70px rgba(15,30,46,.35);font-family:Inter,sans-serif}
+.kbd-top{background:var(--kbc);color:white;padding:12px 14px 12px 22px;display:flex;align-items:center;justify-content:space-between;flex:none}
+.kbd-col{font-size:11.5px;font-weight:800;letter-spacing:1.5px;text-transform:uppercase}
+.kbd-x{width:36px;height:36px;border-radius:10px;border:0;background:rgba(255,255,255,.18);color:white;display:inline-flex;align-items:center;justify-content:center;cursor:pointer}
+.kbd-body{padding:16px 22px 10px;overflow-y:auto;flex:1}
+.kbd-title{display:block;width:100%;box-sizing:border-box;border:1.5px solid transparent;border-radius:10px;padding:6px 8px;font:800 21px/1.3 Inter,sans-serif;color:#0F1E2E;resize:none;overflow:hidden;background:none}
+.kbd-title:hover{background:#F8FAFC}.kbd-title:focus{outline:none;border-color:#0D9488;background:white}
+.kbd-lbl{font-size:10.5px;font-weight:800;letter-spacing:1.2px;color:#94A3B8;margin:18px 0 8px}
+.kbd-st{display:flex;gap:8px;flex-wrap:wrap}
+.kbd-st button{display:inline-flex;align-items:center;gap:6px;border:1.5px solid #E2E8F0;background:white;color:#334155;border-radius:20px;padding:8px 14px;font:700 13px Inter,sans-serif;cursor:pointer}
+.kbd-st button:hover{border-color:var(--sc)}
+.kbd-st button.on{background:var(--sc);border-color:var(--sc);color:white}
+.kbd-who{display:flex;align-items:center;gap:10px}
+.kbd-who .kb-nm{display:none}
+.kbd-who input{flex:1;min-width:0;border:1.5px solid #E2E8F0;border-radius:10px;padding:10px 12px;font:600 14px Inter,sans-serif;color:#0F1E2E}
+.kbd-who input:focus,.kbd-desc:focus{outline:none;border-color:#0D9488}
+.kbd-desc{display:block;width:100%;box-sizing:border-box;min-height:110px;border:1.5px solid #E2E8F0;border-radius:12px;padding:12px 14px;font:500 14px/1.55 Inter,sans-serif;color:#334155;resize:none;overflow:hidden;background:#F8FAFC}
+.kbd-desc:focus{background:white}
+.kbd-ph{display:flex;gap:10px;flex-wrap:wrap}
+.kbd-ph img{width:96px;height:96px;object-fit:cover;border-radius:12px;cursor:zoom-in;border:1px solid #E2E8F0}
+.kbd-addph{width:96px;height:96px;border-radius:12px;border:1.5px dashed #CBD5E1;background:#F8FAFC;color:#64748B;display:inline-flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;font:700 11.5px Inter,sans-serif;cursor:pointer}
+.kbd-addph:hover{border-color:#0D9488;color:#0D9488}
+.kbd-foot{display:flex;align-items:center;justify-content:space-between;padding:12px 22px;border-top:1px solid #EEF1F5;flex:none}
+.kbd-saved{font-size:12px;color:#94A3B8;font-weight:600}
+.kbd-del{display:inline-flex;align-items:center;gap:6px;border:0;background:none;color:#DC2626;font:700 13px Inter,sans-serif;cursor:pointer;padding:8px 10px;border-radius:9px}
+.kbd-del:hover{background:#FEF2F2}
+#p-kb .kanban-card{cursor:pointer}
+@media(max-width:700px){#kb-detail{padding:0;align-items:stretch}.kbd{max-width:none;max-height:none;height:100%;border-radius:0}.kbd-top{padding-top:max(12px,env(safe-area-inset-top))}.kbd-foot{padding-bottom:max(12px,env(safe-area-inset-bottom))}}
 #kb-tabs{display:none}
 @media(min-width:901px){
  #p-kb{padding-bottom:24px!important}
@@ -10452,6 +10481,7 @@ function wireCardDrag(div, startDrag){
 }
 
 let kbDrag = null; // {cardId, fromCol, ghost, offsetX, offsetY}
+let kbLastDragAt = 0;
 
 function kbRender(){
   __photoStripRegistry = [];
@@ -10480,12 +10510,6 @@ function kbRender(){
         <div class="kanban-card-meta" style="margin-top:10px;display:flex;align-items:center;gap:6px">
           ${kbAvatar(card.assignee)}
           <div class="kb-acts" onmousedown="event.stopPropagation()" ontouchstart="event.stopPropagation()">
-            <span class="kb-hov">
-              <button class="kb-mini" onclick="event.stopPropagation();kbAddPhotoClick(${card.id},'${colId}')" title="Add photo"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2Z"/><circle cx="12" cy="13" r="4"/></svg></button>
-              ${cIdx > 0 ? `<button class="kb-mini" onclick="event.stopPropagation();kbMove(${card.id},'${colId}','${cols[cIdx-1]}')" title="Move back"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg></button>` : ''}
-              <button class="kb-mini kb-del" onclick="event.stopPropagation();kbDelete(${card.id},'${colId}')" title="Delete"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
-            </span>
-            <button class="kb-mini kb-more" onclick="event.stopPropagation();kbCardMenu(this,${card.id},'${colId}')" title="More"><svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="2.2"/><circle cx="12" cy="12" r="2.2"/><circle cx="12" cy="19" r="2.2"/></svg></button>
             ${cIdx < 2 ? `<button class="kb-go" onclick="event.stopPropagation();kbMove(${card.id},'${colId}','${cols[cIdx+1]}')" title="Move on"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg></button>` : ''}
           </div>
         </div>`;
@@ -10494,16 +10518,16 @@ function kbRender(){
       wireCardDrag(div, (clientX, clientY) => {
         const rect = div.getBoundingClientRect();
         const ghost = div.cloneNode(true);
-        ghost.style.cssText = `position:fixed;z-index:9999;width:${rect.width}px;opacity:0.85;pointer-events:none;box-shadow:0 8px 24px rgba(0,0,0,0.2);transform:rotate(2deg);transition:none`;
+        ghost.style.cssText = `position:fixed;z-index:9999;width:${rect.width}px;opacity:0.85;visibility:hidden;pointer-events:none;box-shadow:0 8px 24px rgba(0,0,0,0.2);transform:rotate(2deg);transition:none`;
         ghost.style.left = rect.left + 'px';
         ghost.style.top = rect.top + 'px';
         document.body.appendChild(ghost);
-        div.style.opacity = '0.3';
         const wrap = document.getElementById('kanban-wrap');
         if(wrap) wrap.style.scrollSnapType = 'none'; // let auto-scroll-near-edge move freely during drag
-        kbDrag = {cardId: card.id, fromCol: colId, ghost, el: div, offsetX: clientX - rect.left, offsetY: clientY - rect.top};
+        kbDrag = {cardId: card.id, fromCol: colId, ghost, el: div, offsetX: clientX - rect.left, offsetY: clientY - rect.top, sx: clientX, sy: clientY, moved: false};
       });
 
+      div.addEventListener('click', e => { if(e.target.closest('button,img') || Date.now() - kbLastDragAt < 400) return; kbOpenCard(card.id); });
       col.appendChild(div);
     });
   });
@@ -10518,6 +10542,9 @@ function kbRender(){
 // Global mouse + touch move and end
 function kbDragMove(clientX, clientY){
   if(!kbDrag) return;
+  if(!kbDrag.moved && Math.abs(clientX - kbDrag.sx) < 6 && Math.abs(clientY - kbDrag.sy) < 6) return; // a tap, not a drag yet
+  if(!kbDrag.moved){ kbDrag.ghost.style.visibility = 'visible'; kbDrag.el.style.opacity = '0.3'; }
+  kbDrag.moved = true;
   kbDrag.ghost.style.left = (clientX - kbDrag.offsetX) + 'px';
   kbDrag.ghost.style.top = (clientY - kbDrag.offsetY) + 'px';
 
@@ -10563,6 +10590,12 @@ document.addEventListener('touchmove', e => {
 
 function kbDragEnd(){
   if(!kbDrag) return;
+  if(!kbDrag.moved){ // just a tap: tidy up, the click opens the task
+    kbDrag.ghost.remove(); kbDrag.el.style.opacity = '';
+    const w0 = document.getElementById('kanban-wrap'); if(w0) w0.style.scrollSnapType = '';
+    kbDrag = null; return;
+  }
+  kbLastDragAt = Date.now();
   const wrap = document.getElementById('kanban-wrap');
   if(wrap) wrap.style.scrollSnapType = '';
   const ghost = kbDrag.ghost;
@@ -10695,6 +10728,90 @@ window.kbCardMenu = function(btn, cardId, colId){
   m.style.left = Math.max(8, Math.min(innerWidth - mw - 8, r.right - mw)) + 'px';
   m.style.top = (r.bottom + 6 + mh > innerHeight ? r.top - mh - 6 : r.bottom + 6) + 'px';
 };
+// Tap a task to open it big (like Trello): type straight into it, it saves by itself
+let kbOpenId = null;
+function kbFindCard(id){
+  const b = kbBoards[kbActiveProjectId] || {};
+  for(const col of ['todo','progress','done']){ const c = (b[col]||[]).find(x => x.id === id); if(c) return { card: c, col }; }
+  return null;
+}
+async function kbCardSave(card, fields){
+  Object.assign(card, fields);
+  kbRender();
+  if(!card.dbId) return;
+  const { error } = await sb.from(kbActiveIsTeam ? 'task_cards' : 'personal_task_cards').update(fields).eq('id', card.dbId);
+  if(error){ toast('Not saved - check your connection'); console.warn(error); }
+}
+window.kbOpenCard = function(id){
+  kbOpenId = id;
+  let o = document.getElementById('kb-detail');
+  if(!o){ o = document.createElement('div'); o.id = 'kb-detail'; document.body.appendChild(o);
+    o.addEventListener('click', e => { if(e.target === o) kbCloseCard(); });
+    document.addEventListener('keydown', e => { if(e.key === 'Escape' && o.style.display === 'flex' && document.getElementById('photoLightbox').style.display !== 'flex') kbCloseCard(); }); }
+  o.style.display = 'flex';
+  document.body.style.overflow = 'hidden';
+  kbDetailRender();
+};
+window.kbCloseCard = function(){
+  const a = document.activeElement; if(a && a.closest && a.closest('#kb-detail')) a.blur(); // saves anything being typed
+  const o = document.getElementById('kb-detail'); if(o) o.style.display = 'none';
+  document.body.style.overflow = ''; kbOpenId = null;
+};
+function kbDetailRender(){
+  const o = document.getElementById('kb-detail'), f = kbFindCard(kbOpenId);
+  if(!o) return; if(!f){ kbCloseCard(); return; }
+  const { card, col } = f;
+  const esc = v => String(v||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;');
+  const clr = c => { const el = document.getElementById('kbcol-'+c); return (el && getComputedStyle(el).getPropertyValue('--kbc').trim()) || KB_COL_DEFAULT_COLOURS[c]; };
+  const nm = c => (document.getElementById('kbtitle-'+c)||{}).textContent || KB_COL_DEFAULT_TITLES[c];
+  const ic = (p, sz) => `<svg width="${sz||15}" height="${sz||15}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${p}</svg>`;
+  const photos = card.photos || [];
+  o.innerHTML = `<div class="kbd" style="--kbc:${clr(col)}">
+    <div class="kbd-top"><span class="kbd-col">${esc(nm(col))}</span><button class="kbd-x" onclick="kbCloseCard()" aria-label="Close">${ic('<path d="M18 6 6 18M6 6l12 12"/>', 18)}</button></div>
+    <div class="kbd-body">
+      <textarea id="kbd-title" class="kbd-title" rows="1" maxlength="200" placeholder="Task title">${esc(card.title)}</textarea>
+      <div class="kbd-lbl">STATUS</div>
+      <div class="kbd-st">${['todo','progress','done'].map(c => `<button class="${c===col?'on':''}" style="--sc:${clr(c)}" onclick="kbDetailMove('${c}')">${c===col?ic('<path d="M20 6 9 17l-5-5"/>',13):''}${esc(nm(c))}</button>`).join('')}</div>
+      <div class="kbd-lbl">ASSIGNED TO</div>
+      <div class="kbd-who">${kbAvatar(card.assignee)}<input id="kbd-asg" value="${esc(/^unassigned$/i.test(card.assignee||'')?'':card.assignee)}" placeholder="Type a name" maxlength="60"></div>
+      <div class="kbd-lbl">DESCRIPTION</div>
+      <textarea id="kbd-desc" class="kbd-desc" placeholder="Add more detail - tap here and type">${esc(card.description)}</textarea>
+      <div class="kbd-lbl">PHOTOS${photos.length ? ' · ' + photos.length : ''}</div>
+      <div class="kbd-ph">${photos.map((src, i) => `<img src="${src}" onclick="kbDetailPhoto(${i},this)">`).join('')}
+        <button class="kbd-addph" onclick="kbDetailAddPhoto()">${ic('<path d="M12 5v14M5 12h14"/>',18)}<span>Add photo</span></button></div>
+    </div>
+    <div class="kbd-foot"><span class="kbd-saved" id="kbd-saved">Changes save by themselves</span><button class="kbd-del" onclick="kbDelete(${card.id},'${col}')">${ic('<path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>',14)}Delete</button></div>
+  </div>`;
+  const grow = el => { el.style.height = 'auto'; el.style.height = el.scrollHeight + 'px'; };
+  const t = document.getElementById('kbd-title'), d = document.getElementById('kbd-desc'), a = document.getElementById('kbd-asg');
+  [t, d].forEach(el => { grow(el); el.addEventListener('input', () => grow(el)); });
+  const saved = () => { const sv = document.getElementById('kbd-saved'); if(sv){ sv.textContent = 'Saved ✓'; clearTimeout(sv._t); sv._t = setTimeout(() => { sv.textContent = 'Changes save by themselves'; }, 1800); } };
+  t.addEventListener('keydown', e => { if(e.key === 'Enter'){ e.preventDefault(); t.blur(); } });
+  a.addEventListener('keydown', e => { if(e.key === 'Enter'){ e.preventDefault(); a.blur(); } });
+  t.addEventListener('blur', () => { const v = t.value.replace(/\s+/g,' ').trim(); if(!v){ t.value = card.title; toast('A task needs a title'); return; } if(v !== card.title){ kbCardSave(card, { title: v }); saved(); } });
+  d.addEventListener('blur', () => { const v = d.value.replace(/\s+$/,''); if(v !== (card.description||'')){ kbCardSave(card, { description: v }); saved(); } });
+  a.addEventListener('blur', () => { const v = a.value.trim() || 'Unassigned'; if(v !== card.assignee){ kbCardSave(card, { assignee: v }); saved(); const w = document.querySelector('.kbd-who .kb-who'); if(w) w.outerHTML = kbAvatar(v); } });
+}
+// Photo viewer (registered fresh each time, because the board redraw clears the list)
+window.kbDetailPhoto = function(i, el){
+  const id = kbOpenId;
+  const g0 = kbFindCard(id); if(!g0) return;
+  el.closest('.kbd-ph').dataset.photoKey = registerPhotoStrip(g0.card.photos || [],
+    () => { const g = kbFindCard(id); if(!g.card.photos) g.card.photos = []; return g.card.photos; },
+    () => { const g = kbFindCard(id); if(g){ kbCardPhotosChanged(g.card); if(kbOpenId === id) kbDetailRender(); } });
+  photoLightboxOpen(i, el);
+};
+window.kbDetailAddPhoto = function(){
+  const id = kbOpenId;
+  openPhotoPicker(() => { const g = kbFindCard(id); if(!g.card.photos) g.card.photos = []; return g.card.photos; },
+                  () => { const g = kbFindCard(id); if(g){ kbCardPhotosChanged(g.card); if(kbOpenId === id) kbDetailRender(); } });
+};
+window.kbDetailMove = function(toCol){
+  const f = kbFindCard(kbOpenId); if(!f || f.col === toCol) return;
+  const a = document.activeElement; if(a && a.closest && a.closest('#kb-detail')) a.blur();
+  kbMove(f.card.id, f.col, toCol); kbDetailRender();
+};
+
 // Phone: tabs above the board jump straight to a column
 function kbTabsRender(){
   const t = document.getElementById('kb-tabs'), w = document.getElementById('kanban-wrap');
@@ -10786,6 +10903,7 @@ window.addKanbanCard = function(colSelector){
 
 window.kbDelete = function(cardId, colId){
   appConfirmShow({title:'Delete Task', msg:'Are you sure you want to delete this task?', onOk:()=>{
+    if(typeof kbCloseCard === 'function' && kbOpenId === cardId) kbCloseCard();
     const board = kbBoards[kbActiveProjectId];
     const card = board[colId].find(c => c.id === cardId);
     board[colId] = board[colId].filter(c => c.id !== cardId);

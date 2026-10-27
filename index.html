@@ -14019,7 +14019,7 @@ function sopRenderDoc(){
   const photo = doc.photo ? `<img class="sop-photo" src="${doc.photo}" onclick="recipePhotoZoom(this.src)" title="Tap to zoom">` : '';
   const hasContent = doc.objective || doc.procedure || extra.length || (doc.sections||[]).length;
   const content = hasContent ? block('OBJECTIVE', doc.objective) + procHtml + extraHtml + (doc.sections||[]).map(sec => block(sopEsc(sec.name || 'Notes').toUpperCase(), sec.content)).join('')
-    : `<div class="vac-empty"><b>This SOP is empty</b>${sopIsManager() ? '<span>Tap Edit SOP to add the objective and steps</span>' : ''}</div>`;
+    : `<div class="vac-empty"><b>This SOP is empty</b>${sopIsManager() ? '<span>Add the objective, the steps and any safety notes</span><button class="sop-sign-b" style="align-self:center;margin-top:10px" onclick="sopEditContent()">+ Add details</button>' : '<span>A manager hasn\'t added the details yet</span>'}</div>`;
   // Sign-off
   const staff = sopDeptStaff(dname), signedIds = sopSignedIds(doc);
   const sigs = (doc.signatures || []).map((s, i) => ({ s, i, cur: sopSigCurrent(doc, s), p: sopSigPerson(s) }));
@@ -14035,6 +14035,7 @@ function sopRenderDoc(){
   </div>`;
   const upd = doc.updatedAt ? 'Updated ' + new Date(doc.updatedAt).toLocaleDateString('en-GB', { day:'numeric', month:'short', year:'numeric' }) : '';
   const sub = document.getElementById('sop-doc-dept'); if(sub) sub.textContent = dname + (upd ? ' · ' + upd : '');
+  if(!hasContent){ body.innerHTML = content; return; } // nothing to read yet, so nothing to sign
   body.innerHTML = banner + (sopReviewDue(doc) ? '<div class="sop-me gold"><span>Not updated for over a year - due for review</span></div>' : '') + photo + content + signoff;
 }
 

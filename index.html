@@ -5821,7 +5821,8 @@ function nav(id, pushState=true){
     : id;
   const nb=document.getElementById('n-'+sidebarId);
   if(nb)nb.classList.add('active');
-  if(id==='notes'){mnGoToday(); mnLoadFromSupabase();} else { document.body.classList.remove('mn-full-open'); if(typeof mnFlush==='function') mnFlush(); }
+  // Closing a pop-up re-runs nav for the same page - only reset Meeting Notes when you actually arrive
+  if(id==='notes'){ if(!window._mnOnPage){ mnGoToday(); mnLoadFromSupabase(); } window._mnOnPage = true; } else { window._mnOnPage = false; document.body.classList.remove('mn-full-open'); if(typeof mnFlush==='function') mnFlush(); }
   if(id==='cal'){calRender();}
   if(id==='djsched'){djSchedRender();}
   if(id==='home'){initHome(); announceRender();}
@@ -10047,6 +10048,7 @@ let mnActiveKey = null;       // selected day 'YYYY-MM-DD'
 let mnOpenId = null;          // meeting open on the right (or full screen on a phone)
 let mnLoaded = false, mnNotReady = false, mnSaveTimer = null;
 let mnStaff = null;
+const mnDeletedIds = new Set();
 
 const mnKey = d => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
 const mnEsc = v => String(v == null ? '' : v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;');
@@ -10060,7 +10062,12 @@ async function mnLoadFromSupabase(){
   try{
     const { data, error } = await sb.from('meetings').select('*').order('date', { ascending: true });
     if(error) throw error;
-    mnMeetings = (data || []).map(mnRow);
+    // Don't bring back a meeting that's being deleted, or undo typing that hasn't saved yet
+    const fresh = (data || []).map(mnRow).filter(m => !mnDeletedIds.has(String(m.id)));
+    if(mnDirty){ const i = fresh.findIndex(m => String(m.id) === String(mnDirty.id)); if(i > -1) fresh[i] = mnDirty; }
+    const open = mnOpenId && mnGet(mnOpenId);
+    if(open && document.activeElement && document.activeElement.closest && document.activeElement.closest('#mn-note')){ const i = fresh.findIndex(m => String(m.id) === String(open.id)); if(i > -1) fresh[i] = open; }
+    mnMeetings = fresh;
     mnNotReady = false;
   }catch(e){
     console.warn('Meetings not loaded', e);
@@ -10311,11 +10318,12 @@ window.mnPickPerson = function(btn, aid){
 window.mnDelete = function(id){
   appConfirmShow({ title: 'Delete meeting', msg: 'Delete this meeting and its notes for everyone? This cannot be undone.', onOk: async () => {
     const before = mnMeetings.slice();
+    mnDeletedIds.add(String(id));
     mnMeetings = mnMeetings.filter(m => String(m.id) !== String(id));
     if(mnDirty && String(mnDirty.id) === String(id)) mnDirty = null;
     mnOpenId = null; mnRender(); mnRenderNote();
     const { data, error } = await sb.from('meetings').delete().eq('id', id).select();
-    if(error || !data || !data.length){ mnMeetings = before; mnRender(); toast('Not deleted - check your connection'); if(error) console.warn(error); return; }
+    if(error || !data || !data.length){ mnDeletedIds.delete(String(id)); mnMeetings = before; mnRender(); toast('Not deleted - check your connection'); if(error) console.warn(error); return; }
     toast('Meeting deleted');
   }});
 };

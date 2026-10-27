@@ -2108,7 +2108,13 @@ body.ev-nomoney .dash-hero .ev-money{display:none!important}
 .sop-search{display:flex;align-items:center;gap:10px;background:white;border-radius:14px;padding:0 16px;margin:14px 0;box-shadow:0 1px 3px rgba(15,30,46,.07)}
 .sop-search input{flex:1;min-width:0;border:0;outline:none;font:500 15px Inter,sans-serif;color:#0F1E2E;padding:13px 0;background:none}
 .sop-search:focus-within{box-shadow:0 0 0 2px #0D9488}
-#p-faq > .ph,#p-vendors > .ph{flex-wrap:wrap;row-gap:0}
+#p-faq > .ph,#p-vendors > .ph,#p-customers > .ph{flex-wrap:wrap;row-gap:0}
+.cu-btns{display:flex;gap:8px;align-items:center}
+.cu-more{width:42px!important;height:42px!important;background:rgba(255,255,255,.1)!important;color:white!important;border-radius:12px!important}
+.cu-more:hover{background:rgba(255,255,255,.2)!important}
+.cu-count{font-size:12px;font-weight:800;letter-spacing:1px;color:#64748B;margin:4px 2px 0;text-transform:uppercase}
+.cu-letter{font-size:13px;font-weight:800;color:#0D9488;margin:16px 4px 8px}
+@media(max-width:760px){#p-customers > .ph .cu-btns{flex:0 0 100%;margin-top:14px;order:3}#p-customers > .ph .cu-btns .btn{flex:1}#p-customers .kb-search{order:2}}
 .dpt-title{font-size:18px;font-weight:800;color:#0F1E2E}.dpt-hsub{font-size:13px;color:#64748B;margin-top:4px;line-height:1.5;max-width:560px}
 @media(max-width:760px){#admin-tabs{width:100%!important;display:grid!important;grid-template-columns:repeat(3,1fr)}#admin-tabs button{justify-content:center;padding:9px 4px!important;font-size:12px!important;text-align:center;line-height:1.2}#admin-tabs button svg{display:none}#admin-tabs button span{display:none}
   .dpt-head .pp-add{width:100%}}
@@ -5726,19 +5732,16 @@ img.emoji-tw{width:1.15em;height:1.15em;vertical-align:-0.2em;margin:0 1px}
     </div>
 
     <!-- CUSTOMER DATABASE -->
-    <div class="page" id="p-customers" style="padding:32px 28px 40px">
+    <div class="page" id="p-customers" style="padding:32px 28px 0">
       <div class="ph">
         <div>
           <div class="ph-title">Address Book</div>
-          <div class="ph-sub">Your customer address book — search or browse</div>
+          <div class="ph-sub">Your customer contacts - tap a name to call, WhatsApp or copy their email</div>
         </div>
-        <div style="display:flex;gap:10px">
-          <button class="btn btn-ghost" onclick="customerExportCsv()">↓ Export CSV</button>
-          <button class="btn btn-ghost" onclick="customerUploadCsv()">+ Upload CSV</button>
-          <button class="btn btn-navy" onclick="customerAdd()">+ Add Contact</button>
-        </div>
+        <div class="cu-btns"><button class="btn btn-navy" onclick="customerAdd()">+ Add Contact</button><button class="kbq-dots cu-more" title="Export / Upload CSV" onclick="event.stopPropagation();customerMenu(this)"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg></button></div>
+        <label class="sop-search kb-search"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#94A3B8" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg><input id="customer-search" type="text" placeholder="Search name, company, phone…" oninput="customerRenderList()" autocomplete="off"></label>
       </div>
-      <input class="search-inp" type="text" id="customer-search" placeholder="Search by name or company…" style="width:100%;margin-bottom:16px" oninput="customerRenderList()">
+      <div class="cu-count" id="cu-count"></div>
       <div id="customer-list"></div>
     </div>
 
@@ -20435,9 +20438,7 @@ async function customerLoadFromSupabase(){
       data = inserted;
     }
 
-    customerData = (data||[]).map(row => ({
-      id: row.id, dbId: row.id, name: row.name, company: row.company||'', phone: row.phone||'', email: row.email||''
-    }));
+    customerData = (data||[]).map(cuFromRow);
   } catch(e){
     console.warn('Address Book Supabase load failed, using demo data', e);
   } finally {
@@ -20445,100 +20446,134 @@ async function customerLoadFromSupabase(){
   }
 }
 
+// Address Book (same pattern as Vendor Directory): A-Z list of names, tap one for a details pop-up
+// (tap to call / WhatsApp / copy email), Edit inside. Everyone who can open it can add and edit; managers and up delete.
+const cuCanDelete = () => !myProfile || myProfile.is_owner || ['superadmin','director','manager'].includes(myProfile.role);
+const cuFromRow = row => ({ id: row.id, dbId: row.id, name: row.name || '', company: row.company || '', phone: row.phone || '', email: row.email || '', notes: row.notes || '' });
+
 function customerRenderList(){
   const list = document.getElementById('customer-list');
   if(!list) return;
-  if(customerLoading){
-    list.innerHTML = '<div style="text-align:center;padding:32px;color:#94A3B8;font-size:13px">Loading…</div>';
-    return;
-  }
-  const q = (document.getElementById('customer-search').value || '').trim().toLowerCase();
-  let items = customerData.slice().sort((a,b)=>a.name.localeCompare(b.name));
-  if(q){
-    items = items.filter(c =>
-      c.name.toLowerCase().includes(q) ||
-      c.company.toLowerCase().includes(q)
-    );
-  }
+  if(customerLoading){ list.innerHTML = '<div class="vac-empty">Loading…</div>'; return; }
+  const q = vdNorm(document.getElementById('customer-search').value);
+  let items = customerData.slice().sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: 'base' }));
+  if(q) items = items.filter(c => vdNorm([c.name, c.company, c.phone, c.email, c.notes].join(' ')).includes(q));
+  const cnt = document.getElementById('cu-count'); if(cnt) cnt.textContent = customerData.length + ' contact' + (customerData.length === 1 ? '' : 's');
   if(!items.length){
-    list.innerHTML = `<div style="text-align:center;padding:32px;color:#94A3B8;font-size:13px">${q ? 'No contacts found' : 'No contacts yet — click + Add Contact or + Upload CSV'}</div>`;
+    list.innerHTML = `<div class="vac-empty"><b>${q ? 'No contacts match "' + vdEsc(document.getElementById('customer-search').value.trim()) + '"' : 'No contacts yet'}</b><span>${q ? 'Try another word' : 'Tap + Add Contact, or ••• › Upload CSV'}</span></div>`;
     return;
   }
-  list.innerHTML = items.map(c => `
-    <div class="vendor-item">
-      <div style="flex:1">
-        <div class="vendor-name">${c.name}</div>
-        <div class="vendor-supplies">${c.company}</div>
-        <div class="vendor-contact">${c.phone}${c.phone && c.email ? ' · ' : ''}${c.email}</div>
-      </div>
-      <button onclick="customerEdit(${c.id})" style="border:none;background:none;color:#64748B;font-size:13px;cursor:pointer;flex-shrink:0;margin-right:8px"><svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="2.2"/><circle cx="12" cy="12" r="2.2"/><circle cx="12" cy="19" r="2.2"/></svg></button>
-      <button onclick="customerDelete(${c.id})" style="border:none;background:none;color:#EF4444;font-size:16px;cursor:pointer;flex-shrink:0">×</button>
+  const groups = {};
+  items.forEach(c => { const L = /^[a-z]/i.test(c.name.trim()) ? c.name.trim()[0].toUpperCase() : '#'; (groups[L] = groups[L] || []).push(c); });
+  list.innerHTML = Object.keys(groups).sort((a, b) => a === '#' ? 1 : b === '#' ? -1 : a.localeCompare(b)).map(L =>
+    `<div class="cu-letter">${L}</div><div class="vd-grid">${groups[L].map(c => `<button class="vd-c" onclick="customerOpen(${vdEsc(JSON.stringify(c.id))})">${vdAvatar(c)}<div class="vd-nm"><h3>${vdEsc(c.name)}</h3>${c.company ? `<div class="vd-sup">${vdEsc(c.company)}</div>` : ''}</div><svg class="vd-arr" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="m9 18 6-6-6-6"/></svg></button>`).join('')}</div>`).join('') + '<div style="height:30px"></div>';
+}
+
+window.customerOpen = function(id){
+  const c = customerData.find(x => String(x.id) === String(id)); if(!c) return;
+  let o = document.getElementById('vd-detail');
+  if(!o){ o = document.createElement('div'); o.id = 'vd-detail'; document.body.appendChild(o); o.addEventListener('click', e => { if(e.target === o) vdDetailClose(); }); }
+  const arr = '<svg class="vd-arr" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="m9 18 6-6-6-6"/></svg>';
+  const j = vdEsc(JSON.stringify(c.id));
+  o.innerHTML = `<div class="vdf vdd">
+    <button class="vdd-x" onclick="vdDetailClose()" title="Close"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
+    <div class="vdd-h">${vdAvatar(c, 52)}<div style="min-width:0"><b>${vdEsc(c.name)}</b>${c.company ? `<span>${vdEsc(c.company)}</span>` : ''}</div></div>
+    <div class="vdf-body">
+      ${c.phone ? `<a class="vdd-row" href="tel:${vdEsc(c.phone.replace(/[^\d+]/g, ''))}"><span class="vdd-ic">${vdSvg('call', 16)}</span><span class="vdd-t"><small>Phone - tap to call</small><b>${vdEsc(c.phone)}</b></span>${arr}</a>
+        <a class="vdd-row" href="https://api.whatsapp.com/send?phone=${vdWaNumber(c.phone)}" target="_blank" rel="noopener"><span class="vdd-ic">${vdSvg('wa', 16)}</span><span class="vdd-t"><small>WhatsApp - tap to message</small><b>${vdEsc(c.phone)}</b></span>${arr}</a>` : ''}
+      ${c.email ? `<a class="vdd-row" href="mailto:${vdEsc(c.email)}" onclick="return vendorEmail(event, ${vdEsc(JSON.stringify(c.email))})"><span class="vdd-ic">${vdSvg('em', 16)}</span><span class="vdd-t"><small>Email - tap to copy</small><b>${vdEsc(c.email)}</b></span>${arr}</a>` : ''}
+      ${c.notes ? `<div class="vd-note">${vdSvg('note', 15)}<span>${vdEsc(c.notes)}</span></div>` : ''}
+      ${!c.phone && !c.email && !c.notes ? '<div class="vd-sup" style="padding:6px 0 10px">No contact details yet</div>' : ''}
     </div>
-  `).join('');
-}
+    <div class="vdf-foot"><button type="button" class="mns-cancel" onclick="customerShareChat(${j})" style="display:inline-flex;align-items:center;gap:7px">${vdSvg('chat')}Send in Chat</button><button type="button" class="mns-go" onclick="customerEditFromDetail(${j})">Edit</button></div>
+  </div>`;
+  o.style.display = 'flex';
+  mvBackOpen('vddetail', () => { o.style.display = 'none'; });
+};
+window.customerEditFromDetail = function(id){
+  const o = document.getElementById('vd-detail'); if(o) o.style.display = 'none';
+  const e = mvBackStack.find(x => x.id === 'vddetail');
+  if(e){ e.id = 'vdform'; e.closeFn = () => { const f = document.getElementById('vd-form'); if(f) f.style.display = 'none'; }; }
+  customerEdit(id);
+};
+window.customerShareChat = function(id){
+  const c = customerData.find(x => String(x.id) === String(id)); if(!c) return;
+  mvSendInChat({ title: 'Send this contact', body: ['👤 ' + c.name, c.company ? '🏢 ' + c.company : '', c.phone ? '📞 ' + c.phone : '', c.email ? '✉️ ' + c.email : '', c.notes ? '📝 ' + c.notes : ''].filter(Boolean).join('\n'), people: [] });
+};
 
-function customerAdd(){
-  appModalShow({
-    title:'Add Contact',
-    fields:[
-      {label:'Name', placeholder:'e.g. James Whitfield'},
-      {label:'Company', placeholder:'e.g. Nexus Global Indonesia'},
-      {label:'Phone', placeholder:'e.g. +62 812-1111-2222'},
-      {label:'Email', placeholder:'e.g. james@nexusglobal.id'}
-    ],
-    async onOk([name, company, phone, email]){
-      const c = {id: customerNextId++, name, company, phone, email};
-      customerData.push(c);
-      customerRenderList();
-      try{
-        const { data, error } = await sb.from('customer_contacts').insert({ name, company, phone, email }).select().single();
-        if(error) throw error;
-        c.dbId = data.id;
-        toast('Contact added ✓');
-      } catch(e){
-        console.warn('Could not save contact to Supabase', e);
-        toast('Added here, but not saved - check your connection');
-      }
-    }
-  });
+// Saves; if the notes column isn't there yet, saves again without it
+async function customerSaveRow(row, dbId){
+  const go = r => dbId ? sb.from('customer_contacts').update(r).eq('id', dbId).select('*') : sb.from('customer_contacts').insert(r).select('*');
+  let res = await go(row);
+  if(res.error && /notes/i.test(res.error.message || '')){ const r2 = Object.assign({}, row); delete r2.notes; res = await go(r2); }
+  return res;
 }
-
-function customerEdit(id){
-  const c = customerData.find(x=>x.id===id);
-  if(!c) return;
-  appModalShow({
-    title:'Edit Contact',
-    fields:[
-      {label:'Name', value:c.name},
-      {label:'Company', value:c.company},
-      {label:'Phone', value:c.phone},
-      {label:'Email', value:c.email}
-    ],
-    async onOk([name, company, phone, email]){
-      c.name=name; c.company=company; c.phone=phone; c.email=email;
-      customerRenderList();
-      toast('Contact updated ✓');
-      if(c.dbId){
-        const { error } = await sb.from('customer_contacts').update({ name, company, phone, email }).eq('id', c.dbId);
-        if(error) console.warn('Could not save contact update to Supabase', error);
-      }
+function customerForm(c){
+  let o = document.getElementById('vd-form');
+  if(!o){ o = document.createElement('div'); o.id = 'vd-form'; document.body.appendChild(o); o.addEventListener('click', e => { if(e.target === o) vdFormClose(); }); }
+  const f = (lbl, key, ph, type) => `<label class="vdf-f"><span>${lbl}</span><input data-k="${key}" type="${type || 'text'}" value="${vdEsc(c ? c[key] : '')}" placeholder="${ph}" ${type === 'tel' ? 'inputmode="tel"' : type === 'email' ? 'inputmode="email" autocapitalize="off"' : ''}></label>`;
+  o.innerHTML = `<div class="vdf">
+    <div class="vdf-h"><b>${c ? 'Edit contact' : 'Add contact'}</b></div>
+    <div class="vdf-body">
+      ${f('NAME', 'name', 'e.g. James Whitfield')}
+      ${f('COMPANY', 'company', 'e.g. Nexus Global')}
+      ${f('PHONE / WHATSAPP', 'phone', 'e.g. +62 812 3456 7890', 'tel')}
+      ${f('EMAIL', 'email', 'e.g. james@company.com', 'email')}
+      <label class="vdf-f"><span>NOTES</span><textarea data-k="notes" rows="3" placeholder="e.g. Books the terrace for company events, likes a quiet table">${vdEsc(c ? c.notes : '')}</textarea></label>
+    </div>
+    <div class="vdf-foot">${c && cuCanDelete() ? `<button type="button" class="vdf-del" onclick="vdFormClose();customerDelete(${vdEsc(JSON.stringify(c.id))})">Delete</button>` : ''}<button type="button" class="mns-cancel" onclick="vdFormClose()">Cancel</button><button type="button" class="mns-go" id="vdf-save">${c ? 'Save' : 'Save contact'}</button></div>
+  </div>`;
+  document.getElementById('vdf-save').addEventListener('click', async () => {
+    const val = k => (o.querySelector(`[data-k="${k}"]`).value || '').trim();
+    const rec = { name: val('name'), company: val('company'), phone: val('phone'), email: val('email'), notes: val('notes') };
+    if(!rec.name){ toast('Please type a name'); o.querySelector('[data-k="name"]').focus(); return; }
+    if(rec.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(rec.email)){ toast('That email doesn\'t look right'); return; }
+    const btn = document.getElementById('vdf-save'); btn.disabled = true; btn.textContent = 'Saving…';
+    if(myProfile){
+      const res = await customerSaveRow(rec, c && c.dbId);
+      if(res.error || !res.data || !res.data.length){ console.warn(res.error); btn.disabled = false; btn.textContent = 'Save'; toast('Not saved - please try again'); return; }
+      const saved = cuFromRow(res.data[0]);
+      if(c) Object.assign(c, saved, { notes: res.data[0].notes === undefined ? rec.notes : saved.notes }); else customerData.push(saved);
+    } else {
+      if(c) Object.assign(c, rec); else customerData.push(Object.assign({ id: customerNextId++ }, rec));
     }
+    vdFormClose();
+    customerRenderList();
+    toast(c ? 'Saved ✓' : 'Contact added ✓');
   });
+  o.style.display = 'flex';
+  mvBackOpen('vdform', () => { o.style.display = 'none'; });
+  if(!c) setTimeout(() => { const n = o.querySelector('[data-k="name"]'); if(n && innerWidth > 760) n.focus(); }, 50);
 }
+function customerAdd(){ customerForm(null); }
+function customerEdit(id){ const c = customerData.find(x => String(x.id) === String(id)); if(c) customerForm(c); }
 
 function customerDelete(id){
-  const c = customerData.find(x=>x.id===id);
-  if(!c) return;
-  appConfirmShow({title:'Delete Contact', msg:`Delete "${c.name}"?`, onOk: async ()=>{
-    customerData = customerData.filter(x=>x.id!==id);
+  const c = customerData.find(x => String(x.id) === String(id));
+  if(!c || !cuCanDelete()) return;
+  appConfirmShow({ title: 'Delete contact?', msg: '"' + c.name + '" will be removed for everyone.', label: 'Delete', onOk: async () => {
+    customerData = customerData.filter(x => x !== c);
     customerRenderList();
-    toast('Contact deleted');
-    if(c.dbId){
-      const { error } = await sb.from('customer_contacts').delete().eq('id', c.dbId);
-      if(error) console.warn('Could not delete contact from Supabase', error);
+    if(myProfile && c.dbId){
+      const { data, error } = await sb.from('customer_contacts').delete().eq('id', c.dbId).select();
+      if(error || !data || !data.length){ customerData.push(c); customerRenderList(); toast('Not deleted - please try again'); if(error) console.warn(error); return; }
     }
+    toast('Deleted');
   }});
 }
+
+// ••• in the banner: Export / Upload CSV
+window.customerMenu = function(btn){
+  const old = document.getElementById('kbq-menu');
+  if(old){ const same = old.dataset.id === 'cu'; old.remove(); if(same) return; }
+  const m = document.createElement('div');
+  m.id = 'kbq-menu'; m.className = 'kbq-menu'; m.dataset.id = 'cu'; m.style.width = '170px';
+  m.innerHTML = `<button onclick="faqMenuClose();customerExportCsv()"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>Export CSV</button><button onclick="faqMenuClose();customerUploadCsv()"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12"/></svg>Upload CSV</button>`;
+  document.body.appendChild(m);
+  const r = btn.getBoundingClientRect();
+  m.style.top = (r.bottom + window.scrollY + 4) + 'px';
+  m.style.left = Math.max(8, r.right + window.scrollX - m.offsetWidth) + 'px';
+};
 
 function parseCsvLine(line){
   const result = [];
@@ -20566,9 +20601,9 @@ function csvEscapeField(val){
 
 function customerExportCsv(){
   if(!customerData.length){ toast('No contacts to export yet'); return; }
-  const rows = [['Name','Company','Phone','Email']];
+  const rows = [['Name','Company','Phone','Email','Notes']];
   customerData.slice().sort((a,b)=>a.name.localeCompare(b.name)).forEach(c=>{
-    rows.push([c.name, c.company, c.phone, c.email]);
+    rows.push([c.name, c.company, c.phone, c.email, c.notes || '']);
   });
   const csv = rows.map(r => r.map(csvEscapeField).join(',')).join('\r\n');
   const blob = new Blob([csv], {type:'text/csv;charset=utf-8;'});
@@ -20598,9 +20633,9 @@ function customerUploadCsv(){
 
       <div style="background:#F1F5F9;border-radius:10px;padding:14px 16px;margin-bottom:16px">
         <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.7px;color:#64748B;margin-bottom:8px">Required column order</div>
-        <div style="font-family:monospace;font-size:12px;color:#0F1E2E;background:white;border:1px solid #E2E8F0;border-radius:6px;padding:8px 10px;margin-bottom:8px">Name, Company, Phone, Email</div>
+        <div style="font-family:monospace;font-size:12px;color:#0F1E2E;background:white;border:1px solid #E2E8F0;border-radius:6px;padding:8px 10px;margin-bottom:8px">Name, Company, Phone, Email, Notes</div>
         <div style="font-size:12px;color:#475569;line-height:1.6">
-          • One contact per line, in exactly this order<br>
+          • One contact per line, in exactly this order (Notes is optional)<br>
           • First row can be a header (e.g. "Name,Company,Phone,Email") — it'll be detected and skipped automatically<br>
           • Wrap any value that contains a comma in quotes, e.g. "Smith, Jane"<br>
           • Leave a field blank if you don't have it — just keep the comma, e.g. <span style="font-family:monospace">Jane Smith,,+62 812...,jane@co.com</span>
@@ -20657,7 +20692,8 @@ async function customerCsvImport(){
     name: r[0] || '',
     company: r[1] || '',
     phone: r[2] || '',
-    email: r[3] || ''
+    email: r[3] || '',
+    notes: r[4] || ''
   }));
   newContacts.forEach(c => customerData.push(c));
   const count = customerCsvParsedRows.length;
@@ -20666,9 +20702,12 @@ async function customerCsvImport(){
   if(modal) modal.remove();
   customerRenderList();
   try{
-    const { data, error } = await sb.from('customer_contacts').insert(
-      newContacts.map(c => ({ name: c.name, company: c.company, phone: c.phone, email: c.email }))
+    let { data, error } = await sb.from('customer_contacts').insert(
+      newContacts.map(c => ({ name: c.name, company: c.company, phone: c.phone, email: c.email, notes: c.notes }))
     ).select();
+    if(error && /notes/i.test(error.message || '')) ({ data, error } = await sb.from('customer_contacts').insert(
+      newContacts.map(c => ({ name: c.name, company: c.company, phone: c.phone, email: c.email }))
+    ).select());
     if(error) throw error;
     data.forEach((row, i) => { newContacts[i].dbId = row.id; });
     toast(`${count} contact${count===1?'':'s'} added ✓ — ${customerData.length} total`);

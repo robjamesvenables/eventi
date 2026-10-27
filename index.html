@@ -10269,14 +10269,15 @@ window.mnDelete = function(id){
 function mnText(m, wa){
   const b = s => wa ? '*' + s + '*' : s;
   const d = new Date(m.date + 'T00:00:00');
-  const when = mnDows[d.getDay()] + ' ' + d.getDate() + ' ' + mnMonths[d.getMonth()] + (m.time ? ', ' + m.time : '');
+  const when = mnDows[d.getDay()] + ' ' + d.getDate() + ' ' + mnMonths[d.getMonth()] + ' ' + d.getFullYear() + (m.time ? ', ' + m.time : '');
   const staff = mnStaff || [];
   const names = m.attendeeIds.map(id => (staff.find(p => String(p.id) === String(id)) || {}).name).filter(Boolean);
-  let t = b(m.title || 'Meeting notes') + '\n' + when + (m.location ? ' · ' + m.location : '') + '\n';
-  if(names.length || m.attendees) t += 'Attendees: ' + (names.length ? names.join(', ') : m.attendees) + '\n';
-  if(m.notes.trim()) t += '\n' + m.notes.trim() + '\n';
+  let t = '📋 ' + b(m.title || 'Meeting notes') + '\n📅 ' + when + '\n';
+  if(m.location) t += '📍 ' + m.location + '\n';
+  if(names.length || m.attendees) t += '👥 ' + (names.length ? names.join(', ') : m.attendees) + '\n';
+  if(m.notes.trim()) t += '\n📝 ' + b('Notes') + '\n' + m.notes.trim() + '\n';
   const acts = m.actions.filter(a => a.text.trim());
-  if(acts.length) t += '\n' + b('Action points') + '\n' + acts.map(a => (a.done ? '✓ ' : '• ') + a.text.trim() + (a.who_name ? ' - ' + a.who_name.split(' ')[0] : '')).join('\n');
+  if(acts.length) t += '\n✅ ' + b('Action points') + '\n' + acts.map(a => (a.done ? '✔️ ' : '▫️ ') + a.text.trim() + (a.who_name ? ' → ' + a.who_name.split(' ')[0] : '')).join('\n');
   return t.trim();
 }
 function mnCopyComms(){

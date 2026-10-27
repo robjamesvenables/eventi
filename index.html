@@ -6191,9 +6191,33 @@ window.addEventListener('popstate', function(e){
     // Only close an open chat thread if we're not popping back INTO one
     chatBackToList();
   }
+  if(mvBackSkip) return;                       // just closing one of our pop-ups, stay put
+  if(e.state && e.state.mvOverlay) return;     // stepping between pop-ups on the same page
   const id = e.state ? e.state.page : 'home';
   isBackNavigation = true;
   nav(id, false);
+});
+
+// Phone back button closes whatever is open on top (big QR, a task, a meeting, a photo...)
+// instead of doing nothing. Open: mvBackOpen(id, closeFn). Closed by a tap: mvBackDone(id).
+const mvBackStack = [];
+let mvBackSkip = 0;
+window.mvBackOpen = function(id, closeFn){
+  if(mvBackStack.some(x => x.id === id)) return;
+  const prior = history.state || { page: 'home' };
+  history.pushState(Object.assign({}, prior, { mvOverlay: id }), '', location.hash || '#' + id);
+  mvBackStack.push({ id, closeFn });
+};
+window.mvBackDone = function(id){
+  const i = mvBackStack.findIndex(x => x.id === id);
+  if(i < 0) return;
+  mvBackStack.splice(i, 1);
+  mvBackSkip++; history.back();
+};
+window.addEventListener('popstate', function(e){
+  if(mvBackSkip){ mvBackSkip--; return; }
+  const top = mvBackStack[mvBackStack.length - 1];
+  if(top && (!e.state || e.state.mvOverlay !== top.id)){ mvBackStack.pop(); try{ top.closeFn(); }catch(x){ console.warn(x); } }
 });
 
 const DASH_STAT_CONFIG = {
@@ -10188,8 +10212,10 @@ window.mnOpenMeeting = function(id){
   mnOpenId = id;
   mnRenderList();
   mnRenderNote();
+  if(mnIsPhone()) mvBackOpen('mnnote', () => mnCloseNote(true));
 };
-window.mnCloseNote = function(){
+window.mnCloseNote = function(fromBack){
+  if(!fromBack) mvBackDone('mnnote');
   const a = document.activeElement; if(a && a.closest && a.closest('#mn-note')) a.blur();
   mnFlush();
   mnOpenId = null;
@@ -10205,6 +10231,7 @@ window.mnNew = async function(){
   const m = mnRow(data); mnMeetings.push(m);
   mnActiveKey = key; mnOpenId = m.id;
   mnRender(); mnRenderNote();
+  if(mnIsPhone()) mvBackOpen('mnnote', () => mnCloseNote(true));
   setTimeout(() => { const t = document.getElementById('mnx-title'); if(t) t.focus(); }, 60);
 };
 function mnRenderNote(){
@@ -11123,9 +11150,11 @@ window.kbOpenCard = function(id){
     document.addEventListener('keydown', e => { if(e.key === 'Escape' && o.style.display === 'flex' && document.getElementById('photoLightbox').style.display !== 'flex') kbCloseCard(); }); }
   o.style.display = 'flex';
   document.body.style.overflow = 'hidden';
+  mvBackOpen('kbd', () => kbCloseCard(true));
   kbDetailRender();
 };
-window.kbCloseCard = function(){
+window.kbCloseCard = function(fromBack){
+  if(!fromBack) mvBackDone('kbd');
   const a = document.activeElement; if(a && a.closest && a.closest('#kb-detail')) a.blur(); // saves anything being typed
   const o = document.getElementById('kb-detail'); if(o) o.style.display = 'none';
   document.body.style.overflow = ''; kbOpenId = null;
@@ -13328,8 +13357,9 @@ window.surveyQrBig = function(){
   const src = c ? c.toDataURL('image/png') : (im && im.src);
   if(!src){ toast('QR code not ready yet - please try again'); return; }
   let o = document.getElementById('sv-qr-big');
-  if(!o){ o = document.createElement('div'); o.id = 'sv-qr-big'; document.body.appendChild(o); o.addEventListener('click', () => { o.style.display = 'none'; }); }
+  if(!o){ o = document.createElement('div'); o.id = 'sv-qr-big'; document.body.appendChild(o); o.addEventListener('click', () => { o.style.display = 'none'; mvBackDone('svqr'); }); }
   const name = (typeof myCompany !== 'undefined' && myCompany && myCompany.name) ? myCompany.name : '';
+  mvBackOpen('svqr', () => { o.style.display = 'none'; });
   o.innerHTML = `<div class="svqb"><div class="svqb-t">How was your visit${name ? ' to ' + name.replace(/</g,'&lt;') : ''}?</div><img src="${src}" alt="QR code"><div class="svqb-s">Scan with your phone camera - it takes 30 seconds</div><div class="svqb-x">Tap anywhere to close</div></div>`;
   o.style.display = 'flex';
 };
@@ -23963,10 +23993,11 @@ window.sbxView = function(id){
   let o = document.getElementById('sbx-lb');
   if(!o){ o = document.createElement('div'); o.id = 'sbx-lb'; o.style.cssText = 'position:fixed;inset:0;background:rgba(10,18,28,.92);z-index:10006;display:none;align-items:center;justify-content:center;padding:20px;cursor:zoom-out';
     o.innerHTML = '<img style="max-width:100%;max-height:100%;border-radius:10px;box-shadow:0 20px 60px rgba(0,0,0,.5)"><button aria-label="Close" style="position:fixed;top:16px;right:16px;width:44px;height:44px;border-radius:50%;border:0;background:rgba(255,255,255,.15);color:white;font-size:24px;cursor:pointer">×</button>';
-    o.addEventListener('click', () => { o.style.display = 'none'; });
-    document.addEventListener('keydown', e => { if(e.key === 'Escape' && o.style.display === 'flex') o.style.display = 'none'; });
+    o.addEventListener('click', () => { o.style.display = 'none'; mvBackDone('sbxlb'); });
+    document.addEventListener('keydown', e => { if(e.key === 'Escape' && o.style.display === 'flex'){ o.style.display = 'none'; mvBackDone('sbxlb'); } });
     document.body.appendChild(o); }
   o.querySelector('img').src = it.content; o.style.display = 'flex';
+  mvBackOpen('sbxlb', () => { o.style.display = 'none'; });
 };
 function sandboxRender(){
   const feed = document.getElementById('sandbox-feed');

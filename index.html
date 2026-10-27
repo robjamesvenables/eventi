@@ -5527,12 +5527,12 @@ img.emoji-tw{width:1.15em;height:1.15em;vertical-align:-0.2em;margin:0 1px}
       <div class="ph">
         <div>
           <div class="ph-title">SOPs</div>
-          <div class="ph-sub">How we do things here - read it, then sign it</div>
+          <div class="ph-sub">How we do things here - guidelines for every team</div>
         </div>
       </div>
       <label class="sop-search"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#94A3B8" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg><input id="sop-search" placeholder="Search all SOPs, e.g. allergen" oninput="sopSearch(this.value)" autocomplete="off"></label>
       <div class="sop-list" id="sop-dept-list"></div>
-      <div class="sop-from">Departments come from Admin Console › People<button id="sop-signoff-sw" class="sop-sw" onclick="sopToggleSignoff()" style="display:none">Staff sign-off: <b>Off</b></button></div>
+      <div class="sop-from">Departments come from Admin Console › People</div>
     </div>
 
     <!-- SOP DEPT LIST -->
@@ -13895,7 +13895,7 @@ function inventoryDelete(id){
 const sopIsManager = () => !myProfile || myProfile.is_owner || myProfile.role === 'superadmin' || roleCan('sopsedit');
 const sopCanApprove = () => !myProfile || myProfile.is_owner || myProfile.role === 'superadmin' || roleCan('sopsapprove');
 // Staff sign-off is off unless a company switches it on (most venues treat SOPs as guidelines)
-const sopSignoffOn = () => !!(typeof appSettings !== 'undefined' && appSettings && (appSettings.sop_signoff === 'on' || appSettings.sop_signoff === true));
+const sopSignoffOn = () => false; // staff sign-off taken out (decided) - SOPs are guidelines; old signatures stay in the data
 const sopEsc = x => String(x == null ? '' : x).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;');
 const sopNorm = x => String(x || '').trim().toLowerCase();
 let sopStaff = null, sopSearchQ = '';
@@ -13961,8 +13961,6 @@ function sopRenderDeptList(){
   }
   const depts = sopVisibleDepts();
   if(!depts.length){ list.innerHTML = '<div class="vac-empty"><b>No departments yet</b><span>Add your departments in Admin Console › People, then add SOPs to them here</span></div>'; return; }
-  const sw = document.getElementById('sop-signoff-sw');
-  if(sw){ sw.style.display = sopCanApprove() && myProfile ? '' : 'none'; sw.classList.toggle('on', sopSignoffOn()); sw.querySelector('b').textContent = sopSignoffOn() ? 'On' : 'Off'; }
   list.innerHTML = `<div class="sop-tiles">${depts.map(d => {
     const docs = sopData[d.id] || [];
     const todo = docs.filter(doc => sopMyState(doc, d.name) === 'todo' || sopMyState(doc, d.name) === 'outdated').length;
@@ -14069,18 +14067,6 @@ window.sopPdf = function(){
       html2canvas: { scale: 2, useCORS: true, backgroundColor: '#ffffff', x: 0, y: 0, width: rect.width, height: rect.height, windowWidth: rect.width, windowHeight: rect.height },
       jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' } }).from(tpl).save().then(() => tpl.remove()).catch(err => { console.error(err); tpl.remove(); toast('PDF export failed - please try again'); });
   }));
-};
-window.sopToggleSignoff = async function(){
-  if(!sopCanApprove()) return;
-  const next = sopSignoffOn() ? 'off' : 'on';
-  appConfirmShow({ title: next === 'on' ? 'Turn on staff sign-off?' : 'Turn off staff sign-off?', label: next === 'on' ? 'Turn on' : 'Turn off',
-    msg: next === 'on' ? 'Staff will be asked to read and sign the SOPs for their department, and you will see who has signed.' : 'SOPs become guidelines only - nobody is asked to sign. Signatures already given are kept.',
-    onOk: async () => {
-      appSettings.sop_signoff = next; sopRenderDeptList();
-      const { error } = await sb.from('app_settings').upsert({ key:'sop_signoff', value: next }, { onConflict:'company_id,key' });
-      if(error){ toast('Not saved - check your connection'); console.warn(error); }
-      else toast(next === 'on' ? 'Staff sign-off is on' : 'Staff sign-off is off');
-    } });
 };
 window.sopNewDocClick = async function(){ if(!sopIsManager()) return; if(await sopEnsureDept()) sopNewDoc(); };
 

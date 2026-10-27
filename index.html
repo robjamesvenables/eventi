@@ -20039,7 +20039,7 @@ window.vendorOpen = function(id){
       ${v.contactName ? row('user', 'Contact' + (v.contactRole ? ' · ' + v.contactRole : ''), v.contactName) : ''}
       ${v.phone ? row('call', 'Phone - tap to call', v.phone, 'tel:' + v.phone.replace(/[^\d+]/g, '')) : ''}
       ${v.phone ? row('wa', 'WhatsApp - tap to message', v.phone, 'https://api.whatsapp.com/send?phone=' + vdWaNumber(v.phone), true) : ''}
-      ${v.email ? row('em', 'Email - tap to write', v.email, 'mailto:' + v.email).replace('<a class="vdd-row"', `<a class="vdd-row" onclick="return vendorEmail(event, ${vdEsc(JSON.stringify(v.email))})"`) : ''}
+      ${v.email ? row('em', 'Email - tap to copy', v.email, 'mailto:' + v.email).replace('<a class="vdd-row"', `<a class="vdd-row" onclick="return vendorEmail(event, ${vdEsc(JSON.stringify(v.email))})"`) : ''}
       ${v.notes ? `<div class="vd-note">${vdSvg('note', 15)}<span>${vdEsc(v.notes)}</span></div>` : ''}
       ${!v.contactName && !v.phone && !v.email && !v.notes ? '<div class="vd-sup" style="padding:6px 0 10px">No contact details yet</div>' : ''}
     </div>
@@ -20048,15 +20048,13 @@ window.vendorOpen = function(id){
   o.style.display = 'flex';
   mvBackOpen('vddetail', () => { o.style.display = 'none'; });
 };
-// Email: a phone opens its mail app. A computer often has no mail app set up (so mailto does nothing) -
-// there it opens a new Gmail email instead, and copies the address so it can be pasted anywhere else.
+// Email: tap copies the address (people use different email apps, so we don't open one)
 window.vendorEmail = function(ev, email){
-  const phone = matchMedia('(max-width:760px)').matches || matchMedia('(pointer:coarse)').matches;
-  if(phone) return true;
   ev.preventDefault();
-  try{ navigator.clipboard.writeText(email).catch(() => {}); }catch(e){}
-  window.open('https://mail.google.com/mail/?view=cm&fs=1&to=' + encodeURIComponent(email), '_blank', 'noopener');
-  toast('Opening Gmail - email address copied too');
+  const done = () => toast('Email copied ✓ - paste it into your email');
+  const fallback = () => { const t = document.createElement('textarea'); t.value = email; t.style.cssText = 'position:fixed;opacity:0'; document.body.appendChild(t); t.select();
+    try{ document.execCommand('copy'); done(); }catch(e){ toast(email); } t.remove(); };
+  try{ navigator.clipboard.writeText(email).then(done, fallback); }catch(e){ fallback(); }
   return false;
 };
 window.vdDetailClose = function(){ const o = document.getElementById('vd-detail'); if(o) o.style.display = 'none'; mvBackDone('vddetail'); };

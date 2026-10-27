@@ -1979,6 +1979,13 @@ body.ev-nomoney .dash-hero .ev-money{display:none!important}
 #survey-qr-canvas{width:56px;height:56px;background:white;border-radius:8px;padding:4px;flex:none}
 #survey-qr-canvas canvas,#survey-qr-canvas img{width:48px!important;height:48px!important;display:block}
 .sv-qr b{display:block;color:white;font-size:13px}
+#survey-qr-canvas{cursor:zoom-in}
+#sv-qr-big{display:none;position:fixed;inset:0;z-index:10006;background:#0F1E2E;align-items:center;justify-content:center;padding:20px;cursor:pointer}
+.svqb{display:flex;flex-direction:column;align-items:center;gap:18px;text-align:center;font-family:Inter,sans-serif}
+.svqb-t{color:white;font-size:26px;font-weight:800;letter-spacing:-.5px;max-width:520px}
+.svqb img{width:min(78vw,62vh,420px);height:auto;background:white;border-radius:22px;padding:18px}
+.svqb-s{color:#5EEAD4;font-size:15px;font-weight:700}
+.svqb-x{color:#64748B;font-size:12.5px;font-weight:600}
 .sv-qr span{font-size:12px;color:#94A3B8}
 .sv-qr button{border:0;background:none;color:#5EEAD4;font:700 12px Inter,sans-serif;cursor:pointer;padding:0}
 .sv-bar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:14px}
@@ -4140,7 +4147,7 @@ img.emoji-tw{width:1.15em;height:1.15em;vertical-align:-0.2em;margin:0 1px}
           <div class="ph-title">Customer Survey</div>
           <div class="ph-sub">How guests rated their visit - by QR or logged by GRO</div>
         </div>
-        <div class="sv-qr"><div id="survey-qr-canvas"></div><div><b>Guest QR code</b><span><button onclick="surveyDownloadQr()">Download</button> · <button onclick="surveyShareQrLink()">Send</button></span></div></div>
+        <div class="sv-qr"><div id="survey-qr-canvas" onclick="surveyQrBig()" title="Show big for a guest to scan"></div><div><b>Guest QR code</b><span><button onclick="surveyQrBig()">Show</button> · <button onclick="surveyDownloadQr()">Download</button> · <button onclick="surveyShareQrLink()">Send</button></span></div></div>
       </div>
       <div class="sv-bar">
         <div class="sv-seg" id="sv-seg"><button data-m="day" class="on" onclick="surveySetMode('day')">Day</button><button data-m="week" onclick="surveySetMode('week')">Week</button><button data-m="month" onclick="surveySetMode('month')">Month</button></div>
@@ -13292,6 +13299,17 @@ function surveyDownloadQr(){
   link.click();
 }
 
+// Show the QR big on screen, so a guest can scan it straight off a phone or tablet
+window.surveyQrBig = function(){
+  const c = document.querySelector('#survey-qr-canvas canvas'), im = document.querySelector('#survey-qr-canvas img');
+  const src = c ? c.toDataURL('image/png') : (im && im.src);
+  if(!src){ toast('QR code not ready yet - please try again'); return; }
+  let o = document.getElementById('sv-qr-big');
+  if(!o){ o = document.createElement('div'); o.id = 'sv-qr-big'; document.body.appendChild(o); o.addEventListener('click', () => { o.style.display = 'none'; }); }
+  const name = (typeof myCompany !== 'undefined' && myCompany && myCompany.name) ? myCompany.name : '';
+  o.innerHTML = `<div class="svqb"><div class="svqb-t">How was your visit${name ? ' to ' + name.replace(/</g,'&lt;') : ''}?</div><img src="${src}" alt="QR code"><div class="svqb-s">Scan with your phone camera - it takes 30 seconds</div><div class="svqb-x">Tap anywhere to close</div></div>`;
+  o.style.display = 'flex';
+};
 function surveyShareQrLink(){
   shareToChatOpen('Scan or tap this link to leave feedback: ' + surveyQrUrl());
 }

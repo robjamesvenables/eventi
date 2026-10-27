@@ -1664,6 +1664,8 @@ body.ev-viewonly .pnl-open,body.ev-viewonly .pnl-pdf-top{display:none!important}
 .dash-hero .stat-hint{color:#CBD5E1!important;opacity:.8}
 .dash-hero .stat:nth-child(1) .stat-val,.dash-hero .stat:nth-child(3) .stat-val{color:#2DD4BF!important}
 .dash-hero .stat:nth-child(4) .stat-val{color:#E9C46A!important}
+body.ev-nomoney .dash-hero .ev-money{display:none!important}
+.cal-stats:empty{display:none}
 #p-dash .month-strip button.on,#p-dash .month-strip .on{background:#0D9488!important;border-color:#0D9488!important;color:white!important}
 /* ── Event Calendar: brand banner, up next, coloured statuses, holidays ── */
 .cal-hero{position:relative;overflow:hidden;border-radius:22px;padding:20px 24px;margin-bottom:16px;background:linear-gradient(120deg,#0F1E2E 0%,#123247 55%,#0F766E 130%);color:white}
@@ -4392,23 +4394,23 @@ img.emoji-tw{width:1.15em;height:1.15em;vertical-align:-0.2em;margin:0 1px}
       <div class="stats">
         <div class="stat g" style="position:relative">
           <div class="stat-val" id="stat-active-events">–</div>
-          <div class="stat-lbl">Active Events</div>
-          <div class="stat-hint">Upcoming</div>
+          <div class="stat-lbl">Coming Up</div>
+          <div class="stat-hint" id="stat-active-hint">Dated events ahead</div>
         </div>
         <div class="stat" style="position:relative">
           <div class="stat-val" id="stat-total-guests">–</div>
-          <div class="stat-lbl">Total Guests</div>
-          <div class="stat-hint">Across all events</div>
+          <div class="stat-lbl">Guests</div>
+          <div class="stat-hint">For those events</div>
         </div>
-        <div class="stat" style="position:relative">
+        <div class="stat ev-money" style="position:relative">
           <div class="stat-val" id="stat-revenue" style="font-size:22px">–</div>
-          <div class="stat-lbl">Revenue</div>
-          <div class="stat-hint">Upcoming events</div>
+          <div class="stat-lbl">Confirmed Revenue</div>
+          <div class="stat-hint">Confirmed, deposit &amp; fully paid</div>
         </div>
         <div class="stat r" style="position:relative">
           <div class="stat-val" id="stat-pending-payment">–</div>
-          <div class="stat-lbl">Pending Payment</div>
-          <div class="stat-hint">Not fully paid yet</div>
+          <div class="stat-lbl">Enquiries</div>
+          <div class="stat-hint" id="stat-enq-hint">Not confirmed yet</div>
         </div>
       </div>
       </div>
@@ -5982,10 +5984,10 @@ window.addEventListener('popstate', function(e){
 });
 
 const DASH_STAT_CONFIG = {
-  activeEvents: {label:'Active Events', elId:'stat-active-events', placeholder:'e.g. 6'},
-  totalGuests: {label:'Total Guests', elId:'stat-total-guests', placeholder:'e.g. 801'},
-  revenue: {label:'Revenue', elId:'stat-revenue', placeholder:'e.g. Rp 98.000.000'},
-  pendingPayment: {label:'Pending Payment', elId:'stat-pending-payment', placeholder:'e.g. 3'}
+  activeEvents: {label:'Coming Up', elId:'stat-active-events', placeholder:'e.g. 6'},
+  totalGuests: {label:'Guests', elId:'stat-total-guests', placeholder:'e.g. 801'},
+  revenue: {label:'Confirmed Revenue', elId:'stat-revenue', placeholder:'e.g. Rp 98.000.000'},
+  pendingPayment: {label:'Enquiries', elId:'stat-pending-payment', placeholder:'e.g. 3'}
 };
 
 function editDashStat(key){
@@ -7136,10 +7138,21 @@ function evRenderDash(){
   const upcoming = evAll.filter(ev=>!evIsPast(ev));
   const live = upcoming.filter(ev=>ev.status!=='Cancelled');
   const set = (id, v)=>{ const el=document.getElementById(id); if(el) el.textContent=v; };
-  set('stat-active-events', live.length);
-  set('stat-total-guests', live.reduce((a,e)=>a+(Number(e.pax)||0),0).toLocaleString());
-  set('stat-revenue', evMoney(live.reduce((a,e)=>a+(Number(e.revenue)||0),0)));
-  set('stat-pending-payment', live.filter(e=>e.status!=='Fully paid').length);
+  // Summary: dated events still to come. Money = confirmed business only; enquiries shown separately.
+  const dated = live.filter(e=>!!e.event_date);
+  const firm = dated.filter(e=>['Confirmed','Deposit paid','Fully paid'].includes(e.status));
+  const enq = dated.filter(e=>e.status==='Enquiry');
+  const noDate = live.length - dated.length;
+  const canMoney = !!myProfile ? (myProfile.is_owner || ['superadmin','director','manager'].includes(myProfile.role)) : true;
+  const short = v => v >= 1e9 ? 'Rp ' + (v/1e9).toFixed(1).replace(/\.0$/,'') + 'B' : v >= 1e6 ? 'Rp ' + Math.round(v/1e6) + 'M' : evMoney(v);
+  set('stat-active-events', dated.length);
+  set('stat-active-hint', noDate ? noDate + ' more with no date yet' : 'Dated events ahead');
+  set('stat-total-guests', dated.reduce((a,e)=>a+(Number(e.pax)||0),0).toLocaleString());
+  set('stat-revenue', evMoney(firm.reduce((a,e)=>a+(Number(e.revenue)||0),0)));
+  set('stat-pending-payment', enq.length);
+  const enqVal = enq.reduce((a,e)=>a+(Number(e.revenue)||0),0);
+  set('stat-enq-hint', canMoney && enqVal ? 'Worth ' + short(enqVal) + ' if confirmed' : 'Not confirmed yet');
+  document.body.classList.toggle('ev-nomoney', !canMoney);
   set('dash-sub', 'Live overview · ' + evVenueName());
   const sbBadge=document.getElementById('sb-badge-dash');
   if(sbBadge){ sbBadge.textContent=live.length; sbBadge.style.display = live.length ? '' : 'none'; }
@@ -8688,8 +8701,7 @@ function calRenderExtras(){
   const toConfirm = inMonth.filter(e => e.st === 'enq').length;
   const money = v => v >= 1e9 ? 'Rp ' + (v / 1e9).toFixed(1).replace(/\.0$/, '') + 'B' : v >= 1e6 ? 'Rp ' + Math.round(v / 1e6) + 'M' : v ? 'Rp ' + Math.round(v).toLocaleString('id-ID') : '-';
   const st = document.getElementById('cal-stats');
-  if(st) st.innerHTML = [['EVENTS THIS MONTH', inMonth.length, ''], ['GUESTS', guests.toLocaleString('en-GB'), ''], ['REVENUE', money(rev), 'teal'], ['STILL TO CONFIRM', toConfirm, toConfirm ? 'gold' : '']]
-    .map(([l, v, c]) => `<div class="cal-st ${c}"><small>${l}</small><b>${v}</b></div>`).join('');
+  if(st) st.innerHTML = '';   // the calendar shows dates, not totals - the event numbers live on Current Events
   const nx = document.getElementById('cal-next'); if(!nx) return;
   const t = new Date(); t.setHours(0, 0, 0, 0);
   const up = calEvents.filter(e => !e.cancelled && new Date(e.date + 'T00:00:00') >= t).sort((a, b) => String(a.date).localeCompare(String(b.date))).slice(0, 3);

@@ -2906,21 +2906,22 @@ img.emoji-tw{width:1.15em;height:1.15em;vertical-align:-0.2em;margin:0 1px}
 .kitchen-tab{padding:10px 20px;font-size:13px;font-weight:600;color:var(--ink2);cursor:pointer;border:none;background:none;font-family:"Inter",sans-serif;border-bottom:2px solid transparent;margin-bottom:-2px;transition:all 0.15s}
 .kitchen-tab.on{color:#065F46;border-bottom-color:#065F46}
 .kitchen-tab:hover{color:#065F46}
-#p-kitchen > .ph{flex-wrap:wrap;row-gap:0}
-#p-kitchen .kt-row{flex:0 0 100%;order:5}
-#p-kitchen .kt-tabs{display:flex;gap:4px;background:rgba(255,255,255,.08);border:0;border-radius:12px;padding:4px;margin:16px 0 0;width:fit-content;max-width:100%}
-#p-kitchen .kt-tabs .kitchen-tab{border:0;margin:0;border-radius:9px;padding:9px 18px;color:#CBD5E1;font-weight:700;font-size:13.5px}
-#p-kitchen .kt-tabs .kitchen-tab:hover{color:white}
-#p-kitchen .kt-tabs .kitchen-tab.on{background:white;color:#0F1E2E}
+#p-kitchen > .ph,#p-bar > .ph{flex-wrap:wrap;row-gap:0}
+#p-kitchen .kt-row,#p-bar .kt-row{flex:0 0 100%;order:5}
+#p-kitchen .kt-tabs,#p-bar .kt-tabs{display:flex;gap:4px;background:rgba(255,255,255,.08);border:0;border-radius:12px;padding:4px;margin:16px 0 0;width:fit-content;max-width:100%}
+#p-kitchen .kt-tabs .kitchen-tab,#p-bar .kt-tabs .kitchen-tab{border:0;margin:0;border-radius:9px;padding:9px 18px;color:#CBD5E1;font-weight:700;font-size:13.5px}
+#p-kitchen .kt-tabs .kitchen-tab:hover,#p-bar .kt-tabs .kitchen-tab:hover{color:white}
+#p-kitchen .kt-tabs .kitchen-tab.on,#p-bar .kt-tabs .kitchen-tab.on{background:white;color:#0F1E2E}
 #p-kitchen .kt-break{flex-basis:100%;height:0}
 #kp-allergens table td:first-child,#kp-allergens table th:first-child{position:sticky;left:0;z-index:1}
 #kp-allergens table td:first-child{background:white;box-shadow:2px 0 4px rgba(15,30,46,.06)}
 #kp-allergens table th:first-child{background:var(--navy)}
 @media(max-width:760px){
-  #p-kitchen > .ph #kitchen-add{flex:0 0 100%;order:3;margin-top:12px}
-  #p-kitchen .kt-row{order:2}
-  #p-kitchen .kt-tabs{mask-image:none!important;-webkit-mask-image:none!important;padding-bottom:4px!important;width:100%!important;display:grid!important;grid-template-columns:repeat(4,1fr);overflow:visible!important}
-  #p-kitchen .kt-tabs .kitchen-tab{padding:9px 2px;font-size:12.5px;text-align:center}
+  #p-kitchen > .ph #kitchen-add,#p-bar > .ph #bar-add{flex:0 0 100%;order:3;margin-top:12px}
+  #p-kitchen .kt-row,#p-bar .kt-row{order:2}
+  #p-kitchen .kt-tabs,#p-bar .kt-tabs{mask-image:none!important;-webkit-mask-image:none!important;padding-bottom:4px!important;width:100%!important;display:grid!important;grid-template-columns:repeat(4,1fr);overflow:visible!important}
+  #p-bar .kt-tabs{grid-template-columns:repeat(2,1fr)}
+  #p-kitchen .kt-tabs .kitchen-tab,#p-bar .kt-tabs .kitchen-tab{padding:9px 2px;font-size:12.5px;text-align:center}
 }
 .kitchen-panel{display:none}
 .kitchen-panel.on{display:block}
@@ -5542,12 +5543,11 @@ img.emoji-tw{width:1.15em;height:1.15em;vertical-align:-0.2em;margin:0 1px}
           <div class="ph-title">Bar</div>
           <div class="ph-sub">Cocktail menus and recipes for your bar team</div>
         </div>
-      </div>
-
-      <!-- Tabs -->
-      <div class="kitchen-tabs">
-        <button class="kitchen-tab bar-tab on" onclick="barTab('menus',this)">Menus</button>
-        <button class="kitchen-tab bar-tab" onclick="barTab('recipes',this)">Recipes</button>
+        <button class="btn btn-navy" id="bar-add" onclick="barBannerAdd()">+ Add Menu</button>
+        <div class="kt-row"><div class="kitchen-tabs kt-tabs">
+          <button class="kitchen-tab bar-tab on" onclick="barTab('menus',this)">Menus</button>
+          <button class="kitchen-tab bar-tab" onclick="barTab('recipes',this)">Recipes</button>
+        </div></div>
       </div>
 
       <!-- MENUS PANEL -->
@@ -5558,9 +5558,6 @@ img.emoji-tw{width:1.15em;height:1.15em;vertical-align:-0.2em;margin:0 1px}
 
       <!-- RECIPES PANEL -->
       <div class="kitchen-panel bar-panel" id="bp-recipes">
-        <div style="display:flex;justify-content:flex-end;margin-bottom:16px">
-          <button class="btn btn-navy" onclick="barAddRecipe()">+ Add Recipe</button>
-        </div>
         <div id="bar-recipes-container"></div>
       </div>
     </div>
@@ -15062,7 +15059,11 @@ function kitchenTab(id, el){
   if(id==='links') kitchenRenderLinks();
 }
 
+let barActiveTab = 'menus';
+function barBannerAdd(){ if(barActiveTab === 'recipes') barAddRecipe(); else barAddMenu(null); }
 function barTab(id, el){
+  barActiveTab = id;
+  const ab = document.getElementById('bar-add'); if(ab) ab.textContent = id === 'recipes' ? '+ Add Recipe' : '+ Add Menu';
   document.querySelectorAll('.bar-tab').forEach(t => t.classList.remove('on'));
   document.querySelectorAll('.bar-panel').forEach(p => p.classList.remove('on'));
   el.classList.add('on');
@@ -15391,14 +15392,19 @@ function barRenderMenus(){
 
 function barAddMenu(sectionId){
   const defaultArea = barActiveArea!=='all' ? barActiveArea : (barAreas[0] ? barAreas[0].id : '');
-  appModalShow({
-    title:'Add Menu',
-    fields:[
+  const askStage = !sectionId;
+  const fields = [
       {label:'Area', type:'pillpicker', options: barAreas, value: defaultArea},
       {label:'Category', placeholder:'e.g. Cocktails'},
       {label:'Menu name', placeholder:'e.g. Cocktail Menu'}
-    ],
-    async onOk([area, cat, name]){
+    ];
+  if(askStage) fields.unshift({label:'Stage', type:'pillpicker', options: kitchenMenuSections.map(x => ({ id:x.id, name:x.label, label:x.label })), value:'progress'});
+  appModalShow({
+    title:'Add Menu',
+    fields,
+    async onOk(vals){
+      if(askStage) sectionId = vals.shift() || 'progress';
+      const [area, cat, name] = vals;
       const now = new Date();
       const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
       const meta = `Updated ${now.getDate()} ${months[now.getMonth()]} ${now.getFullYear()}`;

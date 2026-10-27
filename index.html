@@ -13617,12 +13617,14 @@ function surveyPdf(){
   if(dayEntries.length === 0){ toast('No responses to export yet'); return; }
 
   const tpl = document.createElement('div');
-  tpl.style.cssText = 'position:fixed;top:0;left:0;width:700px;max-height:100vh;overflow:auto;background:white;padding:36px;font-family:Inter,sans-serif;z-index:99999';
+  // Same capture as the SOP PDF (which works): a full-height block at the top of the page, captured at its exact size.
+  // The old version was a fixed, scrolling box - if the page was scrolled down, the capture came out blank.
+  tpl.style.cssText = 'position:absolute;top:0;left:0;width:700px;background:white;padding:36px;font-family:Inter,sans-serif;z-index:99999';
   tpl.innerHTML = `
     <div style="font-size:22px;font-weight:800;color:#0F1E2E;margin-bottom:4px">Customer Survey</div>
     <div style="font-size:12px;color:#94A3B8;margin-bottom:20px">${surveyRangeLabel()} · ${dayEntries.length} response${dayEntries.length!==1?'s':''}</div>
     ${dayEntries.map(e => `
-      <div style="margin-bottom:16px;padding-bottom:16px;border-bottom:1px solid #E2E8F0">
+      <div class="sv-pdf-e" style="margin-bottom:16px;padding-bottom:16px;border-bottom:1px solid #E2E8F0">
         <div style="font-size:13px;font-weight:700;color:#0F1E2E;margin-bottom:6px">${e.source==='qr'?'Via QR':'Logged by GRO'} <span style="font-weight:400;color:#94A3B8">· ${e.time}</span></div>
         <div style="font-size:12px;color:#334155;line-height:1.8">
           ${SURVEY_QUESTIONS.map(q => `${q.label}: ${e[q.id]}/5`).join(' &nbsp;·&nbsp; ')}<br>
@@ -13633,13 +13635,18 @@ function surveyPdf(){
   `;
   document.body.appendChild(tpl);
   toast('Preparing your PDF…');
-  html2pdf().set({
-    margin: 10,
-    filename: 'customer-survey-' + surveyDateKey(surveySelectedDate) + '.pdf',
-    image: { type: 'jpeg', quality: 0.95 },
-    html2canvas: { scale: 2, useCORS: true, backgroundColor: '#ffffff' },
-    jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
-  }).from(tpl).save().then(()=>{ tpl.remove(); }).catch(()=>{ tpl.remove(); toast('PDF export failed — please try again'); });
+  requestAnimationFrame(() => requestAnimationFrame(() => {
+    const sy = window.scrollY; window.scrollTo(0, 0);   // a scrolled page made the top of the PDF blank
+    const rect = tpl.getBoundingClientRect();
+    html2pdf().set({
+      margin: 10,
+      filename: 'customer-survey-' + surveyDateKey(surveySelectedDate) + '.pdf',
+      image: { type: 'jpeg', quality: 0.95 },
+      html2canvas: { scale: 2, useCORS: true, backgroundColor: '#ffffff', x: 0, y: 0, scrollX: 0, scrollY: 0, width: rect.width, height: rect.height, windowWidth: rect.width, windowHeight: rect.height },
+      jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+      pagebreak: { mode: ['css', 'legacy'], avoid: '.sv-pdf-e' }
+    }).from(tpl).save().then(() => { tpl.remove(); window.scrollTo(0, sy); }).catch(err => { console.error(err); tpl.remove(); window.scrollTo(0, sy); toast('PDF export failed - please try again'); });
+  }));
 }
 
 function surveyShare(){
@@ -14352,10 +14359,11 @@ window.sopPdf = function(){
   toast('Preparing your PDF…');
   const slug = String(doc.title).replace(/[^a-z0-9]+/gi,'-').replace(/^-+|-+$/g,'').toLowerCase() || 'sop';
   requestAnimationFrame(() => requestAnimationFrame(() => {
+    const sy = window.scrollY; window.scrollTo(0, 0);   // a scrolled page made the top of the PDF blank
     const rect = tpl.getBoundingClientRect();
     html2pdf().set({ margin: 10, filename: `sop-${slug}.pdf`, image: { type: 'jpeg', quality: 0.95 },
-      html2canvas: { scale: 2, useCORS: true, backgroundColor: '#ffffff', x: 0, y: 0, width: rect.width, height: rect.height, windowWidth: rect.width, windowHeight: rect.height },
-      jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' } }).from(tpl).save().then(() => tpl.remove()).catch(err => { console.error(err); tpl.remove(); toast('PDF export failed - please try again'); });
+      html2canvas: { scale: 2, useCORS: true, backgroundColor: '#ffffff', x: 0, y: 0, scrollX: 0, scrollY: 0, width: rect.width, height: rect.height, windowWidth: rect.width, windowHeight: rect.height },
+      jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' } }).from(tpl).save().then(() => { tpl.remove(); window.scrollTo(0, sy); }).catch(err => { console.error(err); tpl.remove(); window.scrollTo(0, sy); toast('PDF export failed - please try again'); });
   }));
 };
 window.sopNewDocClick = async function(){ if(!sopIsManager()) return; if(await sopEnsureDept()) sopNewDoc(); };

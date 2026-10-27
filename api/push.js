@@ -155,6 +155,34 @@ async function taskPush(me, b, res){
   return L.send(res, 200, { ok: true, sent, devices: subs.length, skipped });
 }
 
+// Team project shared with people: "Robbie added you to NYE Party". Only people really in the project, same company.
+async function projectPush(me, b, res){
+  const proj = (await L.db('task_projects?select=*&id=eq.' + encodeURIComponent(b.project_id)))[0];
+  if (!proj || (proj.company_id && String(proj.company_id) !== String(me.company_id))) return L.send(res, 200, { ok: true, sent: 0, why: 'project not found' });
+  const okMgr = me.is_owner || ['superadmin', 'director', 'manager'].includes(me.role) || String(proj.created_by_profile) === String(me.id);
+  if (!okMgr) return L.send(res, 200, { ok: true, sent: 0, why: 'not allowed' });
+  const members = (proj.member_ids || []).map(String);
+  const ids = [...new Set(b.added.map(String))].filter(id => members.includes(id) && id !== String(me.id)).slice(0, 50);
+  if (!ids.length) return L.send(res, 200, { ok: true, sent: 0, why: 'no one to tell' });
+  webpush.setVapidDetails('mailto:hello@getmavis.co', VAPID_PUBLIC, VAPID_PRIVATE);
+  const now = new Date(); let sent = 0;
+  for (const id of ids) {
+    const person = (await L.db('profiles?select=id,company_id,active&id=eq.' + encodeURIComponent(id)))[0];
+    if (!person || String(person.company_id) !== String(me.company_id) || person.active === false) continue;
+    const [prefs, subs] = await Promise.all([
+      L.db('chat_prefs?select=*&profile_id=eq.' + encodeURIComponent(id)).catch(() => []),
+      L.db('push_subs?select=*&profile_id=eq.' + encodeURIComponent(id)).catch(() => [])
+    ]);
+    if (inQuiet(prefs[0], now)) continue;
+    const payload = JSON.stringify({ title: 'Task Board', body: (me.first_name || 'Someone') + ' added you to ' + String(proj.name || 'a project'), thread: 'project-' + proj.id, url: '/?project=' + proj.id, from: me.id, who: initials(me), colour: ROLE_COLOURS[me.role] || '#0D9488' });
+    for (const s of subs) {
+      try { await webpush.sendNotification({ endpoint: s.endpoint, keys: { p256dh: s.p256dh, auth: s.auth } }, payload, { TTL: 6 * 3600, urgency: 'high' }); sent++; }
+      catch (e) { if (e.statusCode === 404 || e.statusCode === 410) await L.db('push_subs?endpoint=eq.' + encodeURIComponent(s.endpoint), { method: 'DELETE' }).catch(() => {}); }
+    }
+  }
+  return L.send(res, 200, { ok: true, sent });
+}
+
 // ── Ordering ──
 // POST { order_id, event }  event: new | hold | answered | approved | rejected | ordered | received | paid | note
 //   new → approvers · hold/approved/rejected/ordered/paid → the person who asked
@@ -277,6 +305,7 @@ module.exports = async (req, res) => {
     if (b.request_id) return await requestPush(me, b, res);
     if (b.order_id) return await orderPush(me, b, res);
     if (b.task_id) return await taskPush(me, b, res);
+    if (b.project_id && Array.isArray(b.added)) return await projectPush(me, b, res);
     const msg = (await L.db('chat_msgs?select=*&id=eq.' + encodeURIComponent(b.msg_id || '')))[0];
     // only the person who sent it, and only straight after sending
     if (!msg) { await note(me, 'not sent - message not found'); return L.send(res, 200, { ok: true, sent: 0, why: 'message not found' }); }

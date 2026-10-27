@@ -269,6 +269,23 @@ body{margin:0;padding:0;font-family:'Inter',sans-serif;background:var(--bg);colo
 .tb-proj-tile{position:relative;background:white;border:1px solid #E2E8F0;border-radius:14px;padding:18px;text-align:left;cursor:pointer;font-family:'Inter',sans-serif}
 .tb-proj-tile-name{font-size:14px;font-weight:800;color:#0F1E2E;margin-bottom:4px;padding-right:44px}
 .tb-proj-tile-count{font-size:12px;color:#94A3B8}
+.tbp{border:0;box-shadow:0 1px 3px rgba(15,30,46,.07);border-radius:16px;padding:16px}
+.tbp-top{display:flex;align-items:flex-start;gap:8px}.tbp-top .tb-proj-tile-name{flex:1;font-size:15.5px}.tbp-top .kbq-dots{margin:-6px -6px 0 0}
+.tbp-who,.tb-who{display:flex;align-items:center;gap:8px;flex-wrap:wrap}.tbp-who{margin-top:12px;padding-top:12px;border-top:1px solid #F1F5F9}
+.tb-faces{display:inline-flex}.tb-face{width:26px;height:26px;border-radius:50%;color:white;font:800 9.5px Inter,sans-serif;display:inline-flex;align-items:center;justify-content:center;border:2px solid white;margin-left:-7px;flex:none}.tb-faces .tb-face:first-child{margin-left:0}
+.tb-wtxt{font-size:12.5px;color:#475569;font-weight:600;min-width:0}
+.tb-chip{font-size:11.5px;font-weight:700;border-radius:8px;padding:4px 9px;display:inline-flex;align-items:center;gap:5px}.tb-chip.ev{background:#E0F5F2;color:#0F766E}.tb-chip.lk{background:#F1F5F9;color:#475569;margin-left:auto}
+.tb-share{display:flex;align-items:center;gap:10px;margin:-4px 0 14px;flex-wrap:wrap}.tb-share .tb-who{flex:1}.tb-share .tb-chip.lk{margin-left:0}
+.tb-share-b{display:inline-flex;align-items:center;gap:6px;border:0;background:#0F1E2E;color:white;border-radius:10px;padding:9px 13px;font:800 12.5px Inter,sans-serif;cursor:pointer}
+#tb-sheet{display:none;position:fixed;inset:0;background:rgba(15,30,46,.55);z-index:10005;align-items:center;justify-content:center;padding:16px}
+.tbs-seg{display:flex;background:#F1F5F9;border-radius:11px;padding:4px;gap:4px}.tbs-seg button{flex:1;border:0;background:none;padding:10px 6px;border-radius:8px;font:700 13.5px Inter,sans-serif;color:#64748B;cursor:pointer}.tbs-seg button.on{background:#0F1E2E;color:white}
+.tbs-q{width:100%;box-sizing:border-box;border:1.5px solid #E2E8F0;border-radius:10px;padding:10px 12px;font:500 16px Inter,sans-serif;outline:none;margin-bottom:6px}.tbs-q:focus{border-color:#0D9488}
+.tbs-list{max-height:240px;overflow:auto}
+.tbs-p{display:flex;align-items:center;gap:10px;width:100%;border:0;background:none;padding:8px 4px;border-bottom:1px solid #F8FAFC;cursor:pointer;font-family:Inter,sans-serif;text-align:left}.tbs-p .tb-face{margin:0;border:0}
+.tbs-p b{flex:1;font-size:14px;color:#0F1E2E}.tbs-p small{font-size:11.5px;color:#94A3B8;font-weight:600}
+.tbs-cb{width:22px;height:22px;border-radius:7px;border:2px solid #CBD5E1;display:flex;align-items:center;justify-content:center;flex:none}.tbs-p.on .tbs-cb{background:#0D9488;border-color:#0D9488}
+.tbs-sum{background:#F8FAFC;border-radius:10px;padding:10px 12px;font-size:12.5px;color:#334155;margin:4px 0 6px;line-height:1.5}
+@media(max-width:760px){#tb-sheet{padding:0;align-items:flex-end}}
 .tb-proj-tile-del{font-size:14px;color:#CBD5E1;cursor:pointer;width:20px;height:20px;display:flex;align-items:center;justify-content:center;border-radius:6px}
 .tb-proj-tile-del:hover{color:#EF4444;background:#FEF2F2}
 .tb-proj-tile-edit{color:#CBD5E1;cursor:pointer;width:20px;height:20px;display:flex;align-items:center;justify-content:center;border-radius:6px}
@@ -5387,10 +5404,10 @@ img.emoji-tw{width:1.15em;height:1.15em;vertical-align:-0.2em;margin:0 1px}
         Back to Task Board
       </button>
       <div class="ph">
-        <div class="ph-title">Team Projects</div>
+        <div><div class="ph-title">Team Projects</div><div class="ph-sub">Shared boards - you only see projects you're in</div></div>
         <button class="btn btn-navy" id="tb-team-add-btn" onclick="taskboardAddProject(true)">+ New Project</button>
       </div>
-      <div id="tb-team-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,260px));gap:14px;max-width:840px"></div>
+      <div id="tb-team-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px;max-width:900px"></div>
     </div>
 
     <div class="page" id="p-kb" style="padding:32px 28px 80px">
@@ -5405,6 +5422,7 @@ img.emoji-tw{width:1.15em;height:1.15em;vertical-align:-0.2em;margin:0 1px}
         </div>
         <button class="btn btn-navy" onclick="addKanbanCard('col-todo')">+ Add Task</button>
       </div>
+      <div id="kb-share" class="tb-share" style="display:none"></div>
 
       <div id="kb-tabs"></div>
       <div class="kanban-wrap" id="kanban-wrap">
@@ -10742,7 +10760,148 @@ const kbBoards = {
 const colColors = {todo:'#94A3B8', progress:'#F59E0B', done:'#10B981'};
 function taskboardRenderRoot(){}
 
+// ── TEAM PROJECT SHARING ──
+// A team project is seen by Everyone, or only by: whoever made it, the people picked, anyone in a picked department,
+// plus Directors / Super Admins / the owner. Only the maker or a Manager and up can change it. (Database rules do the
+// real locking - see task-sharing.sql - this just keeps the screens matching.)
+const tbMe = () => myProfile ? String(myProfile.id) : '';
+const tbIsBoss = () => !myProfile || myProfile.is_owner || ['superadmin','director'].includes(myProfile.role);
+const tbMyDepts = () => (myProfile && Array.isArray(myProfile.departments) ? myProfile.departments : []).map(d => String(d).toLowerCase());
+function tbCanSee(p){
+  if(!myProfile || p.shareAll !== false || tbIsBoss()) return true;
+  if(String(p.createdBy || '') === tbMe() || (p.members || []).map(String).includes(tbMe())) return true;
+  const my = tbMyDepts();
+  return (p.depts || []).some(d => my.includes(String(d).toLowerCase()));
+}
+function tbCanManage(p){
+  if(!myProfile) return true;
+  return myProfile.is_owner || ['superadmin','director','manager'].includes(myProfile.role) || (!!p.createdBy && String(p.createdBy) === tbMe());
+}
+// Everyone in the project (from the staff list): maker + picked people + people in picked departments
+function tbProjectPeople(p, staff){
+  if(p.shareAll !== false) return staff.slice();
+  const ids = new Set((p.members || []).map(String)); if(p.createdBy) ids.add(String(p.createdBy));
+  const depts = (p.depts || []).map(d => String(d).toLowerCase());
+  return staff.filter(s => ids.has(String(s.id)) || (s.depts || []).some(d => depts.includes(d)));
+}
+function tbWhoLabel(p){
+  if(p.shareAll !== false) return 'Everyone';
+  const staff = sopStaff || [];
+  const names = (p.members || []).map(id => (staff.find(s => s.id === String(id)) || {}).first || '').filter(Boolean);
+  const d = p.depts || [];
+  if(d.length && names.length) return d.join(', ') + ' + ' + names.length + (names.length === 1 ? ' person' : ' people');
+  if(d.length) return d.join(', ');
+  if(names.length) return names.length <= 3 ? names.join(', ') : names.slice(0, 2).join(', ') + ' + ' + (names.length - 2) + ' more';
+  return 'Only you';
+}
+function tbFace(name, s){
+  const n = String(name || '?').trim(), w = n.split(/\s+/), ini = (w.length > 1 ? w[0][0] + w[1][0] : n.slice(0, 2)).toUpperCase();
+  let h = 0; for(const ch of n.toLowerCase()) h = (h * 31 + ch.charCodeAt(0)) >>> 0;
+  return `<span class="tb-face" style="background:${['#1E3A5F','#C4973B','#0D9488','#475569'][h % 4]}${s ? `;width:${s}px;height:${s}px;font-size:${Math.round(s * .36)}px` : ''}">${vdEsc(ini)}</span>`;
+}
+function tbFaces(p){
+  const people = tbProjectPeople(p, sopStaff || []);
+  const show = people.slice(0, 4);
+  return `<span class="tb-faces">${show.map(s => tbFace(s.name)).join('')}${people.length > 4 ? `<span class="tb-face" style="background:#64748B">+${people.length - 4}</span>` : ''}</span>`;
+}
+const TB_LOCK = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>';
+const TB_GLOBE = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15 15 0 0 1 0 20M12 2a15 15 0 0 0 0 20"/></svg>';
+function tbWhoRow(p){
+  return p.shareAll !== false
+    ? `<span class="tb-chip ev">${TB_GLOBE}Everyone</span><span class="tb-wtxt">The whole team can see it</span>`
+    : `${tbFaces(p)}<span class="tb-wtxt">${vdEsc(tbWhoLabel(p))}</span><span class="tb-chip lk">${TB_LOCK}Private</span>`;
+}
+
+// The project sheet: new project, or Share / settings on an existing one
+window.tbProjectSheet = async function(projectId){
+  const p = projectId ? kbTeamProjects.find(x => x.id === projectId) : null;
+  if(p && !tbCanManage(p)){ toast('Only whoever made this project, or a manager, can change it'); return; }
+  const staff = (await sopStaffLoad()).slice().sort((a, b) => a.name.localeCompare(b.name));
+  const depts = (typeof faqCompanyDepts === 'function' ? faqCompanyDepts() : []).map(String).filter(Boolean);
+  const st = { all: p ? p.shareAll !== false : false, members: new Set((p ? p.members : []).map(String)), depts: new Set(p ? p.depts : []) };
+  const maker = p ? String(p.createdBy || '') : tbMe();
+  let o = document.getElementById('tb-sheet');
+  if(!o){ o = document.createElement('div'); o.id = 'tb-sheet'; document.body.appendChild(o); o.addEventListener('click', e => { if(e.target === o) tbSheetClose(); }); }
+  o.innerHTML = `<div class="vdf tbs">
+    <div class="vdf-h"><b>${p ? 'Project settings' : 'New team project'}</b></div>
+    <div class="vdf-body">
+      <label class="vdf-f"><span>PROJECT NAME</span><input id="tbs-name" value="${vdEsc(p ? p.name : '')}" placeholder="e.g. NYE Party 2026" maxlength="60" autocomplete="off"></label>
+      <div class="vdf-f"><span>WHO CAN SEE IT</span><div class="tbs-seg"><button type="button" data-a="1">Everyone</button><button type="button" data-a="0">Pick who</button></div></div>
+      <div id="tbs-pick">
+        ${depts.length ? `<div class="vdf-f"><span>WHOLE DEPARTMENTS</span><div class="vdf-pills">${depts.map(d => `<button type="button" class="vdf-pill tbs-d" data-d="${vdEsc(d)}">${vdEsc(d)}</button>`).join('')}</div></div>` : ''}
+        <div class="vdf-f"><span>AND / OR PEOPLE</span><input id="tbs-q" class="tbs-q" placeholder="Search staff…" autocomplete="off">
+          <div class="tbs-list">${staff.filter(s => s.id !== maker).map(s => `<button type="button" class="tbs-p" data-id="${s.id}" data-n="${vdEsc(s.name.toLowerCase())}">${tbFace(s.name, 30)}<b>${vdEsc(s.name)}</b><small>${vdEsc((s.depts[0] || '').replace(/\b\w/g, c => c.toUpperCase()))}</small><span class="tbs-cb"></span></button>`).join('') || '<div class="kbp-empty">No staff found</div>'}</div></div>
+      </div>
+      <div class="tbs-sum" id="tbs-sum"></div>
+    </div>
+    <div class="vdf-foot">${p ? '<button type="button" class="vdf-del" id="tbs-del">Delete</button>' : ''}<button type="button" class="mns-cancel" onclick="tbSheetClose()">Cancel</button><button type="button" class="mns-go" id="tbs-save">${p ? 'Save' : 'Create project'}</button></div>
+  </div>`;
+  const sync = () => {
+    o.querySelectorAll('.tbs-seg button').forEach(b => b.classList.toggle('on', (b.dataset.a === '1') === st.all));
+    document.getElementById('tbs-pick').style.display = st.all ? 'none' : '';
+    o.querySelectorAll('.tbs-d').forEach(b => b.classList.toggle('on', st.depts.has(b.dataset.d)));
+    o.querySelectorAll('.tbs-p').forEach(b => { const on = st.members.has(b.dataset.id); b.classList.toggle('on', on); b.querySelector('.tbs-cb').innerHTML = on ? '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>' : ''; });
+    const sumEl = document.getElementById('tbs-sum');
+    if(st.all){ sumEl.innerHTML = '<b>Everyone</b> on the team can see this project.'; return; }
+    const people = tbProjectPeople({ shareAll: false, members: [...st.members], depts: [...st.depts], createdBy: maker }, staff);
+    const parts = [st.depts.size ? 'everyone in ' + [...st.depts].join(' and ') : '', st.members.size ? [...st.members].map(id => (staff.find(s => s.id === id) || {}).first).filter(Boolean).join(', ') : ''].filter(Boolean);
+    sumEl.innerHTML = `<b>${people.length} ${people.length === 1 ? 'person' : 'people'}</b> will see this${parts.length ? ': ' + vdEsc(parts.join(', plus ')) : ''}. ${maker === tbMe() ? 'You\'re always in.' : 'Whoever made it is always in.'} Directors and the owner can see every project.`;
+  };
+  o.querySelectorAll('.tbs-seg button').forEach(b => b.addEventListener('click', () => { st.all = b.dataset.a === '1'; sync(); }));
+  o.querySelectorAll('.tbs-d').forEach(b => b.addEventListener('click', () => { st.depts.has(b.dataset.d) ? st.depts.delete(b.dataset.d) : st.depts.add(b.dataset.d); sync(); }));
+  o.querySelectorAll('.tbs-p').forEach(b => b.addEventListener('click', () => { st.members.has(b.dataset.id) ? st.members.delete(b.dataset.id) : st.members.add(b.dataset.id); sync(); }));
+  document.getElementById('tbs-q').addEventListener('input', e => { const v = e.target.value.trim().toLowerCase(); o.querySelectorAll('.tbs-p').forEach(b => { b.style.display = !v || b.dataset.n.includes(v) ? '' : 'none'; }); });
+  sync();
+  document.getElementById('tbs-save').addEventListener('click', async () => {
+    const name = document.getElementById('tbs-name').value.trim();
+    if(!name){ toast('Please type a project name'); document.getElementById('tbs-name').focus(); return; }
+    const row = { name, share_all: st.all, member_ids: st.all ? [] : [...st.members], member_depts: st.all ? [] : [...st.depts] };
+    const btn = document.getElementById('tbs-save'); btn.disabled = true; btn.textContent = 'Saving…';
+    const before = p ? new Set((p.shareAll !== false ? [] : p.members).map(String)) : new Set();
+    let res;
+    if(p) res = await sb.from('task_projects').update(row).eq('id', p.dbId).select().single();
+    else res = await sb.from('task_projects').insert([Object.assign({ created_by_profile: myProfile ? myProfile.id : null }, row)]).select().single();
+    if(res.error || !res.data){
+      console.warn(res.error); btn.disabled = false; btn.textContent = p ? 'Save' : 'Create project';
+      toast(/share_all|member_|created_by_profile/i.test((res.error && res.error.message) || '') ? 'Sharing needs the database update first - run task-sharing.sql' : 'Not saved - please try again');
+      return;
+    }
+    const saved = tbFromRow(res.data);
+    if(p){ Object.assign(p, saved); }
+    else { kbTeamProjects.push(saved); kbBoards[saved.id] = kbBoards[saved.id] || { todo:[], progress:[], done:[] }; }
+    tbSheetClose();
+    taskboardRenderTeamTiles();
+    if(p && kbActiveProjectId === p.id) tbBoardHead();
+    toast(p ? 'Saved ✓' : 'Project created ✓');
+    // Tell the people who were just added (picked by name - not whole departments, to avoid spamming)
+    const added = row.member_ids.filter(id => !before.has(String(id)) && String(id) !== tbMe());
+    if(added.length && myProfile){
+      try{ const { data } = await sb.auth.getSession(); const token = data && data.session && data.session.access_token;
+        if(token){ const r = await authApi('push', { body: { project_id: saved.dbId, added }, token }); console.log('[push] project share', r); } }catch(e){ console.warn(e); }
+    }
+  });
+  const del = document.getElementById('tbs-del');
+  if(del) del.addEventListener('click', () => { tbSheetClose(); taskboardDeleteProject(p.id, true); });
+  o.style.display = 'flex';
+  mvBackOpen('tbsheet', () => { o.style.display = 'none'; });
+  if(!p) setTimeout(() => { const n = document.getElementById('tbs-name'); if(n && innerWidth > 760) n.focus(); }, 60);
+};
+window.tbSheetClose = function(){ const o = document.getElementById('tb-sheet'); if(o) o.style.display = 'none'; mvBackDone('tbsheet'); };
+function tbFromRow(row){
+  return { id: 'team-' + row.id, name: row.name, dbId: row.id, shareAll: row.share_all !== false, members: (row.member_ids || []).map(String), depts: row.member_depts || [], createdBy: row.created_by_profile ? String(row.created_by_profile) : '' };
+}
+// Board header for a team project: faces + who + Share
+function tbBoardHead(){
+  const el = document.getElementById('kb-share'); if(!el) return;
+  const p = kbActiveIsTeam ? kbTeamProjects.find(x => x.id === kbActiveProjectId) : null;
+  if(!p){ el.innerHTML = ''; el.style.display = 'none'; return; }
+  el.style.display = '';
+  el.innerHTML = `<div class="tb-who">${tbWhoRow(p)}</div>${tbCanManage(p) ? `<button class="tb-share-b" onclick="tbProjectSheet('${p.id}')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><circle cx="9" cy="8" r="4"/><path d="M2 21a7 7 0 0 1 14 0M19 8v6M16 11h6"/></svg>Share</button>` : ''}`;
+  if(!sopStaff) sopStaffLoad().then(() => tbBoardHead());
+}
+
 function tbProjectTile(p, isTeam){
+  if(isTeam) return tbTeamTile(p);
   const board = kbBoards[p.id] || {todo:[],progress:[],done:[]};
   const count = (board.todo||[]).length + (board.progress||[]).length + (board.done||[]).length;
   return `<div class="tb-proj-tile" onclick="taskboardOpenProject('${p.id}',${isTeam})">
@@ -10755,6 +10914,15 @@ function tbProjectTile(p, isTeam){
   </div>`;
 }
 
+function tbTeamTile(p){
+  const board = kbBoards[p.id] || {todo:[],progress:[],done:[]};
+  const count = (board.todo||[]).length + (board.progress||[]).length + (board.done||[]).length, done = (board.done||[]).length;
+  return `<div class="tb-proj-tile tbp" onclick="taskboardOpenProject('${p.id}',true)">
+    <div class="tbp-top"><div class="tb-proj-tile-name" style="padding-right:0">${vdEsc(p.name)}</div>${tbCanManage(p) ? `<button class="kbq-dots" title="Settings and sharing" onclick="event.stopPropagation();tbProjectSheet('${p.id}')"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg></button>` : ''}</div>
+    <div class="tb-proj-tile-count">${count} task${count===1?'':'s'}${count ? ' · ' + done + ' done' : ''}</div>
+    <div class="tbp-who">${tbWhoRow(p)}</div>
+  </div>`;
+}
 // Friendly message for a list that has nothing in it yet
 function mvEmpty(title, sub){
   return '<div style="grid-column:1/-1;text-align:center;padding:44px 20px;color:#94A3B8"><div style="font-size:14px;font-weight:700;color:#475569;margin-bottom:4px">' + title + '</div><div style="font-size:12.5px">' + sub + '</div></div>';
@@ -10772,7 +10940,8 @@ function taskboardRenderPersonalTiles(){
 function taskboardRenderTeamTiles(){
   const grid = document.getElementById('tb-team-grid');
   if(!grid) return;
-  const draw = () => { grid.innerHTML = kbTeamProjects.length ? kbTeamProjects.map(p => tbProjectTile(p, true)).join('') : mvEmpty('No team projects yet', 'Tap + New Project to start a board the whole team can use'); };
+  const draw = () => { grid.innerHTML = kbTeamProjects.length ? kbTeamProjects.map(p => tbProjectTile(p, true)).join('') : mvEmpty('No team projects yet', 'Tap + New Project to start a shared board'); };
+  if(!sopStaff && myProfile) sopStaffLoad().then(() => { if(taskboardTeamLoaded) draw(); });
   // First visit: show Loading instead of old sample projects, until the real list arrives
   if(taskboardTeamLoaded) draw(); else grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:44px 20px;color:#94A3B8;font-size:13px;font-weight:600">Loading…</div>';
   taskboardLoadTeamFromSupabase().then(() => { taskboardTeamLoaded = true; draw(); });
@@ -10809,10 +10978,11 @@ function taskboardOpenProject(projectId, isTeam){
   const proj = list.find(p=>p.id===projectId);
   document.getElementById('kb-project-title').textContent = proj ? proj.name : 'Task Board';
   document.getElementById('kb-project-sub').textContent = isTeam
-    ? 'Shared with your team - changes sync live'
+    ? 'Team project - changes sync live'
     : 'Only you can see this project';
   document.getElementById('kb-back-label').textContent = isTeam ? 'Back to Team Projects' : 'Back to Personal Projects';
   nav('kb');
+  tbBoardHead();
   kbRender();
 }
 
@@ -10821,6 +10991,7 @@ function taskboardBackToTiles(){
 }
 
 function taskboardAddProject(isTeam){
+  if(isTeam) return tbProjectSheet(null);
   appModalShow({
     title: isTeam ? 'New Team Project' : 'New Personal Project',
     fields:[{label:'Project name', placeholder:'e.g. Kitchen Renovation'}],
@@ -10851,12 +11022,15 @@ function taskboardDeleteProject(projectId, isTeam){
     onOk(){
       if(isTeam){
         const proj = kbTeamProjects.find(p=>p.id===projectId);
+        if(proj && !tbCanManage(proj)){ toast('Only whoever made this project, or a manager, can delete it'); return; }
+        const board = kbBoards[projectId];
         kbTeamProjects = kbTeamProjects.filter(p=>p.id!==projectId);
         delete kbBoards[projectId];
         taskboardRenderTeamTiles();
+        if(kbActiveProjectId === projectId && document.getElementById('p-kb').classList.contains('on')) nav('taskboard-team');
         if(proj && proj.dbId){
-          sb.from('task_projects').delete().eq('id', proj.dbId).then(({error})=>{
-            if(error) console.warn('Team project delete failed', error);
+          sb.from('task_projects').delete().eq('id', proj.dbId).select().then(({data, error})=>{
+            if(error || !data || !data.length){ console.warn('Team project delete failed', error); kbTeamProjects.push(proj); kbBoards[projectId] = board; taskboardRenderTeamTiles(); toast('Not deleted - please try again'); }
           });
         }
       } else {
@@ -10875,6 +11049,7 @@ function taskboardDeleteProject(projectId, isTeam){
 }
 
 function taskboardRenameProject(projectId, isTeam){
+  if(isTeam) return tbProjectSheet(projectId);
   const list = isTeam ? kbTeamProjects : kbPersonalProjects;
   const proj = list.find(p => p.id === projectId);
   if(!proj) return;
@@ -10958,7 +11133,9 @@ async function taskboardLoadTeamFromSupabase(){
     kbTeamProjects = [];
     (projects || []).forEach(row => {
       const id = 'team-'+row.id;
-      kbTeamProjects.push({id, name: row.name, dbId: row.id});
+      const proj = tbFromRow(row);
+      if(!tbCanSee(proj)) return;
+      kbTeamProjects.push(proj);
       if(!kbBoards[id]) kbBoards[id] = {todo:[],progress:[],done:[]};
     });
     const { data: cards, error: cerr } = await sb.from('task_cards').select('*').order('sort_order', { ascending: true });
@@ -11445,8 +11622,10 @@ window.kbPickOpen = async function(){
   box.style.display = 'block';
   box.innerHTML = '<div class="kbp-empty">Loading your team…</div>';
   if(!window._kbpOut){ window._kbpOut = 1; document.addEventListener('click', e => { const l = document.getElementById('kbd-pick-list'); if(l && l.style.display === 'block' && !e.target.closest('.kbd-pickwrap')) l.style.display = 'none'; }); }
-  const staff = await kbStaffLoad();
+  let staff = await kbStaffLoad();
   const f = kbFindCard(kbOpenId); if(!f) return;
+  const tp = kbActiveIsTeam ? kbTeamProjects.find(x => x.id === kbActiveProjectId) : null;
+  if(tp && tp.shareAll === false){ const inIt = new Set(tbProjectPeople(tp, await sopStaffLoad()).map(x => String(x.id))); staff = staff.filter(x => inIt.has(String(x.id))); }
   const cur = f.card.assignedTo || '';
   const esc = v => String(v||'').replace(/&/g,'&amp;').replace(/</g,'&lt;');
   const row = p => `<button type="button" class="kbp-row${String(p.id)===String(cur)?' on':''}" data-n="${esc(p.name.toLowerCase())}" onclick="kbPickSet('${p.id}')">${kbAvatar(p.name)}<span class="kbp-role">${esc(typeof roleName==='function' ? roleName(p.role) : (p.role||''))}</span></button>`;
@@ -11482,7 +11661,15 @@ window.kbPickSet = async function(id){
 };
 // Tapping a task notification opens that task
 async function kbOpenFromUrl(){
-  let id = null; try{ id = new URLSearchParams(location.search).get('task'); }catch(e){}
+  let id = null, pid = null; try{ const q = new URLSearchParams(location.search); id = q.get('task'); pid = q.get('project'); }catch(e){}
+  if(!id && pid){
+    // "You've been added to a project" notification
+    try{ history.replaceState(history.state, '', location.pathname + location.hash); }catch(e){}
+    await taskboardLoadTeamFromSupabase();
+    const proj = kbTeamProjects.find(p => String(p.dbId) === String(pid));
+    if(proj) taskboardOpenProject(proj.id, true); else toast('That project has been removed');
+    return;
+  }
   if(!id) return;
   try{ history.replaceState(history.state, '', location.pathname + location.hash); }catch(e){}
   await taskboardLoadTeamFromSupabase();

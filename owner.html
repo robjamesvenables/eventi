@@ -407,7 +407,7 @@ function showLoginLink(p, token, isReset){
     <div class="preview" style="display:flex;justify-content:space-between;align-items:center;gap:10px"><span><span style="font-size:10.5px;font-weight:800;color:var(--teal-dk);letter-spacing:.06em">USERNAME</span><br><b style="color:var(--ink);font-size:15px;word-break:break-all">${esc(p.username)}</b></span>
       <button class="btn sm" onclick="copy('${esc(p.username)}',this)">Copy</button></div>
     <div id="qr" style="display:flex;justify-content:center;padding:14px;background:#F8FAFC;border-radius:12px;margin-top:12px"></div>
-    <div class="foot" style="justify-content:flex-start"><a class="btn teal" style="text-decoration:none" target="_blank" rel="noopener" href="https://wa.me/?text=${encodeURIComponent(msg)}">Send on WhatsApp</a>
+    <div class="foot" style="justify-content:flex-start"><a class="btn teal" style="text-decoration:none" target="_blank" rel="noopener" href="https://api.whatsapp.com/send?text=${encodeURIComponent(msg)}">Send on WhatsApp</a>
       <button class="btn" onclick="copy('${esc(url)}',this)">Copy link</button><button class="btn" style="margin-left:auto" onclick="closeModal()">Done</button></div>`);
   try{ new QRCode($('qr'), { text:url, width:190, height:190, colorDark:'#0F1E2E', colorLight:'#F8FAFC' }); }catch(e){ $('qr').textContent='QR not available - use the link'; }
 }
@@ -608,7 +608,7 @@ function invText(i){
 async function invWhatsApp(id){
   const i=D.invoices.find(x=>x.id===id); const c=clientById(i.company_id)||{};
   const phone=String(c.bill_phone||'').replace(/[^0-9]/g,'').replace(/^0/,'62');
-  window.open('https://wa.me/'+(phone||'')+'?text='+encodeURIComponent(invText(i)),'_blank');
+  window.open('https://api.whatsapp.com/send?phone='+(phone||'')+'&text='+encodeURIComponent(invText(i)),'_blank');
   await invMarkSent(i); toast('Tip: download the PDF and attach it in WhatsApp');
 }
 async function invEmail(id){
@@ -678,7 +678,7 @@ function renderEnquiries(){
         <span style="margin-left:auto;background:${st[1]};color:${st[2]};font-size:11px;font-weight:800;border-radius:20px;padding:4px 10px">${st[0]}</span></div>
         <div style="margin-top:10px;font-size:13.5px"><b>${esc(q.phone)}</b> · best time: ${esc(q.best_time || '-')}</div>
         ${q.note ? `<div style="margin-top:6px;font-size:13.5px;color:#334155">"${esc(q.note)}"</div>` : ''}
-        <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:12px"><a class="btn sm" style="background:#22C55E;color:white;border-color:#22C55E;text-decoration:none" href="https://wa.me/${ph}?text=${msg}" target="_blank" rel="noopener">WhatsApp ${esc(String(q.name || '').split(' ')[0])}</a>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:12px"><a class="btn sm" style="background:#22C55E;color:white;border-color:#22C55E;text-decoration:none" href="https://api.whatsapp.com/send?phone=${ph}&text=${msg}" target="_blank" rel="noopener">WhatsApp ${esc(String(q.name || '').split(' ')[0])}</a>
           ${Object.keys(ENQ_ST).map(k => `<button class="btn sm" style="${(q.status || 'new') === k ? 'background:' + ENQ_ST[k][1] + ';color:' + ENQ_ST[k][2] + ';border-color:' + ENQ_ST[k][1] : ''}" onclick="enqSet(${q.id},'${k}')">${ENQ_ST[k][0]}</button>`).join('')}</div>
         <textarea placeholder="Your notes (only you see these)" style="width:100%;box-sizing:border-box;margin-top:10px;border:1.5px solid #E2E8F0;border-radius:10px;padding:9px 11px;font:500 13.5px Inter,sans-serif;min-height:54px" onblur="enqNote(${q.id}, this.value)">${esc(q.owner_notes || '')}</textarea></div>`; }).join('')
       : '<div class="card" style="margin-top:18px"><div class="empty">No enquiries yet. They arrive here when a client taps Enquire on a Mavis Plus item.</div></div>'}`;

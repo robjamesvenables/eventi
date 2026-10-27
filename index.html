@@ -18599,6 +18599,7 @@ function quickLinksRender(){
         <div class="ql-who">${f.by ? f.by + ' · ' : ''}${ago(f.createdAt)}</div>
         <div class="ql-acts"><button class="ql-open" onclick="window.open('${f.url}','_blank')">Open ↗</button>
           <button class="ql-mini" title="Copy link" onclick="navigator.clipboard.writeText('${f.url}');toast('Copied ✓')"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v1"/></svg></button>
+          <button class="ql-mini" title="Edit" onclick="quickLinksEdit(${f.id})"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.85 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg></button>
           <button class="ql-mini del" title="Delete" onclick="quickLinksDelete(${f.id})"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/></svg></button></div></div>
     </div>`;
   }).join('') + '</div>';
@@ -18641,6 +18642,29 @@ function quickLinksAdd(){
   });
 }
 
+// Edit a link's name or address (everyone can, same as adding)
+function quickLinksEdit(id){
+  const link = quickLinksData.find(f=>f.id===id); if(!link) return;
+  appModalShow({
+    title:'Edit Quick Link',
+    fields:[
+      {label:'Link name', placeholder:'e.g. Solaris Beach Festival — BEO', value: link.name || ''},
+      {label:'URL', placeholder:'https://...', value: link.url || ''}
+    ],
+    async onOk([name, url]){
+      name = (name||'').trim(); url = (url||'').trim();
+      if(!url){ toast('Add the link first'); return; }
+      if(!/^https?:\/\//i.test(url)) url = 'https://' + url;
+      const before = { name: link.name, url: link.url, type: link.type };
+      Object.assign(link, { name, url, type: quickLinksDetectType(url) });
+      quickLinksRender();
+      if(!link.dbId){ toast('Updated ✓'); return; }
+      const { data, error } = await sb.from('quick_links').update({ name, url }).eq('id', link.dbId).select();
+      if(error || !data || !data.length){ Object.assign(link, before); quickLinksRender(); toast('Not saved - check your connection'); console.warn(error); return; }
+      toast('Updated ✓');
+    }
+  });
+}
 function quickLinksDelete(id){
   appConfirmShow({title:'Remove Quick Link', msg:'Remove this link for everyone? This cannot be undone.', onOk: async ()=>{
     const link = quickLinksData.find(f=>f.id===id);

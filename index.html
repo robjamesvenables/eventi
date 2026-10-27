@@ -22953,6 +22953,17 @@ function sandboxTimestamp(){
   return new Date().toLocaleString('en-US',{month:'short', day:'numeric', hour:'numeric', minute:'2-digit'});
 }
 
+// Tap a photo to see it full size (tap anywhere, × or Esc to close)
+window.sbxView = function(id){
+  const it = sandboxItems.find(x => String(x.id) === String(id)); if(!it) return;
+  let o = document.getElementById('sbx-lb');
+  if(!o){ o = document.createElement('div'); o.id = 'sbx-lb'; o.style.cssText = 'position:fixed;inset:0;background:rgba(10,18,28,.92);z-index:10006;display:none;align-items:center;justify-content:center;padding:20px;cursor:zoom-out';
+    o.innerHTML = '<img style="max-width:100%;max-height:100%;border-radius:10px;box-shadow:0 20px 60px rgba(0,0,0,.5)"><button aria-label="Close" style="position:fixed;top:16px;right:16px;width:44px;height:44px;border-radius:50%;border:0;background:rgba(255,255,255,.15);color:white;font-size:24px;cursor:pointer">×</button>';
+    o.addEventListener('click', () => { o.style.display = 'none'; });
+    document.addEventListener('keydown', e => { if(e.key === 'Escape' && o.style.display === 'flex') o.style.display = 'none'; });
+    document.body.appendChild(o); }
+  o.querySelector('img').src = it.content; o.style.display = 'flex';
+};
 function sandboxRender(){
   const feed = document.getElementById('sandbox-feed');
   const empty = document.getElementById('sandbox-empty');
@@ -22979,7 +22990,7 @@ function sandboxRender(){
     if(item.type === 'note'){
       bodyHtml = `<div style="font-size:13.5px;color:#334155;line-height:1.6;white-space:pre-line">${item.content}</div>`;
     } else if(item.type === 'photo'){
-      bodyHtml = `<img src="${item.content}" style="max-width:100%;max-height:280px;border-radius:9px;display:block">`;
+      bodyHtml = `<img src="${item.content}" onclick="sbxView(${item.id})" title="Tap to see full size" style="max-width:100%;max-height:280px;border-radius:9px;display:block;cursor:zoom-in">`;
     } else if(item.type === 'voice'){
       bodyHtml = `<audio controls src="${item.content}" style="width:100%;max-width:360px"></audio>`;
     } else if(item.type === 'link'){

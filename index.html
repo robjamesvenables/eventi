@@ -1746,6 +1746,27 @@ body.ev-nomoney .dash-hero .ev-money{display:none!important}
  .cal-hol{font-size:0;margin:0}.cal-hol::first-letter{font-size:11px}
  .cal-today-tag,.cal-add{display:none}
 }
+/* Calendar "lighter but warmer" (Idea A, decided): navy day strip, warm weekends,
+   grey past days, solid event blocks, and on a computer the grid fills the screen */
+#p-cal .cal-dow-row{background:#1E3A5F!important;border-bottom:0!important}
+#p-cal .cal-dow{color:#CBD5E1!important}
+#p-cal .cal-dow:nth-child(6),#p-cal .cal-dow:nth-child(7){color:#E9C46A!important}
+#p-cal .cal-cell{border-color:#E2E8F0!important;background:white}
+#p-cal .cal-cell.is-we{background:#F7EEDC}
+#p-cal .cal-cell.is-past{background:#F8FAFC}
+#p-cal .cal-cell.is-past.is-we{background:#F3EBDD}
+#p-cal .cal-cell.other-month{background:#EEF1F5}
+#p-cal .cal-cell:hover{background:#F0FDFA}
+#p-cal .cal-cell.is-today{background:#E0F5F2;box-shadow:inset 0 0 0 2px #0D9488}
+#p-cal .cal-hol,#p-cal .cal-legend .h{color:#A07A2C}
+#p-cal .cal-chip{background:var(--c);color:white;border-left:0;border-radius:8px;padding:6px 8px}
+#p-cal .cal-chip small{opacity:.88}
+#p-cal .cal-chip:hover{filter:brightness(1.08)}
+#p-cal .cal-ev-solid{border-radius:8px!important;color:white!important;border-left:0!important}
+#p-cal .cal-ev-solid .cal-ev-dot{background:white!important}
+#p-cal .cal-ev-solid span{color:white!important;opacity:.8!important}
+@media(min-width:900px){#p-cal .cal-cell{min-height:max(112px,calc((100vh - 300px) / var(--cal-rows,5)))}}
+@media(max-width:700px){#p-cal .cal-chip{padding:0;border-radius:4px}#p-cal .cal-ev-solid{font-size:0!important;height:7px;padding:0!important;border-radius:4px!important;margin-top:3px}#p-cal .cal-ev-solid *{display:none!important}}
 /* ── Quick Links: banner + tiles ── */
 #p-quicklinks .ph,#p-mydrive .ph{background:linear-gradient(120deg,#0F1E2E,#1E3A5F 60%,#0F766E 140%);border-radius:20px;padding:20px 24px;margin-bottom:16px;position:relative;overflow:hidden}
 #p-quicklinks .ph::after,#p-mydrive .ph::after{content:'';position:absolute;right:-60px;top:-70px;width:240px;height:240px;border-radius:50%;background:radial-gradient(circle,rgba(233,196,106,.28),transparent 70%);pointer-events:none}
@@ -8696,7 +8717,7 @@ function calRender(){
 }
 
 function calCustomBar(cal,e){
-  return `<div class="cal-event-bar" style="background:${cal.color}1A;color:${cal.color}" onclick="event.stopPropagation();calShowCustomEvent('${cal.id}','${e.id}')"><div class="cal-ev-dot" style="background:${cal.color}"></div>${e.name.length>16?e.name.substring(0,16)+'…':e.name}</div>`;
+  return `<div class="cal-event-bar cal-ev-solid" style="background:${cal.color}" onclick="event.stopPropagation();calShowCustomEvent('${cal.id}','${e.id}')"><div class="cal-ev-dot" style="background:${cal.color}"></div>${e.name.length>16?e.name.substring(0,16)+'…':e.name}</div>`;
 }
 
 // Public holidays on the calendar: Indonesia, plus the main visitor countries (same live source as Forecast)
@@ -8761,7 +8782,7 @@ function calRenderMonth(){
   for(let i=firstDay-1;i>=0;i--)cells.push({day:daysInPrev-i,month:calMonth-1,year:calMonth===0?calYear-1:calYear,other:true});
   for(let d=1;d<=daysInMonth;d++)cells.push({day:d,month:calMonth,year:calYear,other:false});
   let next=1;while(cells.length%7!==0)cells.push({day:next++,month:calMonth+1,year:calMonth===11?calYear+1:calYear,other:true});
-  let html=`<div class="cal-grid-wrap"><div class="cal-dow-row">${calDows.map(d=>`<div class="cal-dow">${d}</div>`).join('')}</div><div class="cal-month-grid">`;
+  let html=`<div class="cal-grid-wrap" style="--cal-rows:${cells.length/7}"><div class="cal-dow-row">${calDows.map(d=>`<div class="cal-dow">${d}</div>`).join('')}</div><div class="cal-month-grid">`;
   cells.forEach(c=>{
     const m=c.month<0?11:c.month>11?0:c.month;
     const y=c.month<0?c.year-1:c.month>11?c.year+1:c.year;
@@ -8776,7 +8797,7 @@ function calRenderMonth(){
       bars+=dayEvents.map(e=>`<div class="cal-chip s-${e.st}" onclick="event.stopPropagation();beoOpenEvent('${e.id}')" title="${String(e.name).replace(/"/g,'')}"><span class="nm">${e.name}</span>${(e.venue||e.pax)?`<small>${[e.venue, e.pax ? e.pax + ' guests' : ''].filter(Boolean).join(' · ')}</small>`:''}</div>`).join('');
       const manualEntry = calManualEntries[dateStr];
       if(manualEntry){
-        bars += `<div class="cal-event-bar" style="background:${manualEntry.color}1A;border-left:3px solid ${manualEntry.color};color:${manualEntry.color};position:relative;padding-right:20px" onclick="event.stopPropagation();calClickDay('${dateStr}')"><div class="cal-ev-dot" style="background:${manualEntry.color}"></div>${manualEntry.text}<span onclick="event.stopPropagation();calDeleteEntry('${dateStr}')" style="position:absolute;right:4px;top:50%;transform:translateY(-50%);font-size:13px;font-weight:700;color:${manualEntry.color};opacity:0.6;cursor:pointer;padding:0 3px">×</span></div>`;
+        bars += `<div class="cal-event-bar cal-ev-solid" style="background:${manualEntry.color};position:relative;padding-right:20px" onclick="event.stopPropagation();calClickDay('${dateStr}')"><div class="cal-ev-dot" style="background:${manualEntry.color}"></div>${manualEntry.text}<span onclick="event.stopPropagation();calDeleteEntry('${dateStr}')" style="position:absolute;right:4px;top:50%;transform:translateY(-50%);font-size:13px;font-weight:700;color:${manualEntry.color};opacity:0.6;cursor:pointer;padding:0 3px">×</span></div>`;
       }
     }
     customCals.forEach(cal=>{

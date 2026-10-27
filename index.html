@@ -2092,6 +2092,19 @@ body.ev-nomoney .dash-hero .ev-money{display:none!important}
 .vac-empty{background:white;border-radius:14px;padding:34px 20px;text-align:center;color:#94A3B8;font-size:13px;display:flex;flex-direction:column;gap:4px}.vac-empty b{color:#475569;font-size:14px}
 @media(max-width:760px){.vac-grid{grid-template-columns:1fr}.vac-b{padding:11px 14px;font-size:13.5px}.vac-chips{flex-wrap:nowrap;overflow-x:auto;min-width:0;flex:1;padding-bottom:2px}.vac-chip{white-space:nowrap}.vac-bar{flex-wrap:nowrap}.vac-tabs .month-tab{padding:10px 14px!important}}
 /* SOPs (decided mockup) */
+.sop-status{display:flex;align-items:center;gap:14px;border-radius:16px;padding:14px 16px;margin-bottom:12px}
+.sop-status.ok{background:#0D9488;color:white}.sop-status.wait{background:#F7EEDC;color:#8A6420;border:1.5px solid #EBD3A6}
+.sop-status-ic{width:44px;height:44px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex:none;background:rgba(255,255,255,.22)}
+.sop-status.wait .sop-status-ic{background:#C4973B;color:white}
+.sop-status-t{flex:1;min-width:0}.sop-status-t b{display:block;font-size:17px}.sop-status-t span{font-size:12.5px;font-weight:600;opacity:.9}
+.sop-status-b{border:0;background:#0F1E2E;color:white;border-radius:11px;padding:12px 18px;font:800 14px Inter,sans-serif;cursor:pointer;flex:none}
+.sop-status.ok .sop-status-b.ghost{background:rgba(255,255,255,.18);color:white;font-size:12.5px;padding:9px 12px}
+.sop-share{display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap}
+.sop-share button{display:inline-flex;align-items:center;gap:7px;border:0;background:white;color:#0F1E2E;border-radius:11px;padding:10px 14px;font:700 13px Inter,sans-serif;cursor:pointer;box-shadow:0 1px 3px rgba(15,30,46,.07)}
+.sop-sw{margin-left:12px;border:1.5px solid #E2E8F0;background:white;border-radius:20px;padding:5px 12px;font:700 12px Inter,sans-serif;color:#64748B;cursor:pointer}
+.sop-sw b{color:#94A3B8}.sop-sw.on{border-color:#0D9488;color:#0F766E}.sop-sw.on b{color:#0D9488}
+@media(max-width:760px){.sop-status{flex-wrap:wrap}.sop-status-b{width:100%;padding:14px}.sop-share button{flex:1;justify-content:center;padding:12px}.sop-sw{display:block;margin:8px 0 0}}
+
 .sop-search{display:flex;align-items:center;gap:10px;background:white;border-radius:14px;padding:0 16px;margin:14px 0;box-shadow:0 1px 3px rgba(15,30,46,.07)}
 .sop-search input{flex:1;min-width:0;border:0;outline:none;font:500 15px Inter,sans-serif;color:#0F1E2E;padding:13px 0;background:none}
 .sop-search:focus-within{box-shadow:0 0 0 2px #0D9488}
@@ -5519,7 +5532,7 @@ img.emoji-tw{width:1.15em;height:1.15em;vertical-align:-0.2em;margin:0 1px}
       </div>
       <label class="sop-search"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#94A3B8" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg><input id="sop-search" placeholder="Search all SOPs, e.g. allergen" oninput="sopSearch(this.value)" autocomplete="off"></label>
       <div class="sop-list" id="sop-dept-list"></div>
-      <div class="sop-from">Departments come from Admin Console › People</div>
+      <div class="sop-from">Departments come from Admin Console › People<button id="sop-signoff-sw" class="sop-sw" onclick="sopToggleSignoff()" style="display:none">Staff sign-off: <b>Off</b></button></div>
     </div>
 
     <!-- SOP DEPT LIST -->
@@ -12131,6 +12144,8 @@ const ADMIN_MODULE_GROUPS = [
     {id:'kitchen', name:'Kitchen', desc:'Kitchen menus, recipes and allergens'},
     {id:'bar', name:'Bar', desc:'Bar menus and recipes'},
     {id:'sops', name:'SOPs & Knowledge Base', desc:'View house procedures and guides'},
+    {id:'sopsedit', name:'Create & edit SOPs', desc:'Write new SOPs and change existing ones'},
+    {id:'sopsapprove', name:'Approve SOPs', desc:'Mark SOPs as approved (usually the GM or a director)'},
     {id:'survey', name:'Customer Survey', desc:'Log and view guest comments (typed or by voice)'},
   ]},
   {label:'Business & Admin', modules:[
@@ -12144,12 +12159,12 @@ const ADMIN_MODULE_GROUPS = [
 
 // Default permission bundle per role - true/false per module id. Editable in the demo.
 let ADMIN_PERMS = {
-  superadmin:  {teamfeed:1,chat:1,suggestions:1,vacancies:1,tasks:1,inventory:1,entertainment:1,calendar:1,sops:1,survey:1,reports:1,directory:1,marketing:1,adminconsole:1,kitchen:1,bar:1,meetings:1,eventsedit:1,requests:1,requestsmanage:1,requestsall:1,ordering:1,orderingapprove:1,orderingbuy:1},
-  director:    {teamfeed:1,chat:1,suggestions:1,vacancies:1,tasks:1,inventory:1,entertainment:1,calendar:1,sops:1,survey:1,reports:1,directory:1,marketing:1,adminconsole:1,kitchen:1,bar:1,meetings:1,eventsedit:1,requests:1,requestsmanage:1,requestsall:1,ordering:1,orderingapprove:1,orderingbuy:1},
-  manager:     {teamfeed:1,chat:1,suggestions:1,vacancies:1,tasks:1,inventory:1,entertainment:1,calendar:1,sops:1,survey:1,reports:1,directory:1,marketing:1,adminconsole:0,kitchen:1,bar:1,meetings:1,eventsedit:1,requests:1,requestsmanage:1,requestsall:1,ordering:1,orderingapprove:1,orderingbuy:1},
-  supervisor:  {teamfeed:1,chat:1,suggestions:1,vacancies:1,tasks:1,inventory:1,entertainment:1,calendar:1,sops:1,survey:1,reports:0,directory:1,marketing:0,adminconsole:0,kitchen:1,bar:1,meetings:1,eventsedit:1,requests:1,requestsmanage:1,requestsall:0,ordering:1,orderingapprove:0,orderingbuy:0},
-  teammember:  {teamfeed:1,chat:1,suggestions:1,vacancies:1,tasks:1,inventory:1,entertainment:0,calendar:1,sops:1,survey:0,reports:0,directory:0,marketing:0,adminconsole:0,kitchen:1,bar:1,meetings:0,eventsedit:0,requests:1,requestsmanage:0,requestsall:0,ordering:1,orderingapprove:0,orderingbuy:0},
-  dailyworker: {teamfeed:1,chat:1,suggestions:0,vacancies:1,tasks:1,inventory:0,entertainment:0,calendar:0,sops:1,survey:0,reports:0,directory:0,marketing:0,adminconsole:0,kitchen:1,bar:1,meetings:0,eventsedit:0,requests:1,requestsmanage:0,requestsall:0,ordering:1,orderingapprove:0,orderingbuy:0},
+  superadmin:  {teamfeed:1,chat:1,suggestions:1,vacancies:1,tasks:1,inventory:1,entertainment:1,calendar:1,sops:1,survey:1,reports:1,directory:1,marketing:1,adminconsole:1,kitchen:1,bar:1,meetings:1,eventsedit:1,requests:1,requestsmanage:1,requestsall:1,ordering:1,orderingapprove:1,orderingbuy:1,sopsedit:1,sopsapprove:1},
+  director:    {teamfeed:1,chat:1,suggestions:1,vacancies:1,tasks:1,inventory:1,entertainment:1,calendar:1,sops:1,survey:1,reports:1,directory:1,marketing:1,adminconsole:1,kitchen:1,bar:1,meetings:1,eventsedit:1,requests:1,requestsmanage:1,requestsall:1,ordering:1,orderingapprove:1,orderingbuy:1,sopsedit:1,sopsapprove:1},
+  manager:     {teamfeed:1,chat:1,suggestions:1,vacancies:1,tasks:1,inventory:1,entertainment:1,calendar:1,sops:1,survey:1,reports:1,directory:1,marketing:1,adminconsole:0,kitchen:1,bar:1,meetings:1,eventsedit:1,requests:1,requestsmanage:1,requestsall:1,ordering:1,orderingapprove:1,orderingbuy:1,sopsedit:1,sopsapprove:0},
+  supervisor:  {teamfeed:1,chat:1,suggestions:1,vacancies:1,tasks:1,inventory:1,entertainment:1,calendar:1,sops:1,survey:1,reports:0,directory:1,marketing:0,adminconsole:0,kitchen:1,bar:1,meetings:1,eventsedit:1,requests:1,requestsmanage:1,requestsall:0,ordering:1,orderingapprove:0,orderingbuy:0,sopsedit:0,sopsapprove:0},
+  teammember:  {teamfeed:1,chat:1,suggestions:1,vacancies:1,tasks:1,inventory:1,entertainment:0,calendar:1,sops:1,survey:0,reports:0,directory:0,marketing:0,adminconsole:0,kitchen:1,bar:1,meetings:0,eventsedit:0,requests:1,requestsmanage:0,requestsall:0,ordering:1,orderingapprove:0,orderingbuy:0,sopsedit:0,sopsapprove:0},
+  dailyworker: {teamfeed:1,chat:1,suggestions:0,vacancies:1,tasks:1,inventory:0,entertainment:0,calendar:0,sops:1,survey:0,reports:0,directory:0,marketing:0,adminconsole:0,kitchen:1,bar:1,meetings:0,eventsedit:0,requests:1,requestsmanage:0,requestsall:0,ordering:1,orderingapprove:0,orderingbuy:0,sopsedit:0,sopsapprove:0},
 };
 
 let PEOPLE_DEPARTMENTS = ['Management', 'GRO', 'Operations', 'Audio Visual', 'IT', 'Engineering', 'Housekeeping', 'Kitchen', 'Bar', 'Sales and Marketing', 'Human Resources'];
@@ -13877,7 +13892,10 @@ function inventoryDelete(id){
 // ── SOPs (decided mockup): Admin Console departments, search, sign-off you can trust ──
 // Departments come from Admin Console > People (same list as staff, chat, vacancies).
 // Signing is tied to your login; if an SOP's content changes, people sign again.
-const sopIsManager = () => !myProfile || myProfile.is_owner || ['superadmin','director','manager'].includes(myProfile.role);
+const sopIsManager = () => !myProfile || myProfile.is_owner || myProfile.role === 'superadmin' || roleCan('sopsedit');
+const sopCanApprove = () => !myProfile || myProfile.is_owner || myProfile.role === 'superadmin' || roleCan('sopsapprove');
+// Staff sign-off is off unless a company switches it on (most venues treat SOPs as guidelines)
+const sopSignoffOn = () => !!(typeof appSettings !== 'undefined' && appSettings && (appSettings.sop_signoff === 'on' || appSettings.sop_signoff === true));
 const sopEsc = x => String(x == null ? '' : x).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;');
 const sopNorm = x => String(x || '').trim().toLowerCase();
 let sopStaff = null, sopSearchQ = '';
@@ -13887,7 +13905,7 @@ async function sopStaffLoad(){
     if(!myProfile || !myProfile.company_id) return (sopStaff = []);
     const { data, error } = await sb.from('profiles').select('id,first_name,last_name,role,active,departments,is_owner').eq('company_id', myProfile.company_id);
     if(error) throw error;
-    sopStaff = (data || []).filter(p => p.active !== false).map(p => ({ id: String(p.id), name: ((p.first_name||'') + ' ' + (p.last_name||'')).trim(), first: p.first_name || '', depts: (Array.isArray(p.departments) ? p.departments : []).map(sopNorm) }));
+    sopStaff = (data || []).filter(p => p.active !== false).map(p => ({ id: String(p.id), name: ((p.first_name||'') + ' ' + (p.last_name||'')).trim(), first: p.first_name || '', role: p.role, owner: !!p.is_owner, depts: (Array.isArray(p.departments) ? p.departments : []).map(sopNorm) }));
   }catch(e){ console.warn('SOP staff not loaded', e); sopStaff = []; }
   return sopStaff;
 }
@@ -13908,7 +13926,7 @@ function sopDeptName(deptId){ const d = sopDepts.find(x => x.id === deptId); ret
 const sopDeptStaff = name => (sopStaff || []).filter(p => p.depts.includes(sopNorm(name)));
 function sopSignedIds(doc){ const ids = new Set(); (doc.signatures||[]).forEach(s => { if(sopSigCurrent(doc, s)){ const p = sopSigPerson(s); if(p) ids.add(p.id); } }); return ids; }
 function sopMyState(doc, deptName){
-  if(!myProfile) return 'none';
+  if(!myProfile || !sopSignoffOn()) return 'none';
   const me = String(myProfile.id);
   const mine = (doc.signatures||[]).filter(s => { const p = sopSigPerson(s); return (p && p.id === me) || String(s.pid) === me; });
   if(mine.some(s => sopSigCurrent(doc, s))) return 'signed';
@@ -13943,11 +13961,14 @@ function sopRenderDeptList(){
   }
   const depts = sopVisibleDepts();
   if(!depts.length){ list.innerHTML = '<div class="vac-empty"><b>No departments yet</b><span>Add your departments in Admin Console › People, then add SOPs to them here</span></div>'; return; }
+  const sw = document.getElementById('sop-signoff-sw');
+  if(sw){ sw.style.display = sopCanApprove() && myProfile ? '' : 'none'; sw.classList.toggle('on', sopSignoffOn()); sw.querySelector('b').textContent = sopSignoffOn() ? 'On' : 'Off'; }
   list.innerHTML = `<div class="sop-tiles">${depts.map(d => {
     const docs = sopData[d.id] || [];
     const todo = docs.filter(doc => sopMyState(doc, d.name) === 'todo' || sopMyState(doc, d.name) === 'outdated').length;
     const review = docs.filter(sopReviewDue).length;
-    const pill = !docs.length ? '' : todo ? `<span class="sop-pill red">${todo} to sign</span>` : review ? `<span class="sop-pill gold">${review} due for review</span>` : `<span class="sop-pill teal">Up to date</span>`;
+    const waiting = docs.filter(doc => doc.status === 'waiting').length;
+    const pill = !docs.length ? '' : todo ? `<span class="sop-pill red">${todo} to sign</span>` : waiting ? `<span class="sop-pill gold">${waiting} waiting for approval</span>` : review ? `<span class="sop-pill gold">${review} due for review</span>` : `<span class="sop-pill teal">All approved</span>`;
     return `<button class="sop-tile" onclick="sopOpenDept(${sopEsc(JSON.stringify(d.id))})">${typeof vacDeptIcon === 'function' ? vacDeptIcon(d.name) : ''}<div><b>${sopEsc(d.name)}</b><small>${docs.length} SOP${docs.length === 1 ? '' : 's'}</small></div>${pill}</button>`;
   }).join('')}</div>`;
 }
@@ -13958,13 +13979,13 @@ function sopDocRow(doc, did, i, showDept){
   const n = staff.filter(p => signed.has(p.id)).length;
   const st = sopMyState(doc, dname);
   const upd = doc.updatedAt ? new Date(doc.updatedAt).toLocaleDateString('en-GB', { month:'short', year:'numeric' }) : '';
-  const meta = (showDept ? dname + ' · ' : '') + (staff.length ? `Signed by ${n} of ${staff.length}` : `${(doc.signatures||[]).filter(s => sopSigCurrent(doc, s)).length} signed`) + (upd ? ' · updated ' + upd : '');
-  const badges = (st === 'todo' ? '<span class="sop-pill red">You haven\'t signed</span>' : st === 'outdated' ? '<span class="sop-pill red">Changed - sign again</span>' : st === 'signed' ? '<span class="sop-pill teal">Signed ✓</span>' : '')
+  const meta = (showDept ? dname + ' · ' : '') + (sopSignoffOn() ? (staff.length ? `Signed by ${n} of ${staff.length} · ` : '') : '') + (upd ? 'updated ' + upd : '');
+  const badges = (doc.status === 'waiting' ? '<span class="sop-pill gold">Waiting for approval</span>' : '<span class="sop-pill teal">Approved</span>') + (st === 'todo' ? '<span class="sop-pill red">You haven\'t signed</span>' : st === 'outdated' ? '<span class="sop-pill red">Changed - sign again</span>' : st === 'signed' ? '<span class="sop-pill teal">Signed</span>' : '')
     + (sopReviewDue(doc) ? '<span class="sop-pill gold">Due for review</span>' : '');
   const open = showDept ? `sopOpenDept(${sopEsc(JSON.stringify(did))});sopOpenDoc(${i})` : `sopOpenDoc(${i})`;
   return `<div class="sop-doc" onclick="${open}">
     <div class="sop-doc-ic"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#0D9488" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>
-    <div class="sop-doc-m"><h4>${sopEsc(doc.title)}</h4><div class="sop-doc-meta">${sopEsc(meta)}</div>${staff.length ? `<div class="sop-bar"><i style="width:${Math.round(n / staff.length * 100)}%"></i></div>` : ''}</div>
+    <div class="sop-doc-m"><h4>${sopEsc(doc.title)}</h4><div class="sop-doc-meta">${sopEsc(meta)}</div>${staff.length && sopSignoffOn() ? `<div class="sop-bar"><i style="width:${Math.round(n / staff.length * 100)}%"></i></div>` : ''}</div>
     <div class="sop-doc-r">${badges}${!showDept && sopIsManager() ? `<span class="sop-doc-tools" onclick="event.stopPropagation()"><button title="Rename" onclick="sopEditDocTitle(${i})"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg></button><button title="Delete" class="del" onclick="sopDeleteDoc(${i})"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg></button></span>` : ''}</div>
   </div>`;
 }
@@ -14000,6 +14021,67 @@ async function sopEnsureDept(){
   currentSopDept = id;
   return true;
 }
+window.sopSetApproved = async function(yes){
+  const doc = (sopData[currentSopDept] || [])[currentSopDoc]; if(!doc || !sopCanApprove()) return;
+  const before = { status: doc.status, approvedBy: doc.approvedBy, approvedAt: doc.approvedAt };
+  const me = myProfile ? ((myProfile.first_name||'') + ' ' + (myProfile.last_name||'')).trim() : '';
+  Object.assign(doc, yes ? { status:'approved', approvedBy: me, approvedAt: Date.now() } : { status:'waiting', approvedBy:'', approvedAt:null });
+  sopRenderDoc();
+  if(!doc.dbId) return;
+  const { error } = await sb.from('sop_docs').update({ status: doc.status, approved_by_name: doc.approvedBy || null, approved_at: doc.approvedAt ? new Date(doc.approvedAt).toISOString() : null }).eq('id', doc.dbId);
+  if(error){ Object.assign(doc, before); sopRenderDoc(); toast(/status|approved_/i.test(error.message||'') ? 'SOP approval needs a quick database update first' : 'Not saved - check your connection'); console.warn(error); return; }
+  toast(yes ? 'Approved ✓' : 'Marked as waiting');
+};
+function sopText(doc){
+  const lines = ['📋 SOP: ' + doc.title, '🏷️ ' + sopDeptName(currentSopDept) + ' · ' + (doc.status === 'waiting' ? 'Waiting for approval' : 'Approved')];
+  const add = (label, v) => { if(v && String(v).trim()) lines.push('', label, String(v).trim()); };
+  add('🎯 Objective', doc.objective); add('📝 Procedure', doc.procedure); add('🧰 Equipment', doc.equipment); add('⚠️ Safety', doc.safety); add('👥 Who', doc.roles);
+  (doc.sections || []).forEach(x => add('• ' + (x.name || 'Notes'), x.content));
+  return lines.join('\n');
+}
+window.sopShareChat = function(){
+  const doc = (sopData[currentSopDept] || [])[currentSopDoc]; if(!doc) return;
+  mvSendInChat({ title: 'Send this SOP', body: sopText(doc), people: [] });
+};
+window.sopAskApproval = async function(){
+  const doc = (sopData[currentSopDept] || [])[currentSopDoc]; if(!doc) return;
+  const staff = await sopStaffLoad();
+  const approvers = staff.filter(p => String(p.id) !== String(myProfile && myProfile.id) && (p.owner || p.role === 'superadmin' || !!(ADMIN_PERMS[p.role] && ADMIN_PERMS[p.role].sopsapprove)));
+  const body = '✅ Please approve this SOP: ' + doc.title + ' (' + sopDeptName(currentSopDept) + ')\nOpen Mavis › SOPs › ' + sopDeptName(currentSopDept) + ' and tap Approve.\n\n' + sopText(doc);
+  mvSendInChat({ title: 'Send for approval', body, people: approvers.map(p => ({ id: p.id, sub: typeof roleName === 'function' ? roleName(p.role) : '' })) });
+};
+window.sopPdf = function(){
+  const doc = (sopData[currentSopDept] || [])[currentSopDoc]; if(!doc) return;
+  const co = (typeof myCompany !== 'undefined' && myCompany && myCompany.name) ? myCompany.name : '';
+  const sec = (label, v) => v && String(v).trim() ? `<div style="font-size:11px;font-weight:800;letter-spacing:1.2px;color:#0D9488;margin:18px 0 6px">${label}</div><div style="font-size:13px;color:#334155;line-height:1.7;white-space:pre-line">${sopEsc(v)}</div>` : '';
+  const tpl = document.createElement('div');
+  tpl.style.cssText = 'position:absolute;top:0;left:0;width:700px;background:white;padding:36px;font-family:Inter,sans-serif;z-index:99999';
+  tpl.innerHTML = `<div style="font-size:11px;font-weight:800;letter-spacing:1.5px;color:#94A3B8">${sopEsc(co ? co.toUpperCase() + ' · ' : '')}STANDARD OPERATING PROCEDURE</div>
+    <div style="font-size:24px;font-weight:800;color:#0F1E2E;margin:6px 0 4px">${sopEsc(doc.title)}</div>
+    <div style="font-size:12px;color:#64748B">${sopEsc(sopDeptName(currentSopDept))}${doc.updatedAt ? ' · Updated ' + new Date(doc.updatedAt).toLocaleDateString('en-GB', { day:'numeric', month:'short', year:'numeric' }) : ''} · ${doc.status === 'waiting' ? 'Waiting for approval' : 'Approved' + (doc.approvedBy ? ' by ' + sopEsc(doc.approvedBy) : '')}</div>
+    ${sec('OBJECTIVE', doc.objective)}${sec('PROCEDURE', doc.procedure)}${sec('EQUIPMENT', doc.equipment)}${sec('SAFETY', doc.safety)}${sec('WHO', doc.roles)}${(doc.sections||[]).map(x => sec(sopEsc(x.name || 'Notes').toUpperCase(), x.content)).join('')}`;
+  document.body.appendChild(tpl);
+  toast('Preparing your PDF…');
+  const slug = String(doc.title).replace(/[^a-z0-9]+/gi,'-').replace(/^-+|-+$/g,'').toLowerCase() || 'sop';
+  requestAnimationFrame(() => requestAnimationFrame(() => {
+    const rect = tpl.getBoundingClientRect();
+    html2pdf().set({ margin: 10, filename: `sop-${slug}.pdf`, image: { type: 'jpeg', quality: 0.95 },
+      html2canvas: { scale: 2, useCORS: true, backgroundColor: '#ffffff', x: 0, y: 0, width: rect.width, height: rect.height, windowWidth: rect.width, windowHeight: rect.height },
+      jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' } }).from(tpl).save().then(() => tpl.remove()).catch(err => { console.error(err); tpl.remove(); toast('PDF export failed - please try again'); });
+  }));
+};
+window.sopToggleSignoff = async function(){
+  if(!sopCanApprove()) return;
+  const next = sopSignoffOn() ? 'off' : 'on';
+  appConfirmShow({ title: next === 'on' ? 'Turn on staff sign-off?' : 'Turn off staff sign-off?', label: next === 'on' ? 'Turn on' : 'Turn off',
+    msg: next === 'on' ? 'Staff will be asked to read and sign the SOPs for their department, and you will see who has signed.' : 'SOPs become guidelines only - nobody is asked to sign. Signatures already given are kept.',
+    onOk: async () => {
+      appSettings.sop_signoff = next; sopRenderDeptList();
+      const { error } = await sb.from('app_settings').upsert({ key:'sop_signoff', value: next }, { onConflict:'company_id,key' });
+      if(error){ toast('Not saved - check your connection'); console.warn(error); }
+      else toast(next === 'on' ? 'Staff sign-off is on' : 'Staff sign-off is off');
+    } });
+};
 window.sopNewDocClick = async function(){ if(!sopIsManager()) return; if(await sopEnsureDept()) sopNewDoc(); };
 
 function sopRenderDoc(){
@@ -14039,8 +14121,18 @@ function sopRenderDoc(){
   </div>`;
   const upd = doc.updatedAt ? 'Updated ' + new Date(doc.updatedAt).toLocaleDateString('en-GB', { day:'numeric', month:'short', year:'numeric' }) : '';
   const sub = document.getElementById('sop-doc-dept'); if(sub) sub.textContent = dname + (upd ? ' · ' + upd : '');
-  if(!hasContent){ body.innerHTML = content; return; } // nothing to read yet, so nothing to sign
-  body.innerHTML = banner + (sopReviewDue(doc) ? '<div class="sop-me gold"><span>Not updated for over a year - due for review</span></div>' : '') + photo + content + signoff;
+  const ok = doc.status !== 'waiting';
+  const by = doc.approvedBy ? ' by ' + sopEsc(doc.approvedBy) : '';
+  const when = doc.approvedAt ? ' · ' + new Date(doc.approvedAt).toLocaleDateString('en-GB', { day:'numeric', month:'short', year:'numeric' }) : '';
+  const status = `<div class="sop-status ${ok ? 'ok' : 'wait'}">
+    <div class="sop-status-ic">${ok ? '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>' : '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>'}</div>
+    <div class="sop-status-t"><b>${ok ? 'Approved' : 'Waiting for approval'}</b><span>${ok ? (by || when ? 'Approved' + by + when : 'Ready to use') : 'Staff can still read it while it waits'}</span></div>
+    ${sopCanApprove() && myProfile ? (ok ? `<button class="sop-status-b ghost" onclick="sopSetApproved(false)">Mark as waiting</button>` : `<button class="sop-status-b" onclick="sopSetApproved(true)">Approve</button>`) : (!ok && sopIsManager() ? `<button class="sop-status-b" onclick="sopAskApproval()">Send for approval</button>` : '')}
+  </div>`;
+  const share = hasContent ? `<div class="sop-share"><button onclick="sopShareChat()"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>Send in Chat</button><button onclick="sopPdf()"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>Download PDF</button></div>` : '';
+  if(!hasContent){ body.innerHTML = status + content; return; }
+  if(!sopSignoffOn()){ body.innerHTML = status + share + (sopReviewDue(doc) ? '<div class="sop-me gold"><span>Not updated for over a year - due for review</span></div>' : '') + photo + content; return; }
+  body.innerHTML = status + share + banner + (sopReviewDue(doc) ? '<div class="sop-me gold"><span>Not updated for over a year - due for review</span></div>' : '') + photo + content + signoff;
 }
 
 window.sopSignInit = function(){
@@ -14109,7 +14201,8 @@ async function sopLoadFromSupabase(){
         objective: row.objective||'', procedure: row.procedure||'', equipment: row.equipment||'',
         safety: row.safety||'', roles: row.roles||'',
         sections: row.sections||[], signatures: row.signatures||[], photo: row.photo||'',
-        updatedAt: updated.getTime() || null
+        updatedAt: updated.getTime() || null,
+        status: row.status === 'waiting' ? 'waiting' : 'approved', approvedBy: row.approved_by_name || '', approvedAt: row.approved_at ? new Date(row.approved_at).getTime() : null
       });
     });
   } catch(e){
@@ -14488,14 +14581,17 @@ function sopNewDoc(){
       {label:'Procedure', type:'textarea', rows:9, placeholder:'1. First step\n2. Second step\n3. ...', optional:true}
     ],
     async onOk([title, objective, procedure]){
-      const doc = {title, meta:'Just created', objective:objective||'', procedure:procedure||'', equipment:'', safety:'', roles:'', sections:[], signatures:[], photo:''};
+      const approver = sopCanApprove() && myProfile;
+      const doc = {title, meta:'Just created', objective:objective||'', procedure:procedure||'', equipment:'', safety:'', roles:'', sections:[], signatures:[], photo:'', updatedAt: Date.now(),
+        status: approver ? 'approved' : 'waiting', approvedBy: approver ? ((myProfile.first_name||'') + ' ' + (myProfile.last_name||'')).trim() : '', approvedAt: approver ? Date.now() : null};
       sopData[currentSopDept].push(doc);
       sopOpenDept(currentSopDept);
       try{
-        const { data, error } = await sb.from('sop_docs').insert({
-          dept_id: currentSopDept, title, objective: objective||'', procedure: procedure||'',
-          equipment:'', safety:'', roles:'', sections:[], signatures:[], photo:''
-        }).select().single();
+        const row = { dept_id: currentSopDept, title, objective: objective||'', procedure: procedure||'',
+          equipment:'', safety:'', roles:'', sections:[], signatures:[], photo:'' };
+        // a director writing it approves it straight away; anyone else's waits for approval
+        let { data, error } = await sb.from('sop_docs').insert(Object.assign({ status: doc.status, approved_by_name: doc.approvedBy || null, approved_at: doc.approvedAt ? new Date(doc.approvedAt).toISOString() : null }, row)).select().single();
+        if(error && /status|approved_/i.test(error.message||'')) ({ data, error } = await sb.from('sop_docs').insert(row).select().single());
         if(error) throw error;
         doc.dbId = data.id;
       } catch(e){

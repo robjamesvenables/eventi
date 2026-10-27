@@ -5845,7 +5845,7 @@ function nav(id, pushState=true){
   if(id==='inventory'){inventoryRenderAreas(); inventoryRenderList();}
   if(id==='admin'){adminConsoleRender(); adminSwitchTab(adminActiveTab);}
   if(id==='notetaker'){notetakerRender();}
-  if(id==='survey'){surveyRender();}
+  if(id==='survey'){ surveyRender(); if(!window._svOnPage) surveyLoadFromSupabase().then(surveyRender); window._svOnPage = true; } else window._svOnPage = false;
   if(id==='vacancies'){vacanciesRender();}
   if(id==='analytics'){ analyticsRender(); businessMetricsLoadFromSupabase().then(analyticsRender); }
   if(id==='predictor'){ predictorRender(); }
@@ -13094,7 +13094,7 @@ function surveyRender(){
       <div class="sv-ov" style="background:${surveyTone(o)}">${o || '-'}<small>OVERALL</small></div>
       <div class="sv-mid"><div class="sv-mini">${areas.map(q => { const v = Number(e[q.id]) || 0; return `<span class="${v && v <= 2 ? 'lo' : ''}">${short[q.id] || q.label} ${v || '-'}</span>`; }).join('')}${e.recommend === 'yes' ? '<span class="yes">Would recommend</span>' : e.recommend === 'no' ? '<span class="lo">Wouldn\'t recommend</span>' : ''}</div>
         <div class="sv-meta">${day}${esc(e.time)} · ${e.source === 'qr' ? 'Via QR' : 'Logged by GRO'}${e.ageRange ? ' · ' + esc(e.ageRange) : ''}${e.country ? ' · ' + esc(e.country) : ''}</div></div>
-      <button class="sv-x" title="Delete" onclick="surveyDelete(${e.id})">×</button>
+      <button class="sv-x" title="Delete" onclick="surveyDelete('${e.id}')">×</button>
     </div>`;
   }).join('');
 }
@@ -13204,10 +13204,14 @@ async function surveySaveForm(){
 }
 
 function surveyDelete(id){
-  surveyEntries = surveyEntries.filter(e => e.id !== id);
-  surveyRender();
-  sb.from('customer_survey_entries').delete().eq('id', id)
-    .then(({error})=>{ if(error) console.warn('Survey entry delete failed', error); });
+  appConfirmShow({ title: 'Delete response', msg: 'Delete this guest response? This cannot be undone.', label: 'Delete', onOk: async () => {
+    const before = surveyEntries.slice();
+    surveyEntries = surveyEntries.filter(e => String(e.id) !== String(id));
+    surveyRender();
+    const { data, error } = await sb.from('customer_survey_entries').delete().eq('id', id).select();
+    if(error || !data || !data.length){ surveyEntries = before; surveyRender(); toast('Not deleted - check your connection'); if(error) console.warn('Survey entry delete failed', error); return; }
+    toast('Response deleted');
+  }});
 }
 
 function surveyPdf(){

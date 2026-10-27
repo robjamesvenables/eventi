@@ -2881,6 +2881,11 @@ img.emoji-tw{width:1.15em;height:1.15em;vertical-align:-0.2em;margin:0 1px}
 .beo .beo-event-title{font-size:28px !important;font-weight:800 !important;line-height:1.2 !important;letter-spacing:-0.01em}
 .beo .beo-stat-lbl{color:rgba(255,255,255,0.75) !important;font-size:11px !important}
 @media (max-width:700px){ .beo .beo-event-title{font-size:23px !important} }
+/* Long names or one long word wrap instead of pushing the P&L button off the banner */
+.beo .beo-hd-bottom > div:first-child{min-width:0;flex:1}
+@media(max-width:700px){.beo .beo-hd-bottom > div:first-child{flex:1 1 100%}}
+.beo .beo-event-title,.beo td[contenteditable]{overflow-wrap:anywhere;word-break:break-word}
+.beo .pnl-open{flex:none}
 
 /* ── EVENT PLAN PHOTOS: bigger thumbnails in department boxes ── */
 .beo [data-photo-key]{gap:10px !important;margin:12px 0 !important}
@@ -8016,6 +8021,13 @@ function updateBeoHeader(){
   const name=document.getElementById('det-name');
   const date=document.getElementById('det-date');
   const title=document.querySelector('.beo-event-title');
+  // Event names max 70 letters - longer names push the P&L button off the banner
+  if(name && name.textContent.length > 70){
+    name.textContent = name.textContent.slice(0, 70);
+    const r = document.createRange(); r.selectNodeContents(name); r.collapse(false);
+    const sl = getSelection(); sl.removeAllRanges(); sl.addRange(r);
+    if(!updateBeoHeader._warned){ updateBeoHeader._warned = 1; toast('Event names can be up to 70 letters'); setTimeout(()=>{ updateBeoHeader._warned = 0; }, 3000); }
+  }
   if(title&&name){
     title.textContent=name.textContent.trim() || 'Untitled Event';
   }

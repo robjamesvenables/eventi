@@ -1767,6 +1767,48 @@ body.ev-nomoney .dash-hero .ev-money{display:none!important}
 #p-cal .cal-ev-solid span{color:white!important;opacity:.8!important}
 @media(min-width:900px){#p-cal .cal-cell{min-height:max(112px,calc((100vh - 300px) / var(--cal-rows,5)))}}
 @media(max-width:700px){#p-cal .cal-chip{padding:0;border-radius:4px}#p-cal .cal-ev-solid{font-size:0!important;height:7px;padding:0!important;border-radius:4px!important;margin-top:3px}#p-cal .cal-ev-solid *{display:none!important}}
+/* Task Board (decided mockup): coloured columns, calmer cards, fills the screen, phone tabs */
+#p-kb .kanban-col{background:#E8ECF1;border-radius:16px;--kbc:#0F1E2E}
+#p-kb .kanban-col-hd{background:var(--kbc)!important}
+#p-kb .kanban-col-count{background:rgba(255,255,255,.22)}
+#p-kb .kanban-card{border-left:5px solid var(--kbc);border-radius:12px;padding:13px 14px 12px 15px}
+#p-kb .kanban-card-title{margin-bottom:0}
+#p-kb .kanban-col-done .kanban-card{opacity:.85}
+#p-kb .kanban-col-done .kanban-card-title{color:#94A3B8}
+.kb-tick{display:inline-flex;width:18px;height:18px;border-radius:50%;background:#0D9488;align-items:center;justify-content:center;margin-right:7px;vertical-align:-3px;text-decoration:none}
+.kb-who{display:inline-flex;align-items:center;gap:7px;min-width:0;pointer-events:none}
+.kb-av{width:26px;height:26px;border-radius:50%;color:white;font-size:10.5px;font-weight:800;display:inline-flex;align-items:center;justify-content:center;flex:none;letter-spacing:.3px}
+.kb-nm{font-size:12px;font-weight:600;color:#64748B;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.kb-acts{margin-left:auto;display:flex;align-items:center;gap:5px;flex:none}
+.kb-hov{display:flex;gap:5px;opacity:0;transition:opacity .15s}
+#p-kb .kanban-card:hover .kb-hov,#p-kb .kanban-card:hover .kb-more,.kb-more:focus{opacity:1}
+.kb-more{opacity:0;transition:opacity .15s}
+.kb-mini{width:30px;height:30px;border-radius:9px;border:1.5px solid #E2E8F0;background:white;color:#64748B;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;padding:0}
+.kb-mini:hover{border-color:#CBD5E1;color:#0F1E2E}
+.kb-del{color:#EF4444}.kb-del:hover{background:#FEF2F2;border-color:#FECACA;color:#DC2626}
+.kb-go{width:30px;height:30px;border-radius:9px;border:0;background:var(--kbc);color:white;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;padding:0}
+.kb-go:hover{filter:brightness(1.12)}
+#kb-menu{display:none;position:fixed;z-index:10005;width:180px;background:white;border-radius:12px;box-shadow:0 12px 32px rgba(15,30,46,.22);padding:6px;font-family:Inter,sans-serif}
+#kb-menu button{display:flex;align-items:center;gap:10px;width:100%;border:0;background:none;padding:10px 12px;border-radius:8px;font:600 13.5px Inter,sans-serif;color:#0F1E2E;cursor:pointer;text-align:left}
+#kb-menu button:hover{background:#F1F5F9}
+#kb-menu button.red{color:#DC2626}#kb-menu button.red:hover{background:#FEF2F2}
+#kb-tabs{display:none}
+@media(min-width:901px){
+ #p-kb{padding-bottom:24px!important}
+ #p-kb .kanban-wrap{align-items:stretch;height:calc(100vh - 230px);min-height:420px}
+ #p-kb .kanban-col{min-height:0}
+ #p-kb .kanban-cards{overflow-y:auto;padding-bottom:6px}
+}
+@media(hover:none){.kb-hov{display:none}.kb-more{opacity:1}}
+@media(max-width:900px){
+ #kb-tabs{display:flex;background:white;border-radius:12px;padding:4px;gap:4px;margin:4px 0 12px;box-shadow:0 1px 3px rgba(15,30,46,.08)}
+ #kb-tabs button{flex:1;min-width:0;border:0;background:none;font:800 12px Inter,sans-serif;padding:9px 4px;border-radius:9px;color:#64748B;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+ #kb-tabs button b{display:inline-block;background:rgba(15,30,46,.08);border-radius:20px;padding:1px 7px;margin-left:5px;font-size:11px}
+ #kb-tabs button.on{background:var(--kbc);color:white}
+ #kb-tabs button.on b{background:rgba(255,255,255,.22)}
+ #p-kb .kanban-col{flex:0 0 100%!important;width:100%!important}
+ .kb-hov{display:none}.kb-more{opacity:1}
+}
 /* ── Quick Links: banner + tiles ── */
 #p-quicklinks .ph,#p-mydrive .ph{background:linear-gradient(120deg,#0F1E2E,#1E3A5F 60%,#0F766E 140%);border-radius:20px;padding:20px 24px;margin-bottom:16px;position:relative;overflow:hidden}
 #p-quicklinks .ph::after,#p-mydrive .ph::after{content:'';position:absolute;right:-60px;top:-70px;width:240px;height:240px;border-radius:50%;background:radial-gradient(circle,rgba(233,196,106,.28),transparent 70%);pointer-events:none}
@@ -4977,6 +5019,7 @@ img.emoji-tw{width:1.15em;height:1.15em;vertical-align:-0.2em;margin:0 1px}
         <button class="btn btn-navy" onclick="addKanbanCard('col-todo')">+ Add Task</button>
       </div>
 
+      <div id="kb-tabs"></div>
       <div class="kanban-wrap" id="kanban-wrap">
 
         <!-- TO DO -->
@@ -10431,17 +10474,19 @@ function kbRender(){
       const cols = ['todo','progress','done'];
       const cIdx = cols.indexOf(colId);
       div.innerHTML = `
-        <div class="kanban-card-title" style="pointer-events:none">${card.title}</div>
+        <div class="kanban-card-title" style="pointer-events:none">${colId==='done'?'<span class="kb-tick"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span>':''}${card.title}</div>
         ${card.description ? `<div style="font-size:12px;color:#64748B;line-height:1.4;margin-top:4px;pointer-events:none;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden">${card.description.replace(/</g,'&lt;')}</div>` : ''}
         ${photoThumbStrip(card.photos, ()=>card.photos, ()=>kbCardPhotosChanged(card))}
-        <div class="kanban-card-meta" style="margin-top:10px;display:flex;align-items:center;gap:6px;flex-wrap:wrap">
-          <span class="kanban-card-assignee" style="pointer-events:none">${card.assignee}</span>
-          <div style="margin-left:auto;display:flex;gap:4px" onmousedown="event.stopPropagation()">
-            <button onclick="event.stopPropagation();kbEditCard(${card.id},'${colId}')" title="Edit" style="padding:5px 8px;border:1.5px solid #E2E8F0;border-radius:6px;background:white;font-size:12px;cursor:pointer;display:flex;align-items:center;justify-content:center;color:#64748B"><svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="2.2"/><circle cx="12" cy="12" r="2.2"/><circle cx="12" cy="19" r="2.2"/></svg></button>
-            <button onclick="event.stopPropagation();kbAddPhotoClick(${card.id},'${colId}')" title="Add photo" style="padding:5px 8px;border:1.5px solid #E2E8F0;border-radius:6px;background:white;font-size:12px;cursor:pointer;display:flex;align-items:center;justify-content:center;color:#64748B"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2Z"/><circle cx="12" cy="13" r="4"/></svg></button>
-            ${cIdx > 0 ? `<button onclick="event.stopPropagation();kbMove(${card.id},'${colId}','${cols[cIdx-1]}')" style="padding:5px 10px;border:1.5px solid #E2E8F0;border-radius:6px;background:white;font-size:12px;font-weight:700;color:#64748B;cursor:pointer;font-family:'Inter',sans-serif">←</button>` : ''}
-            ${cIdx < 2 ? `<button onclick="event.stopPropagation();kbMove(${card.id},'${colId}','${cols[cIdx+1]}')" style="padding:5px 10px;border:none;border-radius:6px;background:#0D9488;font-size:12px;font-weight:700;color:white;cursor:pointer;font-family:'Inter',sans-serif">→</button>` : ''}
-            <button onclick="event.stopPropagation();kbDelete(${card.id},'${colId}')" style="padding:5px 8px;border:1.5px solid #FECACA;border-radius:6px;background:white;font-size:12px;font-weight:700;color:#EF4444;cursor:pointer;font-family:'Inter',sans-serif">×</button>
+        <div class="kanban-card-meta" style="margin-top:10px;display:flex;align-items:center;gap:6px">
+          ${kbAvatar(card.assignee)}
+          <div class="kb-acts" onmousedown="event.stopPropagation()" ontouchstart="event.stopPropagation()">
+            <span class="kb-hov">
+              <button class="kb-mini" onclick="event.stopPropagation();kbAddPhotoClick(${card.id},'${colId}')" title="Add photo"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2Z"/><circle cx="12" cy="13" r="4"/></svg></button>
+              ${cIdx > 0 ? `<button class="kb-mini" onclick="event.stopPropagation();kbMove(${card.id},'${colId}','${cols[cIdx-1]}')" title="Move back"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg></button>` : ''}
+              <button class="kb-mini kb-del" onclick="event.stopPropagation();kbDelete(${card.id},'${colId}')" title="Delete"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
+            </span>
+            <button class="kb-mini kb-more" onclick="event.stopPropagation();kbCardMenu(this,${card.id},'${colId}')" title="More"><svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="2.2"/><circle cx="12" cy="12" r="2.2"/><circle cx="12" cy="19" r="2.2"/></svg></button>
+            ${cIdx < 2 ? `<button class="kb-go" onclick="event.stopPropagation();kbMove(${card.id},'${colId}','${cols[cIdx+1]}')" title="Move on"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg></button>` : ''}
           </div>
         </div>`;
 
@@ -10467,7 +10512,7 @@ function kbRender(){
     const titleEl = document.querySelector(`.kanban-col-${colId} .kanban-col-title`);
     if(titleEl) titleEl.style.color = 'white';
   });
-  setTimeout(kbInitColColours, 0);
+  setTimeout(()=>{ kbInitColColours(); kbTabsRender(); }, 0);
 }
 
 // Global mouse + touch move and end
@@ -10603,6 +10648,8 @@ function kbColSave(col, patch){
 window.kbColColour = function(col, hex){
   const hd = document.getElementById('kbhd-'+col);
   if(hd) hd.style.background = hex;
+  const ce = document.getElementById('kbcol-'+col); if(ce) ce.style.setProperty('--kbc', hex);
+  kbTabsRender();
   localStorage.setItem('kbColColour_'+kbActiveProjectId+'_'+col, hex);
   kbColSave(col, { colour: hex });
   const pop = document.getElementById('kbpop-'+col);
@@ -10619,11 +10666,63 @@ window.toggleKbColPicker = function(e, col){
   if(!isOpen) pop.classList.add('open');
 };
 
+// Starting colours (decided): To Do navy, In Progress gold, Done teal - anyone's own pick still wins
+const KB_COL_DEFAULT_COLOURS = {todo:'#0F1E2E', progress:'#C4973B', done:'#0D9488'};
+// Person on a task card: initials in a coloured circle
+function kbAvatar(name){
+  const n = String(name||'').trim();
+  if(!n || /^unassigned$/i.test(n)) return '<span class="kb-who"><span class="kb-av" style="background:#CBD5E1"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.4" stroke-linecap="round"><circle cx="12" cy="8" r="4"/><path d="M4 21v-1a6 6 0 0 1 6-6h4a6 6 0 0 1 6 6v1"/></svg></span><span class="kb-nm">Unassigned</span></span>';
+  const w = n.split(/\s+/), ini = (w.length > 1 ? w[0][0] + w[1][0] : n.slice(0, 2)).toUpperCase();
+  const pal = ['#1E3A5F','#C4973B','#0D9488','#475569'];
+  let h = 0; for(const ch of n.toLowerCase()) h = (h * 31 + ch.charCodeAt(0)) >>> 0;
+  const esc = v => v.replace(/&/g,'&amp;').replace(/</g,'&lt;');
+  return `<span class="kb-who"><span class="kb-av" style="background:${pal[h % pal.length]}">${esc(ini)}</span><span class="kb-nm">${esc(n)}</span></span>`;
+}
+// The card's ⋮ menu: edit, photo, move back, delete
+window.kbCardMenu = function(btn, cardId, colId){
+  let m = document.getElementById('kb-menu');
+  if(!m){ m = document.createElement('div'); m.id = 'kb-menu'; document.body.appendChild(m);
+    document.addEventListener('click', e => { if(!e.target.closest('#kb-menu')) m.style.display = 'none'; });
+    window.addEventListener('scroll', () => { m.style.display = 'none'; }, true); }
+  const cols = ['todo','progress','done'], i = cols.indexOf(colId);
+  const it = (ic, t, fn, red) => `<button onclick="document.getElementById('kb-menu').style.display='none';${fn}"${red?' class="red"':''}><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${ic}</svg>${t}</button>`;
+  m.innerHTML = it('<path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4Z"/>', 'Edit task', `kbEditCard(${cardId},'${colId}')`)
+    + it('<path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2Z"/><circle cx="12" cy="13" r="4"/>', 'Add photo', `kbAddPhotoClick(${cardId},'${colId}')`)
+    + (i > 0 ? it('<path d="M19 12H5M12 19l-7-7 7-7"/>', 'Move back', `kbMove(${cardId},'${colId}','${cols[i-1]}')`) : '')
+    + it('<path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>', 'Delete', `kbDelete(${cardId},'${colId}')`, true);
+  m.style.display = 'block';
+  const r = btn.getBoundingClientRect(), mw = 180, mh = m.offsetHeight;
+  m.style.left = Math.max(8, Math.min(innerWidth - mw - 8, r.right - mw)) + 'px';
+  m.style.top = (r.bottom + 6 + mh > innerHeight ? r.top - mh - 6 : r.bottom + 6) + 'px';
+};
+// Phone: tabs above the board jump straight to a column
+function kbTabsRender(){
+  const t = document.getElementById('kb-tabs'), w = document.getElementById('kanban-wrap');
+  if(!t || !w) return;
+  const cols = ['todo','progress','done'];
+  const act = t.dataset.on || 'todo';
+  t.innerHTML = cols.map(c => {
+    const nm = (document.getElementById('kbtitle-'+c)||{}).textContent || KB_COL_DEFAULT_TITLES[c];
+    const n = (document.getElementById('count-'+c)||{}).textContent || '0';
+    const clr = getComputedStyle(document.getElementById('kbcol-'+c)).getPropertyValue('--kbc').trim() || KB_COL_DEFAULT_COLOURS[c];
+    return `<button class="${c===act?'on':''}" style="--kbc:${clr}" onclick="kbTabGo('${c}')">${nm.replace(/</g,'&lt;')}<b>${n}</b></button>`;
+  }).join('');
+  if(!w.dataset.tabs){ w.dataset.tabs = 1;
+    w.addEventListener('scroll', () => { clearTimeout(w._tt); w._tt = setTimeout(() => {
+      const i = Math.round(w.scrollLeft / (w.scrollWidth / 3)); const c = cols[Math.max(0, Math.min(2, i))];
+      if(t.dataset.on !== c){ t.dataset.on = c; kbTabsRender(); } }, 80); }); }
+}
+window.kbTabGo = function(c){
+  const w = document.getElementById('kanban-wrap'), el = document.getElementById('kbcol-'+c), t = document.getElementById('kb-tabs');
+  if(t){ t.dataset.on = c; kbTabsRender(); }
+  if(w && el) w.scrollTo({ left: el.offsetLeft - w.offsetLeft, behavior: 'smooth' });
+};
 function kbInitColColours(){
   ['todo','progress','done'].forEach(col=>{
-    const saved = kbColGet(col,'colour') || localStorage.getItem('kbColColour_'+kbActiveProjectId+'_'+col) || '#0F1E2E';
+    const saved = kbColGet(col,'colour') || localStorage.getItem('kbColColour_'+kbActiveProjectId+'_'+col) || KB_COL_DEFAULT_COLOURS[col];
     const hd = document.getElementById('kbhd-'+col);
     if(hd) hd.style.background = saved;
+    const ce = document.getElementById('kbcol-'+col); if(ce) ce.style.setProperty('--kbc', saved);
     const pop = document.getElementById('kbpop-'+col);
     if(pop){
       pop.dataset.built = '1';

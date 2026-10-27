@@ -1,0 +1,58 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Members Club</title>
+<meta name="robots" content="noindex">
+<link rel="icon" type="image/png" href="/favicon-v6.png">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box}
+html,body{margin:0;min-height:100%;background:#0F1E2E}
+body{font-family:Inter,system-ui,-apple-system,"Segoe UI",sans-serif;color:white;background:linear-gradient(160deg,#0F1E2E 0%,#123534 100%);min-height:100vh;display:flex;justify-content:center}
+.w{width:100%;max-width:440px;padding:calc(28px + env(safe-area-inset-top,0px)) 20px calc(28px + env(safe-area-inset-bottom,0px));display:flex;flex-direction:column;min-height:100vh}
+.brand{text-align:center;font-weight:900;letter-spacing:2.5px;font-size:16px;text-transform:uppercase}
+.brand small{display:block;font-size:10.5px;letter-spacing:3.5px;color:#C4973B;margin-top:4px}
+.card{margin:26px 0 16px;border-radius:22px;padding:22px;background:linear-gradient(135deg,#F0D5A8,#C4973B);color:#2B1D07;box-shadow:0 24px 50px rgba(0,0,0,.4);position:relative;overflow:hidden}
+.card:after{content:'';position:absolute;right:-40px;top:-40px;width:160px;height:160px;border-radius:50%;border:24px solid rgba(255,255,255,.18)}
+.card .k{font-size:11px;font-weight:900;letter-spacing:2px;opacity:.75}
+.card h1{margin:8px 0 2px;font-size:26px;letter-spacing:-.4px}
+.card .code{font-size:12.5px;font-weight:700;opacity:.7}
+.row{display:flex;justify-content:space-between;margin-top:20px;font-size:12px;font-weight:700;gap:10px}
+.row b{display:block;font-size:22px;letter-spacing:-.3px}
+.perks{background:rgba(255,255,255,.08);border-radius:16px;padding:14px 16px;font-size:14px}
+.perks .t{font-weight:800;color:#5EEAD4;font-size:11px;letter-spacing:1.2px;margin-bottom:6px}
+.perks div.p{padding:6px 0;display:flex;gap:10px;align-items:flex-start;line-height:1.4}
+.perks svg{flex:none;margin-top:1px}
+.foot{margin-top:auto;padding-top:24px;text-align:center;font-size:12.5px;color:#94A3B8;line-height:1.6}
+.msg{margin-top:34px;text-align:center}.msg h2{font-size:22px;margin:0 0 8px}.msg p{color:#CBD5E1;font-size:14.5px;line-height:1.6;margin:0}
+.load{margin-top:80px;text-align:center;color:#94A3B8;font-size:14px}
+.mavis{display:block;text-align:center;margin-top:14px;font-size:11px;color:#64748B;text-decoration:none}
+</style></head><body><div class="w" id="w"><div class="load">Loading your card…</div></div>
+<script>
+(function(){
+  var m = location.pathname.match(/\/k\/([A-Za-z0-9]+)/i);
+  var code = m ? m[1].toUpperCase() : '';
+  // Staff signed in to Mavis on this phone: open the member straight in the app (check-in)
+  try {
+    for (var i = 0; i < localStorage.length; i++) {
+      var key = localStorage.key(i);
+      if (/^sb-.*-auth-token$/.test(key) && localStorage.getItem(key)) { location.replace('/?member=' + encodeURIComponent(code)); return; }
+    }
+  } catch (e) {}
+  var w = document.getElementById('w');
+  var esc = function(v){ return String(v == null ? '' : v).replace(/[&<>"']/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); };
+  var tick = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#5EEAD4" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>';
+  function brandHtml(b){ return '<div class="brand">' + esc(b) + '<small>Members Club</small></div>'; }
+  if (!code) { w.innerHTML = '<div class="msg"><h2>Members Club</h2><p>This link is missing its keyring code.</p></div>'; return; }
+  fetch('/api/member-card?code=' + encodeURIComponent(code)).then(function(r){ return r.json(); }).then(function(d){
+    if (!d || !d.ok) { w.innerHTML = '<div class="msg"><h2>Members Club</h2><p>We couldn\'t find this keyring. Please show it to our team.</p></div><a class="mavis" href="https://getmavis.co">Powered by Mavis</a>'; return; }
+    document.title = d.brand + ' - Members Club';
+    if (d.blank) { w.innerHTML = brandHtml(d.brand) + '<div class="msg"><h2>Welcome!</h2><p>This keyring isn\'t set up yet.<br>Show it to our team and they\'ll make you a member in seconds.</p></div><div class="foot">Keyring ' + esc(code) + '</div>'; return; }
+    var vip = d.tier === 'vip';
+    w.innerHTML = brandHtml(d.brand) +
+      '<div class="card"><div class="k">' + (vip ? 'VIP MEMBER' : 'MEMBER') + '</div><h1>' + esc(d.first) + '</h1><div class="code">Keyring ' + esc(d.code) + '</div>' +
+      '<div class="row"><div><b>' + esc(d.visits) + '</b>visit' + (d.visits === 1 ? '' : 's') + '</div>' + (d.favourite ? '<div><b>' + esc(d.favourite) + '</b>favourite</div>' : '') + '<div><b>' + esc(d.since) + '</b>since</div></div></div>' +
+      (d.perks && d.perks.length ? '<div class="perks"><div class="t">YOUR PERKS</div>' + d.perks.map(function(p){ return '<div class="p">' + tick + '<span>' + esc(p) + '</span></div>'; }).join('') + '</div>' : '') +
+      '<div class="foot">Show your keyring to our team when you arrive.</div><a class="mavis" href="https://getmavis.co">Powered by Mavis</a>';
+  }).catch(function(){ w.innerHTML = '<div class="msg"><h2>Members Club</h2><p>Couldn\'t load your card. Check your connection and try again.</p></div>'; });
+})();
+</script></body></html>

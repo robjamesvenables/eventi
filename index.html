@@ -10468,7 +10468,7 @@ function kbRender(){
         ${photoThumbStrip(card.photos, ()=>card.photos, ()=>kbCardPhotosChanged(card))}
         ${card.dueDate ? `<div style="margin-top:8px;pointer-events:none">${kbDueChip(card.dueDate, colId==='done')}</div>` : ''}
         <div class="kanban-card-meta" style="margin-top:10px;display:flex;align-items:center;gap:6px">
-          ${kbAvatar(card.assignee)}
+          ${kbActiveIsTeam ? kbAvatar(card.assignee) : ''}
           <div class="kb-acts" onmousedown="event.stopPropagation()" ontouchstart="event.stopPropagation()">
             ${cIdx < 2 ? `<button class="kb-go" onclick="event.stopPropagation();kbMove(${card.id},'${colId}','${cols[cIdx+1]}')" title="Move on"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg></button>` : ''}
           </div>
@@ -10751,8 +10751,8 @@ function kbDetailRender(){
       <textarea id="kbd-title" class="kbd-title" rows="1" maxlength="200" placeholder="Task title">${esc(card.title)}</textarea>
       <div class="kbd-lbl">STATUS</div>
       <div class="kbd-st">${['todo','progress','done'].map(c => `<button class="${c===col?'on':''}" style="--sc:${clr(c)}" onclick="kbDetailMove('${c}')">${c===col?ic('<path d="M20 6 9 17l-5-5"/>',13):''}${esc(nm(c))}</button>`).join('')}</div>
-      <div class="kbd-lbl">ASSIGNED TO</div>
-      <div class="kbd-who">${kbAvatar(card.assignee)}<input id="kbd-asg" value="${esc(/^unassigned$/i.test(card.assignee||'')?'':card.assignee)}" placeholder="Type a name" maxlength="60"></div>
+      ${kbActiveIsTeam ? `<div class="kbd-lbl">ASSIGNED TO</div>
+      <div class="kbd-who">${kbAvatar(card.assignee)}<input id="kbd-asg" value="${esc(/^unassigned$/i.test(card.assignee||'')?'':card.assignee)}" placeholder="Type a name" maxlength="60"></div>` : ''}
       <div class="kbd-lbl">DUE DATE</div>
       <div class="kbd-due"><input type="date" id="kbd-due" value="${esc(card.dueDate)}">${card.dueDate ? kbDueChip(card.dueDate, col==='done') + `<button type="button" class="kbd-clear" onclick="kbDetailDue('')">Remove</button>` : '<span class="kbd-hint">Optional</span>'}</div>
       <div class="kbd-lbl">DESCRIPTION</div>
@@ -10761,18 +10761,18 @@ function kbDetailRender(){
       <div class="kbd-ph">${photos.map((src, i) => `<img src="${src}" onclick="kbDetailPhoto(${i},this)">`).join('')}
         <button class="kbd-addph" onclick="kbDetailAddPhoto()">${ic('<path d="M12 5v14M5 12h14"/>',18)}<span>Add photo</span></button></div>
     </div>
-    <div class="kbd-foot"><div style="min-width:0"><div class="kbd-by">${(card.createdBy || card.createdAt) ? 'Added' + (card.createdBy ? ' by <b>' + esc(card.createdBy) + '</b>' : '') + (card.createdAt ? ' · ' + new Date(card.createdAt).toLocaleDateString('en-GB', { day:'numeric', month:'short', year:'numeric' }) : '') : ''}</div><span class="kbd-saved" id="kbd-saved">Changes save by themselves</span></div><button class="kbd-del" onclick="kbDelete(${card.id},'${col}')">${ic('<path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>',14)}Delete</button></div>
+    <div class="kbd-foot"><div style="min-width:0"><div class="kbd-by">${(card.createdBy || card.createdAt) ? 'Added' + (card.createdBy && kbActiveIsTeam ? ' by <b>' + esc(card.createdBy) + '</b>' : '') + (card.createdAt ? ' · ' + new Date(card.createdAt).toLocaleDateString('en-GB', { day:'numeric', month:'short', year:'numeric' }) : '') : ''}</div><span class="kbd-saved" id="kbd-saved">Changes save by themselves</span></div><button class="kbd-del" onclick="kbDelete(${card.id},'${col}')">${ic('<path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>',14)}Delete</button></div>
   </div>`;
   const grow = el => { el.style.height = 'auto'; el.style.height = el.scrollHeight + 'px'; };
   const t = document.getElementById('kbd-title'), d = document.getElementById('kbd-desc'), a = document.getElementById('kbd-asg');
   [t, d].forEach(el => { grow(el); el.addEventListener('input', () => grow(el)); });
   const saved = () => { const sv = document.getElementById('kbd-saved'); if(sv){ sv.textContent = 'Saved ✓'; clearTimeout(sv._t); sv._t = setTimeout(() => { sv.textContent = 'Changes save by themselves'; }, 1800); } };
   t.addEventListener('keydown', e => { if(e.key === 'Enter'){ e.preventDefault(); t.blur(); } });
-  a.addEventListener('keydown', e => { if(e.key === 'Enter'){ e.preventDefault(); a.blur(); } });
+  if(a) a.addEventListener('keydown', e => { if(e.key === 'Enter'){ e.preventDefault(); a.blur(); } });
   const du = document.getElementById('kbd-due'); du.addEventListener('change', () => kbDetailDue(du.value));
   t.addEventListener('blur', () => { const v = t.value.replace(/\s+/g,' ').trim(); if(!v){ t.value = card.title; toast('A task needs a title'); return; } if(v !== card.title){ kbCardSave(card, { title: v }); saved(); } });
   d.addEventListener('blur', () => { const v = d.value.replace(/\s+$/,''); if(v !== (card.description||'')){ kbCardSave(card, { description: v }); saved(); } });
-  a.addEventListener('blur', () => { const v = a.value.trim() || 'Unassigned'; if(v !== card.assignee){ kbCardSave(card, { assignee: v }); saved(); const w = document.querySelector('.kbd-who .kb-who'); if(w) w.outerHTML = kbAvatar(v); } });
+  if(a) a.addEventListener('blur', () => { const v = a.value.trim() || 'Unassigned'; if(v !== card.assignee){ kbCardSave(card, { assignee: v }); saved(); const w = document.querySelector('.kbd-who .kb-who'); if(w) w.outerHTML = kbAvatar(v); } });
 }
 // Photo viewer (registered fresh each time, because the board redraw clears the list)
 window.kbDetailPhoto = function(i, el){

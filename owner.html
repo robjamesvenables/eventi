@@ -150,6 +150,7 @@ tr.click:hover td{background:#F8FAFC}
     <button class="nav" data-p="clients" onclick="go('clients')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18"/></svg>Clients</button>
     <button class="nav" data-p="money" onclick="go('money')" style="position:relative"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="6" width="20" height="13" rx="2"/><circle cx="12" cy="12.5" r="2.5"/></svg>Money<span class="count hidden" id="money-count"></span></button>
     <button class="nav" data-p="health" onclick="go('health')" style="position:relative"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>Health<span class="count hidden" id="health-count"></span></button>
+    <button class="nav" data-p="enquiries" onclick="go('enquiries')" style="position:relative"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16v12H8l-4 4z"/><path d="M8 9h8M8 12h5"/></svg>Enquiries<span class="count hidden" id="enq-count"></span></button>
     <button class="newbtn" onclick="newClient()">+ New client</button>
     <div class="me"><div class="av" style="background:var(--teal)" id="me-av">R</div><div style="font-size:12.5px;font-weight:700"><span id="me-name">Robbie</span><a onclick="signOut()">Sign out</a></div></div>
   </aside>
@@ -218,6 +219,8 @@ async function load(){
   $('money-count').textContent = due; $('money-count').classList.toggle('hidden', !due);
   const errs = D.errors.filter(e=>daysSince(e.created_at)<1).length;
   $('health-count').textContent = errs; $('health-count').classList.toggle('hidden', !errs);
+  D.enquiries = D.enquiries || []; const nq = D.enquiries.filter(q=>(q.status||'new')==='new').length;
+  $('enq-count').textContent = nq; $('enq-count').classList.toggle('hidden', !nq);
   render();
   return true;
 }
@@ -240,7 +243,7 @@ async function signOut(){ await sb.auth.signOut(); location.reload(); }
 function go(p){ PAGE=p; closeDrawer(); render(); window.scrollTo(0,0); try{ history.replaceState(null,'','#'+p); }catch(e){} }
 function render(){
   document.querySelectorAll('.nav').forEach(n=>n.classList.toggle('on', n.dataset.p===PAGE));
-  ({home:renderHome, clients:renderClients, money:renderMoney, health:renderHealth}[PAGE] || renderHome)();
+  ({home:renderHome, clients:renderClients, money:renderMoney, health:renderHealth, enquiries:renderEnquiries}[PAGE] || renderHome)();
 }
 
 // ---------- HOME ----------
@@ -663,6 +666,25 @@ function renderHealth(){
         <span class="muted" style="min-width:110px;text-align:right">${bytes(c.storage_bytes)}</span></div>`; }).join('') || '<div class="empty">No clients yet.</div>'}
     </div>`;
 }
+// ---------- ENQUIRIES (from "Enquire" on Mavis Plus items) ----------
+const ENQ_ST = { new:['New','#DBEAFE','#1D4ED8'], contacted:['Contacted','#FEF3C7','#92400E'], won:['Won','#DCFCE7','#15803D'], notnow:['Not now','#F1F5F9','#64748B'] };
+function renderEnquiries(){
+  const list = D.enquiries || [];
+  const ago = t => { const m = Math.round((Date.now() - new Date(t)) / 60000); return m < 60 ? m + ' min ago' : m < 1440 ? Math.round(m / 60) + ' h ago' : Math.round(m / 1440) + ' d ago'; };
+  $('main').innerHTML = `<h1>Enquiries</h1><div class="sub">Clients asking about Mavis Plus add-ons</div>
+    ${list.length ? list.map(q => { const c = clientById(q.company_id) || { name:'?' }; const st = ENQ_ST[q.status] || ENQ_ST.new; const ph = String(q.phone || '').replace(/[^0-9]/g, '').replace(/^0/, '62');
+      const msg = encodeURIComponent('Hi ' + String(q.name || '').split(' ')[0] + ', Robbie from Mavis here - thanks for your enquiry about ' + q.item + '.');
+      return `<div class="card" style="margin-top:14px"><div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">${avatar(c,34)}<div style="min-width:0"><b style="font-size:15px">${esc(q.item)}</b><div class="muted" style="font-size:12.5px">${esc(q.name)} · ${esc(c.name)} · ${ago(q.created_at)}</div></div>
+        <span style="margin-left:auto;background:${st[1]};color:${st[2]};font-size:11px;font-weight:800;border-radius:20px;padding:4px 10px">${st[0]}</span></div>
+        <div style="margin-top:10px;font-size:13.5px"><b>${esc(q.phone)}</b> · best time: ${esc(q.best_time || '-')}</div>
+        ${q.note ? `<div style="margin-top:6px;font-size:13.5px;color:#334155">"${esc(q.note)}"</div>` : ''}
+        <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:12px"><a class="btn sm" style="background:#22C55E;color:white;border-color:#22C55E;text-decoration:none" href="https://wa.me/${ph}?text=${msg}" target="_blank" rel="noopener">WhatsApp ${esc(String(q.name || '').split(' ')[0])}</a>
+          ${Object.keys(ENQ_ST).map(k => `<button class="btn sm" style="${(q.status || 'new') === k ? 'background:' + ENQ_ST[k][1] + ';color:' + ENQ_ST[k][2] + ';border-color:' + ENQ_ST[k][1] : ''}" onclick="enqSet(${q.id},'${k}')">${ENQ_ST[k][0]}</button>`).join('')}</div>
+        <textarea placeholder="Your notes (only you see these)" style="width:100%;box-sizing:border-box;margin-top:10px;border:1.5px solid #E2E8F0;border-radius:10px;padding:9px 11px;font:500 13.5px Inter,sans-serif;min-height:54px" onblur="enqNote(${q.id}, this.value)">${esc(q.owner_notes || '')}</textarea></div>`; }).join('')
+      : '<div class="card" style="margin-top:18px"><div class="empty">No enquiries yet. They arrive here when a client taps Enquire on a Mavis Plus item.</div></div>'}`;
+}
+async function enqSet(id, status){ const d = await api('enquiry_update', { id, status }); if(d.ok){ const q = D.enquiries.find(x => x.id === id); if(q) q.status = status; load(); } else toast('Could not save'); }
+async function enqNote(id, v){ const q = D.enquiries.find(x => x.id === id); if(!q || (q.owner_notes || '') === v) return; const d = await api('enquiry_update', { id, owner_notes: v }); if(d.ok){ q.owner_notes = v; toast('Note saved'); } }
 async function clearErrors(){ const d=await api('errors_clear'); if(d.ok){ await load(); toast('Cleared'); } }
 
 // ---------- modal ----------
@@ -674,7 +696,7 @@ document.addEventListener('keydown',e=>{ if(e.key==='Escape'){ if($('modal-bg'))
 // ---------- start ----------
 (async()=>{
   PAGE = (location.hash||'').slice(1) || 'home';
-  if(!['home','clients','money','health'].includes(PAGE)) PAGE='home';
+  if(!['home','clients','money','health','enquiries'].includes(PAGE)) PAGE='home';
   const { data } = await sb.auth.getSession();
   if(!data || !data.session){ showLogin(); return; }
   await load();

@@ -54,6 +54,17 @@ module.exports = async (req, res) => {
       return L.send(res, 200, { ok: true });
     }
 
+    if (b.action === 'enquire') {
+      if (!(me.is_owner || ['superadmin', 'director'].includes(me.role))) return L.send(res, 403, { ok: false, message: 'Only Super Admins and Directors can send enquiries' });
+      const clip = (v, n) => String(v == null ? '' : v).replace(/[<>]/g, '').trim().slice(0, n);
+      const row = { company_id: String(me.company_id), profile_id: String(me.id), name: clip([me.first_name, me.last_name].filter(Boolean).join(' '), 120),
+        item: clip(b.item, 80), phone: clip(b.phone, 40), best_time: clip(b.best_time, 20), note: clip(b.note, 1000) };
+      if (!row.item || !/[0-9]{6,}/.test(row.phone.replace(/[^0-9]/g, ''))) return L.send(res, 400, { ok: false, message: 'Please add a WhatsApp or phone number' });
+      try { await L.db('mavis_enquiries', { method: 'POST', body: row }); }
+      catch (e) { return L.send(res, 500, { ok: false, message: 'Enquiries need a quick database update first' }); }
+      return L.send(res, 200, { ok: true });
+    }
+
     if (b.action === 'report_error') {
       const msg = String(b.message || '').slice(0, 500);
       if (msg) await L.db('app_errors', { method: 'POST', body: { company_id: me.company_id, username: me.username, page: String(b.page || '').slice(0, 60), message: msg } }).catch(() => {});

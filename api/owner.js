@@ -49,13 +49,14 @@ module.exports = async (req, res) => {
     const b = L.body(req);
 
     if (b.action === 'overview') {
-      const [companies, profiles, invoices, files, errors, settings] = await Promise.all([
+      const [companies, profiles, invoices, files, errors, settings, enquiries] = await Promise.all([
         L.db('companies?select=*&order=created_at.asc'),
         L.db('profiles?select=id,company_id,username,first_name,last_name,role,active,user_id,last_login,last_seen,email'),
         L.db('invoices?select=*&order=created_at.desc&limit=500'),
         L.db('shared_files?select=company_id,size_bytes').catch(() => []),
         L.db('app_errors?select=*&order=created_at.desc&limit=200').catch(() => []),
-        getSettings()
+        getSettings(),
+        L.db('mavis_enquiries?select=*&order=created_at.desc&limit=300').catch(() => [])
       ]);
       const today = new Date(); today.setHours(0, 0, 0, 0);
       const clients = companies.map(c => {
@@ -77,7 +78,7 @@ module.exports = async (req, res) => {
         };
       });
       const safeSettings = Object.assign({}, settings); delete safeSettings.invoice_counter;
-      return L.send(res, 200, { ok: true, clients, invoices, errors, settings: safeSettings, me: { name: me.first_name } });
+      return L.send(res, 200, { ok: true, clients, invoices, errors, enquiries, settings: safeSettings, me: { name: me.first_name } });
     }
 
     if (b.action === 'create') {
@@ -192,6 +193,15 @@ module.exports = async (req, res) => {
       if (!inv) return L.send(res, 404, { ok: false });
       if (inv.status !== 'draft') return L.send(res, 400, { ok: false, message: 'Only drafts can be deleted - mark it as cancelled instead.' });
       await L.db('invoices?id=eq.' + encodeURIComponent(b.id), { method: 'DELETE' });
+      return L.send(res, 200, { ok: true });
+    }
+
+    if (b.action === 'enquiry_update') {
+      const id = parseInt(b.id, 10); if (!id) return L.send(res, 400, { ok: false });
+      const patch = {};
+      if (['new', 'contacted', 'won', 'notnow'].includes(b.status)) patch.status = b.status;
+      if (b.owner_notes !== undefined) patch.owner_notes = String(b.owner_notes || '').slice(0, 2000);
+      await L.db('mavis_enquiries?id=eq.' + id, { method: 'PATCH', body: patch });
       return L.send(res, 200, { ok: true });
     }
 

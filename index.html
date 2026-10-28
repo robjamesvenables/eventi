@@ -16263,7 +16263,7 @@ window.mdDishView = function(kind, sectionId, dishId){
       ${d.ingredients ? `<div class="md-lab">INGREDIENTS</div><div class="md-tx">${mdEsc(d.ingredients)}</div>` : ''}
       ${d.method ? `<div class="md-lab">METHOD</div><div class="md-tx">${mdEsc(d.method)}</div>` : ''}
     </div>
-    <div class="md-vf"><button class="md-del" onclick="kitchenDishViewClose();${pre}DishDelete(${sectionId},${d.id})">Delete</button><button class="mns-cancel" onclick="kitchenDishViewClose()">Close</button><button class="mns-go" onclick="kitchenDishViewClose();${pre}DishEdit(${sectionId},${d.id})">Edit</button></div>
+    <div class="md-vf"><button class="md-del" onclick="mdDishCloseThen(()=>${pre}DishDelete(${sectionId},${d.id}))">Delete</button><button class="mns-cancel" onclick="kitchenDishViewClose()">Close</button><button class="mns-go" onclick="mdDishCloseThen(()=>${pre}DishEdit(${sectionId},${d.id}))">Edit</button></div>
   </div>`;
   document.body.appendChild(overlay);
   const priorState = history.state || { page: kind };
@@ -16334,6 +16334,17 @@ function kitchenDishCardHtml(sectionId, d, idx, total){
   </div>`;
 }
 
+// Close the dish view, wait for the "back" step to finish, then open Edit/Delete
+// (opening straight away let that back step close the new pop-up again)
+window.mdDishCloseThen = function(fn){
+  const el = document.getElementById('kitchenDishViewOverlay');
+  if(el) el.remove();
+  let done = false;
+  const run = () => { if(done) return; done = true; window.removeEventListener('popstate', run); setTimeout(fn, 30); };
+  window.addEventListener('popstate', run);
+  history.back();
+  setTimeout(run, 500);
+};
 window.kitchenDishViewClose = function(fromPop){
   const el = document.getElementById('kitchenDishViewOverlay');
   if(el) el.remove();

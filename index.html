@@ -4901,9 +4901,9 @@ html:has(#menuDetailOverlay[style*="flex"]),html:has(#menuDetailOverlay[style*="
       <div class="ph">
         <div>
           <div class="ph-title">Quick Links</div>
-          <div class="ph-sub">Important links for what's happening right now — everyone can see and add</div>
+          <div class="ph-sub">Important links for what's happening right now — shared with the team</div>
         </div>
-        <button class="btn btn-navy" onclick="quickLinksAdd()">+ Add Link</button>
+        <button class="btn btn-navy" id="ql-add-btn" onclick="quickLinksAdd()">+ Add Link</button>
       </div>
       <div id="ql-list"></div>
       <div id="ql-empty" style="display:none;text-align:center;padding:48px;color:#94A3B8">
@@ -12443,18 +12443,20 @@ const ADMIN_MODULE_GROUPS = [
     {id:'meetings', name:'Meetings', desc:'Smart Notetaker and meeting notes'},
     {id:'directory', name:'Vendor Directory', desc:'View supplier contacts'},
     {id:'marketing', name:'Asset Library', desc:'Logos, menus, photos and sales material'},
+    {id:'quicklinks', name:'Quick Links', desc:"See and open the team's shared links"},
+    {id:'quicklinksedit', name:'Edit Quick Links', desc:'Add, change, pin and delete Quick Links'},
     {id:'adminconsole', name:'Admin Console', desc:'Manage roles and team access (this page)'},
   ]},
 ];
 
 // Default permission bundle per role - true/false per module id. Editable in the demo.
 let ADMIN_PERMS = {
-  superadmin:  {teamfeed:1,chat:1,suggestions:1,vacancies:1,tasks:1,inventory:1,entertainment:1,calendar:1,sops:1,survey:1,reports:1,directory:1,marketing:1,adminconsole:1,kitchen:1,bar:1,meetings:1,eventsedit:1,requests:1,requestsmanage:1,requestsall:1,ordering:1,orderingapprove:1,orderingbuy:1,sopsedit:1,sopsapprove:1,membership:1},
-  director:    {teamfeed:1,chat:1,suggestions:1,vacancies:1,tasks:1,inventory:1,entertainment:1,calendar:1,sops:1,survey:1,reports:1,directory:1,marketing:1,adminconsole:1,kitchen:1,bar:1,meetings:1,eventsedit:1,requests:1,requestsmanage:1,requestsall:1,ordering:1,orderingapprove:1,orderingbuy:1,sopsedit:1,sopsapprove:1,membership:1},
-  manager:     {teamfeed:1,chat:1,suggestions:1,vacancies:1,tasks:1,inventory:1,entertainment:1,calendar:1,sops:1,survey:1,reports:1,directory:1,marketing:1,adminconsole:0,kitchen:1,bar:1,meetings:1,eventsedit:1,requests:1,requestsmanage:1,requestsall:1,ordering:1,orderingapprove:1,orderingbuy:1,sopsedit:1,sopsapprove:0,membership:1},
-  supervisor:  {teamfeed:1,chat:1,suggestions:1,vacancies:1,tasks:1,inventory:1,entertainment:1,calendar:1,sops:1,survey:1,reports:0,directory:1,marketing:0,adminconsole:0,kitchen:1,bar:1,meetings:1,eventsedit:1,requests:1,requestsmanage:1,requestsall:0,ordering:1,orderingapprove:0,orderingbuy:0,sopsedit:0,sopsapprove:0,membership:1},
-  teammember:  {teamfeed:1,chat:1,suggestions:1,vacancies:1,tasks:1,inventory:1,entertainment:0,calendar:1,sops:1,survey:0,reports:0,directory:0,marketing:0,adminconsole:0,kitchen:1,bar:1,meetings:0,eventsedit:0,requests:1,requestsmanage:0,requestsall:0,ordering:1,orderingapprove:0,orderingbuy:0,sopsedit:0,sopsapprove:0,membership:1},
-  dailyworker: {teamfeed:1,chat:1,suggestions:0,vacancies:1,tasks:1,inventory:0,entertainment:0,calendar:0,sops:1,survey:0,reports:0,directory:0,marketing:0,adminconsole:0,kitchen:1,bar:1,meetings:0,eventsedit:0,requests:1,requestsmanage:0,requestsall:0,ordering:1,orderingapprove:0,orderingbuy:0,sopsedit:0,sopsapprove:0,membership:0},
+  superadmin:  {teamfeed:1,chat:1,suggestions:1,vacancies:1,tasks:1,inventory:1,entertainment:1,calendar:1,sops:1,survey:1,reports:1,directory:1,marketing:1,adminconsole:1,kitchen:1,bar:1,meetings:1,eventsedit:1,requests:1,requestsmanage:1,requestsall:1,ordering:1,orderingapprove:1,orderingbuy:1,sopsedit:1,sopsapprove:1,membership:1,quicklinks:1,quicklinksedit:1},
+  director:    {teamfeed:1,chat:1,suggestions:1,vacancies:1,tasks:1,inventory:1,entertainment:1,calendar:1,sops:1,survey:1,reports:1,directory:1,marketing:1,adminconsole:1,kitchen:1,bar:1,meetings:1,eventsedit:1,requests:1,requestsmanage:1,requestsall:1,ordering:1,orderingapprove:1,orderingbuy:1,sopsedit:1,sopsapprove:1,membership:1,quicklinks:1,quicklinksedit:1},
+  manager:     {teamfeed:1,chat:1,suggestions:1,vacancies:1,tasks:1,inventory:1,entertainment:1,calendar:1,sops:1,survey:1,reports:1,directory:1,marketing:1,adminconsole:0,kitchen:1,bar:1,meetings:1,eventsedit:1,requests:1,requestsmanage:1,requestsall:1,ordering:1,orderingapprove:1,orderingbuy:1,sopsedit:1,sopsapprove:0,membership:1,quicklinks:1,quicklinksedit:1},
+  supervisor:  {teamfeed:1,chat:1,suggestions:1,vacancies:1,tasks:1,inventory:1,entertainment:1,calendar:1,sops:1,survey:1,reports:0,directory:1,marketing:0,adminconsole:0,kitchen:1,bar:1,meetings:1,eventsedit:1,requests:1,requestsmanage:1,requestsall:0,ordering:1,orderingapprove:0,orderingbuy:0,sopsedit:0,sopsapprove:0,membership:1,quicklinks:1,quicklinksedit:0},
+  teammember:  {teamfeed:1,chat:1,suggestions:1,vacancies:1,tasks:1,inventory:1,entertainment:0,calendar:1,sops:1,survey:0,reports:0,directory:0,marketing:0,adminconsole:0,kitchen:1,bar:1,meetings:0,eventsedit:0,requests:1,requestsmanage:0,requestsall:0,ordering:1,orderingapprove:0,orderingbuy:0,sopsedit:0,sopsapprove:0,membership:1,quicklinks:1,quicklinksedit:0},
+  dailyworker: {teamfeed:1,chat:1,suggestions:0,vacancies:1,tasks:1,inventory:0,entertainment:0,calendar:0,sops:1,survey:0,reports:0,directory:0,marketing:0,adminconsole:0,kitchen:1,bar:1,meetings:0,eventsedit:0,requests:1,requestsmanage:0,requestsall:0,ordering:1,orderingapprove:0,orderingbuy:0,sopsedit:0,sopsapprove:0,membership:0,quicklinks:0,quicklinksedit:0},
 };
 
 let PEOPLE_DEPARTMENTS = ['Management', 'GRO', 'Operations', 'Audio Visual', 'IT', 'Engineering', 'Housekeeping', 'Kitchen', 'Bar', 'Sales and Marketing', 'Human Resources'];
@@ -13290,6 +13292,7 @@ const MODULE_PAGES = {
   suggestions: ['suggestions'],
   vacancies: ['vacancies'],
   survey: ['survey'],
+  quicklinks: ['quicklinks'],
   membership: ['membership'],
   adminconsole: ['admin'],
   kitchen: ['kitchen'],
@@ -19951,6 +19954,7 @@ function quickLinksDetectType(url){
 // Pinned links are shared by the whole company (saved as a company setting)
 function quickLinksPins(){ try{ const v = appSettings && appSettings.ql_pins; const a = typeof v === 'string' ? JSON.parse(v) : v; return Array.isArray(a) ? a.map(String) : []; }catch(e){ return []; } }
 window.quickLinksTogglePin = async function(id){
+  if(!roleCan('quicklinksedit')) return;
   const pins = quickLinksPins(), k = String(id), next = pins.includes(k) ? pins.filter(x => x !== k) : pins.concat([k]);
   appSettings.ql_pins = JSON.stringify(next); quickLinksRender();
   const { error } = await sb.from('app_settings').upsert({ key:'ql_pins', value: JSON.stringify(next) }, { onConflict:'company_id,key' });
@@ -19960,6 +19964,7 @@ window.quickLinksTogglePin = async function(id){
 
 function quickLinksRender(){
   const list = document.getElementById('ql-list');
+  const addBtn = document.getElementById('ql-add-btn'); if(addBtn) addBtn.style.display = roleCan('quicklinksedit') ? '' : 'none';
   const empty = document.getElementById('ql-empty');
   const badge = document.getElementById('sb-badge-quicklinks');
   if(badge) badge.textContent = quickLinksData.length;
@@ -19993,7 +19998,7 @@ function quickLinksRender(){
     const host = String(f.url).replace(/^https?:\/\//, '').split('/')[0].replace(/^www\./, '');
     const isNew = quickLinksIsNew(f.createdAt);
     return `<div class="ql-tile${pin ? ' pin' : ''}">
-      <button class="ql-star${pin ? ' on' : ''}" title="${pin ? 'Unpin' : 'Pin to the top'}" onclick="quickLinksTogglePin(${f.id})">★</button>
+      ${roleCan('quicklinksedit') ? `<button class="ql-star${pin ? ' on' : ''}" title="${pin ? 'Unpin' : 'Pin to the top'}" onclick="quickLinksTogglePin(${f.id})">★</button>` : (pin ? '<span class="ql-star on" title="Pinned" style="cursor:default">★</span>' : '')}
       <div class="ql-ic" style="background:${ic[0]};color:${ic[1]}">${S(ic[2])}</div>
       <div class="ql-body"><div class="ql-name">${f.name}${isNew ? ' <span class="ql-new">NEW</span>' : ''}</div><div class="ql-host">${host}</div>
         <div class="ql-who">${f.by ? f.by + ' · ' : ''}${ago(f.createdAt)}</div>
@@ -20006,6 +20011,7 @@ function quickLinksRender(){
 }
 
 function quickLinksAdd(){
+  if(!roleCan('quicklinksedit')){ toast('Only managers can add Quick Links'); return; }
   appModalShow({
     title:'Add Quick Link',
     fields:[
@@ -20045,12 +20051,11 @@ function quickLinksAdd(){
 
 // Rules: everyone can see and add; only whoever added a link, or Managers and above, can edit or delete it
 function quickLinksCanEdit(f){
-  if(!myProfile) return true;   // demo
-  if(myProfile.is_owner || ['superadmin','director','manager'].includes(myProfile.role)) return true;
-  return !!f.createdBy && String(f.createdBy) === String(myProfile.user_id);
+  return roleCan('quicklinksedit');   // set per role in Admin Console > Roles & Permissions
 }
 // Edit a link's name or address
 function quickLinksEdit(id){
+  if(!roleCan('quicklinksedit')) return;
   const link = quickLinksData.find(f=>f.id===id); if(!link) return;
   appModalShow({
     title:'Edit Quick Link',
@@ -20073,6 +20078,7 @@ function quickLinksEdit(id){
   });
 }
 function quickLinksDelete(id){
+  if(!roleCan('quicklinksedit')) return;
   appConfirmShow({title:'Remove Quick Link', msg:'Remove this link for everyone? This cannot be undone.', onOk: async ()=>{
     const link = quickLinksData.find(f=>f.id===id);
     const before = quickLinksData.slice();

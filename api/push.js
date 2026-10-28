@@ -248,6 +248,37 @@ async function orderPush(me, b, res){
 }
 function ordRefOf(o){ return 'Order #' + o.ref; }
 
+// ── Suggestion Box ──
+// POST { suggestion: true }  - right after someone sends an anonymous suggestion.
+// Tells Managers and up. Stays anonymous: no name, no initials, nothing logged about who sent it.
+async function suggestionPush(me, b, res){
+  const since = new Date(Date.now() - 2 * 60000).toISOString();
+  const s = (await L.db('suggestions?select=id,text,kind,created_at&order=created_at.desc&limit=1&company_id=eq.' + encodeURIComponent(me.company_id) + '&created_at=gte.' + encodeURIComponent(since)).catch(() => []))[0];
+  if (!s) return L.send(res, 200, { ok: true, sent: 0, why: 'nothing new' });
+  const people = await L.db('profiles?select=id,role,is_owner,active&company_id=eq.' + encodeURIComponent(me.company_id));
+  const mgrs = people.filter(p => p.active !== false && String(p.id) !== String(me.id) && (p.is_owner || ['superadmin', 'director', 'manager'].includes(p.role)));
+  if (!mgrs.length) return L.send(res, 200, { ok: true, sent: 0, why: 'no managers' });
+  const ids = mgrs.map(p => encodeURIComponent(p.id)).join(',');
+  const [subs, prefs] = await Promise.all([
+    L.db('push_subs?select=*&profile_id=in.(' + ids + ')'),
+    L.db('chat_prefs?select=*&profile_id=in.(' + ids + ')').catch(() => [])
+  ]);
+  if (!subs.length) return L.send(res, 200, { ok: true, sent: 0, why: 'notifications not turned on' });
+  const label = { idea: 'New idea', problem: 'Something to fix', easier: 'Make work easier', shoutout: 'Shout-out' }[s.kind] || 'New suggestion';
+  const t = String(s.text || ''); const body = t.length > 120 ? t.slice(0, 117) + '…' : t;
+  webpush.setVapidDetails('mailto:hello@getmavis.co', VAPID_PUBLIC, VAPID_PRIVATE);
+  const now = new Date();
+  let sent = 0;
+  await Promise.all(subs.map(async sub => {
+    const pref = prefs.find(p => String(p.profile_id) === String(sub.profile_id));
+    if (inQuiet(pref, now)) return;
+    const payload = JSON.stringify({ title: 'Suggestion Box · ' + label, body, thread: 'suggestion-' + s.id, url: '/?suggest=1', who: '?', colour: '#C4973B' });
+    try { await webpush.sendNotification({ endpoint: sub.endpoint, keys: { p256dh: sub.p256dh, auth: sub.auth } }, payload, { TTL: 12 * 3600, urgency: 'normal' }); sent++; }
+    catch (e) { if (e.statusCode === 404 || e.statusCode === 410) await L.db('push_subs?endpoint=eq.' + encodeURIComponent(sub.endpoint), { method: 'DELETE' }).catch(() => {}); }
+  }));
+  return L.send(res, 200, { ok: true, sent, devices: subs.length });
+}
+
 module.exports = async (req, res) => {
   if (req.method !== 'POST') return L.send(res, 405, { ok: false });
   if (!L.SERVICE_KEY) return L.send(res, 503, { ok: false, reason: 'notset' });
@@ -277,6 +308,7 @@ module.exports = async (req, res) => {
     if (b.request_id) return await requestPush(me, b, res);
     if (b.order_id) return await orderPush(me, b, res);
     if (b.task_id) return await taskPush(me, b, res);
+    if (b.suggestion) return await suggestionPush(me, b, res);
     const msg = (await L.db('chat_msgs?select=*&id=eq.' + encodeURIComponent(b.msg_id || '')))[0];
     // only the person who sent it, and only straight after sending
     if (!msg) { await note(me, 'not sent - message not found'); return L.send(res, 200, { ok: true, sent: 0, why: 'message not found' }); }

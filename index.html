@@ -18465,11 +18465,12 @@ function marketingRenderFiles(){
       return `<div class="myd-file-row">
         <div class="myd-file-row-ico" style="background:#EDE9FE"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#7C3AED" stroke-width="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg></div>
         <div style="flex:1;min-width:0">
-          <div class="myd-file-row-name">${item.name}</div>
+          <div class="myd-file-row-name">${mktEsc(item.name)}</div>
           <div class="myd-file-row-url">External link</div>
         </div>
         <div class="myd-file-row-actions">
           <button class="btn btn-navy" style="font-size:12px;padding:7px 14px" onclick="window.open('${item.url}','_blank')">↗ Open</button>
+          <button class="btn btn-ghost" style="font-size:12px;padding:7px 10px;display:inline-flex;align-items:center" onclick="marketingEditItem(${item.id})" title="Edit"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.85 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg></button>
           <button class="btn btn-ghost" style="font-size:12px;padding:7px 10px;color:#EF4444;border-color:#FECACA" onclick="marketingDeleteItem(${item.id})">×</button>
         </div>
       </div>`;
@@ -18481,12 +18482,13 @@ function marketingRenderFiles(){
     return `<div class="myd-file-row">
       ${thumb}
       <div style="flex:1;min-width:0">
-        <div class="myd-file-row-name">${item.name}</div>
+        <div class="myd-file-row-name">${mktEsc(item.name)}</div>
         <div class="myd-file-row-url">${marketingFormatSize(item.sizeBytes)}</div>
       </div>
       <div class="myd-file-row-actions">
         <button class="btn btn-navy" style="font-size:12px;padding:7px 14px" onclick="marketingOpenFile('${item.id}')">↗ View</button>
         <button class="btn btn-ghost" style="font-size:12px;padding:7px 12px;display:inline-flex;align-items:center;gap:5px" onclick="marketingDownloadFile('${item.id}')" title="Download"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><polyline points="7 10 12 15 17 10"/><path d="M5 21h14"/></svg>Download</button>
+        <button class="btn btn-ghost" style="font-size:12px;padding:7px 10px;display:inline-flex;align-items:center" onclick="marketingEditItem(${item.id})" title="Edit"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.85 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg></button>
         <button class="btn btn-ghost" style="font-size:12px;padding:7px 10px;color:#EF4444;border-color:#FECACA" onclick="marketingDeleteItem(${item.id})">×</button>
       </div>
     </div>`;
@@ -18569,6 +18571,87 @@ window.marketingAddLink = function(){
     }
   });
 };
+
+// Edit an asset: change its title, the link, the folder - or swap the file/image for a new one
+const mktEsc = v => String(v == null ? '' : v).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+window.marketingEditItem = function(itemId){
+  const folder = marketingFolders.find(f=>f.id===marketingActiveFolder);
+  const item = folder && folder.items.find(i=>String(i.id)===String(itemId));
+  if(!item) return;
+  const isLink = item.type === 'link';
+  const fields = [{label:'Title', value:item.name, placeholder:'e.g. Summer Campaign Video'}];
+  if(isLink) fields.push({label:'Link', value:item.url, placeholder:'https://drive.google.com/...'});
+  fields.push({label:'Folder', type:'pillpicker', options: marketingFolders.map(f=>({id:f.id, name:f.name})), value: folder.id});
+  appModalShow({
+    title: isLink ? 'Edit link' : 'Edit file',
+    fields,
+    async onOk(vals){
+      const name = (vals[0] || '').trim() || item.name;
+      let url = isLink ? (vals[1] || '').trim() : null;
+      const toFolder = vals[isLink ? 2 : 1] || folder.id;
+      if(isLink){
+        if(!url){ toast('Please add the link'); return; }
+        url = /^https?:\/\//i.test(url) ? url : 'https://' + url;
+      }
+      const row = { name, folder: toFolder };
+      if(isLink) row.url = url;
+      const { data, error } = await sb.from('shared_files').update(row).eq('id', item.id).select();
+      if(error || !data || !data.length){ console.warn(error); toast('Not saved - check your connection'); return; }
+      item.name = name; if(isLink) item.url = url;
+      if(toFolder !== folder.id){
+        folder.items = folder.items.filter(i=>i !== item);
+        const dest = marketingFolders.find(f=>f.id===toFolder); if(dest) dest.items.push(item);
+        toast('Saved - moved to ' + (dest ? dest.name : 'the other folder'));
+      } else toast('Saved ✓');
+      marketingRenderFiles();
+    }
+  });
+  if(!isLink){
+    // Swap the file for a new one (keeps its place, title and folder)
+    const host = document.getElementById('appModalFields');
+    if(host){
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.style.cssText = 'margin-top:14px;width:100%;display:flex;align-items:center;justify-content:center;gap:8px;padding:11px;border:1.5px dashed #CBD5E1;border-radius:10px;background:#F8FAFC;font:700 13px Inter,sans-serif;color:#334155;cursor:pointer';
+      b.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 0 1-15.5 6.2L3 16"/><path d="M3 21v-5h5"/><path d="M3 12a9 9 0 0 1 15.5-6.2L21 8"/><path d="M21 3v5h-5"/></svg>' + (item.fileType === 'image' ? 'Replace image' : 'Replace file');
+      b.onclick = () => { appModalClose(); marketingReplacePick(item.id); };
+      host.appendChild(b);
+    }
+  }
+};
+window.marketingReplacePick = function(itemId){
+  const input = document.createElement('input');
+  input.type = 'file';
+  input.accept = 'image/*,application/pdf,.doc,.docx,.xls,.xlsx,.csv,.ppt,.pptx,.txt';
+  input.onchange = () => { const f = input.files[0]; if(f) marketingReplaceFile(itemId, f); };
+  input.click();
+};
+async function marketingReplaceFile(itemId, file){
+  const folder = marketingFolders.find(f=>f.items.some(i=>String(i.id)===String(itemId)));
+  const item = folder && folder.items.find(i=>String(i.id)===String(itemId));
+  if(!item) return;
+  if(file.size > MKT_FILE_LIMIT){ marketingShowRestriction(`This file is ${marketingFormatSize(file.size)} — over the 25MB per-file limit.`); return; }
+  if(marketingTotalUsed() - (item.sizeBytes || 0) + file.size > MKT_TOTAL_LIMIT){ marketingShowRestriction(`Marketing storage is nearly full (${marketingFormatSize(marketingTotalUsed())} of 1GB used) — this file won't fit.`); return; }
+  toast('Uploading…');
+  const safe = file.name.replace(/[^A-Za-z0-9._-]+/g,'_').slice(-80);
+  const path = (myProfile ? myProfile.company_id + '/' : '') + folder.id + '/' + Date.now() + '-' + safe;
+  try{
+    const up = await sb.storage.from(MKT_BUCKET).upload(path, file, { contentType: file.type || undefined, upsert:false });
+    if(up.error) throw up.error;
+    const kind = marketingFileKind(file);
+    const { data, error } = await sb.from('shared_files').update({ path, size_bytes:file.size, file_type:kind }).eq('id', item.id).select();
+    if(error || !data || !data.length){ await sb.storage.from(MKT_BUCKET).remove([path]); throw error || new Error('not saved'); }
+    const oldPath = item.path;
+    const signed = await sb.storage.from(MKT_BUCKET).createSignedUrl(path, 43200);
+    Object.assign(item, { path, sizeBytes:file.size, fileType:kind, dataUrl:(signed.data && signed.data.signedUrl) || '' });
+    if(oldPath) sb.storage.from(MKT_BUCKET).remove([oldPath]).catch(()=>{});
+    marketingRenderFiles(); marketingUpdateStorageBar();
+    toast('Replaced ✓');
+  }catch(e){
+    console.warn('Replace failed', e);
+    toast('Not replaced - check your connection and try again');
+  }
+}
 
 window.marketingDeleteItem = function(itemId){
   const folder = marketingFolders.find(f=>f.id===marketingActiveFolder);

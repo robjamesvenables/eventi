@@ -24263,8 +24263,7 @@ function hlInitScroll(){
   if(!strip || !outer) return;
   hlRemoveClones(strip);
   const cards = Array.from(strip.children);
-  const isMobile = window.innerWidth <= 700;
-  if(isMobile || cards.length < 2){
+  if(cards.length < 2){
     hlStopAutoScroll();
     return;
   }
@@ -24282,8 +24281,6 @@ function hlStopAutoScroll(){
 function hlStartAutoScroll(strip, outer){
   hlStopAutoScroll();
 
-  const isPhoneWidth = window.innerWidth <= 700;
-  if(isPhoneWidth) return;
 
   // Duplicate so the loop can wrap seamlessly - but ONLY when the real cards already
   // overflow the strip. With just a few highlights there is nothing to scroll, and the
@@ -24301,7 +24298,9 @@ function hlStartAutoScroll(strip, outer){
     copy.setAttribute('aria-hidden','true');
     strip.appendChild(copy);
   });
-  const cardW = 200 + 14;
+  // Step = one card + the gap (measured, so it is right on phone and laptop)
+  const c0 = strip.children[0], c1 = strip.children[1];
+  const cardW = (c0 && c1) ? Math.round(c1.getBoundingClientRect().left - c0.getBoundingClientRect().left) : 214;
   const halfWidth = strip.scrollWidth / 2;
   hlAutoScrollPaused = false;
   outer.scrollLeft = 0;
@@ -24337,8 +24336,11 @@ function hlStartAutoScroll(strip, outer){
   }, 2600);
 }
 
-let hlResizeTimer;
+let hlResizeTimer, hlLastW = window.innerWidth;
 window.addEventListener('resize', ()=>{
+  // Phones fire resize when the address bar shows/hides while scrolling - only restart on a real width change
+  if(window.innerWidth === hlLastW) return;
+  hlLastW = window.innerWidth;
   clearTimeout(hlResizeTimer);
   hlResizeTimer = setTimeout(hlInitScroll, 150);
 });

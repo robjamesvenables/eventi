@@ -6240,7 +6240,7 @@ function nav(id, pushState=true){
   if(id==='notes'){ if(!window._mnOnPage){ mnGoToday(); mnLoadFromSupabase(); } window._mnOnPage = true; } else { window._mnOnPage = false; document.body.classList.remove('mn-full-open'); if(typeof mnFlush==='function') mnFlush(); }
   if(id==='cal'){calRender();}
   if(id==='djsched'){djSchedRender();}
-  if(id==='home'){initHome(); announceRender();}
+  if(id==='home'){initHome(); announceRender(); setTimeout(()=>{ try{ hlInitScroll(); }catch(e){} }, 200);}
   if(id==='quicklinks'){quickLinksRender();}
   if(id==='sandbox'){sandboxRender();}
   if(id==='music'){musicRender();}
@@ -24505,6 +24505,7 @@ function hlStartAutoScroll(strip, outer){
   // this again WITHOUT a fresh rebuild, which previously doubled the doubled strip.
   hlRemoveClones(strip);
   outer.scrollLeft = 0;
+  if(!outer.clientWidth) return;   // Dashboard not on screen - started again when you come back to it
   if(strip.scrollWidth <= outer.clientWidth + 4){
     return;
   }
@@ -24526,23 +24527,28 @@ function hlStartAutoScroll(strip, outer){
     outer.onmouseenter = () => { hlAutoScrollPaused = true; };
     outer.onmouseleave = () => { hlAutoScrollPaused = false; };
   }
-  let resumeTimer;
+  let resumeTimer, touchPausedAt = 0;
   const pauseForInteraction = () => {
-    hlAutoScrollPaused = true;
+    hlAutoScrollPaused = true; touchPausedAt = Date.now();
     clearTimeout(resumeTimer);
   };
   const resumeAfterInteraction = () => {
     clearTimeout(resumeTimer);
-    resumeTimer = setTimeout(() => { hlAutoScrollPaused = false; }, 2500);
+    resumeTimer = setTimeout(() => { hlAutoScrollPaused = false; touchPausedAt = 0; }, 2500);
   };
   outer.ontouchstart = pauseForInteraction;
   outer.ontouchend = resumeAfterInteraction;
+  outer.ontouchcancel = resumeAfterInteraction;     // swipe turned into a page scroll
   outer.onpointerdown = pauseForInteraction;
   outer.onpointerup = resumeAfterInteraction;
+  outer.onpointercancel = resumeAfterInteraction;
 
   // Back to stepping one card at a time with a pause between each step.
   hlAutoScrollAnim = setInterval(()=>{
+    // Safety net: never stay stuck after a tap/swipe (mouse resting on it still pauses)
+    if(hlAutoScrollPaused && touchPausedAt && Date.now() - touchPausedAt > 8000){ hlAutoScrollPaused = false; touchPausedAt = 0; }
     if(hlAutoScrollPaused) return;
+    if(!outer.isConnected || !outer.clientWidth) return;
     let next = outer.scrollLeft + cardW;
     if(next >= halfWidth){
       outer.scrollLeft = 0;
@@ -24553,6 +24559,9 @@ function hlStartAutoScroll(strip, outer){
 }
 
 let hlResizeTimer, hlLastW = window.innerWidth;
+document.addEventListener('visibilitychange', () => {
+  if(document.visibilityState === 'visible' && document.getElementById('p-home')?.classList.contains('on')) setTimeout(()=>{ try{ hlInitScroll(); }catch(e){} }, 300);
+});
 window.addEventListener('resize', ()=>{
   // Phones fire resize when the address bar shows/hides while scrolling - only restart on a real width change
   if(window.innerWidth === hlLastW) return;

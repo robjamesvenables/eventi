@@ -20188,6 +20188,8 @@ window.msSheetClose = function(){ const o = document.getElementById('ms-sheet');
 // ── Member profile ──
 window.msOpenMember = function(id, checked){
   const m = MS.members.find(x => String(x.id) === String(id)); if(!m) return;
+  // Already in today at this venue? Say so instead of offering Check in again
+  if(!checked){ const v = msVenue(), d = msToday(); if((MS.visits[m.id] || []).some(x => x.venue === v && x.visit_date === d)) checked = { venue:v, already:true }; }
   const s = msStats(m), bd = msBirthdaySoon(m), perks = msPerks()[m.tier === 'vip' ? 'vip' : 'member'];
   const code = MS.keyrings[m.id];
   const since = new Date(m.created_at).toLocaleDateString('en-GB', { month:'short', year:'numeric' });

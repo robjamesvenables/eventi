@@ -2114,6 +2114,15 @@ body.ev-nomoney .dash-hero .ev-money{display:none!important}
 body:not(.mv-demo) #ms-demoqr-btn{display:none!important}
 @media(max-width:760px){#ms-demoqr-btn{display:none!important}}
 .ms-qrs{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.ms-prev{width:100%;display:flex;align-items:center;justify-content:center;gap:8px;border:1.5px solid #0D9488;background:#F0FDFA;color:#0F766E;border-radius:12px;padding:11px;font:800 13.5px Inter,sans-serif;cursor:pointer;margin-bottom:4px}
+.ms-gh{font-size:11px;font-weight:900;letter-spacing:1.3px;color:#0F1E2E;margin:16px 0 8px;padding-top:12px;border-top:1px solid #EEF1F4}.ms-gh small{font-weight:600;letter-spacing:0;color:#94A3B8;margin-left:6px;font-size:11.5px}
+.ms-v2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.ms-vbox{background:#F8FAFC;border-radius:12px;padding:10px;margin-bottom:8px}
+.ms-vbox label{display:block;margin-top:8px}.ms-vbox label span{display:block;font-size:10px;font-weight:800;letter-spacing:.8px;color:#94A3B8;margin-bottom:4px}
+.ms-vbox input{width:100%;min-width:0;border:1.5px solid #E2E8F0;border-radius:9px;padding:9px 10px;font:500 15px Inter,sans-serif;color:#0F1E2E;background:white;box-sizing:border-box}
+.ms-vtop{display:flex;gap:8px;align-items:center}.ms-vtop .ms-vn{font-weight:700}
+.ms-vx{width:36px;height:36px;flex:none;border:0;border-radius:9px;background:white;color:#94A3B8;display:flex;align-items:center;justify-content:center;cursor:pointer}.ms-vx:hover{color:#DC2626}
+.ms-vadd{width:100%;border:1.5px dashed #CBD5E1;background:none;border-radius:11px;padding:10px;font:700 13px Inter,sans-serif;color:#475569;cursor:pointer}
 .ms-qrc{background:#F8FAFC;border-radius:14px;padding:16px;text-align:center}
 .ms-qrc .q{background:white;border-radius:12px;padding:12px;display:inline-block;box-shadow:0 1px 3px rgba(15,30,46,.08)}
 .ms-qrc .q img,.ms-qrc .q canvas{display:block;width:220px;height:220px}
@@ -4549,7 +4558,7 @@ html:has(#menuDetailOverlay[style*="flex"]),html:has(#menuDetailOverlay[style*="
     <div class="page" id="p-membership" style="padding:32px 28px 0">
       <div class="ph">
         <div><div class="ph-title">Membership</div><div class="ph-sub">Your regulars, across all your venues</div></div>
-        <div class="ms-hbtns"><button class="btn btn-navy" id="ms-scan-btn" onclick="msScanOpen()"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-3px;margin-right:6px"><path d="M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2M7 12h10"/></svg>Scan a keyring</button><button class="ms-tiers" id="ms-tiers-btn" onclick="msTiers()">Tiers &amp; perks</button><button class="ms-tiers" id="ms-demoqr-btn" onclick="msDemoQr()">Demo QR codes</button></div>
+        <div class="ms-hbtns"><button class="btn btn-navy" id="ms-scan-btn" onclick="msScanOpen()"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-3px;margin-right:6px"><path d="M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2M7 12h10"/></svg>Scan a keyring</button><button class="ms-tiers" id="ms-tiers-btn" onclick="msTiers()">Guest page</button><button class="ms-tiers" id="ms-demoqr-btn" onclick="msDemoQr()">Demo QR codes</button></div>
         <div class="ms-stats" id="ms-stats"></div>
       </div>
       <div id="ms-home"></div>
@@ -20403,19 +20412,60 @@ window.msEdit = function(id){
 };
 
 // ── Tiers & perks (managers) ──
+// Guest page settings (managers): perks, reward, venues - everything a guest sees when they scan their keyring.
+// Tonight / This week come from the Entertainment Schedule, menus from Kitchen & Bar live menus.
+function msPage(){
+  try{ const v = appSettings && appSettings.member_page; const p = v ? (typeof v === 'string' ? JSON.parse(v) : v) : null; if(p) return p; }catch(e){}
+  if(typeof appIsDemoCompany === 'function' && appIsDemoCompany() && myProfile){
+    const v = (name, opens, closes) => ({ name, opens, closes, map:'https://maps.google.com', wa:'6281234567890', phone:'+62 812 3456 7890' });
+    return { venues:[v('Rooftop','16:00','01:00'), v('Harbour','11:00','23:00'), v('Garden','08:00','16:00'), v('Beach Club','10:00','00:00')], reward:{ visits:50, text:'Dinner for two on us' } };
+  }
+  return { venues:[], reward:null };
+}
+function msVenueRow(v){
+  v = v || {};
+  return `<div class="ms-vbox"><div class="ms-vtop"><input class="ms-vn" placeholder="Venue name, e.g. Rooftop" value="${msEsc(v.name || '')}"><button type="button" class="ms-vx" title="Remove" onclick="this.closest('.ms-vbox').remove()"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg></button></div>
+    <div class="ms-v2"><label><span>OPENS</span><input type="time" class="ms-vo" value="${msEsc(v.opens || '')}"></label><label><span>CLOSES</span><input type="time" class="ms-vc" value="${msEsc(v.closes || '')}"></label></div>
+    <label><span>GOOGLE MAPS LINK</span><input class="ms-vm" inputmode="url" placeholder="https://maps.app.goo.gl/..." value="${msEsc(v.map || '')}"></label>
+    <div class="ms-v2"><label><span>WHATSAPP (BOOKINGS)</span><input class="ms-vw" type="tel" placeholder="+62 812..." value="${msEsc(v.wa ? '+' + String(v.wa).replace(/\D/g, '') : '')}"></label><label><span>PHONE</span><input class="ms-vp" type="tel" placeholder="+62 361..." value="${msEsc(v.phone || '')}"></label></div></div>`;
+}
 window.msTiers = function(){
   if(!msIsMgr()) return;
-  const p = msPerks();
-  msSheet(`<div class="vdf-h"><b>Tiers &amp; perks</b><div class="dpt-sub">One perk per line. Guests see these on their member card.</div></div>
-    <div class="vdf-body"><label class="vdf-f"><span>MEMBER - EVERYONE WITH A KEYRING</span><textarea id="ms-p-member" rows="4">${msEsc(p.member.join('\n'))}</textarea></label>
-      <label class="vdf-f"><span>VIP - SET BY A MANAGER</span><textarea id="ms-p-vip" rows="5">${msEsc(p.vip.join('\n'))}</textarea></label></div>
+  const p = msPerks(), pg = msPage(), rw = pg.reward || {};
+  const anyCode = Object.values(MS.keyrings || {})[0];
+  msSheet(`<div class="vdf-h"><b>Guest page</b><div class="dpt-sub">What members see when they scan their keyring</div></div>
+    <div class="vdf-body">
+      ${anyCode ? `<button type="button" class="ms-prev" onclick="window.open('/k/${encodeURIComponent(anyCode)}?guest=1','_blank')"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>See it as a guest</button>` : ''}
+      <div class="ms-gh">PERKS <small>one per line</small></div>
+      <label class="vdf-f"><span>MEMBER - EVERYONE WITH A KEYRING</span><textarea id="ms-p-member" rows="3">${msEsc(p.member.join('\n'))}</textarea></label>
+      <label class="vdf-f"><span>VIP - SET BY A MANAGER</span><textarea id="ms-p-vip" rows="4">${msEsc(p.vip.join('\n'))}</textarea></label>
+      <div class="ms-gh">REWARD <small>leave empty to hide</small></div>
+      <div class="ms-v2"><label class="vdf-f"><span>AFTER HOW MANY VISITS</span><input id="ms-rw-n" type="number" inputmode="numeric" min="1" placeholder="e.g. 50" value="${msEsc(rw.visits || '')}"></label>
+        <label class="vdf-f"><span>THE REWARD</span><input id="ms-rw-t" placeholder="e.g. Dinner for two on us" value="${msEsc(rw.text || '')}"></label></div>
+      <div class="ms-gh">VENUES <small>hours, map and booking</small></div>
+      <div id="ms-vlist">${(pg.venues || []).map(msVenueRow).join('')}</div>
+      <button type="button" class="ms-vadd" onclick="document.getElementById('ms-vlist').insertAdjacentHTML('beforeend', msVenueRow())">+ Add venue</button>
+      <div class="vd-note" style="margin-top:14px">${vdSvg('note', 15)}<span>"Tonight" and "This week" come from your Entertainment Schedule. Menus come from the Live menus in Kitchen and Bar.</span></div>
+    </div>
     <div class="vdf-foot"><button class="mns-cancel" onclick="msSheetClose()">Cancel</button><button class="mns-go" id="ms-save">Save</button></div>`);
   document.getElementById('ms-save').addEventListener('click', async () => {
     const lines = id => document.getElementById(id).value.split('\n').map(x => x.trim()).filter(Boolean).slice(0, 8);
-    const value = JSON.stringify({ member: lines('ms-p-member'), vip: lines('ms-p-vip') });
-    const { error } = await sb.from('app_settings').upsert({ key:'member_perks', value }, { onConflict:'company_id,key' });
-    if(error){ console.warn(error); toast('Not saved - please try again'); return; }
-    appSettings.member_perks = value; msSheetClose(); toast('Perks saved ✓');
+    const perks = JSON.stringify({ member: lines('ms-p-member'), vip: lines('ms-p-vip') });
+    const n = parseInt(document.getElementById('ms-rw-n').value, 10), t = document.getElementById('ms-rw-t').value.trim();
+    const venues = [...document.querySelectorAll('#ms-vlist .ms-vbox')].map(b => ({
+      name: b.querySelector('.ms-vn').value.trim(), opens: b.querySelector('.ms-vo').value, closes: b.querySelector('.ms-vc').value,
+      map: b.querySelector('.ms-vm').value.trim(), wa: b.querySelector('.ms-vw').value.replace(/\D/g, ''), phone: b.querySelector('.ms-vp').value.trim()
+    })).filter(v => v.name);
+    const bad = venues.find(v => v.map && !/^https?:\/\//i.test(v.map));
+    if(bad){ toast('The map link for ' + bad.name + ' should start with https://'); return; }
+    const page = JSON.stringify(Object.assign({}, msPage(), { venues, reward: n > 0 ? { visits:n, text:t } : null }));
+    const btn = document.getElementById('ms-save'); btn.disabled = true; btn.textContent = 'Saving…';
+    const [a, b] = await Promise.all([
+      sb.from('app_settings').upsert({ key:'member_perks', value: perks }, { onConflict:'company_id,key' }),
+      sb.from('app_settings').upsert({ key:'member_page', value: page }, { onConflict:'company_id,key' })
+    ]);
+    if(a.error || b.error){ console.warn(a.error || b.error); toast('Not saved - please try again'); btn.disabled = false; btn.textContent = 'Save'; return; }
+    appSettings.member_perks = perks; appSettings.member_page = page; msSheetClose(); toast('Guest page saved ✓');
   });
 };
 

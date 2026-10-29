@@ -25,6 +25,7 @@ body{font-family:Inter,system-ui,-apple-system,"Segoe UI",sans-serif;color:white
 .foot{margin-top:auto;padding-top:24px;text-align:center;font-size:12.5px;color:#94A3B8;line-height:1.6}
 .msg{margin-top:34px;text-align:center}.msg h2{font-size:22px;margin:0 0 8px}.msg p{color:#CBD5E1;font-size:14.5px;line-height:1.6;margin:0}
 .load{margin-top:80px;text-align:center;color:#94A3B8;font-size:14px}
+.pv{position:fixed;left:0;right:0;top:0;z-index:5;background:#0D9488;color:white;text-align:center;font-size:12px;font-weight:800;padding:7px 10px;padding-top:calc(7px + env(safe-area-inset-top,0px))}
 .mavis{display:block;text-align:center;margin-top:14px;font-size:11px;color:#64748B;text-decoration:none}
 </style></head><body><div class="w" id="w"><div class="load">Loading your card…</div></div>
 <script>
@@ -32,13 +33,15 @@ body{font-family:Inter,system-ui,-apple-system,"Segoe UI",sans-serif;color:white
   var m = location.pathname.match(/\/k\/([A-Za-z0-9]+)/i);
   var code = m ? m[1].toUpperCase() : '';
   // Staff signed in to Mavis on this phone: open the member straight in the app (check-in)
-  try {
+  var preview = /[?&]guest=1/.test(location.search);   // staff opening the guest's view on purpose
+  if (!preview) try {
     for (var i = 0; i < localStorage.length; i++) {
       var key = localStorage.key(i);
       if (/^sb-.*-auth-token$/.test(key) && localStorage.getItem(key)) { location.replace('/?member=' + encodeURIComponent(code)); return; }
     }
   } catch (e) {}
   var w = document.getElementById('w');
+  if (preview) { var pv = document.createElement('div'); pv.className = 'pv'; pv.textContent = 'Preview - this is what your guest sees'; document.body.insertBefore(pv, document.body.firstChild); w.style.paddingTop = 'calc(58px + env(safe-area-inset-top,0px))'; }
   var esc = function(v){ return String(v == null ? '' : v).replace(/[&<>"']/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); };
   var tick = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#5EEAD4" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>';
   function brandHtml(b){ return '<div class="brand">' + esc(b) + '<small>Members Club</small></div>'; }

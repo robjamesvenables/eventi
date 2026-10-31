@@ -37,6 +37,7 @@ svg{display:block;flex:none}
 .pill{flex:none;display:flex;align-items:center;gap:5px;background:var(--card);border-radius:999px;padding:7px 14px;font-size:14px;font-weight:700;color:var(--mute);white-space:nowrap}
 .pill.on{background:var(--gold);color:var(--navy)}
 .rows{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding-bottom:96px}
+.sec{padding:12px 20px 4px;font-size:12px;font-weight:800;letter-spacing:.8px;text-transform:uppercase;color:var(--soft)}
 .row{display:flex;gap:13px;align-items:center;padding:9px 16px;cursor:pointer;user-select:none;-webkit-user-select:none}
 .row:active,.row.act{background:#F7F5F0}
 .av{width:52px;height:52px;border-radius:50%;flex:none;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:800;font-size:17px;background-size:cover;background-position:center;overflow:hidden}
@@ -318,8 +319,8 @@ function avatar(t){
   if(t.kind === 'all') return `<div class="av" style="background:#C4973B">${ic(P.people, 25)}</div>`;
   if(t.kind === 'dept'){
     const k = deptSpec(t.name);
-    if(k === 'txt'){ const w = String(t.name || '?').replace(/[^A-Za-z0-9 ]/g, ' ').split(/\s+/).filter(Boolean); return `<div class="av" style="background:#1E3A5F">${esc((w.length > 1 ? w[0][0] + w[1][0] : (w[0] || '?')[0]).toUpperCase())}</div>`; }
-    return `<div class="av" style="background:${DEPT_SOLID[k] || '#1E3A5F'}">${ic(DEPT_P[k], 25)}</div>`;
+    if(k === 'txt'){ const w = String(t.name || '?').replace(/[^A-Za-z0-9 ]/g, ' ').split(/\s+/).filter(Boolean); return `<div class="av" style="background:#0F1E2E">${esc((w.length > 1 ? w[0][0] + w[1][0] : (w[0] || '?')[0]).toUpperCase())}</div>`; }
+    return `<div class="av" style="background:#0F1E2E">${ic(DEPT_P[k], 25)}</div>`;
   }
   return `<div class="av" style="background:#0D9488">${ic(P.people, 25)}</div>`;
 }
@@ -413,7 +414,14 @@ function renderList(){
     $('rows').innerHTML = `<div class="empty">${q ? 'Nothing matches "' + esc(S.q) + '"' : S.filter === 'unread' ? 'You\'re all caught up' : S.filter === 'direct' ? 'No one-to-one chats yet.<br>Tap <b>+</b> to message someone.' : 'No chats yet'}</div>`;
     return;
   }
-  $('rows').innerHTML = rows.map(c => {
+  const rank = {all:0, dept:1, group:2};
+  const groups = rows.filter(c => c.t.kind !== 'direct').sort((a, b) => rank[a.t.kind] - rank[b.t.kind] || (a.t.kind === 'dept' ? tname(a.t).localeCompare(tname(b.t)) : String(b.at).localeCompare(String(a.at))));
+  const directs = rows.filter(c => c.t.kind === 'direct');
+  const label = t => `<div class="sec">${t}</div>`;
+  $('rows').innerHTML = (groups.length && directs.length || S.filter === 'all' ? (groups.length ? label('Groups') : '') : '') + rowsHtml(groups) + (directs.length && groups.length ? label('Direct messages') : '') + rowsHtml(directs);
+}
+function rowsHtml(rows){
+  return rows.map(c => {
     const t = c.t, last = c.last, mu = muted(t.id);
     let prev;
     if(last){

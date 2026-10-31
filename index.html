@@ -15428,12 +15428,13 @@ window.barDishAdd = function(sectionId){
       {label:'Category', placeholder:'e.g. Signature, Classic, Mocktail'},
       {label:'Serves', placeholder:'e.g. 1'},
       {label:'Price (Rp)', type:'money', placeholder:'e.g. 145,000'},
-      {label:'Allergens (optional)', placeholder:'e.g. Dairy', optional:true}
+      {label:'Allergens (optional)', placeholder:'e.g. Dairy', optional:true},
+      {label:'Pour cost % (optional)', placeholder:'e.g. 18', optional:true}
     ],
-    onOk([photo, name, cat, serves, price, allergens]){
+    onOk([photo, name, cat, serves, price, allergens, pourCost]){
       if(!name) return;
       const maxId = Math.max(0, ...sec.dishes.map(d=>d.id));
-      sec.dishes.push({id:maxId+1, name, cat: cat||'', serves: serves||'', price, allergens: allergens ? allergens.split(',').map(a=>a.trim()) : [], photo: photo||''});
+      sec.dishes.push({id:maxId+1, name, cat: cat||'', serves: serves||'', price, allergens: allergens ? allergens.split(',').map(a=>a.trim()) : [], photo: photo||'', foodCostPct: pourCost ? parseFloat(pourCost) : null});
       barMenuDetailRender();
       toast('Drink added ✓');
       barSaveMenuContent(m.id);
@@ -15454,10 +15455,12 @@ window.barDishEdit = function(sectionId, dishId){
       {label:'Category', value:d.cat||''},
       {label:'Serves', value:d.serves||''},
       {label:'Price (Rp)', type:'money', value:d.price},
-      {label:'Allergens (optional)', value:(d.allergens||[]).join(', '), optional:true}
+      {label:'Allergens (optional)', value:(d.allergens||[]).join(', '), optional:true},
+      {label:'Pour cost % (optional)', value: d.foodCostPct!=null?String(d.foodCostPct):'', placeholder:'e.g. 18', optional:true}
     ],
-    onOk([photo, name, cat, serves, price, allergens]){
+    onOk([photo, name, cat, serves, price, allergens, pourCost]){
       d.name=name; d.cat=cat||''; d.serves=serves||''; d.price=price;
+      d.foodCostPct = pourCost ? parseFloat(pourCost) : null;
       d.allergens = allergens ? allergens.split(',').map(a=>a.trim()) : [];
       if(photo) d.photo = photo;
       barMenuDetailRender();
@@ -16248,7 +16251,7 @@ function mdDishRow(kind, sectionId, d, idx, total){
   const photo = d.photo ? `<img src="${mdEsc(d.photo)}" class="md-ph" alt="">`
     : `<div class="md-ph md-ph0"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2Z"/><circle cx="12" cy="13" r="4"/></svg></div>`;
   const al = (d.allergens || []).filter(Boolean);
-  const fc = d.foodCostPct != null && d.foodCostPct !== '' ? `<span class="md-tag ${d.foodCostPct <= 32 ? 'g' : d.foodCostPct <= 40 ? 'a' : 'r'}">Food cost ${d.foodCostPct}%</span>` : '';
+  const fc = d.foodCostPct != null && d.foodCostPct !== '' ? `<span class="md-tag ${d.foodCostPct <= 32 ? 'g' : d.foodCostPct <= 40 ? 'a' : 'r'}">${kind === 'bar' ? 'Pour' : 'Food'} cost ${d.foodCostPct}%</span>` : '';
   const meta = [d.cat, d.serves ? 'Serves ' + d.serves : ''].filter(Boolean).join(' · ');
   const move = kind === 'kitchen' ? `<div class="md-move" onclick="event.stopPropagation()"><button ${idx === 0 ? 'disabled' : ''} onclick="kitchenDishMove(${sectionId},${d.id},-1)" title="Move up">▲</button><button ${idx === total - 1 ? 'disabled' : ''} onclick="kitchenDishMove(${sectionId},${d.id},1)" title="Move down">▼</button></div>` : '';
   return `<div class="md-row" onclick="mdDishView('${kind}',${sectionId},${d.id})">${move}${photo}
@@ -16292,7 +16295,7 @@ window.mdDishView = function(kind, sectionId, dishId){
     <div class="md-vb">
       <div class="md-vt"><b>${mdEsc(d.name)}</b>${d.price ? `<span>Rp ${kitchenFmtPrice(d.price)}</span>` : ''}</div>
       ${d.cat || d.serves ? `<div class="md-meta">${mdEsc([d.cat, d.serves ? 'Serves ' + d.serves : ''].filter(Boolean).join(' · '))}</div>` : ''}
-      ${al.length || d.foodCostPct != null ? `<div class="md-tags" style="margin-top:10px">${al.length ? `<span class="md-tag al">Allergens: ${mdEsc(al.join(', '))}</span>` : ''}${d.foodCostPct != null && d.foodCostPct !== '' ? `<span class="md-tag ${d.foodCostPct <= 32 ? 'g' : d.foodCostPct <= 40 ? 'a' : 'r'}">Food cost ${d.foodCostPct}%</span>` : ''}</div>` : ''}
+      ${al.length || d.foodCostPct != null ? `<div class="md-tags" style="margin-top:10px">${al.length ? `<span class="md-tag al">Allergens: ${mdEsc(al.join(', '))}</span>` : ''}${d.foodCostPct != null && d.foodCostPct !== '' ? `<span class="md-tag ${d.foodCostPct <= 32 ? 'g' : d.foodCostPct <= 40 ? 'a' : 'r'}">${kind === 'bar' ? 'Pour' : 'Food'} cost ${d.foodCostPct}%</span>` : ''}</div>` : ''}
       ${d.desc ? `<div class="md-lab">DESCRIPTION</div><div class="md-tx">${mdEsc(d.desc)}</div>` : ''}
       ${d.ingredients ? `<div class="md-lab">INGREDIENTS</div><div class="md-tx">${mdEsc(d.ingredients)}</div>` : ''}
       ${d.method ? `<div class="md-lab">METHOD</div><div class="md-tx">${mdEsc(d.method)}</div>` : ''}

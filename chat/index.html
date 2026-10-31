@@ -1,0 +1,1001 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,interactive-widget=resizes-content">
+<title>Mavis Chat</title>
+<meta name="theme-color" content="#FFFFFF">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Mavis Chat">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<link rel="manifest" href="/chat/manifest.json?v=1">
+<link rel="icon" type="image/png" href="/chat/icon-192.png">
+<link rel="apple-touch-icon" href="/chat/apple-touch-icon.png">
+<!-- Mavis Chat: a small, fast page that only does Chat. Same login, same messages and same notifications
+     as the full Mavis app - it just skips loading everything else, so it opens like WhatsApp. -->
+<style>
+:root{--navy:#0F1E2E;--gold:#C4973B;--teal:#0D9488;--ink:#0F1E2E;--mute:#64748B;--soft:#94A3B8;--line:#EEF1F4;--card:#F1F3F6;--wall:#F4EFE7;--mine:#F6E6C6}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%;background:#fff;color:var(--ink);font-family:Inter,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;-webkit-font-smoothing:antialiased;overscroll-behavior:none}
+button{font:inherit;color:inherit;background:none;border:0;padding:0;cursor:pointer}
+input,textarea{font:inherit;color:inherit}
+svg{display:block;flex:none}
+.app{position:fixed;inset:0;display:flex;background:#fff;max-width:100vw;overflow:hidden}
+/* ── Chats list ── */
+#list{flex:1;min-width:0;display:flex;flex-direction:column;height:100%;position:relative;padding-top:env(safe-area-inset-top)}
+.top{display:flex;align-items:center;justify-content:space-between;padding:14px 16px 8px 20px}
+.brand{display:flex;align-items:center;gap:10px;font-size:25px;font-weight:900;letter-spacing:-.6px}
+.brand img{width:34px;height:34px;border-radius:9px}
+.ib{width:42px;height:42px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:var(--ink)}
+.ib:active{background:var(--card)}
+.search{margin:4px 16px 10px;background:var(--card);border-radius:999px;height:46px;display:flex;align-items:center;gap:10px;padding:0 16px;color:var(--mute)}
+.search input{flex:1;min-width:0;border:0;background:none;outline:none;font-size:16px;color:var(--ink)}
+.search input::placeholder{color:var(--mute)}
+.pills{display:flex;gap:8px;padding:0 16px 8px;overflow-x:auto;scrollbar-width:none}
+.pills::-webkit-scrollbar{display:none}
+.pill{flex:none;display:flex;align-items:center;gap:5px;background:var(--card);border-radius:999px;padding:7px 14px;font-size:14px;font-weight:700;color:var(--mute);white-space:nowrap}
+.pill.on{background:var(--gold);color:var(--navy)}
+.rows{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding-bottom:96px}
+.row{display:flex;gap:13px;align-items:center;padding:9px 16px;cursor:pointer;user-select:none;-webkit-user-select:none}
+.row:active,.row.act{background:#F7F5F0}
+.av{width:52px;height:52px;border-radius:50%;flex:none;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:800;font-size:17px;background-size:cover;background-position:center;overflow:hidden}
+.av img{width:100%;height:100%;object-fit:cover}
+.mid{flex:1;min-width:0;padding:4px 0 12px;border-bottom:1px solid var(--line);margin-bottom:-12px}
+.row:last-child .mid{border-bottom-color:transparent}
+.l1{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+.l1 b{font-size:16.5px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tm{font-size:12px;color:var(--mute);flex:none}
+.tm.new{color:var(--gold);font-weight:800}
+.l2{display:flex;align-items:center;gap:7px;margin-top:3px;min-height:22px}
+.msg{flex:1;min-width:0;font-size:14.5px;color:var(--mute);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.msg .mi{display:inline-block;vertical-align:-3px;margin-right:3px}
+.badge{flex:none;background:var(--gold);color:var(--navy);font-size:12px;font-weight:900;min-width:22px;height:22px;border-radius:11px;display:flex;align-items:center;justify-content:center;padding:0 6px}
+.badge.muted{background:#CBD5E1;color:#fff}
+.badge.at{background:var(--teal);color:#fff}
+.ico{color:var(--soft);display:flex}
+.empty{padding:40px 24px;text-align:center;color:var(--soft);font-size:14px;line-height:1.6}
+.fab{position:absolute;right:18px;bottom:calc(84px + env(safe-area-inset-bottom));width:60px;height:60px;border-radius:18px;background:var(--gold);color:var(--navy);display:flex;align-items:center;justify-content:center;box-shadow:0 8px 22px rgba(15,30,46,.28);z-index:3}
+.tabs{display:flex;border-top:1px solid var(--line);padding:7px 4px calc(9px + env(safe-area-inset-bottom));background:#fff}
+.tab{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;font-size:12px;font-weight:700;color:var(--mute);text-decoration:none}
+.tab span{position:relative;width:62px;height:32px;border-radius:16px;display:flex;align-items:center;justify-content:center}
+.tab.on{color:var(--ink)}.tab.on span{background:#F3E6C9;color:#9A7424}
+.tab i{position:absolute;top:1px;right:12px;min-width:17px;height:17px;border-radius:9px;background:var(--gold);color:var(--navy);font:900 10.5px/17px Inter,sans-serif;font-style:normal;padding:0 4px}
+.note{margin:2px 16px 10px;border-radius:14px;background:#FFF7E6;border:1px solid #F3E2B8;padding:12px 14px;display:flex;gap:12px;align-items:center;font-size:13.5px;line-height:1.4}
+.note b{display:block;font-size:14px}
+.note .go{flex:none;background:var(--navy);color:#fff;border-radius:999px;padding:8px 14px;font-weight:800;font-size:13px}
+.note .x{flex:none;color:var(--soft);padding:4px}
+/* ── One chat ── */
+#thread{position:fixed;inset:0;background:var(--wall);display:flex;flex-direction:column;transform:translateX(100%);transition:transform .22s ease;z-index:10;visibility:hidden}
+#thread.open{transform:none;visibility:visible}
+.th{display:flex;align-items:center;gap:8px;padding:calc(8px + env(safe-area-inset-top)) 8px 8px 4px;background:#fff;border-bottom:1px solid var(--line)}
+.th .av{width:42px;height:42px;font-size:15px}
+.thn{flex:1;min-width:0;display:flex;flex-direction:column;cursor:pointer}
+.thn b{font-size:17px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.thn span{font-size:12.5px;color:var(--mute);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.msgs{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:10px 10px 6px;display:flex;flex-direction:column;gap:3px}
+.day{align-self:center;background:#fff;color:var(--mute);font-size:12px;font-weight:700;padding:5px 12px;border-radius:8px;margin:8px 0;box-shadow:0 1px 1px rgba(0,0,0,.06)}
+.m{max-width:82%;display:flex;flex-direction:column;position:relative}
+.m.in{align-self:flex-start}.m.out{align-self:flex-end;align-items:flex-end}
+.m.gap{margin-top:7px}
+.bub{position:relative;padding:6px 9px 7px 10px;border-radius:12px;font-size:15.5px;line-height:1.38;box-shadow:0 1px 1px rgba(0,0,0,.08);background:#fff;max-width:100%;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
+.m.out .bub{background:var(--mine)}
+.m.in.first .bub{border-top-left-radius:3px}.m.out.first .bub{border-top-right-radius:3px}
+.m.sel .bub{box-shadow:0 0 0 2px var(--gold)}
+.who{font-size:13px;font-weight:800;margin-bottom:1px}
+.txt{white-space:pre-wrap;word-break:break-word}
+.meta{float:right;margin:7px 0 -5px 10px;font-size:11px;color:var(--mute);display:inline-flex;align-items:center;gap:3px;white-space:nowrap}
+.bub.pic{padding:4px}
+.bub.pic .who{padding:2px 6px 3px}
+.bub.pic .txt{padding:5px 6px 2px}
+.bub.pic.only .meta{position:absolute;right:10px;bottom:9px;margin:0;color:#fff;text-shadow:0 1px 3px rgba(0,0,0,.6)}
+.photo{display:block;width:260px;max-width:100%;max-height:340px;object-fit:cover;border-radius:9px;cursor:zoom-in;background:#E7E2D9}
+.vid{display:block;width:260px;max-width:100%;border-radius:9px;background:#000}
+.loading{width:240px;height:150px;border-radius:9px;background:#EAE5DC;display:flex;align-items:center;justify-content:center;color:var(--mute);font-size:12.5px}
+.doc{display:flex;align-items:center;gap:10px;padding:8px;background:rgba(15,30,46,.05);border-radius:9px;min-width:200px;color:inherit;text-decoration:none;margin-bottom:2px}
+.doc b{display:block;font-size:13.5px;max-width:190px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.doc span{font-size:11.5px;color:var(--mute)}
+.voice{display:flex;align-items:center;gap:10px;min-width:220px;padding:2px 0}
+.voice .pb{width:36px;height:36px;border-radius:50%;background:var(--gold);color:var(--navy);display:flex;align-items:center;justify-content:center}
+.voice .bar{flex:1;height:4px;border-radius:2px;background:rgba(15,30,46,.15);position:relative}
+.voice .bar i{position:absolute;left:0;top:0;bottom:0;border-radius:2px;background:var(--teal);width:0}
+.voice .vt{font-size:12px;color:var(--mute);min-width:32px}
+.quote{background:rgba(15,30,46,.06);border-left:4px solid var(--teal);border-radius:6px;padding:4px 8px;margin:1px 0 5px;font-size:13px;color:#475569;cursor:pointer;max-width:260px}
+.quote b{display:block;font-size:12.5px;color:var(--teal)}
+.quote div{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fwd{font-size:12px;font-style:italic;color:var(--mute);display:flex;align-items:center;gap:4px;margin-bottom:2px}
+.del{font-style:italic;color:var(--mute)}
+.tag{color:var(--teal);font-weight:700}.tag.me{background:#E0F5F2;border-radius:4px;padding:0 3px}
+.flagged{display:inline-flex;align-items:center;gap:4px;font-size:11.5px;font-weight:800;color:#B45309;background:#FEF3C7;border-radius:6px;padding:2px 7px;margin-bottom:3px;align-self:flex-start}
+.rx{display:flex;gap:4px;flex-wrap:wrap;margin:-4px 6px 2px;position:relative;z-index:1}
+.rx button{background:#fff;border-radius:999px;padding:2px 8px;font-size:13px;box-shadow:0 1px 2px rgba(0,0,0,.14);display:flex;align-items:center;gap:3px}
+.rx button.me{background:#E0F5F2;box-shadow:0 0 0 1.5px var(--teal)}
+.ticks{display:inline-flex}
+.comp{display:flex;align-items:flex-end;gap:7px;padding:6px 8px calc(8px + env(safe-area-inset-bottom));background:var(--wall)}
+.field{flex:1;min-width:0;background:#fff;border-radius:24px;display:flex;align-items:flex-end;gap:2px;padding:4px 6px 4px 14px;box-shadow:0 1px 1px rgba(0,0,0,.08);min-height:48px;flex-direction:column}
+.field .rp{align-self:stretch;margin:4px 0 2px -6px;background:rgba(15,30,46,.06);border-left:4px solid var(--teal);border-radius:8px;padding:5px 30px 5px 8px;font-size:13px;color:#475569;position:relative}
+.field .rp b{display:block;color:var(--teal);font-size:12.5px}
+.field .rp div{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.field .rp button{position:absolute;right:6px;top:6px;color:var(--mute)}
+.frow{display:flex;align-items:flex-end;gap:2px;width:100%}
+.field textarea{flex:1;min-width:0;border:0;outline:none;resize:none;background:none;font-size:16.5px;line-height:1.35;padding:10px 0;max-height:130px;height:42px}
+.field .g{width:40px;height:40px;display:flex;align-items:center;justify-content:center;color:var(--mute);border-radius:50%}
+.send{width:48px;height:48px;border-radius:50%;background:var(--gold);color:var(--navy);display:flex;align-items:center;justify-content:center;flex:none}
+.rec{flex:1;display:flex;align-items:center;gap:12px;background:#fff;border-radius:24px;height:48px;padding:0 8px 0 16px;box-shadow:0 1px 1px rgba(0,0,0,.08);font-weight:700}
+.rec .dot{width:10px;height:10px;border-radius:50%;background:#DC2626;animation:blink 1s infinite}
+@keyframes blink{50%{opacity:.25}}
+.rec .cancel{margin-left:auto;color:#DC2626;font-weight:800;font-size:14px;padding:8px}
+.down{position:absolute;right:14px;bottom:calc(76px + env(safe-area-inset-bottom));width:40px;height:40px;border-radius:50%;background:#fff;box-shadow:0 2px 8px rgba(0,0,0,.18);display:none;align-items:center;justify-content:center;color:var(--mute)}
+.down.show{display:flex}
+/* ── Sheets, menus, viewer ── */
+.shade{position:fixed;inset:0;background:rgba(15,30,46,.4);z-index:30;display:flex;align-items:flex-end;justify-content:center;animation:fade .15s}
+@keyframes fade{from{opacity:0}}
+.sheet{background:#fff;width:100%;max-width:560px;border-radius:20px 20px 0 0;padding:8px 0 calc(10px + env(safe-area-inset-bottom));max-height:88dvh;display:flex;flex-direction:column;animation:up .2s ease}
+@keyframes up{from{transform:translateY(40px)}}
+.sheet .grab{width:40px;height:4px;border-radius:2px;background:#E2E8F0;margin:2px auto 8px}
+.sheet h3{margin:4px 20px 8px;font-size:19px}
+.sheet .sub{margin:-4px 20px 10px;color:var(--mute);font-size:13px}
+.sheet .scroll{overflow-y:auto;flex:1}
+.emo{display:flex;justify-content:space-around;padding:6px 14px 12px;border-bottom:1px solid var(--line)}
+.emo button{font-size:30px;width:52px;height:52px;border-radius:50%}
+.emo button.me{background:#F3E6C9}
+.act{display:flex;align-items:center;gap:16px;width:100%;padding:14px 22px;font-size:16px;font-weight:600;text-align:left}
+.act:active{background:var(--card)}
+.act.red{color:#DC2626}
+.act svg{color:var(--mute)}.act.red svg{color:#DC2626}
+.prow{display:flex;align-items:center;gap:13px;padding:9px 18px;cursor:pointer}
+.prow:active{background:var(--card)}
+.prow .av{width:46px;height:46px;font-size:15px}
+.prow b{display:block;font-size:16px}.prow span{font-size:13px;color:var(--mute)}
+.sheet .search{margin:2px 16px 8px}
+.viewer{position:fixed;inset:0;background:#000;z-index:40;display:flex;align-items:center;justify-content:center}
+.viewer img{max-width:100%;max-height:100%;object-fit:contain}
+.viewer button{position:absolute;top:calc(12px + env(safe-area-inset-top));right:12px;width:44px;height:44px;border-radius:50%;background:rgba(255,255,255,.15);color:#fff;display:flex;align-items:center;justify-content:center}
+.preview{position:fixed;inset:0;background:#0B1622;z-index:40;display:flex;flex-direction:column}
+.preview .pv{flex:1;display:flex;align-items:center;justify-content:center;min-height:0;padding:calc(56px + env(safe-area-inset-top)) 12px 12px}
+.preview .pv img,.preview .pv video{max-width:100%;max-height:100%;border-radius:8px}
+.preview .pvdoc{color:#fff;text-align:center;font-weight:700}
+.preview .pbar{display:flex;gap:8px;padding:8px 8px calc(12px + env(safe-area-inset-bottom))}
+.preview .pbar input{flex:1;min-width:0;border:0;outline:none;border-radius:24px;height:48px;padding:0 18px;font-size:16px}
+.preview .close{position:absolute;top:calc(10px + env(safe-area-inset-top));left:10px;width:44px;height:44px;border-radius:50%;color:#fff;display:flex;align-items:center;justify-content:center}
+.toast{position:fixed;left:50%;bottom:calc(110px + env(safe-area-inset-bottom));transform:translateX(-50%);background:var(--navy);color:#fff;border-radius:12px;padding:11px 16px;font-size:14px;font-weight:600;z-index:50;max-width:88vw;text-align:center;animation:fade .2s}
+.gate{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;padding:32px;text-align:center;background:#fff;z-index:60}
+.gate img{width:84px;height:84px;border-radius:22px}
+.gate h1{margin:0;font-size:26px;letter-spacing:-.5px}
+.gate p{margin:0;color:var(--mute);line-height:1.55;max-width:320px}
+.gate a{background:var(--gold);color:var(--navy);border-radius:999px;padding:14px 26px;font-weight:800;text-decoration:none}
+.skel{display:flex;gap:13px;align-items:center;padding:12px 16px}
+.skel i{width:52px;height:52px;border-radius:50%;background:var(--card)}
+.skel b{flex:1;height:14px;border-radius:7px;background:var(--card)}
+.sidehint{display:none}
+/* Computer / tablet: list on the left, chat on the right */
+@media (min-width:860px){
+  #list{flex:none;width:400px;border-right:1px solid var(--line)}
+  #thread{position:relative;inset:auto;flex:1;transform:none;visibility:visible;transition:none;z-index:1}
+  #thread:not(.open) > *{display:none}
+  #thread:not(.open) .sidehint{display:flex}
+  .sidehint{flex:1;align-items:center;justify-content:center;flex-direction:column;gap:12px;color:var(--mute);font-size:15px}
+  .sidehint img{width:72px;height:72px;border-radius:18px}
+  .th .back{display:none}
+  .fab{bottom:calc(84px + env(safe-area-inset-bottom))}
+}
+</style>
+</head>
+<body>
+<div class="app">
+  <section id="list">
+    <div class="top">
+      <div class="brand"><img src="/chat/icon-192.png" alt="">Mavis Chat</div>
+      <button class="ib" id="menuBtn" aria-label="Menu"><svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg></button>
+    </div>
+    <label class="search"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><input id="q" type="search" placeholder="Search people and groups" autocomplete="off"></label>
+    <div class="pills" id="pills"></div>
+    <div id="notes"></div>
+    <div class="rows" id="rows"><div class="skel"><i></i><b></b></div><div class="skel"><i></i><b></b></div><div class="skel"><i></i><b></b></div><div class="skel"><i></i><b></b></div></div>
+    <button class="fab" id="fab" aria-label="New chat"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></button>
+    <nav class="tabs">
+      <button class="tab on" id="tabChats"><span><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg><i id="tabCount" style="display:none"></i></span>Chats</button>
+      <a class="tab" href="/"><span><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 11 18-5v12L3 14z"/><path d="M11.6 16.8a3 3 0 1 1-5.8-1.6"/></svg></span>Team Feed</a>
+      <button class="tab" id="tabPeople"><span><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="4"/><path d="M2 21a7 7 0 0 1 14 0M17 11a3 3 0 1 0 0-6M22 21a6 6 0 0 0-4-5.6"/></svg></span>People</button>
+      <a class="tab" href="/"><span><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg></span>Open Mavis</a>
+    </nav>
+  </section>
+  <section id="thread">
+    <div class="sidehint"><img src="/chat/icon-192.png" alt="">Pick a chat to start messaging</div>
+    <div class="th" id="th"></div>
+    <div class="msgs" id="msgs"></div>
+    <button class="down" id="down" aria-label="Go to newest"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg></button>
+    <div class="comp" id="comp"></div>
+  </section>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.3/dist/umd/supabase.js"></script>
+<script>
+(function(){
+'use strict';
+const sb = window.supabase.createClient('https://qjxcpmkiyfrukxicdwkl.supabase.co', 'sb_publishable_bHRgdmEZPalEJSMBBr8prQ_Qhu_h1X9');
+const VAPID = 'BGfKLEwZ6ZDqoozMUz2jqNJonJni6l-sA2FU8yHkUAm5FnnwHb44ZGBlEolJXr4QSZospqPa1_z-N2dMjTtKCJc';
+const COLS = 'id,thread_id,sender_id,body,attachment_type,attachment_name,reply_to,reactions,edited_at,deleted_at,created_at,forwarded';
+const EDIT_MINS = 15, DELETE_HOURS = 48, MAX_FILE_MB = 8;
+const REACTIONS = [{id:'thumbsup',c:'👍'},{id:'heart',c:'❤️'},{id:'highfive',c:'🙌'},{id:'party',c:'🎉'},{id:'star',c:'⭐'}];
+const ROLE_COLOURS = {superadmin:'#0F1E2E', director:'#DC2626', manager:'#16A34A', supervisor:'#2563EB', teammember:'#B8862F', dailyworker:'#7C8AA0'};
+const ROLE_NAMES = {superadmin:'Super Admin', director:'Director', manager:'Manager', supervisor:'Supervisor', teammember:'Team Member', dailyworker:'Daily Worker'};
+const S = { me:null, company:null, people:{}, threads:{}, members:{}, reads:{}, msgs:{}, attLoaded:{}, prefs:{muted:{}, cleared:{}, hidden:[]}, marks:{}, settings:{},
+  ready:false, active:null, filter:'all', q:'', view:[], reply:null, sel:null, cols:COLS };
+
+// ── little helpers ──
+const $ = id => document.getElementById(id);
+const esc = v => String(v == null ? '' : v).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const ic = (p, s, w) => `<svg width="${s || 22}" height="${s || 22}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${w || 2}" stroke-linecap="round" stroke-linejoin="round">${p}</svg>`;
+const P = {
+  back:'<path d="M15 18l-6-6 6-6"/>', dots:'', plus:'<path d="M12 5v14M5 12h14"/>', cam:'<path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/>',
+  mic:'<rect x="9" y="2" width="6" height="12" rx="3"/><path d="M19 10v1a7 7 0 0 1-14 0v-1M12 18v4"/>', send:'<path d="m22 2-11 11M22 2 15 22l-4-9-9-4z"/>',
+  img:'<rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/>', vid:'<path d="M23 7l-7 5 7 5V7z"/><rect x="1" y="5" width="15" height="14" rx="2"/>',
+  doc:'<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/>', bell:'<path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/>',
+  belloff:'<path d="M13.73 21a2 2 0 0 1-3.46 0M18.63 13A17.9 17.9 0 0 1 18 8M6.26 6.26A5.86 5.86 0 0 0 6 8c0 7-3 9-3 9h14M18 8a6 6 0 0 0-9.33-5M1 1l22 22"/>',
+  reply:'<polyline points="9 14 4 9 9 4"/><path d="M20 20v-7a4 4 0 0 0-4-4H4"/>', copy:'<rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>',
+  flag:'<path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1zM4 22v-7"/>', edit:'<path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/>',
+  trash:'<path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/>', x:'<path d="M18 6 6 18M6 6l12 12"/>', fwd:'<polyline points="15 14 20 9 15 4"/><path d="M4 20v-7a4 4 0 0 1 4-4h12"/>',
+  ban:'<circle cx="12" cy="12" r="9"/><path d="m5.7 5.7 12.6 12.6"/>', people:'<circle cx="9" cy="8" r="4"/><path d="M2 21a7 7 0 0 1 14 0M17 11a3 3 0 1 0 0-6M22 21a6 6 0 0 0-4-5.6"/>',
+  grid:'<rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/>',
+  play:'', pause:''
+};
+const PLAY = '<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M7 4.5v15a1 1 0 0 0 1.5.86l12.5-7.5a1 1 0 0 0 0-1.72L8.5 3.64A1 1 0 0 0 7 4.5z"/></svg>';
+const PAUSE = '<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16" rx="1"/><rect x="14" y="4" width="4" height="16" rx="1"/></svg>';
+const DOTS = '<svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg>';
+const TICK1 = '<svg width="15" height="11" viewBox="0 0 17 12" fill="none" stroke="#94A3B8" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 6.5l3.2 3.2L13 2.5"/></svg>';
+const TICK2 = '<svg width="17" height="11" viewBox="0 0 17 12" fill="none" stroke="#0D9488" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M1 6.5l3.2 3.2L10.5 2.5M6.8 9.7l1 0L15.5 2.5"/></svg>';
+const CLOCK = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#94A3B8" stroke-width="2.2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>';
+let toastT;
+function toast(t){ document.querySelectorAll('.toast').forEach(x => x.remove()); const d = document.createElement('div'); d.className = 'toast'; d.textContent = t; document.body.appendChild(d); clearTimeout(toastT); toastT = setTimeout(() => d.remove(), 2600); }
+
+// ── department icons (same as the full app) ──
+const DEPT_P = {
+  kitchen:'<path d="M6 13.9A4 4 0 0 1 7 6a5 5 0 0 1 10 0 4 4 0 0 1 1 7.9V20H6z"/><path d="M6 17h12"/>', bar:'<path d="M8 22h8M12 15v7M5 3h14l-7 12z"/>',
+  foh:'<path d="M3 18h18M5 18a7 7 0 0 1 14 0M12 8V6M10 6h4"/>', security:'<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>',
+  tech:'<rect x="4" y="2" width="16" height="20" rx="2"/><circle cx="12" cy="14" r="4"/><path d="M12 6h.01"/>', clean:'<path d="m12 3-1.9 5.8L4 10.7l5.1 2.2L12 19l2.9-6.1 5.1-2.2-6.1-1.9z"/>',
+  office:'<rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/>', people:'<circle cx="9" cy="8" r="4"/><path d="M2 21a7 7 0 0 1 14 0M17 11a3 3 0 1 0 0-6M22 21a6 6 0 0 0-4-5.6"/>',
+  spa:'<path d="M12 21c-4.5 0-8-3-8-8 3 0 6 1.5 8 4.5 2-3 5-4.5 8-4.5 0 5-3.5 8-8 8z"/><path d="M12 17.5c-1.6-2-2.4-4-2.4-6.3S10.6 6.6 12 4.5c1.4 2.1 2.4 4.4 2.4 6.7s-.8 4.3-2.4 6.3z"/>',
+  pool:'<path d="M2 8c2 0 2-2 4-2s2 2 4 2 2-2 4-2 2 2 4 2 2-2 4-2M2 13c2 0 2-2 4-2s2 2 4 2 2-2 4-2 2 2 4 2 2-2 4-2M2 18c2 0 2-2 4-2s2 2 4 2 2-2 4-2 2 2 4 2 2-2 4-2"/>',
+  beach:'<path d="M2 12a10 10 0 0 1 20 0z"/><path d="M12 12v7a2 2 0 0 0 4 0"/>', maint:'<path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.8-3.8a6 6 0 0 1-7.9 7.9l-6.9 6.9a2.1 2.1 0 0 1-3-3l6.9-6.9a6 6 0 0 1 7.9-7.9z"/>',
+  marketing:'<path d="m3 11 18-5v12L3 14z"/><path d="M11.6 16.8a3 3 0 1 1-5.8-1.6"/>', finance:'<circle cx="8" cy="8" r="6"/><path d="M18.1 10.4A6 6 0 1 1 10.3 18M7 6h1v4"/>',
+  events:'<rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/>', garden:'<path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.5 19 2c1 2 2 4.2 2 8 0 5.5-4.8 10-10 10Z"/><path d="M2 21c0-3 1.9-5.4 5.2-6"/>',
+  stores:'<path d="M21 8 12 3 3 8v8l9 5 9-5z"/><path d="m3 8 9 5 9-5M12 13v8"/>', retail:'<path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><path d="M3 6h18M16 10a4 4 0 0 1-8 0"/>',
+  gym:'<path d="M6.5 6.5v11M17.5 6.5v11M3 9.5v5M21 9.5v5M6.5 12h11"/>', kids:'<circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2M9 9h.01M15 9h.01"/>',
+  car:'<path d="M3 17v-4l2-6h14l2 6v4zM3 13h18"/><circle cx="7.5" cy="17" r="1.8"/><circle cx="16.5" cy="17" r="1.8"/>', laundry:'<path d="M20.4 6.6 16 3a4 4 0 0 1-8 0L3.6 6.6l2 4L7 10v11h10V10l1.4.6z"/>',
+  sales:'<path d="m22 7-8.5 8.5-5-5L2 17"/><path d="M16 7h6v6"/>'
+};
+const DEPT_RULES = [
+  ['kitchen', /kitchen|chef|cook|pastry|bakery|steward|culinary/], ['bar', /\bbar\b|bartend|mixolog|barista|drink|beverage|wine|sommelier/],
+  ['spa', /spa\b|wellness|massage|yoga|therap|beauty|salon/], ['pool', /pool|lifeguard|swim/], ['beach', /beach/],
+  ['clean', /housekeep|clean|room attend/], ['laundry', /laundry|linen|uniform/],
+  ['foh', /front|foh|host|reception|guest|\bgro\b|service|wait|floor|server|concierge|restaurant|dining/], ['security', /secur|guard/],
+  ['tech', /\bav\b|audio|visual|tech|\bit\b|music|\bdj\b|sound|light|production/], ['maint', /maint|engineer|repair|facilit|technician/],
+  ['people', /\bhr\b|human|people|personnel|staff|training/], ['marketing', /market|social|media|\bpr\b|brand|creative|design|content/],
+  ['finance', /financ|account|payroll|cash|audit/], ['sales', /sales|revenue|business dev/],
+  ['events', /event|entertain|wedding|function|banquet|reserv|booking|programm/], ['garden', /garden|landscap|plant|grounds/],
+  ['stores', /stores?\b|purchas|procure|warehouse|inventory|logistic|receiving/], ['retail', /retail|shop|boutique|merch/],
+  ['gym', /gym|fitness|sport|padel|tennis/], ['kids', /kid|child|family/], ['car', /transport|driver|valet|fleet|parking/],
+  ['office', /office|admin|manage|executive|\bgm\b|director|operation|owner/]
+];
+// Bright, solid colours for the round chat pictures (like WhatsApp group photos)
+const DEPT_SOLID = { kitchen:'#C4973B', bar:'#0D9488', spa:'#DB2777', pool:'#0891B2', beach:'#D97706', clean:'#0D9488', laundry:'#475569', foh:'#1E3A5F', security:'#475569',
+  tech:'#7C3AED', maint:'#334155', people:'#1E3A5F', marketing:'#7C3AED', finance:'#16A34A', sales:'#16A34A', events:'#DB2777', garden:'#16A34A', stores:'#92400E', retail:'#BE185D',
+  gym:'#2563EB', kids:'#F59E0B', car:'#475569', office:'#1E3A5F' };
+function deptSpec(name){
+  const key = String(name || '').trim().toLowerCase();
+  let saved = null; try{ const v = S.settings.dept_icons; const o = v ? (typeof v === 'string' ? JSON.parse(v) : v) : {}; saved = o && o[key]; }catch(e){}
+  if(saved && saved.i && (saved.i === 'txt' || DEPT_P[saved.i])) return saved.i;
+  const hit = DEPT_RULES.find(r => r[1].test(key)); return hit ? hit[0] : 'txt';
+}
+
+// ── people & threads ──
+const me = () => S.me && S.me.id;
+function pname(pid, short){
+  const p = S.people[pid]; if(!p) return 'Former team member';
+  if(pid === me() && short) return 'You';
+  return short ? (p.first_name || '') : ((p.first_name || '') + ' ' + (p.last_name || '')).trim();
+}
+function initials(pid){ const p = S.people[pid]; if(!p) return '?'; return (((p.first_name || '')[0] || '') + ((p.last_name || '')[0] || '')).toUpperCase() || '?'; }
+const depts = p => Array.isArray(p && p.departments) ? p.departments : [];
+function memberIds(t){
+  if(!t) return [];
+  const active = Object.values(S.people).filter(p => p.active);
+  if(t.kind === 'all') return active.map(p => p.id);
+  if(t.kind === 'dept') return active.filter(p => depts(p).includes(t.name)).map(p => p.id);
+  return (S.members[t.id] || []).filter(id => S.people[id] && S.people[id].active);
+}
+const other = t => (S.members[t.id] || []).find(x => x !== me()) || me();
+function tname(t){ if(t.kind === 'direct'){ const o = other(t); return o === me() ? pname(o) + ' (you)' : pname(o); } return t.name || 'Group'; }
+function personSub(pid){ const p = S.people[pid]; if(!p) return ''; return [ROLE_NAMES[p.role] || p.role, depts(p).join(', ')].filter(Boolean).join(' · '); }
+function personAvatar(pid, cls){
+  const p = S.people[pid];
+  if(p && p.photo) return `<div class="av ${cls || ''}"><img src="${esc(p.photo)}" alt="" loading="lazy"></div>`;
+  return `<div class="av ${cls || ''}" style="background:${ROLE_COLOURS[p && p.role] || '#0D9488'}">${esc(initials(pid))}</div>`;
+}
+function avatar(t){
+  if(t.kind === 'direct') return personAvatar(other(t));
+  if(t.kind === 'all') return `<div class="av" style="background:#C4973B">${ic(P.people, 25)}</div>`;
+  if(t.kind === 'dept'){
+    const k = deptSpec(t.name);
+    if(k === 'txt'){ const w = String(t.name || '?').replace(/[^A-Za-z0-9 ]/g, ' ').split(/\s+/).filter(Boolean); return `<div class="av" style="background:#1E3A5F">${esc((w.length > 1 ? w[0][0] + w[1][0] : (w[0] || '?')[0]).toUpperCase())}</div>`; }
+    return `<div class="av" style="background:${DEPT_SOLID[k] || '#1E3A5F'}">${ic(DEPT_P[k], 25)}</div>`;
+  }
+  return `<div class="av" style="background:#0D9488">${ic(P.people, 25)}</div>`;
+}
+function visible(tid){
+  const all = S.msgs[tid] || [];
+  const cut = S.prefs.cleared && S.prefs.cleared[tid];
+  const hid = S.prefs.hidden && S.prefs.hidden.length ? new Set(S.prefs.hidden.map(String)) : null;
+  if(!cut && !hid) return all;
+  const cutT = cut ? new Date(cut).getTime() : 0;
+  return all.filter(m => (!cutT || new Date(m.created_at).getTime() > cutT) && (!hid || !hid.has(String(m.id))));
+}
+function myRead(tid){ const r = S.reads[tid] && S.reads[tid][me()]; if(r) return r; const p = S.people[me()]; return (p && p.created_at) || '1970-01-01'; }
+function muted(tid){ const m = S.prefs.muted && S.prefs.muted[tid]; return !!m && (m === 'always' || new Date(m) > new Date()); }
+function mentionsMe(body){ if(!body || !S.me) return false; const n = pname(me()).toLowerCase(); return !!n && body.toLowerCase().includes('@' + n); }
+function preview(m){
+  if(!m) return '';
+  if(m.deleted_at) return 'Message deleted';
+  if(m.body) return m.body;
+  return {voice:'Voice note', video:'Video', image:'Photo'}[m.attachment_type] || (m.attachment_name || 'Document');
+}
+const kindIcon = m => m && !m.deleted_at && m.attachment_type ? `<span class="mi">${ic(m.attachment_type === 'image' ? P.img : m.attachment_type === 'video' ? P.vid : m.attachment_type === 'voice' ? P.mic : P.doc, 15)}</span>` : '';
+const hhmm = v => new Date(v).toLocaleTimeString('en-GB', {hour:'2-digit', minute:'2-digit'});
+function listTime(v){
+  if(!v) return '';
+  const d = new Date(v), now = new Date(); if(d.toDateString() === now.toDateString()) return hhmm(v);
+  const y = new Date(now); y.setDate(now.getDate() - 1); if(d.toDateString() === y.toDateString()) return 'Yesterday';
+  if(now - d < 6 * 86400000) return d.toLocaleDateString('en-GB', {weekday:'short'});
+  return d.toLocaleDateString('en-GB', {day:'numeric', month:'short'});
+}
+function dayLabel(v){
+  const d = new Date(v), now = new Date(), y = new Date(now); y.setDate(now.getDate() - 1);
+  if(d.toDateString() === now.toDateString()) return 'Today';
+  if(d.toDateString() === y.toDateString()) return 'Yesterday';
+  return d.toLocaleDateString('en-GB', {weekday:'short', day:'numeric', month:'short', year: d.getFullYear() === now.getFullYear() ? undefined : 'numeric'});
+}
+const receiptsOn = () => S.settings.chat_read_receipts !== 'off';
+function allRead(m, t){
+  const others = memberIds(t).filter(id => id !== me()); const r = S.reads[t.id] || {};
+  return others.length && others.every(id => r[id] && r[id] >= m.created_at);
+}
+function ticks(m, t){
+  if(m.sender_id !== me() || m.deleted_at) return '';
+  if(m._failed) return '<span style="color:#DC2626;font-weight:900">!</span>';
+  if(m._tmp) return CLOCK;
+  return receiptsOn() && allRead(m, t) ? TICK2 : TICK1;
+}
+function mentionHtml(escapedBody){
+  if(escapedBody.indexOf('@') < 0) return escapedBody;
+  let out = escapedBody;
+  Object.values(S.people).map(p => ({id:p.id, n:pname(p.id)})).filter(x => x.n).sort((a, b) => b.n.length - a.n.length).forEach(x => {
+    const safe = esc(x.n).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    out = out.replace(new RegExp('@' + safe + '(?![^<]*</span>)', 'gi'), `<span class="tag${x.id === me() ? ' me' : ''}">@${esc(x.n)}</span>`);
+  });
+  return out;
+}
+const linkify = s => s.replace(/(https?:\/\/[^\s<]+)/g, '<a href="$1" target="_blank" rel="noopener" style="color:#0D9488">$1</a>');
+
+// ── Chats list ──
+function conversations(){
+  const order = [];
+  Object.values(S.threads).forEach(t => {
+    const msgs = visible(t.id), last = msgs[msgs.length - 1];
+    if(t.kind === 'direct' && !msgs.length && t.id !== S.active) return;
+    const read = myRead(t.id), open = t.id === S.active && document.visibilityState === 'visible';
+    const fresh = open ? [] : msgs.filter(m => m.sender_id !== me() && !m.deleted_at && m.created_at > read);
+    order.push({ t, last, unread:fresh.length, mentioned:fresh.some(m => mentionsMe(m.body)), at: last ? last.created_at : (t.kind === 'all' ? '0001' : '0000') + (t.name || '') });
+  });
+  order.sort((a, b) => String(b.at).localeCompare(String(a.at)));
+  return order;
+}
+function renderPills(convs){
+  const unread = convs.filter(c => c.unread && !muted(c.t.id)).length, marked = Object.keys(S.marks).length;
+  const pills = [['all','All'], ['unread', 'Unread' + (unread ? ' ' + unread : '')], ['groups','Groups'], ['direct','Direct'], ['marked', ic(P.flag, 14) + ' Marked' + (marked ? ' ' + marked : '')]];
+  $('pills').innerHTML = pills.map(([k, l]) => `<button class="pill${S.filter === k ? ' on' : ''}" data-f="${k}">${l}</button>`).join('');
+}
+function renderList(){
+  if(!S.ready && !S.cached) return;
+  const convs = conversations();
+  renderPills(convs);
+  const total = convs.reduce((n, c) => n + (muted(c.t.id) ? 0 : c.unread), 0);
+  const tc = $('tabCount'); tc.style.display = total ? '' : 'none'; tc.textContent = total > 99 ? '99+' : total;
+  document.title = total ? `(${total}) Mavis Chat` : 'Mavis Chat';
+  try{ if(navigator.setAppBadge) total ? navigator.setAppBadge(total) : navigator.clearAppBadge(); }catch(e){}
+  if(S.filter === 'marked') return renderMarked();
+  const q = S.q.trim().toLowerCase();
+  let rows = convs.filter(c => !q || tname(c.t).toLowerCase().includes(q) || (c.last && (c.last.body || '').toLowerCase().includes(q)));
+  if(S.filter === 'unread') rows = rows.filter(c => c.unread);
+  if(S.filter === 'groups') rows = rows.filter(c => c.t.kind !== 'direct');
+  if(S.filter === 'direct') rows = rows.filter(c => c.t.kind === 'direct');
+  if(!rows.length){
+    $('rows').innerHTML = `<div class="empty">${q ? 'Nothing matches "' + esc(S.q) + '"' : S.filter === 'unread' ? 'You\'re all caught up' : S.filter === 'direct' ? 'No one-to-one chats yet.<br>Tap <b>+</b> to message someone.' : 'No chats yet'}</div>`;
+    return;
+  }
+  $('rows').innerHTML = rows.map(c => {
+    const t = c.t, last = c.last, mu = muted(t.id);
+    let prev;
+    if(last){
+      const mine = last.sender_id === me();
+      const who = last.deleted_at ? '' : mine ? (receiptsOn() && allRead(last, t) ? `<span class="mi">${TICK2}</span>` : `<span class="mi">${TICK1}</span>`) : (t.kind !== 'direct' ? esc(pname(last.sender_id, true)) + ': ' : '');
+      prev = who + kindIcon(last) + esc(preview(last));
+    } else prev = t.kind === 'direct' ? 'No messages yet' : 'No messages yet - say hi 👋';
+    const right = (mu ? `<span class="ico">${ic(P.belloff, 16)}</span>` : '') + (c.mentioned ? '<span class="badge at">@</span>' : '') + (c.unread ? `<span class="badge${mu ? ' muted' : ''}">${c.unread}</span>` : '');
+    return `<div class="row${t.id === S.active ? ' act' : ''}" data-t="${t.id}">${avatar(t)}<div class="mid"><div class="l1"><b>${esc(tname(t))}</b><span class="tm${c.unread && !mu ? ' new' : ''}">${last ? listTime(last.created_at) : ''}</span></div><div class="l2"><span class="msg">${prev}</span>${right}</div></div></div>`;
+  }).join('');
+}
+function findMsg(id){ for(const tid in S.msgs){ const m = S.msgs[tid].find(x => x.id === id); if(m) return m; } return null; }
+function renderMarked(){
+  const all = Object.keys(S.marks).map(findMsg).filter(Boolean).sort((a, b) => String(S.marks[b.id]).localeCompare(String(S.marks[a.id])));
+  $('rows').innerHTML = all.length ? all.map(m => {
+    const t = S.threads[m.thread_id];
+    return `<div class="row" data-t="${m.thread_id}" data-m="${m.id}">${t ? avatar(t) : ''}<div class="mid"><div class="l1"><b>${esc(pname(m.sender_id, true))}${t ? ' · ' + esc(tname(t)) : ''}</b><span class="tm">${listTime(m.created_at)}</span></div><div class="l2"><span class="msg">${kindIcon(m)}${esc(preview(m))}</span><span class="ico" style="color:#C4973B">${ic(P.flag, 16)}</span></div></div></div>`;
+  }).join('') : '<div class="empty">Nothing marked.<br>Press and hold a message, then tap <b>Mark</b> to come back to it later.</div>';
+}
+
+// ── One chat ──
+function renderHeader(){
+  const t = S.threads[S.active]; if(!t) return;
+  const n = memberIds(t).length;
+  const sub = t.kind === 'direct' ? personSub(other(t)) : t.kind === 'all' ? 'Everyone · ' + n + ' people' : (t.kind === 'dept' ? 'Department · ' : '') + n + (n === 1 ? ' member' : ' members');
+  $('th').innerHTML = `<button class="ib back" id="backBtn" aria-label="Back">${ic(P.back, 26, 2.4)}</button>${avatar(t)}<div class="thn" id="thInfo"><b>${esc(tname(t))}</b><span>${esc(sub)}</span></div>${muted(t.id) ? `<span class="ico" style="padding:0 2px">${ic(P.belloff, 18)}</span>` : ''}<button class="ib" id="thMenu" aria-label="More">${DOTS}</button>`;
+}
+function attHtml(m){
+  if(!m.attachment_type || m.deleted_at) return '';
+  if(!m.attachment) return `<div class="loading">Loading ${m.attachment_type === 'voice' ? 'voice note' : m.attachment_type}…</div>`;
+  if(m.attachment_type === 'image') return `<img class="photo" src="${m.attachment}" alt="" data-zoom="1">`;
+  if(m.attachment_type === 'video') return `<video class="vid" src="${m.attachment}" controls playsinline preload="metadata"></video>`;
+  if(m.attachment_type === 'voice'){
+    const on = S.voice && S.voice.id === m.id;
+    return `<div class="voice" data-v="${m.id}"><button class="pb" data-play="${m.id}" aria-label="Play">${on && !S.voice.a.paused ? PAUSE : PLAY}</button><div class="bar"><i style="width:${on ? S.voice.pct : 0}%"></i></div><span class="vt">${on ? S.voice.label : (S.vlen[m.id] || '0:00')}</span></div>`;
+  }
+  return `<a class="doc" href="${m.attachment}" download="${esc(m.attachment_name || 'document')}">${ic(P.doc, 30, 1.6)}<div><b>${esc(m.attachment_name || 'Document')}</b><span>Tap to download</span></div></a>`;
+}
+function renderMsgs(keepPos){
+  const t = S.threads[S.active], wrap = $('msgs'); if(!t) return;
+  const msgs = visible(t.id); S.view = msgs;
+  const nearBottom = wrap.scrollHeight - wrap.scrollTop - wrap.clientHeight < 120;
+  let html = '', lastDay = '';
+  if(!msgs.length) html = `<div class="day" style="margin:auto">${t.kind === 'direct' ? 'No messages yet - say hello 👋' : 'No messages yet in ' + esc(tname(t))}</div>`;
+  msgs.forEach((m, i) => {
+    const day = new Date(m.created_at).toDateString();
+    if(day !== lastDay){ lastDay = day; html += `<div class="day">${dayLabel(m.created_at)}</div>`; }
+    const mine = m.sender_id === me(), prev = msgs[i - 1];
+    const first = !prev || prev.sender_id !== m.sender_id || new Date(prev.created_at).toDateString() !== day || prev.deleted_at;
+    const showName = first && !mine && t.kind !== 'direct';
+    let inner = '';
+    if(m.deleted_at) inner = `<span class="del">${ic(P.ban, 14)}</span> <span class="del">This message was deleted</span>`;
+    else {
+      if(m.forwarded) inner += `<div class="fwd">${ic(P.fwd, 12)} Forwarded</div>`;
+      if(m.reply_to){ const o = msgs.find(x => x.id === m.reply_to); inner += `<div class="quote" data-jump="${m.reply_to}"><b>${o ? esc(pname(o.sender_id, true)) : 'Message'}</b><div>${o ? kindIcon(o) + esc(preview(o)) : 'Not available'}</div></div>`; }
+      inner += attHtml(m);
+      if(m.body) inner += `<span class="txt">${linkify(mentionHtml(esc(m.body)))}</span>`;
+    }
+    const pic = !m.deleted_at && (m.attachment_type === 'image' || m.attachment_type === 'video');
+    const meta = `<span class="meta">${S.marks[m.id] ? `<span style="color:#C4973B">${ic(P.flag, 11)}</span>` : ''}${m.edited_at && !m.deleted_at ? 'Edited ' : ''}${hhmm(m.created_at)}${ticks(m, t)}</span>`;
+    const r = m.reactions || {};
+    const rx = m.deleted_at ? '' : REACTIONS.map(e => { const l = (r[e.id] || []).map(String); return l.length ? `<button data-react="${e.id}" data-i="${i}" class="${l.includes(String(me())) ? 'me' : ''}">${e.c}${l.length > 1 ? ' ' + l.length : ''}</button>` : ''; }).join('');
+    const col = ROLE_COLOURS[S.people[m.sender_id] && S.people[m.sender_id].role] || '#0D9488';
+    html += `<div class="m ${mine ? 'out' : 'in'}${first ? ' first gap' : ''}${S.sel === m.id ? ' sel' : ''}" id="m-${m.id}" data-i="${i}">
+      <div class="bub${pic ? ' pic' + (m.body ? '' : ' only') : ''}">${showName ? `<div class="who" style="color:${col}">${esc(pname(m.sender_id))}</div>` : ''}${inner}${meta}</div>
+      ${rx ? `<div class="rx">${rx}</div>` : ''}</div>`;
+  });
+  wrap.innerHTML = html;
+  if(!keepPos && (S.stick || nearBottom || wrap.dataset.tid !== String(t.id))){ wrap.scrollTop = wrap.scrollHeight; S.stick = true; }
+  wrap.dataset.tid = t.id;
+  $('down').classList.toggle('show', wrap.scrollHeight - wrap.scrollTop - wrap.clientHeight > 300);
+}
+function renderComposer(){
+  const c = $('comp');
+  if(S.rec){
+    c.innerHTML = `<div class="rec"><span class="dot"></span><span id="recT">0:00</span><span style="color:var(--mute);font-weight:600;font-size:14px">Recording…</span><button class="cancel" id="recCancel">Cancel</button></div><button class="send" id="recSend" aria-label="Send voice note">${ic(P.send, 22, 2.2)}</button>`;
+    return;
+  }
+  const r = S.reply && S.view.find(m => m.id === S.reply);
+  const keep = $('ta') ? $('ta').value : '';
+  c.innerHTML = `<div class="field">${r ? `<div class="rp"><b>${esc(pname(r.sender_id, true))}</b><div>${kindIcon(r)}${esc(preview(r))}</div><button id="rpX" aria-label="Cancel reply">${ic(P.x, 16)}</button></div>` : ''}<div class="frow"><textarea id="ta" rows="1" placeholder="Message" enterkeyhint="send"></textarea><button class="g" id="attBtn" aria-label="Attach">${ic(P.plus, 23)}</button><button class="g" id="camBtn" aria-label="Camera">${ic(P.cam, 22)}</button></div></div><button class="send" id="sendBtn" aria-label="Send">${ic(P.mic, 22, 2.2)}</button>`;
+  const ta = $('ta'); ta.value = keep; grow(); sendIcon();
+}
+function grow(){ const ta = $('ta'); if(!ta) return; ta.style.height = '42px'; ta.style.height = Math.min(130, ta.scrollHeight) + 'px'; }
+function sendIcon(){ const b = $('sendBtn'), ta = $('ta'); if(!b || !ta) return; const has = !!ta.value.trim(); if(b.dataset.has !== String(has)){ b.dataset.has = has; b.innerHTML = ic(has ? P.send : P.mic, 22, 2.2); b.setAttribute('aria-label', has ? 'Send' : 'Record a voice note'); } }
+
+function openThread(id, fromHistory){
+  const t = S.threads[id]; if(!t) return;
+  stopVoice();
+  const was = S.active; S.active = id; S.sel = null; S.reply = null; S.stick = true;
+  renderHeader(); renderComposer(); renderMsgs();
+  $('thread').classList.add('open');
+  if(!fromHistory && !was && window.innerWidth < 860) history.pushState({t:id}, '', location.pathname + location.search);
+  markRead(id); renderList(); loadAttachments(id); tellViewing();
+  if(window.innerWidth >= 860) setTimeout(() => $('ta') && $('ta').focus(), 60);
+  saveLast();
+}
+function closeThread(){
+  stopVoice(); S.active = null; S.sel = null;
+  $('thread').classList.remove('open');
+  renderList(); tellViewing();
+}
+window.addEventListener('popstate', () => { if(S.active && window.innerWidth < 860) closeThread(); document.querySelectorAll('.shade,.viewer,.preview').forEach(x => x.remove()); });
+
+// ── Loading ──
+const CACHE_KEY = uid => 'mvchat1_' + uid;
+function loadCache(uid){
+  try{
+    const c = JSON.parse(localStorage.getItem(CACHE_KEY(uid)) || 'null'); if(!c || !c.me) return false;
+    Object.assign(S, { me:c.me, company:c.company, people:c.people || {}, threads:c.threads || {}, members:c.members || {}, reads:c.reads || {}, msgs:c.msgs || {}, prefs:c.prefs || S.prefs, marks:c.marks || {}, settings:c.settings || {}, cached:true });
+    return true;
+  }catch(e){ return false; }
+}
+let saveT;
+function saveCache(){
+  clearTimeout(saveT);
+  saveT = setTimeout(() => {
+    if(!S.ready || !S.uid) return;
+    try{
+      const msgs = {};
+      Object.keys(S.msgs).forEach(tid => { msgs[tid] = S.msgs[tid].filter(m => !m._tmp).slice(-40).map(m => Object.assign({}, m, {attachment:null})); });
+      const people = {};
+      Object.values(S.people).forEach(p => { people[p.id] = Object.assign({}, p, { photo: p.photo && p.photo.length < 30000 ? p.photo : null }); });
+      localStorage.setItem(CACHE_KEY(S.uid), JSON.stringify({ me:S.me, company:S.company, people, threads:S.threads, members:S.members, reads:S.reads, msgs, prefs:S.prefs, marks:S.marks, settings:{ chat_read_receipts:S.settings.chat_read_receipts, dept_icons:S.settings.dept_icons }, at:Date.now() }));
+    }catch(e){ try{ localStorage.removeItem(CACHE_KEY(S.uid)); }catch(_){} }
+  }, 800);
+}
+function saveLast(){}
+async function boot(){
+  if('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(() => {});
+  let session = null;
+  try{ const { data } = await sb.auth.getSession(); session = data && data.session; }catch(e){}
+  if(!session){ return gate(); }
+  S.uid = session.user.id;
+  if(loadCache(S.uid)){ renderList(); openFromUrl(); }
+  const { data: rows, error } = await sb.from('profiles').select('*').eq('user_id', session.user.id).limit(1);
+  const prof = rows && rows[0];
+  if(error && !S.cached){ $('rows').innerHTML = '<div class="empty">Can\'t reach Mavis right now.<br>Check your connection and try again.</div>'; return; }
+  if(!error && (!prof || !prof.active)){ try{ localStorage.removeItem(CACHE_KEY(S.uid)); }catch(e){} return gate(true); }
+  if(prof) S.me = prof;
+  await loadAll();
+}
+async function loadAll(){
+  try{ await sb.rpc('chat_sync'); }catch(e){}
+  const since = new Date(Date.now() - 120 * 86400000).toISOString();
+  const q = cols => sb.from('chat_msgs').select(cols).gte('created_at', since).order('created_at', {ascending:false}).limit(3000);
+  let [th, mem, rd, ms, pp, pr, mk, st, co] = await Promise.all([
+    sb.from('chat_threads').select('*'), sb.from('chat_members').select('*'), sb.from('chat_reads').select('*'), q(S.cols),
+    sb.from('profiles').select('*').eq('company_id', S.me.company_id), sb.from('chat_prefs').select('*').limit(1), sb.from('chat_marks').select('*'),
+    sb.from('app_settings').select('*'), sb.from('companies').select('id,code,name,logo').eq('id', S.me.company_id).limit(1)
+  ]);
+  if(ms.error && /forwarded/.test(ms.error.message || '')){ S.cols = COLS.replace(',forwarded', ''); ms = await q(S.cols); }
+  if(th.error){ if(!S.cached) $('rows').innerHTML = '<div class="empty">Chat isn\'t set up for your team yet.</div>'; return; }
+  S.people = {}; (pp.data || []).forEach(p => S.people[p.id] = p);
+  S.threads = {}; (th.data || []).forEach(t => S.threads[t.id] = t);
+  S.members = {}; (mem.data || []).forEach(m => (S.members[m.thread_id] = S.members[m.thread_id] || []).push(m.profile_id));
+  S.reads = {}; (rd.data || []).forEach(r => (S.reads[r.thread_id] = S.reads[r.thread_id] || {})[r.profile_id] = r.last_read);
+  const keep = {}; Object.values(S.msgs).flat().forEach(m => { if(m.attachment) keep[m.id] = m.attachment; });
+  const tmps = Object.values(S.msgs).flat().filter(m => m._tmp);
+  S.msgs = {};
+  (ms.data || []).reverse().forEach(m => { if(keep[m.id]) m.attachment = keep[m.id]; (S.msgs[m.thread_id] = S.msgs[m.thread_id] || []).push(m); });
+  tmps.forEach(m => (S.msgs[m.thread_id] = S.msgs[m.thread_id] || []).push(m));
+  if(pr.data && pr.data[0]){ const d = pr.data[0]; S.prefs = { muted:d.muted || {}, cleared:d.cleared || {}, hidden:d.hidden || [], quiet_from:d.quiet_from, quiet_to:d.quiet_to }; }
+  S.marks = {}; (mk.data || []).forEach(r => S.marks[r.msg_id] = r.created_at);
+  S.settings = {}; (st.data || []).forEach(r => { let v = r.value; try{ v = typeof v === 'string' && /^[[{"]/.test(v) ? JSON.parse(v) : v; }catch(e){} S.settings[r.key] = v; });
+  S.company = co.data && co.data[0];
+  S.ready = true; S.attLoaded = {};
+  renderList();
+  if(S.active && S.threads[S.active]){ renderHeader(); renderMsgs(); loadAttachments(S.active); }
+  openFromUrl();
+  subscribe(); notes(); saveCache();
+  if('serviceWorker' in navigator) navigator.serviceWorker.ready.then(() => pushSubscribe(false));
+}
+async function reloadThreads(withPeople){
+  if(withPeople){ try{ await sb.rpc('chat_sync'); }catch(e){} }
+  const [th, mem, pp] = await Promise.all([sb.from('chat_threads').select('*'), sb.from('chat_members').select('*'), withPeople ? sb.from('profiles').select('*').eq('company_id', S.me.company_id) : Promise.resolve(null)]);
+  if(th.error) return;
+  if(pp && pp.data){ S.people = {}; pp.data.forEach(p => S.people[p.id] = p); }
+  S.threads = {}; (th.data || []).forEach(t => S.threads[t.id] = t);
+  S.members = {}; (mem.data || []).forEach(m => (S.members[m.thread_id] = S.members[m.thread_id] || []).push(m.profile_id));
+  if(S.active && !S.threads[S.active]){ closeThread(); }
+  else if(S.active) renderHeader();
+  renderList(); saveCache();
+}
+let reloadT;
+const soonReload = () => { clearTimeout(reloadT); reloadT = setTimeout(reloadThreads, 400); };
+let channel, pollT, polling;
+function subscribe(){
+  if(channel) return;
+  channel = sb.channel('mchat-' + me())
+    .on('postgres_changes', {event:'*', schema:'public', table:'chat_msgs'}, p => { const r = p.new; if(!r || !r.id) return; if(!S.threads[r.thread_id]){ soonReload(); setTimeout(() => upsert(r, true), 900); return; } upsert(r, true); })
+    .on('postgres_changes', {event:'*', schema:'public', table:'chat_reads'}, p => { const r = p.new; if(!r || !r.thread_id) return; (S.reads[r.thread_id] = S.reads[r.thread_id] || {})[r.profile_id] = r.last_read; renderList(); if(r.thread_id === S.active) renderMsgs(true); })
+    .on('postgres_changes', {event:'*', schema:'public', table:'chat_threads'}, soonReload)
+    .on('postgres_changes', {event:'*', schema:'public', table:'chat_members'}, soonReload)
+    .subscribe();
+  const tick = () => { if(document.visibilityState === 'visible') poll(); };
+  pollT = setInterval(tick, 5000);
+  document.addEventListener('visibilitychange', () => { tick(); tellViewing(); if(document.visibilityState === 'visible' && S.active){ markRead(S.active); renderList(); } });
+  window.addEventListener('focus', tick); window.addEventListener('online', tick);
+}
+async function poll(){
+  if(!S.ready || polling) return; polling = true;
+  try{
+    let latest = '1970-01-01';
+    Object.values(S.msgs).forEach(a => a.forEach(m => { if(!m._tmp && m.created_at > latest) latest = m.created_at; }));
+    const [ms, rd] = await Promise.all([sb.from('chat_msgs').select(S.cols).gt('created_at', latest).order('created_at', {ascending:true}).limit(200), sb.from('chat_reads').select('*')]);
+    if(rd.data){ let ch = false; rd.data.forEach(r => { const t = S.reads[r.thread_id] = S.reads[r.thread_id] || {}; if(t[r.profile_id] !== r.last_read){ t[r.profile_id] = r.last_read; ch = true; } }); if(ch){ renderList(); if(S.active) renderMsgs(true); } }
+    if(ms.data && ms.data.length){ if(ms.data.some(m => !S.threads[m.thread_id])) await reloadThreads(); ms.data.forEach(m => upsert(m, true)); }
+  }catch(e){}
+  polling = false;
+}
+function upsert(row, live){
+  const arr = S.msgs[row.thread_id] = S.msgs[row.thread_id] || [];
+  let i = arr.findIndex(m => m.id === row.id);
+  if(i === -1 && live && row.sender_id === me()) i = arr.findIndex(m => m._tmp && (m.body || '') === (row.body || '') && (m.attachment_type || null) === (row.attachment_type || null));
+  if(i > -1){
+    const keep = arr[i].attachment;
+    arr[i] = Object.assign({}, arr[i], row, {_tmp:false, _failed:false});
+    if(!row.attachment && keep && !row.deleted_at) arr[i].attachment = keep;
+    if(row.deleted_at) arr[i].attachment = null;
+  } else { arr.push(Object.assign({}, row)); arr.sort((a, b) => String(a.created_at).localeCompare(String(b.created_at))); }
+  const m = arr.find(x => x.id === row.id);
+  if(m && m.attachment_type && !m.attachment && !m.deleted_at && S.attLoaded[row.thread_id]) fetchAtt(m);
+  if(row.thread_id === S.active){ if(live && row.sender_id !== me() && document.visibilityState === 'visible') markRead(row.thread_id); renderMsgs(); }
+  renderList(); saveCache();
+}
+async function fetchAtt(m){ const { data } = await sb.from('chat_msgs').select('id,attachment').eq('id', m.id).limit(1); if(data && data[0]){ m.attachment = data[0].attachment; if(m.thread_id === S.active) renderMsgs(true); } }
+async function loadAttachments(tid){
+  if(S.attLoaded[tid] || !S.ready) return; S.attLoaded[tid] = true;
+  const ids = (S.msgs[tid] || []).filter(m => m.attachment_type && !m.attachment && !m.deleted_at && !m._tmp).map(m => m.id);
+  if(!ids.length) return;
+  // newest first, in small batches, so the photos you see first arrive first
+  ids.reverse();
+  for(let k = 0; k < ids.length; k += 8){
+    const { data, error } = await sb.from('chat_msgs').select('id,attachment').in('id', ids.slice(k, k + 8));
+    if(error){ S.attLoaded[tid] = false; return; }
+    const byId = {}; (data || []).forEach(r => byId[r.id] = r.attachment);
+    (S.msgs[tid] || []).forEach(m => { if(byId[m.id]) m.attachment = byId[m.id]; });
+    if(tid === S.active) renderMsgs(true);
+  }
+}
+function markRead(tid){
+  if(!S.ready) return;
+  (S.reads[tid] = S.reads[tid] || {})[me()] = new Date().toISOString();
+  sb.rpc('chat_read', {th: tid}).then(() => {}, () => {});
+}
+
+// ── Sending ──
+async function send(tid, fields){
+  const t = S.threads[tid]; if(!t || !S.ready) return false;
+  const tmp = Object.assign({ id:'tmp-' + Date.now() + Math.random().toString(36).slice(2, 6), thread_id:tid, sender_id:me(), body:null, attachment:null, attachment_type:null, attachment_name:null, reply_to:null, reactions:{}, created_at:new Date().toISOString(), _tmp:true }, fields);
+  const arr = S.msgs[tid] = S.msgs[tid] || []; arr.push(tmp);
+  if(tid === S.active){ S.stick = true; renderMsgs(); }
+  renderList();
+  const payload = { thread_id:tid, sender_id:me(), body:tmp.body, attachment:tmp.attachment, attachment_type:tmp.attachment_type, attachment_name:tmp.attachment_name, reply_to:tmp.reply_to };
+  const { data, error } = await sb.from('chat_msgs').insert(payload).select(S.cols).single();
+  const ti = arr.findIndex(m => m.id === tmp.id);
+  if(error){ if(ti > -1){ arr[ti]._failed = true; arr[ti]._tmp = false; } toast('Message not sent - check your connection and try again'); if(tid === S.active) renderMsgs(true); return false; }
+  data.attachment = tmp.attachment;
+  notifyServer(data.id);
+  const ri = arr.findIndex(m => m.id === data.id);
+  if(ri > -1){ if(ti > -1) arr.splice(ti, 1); } else if(ti > -1) arr[ti] = data; else arr.push(data);
+  markRead(tid);
+  if(tid === S.active) renderMsgs();
+  renderList(); saveCache();
+  return true;
+}
+async function notifyServer(id){
+  try{
+    const { data } = await sb.auth.getSession(); const token = data && data.session && data.session.access_token; if(!token) return;
+    fetch('/api/push', { method:'POST', headers:{'Content-Type':'application/json', Authorization:'Bearer ' + token}, body:JSON.stringify({msg_id:id}) }).catch(() => {});
+  }catch(e){}
+}
+function sendText(){
+  const ta = $('ta'); if(!ta) return; const text = ta.value.trim(); if(!text || !S.active) return;
+  const reply = S.reply; ta.value = ''; S.reply = null;
+  renderComposer(); $('ta').focus();
+  send(S.active, { body:text, reply_to:reply });
+}
+function pick(kind){
+  const input = document.createElement('input'); input.type = 'file';
+  if(kind === 'camera'){ input.accept = 'image/*'; input.capture = 'environment'; }
+  else if(kind === 'media') input.accept = 'image/*,video/*';
+  else input.accept = '.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.csv,application/pdf';
+  input.onchange = async () => {
+    const f = input.files && input.files[0]; if(!f) return;
+    const type = f.type.startsWith('image/') ? 'image' : f.type.startsWith('video/') ? 'video' : 'document';
+    if(type !== 'image' && f.size > MAX_FILE_MB * 1048576){ toast(`That file is too big - the limit is ${MAX_FILE_MB} MB`); return; }
+    try{ previewSend({ url: type === 'image' ? await shrink(f) : await asDataUrl(f), type, name:f.name }); }catch(e){ toast('That file could not be opened'); }
+  };
+  input.click();
+}
+const asDataUrl = f => new Promise((ok, bad) => { const r = new FileReader(); r.onload = () => ok(r.result); r.onerror = bad; r.readAsDataURL(f); });
+function shrink(f){
+  return asDataUrl(f).then(src => new Promise((ok, bad) => {
+    const img = new Image();
+    img.onload = () => { let w = img.width, h = img.height, M = 1600; if(w > M || h > M){ if(w > h){ h = Math.round(h * M / w); w = M; } else { w = Math.round(w * M / h); h = M; } }
+      const c = document.createElement('canvas'); c.width = w; c.height = h; c.getContext('2d').drawImage(img, 0, 0, w, h); ok(c.toDataURL('image/jpeg', .82)); };
+    img.onerror = bad; img.src = src;
+  }));
+}
+function previewSend(a){
+  const o = document.createElement('div'); o.className = 'preview';
+  o.innerHTML = `<button class="close" aria-label="Cancel">${ic(P.x, 26)}</button><div class="pv">${a.type === 'image' ? `<img src="${a.url}" alt="">` : a.type === 'video' ? `<video src="${a.url}" controls playsinline></video>` : `<div class="pvdoc">${ic(P.doc, 56, 1.5)}<p>${esc(a.name)}</p></div>`}</div>
+    <div class="pbar"><input id="cap" placeholder="${a.type === 'document' ? 'Add a message' : 'Add a caption'}" enterkeyhint="send"><button class="send" id="pvSend" aria-label="Send">${ic(P.send, 22, 2.2)}</button></div>`;
+  document.body.appendChild(o);
+  const go = () => { const cap = $('cap').value.trim(); o.remove(); const reply = S.reply; S.reply = null; renderComposer(); send(S.active, { attachment:a.url, attachment_type:a.type, attachment_name:a.name, body:cap || null, reply_to:reply }); };
+  o.querySelector('.close').onclick = () => o.remove();
+  $('pvSend').onclick = go;
+  $('cap').addEventListener('keydown', e => { if(e.key === 'Enter'){ e.preventDefault(); go(); } });
+}
+
+// ── Voice notes ──
+S.vlen = {};
+async function startRec(){
+  if(!navigator.mediaDevices || !window.MediaRecorder){ toast('Voice notes don\'t work in this browser'); return; }
+  try{
+    const stream = await navigator.mediaDevices.getUserMedia({audio:true});
+    const rec = new MediaRecorder(stream); const chunks = [];
+    rec.ondataavailable = e => e.data.size && chunks.push(e.data);
+    S.rec = { rec, stream, chunks, start:Date.now(), timer:setInterval(() => { const el = $('recT'); if(el) el.textContent = clock((Date.now() - S.rec.start) / 1000); }, 250) };
+    rec.start(); renderComposer();
+    if(navigator.vibrate) navigator.vibrate(20);
+  }catch(e){ toast('Mavis Chat needs the microphone - allow it in your phone settings'); }
+}
+function stopRec(sendIt){
+  const r = S.rec; if(!r) return; S.rec = null; clearInterval(r.timer);
+  const tid = S.active, len = (Date.now() - r.start) / 1000;
+  r.rec.onstop = () => {
+    r.stream.getTracks().forEach(t => t.stop());
+    if(!sendIt || len < 0.8){ renderComposer(); return; }
+    const blob = new Blob(r.chunks, {type: r.rec.mimeType || 'audio/webm'});
+    asDataUrl(blob).then(url => send(tid, { attachment:url, attachment_type:'voice', attachment_name:'Voice note' }));
+    renderComposer();
+  };
+  r.rec.stop();
+}
+const clock = s => { s = Math.max(0, Math.round(s || 0)); return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0'); };
+function stopVoice(){ if(S.voice){ S.voice.a.pause(); S.voice = null; } }
+function playVoice(id){
+  const m = findMsg(id); if(!m || !m.attachment) return;
+  if(S.voice && S.voice.id === id){ S.voice.a.paused ? S.voice.a.play() : S.voice.a.pause(); setTimeout(() => renderMsgs(true), 30); return; }
+  stopVoice();
+  const a = new Audio(m.attachment); S.voice = { id, a, pct:0, label:'0:00' };
+  const upd = () => { const v = S.voice; if(!v || v.id !== id) return; const d = isFinite(a.duration) ? a.duration : 0; v.pct = d ? a.currentTime / d * 100 : 0; v.label = clock(a.currentTime);
+    const box = document.querySelector(`[data-v="${id}"]`); if(box){ box.querySelector('.bar i').style.width = v.pct + '%'; box.querySelector('.vt').textContent = v.label; } };
+  a.ontimeupdate = upd;
+  a.onloadedmetadata = () => { if(isFinite(a.duration)) S.vlen[id] = clock(a.duration); };
+  a.onended = () => { S.voice = null; renderMsgs(true); };
+  a.play().then(() => renderMsgs(true)).catch(() => toast('Could not play that voice note'));
+}
+
+// ── Message actions (press and hold) ──
+function sheet(html, cls){
+  const o = document.createElement('div'); o.className = 'shade';
+  o.innerHTML = `<div class="sheet ${cls || ''}"><div class="grab"></div>${html}</div>`;
+  o.addEventListener('click', e => { if(e.target === o) closeSheet(); });
+  document.body.appendChild(o); return o;
+}
+function closeSheet(){ document.querySelectorAll('.shade').forEach(x => x.remove()); if(S.sel){ S.sel = null; renderMsgs(true); } }
+function msgActions(i){
+  const m = S.view[i]; if(!m || m._tmp || m.deleted_at) return;
+  S.sel = m.id; renderMsgs(true);
+  if(navigator.vibrate) navigator.vibrate(15);
+  const mine = m.sender_id === me(), age = Date.now() - new Date(m.created_at).getTime();
+  const r = m.reactions || {};
+  const row = (k, icon, label, red) => `<button class="act${red ? ' red' : ''}" data-a="${k}">${ic(icon, 22)}${label}</button>`;
+  const o = sheet(`<div class="emo">${REACTIONS.map(e => `<button data-e="${e.id}" class="${(r[e.id] || []).map(String).includes(String(me())) ? 'me' : ''}">${e.c}</button>`).join('')}</div>
+    ${row('reply', P.reply, 'Reply')}${m.body ? row('copy', P.copy, 'Copy') : ''}${row('mark', P.flag, S.marks[m.id] ? 'Unmark' : 'Mark for later')}
+    ${mine && m.body && age < EDIT_MINS * 60000 ? row('edit', P.edit, 'Edit') : ''}${row('delme', P.trash, 'Delete for me', true)}${mine && age < DELETE_HOURS * 3600000 ? row('delall', P.trash, 'Delete for everyone', true) : ''}`);
+  o.querySelectorAll('[data-e]').forEach(b => b.onclick = () => { closeSheet(); react(m, b.dataset.e); });
+  o.querySelectorAll('[data-a]').forEach(b => b.onclick = () => { const a = b.dataset.a; closeSheet(); ({reply:() => { S.reply = m.id; renderComposer(); $('ta').focus(); }, copy:() => copyText(m.body), mark:() => toggleMark(m), edit:() => editMsg(m), delme:() => deleteForMe(m), delall:() => deleteForAll(m)})[a](); });
+}
+function react(m, id){
+  const mine = String(me()), r = m.reactions = Object.assign({}, m.reactions || {});
+  const l = (r[id] || []).map(String); r[id] = l.includes(mine) ? l.filter(x => x !== mine) : l.concat(mine);
+  renderMsgs(true);
+  sb.rpc('chat_react', {msg:m.id, emoji:id}).then(({error}) => { if(error) toast('Could not save that reaction'); });
+}
+function copyText(t){ (navigator.clipboard ? navigator.clipboard.writeText(t) : Promise.reject()).then(() => toast('Copied'), () => toast('Could not copy')); }
+async function toggleMark(m){
+  if(S.marks[m.id]){
+    delete S.marks[m.id]; renderMsgs(true); renderList();
+    const { error } = await sb.from('chat_marks').delete().eq('msg_id', m.id); toast(error ? 'Could not unmark - please try again' : 'Unmarked');
+  } else {
+    S.marks[m.id] = new Date().toISOString(); renderMsgs(true); renderList();
+    const { error } = await sb.from('chat_marks').insert({msg_id:m.id});
+    if(error){ delete S.marks[m.id]; renderMsgs(true); renderList(); toast('Could not mark - please try again'); } else toast('Marked - find it under Marked');
+  }
+  saveCache();
+}
+function editMsg(m){
+  const o = sheet(`<h3>Edit message</h3><div class="sub">You can edit for ${EDIT_MINS} minutes after sending</div><div style="padding:0 16px"><textarea id="edT" style="width:100%;min-height:100px;border:1px solid #E2E8F0;border-radius:12px;padding:12px;font-size:16px;outline:none">${esc(m.body)}</textarea></div><div style="display:flex;gap:10px;padding:12px 16px 4px"><button class="act" style="justify-content:center;border-radius:12px;background:var(--card)" id="edNo">Cancel</button><button class="act" style="justify-content:center;border-radius:12px;background:var(--gold);color:var(--navy);font-weight:800" id="edGo">Save</button></div>`);
+  $('edNo').onclick = closeSheet;
+  $('edGo').onclick = async () => {
+    const v = $('edT').value.trim(); closeSheet(); if(!v || v === m.body) return;
+    const { error } = await sb.rpc('chat_edit', {msg:m.id, new_body:v});
+    if(error){ toast(/no longer/.test(error.message || '') ? 'Too late to edit - it has been over ' + EDIT_MINS + ' minutes' : 'Could not edit that message'); return; }
+    m.body = v; m.edited_at = new Date().toISOString(); renderMsgs(true); renderList();
+  };
+}
+async function savePrefs(){
+  const row = { profile_id:me(), muted:S.prefs.muted || {}, quiet_from:S.prefs.quiet_from || null, quiet_to:S.prefs.quiet_to || null, cleared:S.prefs.cleared || {}, hidden:(S.prefs.hidden || []).slice(-2000),
+    tz:Intl.DateTimeFormat().resolvedOptions().timeZone || 'Asia/Makassar', updated_at:new Date().toISOString() };
+  const { error } = await sb.from('chat_prefs').upsert(row, {onConflict:'profile_id'});
+  if(error){ toast('Not saved - please try again'); return false; }
+  saveCache(); return true;
+}
+async function deleteForMe(m){
+  const before = (S.prefs.hidden || []).slice(); S.prefs.hidden = before.concat([String(m.id)]);
+  renderMsgs(true); renderList();
+  if(await savePrefs()) toast('Deleted for you'); else { S.prefs.hidden = before; renderMsgs(true); renderList(); }
+}
+async function deleteForAll(m){
+  const { error } = await sb.rpc('chat_delete', {msg:m.id});
+  if(error){ toast(/no longer/.test(error.message || '') ? 'Too late to delete - it has been over 2 days' : 'Could not delete that message'); return; }
+  Object.assign(m, {deleted_at:new Date().toISOString(), body:null, attachment:null, attachment_type:null, attachment_name:null, reactions:{}});
+  renderMsgs(true); renderList(); toast('Deleted for everyone');
+}
+function threadMenu(){
+  const t = S.threads[S.active]; if(!t) return;
+  const mu = muted(t.id);
+  const o = sheet(`<h3>${esc(tname(t))}</h3>
+    ${t.kind !== 'direct' ? `<button class="act" data-a="members">${ic(P.people, 22)}See who's in this chat</button>` : ''}
+    ${mu ? `<button class="act" data-a="unmute">${ic(P.bell, 22)}Turn notifications back on</button>` : `<button class="act" data-a="m8">${ic(P.belloff, 22)}Mute for 8 hours</button><button class="act" data-a="mw">${ic(P.belloff, 22)}Mute for 1 week</button><button class="act" data-a="ma">${ic(P.belloff, 22)}Mute always</button>`}
+    <a class="act" style="text-decoration:none;color:inherit" href="/?chat=${encodeURIComponent(t.id)}">${ic(P.grid, 22)}Open in full Mavis</a>`);
+  o.querySelectorAll('[data-a]').forEach(b => b.onclick = async () => {
+    const a = b.dataset.a; closeSheet();
+    if(a === 'members') return showMembers(t);
+    S.prefs.muted = Object.assign({}, S.prefs.muted);
+    if(a === 'unmute') delete S.prefs.muted[t.id];
+    else S.prefs.muted[t.id] = a === 'ma' ? 'always' : new Date(Date.now() + (a === 'm8' ? 8 * 3600000 : 7 * 86400000)).toISOString();
+    renderHeader(); renderList();
+    if(await savePrefs()) toast(a === 'unmute' ? 'Notifications on' : 'Muted');
+  });
+}
+function showMembers(t){
+  const ids = memberIds(t).sort((a, b) => pname(a).localeCompare(pname(b)));
+  const o = sheet(`<h3>${esc(tname(t))}</h3><div class="sub">${ids.length} ${ids.length === 1 ? 'person' : 'people'}</div><div class="scroll">${ids.map(pid => `<div class="prow" data-p="${pid}">${personAvatar(pid)}<div><b>${esc(pname(pid))}${pid === me() ? ' (you)' : ''}</b><span>${esc(personSub(pid))}</span></div></div>`).join('')}</div>`);
+  o.querySelectorAll('[data-p]').forEach(r => r.onclick = () => { if(r.dataset.p !== me()){ closeSheet(); directTo(r.dataset.p); } });
+}
+
+// ── New chat / People ──
+function peopleSheet(title){
+  const list = () => {
+    const q = ($('pq') && $('pq').value || '').trim().toLowerCase();
+    const ps = Object.values(S.people).filter(p => p.active && p.id !== me() && (!q || pname(p.id).toLowerCase().includes(q) || depts(p).join(' ').toLowerCase().includes(q))).sort((a, b) => pname(a.id).localeCompare(pname(b.id)));
+    $('plist').innerHTML = ps.length ? ps.map(p => `<div class="prow" data-p="${p.id}">${personAvatar(p.id)}<div style="min-width:0"><b>${esc(pname(p.id))}</b><span>${esc(personSub(p.id))}</span></div></div>`).join('') : '<div class="empty">No one found</div>';
+    $('plist').querySelectorAll('[data-p]').forEach(r => r.onclick = () => { closeSheet(); directTo(r.dataset.p); });
+  };
+  const canGroup = S.me && (['superadmin','director','manager','supervisor'].includes(S.me.role) || S.me.is_owner);
+  sheet(`<h3>${title}</h3><label class="search">${ic('<circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/>', 20)}<input id="pq" type="search" placeholder="Search by name or department" autocomplete="off"></label>
+    ${canGroup ? `<a class="act" style="text-decoration:none;color:inherit" href="/?newgroup=1">${ic(P.people, 22)}New group <span style="margin-left:auto;font-size:12.5px;color:var(--soft);font-weight:600">in full Mavis</span></a>` : ''}
+    <div class="scroll" id="plist"></div>`, 'tall');
+  $('pq').addEventListener('input', list); list();
+}
+async function directTo(pid){
+  const found = Object.values(S.threads).find(t => t.kind === 'direct' && (S.members[t.id] || []).includes(pid) && (S.members[t.id] || []).includes(me()));
+  if(found) return openThread(found.id);
+  const { data, error } = await sb.rpc('chat_direct', {other:pid});
+  if(error || !data){ toast('Could not start that chat - please try again'); return; }
+  if(!S.threads[data]) await reloadThreads();
+  openThread(data);
+}
+
+// ── Notifications + install ──
+const pushOk = () => 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window;
+const isIOS = () => /iPhone|iPad|iPod/.test(navigator.userAgent);
+const installed = () => matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
+function b64(s){ const p = '='.repeat((4 - s.length % 4) % 4); const b = atob((s + p).replace(/-/g, '+').replace(/_/g, '/')); return Uint8Array.from([...b].map(c => c.charCodeAt(0))); }
+async function pushSubscribe(ask){
+  if(!pushOk() || !S.me) return false;
+  try{
+    if(Notification.permission !== 'granted'){ if(!ask) return false; if(await Notification.requestPermission() !== 'granted'){ notes(); return false; } }
+    const reg = await navigator.serviceWorker.ready;
+    let sub = await reg.pushManager.getSubscription();
+    if(!sub) sub = await reg.pushManager.subscribe({userVisibleOnly:true, applicationServerKey:b64(VAPID)});
+    const j = sub.toJSON();
+    await sb.rpc('push_register', {ep:j.endpoint, key_p256dh:j.keys.p256dh, key_auth:j.keys.auth, agent:navigator.userAgent});
+    notes(); return true;
+  }catch(e){ if(ask) toast('Could not turn on notifications on this device'); return false; }
+}
+let installEvt = null;
+window.addEventListener('beforeinstallprompt', e => { e.preventDefault(); installEvt = e; notes(); });
+const later = k => { try{ return Date.now() < Number(localStorage.getItem('mvchat_later_' + k) || 0); }catch(e){ return false; } };
+const setLater = k => { try{ localStorage.setItem('mvchat_later_' + k, String(Date.now() + 7 * 86400000)); }catch(e){} };
+function notes(){
+  const box = $('notes'); if(!box) return;
+  let html = '';
+  if(!installed() && !later('install')){
+    if(installEvt) html = `<div class="note"><img src="/chat/icon-192.png" alt="" style="width:36px;height:36px;border-radius:9px"><div style="flex:1"><b>Add Mavis Chat to your phone</b>Its own icon - opens straight into your chats</div><button class="go" data-n="install">Add</button><button class="x" data-x="install">${ic(P.x, 16)}</button></div>`;
+    else if(isIOS()) html = `<div class="note"><img src="/chat/icon-192.png" alt="" style="width:36px;height:36px;border-radius:9px"><div style="flex:1"><b>Add Mavis Chat to your Home Screen</b>Tap Share, then "Add to Home Screen"</div><button class="x" data-x="install">${ic(P.x, 16)}</button></div>`;
+  }
+  if(!html && pushOk() && S.me && Notification.permission === 'default' && !later('push'))
+    html = `<div class="note">${ic(P.bell, 26)}<div style="flex:1"><b>Get notified of new messages</b>So you never miss a message from the team</div><button class="go" data-n="push">Turn on</button><button class="x" data-x="push">${ic(P.x, 16)}</button></div>`;
+  box.innerHTML = html;
+  box.querySelectorAll('[data-x]').forEach(b => b.onclick = () => { setLater(b.dataset.x); notes(); });
+  box.querySelectorAll('[data-n]').forEach(b => b.onclick = async () => {
+    if(b.dataset.n === 'install' && installEvt){ installEvt.prompt(); const r = await installEvt.userChoice; installEvt = null; if(r.outcome === 'accepted') toast('Mavis Chat added ✓'); notes(); }
+    if(b.dataset.n === 'push'){ if(await pushSubscribe(true)) toast('Notifications on ✓'); }
+  });
+}
+function tellViewing(){
+  try{ const sw = navigator.serviceWorker && navigator.serviceWorker.controller; if(sw) sw.postMessage({ type:'viewing', thread: document.visibilityState === 'visible' && S.active ? S.active : null }); }catch(e){}
+}
+setInterval(tellViewing, 20000);
+if('serviceWorker' in navigator) navigator.serviceWorker.addEventListener('message', e => { const d = e.data || {}; if(d.type === 'open-chat' && d.thread && S.threads[d.thread]) openThread(d.thread); });
+function openFromUrl(){
+  let id = null; try{ const p = new URLSearchParams(location.search); id = p.get('t') || p.get('chat'); }catch(e){}
+  if(!id || !S.threads[id]) return;
+  try{ history.replaceState(null, '', location.pathname); }catch(e){}
+  openThread(id, true);
+  if(window.innerWidth < 860) history.pushState({t:id}, '', location.pathname);
+}
+function gate(notActive){
+  const g = document.createElement('div'); g.className = 'gate';
+  g.innerHTML = `<img src="/chat/icon-192.png" alt=""><h1>Mavis Chat</h1><p>${notActive ? 'Your Mavis login isn\'t active. Ask your manager to switch it on.' : 'Sign in to Mavis once on this phone, then come back here - you\'ll stay signed in.'}</p><a href="/?next=chat">Sign in to Mavis</a>`;
+  document.body.appendChild(g);
+}
+
+// ── Taps ──
+$('rows').addEventListener('click', e => {
+  const r = e.target.closest('.row'); if(!r) return;
+  openThread(r.dataset.t);
+  if(r.dataset.m) setTimeout(() => jump(r.dataset.m), 150);
+});
+$('pills').addEventListener('click', e => { const b = e.target.closest('[data-f]'); if(!b) return; S.filter = b.dataset.f; renderList(); $('rows').scrollTop = 0; });
+$('q').addEventListener('input', e => { S.q = e.target.value; renderList(); });
+$('fab').onclick = () => peopleSheet('New chat');
+$('tabPeople').onclick = () => peopleSheet('People');
+$('tabChats').onclick = () => { S.filter = 'all'; S.q = ''; $('q').value = ''; renderList(); $('rows').scrollTop = 0; };
+$('menuBtn').onclick = () => {
+  const o = sheet(`<h3>${esc(S.me ? pname(me()) : 'Mavis Chat')}</h3><div class="sub">${esc((S.company && S.company.name) || '')}</div>
+    <a class="act" style="text-decoration:none;color:inherit" href="/">${ic(P.grid, 22)}Open full Mavis</a>
+    ${pushOk() && Notification.permission !== 'granted' ? `<button class="act" data-a="push">${ic(P.bell, 22)}Turn on notifications</button>` : ''}
+    <button class="act" data-a="refresh">${ic('<path d="M21 12a9 9 0 1 1-3-6.7L21 8"/><path d="M21 3v5h-5"/>', 22)}Refresh chats</button>`);
+  o.querySelectorAll('[data-a]').forEach(b => b.onclick = async () => { closeSheet(); if(b.dataset.a === 'push'){ if(await pushSubscribe(true)) toast('Notifications on ✓'); } else { toast('Refreshing…'); await loadAll(); } });
+};
+$('th').addEventListener('click', e => {
+  if(e.target.closest('#backBtn')){ if(history.state && history.state.t) history.back(); else closeThread(); return; }
+  if(e.target.closest('#thMenu')) return threadMenu();
+  if(e.target.closest('#thInfo')){ const t = S.threads[S.active]; if(t && t.kind !== 'direct') showMembers(t); }
+});
+const msgsEl = $('msgs');
+function jump(id){ const el = $('m-' + id); if(!el) return; el.scrollIntoView({block:'center', behavior:'smooth'}); S.sel = id; renderMsgs(true); setTimeout(() => { if(S.sel === id){ S.sel = null; renderMsgs(true); } }, 1400); }
+msgsEl.addEventListener('click', e => {
+  const z = e.target.closest('[data-zoom]'); if(z){ const v = document.createElement('div'); v.className = 'viewer'; v.innerHTML = `<img src="${z.src}" alt=""><button aria-label="Close">${ic(P.x, 24)}</button>`; v.onclick = () => v.remove(); document.body.appendChild(v); return; }
+  const pl = e.target.closest('[data-play]'); if(pl) return playVoice(pl.dataset.play);
+  const rb = e.target.closest('[data-react]'); if(rb){ const m = S.view[Number(rb.dataset.i)]; if(m) react(m, rb.dataset.react); return; }
+  const q = e.target.closest('[data-jump]'); if(q) return jump(q.dataset.jump);
+});
+// press and hold a message (or right-click on a computer)
+(function(){
+  let timer = null, sx = 0, sy = 0, fired = 0;
+  const idx = e => { const m = e.target.closest('.m'); return m ? Number(m.dataset.i) : -1; };
+  msgsEl.addEventListener('touchstart', e => { clearTimeout(timer); const i = idx(e); if(i < 0 || e.target.closest('a,video,[data-play],[data-react]')) return; sx = e.touches[0].clientX; sy = e.touches[0].clientY; timer = setTimeout(() => { fired = Date.now(); msgActions(i); }, 420); }, {passive:true});
+  msgsEl.addEventListener('touchmove', e => { const t = e.touches[0]; if(Math.abs(t.clientX - sx) > 10 || Math.abs(t.clientY - sy) > 10) clearTimeout(timer); }, {passive:true});
+  msgsEl.addEventListener('touchend', e => { clearTimeout(timer); if(Date.now() - fired < 600 && e.cancelable) e.preventDefault(); });
+  msgsEl.addEventListener('touchcancel', () => clearTimeout(timer));
+  msgsEl.addEventListener('contextmenu', e => { const i = idx(e); if(i < 0) return; e.preventDefault(); if(Date.now() - fired > 600) msgActions(i); });
+  msgsEl.addEventListener('dblclick', e => { const i = idx(e); if(i >= 0 && !('ontouchstart' in window)) msgActions(i); });
+})();
+msgsEl.addEventListener('scroll', () => { const gap = msgsEl.scrollHeight - msgsEl.scrollTop - msgsEl.clientHeight; S.stick = gap < 120; $('down').classList.toggle('show', gap > 300); }, {passive:true});
+// photos arriving after the text: stay at the newest message if that's where you were
+msgsEl.addEventListener('load', () => { if(S.stick) msgsEl.scrollTop = msgsEl.scrollHeight; }, true);
+$('down').onclick = () => msgsEl.scrollTo({top:msgsEl.scrollHeight, behavior:'smooth'});
+$('comp').addEventListener('input', e => { if(e.target.id === 'ta'){ grow(); sendIcon(); } });
+$('comp').addEventListener('keydown', e => { if(e.target.id === 'ta' && e.key === 'Enter' && !e.shiftKey && !('ontouchstart' in window)){ e.preventDefault(); sendText(); } });
+$('comp').addEventListener('click', e => {
+  const b = e.target.closest('button'); if(!b) return;
+  if(b.id === 'sendBtn'){ if($('ta').value.trim()) sendText(); else startRec(); }
+  if(b.id === 'attBtn'){ const o = sheet(`<button class="act" data-k="media">${ic(P.img, 22)}Photo or video</button><button class="act" data-k="doc">${ic(P.doc, 22)}Document</button>`); o.querySelectorAll('[data-k]').forEach(x => x.onclick = () => { closeSheet(); pick(x.dataset.k); }); }
+  if(b.id === 'camBtn') pick('camera');
+  if(b.id === 'rpX'){ S.reply = null; renderComposer(); }
+  if(b.id === 'recCancel') stopRec(false);
+  if(b.id === 'recSend') stopRec(true);
+});
+window.addEventListener('resize', () => { if(S.active) $('msgs').scrollTop = $('msgs').scrollHeight; });
+
+if(/[?&]debug\b/.test(location.search)) window.__S = S;
+boot();
+})();
+</script>
+</body>
+</html>

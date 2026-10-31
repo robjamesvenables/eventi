@@ -1673,6 +1673,10 @@ body.ev-viewonly .pnl-open,body.ev-viewonly .pnl-pdf-top{display:none!important}
 #p-chat > .ph{background:#0F1E2E;border-radius:20px;padding:20px 24px;margin:0 0 16px!important;align-items:center}
 #p-chat > .ph .ph-title{color:#fff!important;font-size:26px!important;letter-spacing:-.5px}
 #p-chat > .ph .ph-sub{color:#CBD5E1!important}
+#p-chat > .ph{justify-content:space-between;gap:12px}
+.mvchat-get{display:inline-flex;align-items:center;gap:8px;flex:none;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.22);color:#fff;border-radius:999px;padding:6px 14px 6px 6px;font-weight:800;font-size:13px;text-decoration:none;white-space:nowrap}
+.mvchat-get img{width:26px;height:26px;border-radius:7px}
+@media(max-width:700px){#p-chat > .ph{position:relative}#p-chat > .ph .mvchat-get{position:absolute;right:14px;top:16px;padding:4px 11px 4px 4px;font-size:12px;width:auto!important}}
 @media(max-width:700px){#p-chat > .ph{margin:0 16px 14px!important;padding:18px 20px!important}}
 .req-banner{background:#0F1E2E;border-radius:20px;padding:20px 24px;margin-bottom:16px}
 .req-banner .req-hello{color:#fff;font-size:26px;letter-spacing:-.5px}
@@ -5051,6 +5055,7 @@ html:has(#menuDetailOverlay[style*="flex"]),html:has(#menuDetailOverlay[style*="
           <div class="ph-title">Chat</div>
           <div class="ph-sub">Your team, by department or one to one</div>
         </div>
+        <a class="mvchat-get" href="/chat/" title="Mavis Chat opens straight into your chats - add it to your phone's home screen"><img src="/chat/icon-192.png" alt="">Mavis Chat app</a>
       </div>
 
       <div id="chat-card" style="background:white;border:1.5px solid #E2E8F0;border-radius:14px;overflow:hidden;display:flex;min-height:420px">
@@ -6924,6 +6929,16 @@ function appClearDemoState(){
              currentVenue = 'a'; renderVenueSwitcherButton(); renderVenueDropdown(); });
 }
 function authEnterApp(){
+  // Signed in from Mavis Chat: go straight back to it. "New group" from Mavis Chat: open the group maker here.
+  try{
+    const qp = new URLSearchParams(location.search);
+    if(myProfile && qp.get('next') === 'chat'){ location.replace('/chat/'); return; }
+    if(myProfile && qp.get('newgroup')){
+      history.replaceState(history.state, '', location.pathname + location.hash);
+      const go = (n) => { if(CH.ready){ nav('chat'); chat2GroupEditor(); } else if(n < 40) setTimeout(() => go(n + 1), 250); };
+      setTimeout(() => go(0), 300);
+    }
+  }catch(e){}
   setTimeout(() => { try{ kbOpenFromUrl(); }catch(e){} }, 900);
   setTimeout(() => { try{ sgOpenFromUrl(); }catch(e){} }, 950);
   setTimeout(() => { try{ msOpenFromUrl(); }catch(e){} }, 1000);

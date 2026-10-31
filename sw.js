@@ -92,12 +92,21 @@ self.addEventListener('notificationclick', (event) => {
   const data = event.notification.data || {};
   event.waitUntil((async () => {
     const wins = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
-    for (const w of wins) {
-      if (new URL(w.url).origin === self.location.origin) {
-        await w.focus();
-        w.postMessage({ type: 'open-chat', thread: data.thread });
-        return;
-      }
+    const ours = wins.filter(w => new URL(w.url).origin === self.location.origin);
+    const isChatWin = w => new URL(w.url).pathname.startsWith('/chat');
+    // A chat message opens Mavis Chat (the fast chat-only app). Requests, tasks and orders open full Mavis.
+    const isChatMsg = data.thread && !/^(req|task|ord|suggestion)-/.test(String(data.thread));
+    if (isChatMsg) {
+      const target = ours.find(isChatWin) || ours.find(w => w.visibilityState === 'visible');
+      if (target) { await target.focus(); target.postMessage({ type: 'open-chat', thread: data.thread }); return; }
+      await self.clients.openWindow('/chat/?t=' + encodeURIComponent(data.thread));
+      return;
+    }
+    const main = ours.find(w => !isChatWin(w));
+    if (main) {
+      await main.focus();
+      main.postMessage({ type: 'open-chat', thread: data.thread });
+      return;
     }
     await self.clients.openWindow(data.url || '/');
   })());

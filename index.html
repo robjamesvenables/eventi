@@ -17130,6 +17130,7 @@ function appLoadAllData(){
   surveyRenderQr();
   businessMetricsLoadFromSupabase();
   stickyLoadMyNotes();
+  setTimeout(() => { try{ predictorWarm(); }catch(e){} }, 3000);
 }
 // (Data loads from authEnterApp, once the person and their company are known - needed so
 // demo content is only added for the demo company.)
@@ -23073,19 +23074,35 @@ async function predictorFetchCurrency(){
   return results;
 }
 
+// Weather, holidays and currency come from outside services, so they are fetched in the
+// background shortly after the app opens. By the time someone taps Forecast it is ready.
+let predictorWarmPromise = null;
+function predictorWarm(){
+  if(predictorData.loaded) return Promise.resolve();
+  if(!predictorWarmPromise){
+    predictorWarmPromise = Promise.all([predictorFetchHolidays(), predictorFetchWeather(), predictorFetchCurrency()])
+      .then(([holidays, weather, currency]) => { predictorData = { holidays, weather, currency, loaded: true }; })
+      .finally(() => { predictorWarmPromise = null; });
+  }
+  return predictorWarmPromise;
+}
+
 async function predictorLoadAll(){
   document.getElementById('predictor-loading').style.display = 'block';
   document.getElementById('predictor-body').style.display = 'none';
-  // Ensures the real Reporting/CSV history is actually in memory before computing anything
-  // from it - this page shouldn't silently depend on the app-init load (or a prior visit to
-  // Analytics) having already finished by the time someone opens Predictor directly.
-  const [holidays, weather, currency] = await Promise.all([
-    predictorFetchHolidays(), predictorFetchWeather(), predictorFetchCurrency(), (businessMetrics && businessMetrics.length && Date.now() - businessMetricsLoadedAt < 5 * 60000) ? Promise.resolve() : businessMetricsLoadFromSupabase()
-  ]);
-  predictorData = { holidays, weather, currency, loaded: true };
+  // History already in memory (loaded when the app opened) is used straight away - an older
+  // copy is refreshed quietly afterwards instead of making everyone wait for it again.
+  const haveMetrics = businessMetrics && businessMetrics.length;
+  await Promise.all([predictorWarm(), haveMetrics ? Promise.resolve() : businessMetricsLoadFromSupabase()]);
   document.getElementById('predictor-loading').style.display = 'none';
   document.getElementById('predictor-body').style.display = 'block';
   predictorRenderBody();
+  if(haveMetrics && Date.now() - businessMetricsLoadedAt > 5 * 60000){
+    businessMetricsLoadFromSupabase().then(() => {
+      const pg = document.getElementById('p-predictor');
+      if(pg && pg.classList.contains('on')) predictorRenderBody();
+    });
+  }
 }
 
 function predictorHolidayForDate(countryCode, date){
@@ -23241,7 +23258,9 @@ function predictorFmtMoney(v){
 }
 
 function predictorRender(){
-  if(!predictorData.loaded){ predictorLoadAll(); return; }
+  if(!predictorData.loaded || !businessMetrics || !businessMetrics.length){ predictorLoadAll(); return; }
+  document.getElementById('predictor-loading').style.display = 'none';
+  document.getElementById('predictor-body').style.display = 'block';
   predictorRenderBody();
 }
 

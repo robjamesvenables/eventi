@@ -15716,9 +15716,46 @@ async function barLoadFromSupabase(){
       allergens: row.allergens, allergensColor: row.allergens_color, ingredients: row.ingredients,
       method: row.method, photo: row.photo || ''
     }));
+    if(typeof appIsDemoCompany === 'function' && appIsDemoCompany() && myProfile) await barEnsureDemoDrinks();
   } catch(e){
     console.warn('Bar Supabase load failed, using demo data (run the SQL if this is the first load)', e);
   }
+}
+
+// Demo company only: if the signature cocktails (with the Espresso Martini photo) have gone
+// missing, put a live cocktail list and the Espresso Martini recipe back. Never runs for a
+// real client, and never touches menus that are already there.
+let barDemoChecked = false;
+async function barEnsureDemoDrinks(){
+  if(barDemoChecked) return; barDemoChecked = true;
+  const isEM = x => /espresso martini/i.test((x && x.name) || '');
+  const photo = 'recipe-photos/espresso-martini.webp';
+  try{
+    const hasDrink = barMenusData.some(m => m.section === 'live' && ((m.content && m.content.sections) || []).some(sec => (sec.dishes || []).some(isEM)));
+    if(!hasDrink){
+      const d = (id, name, price, desc, allergens, cost, ph) => ({ id, name, cat:'Cocktail', serves:'1', price, desc, allergens, foodCostPct:cost, photo:ph || '' });
+      const content = { sections:[
+        { id:1, name:'Signatures', dishes:[
+          d(1, 'Espresso Martini', 150000, 'Vodka, coffee liqueur, fresh espresso', ['Dairy'], 18, photo),
+          d(2, 'Ember Spritz', 145000, 'Aperol, passionfruit, prosecco', [], 16),
+          d(3, 'Tide Margarita', 155000, 'Tequila, lime, smoked salt', [], 17),
+          d(4, 'Rooftop Negroni', 160000, 'Gin, Campari, coconut vermouth', [], 19) ] },
+        { id:2, name:'Low & No', dishes:[
+          d(5, 'Garden Cooler', 95000, 'Cucumber, elderflower, lime, soda', [], 12),
+          d(6, 'Virgin Colada', 90000, 'Pineapple, coconut, lime', [], 14) ] } ] };
+      const now = new Date(), months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+      const row = { area: (barAreas[0] && barAreas[0].id) || 'mainbar', section:'live', cat:'Cocktails', name:'Signature Cocktails', meta:`Updated ${now.getDate()} ${months[now.getMonth()]} ${now.getFullYear()}`, links:[], content };
+      const { data, error } = await sb.from('bar_menus').insert(row).select().single();
+      if(!error && data) barMenusData.push({ id:data.id, area:row.area, section:row.section, cat:row.cat, name:row.name, meta:row.meta, links:[], content });
+    }
+    if(!barRecipesData.some(isEM)){
+      const r = { name:'Espresso Martini', cat:'Signature', cat_color:'green', serves:'1', price:'150,000', allergens:'Dairy', allergens_color:'amber',
+        ingredients:'45ml vodka, 30ml coffee liqueur, 30ml fresh espresso, 10ml sugar syrup',
+        method:'Shake all ingredients hard with ice. Double strain into a chilled coupe. Garnish with 3 coffee beans.', photo };
+      const { data, error } = await sb.from('bar_recipes').insert(r).select().single();
+      if(!error && data) barRecipesData.push({ id:data.id, name:r.name, cat:r.cat, catColor:r.cat_color, serves:r.serves, price:r.price, allergens:r.allergens, allergensColor:r.allergens_color, ingredients:r.ingredients, method:r.method, photo });
+    }
+  } catch(e){ console.warn('Demo drinks check failed', e); }
 }
 
 function barRecipeCardHtml(r){

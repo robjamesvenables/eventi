@@ -9508,6 +9508,28 @@ function rdTidyTime(t){
   if(h > 23 || m > 59) return null;
   return String(h).padStart(2, '0') + ':' + String(m).padStart(2, '0');
 }
+// Event figures (Guests, Revenue...): clicking clears the "—" or selects the number, so typing replaces it.
+// Left empty, the "—" comes back.
+document.addEventListener('focusin', e => {
+  const el = e.target;
+  if(!el || !el.classList || !el.classList.contains('beo-stat-val') || el.getAttribute('contenteditable') !== 'true') return;
+  if(/^[—–-]?$/.test(el.textContent.trim())){ el.textContent = ''; return; }
+  setTimeout(() => { if(document.activeElement !== el) return; const r = document.createRange(); r.selectNodeContents(el); const sel = window.getSelection(); sel.removeAllRanges(); sel.addRange(r); }, 0);
+});
+document.addEventListener('focusout', e => {
+  const el = e.target;
+  if(!el || !el.classList || !el.classList.contains('beo-stat-val') || el.getAttribute('contenteditable') !== 'true') return;
+  const v = el.textContent.replace(/^[—–-]+/, '').trim();
+  if(v !== el.textContent.trim()) el.textContent = v;
+  if(!v) el.textContent = '—';
+});
+// The big Guests number is a copy of "Attendance (Pax)" (that field is what's saved) - typing in either keeps both the same
+document.addEventListener('input', e => {
+  const el = e.target;
+  if(!el || el.id !== 'stat-pax') return;
+  const det = document.getElementById('det-pax');
+  if(det){ det.textContent = el.textContent.replace(/[^\d]/g, ''); if(typeof beoTriggerSave === 'function') beoTriggerSave(); }
+});
 // While typing: the colon appears by itself (1525 -> 15:25). Only plain numbers are touched.
 document.addEventListener('input', e => {
   const el = e.target;

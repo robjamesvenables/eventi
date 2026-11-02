@@ -9493,8 +9493,26 @@ function addFtRow(sectionId){
 // ── Timeline alerts: a bell on each timeline row. Pick the department(s) and how many minutes before;
 // on the day, those people get a phone pop-up ("In 10 min · 19:30 Welcome speech"). Sent by api/alerts.js.
 const RD_BELL = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>';
+// Times tidy themselves: 1520 / 15.20 / 15,20 -> 15:20, 930 -> 09:30, 9 -> 09:00 (anything else is left as typed)
+function rdTidyTime(t){
+  const v = String(t || '').trim().replace(/\s+/g, '');
+  let h, m, x;
+  if((x = v.match(/^(\d{1,2})[:.,h-](\d{1,2})$/i))){ h = +x[1]; m = +x[2]; }
+  else if((x = v.match(/^(\d{3,4})$/))){ h = +x[1].slice(0, -2); m = +x[1].slice(-2); }
+  else if((x = v.match(/^(\d{1,2})$/))){ h = +x[1]; m = 0; }
+  else return null;
+  if(h > 23 || m > 59) return null;
+  return String(h).padStart(2, '0') + ':' + String(m).padStart(2, '0');
+}
+document.addEventListener('focusout', e => {
+  const el = e.target;
+  if(!el || !el.classList || !el.classList.contains('rd-time')) return;
+  const tidy = rdTidyTime(el.textContent);
+  if(tidy && tidy !== el.textContent.trim()){ el.textContent = tidy; if(typeof beoTriggerSave === 'function') beoTriggerSave(); }
+});
 function rdBellsEnsure(){
   document.querySelectorAll('#rd-list .rd-item').forEach(it => {
+    const tm = it.querySelector('.rd-time'); if(tm && tm.getAttribute('inputmode') !== 'decimal') tm.setAttribute('inputmode', 'decimal');
     if(!it.querySelector(':scope > .rd-bell')){
       const b = document.createElement('button'); b.type = 'button'; b.className = 'rd-bell'; b.title = 'Alert a team before this';
       b.setAttribute('onclick', 'rdBellOpen(event, this)'); b.innerHTML = RD_BELL;

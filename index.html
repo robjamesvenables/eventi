@@ -8497,38 +8497,18 @@ function ebBoard(){
   if(!beoBoard || typeof beoBoard !== 'object') beoBoard = {};
   const b = beoBoard;
   if(!Array.isArray(b.items)) b.items = [];
-  if(!b.pay || typeof b.pay !== 'object') b.pay = {};
-  if(!Array.isArray(b.pay.payments)) b.pay.payments = [];
-  if(b.pay.taxPct == null) b.pay.taxPct = ebTaxDefault();
   return b;
 }
 function ebTaxDefault(){ try{ const v = appSettings && appSettings.tax_service_pct; const n = parseFloat(v); if(!isNaN(n)) return n; }catch(e){} return EB_TAX_DEFAULT; }
-function ebTotals(){
-  const p = ebBoard().pay;
-  const sub = Number(p.subtotal) || 0, tax = Math.round(sub * (Number(p.taxPct) || 0) / 100), extras = Number(p.extras) || 0;
-  const grand = sub ? sub + tax + extras : (Number(p.grand) || 0);
-  const paid = p.payments.filter(x => x.paid).reduce((s, x) => s + (Number(x.amount) || 0), 0);
-  return { sub, tax, extras, grand, paid, balance: Math.max(0, grand - paid), pct: grand ? Math.min(100, Math.round(paid / grand * 100)) : 0 };
-}
 function ebSave(){
   beoBoard = JSON.parse(JSON.stringify(ebBoard()));
   ebSyncButton();
   if(typeof beoTriggerSave === 'function') beoTriggerSave();
 }
-// Event status follows the money: some paid = Deposit paid, all paid = Fully paid (never undoes a Cancelled)
-function ebSyncStatus(){
-  const sel = document.getElementById('beo-status'); if(!sel) return;
-  const T = ebTotals(), P = ebBoard().pay.payments;
-  if(!P.length || sel.value === 'Cancelled') return;
-  const all = P.every(x => x.paid) && T.grand && T.paid >= T.grand, some = P.some(x => x.paid);
-  const want = all ? 'Fully paid' : some ? 'Deposit paid' : null;
-  if(want && sel.value !== want){ sel.value = want; toast('Event status is now "' + want + '"'); }
-}
 function ebSyncButton(){
   const b = document.getElementById('eb-open-btn'); if(!b) return;
-  const n = ebBoard().items.length, T = ebTotals();
-  const pay = ebBoard().pay.payments.length ? ` · ${T.pct}% paid` : '';
-  b.querySelector('.eb-n').textContent = n ? n + (n === 1 ? ' item' : ' items') + pay : 'Receipts, files & notes';
+  const n = ebBoard().items.length;
+  b.querySelector('.eb-n').textContent = n ? n + (n === 1 ? ' item' : ' items') : 'Receipts, files & notes';
 }
 
 // ── Files ──
@@ -8576,7 +8556,7 @@ function ebEnsureUi(){
   if(document.getElementById('eb-css')) return;
   const st = document.createElement('style'); st.id = 'eb-css'; st.textContent = `
 #eb-body{padding:6px 0 10px}
-@media(max-width:700px){#eb-body .eb-board{margin:0 -10px;padding:26px 10px 12px;border-radius:16px}#eb-body .eb-pay{margin:0 -4px}}
+@media(max-width:700px){#eb-body .eb-board{margin:0 -10px;padding:26px 10px 12px;border-radius:16px;min-height:380px}#eb-body .eb-empty{min-height:320px}#eb-body .eb-pay{margin:0 -4px}}
 #eb-ov{position:fixed;inset:0;background:rgba(15,30,46,.55);display:none;align-items:center;justify-content:center;z-index:10002;padding:20px}
 #eb-ov.on{display:flex}
 .eb-pop{background:#F4F4F2;width:min(1280px,100%);height:min(94vh,100%);border-radius:22px;display:flex;flex-direction:column;overflow:hidden;font-family:Inter,sans-serif;color:#0F1E2E}
@@ -8598,13 +8578,13 @@ function ebEnsureUi(){
 .eb-chips{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:6px}
 .eb-chip{background:#fff;border:1px solid #E7E5E0;border-radius:999px;padding:7px 13px;font:700 13px Inter,sans-serif;color:#64748B;cursor:pointer}
 .eb-chip.on{background:#F3E6C9;border-color:#E9D3A3;color:#7A5A16}
-.eb-board{background:#EFEDE8;border:1px solid #E4E0D8;border-radius:22px;padding:30px 22px 22px;display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:24px 20px;align-items:start}
+.eb-board{background:#EFEDE8;border:1px solid #E4E0D8;border-radius:22px;padding:36px 26px 28px;display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:30px 24px;align-items:start;min-height:560px;align-content:start}
 .eb-card{position:relative;background:#fff;border-radius:10px;border:1px solid #ECEAE5;box-shadow:0 1px 2px rgba(15,30,46,.06),0 6px 16px rgba(15,30,46,.06);padding:18px 16px 12px;min-width:0}
 .eb-card.done{opacity:.6}
 .eb-clip{position:absolute;top:-14px;right:22px}
 .eb-kind{display:flex;align-items:center;gap:6px;font-size:11px;font-weight:800;letter-spacing:.9px;text-transform:uppercase;color:#64748B;margin-bottom:8px;padding-right:34px}
 .eb-kind svg{color:#94A3B8}
-.eb-card h4{margin:0 0 8px;font-size:15.5px;letter-spacing:-.2px;line-height:1.3;word-break:break-word}
+.eb-card h4{margin:0 0 8px;font-size:16.5px;letter-spacing:-.2px;line-height:1.3;word-break:break-word}
 .eb-amt{font-size:20px;font-weight:900;letter-spacing:-.4px;margin:0 0 8px}
 .eb-img{display:block;width:100%;border-radius:4px;border:1px solid #EEE;cursor:zoom-in;background:#F7F7F5;max-height:360px;object-fit:contain}
 .eb-thumbs{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}.eb-thumbs img{width:100%;height:96px;object-fit:cover;border-radius:4px;cursor:zoom-in;background:#F7F7F5}
@@ -8613,7 +8593,7 @@ function ebEnsureUi(){
 .eb-doc .pg{width:46px;height:58px;border-radius:4px;background:#fff;border:1px solid #E2E8F0;display:flex;align-items:center;justify-content:center;color:#2563EB;flex:none;font:900 10px Inter,sans-serif}
 .eb-doc b{display:block;font-size:13.5px;word-break:break-word}.eb-doc span{font-size:12px;color:#64748B}
 .eb-open{display:inline-flex;margin-top:8px;font-size:13px;font-weight:800;color:#0D9488;text-decoration:none}
-.eb-txt{font-size:14.5px;line-height:1.5;white-space:pre-wrap;word-break:break-word;color:#1E293B}
+.eb-txt{font-size:15px;line-height:1.5;white-space:pre-wrap;word-break:break-word;color:#1E293B}
 .eb-ck{list-style:none;padding:0;margin:6px 0 0;font-size:14px;line-height:1.45}
 .eb-ck li{display:flex;gap:9px;align-items:flex-start;margin:7px 0;cursor:pointer}
 .eb-ck li i{width:18px;height:18px;border-radius:5px;border:2px solid #CBD5E1;flex:none;margin-top:1px;display:flex;align-items:center;justify-content:center;color:#fff}
@@ -8630,7 +8610,9 @@ function ebEnsureUi(){
 .eb-who i{width:20px;height:20px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;color:#fff;font-style:normal;font-size:9.5px;font-weight:800;flex:none}
 .eb-more{border:0;background:none;color:#94A3B8;cursor:pointer;padding:2px 4px;border-radius:6px;margin-right:-4px;display:flex}
 .eb-more:hover{background:#F1F5F9;color:#475569}
-.eb-empty{grid-column:1/-1;text-align:center;color:#94A3B8;padding:30px 10px;font-size:14px;line-height:1.6}
+.eb-empty{grid-column:1/-1;min-height:480px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;text-align:center;color:#64748B;font-size:15px;line-height:1.6}
+.eb-empty b.t{font-size:19px;color:#0F1E2E}
+.eb-empty .ic{width:64px;height:64px;border-radius:18px;background:white;display:flex;align-items:center;justify-content:center;color:#C4973B;box-shadow:0 6px 16px rgba(15,30,46,.08)}
 .eb-sheet{position:fixed;inset:0;background:rgba(15,30,46,.5);z-index:10010;display:flex;align-items:center;justify-content:center;padding:16px}
 .eb-form{background:#fff;border-radius:18px;width:min(520px,100%);max-height:92vh;overflow-y:auto;padding:20px 20px 16px;font-family:Inter,sans-serif;color:#0F1E2E}
 .eb-form h3{margin:0 0 4px;font-size:19px}.eb-form .sub{color:#64748B;font-size:13px;margin:0 0 14px}
@@ -8675,32 +8657,15 @@ window.ebOpen = function(){
 };
 window.ebClose = function(){};
 async function ebShow(){ ebEnsureUi(); ebBoard(); ebRender(); await ebSignAll(); ebRender(); }
-function ebPayHtml(){
-  const b = ebBoard(), P = b.pay.payments, T = ebTotals();
-  if(!P.length && !T.grand){
-    return `<div class="eb-payempty"><div><b>Payments</b><span>Add the client's total and their payments (deposits, balance) to track what's been paid.</span></div>${ebReadOnly() ? '' : `<button class="eb-add" onclick="ebEditPayments()">Set up payments</button>`}</div>`;
-  }
-  const next = P.filter(x => !x.paid).sort((a, c) => String(a.due || '9').localeCompare(String(c.due || '9')))[0];
-  const late = next && next.due && next.due < ebToday();
-  const steps = P.map(x => `${ebEsc(x.label || 'Payment')} ${x.paid ? '✓' : (x.due && x.due < ebToday() ? '- late' : '- waiting')}`).join(' &nbsp;·&nbsp; ');
-  return `<div class="eb-pay">
-    <div><small>GRAND TOTAL</small><b>${ebRp(T.grand)}</b><em>${T.sub ? 'incl. Tax &amp; Service ' + String(b.pay.taxPct).replace('.', ',') + '%' + (Number(b.pay.taxPct) !== ebTaxDefault() ? ' (special rate)' : '') : 'Total to pay'}</em></div>
-    <div><small>PAID</small><b style="color:#2DD4BF">${ebRp(T.paid)}</b><em>${P.filter(x => x.paid).length} of ${P.length} payment${P.length === 1 ? '' : 's'}</em></div>
-    <div><small>BALANCE</small><b style="color:${T.balance ? (late ? '#F87171' : '#FCD34D') : '#4ADE80'}">${T.balance ? ebRp(T.balance) : 'Paid in full'}</b><em>${next ? (next.due ? (late ? 'Was due ' : 'Due ') + ebDate(next.due) : 'No due date') : 'Nothing left to pay'}</em></div>
-    <div><small>${T.pct}% PAID</small><div class="eb-bar"><i style="width:${T.pct}%"></i></div><em>${steps || 'No payments yet'}</em>${ebReadOnly() ? '' : `<br><button class="eb-paybtn" onclick="ebEditPayments()">Edit total &amp; payments</button>`}</div>
-  </div>`;
-}
 function ebCardHtml(it){
   const K = EB_KINDS[it.type] || EB_KINDS.note, files = it.files || [];
   const who = it.by || {}, ini = String(who.name || '?').split(/\s+/).map(w => w[0]).join('').slice(0, 2).toUpperCase();
   const col = ({superadmin:'#0F1E2E', director:'#DC2626', manager:'#16A34A', supervisor:'#2563EB', teammember:'#B8862F', dailyworker:'#7C8AA0'})[who.role] || '#0D9488';
   let body = '';
   if(it.type === 'receipt'){
-    const pay = ebBoard().pay.payments.find(p => p.id === it.paymentId);
-    body += `<div class="eb-amt">${ebRp(it.amount)}</div>`;
+    if(it.title) body += `<h4>${ebEsc(it.title)}</h4>`;
     const f = files[0];
     if(f) body += ebIsImg(f) ? `<img class="eb-img" src="${ebEsc(ebUrl(f))}" alt="Receipt" onclick="ebZoom(this.src)" loading="lazy">` : ebDocHtml(f);
-    body += `<div class="eb-row">${it.paidOn ? `<span class="eb-paid">${ebIc('<path d="M20 6 9 17l-5-5"/>', 13, 2.6)} Paid ${ebShortDate(it.paidOn + 'T00:00:00')}</span>` : ''}<span style="font-size:12px;color:#64748B;font-weight:700">${ebEsc(it.method || 'Bank transfer')}</span></div>`;
   } else if(it.type === 'map'){
     if(it.title) body += `<h4>${ebEsc(it.title)}</h4>`;
     const q = it.place || it.link || '';
@@ -8717,8 +8682,7 @@ function ebCardHtml(it){
     if(it.checklist && it.checklist.length) body += `<ul class="eb-ck">${it.checklist.map((c, i) => `<li class="${c.done ? 'on' : ''}" onclick="ebTick('${it.id}',${i})"><i>${c.done ? ebIc('<path d="M20 6 9 17l-5-5"/>', 12, 3) : ''}</i><span>${ebEsc(c.t)}</span></li>`).join('')}</ul>`;
     if(it.link) body += `<a class="eb-open" target="_blank" rel="noopener" href="${ebEsc(it.link)}">Open link ↗</a>`;
   }
-  const rpay = it.type === 'receipt' ? ebBoard().pay.payments.find(p => p.id === it.paymentId) : null;
-  const label = K.label + (rpay && rpay.label ? ' · ' + rpay.label : it.type === 'photo' && files.length > 1 ? ' · ' + files.length : '');
+  const label = K.label + ( it.type === 'photo' && files.length > 1 ? ' · ' + files.length : '');
   const more = ebReadOnly() ? '' : `<button class="eb-more" onclick="ebMenu(event,'${it.id}')" aria-label="More">${ebIc('<circle cx="5" cy="12" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/>', 18, 3)}</button>`;
   return `<div class="eb-card${it.done ? ' done' : ''}">${EB_CLIP}
     <div class="eb-kind">${ebIc(K.icon, 14, 2.2)} ${ebEsc(label)}</div>${body}
@@ -8728,28 +8692,17 @@ function ebDocHtml(f){
   const ext = (String(f.name || '').split('.').pop() || 'FILE').slice(0, 4).toUpperCase();
   return `<a class="eb-doc" href="${ebEsc(ebUrl(f))}" target="_blank" rel="noopener"><div class="pg">${ebEsc(ext)}</div><div><b>${ebEsc(f.name || 'File')}</b><span>${ebSize(f.size)} · Open ↗</span></div></a>`;
 }
-function ebDueCards(){
-  // Payments still waiting get an empty receipt card, so Sales can drop the bank receipt straight in
-  return ebBoard().pay.payments.filter(p => !p.paid).map(p => {
-    const late = p.due && p.due < ebToday();
-    return `<div class="eb-card">${EB_CLIP}<div class="eb-kind">${ebIc(EB_KINDS.receipt.icon, 14, 2.2)} Receipt · ${ebEsc(p.label || 'Payment')}</div><div class="eb-amt">${ebRp(p.amount)}</div>
-      ${ebCanReceipt() ? `<button class="eb-drop" onclick="ebAdd('receipt','${p.id}')">+ Add the bank receipt<span>Photo or PDF of the client's transfer</span></button>` : `<div class="eb-drop" style="cursor:default">Waiting for the client's payment<span>Sales adds the receipt when it arrives</span></div>`}
-      <div class="eb-row"><span class="eb-wait${late ? ' eb-late' : ''}">${ebIc('<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>', 13, 2.4)} ${p.due ? (late ? 'Late · was due ' : 'Due ') + ebDate(p.due) : 'No due date'}</span></div></div>`;
-  }).join('');
-}
 function ebRender(){
   const body = document.getElementById('eb-body'); if(!body) return;
   const b = ebBoard();
   const counts = {}; b.items.forEach(it => { const g = (EB_KINDS[it.type] || EB_KINDS.note).group; counts[g] = (counts[g] || 0) + 1; });
-  const waiting = b.pay.payments.filter(p => !p.paid).length;
   let items = b.items.slice().sort((x, y) => (x.done ? 1 : 0) - (y.done ? 1 : 0) || String(y.at).localeCompare(String(x.at)));
   if(EB.filter !== 'all') items = items.filter(it => (EB_KINDS[it.type] || EB_KINDS.note).group === EB.filter);
-  const showDue = EB.filter === 'all' || EB.filter === 'receipts';
-  const cards = (showDue ? ebDueCards() : '') + items.map(ebCardHtml).join('');
-  body.innerHTML = ebPayHtml() + `
+  const cards = items.map(ebCardHtml).join('');
+  body.innerHTML = `
     <div class="eb-head"><div><h3>Board</h3><p>Receipts, layouts, files, photos, maps, drawings and notes - for everyone on this event</p></div>${ebReadOnly() ? '' : `<button class="eb-add" onclick="ebAddMenu()">+ Add to board</button>`}</div>
-    <div class="eb-chips">${EB_GROUPS.map(([k, l]) => { const n = k === 'all' ? b.items.length : (counts[k] || 0) + (k === 'receipts' ? waiting : 0); return `<button class="eb-chip${EB.filter === k ? ' on' : ''}" onclick="ebFilter('${k}')">${l}${n ? ' ' + n : ''}</button>`; }).join('')}</div>
-    <div class="eb-board">${cards || `<div class="eb-empty">Nothing here yet.<br>${ebReadOnly() ? '' : 'Tap <b>+ Add to board</b> to pin a receipt, layout, file, photo, map, drawing or note.'}</div>`}</div>`;
+    <div class="eb-chips">${EB_GROUPS.map(([k, l]) => { const n = k === 'all' ? b.items.length : (counts[k] || 0); return `<button class="eb-chip${EB.filter === k ? ' on' : ''}" onclick="ebFilter('${k}')">${l}${n ? ' ' + n : ''}</button>`; }).join('')}</div>
+    <div class="eb-board">${cards || `<div class="eb-empty"><div class="ic">${ebIc('<path d="M21.4 11.1 12.2 20.3a6 6 0 0 1-8.5-8.5l9.2-9.2a4 4 0 0 1 5.7 5.7l-9.2 9.2a2 2 0 0 1-2.8-2.8l8.5-8.5"/>', 30)}</div><b class="t">${EB.filter === 'all' ? 'The board is empty' : 'Nothing here yet'}</b><span>Pin receipts, layouts, files, photos, maps, drawings and notes<br>for everyone working on this event.</span>${ebReadOnly() ? '' : '<button class="eb-add" onclick="ebAddMenu()">+ Add to board</button>'}</div>`}</div>`;
   ebSyncButton();
   const sn = document.getElementById('eb-sec-n'); if(sn){ const n = b.items.length; sn.textContent = n ? '· ' + n + (n === 1 ? ' item' : ' items') : ''; }
 }
@@ -8776,13 +8729,12 @@ window.ebMenu = function(e, id){
     m.remove();
     if(btn.dataset.a === 'done'){ it.done = !it.done; ebRender(); ebSave(); }
     if(btn.dataset.a === 'edit') ebForm(it.type, it);
-    if(btn.dataset.a === 'del') appConfirmShow({ title:'Remove from the board?', msg: it.type === 'receipt' ? 'The payment it belongs to will go back to "not paid".' : 'This removes it for everyone on the event.', onOk: () => ebDelete(it) });
+    if(btn.dataset.a === 'del') appConfirmShow({ title:'Remove from the board?', msg: 'This removes it for everyone on the event.', onOk: () => ebDelete(it) });
   });
 };
 function ebDelete(it){
   const b = ebBoard();
   b.items = b.items.filter(x => x.id !== it.id);
-  if(it.type === 'receipt' && it.paymentId){ const p = b.pay.payments.find(x => x.id === it.paymentId); if(p && p.receiptId === it.id){ p.paid = false; p.paidOn = null; p.receiptId = null; } ebSyncStatus(); }
   const paths = (it.files || []).map(f => f.path).filter(Boolean);
   if(paths.length) sb.storage.from(EB_BUCKET).remove(paths).catch(() => {});
   ebRender(); ebSave(); toast('Removed from the board');
@@ -8792,7 +8744,7 @@ window.ebAddMenu = function(){
   const opt = (k, title, sub, dis) => `<button data-k="${k}"${dis ? ' disabled' : ''}><span>${ebIc(EB_KINDS[k].icon, 18)}</span><div>${title}<small>${sub}</small></div></button>`;
   const s = document.createElement('div'); s.className = 'eb-sheet';
   s.innerHTML = `<div class="eb-form"><h3>Add to the board</h3><p class="sub">Everyone on this event will see it</p><div class="eb-pick">
-    ${opt('receipt', 'Bank receipt', ebCanReceipt() ? 'Proof of a client payment' : 'Sales and managers only', !ebCanReceipt())}${opt('layout', 'Layout / floor plan', 'Image or PDF')}
+    ${opt('receipt', 'Receipt', ebCanReceipt() ? 'Photo or PDF of a bank slip' : 'Sales and managers only', !ebCanReceipt())}${opt('layout', 'Layout / floor plan', 'Image or PDF')}
     ${opt('file', 'File', 'PDF, Word, Excel…')}${opt('photo', 'Photos', 'One or several')}
     ${opt('map', 'Map / location', 'A place or Google Maps link')}${opt('drawing', 'Drawing', 'Sketch it with your finger')}
     ${opt('note', 'Note', 'Text and a to-do list')}</div><div class="eb-fbtns"><button class="eb-no">Cancel</button></div></div>`;
@@ -8807,19 +8759,13 @@ window.ebAdd = function(type, paymentId){ ebForm(type, null, paymentId); };
 function ebForm(type, it, paymentId){
   ebCloseSheets();
   const edit = !!it, K = EB_KINDS[type];
-  const b = ebBoard(), pays = b.pay.payments;
+  const b = ebBoard();
   let files = edit ? (it.files || []).slice() : [];
   const s = document.createElement('div'); s.className = 'eb-sheet';
   const accept = type === 'receipt' || type === 'layout' ? 'image/*,application/pdf' : type === 'photo' ? 'image/*' : type === 'file' ? '.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.csv,.txt,image/*,application/pdf' : '';
   let f = '';
   if(accept) f += `<label>${type === 'receipt' ? 'Receipt (photo or PDF)' : type === 'photo' ? 'Photos' : 'File'}</label><button type="button" class="eb-filebtn" id="ebf-pick">${ebIc('<path d="M21.4 11.1 12.2 20.3a6 6 0 0 1-8.5-8.5l9.2-9.2a4 4 0 0 1 5.7 5.7l-9.2 9.2a2 2 0 0 1-2.8-2.8l8.5-8.5"/>', 20)}<span id="ebf-files">${type === 'photo' ? 'Choose photos' : type === 'receipt' ? 'Choose a photo or PDF' : 'Choose a file'}</span></button><input id="ebf-file" type="file" accept="${accept}"${type === 'photo' ? ' multiple' : ''} style="display:none">`;
-  if(type === 'receipt'){
-    const pid = edit ? it.paymentId : paymentId;
-    f += `<label>Which payment</label><select id="ebf-pay">${pays.map(p => `<option value="${p.id}"${p.id === pid ? ' selected' : ''}>${ebEsc(p.label || 'Payment')} · ${ebRp(p.amount)}${p.paid && p.id !== pid ? ' (paid)' : ''}</option>`).join('')}<option value="">Another payment (not on the list)</option></select>
-      <label>Amount received (Rp)</label><input id="ebf-amt" inputmode="numeric" value="${edit ? ebEsc((it.amount || 0).toLocaleString('id-ID')) : ''}" placeholder="e.g. 129.483.200">
-      <label>Date paid</label><input id="ebf-date" type="date" value="${edit ? ebEsc(it.paidOn || '') : ebToday()}">
-      <label>How they paid</label><select id="ebf-method">${['Bank transfer','Card','Cash','Other'].map(m => `<option${edit && it.method === m ? ' selected' : ''}>${m}</option>`).join('')}</select>`;
-  }
+  if(type === 'receipt') f += `<label>What is it? (optional)</label><input id="ebf-title" value="${edit ? ebEsc(it.title || '') : ''}" placeholder="e.g. 1st DP - Rp 129.483.200">`;
   if(type === 'map'){
     f += `<label>Title</label><input id="ebf-title" value="${edit ? ebEsc(it.title || '') : ''}" placeholder="e.g. Coach drop-off - Luna lobby">
       <label>Place or Google Maps link</label><input id="ebf-place" value="${edit ? ebEsc(it.link || it.place || '') : ''}" placeholder="e.g. Luna Beach Club, Bali - or paste a maps link">
@@ -8832,7 +8778,7 @@ function ebForm(type, it, paymentId){
 
   if(['note','layout','file','photo','drawing'].includes(type)) f += `<label>${type === 'note' ? 'Note' : 'Note (optional)'}</label><textarea id="ebf-text" placeholder="${type === 'note' ? 'e.g. Peanuts in small bowls with the welcome drink' : ''}">${edit ? ebEsc(it.text || '') : ''}</textarea>`;
   if(type === 'note') f += `<label>To-do list (optional, one per line)</label><textarea id="ebf-ck" placeholder="Install 2 standing fans&#10;ARTIST ONLY sign at Elysium by 12pm">${edit && it.checklist ? ebEsc(it.checklist.map(c => c.t).join('\n')) : ''}</textarea>`;
-  s.innerHTML = `<div class="eb-form"><h3>${edit ? 'Edit' : 'Add'} ${K.label.toLowerCase()}</h3><p class="sub">${type === 'receipt' ? 'The payment is marked as paid and the totals update' : 'Pinned to the board for everyone on this event'}</p>${f}<div class="eb-fbtns"><button class="eb-no">Cancel</button><button class="eb-go">${edit ? 'Save' : 'Add to board'}</button></div></div>`;
+  s.innerHTML = `<div class="eb-form"><h3>${edit ? 'Edit' : 'Add'} ${K.label.toLowerCase()}</h3><p class="sub">Pinned to the board for everyone on this event</p>${f}<div class="eb-fbtns"><button class="eb-no">Cancel</button><button class="eb-go">${edit ? 'Save' : 'Add to board'}</button></div></div>`;
   s.addEventListener('mousedown', e => { if(e.target === s && type !== 'drawing') s.remove(); });
   document.body.appendChild(s);
   const $f = id => s.querySelector('#' + id);
@@ -8845,12 +8791,6 @@ function ebForm(type, it, paymentId){
   };
   if($f('ebf-pick')){ $f('ebf-pick').onclick = () => $f('ebf-file').click(); $f('ebf-file').onchange = showFiles; }
   showFiles();
-  const payEl = $f('ebf-pay'), amtEl = $f('ebf-amt');
-  if(payEl && amtEl){
-    const fill = () => { const p = pays.find(x => x.id === payEl.value); if(p && !edit) amtEl.value = (Number(p.amount) || 0).toLocaleString('id-ID'); };
-    payEl.onchange = fill; if(!edit) fill();
-    amtEl.addEventListener('input', () => { const n = ebNum(amtEl.value); amtEl.value = n ? n.toLocaleString('id-ID') : ''; });
-  }
   let pad = null; if(type === 'drawing') pad = ebPad($f('ebf-pad'), s);
   if(edit && type === 'drawing' && files[0]) pad.load(ebUrl(files[0]));
   s.querySelector('.eb-no').onclick = () => s.remove();
@@ -8880,12 +8820,7 @@ function ebForm(type, it, paymentId){
       rec.files = files;
       const val = id => ($f(id) ? ($f(id).value || '').trim() : '');
       if(type === 'receipt'){
-        let pid = val('ebf-pay');
-        const amount = ebNum(val('ebf-amt'));
-        if(!pid){ const np = { id:ebId(), label:'Payment ' + (pays.length + 1), amount, due:null, paid:false }; pays.push(np); pid = np.id; }
-        if(edit && it.paymentId && it.paymentId !== pid){ const op = pays.find(x => x.id === it.paymentId); if(op && op.receiptId === it.id){ op.paid = false; op.paidOn = null; op.receiptId = null; } }
-        Object.assign(rec, { paymentId:pid, amount, paidOn:val('ebf-date') || ebToday(), method:val('ebf-method') || 'Bank transfer' });
-        const p = pays.find(x => x.id === pid); if(p){ p.paid = true; p.paidOn = rec.paidOn; p.receiptId = rec.id; if(!p.amount) p.amount = amount; }
+        rec.title = val('ebf-title');
       } else if(type === 'map'){
         const place = val('ebf-place');
         Object.assign(rec, { title:val('ebf-title'), text:val('ebf-text'), link:/^https?:\/\//i.test(place) ? place : '', place:/^https?:\/\//i.test(place) ? ebPlaceFromLink(place) : place });
@@ -8898,10 +8833,9 @@ function ebForm(type, it, paymentId){
         }
       }
       if(!edit) b.items.push(rec);
-      if(type === 'receipt') ebSyncStatus();
       s.remove();
       await ebSignAll(); ebRender(); ebSave();
-      toast(type === 'receipt' ? 'Receipt added - payment marked as paid ✓' : edit ? 'Saved ✓' : 'Added to the board ✓');
+      toast(edit ? 'Saved ✓' : 'Added to the board ✓');
     }catch(e){
       console.warn('[board]', e); go.disabled = false; go.textContent = edit ? 'Save' : 'Add to board';
       toast(/too big/.test(e.message || '') ? 'That file is too big - the limit is 15 MB' : 'Could not upload - check your connection and try again');
@@ -8941,45 +8875,6 @@ function ebPad(c, host){
     blob: () => new Promise(ok => c.toBlob(ok, 'image/png'))
   };
 }
-// Total and payments (deposits, balance) for the strip at the top
-window.ebEditPayments = function(){
-  if(ebReadOnly()) return;
-  ebCloseSheets();
-  const b = ebBoard(), pay = b.pay;
-  let rows = pay.payments.map(p => Object.assign({}, p));
-  if(!rows.length) rows = [{ id:ebId(), label:'1st DP', amount:0, due:'' }, { id:ebId(), label:'Balance', amount:0, due:'' }];
-  const before = JSON.parse(JSON.stringify(pay));
-  const s = document.createElement('div'); s.className = 'eb-sheet';
-  const money = v => v ? Number(v).toLocaleString('id-ID') : '';
-  const draw = () => {
-    s.innerHTML = `<div class="eb-form"><h3>Total &amp; payments</h3><p class="sub">What the client pays, and when</p>
-      <label>Subtotal before tax (Rp)</label><input id="ebp-sub" inputmode="numeric" value="${money(pay.subtotal)}" placeholder="e.g. 229.600.000">
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px"><div><label>Tax &amp; Service %</label><input id="ebp-tax" inputmode="decimal" value="${ebEsc(String(pay.taxPct).replace('.', ','))}"></div><div><label>Extras after tax (Rp)</label><input id="ebp-ext" inputmode="numeric" value="${money(pay.extras)}" placeholder="e.g. rain stopper"></div></div>
-      <div id="ebp-tot" style="margin:12px 0 4px;padding:12px;border-radius:12px;background:#F8FAFC"></div>
-      <label>Payments</label>
-      ${rows.map((r, i) => `<div class="eb-prow" data-i="${i}"><input class="ebp-l" value="${ebEsc(r.label || '')}" placeholder="e.g. 1st DP"><input class="ebp-a" inputmode="numeric" value="${money(r.amount)}" placeholder="Amount"><input class="ebp-d" type="date" value="${ebEsc(r.due || '')}"><button aria-label="Remove" ${r.paid ? 'disabled title="Paid - remove its receipt first" style="opacity:.35"' : ''}>×</button></div>`).join('')}
-      <button id="ebp-add" style="border:1.5px dashed #CBD5E1;background:#fff;border-radius:10px;padding:9px;width:100%;font:700 13.5px Inter,sans-serif;color:#475569;cursor:pointer">+ Add a payment</button>
-      <button id="ebp-split" style="margin-top:8px;border:0;background:none;color:#0D9488;font:700 13px Inter,sans-serif;cursor:pointer">Make the last payment the balance left to pay</button>
-      <div class="eb-fbtns"><button class="eb-no">Cancel</button><button class="eb-go">Save</button></div></div>`;
-    const grab = () => {
-      pay.subtotal = ebNum(s.querySelector('#ebp-sub').value); pay.extras = ebNum(s.querySelector('#ebp-ext').value);
-      const t = parseFloat(String(s.querySelector('#ebp-tax').value).replace(',', '.')); pay.taxPct = isNaN(t) ? ebTaxDefault() : t;
-      s.querySelectorAll('.eb-prow').forEach(el => { const r = rows[Number(el.dataset.i)]; r.label = el.querySelector('.ebp-l').value.trim(); r.amount = ebNum(el.querySelector('.ebp-a').value); r.due = el.querySelector('.ebp-d').value || null; });
-    };
-    const tot = () => { grab(); const T = ebTotals(), sum = rows.reduce((a, r) => a + (r.amount || 0), 0);
-      s.querySelector('#ebp-tot').innerHTML = `<div class="eb-totline"><span>Tax &amp; Service</span><b>${ebRp(T.tax)}</b></div><div class="eb-totline"><span>Grand total</span><b>${ebRp(T.grand)}</b></div><div class="eb-totline"><span>Payments add up to</span><b style="color:${T.grand && sum !== T.grand ? '#B45309' : '#15803D'}">${ebRp(sum)}${T.grand && sum !== T.grand ? ' · ' + ebRp(Math.abs(T.grand - sum)) + (sum < T.grand ? ' short' : ' over') : ''}</b></div>`; };
-    s.querySelectorAll('input').forEach(inp => inp.addEventListener('input', () => { if(inp.inputMode === 'numeric'){ const n = ebNum(inp.value); inp.value = n ? n.toLocaleString('id-ID') : ''; } tot(); }));
-    s.querySelectorAll('.eb-prow button').forEach(btn => btn.onclick = () => { grab(); rows.splice(Number(btn.parentNode.dataset.i), 1); draw(); });
-    s.querySelector('#ebp-add').onclick = () => { grab(); rows.push({ id:ebId(), label:'', amount:0, due:'' }); draw(); };
-    s.querySelector('#ebp-split').onclick = () => { grab(); const T = ebTotals(); if(!rows.length) return; const others = rows.slice(0, -1).reduce((a, r) => a + (r.amount || 0), 0); rows[rows.length - 1].amount = Math.max(0, T.grand - others); draw(); };
-    s.querySelector('.eb-no').onclick = () => { Object.assign(pay, before); s.remove(); };
-    s.querySelector('.eb-go').onclick = () => { grab(); pay.payments = rows.filter(r => r.label || r.amount || r.paid); s.remove(); ebSyncStatus(); ebRender(); ebSave(); toast('Payments saved ✓'); };
-    tot();
-  };
-  draw();
-  s.addEventListener('mousedown', e => { if(e.target === s){ Object.assign(pay, before); s.remove(); } });
-  document.body.appendChild(s);
-};
 
 // ── CLIENT LINK (live, read-only page for the client: client.html?t=TOKEN) ──
 // Only what's in client_view (plus basic event facts) is ever readable through the link,

@@ -1666,7 +1666,7 @@ body.ev-viewonly .pnl-open,body.ev-viewonly .pnl-pdf-top{display:none!important}
 .beo-bigbtns{display:flex;gap:10px;flex:none;align-items:center}
 .eb-boardbtn{display:inline-flex;align-items:center;gap:10px;background:#C4973B;color:#0F1E2E;border:0;border-radius:14px;padding:12px 18px;font:800 15px Inter,sans-serif;cursor:pointer;box-shadow:0 8px 22px rgba(196,151,59,.35);text-align:left}
 .eb-boardbtn small{display:block;font-size:10.5px;font-weight:700;opacity:.8;max-width:150px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.pdf-export-mode .eb-boardbtn{display:none!important}
+.pdf-export-mode .eb-boardbtn,.pdf-export-mode #eb-sec{display:none!important}
 @media(max-width:700px){.beo-hd-bottom:has(.beo-bigbtns){flex-wrap:wrap}.beo-bigbtns{width:100%;margin-top:12px}.beo-bigbtns > button{flex:1 1 0;justify-content:center;margin-top:0!important;width:auto!important;padding:12px 10px!important}}
 
 .fc-hero{background:#0F1E2E!important}.fc-hero.wet{background:#1E3A5F!important}
@@ -5464,6 +5464,15 @@ html:has(#menuDetailOverlay[style*="flex"]),html:has(#menuDetailOverlay[style*="
               </div></div>
           </div>
 
+          <!-- Event Board: receipts, payments, layouts, files, photos, maps, drawings, notes (saved in plan.board) -->
+          <div class="beo-sec" id="eb-sec">
+            <div class="beo-sec-hd" onclick="tog('eb')">
+              <div class="beo-sec-label"><span class="beo-sec-ico"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px"><path d="M21.4 11.1 12.2 20.3a6 6 0 0 1-8.5-8.5l9.2-9.2a4 4 0 0 1 5.7 5.7l-9.2 9.2a2 2 0 0 1-2.8-2.8l8.5-8.5"/></svg></span> <span>Event Board</span> <span id="eb-sec-n" style="margin-left:6px;opacity:.7;font-weight:600;letter-spacing:.5px"></span></div>
+              <div class="chev open" id="cv-eb">▾</div>
+            </div>
+            <div class="beo-body open" id="bd-eb"><div id="eb-body"></div></div>
+          </div>
+
         </div><!-- /beo-doc -->
       </div><!-- /beo-wrap -->
     </div><!-- /p-beo -->
@@ -8329,7 +8338,7 @@ function beoApply(ev){
   deptLinks = plan.links || {};
   beoPnl = plan.pnl && Array.isArray(plan.pnl.cats) ? plan.pnl : null;
   beoBoard = plan.board && typeof plan.board === 'object' ? plan.board : null;
-  try{ EB.urls = {}; EB.filter = 'all'; setTimeout(ebSyncButton, 0); }catch(e){}
+  try{ EB.urls = {}; EB.filter = 'all'; setTimeout(() => { ebShow(); }, 0); }catch(e){}
   const setT=(id,v)=>{ const el=document.getElementById(id); if(el) el.textContent = v==null?'':v; };
   setT('det-name', (ev.name && ev.name!=='Untitled Event') ? ev.name : '');
   if(!document.getElementById('det-client') && det){
@@ -8564,8 +8573,10 @@ function ebSize(b){ b = Number(b) || 0; return b > 1048576 ? (b / 1048576).toFix
 
 // ── Overlay ──
 function ebEnsureUi(){
-  if(document.getElementById('eb-ov')) return;
-  const st = document.createElement('style'); st.textContent = `
+  if(document.getElementById('eb-css')) return;
+  const st = document.createElement('style'); st.id = 'eb-css'; st.textContent = `
+#eb-body{padding:6px 0 10px}
+@media(max-width:700px){#eb-body .eb-board{margin:0 -10px;padding:26px 10px 12px;border-radius:16px}#eb-body .eb-pay{margin:0 -4px}}
 #eb-ov{position:fixed;inset:0;background:rgba(15,30,46,.55);display:none;align-items:center;justify-content:center;z-index:10002;padding:20px}
 #eb-ov.on{display:flex}
 .eb-pop{background:#F4F4F2;width:min(1280px,100%);height:min(94vh,100%);border-radius:22px;display:flex;flex-direction:column;overflow:hidden;font-family:Inter,sans-serif;color:#0F1E2E}
@@ -8652,25 +8663,15 @@ function ebEnsureUi(){
 @media(max-width:700px){#eb-ov{padding:0}.eb-pop{width:100vw;height:100%;border-radius:0}.eb-top{padding:calc(12px + env(safe-area-inset-top)) 16px 12px}.eb-body{padding:14px 14px 30px}.eb-board{grid-template-columns:1fr;padding:26px 14px 14px;gap:24px}.eb-pick{grid-template-columns:1fr}.eb-sheet{align-items:flex-end;padding:0}.eb-form{border-radius:18px 18px 0 0;width:100%;padding-bottom:calc(16px + env(safe-area-inset-bottom))}.eb-prow{grid-template-columns:1fr 1fr 34px;margin-bottom:14px}.eb-prow input:first-child{grid-column:1/-1}}
 `;
   document.head.appendChild(st);
-  const ov = document.createElement('div'); ov.id = 'eb-ov';
-  ov.innerHTML = `<div class="eb-pop"><div class="eb-top"><div><small id="eb-ev">EVENT BOARD</small><h2 id="eb-title">Board</h2></div><button class="eb-x" onclick="ebClose()" aria-label="Close">×</button></div><div class="eb-body" id="eb-body"></div></div>`;
-  ov.addEventListener('mousedown', e => { if(e.target === ov) ebClose(); });
-  document.body.appendChild(ov);
 }
-window.ebOpen = async function(){
-  ebEnsureUi(); ebBoard();
-  const name = (document.getElementById('det-name')?.textContent || '').trim() || 'Untitled Event';
-  document.getElementById('eb-title').textContent = name;
-  const dt = document.getElementById('det-date')?.value;
-  document.getElementById('eb-ev').textContent = 'EVENT BOARD' + (dt ? ' · ' + ebDate(dt).toUpperCase() : '');
-  document.getElementById('eb-ov').classList.add('on');
-  ebRender();
-  await ebSignAll(); ebRender();
-  try{ history.pushState(Object.assign({}, history.state || {}, { ebOpen:true }), '', location.hash || '#beo'); }catch(e){}
+// The board lives at the bottom of the event plan. The gold Board button jumps down to it.
+window.ebOpen = function(){
+  const sec = document.getElementById('eb-sec'); if(!sec) return;
+  const body = document.getElementById('bd-eb'); if(body && !body.classList.contains('open')) tog('eb');
+  sec.scrollIntoView({ behavior:'smooth', block:'start' });
 };
-window.ebClose = function(){ const ov = document.getElementById('eb-ov'); if(ov && ov.classList.contains('on')){ ov.classList.remove('on'); if(history.state && history.state.ebOpen) history.back(); } };
-window.addEventListener('popstate', () => { const ov = document.getElementById('eb-ov'); if(ov && ov.classList.contains('on') && !(history.state && history.state.ebOpen)){ ov.classList.remove('on'); ebCloseSheets(); } });
-
+window.ebClose = function(){};
+async function ebShow(){ ebEnsureUi(); ebBoard(); ebRender(); await ebSignAll(); ebRender(); }
 function ebPayHtml(){
   const b = ebBoard(), P = b.pay.payments, T = ebTotals();
   if(!P.length && !T.grand){
@@ -8747,6 +8748,7 @@ function ebRender(){
     <div class="eb-chips">${EB_GROUPS.map(([k, l]) => { const n = k === 'all' ? b.items.length : (counts[k] || 0) + (k === 'receipts' ? waiting : 0); return `<button class="eb-chip${EB.filter === k ? ' on' : ''}" onclick="ebFilter('${k}')">${l}${n ? ' ' + n : ''}</button>`; }).join('')}</div>
     <div class="eb-board">${cards || `<div class="eb-empty">Nothing here yet.<br>${ebReadOnly() ? '' : 'Tap <b>+ Add to board</b> to pin a receipt, layout, file, photo, map, drawing or note.'}</div>`}</div>`;
   ebSyncButton();
+  const sn = document.getElementById('eb-sec-n'); if(sn){ const n = b.items.length; sn.textContent = n ? '· ' + n + (n === 1 ? ' item' : ' items') : ''; }
 }
 window.ebFilter = function(k){ EB.filter = k; ebRender(); };
 window.ebZoom = function(src){ const v = document.createElement('div'); v.className = 'eb-view'; v.innerHTML = `<img src="${ebEsc(src)}" alt="">`; v.onclick = () => v.remove(); document.body.appendChild(v); };

@@ -20375,7 +20375,7 @@ function chatRenderMessages(){
       }
     }
     const textHtml = m.text ? momentsTwemojiParse(m.text) : '';
-    const senderLabel = (c.isGroup && !mine && m.senderName) ? `<div style="font-size:10.5px;font-weight:700;color:#0D9488;margin-bottom:2px">${m.senderName}</div>` : '';
+    const senderLabel = (c.isGroup && !mine && m.senderName) ? `<div style="font-size:12px;font-weight:800;color:${chatNameColour(m.senderName)};margin-bottom:2px">${chatEscapeHtml(m.senderName)}</div>` : '';
     return `<div style="align-self:${mine?'flex-end':'flex-start'};max-width:70%;position:relative" class="chat-msg-row">
       ${senderLabel}
       <div style="background:${mine?'#0F1E2E':'#F1F5F9'};color:${mine?'white':'#0F1E2E'};padding:${m.attachment && m.attachmentType==='image' ?'8px':'10px 14px'};border-radius:14px;${mine?'border-bottom-right-radius:4px':'border-bottom-left-radius:4px'};font-size:13.5px;line-height:1.5;user-select:none"
@@ -26957,6 +26957,9 @@ let chatVoiceStream = null;
 let chatVoiceStartedAt = 0;
 let chatVoiceTimer = null;
 
+// Group chats: each person's name always gets the same colour (like WhatsApp), so you can tell who's who at a glance
+const CHAT_NAME_COLOURS = ['#0D9488','#2563EB','#DB2777','#EA580C','#7C3AED','#16A34A','#B45309','#0891B2','#DC2626','#4F46E5','#C026D3','#65A30D'];
+function chatNameColour(name){ let h = 0; const t = String(name || ''); for(let i = 0; i < t.length; i++) h = (h * 31 + t.charCodeAt(i)) >>> 0; return CHAT_NAME_COLOURS[h % CHAT_NAME_COLOURS.length]; }
 function chatEscapeHtml(v){
   return String(v??'').replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 }
@@ -27695,7 +27698,7 @@ window.chatRenderMessages = function(){
     const mine = m.sender_id === me;
     const prev = msgs[i - 1];
     const showName = t.kind !== 'direct' && !mine && (!prev || prev.sender_id !== m.sender_id || new Date(prev.created_at).toDateString() !== day);
-    const nameHtml = showName ? `<div class="cx-who" style="color:${chat2RoleColor(CH.people[m.sender_id]?.role)}">${chatEscapeHtml(chat2Name(m.sender_id))}</div>` : '';
+    const nameHtml = showName ? `<div class="cx-who" style="color:${chatNameColour(m.sender_id)}">${chatEscapeHtml(chat2Name(m.sender_id))}</div>` : '';
     let inner;
     if(m.deleted_at){
       inner = `<span style="font-style:italic;opacity:.65;display:inline-flex;align-items:center;gap:6px"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="m5.7 5.7 12.6 12.6"/></svg>This message was deleted</span>`;

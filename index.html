@@ -6090,6 +6090,7 @@ html:has(#menuDetailOverlay[style*="flex"]),html:has(#menuDetailOverlay[style*="
         <div id="admin-role-cards" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:14px;margin-bottom:28px"></div>
 
         <div id="admin-perm-editor" style="display:none;margin-bottom:28px"></div>
+        <div id="admin-maint-settings" style="margin-bottom:14px"></div>
         <div id="admin-chat-settings" style="margin-bottom:28px"></div>
       </div>
 
@@ -6321,7 +6322,7 @@ function nav(id, pushState=true){
   const chatFloatBtn = document.getElementById('chat-float-btn');
   if(chatFloatBtn) chatFloatBtn.style.display = (id==='home') ? 'flex' : 'none';
   if(id==='taskboard'){taskboardRenderRoot();}
-  if(id==='requests'){ reqStart(); reqRenderList(); }
+  if(id==='requests'){ if(REQ.tab !== 'done') REQ.tab = null; reqStart(); reqRenderList(); }
   if(id==='ordering'){ ordStart(); ordRender(); }
   if(id==='order'){ ordRenderDetail(); }
   if(id==='taskboard-personal'){taskboardRenderPersonalTiles();}
@@ -13164,9 +13165,8 @@ const ADMIN_MODULE_GROUPS = [
   ]},
   {label:'Operations Tools', modules:[
     {id:'tasks', name:'Task Board', desc:'View and manage work assigned to them'},
-    {id:'requests', name:'Maintenance', desc:'Report a problem and follow their own requests'},
-    {id:'requestsmanage', name:'Handle maintenance requests', desc:'Accept, assign and close requests sent to their own department(s)'},
-    {id:'requestsall', name:'See all maintenance requests', desc:'See and handle requests for every department'},
+    {id:'requests', name:'Report a maintenance problem', desc:'Report something broken, with a photo. Teams always see the jobs sent to them'},
+    {id:'requestsall', name:'See and sort all maintenance jobs', desc:'See every job and send new ones to the right team (like the Maintenance coordinators)'},
     {id:'inventory', name:'Inventory', desc:'Check and update stock levels'},
     {id:'entertainment', name:'Entertainment Schedule', desc:'View or edit DJ/event bookings'},
     {id:'calendar', name:'Events & Calendar', desc:'See event plans, past events and the calendar'},
@@ -13196,8 +13196,8 @@ let ADMIN_PERMS = {
   director:    {teamfeed:1,chat:1,suggestions:1,vacancies:1,tasks:1,inventory:1,entertainment:1,calendar:1,sops:1,survey:1,reports:1,directory:1,marketing:1,adminconsole:1,kitchen:1,bar:1,meetings:1,eventsedit:1,requests:1,requestsmanage:1,requestsall:1,ordering:1,orderingapprove:1,orderingbuy:1,sopsedit:1,sopsapprove:1,membership:1,quicklinks:1,quicklinksedit:1},
   manager:     {teamfeed:1,chat:1,suggestions:1,vacancies:1,tasks:1,inventory:1,entertainment:1,calendar:1,sops:1,survey:1,reports:1,directory:1,marketing:1,adminconsole:0,kitchen:1,bar:1,meetings:1,eventsedit:1,requests:1,requestsmanage:1,requestsall:1,ordering:1,orderingapprove:1,orderingbuy:1,sopsedit:1,sopsapprove:0,membership:1,quicklinks:1,quicklinksedit:1},
   supervisor:  {teamfeed:1,chat:1,suggestions:1,vacancies:1,tasks:1,inventory:1,entertainment:1,calendar:1,sops:1,survey:1,reports:0,directory:1,marketing:0,adminconsole:0,kitchen:1,bar:1,meetings:1,eventsedit:1,requests:1,requestsmanage:1,requestsall:0,ordering:1,orderingapprove:0,orderingbuy:0,sopsedit:0,sopsapprove:0,membership:1,quicklinks:1,quicklinksedit:1},
-  teammember:  {teamfeed:1,chat:1,suggestions:1,vacancies:1,tasks:1,inventory:1,entertainment:0,calendar:1,sops:1,survey:0,reports:0,directory:0,marketing:0,adminconsole:0,kitchen:1,bar:1,meetings:0,eventsedit:0,requests:1,requestsmanage:0,requestsall:0,ordering:1,orderingapprove:0,orderingbuy:0,sopsedit:0,sopsapprove:0,membership:1,quicklinks:1,quicklinksedit:1},
-  dailyworker: {teamfeed:1,chat:1,suggestions:0,vacancies:1,tasks:1,inventory:0,entertainment:0,calendar:0,sops:1,survey:0,reports:0,directory:0,marketing:0,adminconsole:0,kitchen:1,bar:1,meetings:0,eventsedit:0,requests:1,requestsmanage:0,requestsall:0,ordering:1,orderingapprove:0,orderingbuy:0,sopsedit:0,sopsapprove:0,membership:0,quicklinks:0,quicklinksedit:0},
+  teammember:  {teamfeed:1,chat:1,suggestions:1,vacancies:1,tasks:1,inventory:1,entertainment:0,calendar:1,sops:1,survey:0,reports:0,directory:0,marketing:0,adminconsole:0,kitchen:1,bar:1,meetings:0,eventsedit:0,requests:0,requestsmanage:0,requestsall:0,ordering:1,orderingapprove:0,orderingbuy:0,sopsedit:0,sopsapprove:0,membership:1,quicklinks:1,quicklinksedit:1},
+  dailyworker: {teamfeed:1,chat:1,suggestions:0,vacancies:1,tasks:1,inventory:0,entertainment:0,calendar:0,sops:1,survey:0,reports:0,directory:0,marketing:0,adminconsole:0,kitchen:1,bar:1,meetings:0,eventsedit:0,requests:0,requestsmanage:0,requestsall:0,ordering:1,orderingapprove:0,orderingbuy:0,sopsedit:0,sopsapprove:0,membership:0,quicklinks:0,quicklinksedit:0},
 };
 
 let PEOPLE_DEPARTMENTS = ['Management', 'GRO', 'Operations', 'Audio Visual', 'IT', 'Engineering', 'Housekeeping', 'Kitchen', 'Bar', 'Sales and Marketing', 'Human Resources'];
@@ -13877,6 +13877,7 @@ function adminConsoleRender(){
   const cardsEl = document.getElementById('admin-role-cards');
   if(!cardsEl) return;
   try{ chatSettingsCardRender(); }catch(e){}
+  try{ maintCoordCardRender(); }catch(e){}
 
   cardsEl.innerHTML = ADMIN_ROLES.map(r => {
     const memberCount = PEOPLE.filter(p=>p.role===r.id).length;
@@ -14027,7 +14028,6 @@ const MODULE_PAGES = {
   directory: ['vendors','customers'],
   marketing: ['marketing'],
   tasks: ['taskboard','taskboard-team','taskboard-personal','kb'],
-  requests: ['requests','request'],
   chat: ['chat'],
   suggestions: ['suggestions'],
   vacancies: ['vacancies'],
@@ -27612,6 +27612,48 @@ window.chat2VoicePlay = function(id){
   a.onended = () => { if(!CH.voice || CH.voice.audio !== a) return; CH.voice.pct = 0; CH.voice.label = CH.vlen[id] || chat2Clock(a.duration); chat2VoiceUi(); CH.voice = null; };
   a.play().then(chat2VoiceUi, () => { toast('Could not play this voice note'); CH.voice = null; });
 };
+// ── Maintenance coordinators: up to 5 people who sort every new maintenance job (Admin Console) ──
+function maintCoordCardRender(){
+  const el = document.getElementById('admin-maint-settings');
+  if(!el) return;
+  if(!myProfile){ el.innerHTML = ''; return; }
+  const canEdit = roleCan('adminconsole');
+  const ids = reqCoords();
+  const ppl = ids.map(id => PEOPLE.find(p => String(p.id) === id)).filter(Boolean);
+  const chip = p => `<span class="mc-chip"><span class="mc-av">${((p.firstName||'?')[0] + ((p.lastName||'')[0]||'')).toUpperCase()}</span>${chatEscapeHtml(p.firstName + ' ' + (p.lastName||''))}${canEdit ? `<button onclick="maintCoordSave(reqCoords().filter(x => x !== '${p.id}'))" aria-label="Remove">×</button>` : ''}</span>`;
+  el.innerHTML = `<div style="background:white;border:1.5px solid #E2E8F0;border-radius:12px;padding:16px 18px;display:flex;align-items:flex-start;gap:16px;flex-wrap:wrap">
+    <div style="width:40px;height:40px;border-radius:10px;background:#FFF7E6;display:flex;align-items:center;justify-content:center;flex-shrink:0"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#B8862F" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94z"/></svg></div>
+    <div style="flex:1;min-width:220px">
+      <div style="font-size:14px;font-weight:800;color:#0F1E2E">Maintenance coordinators</div>
+      <div style="font-size:12px;color:#64748B;margin-top:2px;line-height:1.45">They get a phone pop-up for every new problem reported, and send it to the right team. Pick up to 5, so someone is always on.</div>
+      <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:12px;align-items:center">${ppl.map(chip).join('')}
+        ${canEdit && ids.length < 5 ? `<button class="mc-add" onclick="maintCoordPick()">+ Add coordinator</button>` : ''}</div>
+      ${ids.length ? '' : `<div style="font-size:12px;color:#B45309;font-weight:700;margin-top:10px">Nobody picked yet - new problems go to managers to sort.</div>`}
+    </div>
+  </div>`;
+}
+window.maintCoordPick = function(){
+  const have = reqCoords();
+  const list = PEOPLE.filter(p => p.active !== false && !have.includes(String(p.id))).sort((a, b) => (a.firstName||'').localeCompare(b.firstName||''));
+  if(!list.length){ toast('Everyone is already a coordinator'); return; }
+  document.getElementById('mc-pick')?.remove();
+  const m = document.createElement('div'); m.id = 'mc-pick';
+  m.style.cssText = 'position:fixed;inset:0;background:rgba(15,30,46,.48);z-index:10040;display:flex;align-items:center;justify-content:center;padding:18px';
+  m.onclick = e => { if(e.target === m) m.remove(); };
+  m.innerHTML = `<div style="background:white;border-radius:18px;width:min(420px,100%);max-height:80vh;display:flex;flex-direction:column;overflow:hidden;font-family:Inter,sans-serif">
+    <div style="padding:16px 18px 8px;display:flex;align-items:center"><div style="font-size:17px;font-weight:800;color:#0F1E2E;flex:1">Add a coordinator</div><button class="req-x" onclick="document.getElementById('mc-pick').remove()">×</button></div>
+    <div style="overflow:auto;padding:4px 8px 14px">${list.map(p => `<button class="chat2-pick" onclick="document.getElementById('mc-pick').remove();maintCoordSave(reqCoords().concat('${p.id}'))"><span class="mc-av big">${((p.firstName||'?')[0] + ((p.lastName||'')[0]||'')).toUpperCase()}</span><div style="flex:1;min-width:0;text-align:left"><div style="font-size:14.5px;font-weight:700;color:#0F1E2E">${chatEscapeHtml(p.firstName + ' ' + (p.lastName||''))}</div><div style="font-size:12px;color:#64748B">${chatEscapeHtml(roleName(p.role))}${(p.departments||[]).length ? ' · ' + chatEscapeHtml(p.departments.join(', ')) : ''}</div></div></button>`).join('')}</div></div>`;
+  document.body.appendChild(m);
+};
+window.maintCoordSave = async function(ids){
+  ids = [...new Set(ids.map(String))].slice(0, 5);
+  const value = JSON.stringify(ids);
+  const { error } = await sb.from('app_settings').upsert({ key:'maint_coordinators', value }, { onConflict:'company_id,key' });
+  if(error){ toast('Could not save - ' + (error.message || 'please try again')); return; }
+  appSettings.maint_coordinators = value;
+  maintCoordCardRender();
+  toast('Saved');
+};
 // ── Read receipts: one switch for the whole company (Super Admin, in Admin Console) ──
 function chatReadReceiptsOn(){ return (typeof appSettings === 'undefined' || appSettings.chat_read_receipts !== 'off'); }
 function chatSettingsCardRender(){
@@ -29878,9 +29920,14 @@ function reqAvatar(pid, size){
   return `<div style="width:${s}px;height:${s}px;border-radius:50%;background:${col};color:white;display:flex;align-items:center;justify-content:center;font-size:${Math.round(s*.36)}px;font-weight:800;flex-shrink:0">${ini}</div>`;
 }
 function reqMyDepts(){ return myProfile ? (Array.isArray(myProfile.departments) ? myProfile.departments : []) : ['Engineering']; }
+// Maintenance coordinators: up to 5 people picked in Admin Console. They (and "see all" roles) sort every new job.
+function reqCoords(){ let v = typeof appSettings !== 'undefined' ? appSettings.maint_coordinators : null; try{ while(typeof v === 'string') v = JSON.parse(v); }catch(e){ v = null; } return Array.isArray(v) ? v.map(String) : []; }
+function reqIsCoord(){ return !!myProfile && reqCoords().includes(String(myProfile.id)); }
 function reqSeeAll(){ return roleCan('requestsall'); }
-function reqIsHandler(){ return reqSeeAll() || roleCan('requestsmanage'); }
-function reqCanHandle(r){ return !!r && (reqSeeAll() || (roleCan('requestsmanage') && reqMyDepts().includes(r.dept))); }
+function reqCanSort(){ return !myProfile || reqSeeAll() || reqIsCoord(); }
+function reqCanReport(){ return roleCan('requests'); }
+function reqIsHandler(){ return reqCanSort(); }
+function reqCanHandle(r){ return !!r && (reqCanSort() || (r.status !== 'sort' && reqMyDepts().includes(r.dept))); }
 function reqDeptList(){ return (typeof PEOPLE_DEPARTMENTS !== 'undefined' ? PEOPLE_DEPARTMENTS : []).filter(Boolean); }
 function reqAgo(v){
   const mins = Math.max(0, Math.round((Date.now() - new Date(v).getTime()) / 60000));
@@ -29947,7 +29994,7 @@ function reqRenderAll(){
   if(REQ.openId && document.getElementById('p-request')?.classList.contains('on')) reqRenderDetail();
 }
 // Badge: new requests waiting for my department (handlers only)
-function reqWaiting(){ return REQ.list.filter(r => r.status === 'open' && reqCanHandle(r) && r.reported_by !== reqMe()); }
+function reqWaiting(){ return reqCanSort() ? REQ.list.filter(r => r.status === 'sort') : REQ.list.filter(r => r.status === 'open' && reqCanHandle(r) && r.reported_by !== reqMe()); }
 function reqUpdateBadge(){
   const n = reqWaiting().length;
   const b = document.getElementById('req-nav-badge');
@@ -29988,7 +30035,7 @@ function reqTracker(r, big){
 // ── Home: one simple list (Nov 2026). Numbers at the top for managers, urgent first, filter by team. ──
 // Who sees what: Manager+ (requestsall) everything; Supervisor (requestsmanage) their department's jobs;
 // everyone else only what they reported or were given.
-const REQ_ST = { open:['Waiting','w'], progress:['On it','o'], closed:['Done','d'] };
+const REQ_ST = { sort:['Being sorted','s'], open:['Waiting','w'], progress:['In progress','o'], closed:['Done','d'] };
 function reqVisible(r){ const me = reqMe(); return reqCanHandle(r) || r.reported_by === me || r.assigned_to === me; }
 function reqDur(ms){
   const h = ms / 3600000;
@@ -30001,70 +30048,107 @@ function reqRenderList(){
   const fab = document.getElementById('req-fab');
   if(REQ.notReady){ if(fab) fab.style.display = 'none'; el.innerHTML = reqEmpty('Maintenance is almost ready', 'It needs a one-time setup step on the database first.'); return; }
   if(!REQ.ready){ el.innerHTML = `<div style="padding:40px 0;text-align:center;color:#94A3B8;font-size:13px">Loading…</div>`; return; }
-  if(fab) fab.style.display = '';
-  const me = reqMe(), manager = reqIsHandler();
+  const canReport = reqCanReport(), canSort = reqCanSort();
+  if(fab) fab.style.display = canReport ? '' : 'none';
+  const me = reqMe();
   const all = REQ.list.filter(reqVisible);
-  const open = r => r.status !== 'closed';
-  if(!['open','mine','done','urgent','progress','week'].includes(REQ.tab)) REQ.tab = 'open';
+  const live = r => r.status !== 'closed';
   const weekAgo = Date.now() - 7 * 86400000;
   const sets = {
-    open: all.filter(open),
-    mine: all.filter(r => open(r) && (r.reported_by === me || r.assigned_to === me)),
-    done: all.filter(r => !open(r)),
-    urgent: all.filter(r => open(r) && r.priority === 'urgent'),
+    sort: all.filter(r => r.status === 'sort'),
+    open: all.filter(r => live(r) && (r.status !== 'sort' || !canSort)),
+    done: all.filter(r => !live(r)),
+    urgent: all.filter(r => live(r) && r.priority === 'urgent'),
     progress: all.filter(r => r.status === 'progress'),
-    week: all.filter(r => !open(r) && r.closed_at && new Date(r.closed_at).getTime() >= weekAgo)
+    week: all.filter(r => !live(r) && r.closed_at && new Date(r.closed_at).getTime() >= weekAgo)
   };
+  if(REQ.tabAuto || !REQ.tab || !sets[REQ.tab] || (REQ.tab === 'sort' && !canSort)){ REQ.tab = canSort && sets.sort.length ? 'sort' : 'open'; REQ.tabAuto = true; }
   let rows = sets[REQ.tab];
   const teams = [...new Set(all.map(r => r.dept).filter(Boolean))].sort();
   if(REQ.dept !== 'all' && !teams.includes(REQ.dept)) REQ.dept = 'all';
-  if(REQ.dept !== 'all') rows = rows.filter(r => r.dept === REQ.dept);
-  const pr = {urgent:0, normal:1, low:2}, sr = {open:0, progress:1};
+  if(REQ.dept !== 'all' && REQ.tab !== 'sort') rows = rows.filter(r => r.dept === REQ.dept);
+  const sr = {sort:0, open:1, progress:2};
   if(REQ.tab === 'done' || REQ.tab === 'week') rows = rows.sort((a, b) => String(b.closed_at || b.updated_at).localeCompare(String(a.closed_at || a.updated_at))).slice(0, 100);
   else rows.sort((a, b) => ((a.priority === 'urgent' ? 0 : 1) - (b.priority === 'urgent' ? 0 : 1)) || (sr[a.status] - sr[b.status]) || String(b.created_at).localeCompare(String(a.created_at)));
 
-  // Numbers (managers and supervisors only)
   let nums = '';
-  if(manager){
-    const n = (k, v, label, cls) => `<button class="req-num ${cls || ''}${REQ.tab === k ? ' on' : ''}" ${k ? `onclick="reqSetTab('${k}')"` : 'disabled'}><b>${v}</b><span>${label}</span></button>`;
-    nums = `<div class="req-nums">${n('open', sets.open.length, 'Open')}${n('urgent', sets.urgent.length, 'Urgent', sets.urgent.length ? 'red' : '')}${n('progress', sets.progress.length, 'Being fixed')}${n('week', sets.week.length, 'Fixed this week')}</div>`;
+  if(canSort){
+    const n = (k, v, label, cls) => `<button class="req-num ${cls || ''}${REQ.tab === k ? ' on' : ''}" onclick="reqSetTab('${k}')"><b>${v}</b><span>${label}</span></button>`;
+    nums = `<div class="req-nums">${n('open', sets.open.length, 'Open')}${n('urgent', sets.urgent.length, 'Urgent', sets.urgent.length ? 'red' : '')}${n('progress', sets.progress.length, 'In progress')}${n('week', sets.week.length, 'Fixed this week')}</div>`;
   }
-  const pills = [['open', 'Open', sets.open.length], ['mine', 'Mine'], ['done', 'Done']].map(([k, l, c]) =>
-    `<button class="req-pill${REQ.tab === k ? ' on' : ''}" onclick="reqSetTab('${k}')">${l}${c ? `<i>${c}</i>` : ''}</button>`).join('');
-  const extra = {urgent:'Urgent', progress:'Being fixed', week:'Fixed this week'}[REQ.tab];
-  const teamSel = teams.length > 1 ? `<select class="req-team" onchange="reqSetDept(this.value)"><option value="all">All teams</option>${teams.map(d => `<option value="${reqEsc(d)}"${REQ.dept === d ? ' selected' : ''}>${reqEsc(d)}</option>`).join('')}</select>` : '';
+  const tabs = (canSort ? [['sort', 'To sort', sets.sort.length]] : []).concat([['open', 'Open', canSort ? 0 : sets.open.length], ['done', 'Done']]);
+  const pills = tabs.map(([k, l, c]) => `<button class="req-pill${REQ.tab === k ? ' on' : ''}${k === 'sort' && c ? ' gold' : ''}" onclick="reqSetTab('${k}')">${l}${c ? `<i>${c}</i>` : ''}</button>`).join('');
+  const extra = {urgent:'Urgent', progress:'In progress', week:'Fixed this week'}[REQ.tab];
+  const teamSel = REQ.tab !== 'sort' && teams.length > 1 ? `<select class="req-team" onchange="reqSetDept(this.value)"><option value="all">All teams</option>${teams.map(d => `<option value="${reqEsc(d)}"${REQ.dept === d ? ' selected' : ''}>${reqEsc(d)}</option>`).join('')}</select>` : '';
+  const canAccept = r => r.status === 'open' && reqCanHandle(r);
+  const acceptBtn = r => `<button class="req-acc" onclick="event.stopPropagation();reqAccept('${r.id}')">Accept job</button>`;
   const status = r => { const s = REQ_ST[r.status] || REQ_ST.open; return `<span class="req-st ${s[1]}">${s[0]}</span>`; };
   const whoOn = r => r.assigned_to ? (r.assigned_to === me ? 'You' : reqName(r.assigned_to, true)) : '';
-  const tag = r => { const st = reqDeptStyle(r.dept); return `<span class="req-dtag" style="background:${st.bg};color:${st.fg}">${reqEsc(r.dept)}</span>`; };
-  const urg = r => r.priority === 'urgent' && open(r);
-  // Phone rows
-  const prow = r => `<div class="req-row${urg(r) ? ' urg' : ''}" onclick="reqOpen('${r.id}')">${reqThumbHtml(r, 48)}
+  const tag = r => { if(!r.dept) return '<span class="m">-</span>'; const st = reqDeptStyle(r.dept); return `<span class="req-dtag" style="background:${st.bg};color:${st.fg}">${reqEsc(r.dept)}</span>`; };
+  const urg = r => r.priority === 'urgent' && live(r);
+  const prow = r => `<div class="req-row${urg(r) ? ' urg' : ''}" onclick="reqOpen('${r.id}')">${reqThumbHtml(r, 52)}
       <div class="req-row-mid"><div class="req-row-t">${reqEsc(r.title)}</div>
-      <div class="req-row-s">${[r.location, reqAgo(r.created_at), whoOn(r) ? whoOn(r) + ' on it' : '', REQ.dept === 'all' && manager ? r.dept : ''].filter(Boolean).map(reqEsc).join(' · ')}</div></div>${status(r)}</div>`;
-  let phone = '';
-  if(rows.length){
+      <div class="req-row-s">${[r.location, reqAgo(r.created_at), whoOn(r), REQ.dept === 'all' && canSort ? r.dept : ''].filter(Boolean).map(reqEsc).join(' · ')}</div>
+      ${canAccept(r) ? acceptBtn(r) : ''}</div>${canAccept(r) ? '' : status(r)}</div>`;
+
+  let body;
+  if(REQ.tab === 'sort'){
+    body = rows.length ? `<div class="rq-sortgrid">${rows.map(r => `<div class="rq-scard${r.priority === 'urgent' ? ' emer' : ''}">
+        <div class="rq-spic" onclick="reqOpen('${r.id}')">${r.thumb || r.photo ? `<img src="${r.thumb || r.photo}" alt="">` : reqIcon('camera', 30, '#94A3B8')}${r.priority === 'urgent' ? '<span class="rq-emer">EMERGENCY</span>' : ''}</div>
+        <div class="rq-sbody"><div class="rq-st" onclick="reqOpen('${r.id}')">${reqEsc(r.title)}</div>
+          <div class="rq-ss">${[r.location, reqName(r.reported_by, true), reqAgo(r.created_at)].filter(Boolean).map(reqEsc).join(' · ')}</div>
+          ${reqSortHtml(r)}</div></div>`).join('')}</div>`
+      : reqEmpty('Nothing to sort', 'New reports land here for you to send to the right team.');
+  } else if(rows.length){
     const u = rows.filter(urg), rest = rows.filter(r => !urg(r));
-    phone = (u.length ? `<div class="req-sec red">Urgent</div>` : '') + u.map(prow).join('') + (u.length && rest.length ? `<div class="req-sec">${REQ.tab === 'done' || REQ.tab === 'week' ? 'Done' : 'Open'}</div>` : '') + rest.map(prow).join('');
-  }
-  // Laptop table
-  const table = rows.length ? `<table class="req-table"><thead><tr><th></th><th>Problem</th><th>Where</th><th>Team</th><th>Who's on it</th><th>${REQ.tab === 'done' || REQ.tab === 'week' ? 'Fixed' : 'Reported'}</th><th>Status</th></tr></thead><tbody>
-    ${rows.map(r => `<tr onclick="reqOpen('${r.id}')"><td class="u">${urg(r) ? '<span class="req-urg2">URGENT</span>' : ''}</td>
-      <td class="t"><div class="req-tcell">${reqThumbHtml(r, 36)}<span>${reqEsc(r.title)}</span></div></td>
-      <td class="m">${reqEsc(r.location || '-')}</td><td>${tag(r)}</td>
-      <td>${r.assigned_to ? `<span class="req-whocell">${reqAvatar(r.assigned_to, 24)}${reqEsc(whoOn(r))}</span>` : '<span class="m">-</span>'}</td>
-      <td class="m">${reqAgo((REQ.tab === 'done' || REQ.tab === 'week') ? (r.closed_at || r.updated_at) : r.created_at)}</td><td>${status(r)}</td></tr>`).join('')}
-  </tbody></table>` : '';
+    const phone = (u.length ? `<div class="req-sec red">Urgent</div>` : '') + u.map(prow).join('') + (u.length && rest.length ? `<div class="req-sec">${REQ.tab === 'done' || REQ.tab === 'week' ? 'Done' : 'Open'}</div>` : '') + rest.map(prow).join('');
+    const table = `<table class="req-table"><thead><tr><th></th><th>Problem</th><th>Where</th><th>Team</th><th>Who's on it</th><th>${REQ.tab === 'done' || REQ.tab === 'week' ? 'Fixed' : 'Reported'}</th><th>Status</th></tr></thead><tbody>
+      ${rows.map(r => `<tr onclick="reqOpen('${r.id}')"><td class="u">${urg(r) ? '<span class="req-urg2">URGENT</span>' : ''}</td>
+        <td class="t"><div class="req-tcell">${reqThumbHtml(r, 44)}<span>${reqEsc(r.title)}</span></div></td>
+        <td class="m">${reqEsc(r.location || '-')}</td><td>${tag(r)}</td>
+        <td>${r.assigned_to ? `<span class="req-whocell">${reqAvatar(r.assigned_to, 24)}${reqEsc(whoOn(r))}</span>` : '<span class="m">-</span>'}</td>
+        <td class="m">${reqAgo((REQ.tab === 'done' || REQ.tab === 'week') ? (r.closed_at || r.updated_at) : r.created_at)}</td><td>${canAccept(r) ? acceptBtn(r) : status(r)}</td></tr>`).join('')}
+    </tbody></table>`;
+    body = `<div class="req-phone-list">${phone}</div><div class="req-desk-list">${table}</div>`;
+  } else body = reqEmptyFor(REQ.tab);
 
   el.innerHTML = `
-    <div class="req-banner req-banner2"><div><div class="req-hello">Maintenance</div><div class="req-hello-sub">Everything that needs fixing, in one list</div></div>
-      <button class="req-report" onclick="reqNew()">+ Report a problem</button></div>
+    <div class="req-banner req-banner2"><div><div class="req-hello">Maintenance</div><div class="req-hello-sub">${canSort ? 'Everything that needs fixing, in one list' : 'Jobs for your team, and problems you reported'}</div></div>
+      ${canReport ? `<button class="req-report" onclick="reqNew()">+ Report a problem</button>` : ''}</div>
     ${nums}
     <div class="req-bar2">${pills}${teamSel}${extra ? `<span class="req-showing">Showing: <b>${extra}</b> <button onclick="reqSetTab('open')" aria-label="Clear">×</button></span>` : ''}</div>
-    ${rows.length ? `<div class="req-phone-list">${phone}</div><div class="req-desk-list">${table}</div>` : reqEmptyFor(REQ.tab)}`;
+    ${body}`;
 }
+// The coordinator's two taps: which team, urgent yes/no -> Send
+REQ.sortSel = {};
+function reqSortHtml(r){
+  const sel = REQ.sortSel[r.id] || (REQ.sortSel[r.id] = { dept: r.status === 'sort' ? null : r.dept, urgent: r.priority === 'urgent' });
+  const teams = reqDeptList();
+  if(!teams.length) return `<div class="rq-wait">Add departments in Admin Console first.</div>`;
+  return `<div class="rq-sort" onclick="event.stopPropagation()">
+    <div class="rq-q">Which team?</div>
+    <div class="rq-teams">${teams.map(d => `<button class="${sel.dept === d ? 'on' : ''}" onclick="reqSortPick('${r.id}','dept',this.dataset.d)" data-d="${reqEsc(d)}">${reqEsc(d)}</button>`).join('')}</div>
+    <div class="rq-q">Urgent?</div>
+    <div class="rq-yn"><button class="${sel.urgent ? 'on r' : ''}" onclick="reqSortPick('${r.id}','urgent',true)">Yes</button><button class="${sel.urgent ? '' : 'on'}" onclick="reqSortPick('${r.id}','urgent',false)">No</button></div>
+    <button class="rq-sendbtn" ${sel.dept ? '' : 'disabled'} onclick="reqSortSend('${r.id}')">${sel.dept ? 'Send to ' + reqEsc(sel.dept) : 'Pick a team'}</button>
+  </div>`;
+}
+function reqSortPick(id, k, v){ const r = reqGet(id); if(!REQ.sortSel[id]) REQ.sortSel[id] = { dept:null, urgent: !!r && r.priority === 'urgent' }; REQ.sortSel[id][k] = v; reqRenderAll(); }
+async function reqSortSend(id){
+  const r = reqGet(id), sel = REQ.sortSel[id];
+  if(!r || !sel || !sel.dept) return;
+  const { error } = await reqDb().rpc('request_sort', { rid:id, new_dept:sel.dept, urgent:!!sel.urgent });
+  if(error){ console.warn(error); toast(/request_sort|function/i.test(error.message || '') ? 'Sorting needs a quick database update - ask Mavis support' : 'Could not send: ' + (error.message || 'please try again')); return; }
+  Object.assign(r, { dept:sel.dept, priority: sel.urgent ? 'urgent' : 'normal', status:'open', assigned_to:null, updated_at:new Date().toISOString() });
+  delete REQ.sortSel[id]; REQ.resort = null;
+  toast('Sent to ' + sel.dept + (sel.urgent ? ' as urgent' : ''));
+  reqNotify(id, 'sorted');
+  if(REQ.openId === id) reqLoadNotes(id);
+  reqRenderAll();
+}
+function reqResort(){ const r = reqGet(REQ.openId); if(!r) return; REQ.resort = r.id; REQ.sortSel[r.id] = { dept:null, urgent: r.priority === 'urgent' }; reqRenderDetail(); }
 function reqEmptyFor(tab){
   if(tab === 'done' || tab === 'week') return reqEmpty('Nothing fixed yet', 'Finished jobs show up here.');
-  if(tab === 'mine') return reqEmpty('Nothing of yours open', 'Jobs you report, or are given, show up here.');
   return reqEmpty('All clear', 'Nothing needs fixing right now. Spotted a problem? Tap Report.');
 }
 function reqEmpty(title, sub){
@@ -30091,14 +30175,13 @@ function reqCardHtml(r){
     </div>
   </div>`;
 }
-function reqSetTab(t){ REQ.tab = t; reqRenderList(); }
+function reqSetTab(t){ REQ.tab = t; REQ.tabAuto = false; reqRenderList(); }
 function reqSetDept(d){ REQ.dept = d; reqRenderList(); }
 
 // ── New request: pick a team (if not picked yet) → photo, what, where, how urgent → send ──
-function reqNew(dept){
-  const dl = reqDeptList();
-  if(!dl.length){ toast('Add your departments in Admin Console first'); return; }
-  REQ.form = { dept: dept || null, photo:null, thumb:null, what:'', where:'', otherWhere:false, urgency:'normal' };
+function reqNew(){
+  if(!reqCanReport()){ toast("You can't report problems yet - ask your manager"); return; }
+  REQ.form = { photo:null, thumb:null, what:'', where:'', otherWhere:false, emergency:false };
   reqSheetOpen();
 }
 function reqSheetOpen(){
@@ -30126,36 +30209,23 @@ function reqRecentPlaces(dept){
 }
 function reqSheetRender(){
   const sh = document.getElementById('req-sheet'), f = REQ.form; if(!sh || !f) return;
-  const close = `<button class="req-x" onclick="reqSheetClose()" title="Close">×</button>`;
-  if(!f.dept){
-    sh.innerHTML = `<div class="req-sheet-card"><div class="req-grab"></div>
-      <div class="req-sheet-head"><div class="req-sheet-title">Who is it for?</div>${close}</div>
-      <div class="req-tiles">${reqDeptList().map(d => { const st = reqDeptStyle(d); return `<button class="req-tile" style="background:${st.bg};color:${st.fg}" onclick="reqFormSet('dept', this.dataset.d)" data-d="${reqEsc(d)}"><span class="req-tile-ic">${reqIcon(st.icon, 24, st.stroke)}</span>${reqEsc(d)}</button>`; }).join('')}</div>
-    </div>`;
-    return;
-  }
-  const st = reqDeptStyle(f.dept);
-  const places = reqRecentPlaces(f.dept);
+  const places = reqRecentPlaces(null);
   const showOther = f.otherWhere || !places.length;
   sh.innerHTML = `<div class="req-sheet-card"><div class="req-grab"></div>
-    <div class="req-sheet-head">
-      <button class="req-sendto" style="background:${st.bg};color:${st.fg}" onclick="reqFormSet('dept', null)" title="Change team"><span class="req-tile-ic small">${reqIcon(st.icon, 19, st.stroke)}</span>Request to ${reqEsc(f.dept)}<span class="req-change">Change</span></button>
-      ${close}
-    </div>
+    <div class="req-sheet-head"><div class="req-sheet-title">Report a problem</div><button class="req-x" onclick="reqSheetClose()" title="Close">×</button></div>
     <label class="req-photo-big${f.photo ? ' has' : ''}">
       ${f.photo ? `<img src="${f.photo}" alt=""><span class="req-photo-redo">Change photo</span>`
-        : `<svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#0D9488" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2Z"/><circle cx="12" cy="13" r="4"/></svg><b>Take a photo</b><span>Shows them exactly what's wrong</span>`}
+        : `${reqIcon('camera', 30, '#0D9488')}<b style="color:#0D9488">Take a photo</b>`}
       <input type="file" accept="image/*" style="display:none" onchange="reqFormPhoto(this)">
     </label>
     <div class="req-lab">What's wrong?</div>
-    <div class="req-pick">${st.chips.map(c => `<button onclick="reqFormChip(this.dataset.c)" data-c="${reqEsc(c)}">${reqEsc(c)}</button>`).join('')}</div>
     <input id="req-f-what" class="req-inp" maxlength="120" placeholder="e.g. Fridge 2 not cooling" value="${reqEsc(f.what)}" oninput="REQ.form.what=this.value">
     <div class="req-lab">Where?</div>
-    ${places.length ? `<div class="req-pick">${places.map(p => `<button class="${f.where === p && !f.otherWhere ? 'on' : ''}" onclick="reqFormWhere(this.dataset.p)" data-p="${reqEsc(p)}">${reqEsc(p)}</button>`).join('')}<button class="${f.otherWhere ? 'on' : ''}" onclick="reqFormWhere(null)">+ Other</button></div>` : ''}
+    ${places.length ? `<div class="req-pick">${places.map(p => `<button class="${f.where === p && !f.otherWhere ? 'on' : ''}" onclick="reqFormWhere(this.dataset.p)" data-p="${reqEsc(p)}">${reqEsc(p)}</button>`).join('')}<button class="${f.otherWhere ? 'on' : ''}" onclick="reqFormWhere(null)">Somewhere else</button></div>` : ''}
     ${showOther ? `<input id="req-f-where" class="req-inp" maxlength="80" placeholder="e.g. Pool bar, Room 4" value="${reqEsc(f.otherWhere || !places.length ? f.where : '')}" oninput="REQ.form.where=this.value">` : ''}
-    <div class="req-lab">How urgent?</div>
-    <div class="req-urg-row">${REQ_URGENCY.map(u => `<button class="${f.urgency === u.id ? 'on ' + u.id : ''}" onclick="reqFormSet('urgency','${u.id}')">${u.name}</button>`).join('')}</div>
-    <button class="req-send-big" id="req-f-send" onclick="reqFormSend()">Send to ${reqEsc(f.dept)}</button>
+    <button class="rq-emerbox${f.emergency ? ' on' : ''}" onclick="reqFormSet('emergency', !REQ.form.emergency)">
+      <span><b>Emergency?</b><small>Flood, no power, gas or burning smell, someone could get hurt</small></span><i class="rq-tg"></i></button>
+    <button class="req-send-big${f.emergency ? ' emer' : ''}" id="req-f-send" onclick="reqFormSend()">${f.emergency ? 'Send emergency' : 'Send'}</button>
   </div>`;
 }
 function reqFormSet(k, v){ if(!REQ.form) return; reqFormKeep(); REQ.form[k] = v; reqSheetRender(); }
@@ -30186,17 +30256,17 @@ async function reqFormSend(){
   const title = (f.what || '').trim();
   if(!title){ const w = document.getElementById('req-f-what'); if(w){ w.focus(); w.classList.add('bad'); setTimeout(() => w.classList.remove('bad'), 1400); } toast("Say what's wrong first"); return; }
   const btn = document.getElementById('req-f-send'); if(btn){ btn.disabled = true; btn.textContent = 'Sending…'; }
-  const row = { title, location:(f.where || '').trim() || null, dept:f.dept, priority:f.urgency, photo:f.photo || null, reported_by:reqMe(), company_id:reqCo() };
+  const row = { title, location:(f.where || '').trim() || null, dept:'', priority: f.emergency ? 'urgent' : 'normal', status:'sort', photo:f.photo || null, reported_by:reqMe(), company_id:reqCo() };
   if(!REQ.noThumb) row.thumb = f.thumb || null;
   let { data, error } = await reqDb().from('requests').insert(row).select(reqCols()).single();
   if(error && /thumb/.test(error.message || '')){ REQ.noThumb = true; delete row.thumb; ({ data, error } = await reqDb().from('requests').insert(row).select(reqCols()).single()); }
-  if(error){ if(btn){ btn.disabled = false; btn.textContent = 'Send to ' + f.dept; } toast('Could not send: ' + (error.message || 'please try again')); console.warn(error); return; }
+  if(error){ if(btn){ btn.disabled = false; btn.textContent = 'Send'; } toast(/row-level|policy/i.test(error.message || '') ? 'Reporting needs a quick database update - ask Mavis support' : 'Could not send: ' + (error.message || 'please try again')); console.warn(error); return; }
   if(f.photo) data.photo = f.photo;
   REQ.list.unshift(data);
   reqSheetClose();
-  toast('Sent to ' + data.dept);
+  toast(f.emergency ? 'Emergency sent - the coordinators have been told' : 'Sent - a coordinator will pass it to the right team');
   reqNotify(data.id, 'new');
-  REQ.tab = 'open';
+  REQ.tab = null;
   reqRenderAll();
 }
 function reqEdit(){
@@ -30244,7 +30314,8 @@ async function reqLoadNotes(id){
 function reqEventText(n){
   const who = reqEsc(reqName(n.author_id, true)), b = n.body || '';
   const isMe = n.author_id === reqMe();
-  if(b === 'accepted') return isMe ? "You're on it" : `${who} is on it`;
+  if(b === 'accepted') return isMe ? 'You accepted this job' : `${who} accepted this job`;
+  if(b.startsWith('sorted:')) return `${who} sent this to ${reqEsc(b.slice(7))}`;
   if(b === 'closed') return `${who} marked this as done`;
   if(b === 'reopened') return `${who} reopened this`;
   if(b.startsWith('assigned:')) return `${who} gave this to ${reqEsc(reqName(b.slice(9), true))}`;
@@ -30261,14 +30332,16 @@ function reqRenderDetail(){
   const me = reqMe(), canHandle = reqCanHandle(r), st = reqDeptStyle(r.dept);
   const canEdit = canHandle || (r.reported_by === me && r.status === 'open');
   const canDelete = reqSeeAll() || (r.reported_by === me && r.status === 'open');
-  const moreBtn = canEdit || canDelete || (canHandle && r.status !== 'closed') ? `<button class="req-hero-btn" style="right:14px" onclick="reqMore(event)" title="More"><svg width="18" height="18" viewBox="0 0 24 24" fill="#0F1E2E"><circle cx="12" cy="5" r="2.2"/><circle cx="12" cy="12" r="2.2"/><circle cx="12" cy="19" r="2.2"/></svg></button>` : '';
+  const moreBtn = reqCanSort() || canDelete ? `<button class="req-hero-btn" style="right:14px" onclick="reqMore(event)" title="More"><svg width="18" height="18" viewBox="0 0 24 24" fill="#0F1E2E"><circle cx="12" cy="5" r="2.2"/><circle cx="12" cy="12" r="2.2"/><circle cx="12" cy="19" r="2.2"/></svg></button>` : '';
   const img = r.photo || r.thumb;
   const hero = img
     ? `<div class="req-hero" onclick="reqZoom('main')"><img src="${img}" alt="">${backBtn}${moreBtn}</div>`
     : `<div class="req-hero none" style="background:${st.bg}">${reqIcon(st.icon, 64, st.stroke, 1.6)}${backBtn}${moreBtn}</div>`;
 
   let action = '';
-  if(r.status === 'open' && canHandle) action = `<div class="req-bigacts"><button class="go" onclick="reqAccept()">I'm on it</button><button onclick="reqAssign()">Assign</button></div>`;
+  if((r.status === 'sort' || REQ.resort === r.id) && reqCanSort()) action = reqSortHtml(r) + (REQ.resort === r.id ? `<button class="rq-cancel" onclick="REQ.resort=null;reqRenderDetail()">Cancel</button>` : '');
+  else if(r.status === 'sort') action = `<div class="rq-wait">Waiting for a coordinator to send this to the right team</div>`;
+  else if(r.status === 'open' && canHandle) action = `<button class="req-donebtn rq-accept" onclick="reqAccept()">Accept job</button>`;
   else if(r.status !== 'closed' && (canHandle || r.assigned_to === me || r.reported_by === me)) action = `<button class="req-donebtn" onclick="reqClose()">${REQ_TICK(18)}Mark as done</button>`;
   else if(r.status === 'closed' && (canHandle || r.reported_by === me)) action = `<button class="req-reopen" onclick="reqReopen()">Reopen</button>`;
 
@@ -30287,20 +30360,20 @@ function reqRenderDetail(){
   }).join('');
 
   const stl = REQ_ST[r.status] || REQ_ST.open;
-  const urgName = (REQ_URGENCY.find(u => u.id === r.priority) || {}).name || '';
+  const urgName = r.priority === 'urgent' ? (r.status === 'sort' ? 'Emergency' : 'Urgent') : 'Normal';
   const canPhoto = canHandle || r.reported_by === me || r.assigned_to === me;
   const photoBox = img
     ? `<div class="rq-photo" onclick="reqZoom('main')"><img src="${img}" alt="">${canPhoto ? `<div class="rq-phbtns" onclick="event.stopPropagation()"><button class="rq-chg rq-rm" onclick="reqRemovePhoto()">Remove</button><label class="rq-chg">Change photo<input type="file" accept="image/*" style="display:none" onchange="reqSetPhoto(this)"></label></div>` : ''}</div>`
     : (canPhoto ? `<label class="rq-addph">${reqIcon('camera', 26, '#0D9488')}<span>Add a photo</span><input type="file" accept="image/*" style="display:none" onchange="reqSetPhoto(this)"></label>` : '');
   const onIt = r.assigned_to ? `${reqAvatar(r.assigned_to, 22)}<span>${r.assigned_to === me ? 'You' : reqEsc(reqName(r.assigned_to, true))}${reqOnItAt(r) ? ' · since ' + chat2Time(reqOnItAt(r)) : ''}</span>` : '<span class="m">Nobody yet</span>';
-  const facts = [['Where', reqEsc(r.location || '-')], ['Team', reqEsc(r.dept)], ['Reported by', reqEsc((r.reported_by === me ? 'You' : reqName(r.reported_by, true)) + ' · ' + reqAgo(r.created_at))], ["Who's on it", onIt], ['Urgency', reqEsc(urgName)]]
+  const facts = [['Where', reqEsc(r.location || '-')], ['Team', r.dept ? reqEsc(r.dept) : '<span class="m">Not sorted yet</span>'], ['Reported by', reqEsc((r.reported_by === me ? 'You' : reqName(r.reported_by, true)) + ' · ' + reqAgo(r.created_at))], ["Who's on it", onIt], ['Urgency', reqEsc(urgName)]]
     .map(([k, v]) => `<dt>${k}</dt><dd>${v}</dd>`).join('');
   const reported = `<div class="req-ev"><span>Reported · ${reqEsc(reqDayShort(r.created_at))}</span></div>`;
   el.innerHTML = `<div class="rq-wrap">
     <button class="rq-back" onclick="nav('requests')"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>Maintenance</button>
     <div class="rq-card">
       <div class="rq-hd"><div style="flex:1;min-width:0">
-          <div class="rq-tags">${r.priority === 'urgent' && r.status !== 'closed' ? '<span class="req-urg2">URGENT</span>' : ''}<span class="req-dtag" style="background:${st.bg};color:${st.fg}">${reqEsc(r.dept)}</span>${r.ref ? `<span class="rq-ref">#${reqEsc(r.ref)}</span>` : ''}</div>
+          <div class="rq-tags">${r.priority === 'urgent' && r.status !== 'closed' ? '<span class="req-urg2">URGENT</span>' : ''}${r.dept ? `<span class="req-dtag" style="background:${st.bg};color:${st.fg}">${reqEsc(r.dept)}</span>` : ''}${r.ref ? `<span class="rq-ref">#${reqEsc(r.ref)}</span>` : ''}</div>
           <div class="rq-title">${reqEsc(r.title)}</div></div>
         <span class="req-st ${stl[1]}">${stl[0]}</span>
         ${moreBtn ? `<button class="rq-more" onclick="reqMore(event)" title="More"><svg width="18" height="18" viewBox="0 0 24 24" fill="#0F1E2E"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg></button>` : ''}
@@ -30363,9 +30436,8 @@ function reqMore(e){
   const r = reqGet(REQ.openId); if(!r) return;
   const me = reqMe(), canHandle = reqCanHandle(r);
   const items = [];
-  if(canHandle && r.status !== 'closed') items.push([r.assigned_to ? 'Give to someone else' : 'Assign to someone', 'reqAssign()']);
-  if(canHandle || (r.reported_by === me && r.status === 'open')) items.push(['Edit request', 'reqEdit()']);
-  if(reqSeeAll() || (r.reported_by === me && r.status === 'open')) items.push(['Delete request', 'reqDelete()', true]);
+  if(reqCanSort() && r.status !== 'closed' && r.status !== 'sort') items.push(['Send to another team', 'reqResort()']);
+  if(reqSeeAll() || reqIsCoord() || (r.reported_by === me && (r.status === 'open' || r.status === 'sort'))) items.push(['Delete job', 'reqDelete()', true]);
   if(!items.length) return;
   document.getElementById('req-menu')?.remove();
   const m = document.createElement('div');
@@ -30387,7 +30459,7 @@ async function reqRpc(fn, args, okText, event){
   if(REQ.openId === args.rid) reqLoadNotes(args.rid);
   return true;
 }
-function reqAccept(id){ reqRpc('request_accept', { rid:id || REQ.openId }, "You're on it", 'accepted'); }
+function reqAccept(id){ reqRpc('request_accept', { rid:id || REQ.openId }, 'Job accepted', 'accepted'); }
 function reqClose(){
   appConfirmShow({ title:'Mark as done?', msg:'This closes the request and lets the person who reported it know.', label:'Mark as done', onOk: () => reqRpc('request_close', { rid:REQ.openId }, 'Marked as done', 'closed') });
 }
@@ -30492,6 +30564,8 @@ function reqDemoSetup(){
   const bulb = reqDemoPic('<path d="M200 70a75 75 0 0 0-42 137V245h84v-38A75 75 0 0 0 200 70z" fill="#fffde7" stroke="#b08900" stroke-width="7"/><rect x="160" y="258" width="80" height="22" rx="8" fill="#b08900"/><rect x="170" y="290" width="60" height="18" rx="8" fill="#b08900"/>', '#fff3c4', '#f6d365');
   const cushion = reqDemoPic('<rect x="70" y="170" width="260" height="70" rx="26" fill="#f1f8e9" stroke="#558b2f" stroke-width="7"/><path d="M196 178l18 26-22 18 18 22" stroke="#c62828" stroke-width="9" fill="none" stroke-linecap="round"/><line x1="100" y1="240" x2="90" y2="300" stroke="#558b2f" stroke-width="9"/><line x1="300" y1="240" x2="310" y2="300" stroke="#558b2f" stroke-width="9"/>', '#c8e6c9', '#81c784');
   REQ_DEMO.requests = [
+    {id:'q5', ref:15, title:'Ice machine leaking all over the floor', location:'Main bar', dept:'', priority:'urgent', status:'sort', reported_by:'d1', assigned_to:null, created_at:ago(4), updated_at:ago(4)},
+    {id:'q6', ref:16, title:'Wobbly table, number 12', location:'Restaurant', dept:'', priority:'normal', status:'sort', reported_by:'d2', assigned_to:null, created_at:ago(25), updated_at:ago(25)},
     {id:'q1', ref:14, title:'Fridge 2 not cooling', details:'Started this morning, drinks are warm', location:'Pool bar', dept:'Engineering', priority:'urgent', status:'open', reported_by:'d1', assigned_to:null, created_at:ago(12), updated_at:ago(12), thumb:fridge, photo:fridge},
     {id:'q3', ref:12, title:'Light flickering above reception', location:'Lobby', dept:'Engineering', priority:'normal', status:'progress', reported_by:'d2', assigned_to:'d3', created_at:ago(120), updated_at:ago(60), thumb:bulb, photo:bulb},
     {id:'q2', ref:13, title:'Sun lounger cushion torn', location:'Beach, row B', dept:'Housekeeping', priority:'low', status:'progress', reported_by:'demo-me', assigned_to:'d4', created_at:ago(60*26), updated_at:ago(60*3), thumb:cushion, photo:cushion},
@@ -30535,6 +30609,7 @@ const REQ_DEMO_DB = {
     if(fn === 'request_close'){ Object.assign(r, { status:'closed', closed_at:new Date().toISOString() }); ev('closed'); }
     if(fn === 'request_reopen'){ Object.assign(r, { status:r.assigned_to ? 'progress' : 'open', closed_at:null }); ev('reopened'); }
     if(fn === 'request_update'){ if(a.new_dept !== r.dept) ev('moved:' + a.new_dept); Object.assign(r, { title:a.new_title, details:a.new_details, location:a.new_location, dept:a.new_dept, priority:a.new_priority }); }
+    if(fn === 'request_sort'){ Object.assign(r, { dept:a.new_dept, priority:a.urgent ? 'urgent' : 'normal', status:'open', assigned_to:null }); ev('sorted:' + a.new_dept); }
     if(fn === 'request_set_photo'){ Object.assign(r, { photo:a.new_photo, thumb:a.new_thumb }); }
     if(fn === 'request_delete'){ REQ_DEMO.requests = REQ_DEMO.requests.filter(x => x.id !== a.rid); }
     r.updated_at = new Date().toISOString();
@@ -30679,6 +30754,50 @@ reqStyle.textContent = `
 .req-send-big{width:100%;margin-top:18px;height:54px;border:0;border-radius:16px;background:#0D9488;color:white;font-family:Inter,sans-serif;font-size:16px;font-weight:800;cursor:pointer}
 .req-send-big:disabled{opacity:.6}
 /* one request */
+/* ── Maintenance v2: To sort box, Accept job, Emergency ── */
+.req-pill.gold{background:#FDF3DE;color:#8A6418}.req-pill.gold.on{background:#0F1E2E;color:#fff}
+.req-pill.gold i{background:#C4973B;color:#0F1E2E}
+.req-st.s{background:#EEF2FF;color:#4338CA}
+.req-acc{border:0;background:#0D9488;color:#fff;border-radius:10px;padding:8px 14px;font:800 13.5px Inter,sans-serif;cursor:pointer;white-space:nowrap}
+.req-acc:hover{background:#0F766E}
+.req-row .req-acc{margin-top:8px;width:100%;height:40px;font-size:14.5px}
+.rq-sortgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(330px,1fr));gap:14px}
+.rq-scard{background:#fff;border:1px solid #E8ECF1;border-radius:18px;overflow:hidden;display:flex;flex-direction:column}
+.rq-scard.emer{border:2px solid #DC2626}
+.rq-spic{height:150px;background:#EEF1F4;display:flex;align-items:center;justify-content:center;position:relative;cursor:pointer}
+.rq-spic img{width:100%;height:100%;object-fit:cover}
+.rq-emer{position:absolute;left:10px;top:10px;background:#DC2626;color:#fff;font:900 11px Inter,sans-serif;letter-spacing:.5px;border-radius:6px;padding:4px 8px}
+.rq-sbody{padding:14px 16px 16px}
+.rq-st{font-size:17px;font-weight:800;color:#0F1E2E;cursor:pointer;line-height:1.3}
+.rq-ss{font-size:13px;color:#64748B;margin-top:3px}
+.rq-q{font-size:13px;font-weight:800;color:#0F1E2E;margin:14px 0 8px}
+.rq-teams{display:flex;flex-wrap:wrap;gap:7px}
+.rq-teams button,.rq-yn button{border:1.5px solid #E2E8F0;background:#fff;border-radius:11px;padding:9px 13px;font:700 14px Inter,sans-serif;color:#0F1E2E;cursor:pointer}
+.rq-teams button.on{background:#0F1E2E;border-color:#0F1E2E;color:#fff}
+.rq-yn{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.rq-yn button{height:44px}
+.rq-yn button.on{background:#0F1E2E;border-color:#0F1E2E;color:#fff}
+.rq-yn button.on.r{background:#DC2626;border-color:#DC2626}
+.rq-sendbtn{width:100%;height:50px;margin-top:14px;border:0;border-radius:14px;background:#C4973B;color:#0F1E2E;font:900 15.5px Inter,sans-serif;cursor:pointer}
+.rq-sendbtn:disabled{background:#EEF1F4;color:#94A3B8;cursor:default}
+.rq-right .rq-sort .rq-q:first-child{margin-top:0}
+.rq-cancel{display:block;margin:10px auto 0;border:0;background:none;color:#64748B;font:700 13.5px Inter,sans-serif;cursor:pointer}
+.rq-wait{background:#EEF2FF;color:#4338CA;border-radius:12px;padding:12px 14px;font-size:14px;font-weight:700;text-align:center}
+.rq-accept{background:#0D9488!important}
+.req-send-big.emer{background:#DC2626!important;color:#fff!important}
+.rq-emerbox{width:100%;margin-top:16px;border:1.5px solid #FECACA;background:#FFF5F5;border-radius:14px;padding:12px 14px;display:flex;gap:12px;align-items:center;text-align:left;cursor:pointer;font-family:Inter,sans-serif}
+.rq-emerbox b{display:block;font-size:14.5px;color:#B91C1C}.rq-emerbox small{display:block;font-size:12.5px;color:#7F1D1D;margin-top:2px;line-height:1.35}
+.rq-emerbox span{flex:1}
+.rq-tg{width:48px;height:28px;border-radius:14px;background:#E2E8F0;position:relative;flex:none;transition:background .15s}
+.rq-tg:after{content:'';position:absolute;left:3px;top:3px;width:22px;height:22px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.2);transition:left .15s}
+.rq-emerbox.on{background:#DC2626;border-color:#DC2626}.rq-emerbox.on b,.rq-emerbox.on small{color:#fff}
+.rq-emerbox.on .rq-tg{background:rgba(255,255,255,.4)}.rq-emerbox.on .rq-tg:after{left:23px}
+.mc-chip{display:inline-flex;align-items:center;gap:7px;background:#F1F5F9;border-radius:999px;padding:4px 6px 4px 4px;font:700 13px Inter,sans-serif;color:#0F1E2E}
+.mc-chip button{border:0;background:#E2E8F0;width:20px;height:20px;border-radius:50%;cursor:pointer;color:#475569;font-size:14px;line-height:1}
+.mc-av{width:26px;height:26px;border-radius:50%;background:#0F1E2E;color:#fff;font-size:10.5px;font-weight:800;display:inline-flex;align-items:center;justify-content:center;flex:none}
+.mc-av.big{width:40px;height:40px;font-size:13px}
+.mc-add{border:1.5px dashed #CBD5E1;background:#fff;border-radius:999px;padding:6px 13px;font:700 13px Inter,sans-serif;color:#0D9488;cursor:pointer}
+@media(max-width:600px){ .rq-sortgrid{grid-template-columns:1fr} }
 /* Maintenance job page (Nov 2026): a tidy ticket - header, photo + facts on the left, updates + buttons on the right */
 #req-detail .rq-wrap{max-width:none}
 .rq-back{display:inline-flex;align-items:center;gap:6px;border:0;background:none;font:700 14px Inter,sans-serif;color:#475569;cursor:pointer;padding:4px 0;margin-bottom:12px}

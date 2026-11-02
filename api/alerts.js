@@ -64,7 +64,7 @@ module.exports = async (req, res) => {
     const rows = timelineRows(ev.plan && ev.plan.timeline);
     for (const r of rows) {
       const at = r.start - r.before;
-      if (!(now.mins >= at && now.mins <= at + 3 && now.mins < r.start + 1)) continue;   // due now (catches a missed minute or two)
+      if (!(now.mins >= at && now.mins <= r.start)) continue;   // due now - or late (e.g. a row added 2 min before) but before it starts
       if (!(await claim('ev:' + ev.id + ':' + now.date + ':' + r.time + ':' + r.what.slice(0, 60)))) continue;
       if (!peopleBy[ev.company_id]) peopleBy[ev.company_id] = await L.db('profiles?select=id,departments&active=eq.true&company_id=eq.' + encodeURIComponent(ev.company_id)).catch(() => []);
       const to = peopleBy[ev.company_id].filter(p => (Array.isArray(p.departments) ? p.departments : []).some(d => r.depts.includes(d))).map(p => p.id);

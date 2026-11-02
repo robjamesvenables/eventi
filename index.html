@@ -6733,6 +6733,12 @@ window.mvBackDone = function(id){
   mvBackStack.splice(i, 1);
   mvBackSkip++; history.back();
 };
+// Board and rundown pop-ups (Add to board, Edit, Share rundown): phone back closes them too
+new MutationObserver(() => {
+  const open = !!document.querySelector('body > .eb-sheet'), inStack = mvBackStack.some(x => x.id === 'ebsheet');
+  if(open && !inStack) mvBackOpen('ebsheet', () => document.querySelectorAll('body > .eb-sheet').forEach(x => x.remove()));
+  else if(!open && inStack) mvBackDone('ebsheet');
+}).observe(document.body || document.documentElement, { childList:true });
 window.addEventListener('popstate', function(e){
   if(mvBackSkip){ mvBackSkip--; return; }
   const top = mvBackStack[mvBackStack.length - 1];
@@ -8451,8 +8457,9 @@ window.pnlOpen = function(){
   document.getElementById('pnl-ev').textContent = 'P&L · ' + name.toUpperCase();
   document.getElementById('pnl-ov').classList.add('on'); document.body.style.overflow = 'hidden';
   pnlRender();
+  mvBackOpen('pnl', () => pnlClose(true));
 };
-window.pnlClose = function(){ if(PNL.editing) PNL.editing.blur(); const ov = document.getElementById('pnl-ov'); if(ov) ov.classList.remove('on'); document.body.style.overflow = ''; };
+window.pnlClose = function(fromBack){ if(fromBack !== true) mvBackDone('pnl'); if(PNL.editing) PNL.editing.blur(); const ov = document.getElementById('pnl-ov'); if(ov) ov.classList.remove('on'); document.body.style.overflow = ''; };
 // Copy the categories and lines from another event (actual figures and statuses are cleared)
 window.pnlCopyFrom = function(){
   const others = (evAll || []).filter(e => String(e.id) !== String(beoCurrentId) && e.plan && pnlHasData(e.plan.pnl));

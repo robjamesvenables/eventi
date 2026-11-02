@@ -7766,7 +7766,15 @@ function evDemoBoard(name){
 }
 // Demo company only: fill in departments (and owners) on demo events that are still blank.
 async function evDemoTopUp(rows){
-  if(!BEO_TEMPLATE || !appIsDemoCompany()) return;
+  if(!appIsDemoCompany()) return;
+  for(const row of rows){
+    const plan = row.plan || {};
+    if(plan.board) continue;
+    const board = evDemoBoard(row.name) || evDemoBoard('Horizon Tech Summit 2026 — Welcome Dinner');
+    row.plan = Object.assign({}, plan, { board: JSON.parse(JSON.stringify(board)) });
+    try { await sb.from('events').update({ plan: row.plan }).eq('id', row.id); } catch(e){}
+  }
+  if(!BEO_TEMPLATE) return;
   const isDemoName = n => n === 'Horizon Tech Summit 2026 — Welcome Dinner' || EV_DEMO_DEPTS[n];
   for(const row of rows){
     if(!isDemoName(row.name)) continue;
@@ -7776,7 +7784,7 @@ async function evDemoTopUp(rows){
     const blankBodies = bodies.length && bodies.every(b => /^\s*(Type department notes here…)?\s*$/.test(b.textContent));
     const blankPics = pics.length && pics.every(n => !n.textContent.trim());
     const needPnl = EV_DEMO_PNL[row.name] && !(plan.pnl && Array.isArray(plan.pnl.cats));
-    const demoBoard = !plan.board && evDemoBoard(row.name);
+    const demoBoard = null;
     if(demoBoard && !blankBodies && !blankPics && !needPnl){ row.plan = Object.assign({}, plan, { board: demoBoard }); try { await sb.from('events').update({ plan: row.plan }).eq('id', row.id); } catch(e){} continue; }
     if(demoBoard) plan.board = demoBoard;
     if(!blankBodies && !blankPics && !needPnl){ continue; }

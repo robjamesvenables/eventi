@@ -8748,11 +8748,9 @@ function ebRender(){
   const counts = {}; b.items.forEach(it => { const g = (EB_KINDS[it.type] || EB_KINDS.note).group; counts[g] = (counts[g] || 0) + 1; });
   if(!b.ordered){ b.items.sort((x, y) => String(y.at).localeCompare(String(x.at))); b.ordered = true; }
   let items = b.items.slice();
-  if(EB.filter !== 'all') items = items.filter(it => (EB_KINDS[it.type] || EB_KINDS.note).group === EB.filter);
   const cards = items.map(ebCardHtml).join('');
   body.innerHTML = `
-    <div class="eb-head"><div><h3>Board</h3><p>Receipts, layouts, files, photos, maps, drawings and notes - for everyone on this event${ebReadOnly() || b.items.length < 2 ? '' : ' · ' + (matchMedia('(pointer:coarse)').matches ? 'press and hold a card to move it' : 'drag cards to move them')}</p></div>${ebReadOnly() ? '' : `<button class="eb-add" onclick="ebAddMenu()">+ Add to board</button>`}</div>
-    <div class="eb-chips">${EB_GROUPS.map(([k, l]) => { const n = k === 'all' ? b.items.length : (counts[k] || 0); return `<button class="eb-chip${EB.filter === k ? ' on' : ''}" onclick="ebFilter('${k}')">${l}${n ? ' ' + n : ''}</button>`; }).join('')}</div>
+    <div class="eb-head"><div><h3>Board</h3><p>Drop anything for this event here${ebReadOnly() || b.items.length < 2 ? '' : ' · ' + (matchMedia('(pointer:coarse)').matches ? 'press and hold a card to move it' : 'drag cards to move them')}</p></div>${ebReadOnly() ? '' : `<button class="eb-add" onclick="ebAddMenu()">+ Add to board</button>`}</div>
     <div class="eb-board">${cards || `<div class="eb-empty"><div class="ic">${ebIc('<path d="M21.4 11.1 12.2 20.3a6 6 0 0 1-8.5-8.5l9.2-9.2a4 4 0 0 1 5.7 5.7l-9.2 9.2a2 2 0 0 1-2.8-2.8l8.5-8.5"/>', 30)}</div><b class="t">${EB.filter === 'all' ? 'The board is empty' : 'Nothing here yet'}</b><span>Pin receipts, layouts, files, photos, maps, drawings and notes<br>for everyone working on this event.</span>${ebReadOnly() ? '' : '<button class="eb-add" onclick="ebAddMenu()">+ Add to board</button>'}</div>`}</div>`;
   ebSyncButton();
   ebDragInit();

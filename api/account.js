@@ -32,7 +32,7 @@ module.exports = async (req, res) => {
       const bad = L.secretOk(me.role, b.secret);
       if (bad) return L.send(res, 400, { ok: false, reason: 'weak', message: bad });
       if (String(b.secret) === String(b.current)) return L.send(res, 400, { ok: false, reason: 'same', message: 'Please choose a new one, different from your current one.' });
-      await L.authAdmin('users/' + me.user_id, { method: 'PUT', body: { password: L.authSecret(me.id, String(b.secret)) } });
+      await L.authAdmin('users/' + me.user_id, { method: 'PUT', body: { password: L.authSecret(me.id, String(b.secret)), user_metadata: { username: me.username, pw: true } } });
       // Sign out every OTHER device, then hand this device a fresh session.
       await fetch(L.SUPABASE_URL + '/auth/v1/logout?scope=others', { method: 'POST', headers: { apikey: L.ANON_KEY, Authorization: 'Bearer ' + token } }).catch(() => {});
       const session = await L.passwordGrant(email, L.authSecret(me.id, String(b.secret)));

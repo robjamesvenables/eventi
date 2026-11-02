@@ -21,9 +21,9 @@ module.exports = async (req, res) => {
     const email = L.authEmailFor(p.username);
     let userId = p.user_id;
     if (userId) {
-      await L.authAdmin('users/' + userId, { method: 'PUT', body: { password: L.authSecret(p.id, secret), ban_duration: 'none' } });
+      await L.authAdmin('users/' + userId, { method: 'PUT', body: { password: L.authSecret(p.id, secret), ban_duration: 'none', user_metadata: { username: p.username, pw: true } } });
     } else {
-      const u = await L.authAdmin('users', { method: 'POST', body: { email, password: L.authSecret(p.id, secret), email_confirm: true, user_metadata: { username: p.username } } });
+      const u = await L.authAdmin('users', { method: 'POST', body: { email, password: L.authSecret(p.id, secret), email_confirm: true, user_metadata: { username: p.username, pw: true } } });
       userId = u.id || (u.user && u.user.id);
       await L.db('profiles?id=eq.' + p.id, { method: 'PATCH', body: { user_id: userId } });
     }

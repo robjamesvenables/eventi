@@ -3951,17 +3951,17 @@ html:has(#menuDetailOverlay[style*="flex"]),html:has(#menuDetailOverlay[style*="
       <form id="login-form" onsubmit="event.preventDefault();doLogin()" autocomplete="on">
       <label class="lf-label" id="lemail-label" for="lemail">Username</label>
       <input class="lf-input" id="lemail" type="text" autocomplete="username" autocapitalize="characters" spellcheck="false" placeholder="e.g. MAVIS-JOHN-SMITH" value="">
-      <label class="lf-label" id="lpwd-label" for="lpwd">PIN or password</label>
+      <label class="lf-label" id="lpwd-label" for="lpwd">Password</label>
       <div style="position:relative">
-        <input class="lf-input" id="lpwd" type="password" autocomplete="current-password" placeholder="••••••" value="" style="padding-right:64px">
+        <input class="lf-input" id="lpwd" type="password" autocomplete="current-password" placeholder="••••••••" value="" style="padding-right:64px">
         <button type="button" onclick="loginTogglePw()" id="lpwd-show" style="position:absolute;right:8px;top:0;height:46px;display:flex;align-items:center;background:none;border:none;color:#0D9488;font-weight:700;font-size:12.5px;cursor:pointer;font-family:'Inter',sans-serif">Show</button>
       </div>
       <div id="login-error" role="alert" style="display:none;margin:-4px 0 12px;font-size:13px;font-weight:600;color:#DC2626;line-height:1.4"></div>
       <button class="lf-btn" type="submit" id="login-btn">Sign in</button>
       </form>
-      <div id="login-help-link" style="text-align:center;margin-top:16px"><a onclick="loginShowHelp()" style="font-size:13px;color:#0D9488;font-weight:600;cursor:pointer">Forgot username or PIN?</a></div>
+      <div id="login-help-link" style="text-align:center;margin-top:16px"><a onclick="loginShowHelp()" style="font-size:13px;color:#0D9488;font-weight:600;cursor:pointer">Forgot username or password?</a></div>
       <div id="login-help" style="display:none;margin-top:12px;background:#F8FAFC;border:1px solid #E2E8F0;border-radius:10px;padding:12px 14px;font-size:13px;color:#475569;line-height:1.55">
-        <b style="color:#0F1E2E">Ask your manager.</b> They can see your username in Admin Console and send you a new link to choose a new PIN or password. Your username is usually your Company ID and name, e.g. <b>MAVIS-JOHN-SMITH</b>.
+        <b style="color:#0F1E2E">Ask your manager.</b> They can see your username in Admin Console and send you a new link to choose a new password. Your username is usually your Company ID and name, e.g. <b>MAVIS-JOHN-SMITH</b>.
       </div>
       
       
@@ -6102,7 +6102,7 @@ html:has(#menuDetailOverlay[style*="flex"]),html:has(#menuDetailOverlay[style*="
           <div class="pp-head-top">
             <div>
               <div class="pp-head-title">Your team</div>
-              <div class="pp-head-sub">Tap someone to edit. New people get a login link to set up their own PIN or password.</div>
+              <div class="pp-head-sub">Tap someone to edit. New people get a login link to set up their own password.</div>
             </div>
             <button class="pp-add" onclick="peopleOpenForm()">+ Add person</button>
           </div>
@@ -6851,8 +6851,8 @@ function setLang(lang){
 
 // ── LOGIN ──
 // ── LOGINS ──
-// Real accounts: everyone signs in with a Mavis username (e.g. MAVIS-JOHN-SMITH) plus a 6-digit PIN
-// (staff) or a password (managers and up). The account checks happen in the /api functions on the
+// Real accounts: everyone signs in with a Mavis username (e.g. MAVIS-JOHN-SMITH) plus a password (old 6-digit PINs get swapped for a password on next sign-in)
+// The account checks happen in the /api functions on the
 // server. Until those are switched on (Vercel env var), the old demo login keeps working so nothing breaks.
 let authReady = null;          // null = not checked yet, true = real logins on, false = demo mode
 let myProfile = null;          // the logged-in person (from the profiles table)
@@ -7197,27 +7197,29 @@ async function doLogin(){
       setCurrentUserFromEmail(username.includes('@') ? username : username.toLowerCase());
       try{ localStorage.setItem('mavis_logged_in_email', username); }catch(err){}
       authEnterApp();
-    } else loginError('Please enter your username and PIN or password');
+    } else loginError('Please enter your username and password');
     return;
   }
-  if(!username || !secret){ loginError('Please enter your username and PIN or password'); return; }
+  if(!username || !secret){ loginError('Please enter your username and password'); return; }
   const btn = document.getElementById('login-btn'); if(btn){ btn.disabled = true; btn.textContent = 'Signing in…'; }
   try{
     const d = await authApi('login', { body:{ username, secret } });
     if(!d.ok){
-      if(d.reason==='locked') loginError('Too many wrong tries. Please wait 15 minutes, or ask your manager to reset your PIN.');
+      if(d.reason==='locked') loginError('Too many wrong tries. Please wait 15 minutes, or ask your manager to reset your password.');
       else if(d.reason==='inactive') loginError('This account has been switched off. Please speak to your manager.');
       else if(d.reason==='paused') loginError('This Mavis account is paused. Please contact Mavis.');
       else if(d.reason==='email shared') loginError('That email is on more than one account. Please type your username instead (e.g. SUNSET-JOHN-SMITH).');
-      else if(d.reason==='wrong') loginError('Username or PIN/password not right.' + (d.left>0 && d.left<=3 ? ' ' + d.left + ' tries left before a 15-minute lock.' : ''));
+      else if(d.reason==='wrong') loginError('Username or password not right.' + (d.left>0 && d.left<=3 ? ' ' + d.left + ' tries left before a 15-minute lock.' : ''));
       else loginError('Could not sign in right now. Please check your connection and try again.');
       return;
     }
     await sb.auth.setSession({ access_token: d.session.access_token, refresh_token: d.session.refresh_token });
     try{ localStorage.setItem('mavis_last_username', d.profile.username); localStorage.removeItem('mavis_logged_in_email'); }catch(err){}
+    const oldSecret = p.value;
     p.value = '';
     await authApplyProfile(d.profile, d.company);
     authEnterApp();
+    if(d.must_change) authAskNewPassword(oldSecret);
   }catch(err){
     console.warn(err); loginError('Could not sign in right now. Please check your connection and try again.');
   }finally{
@@ -7258,7 +7260,7 @@ async function authRunSetup(token){
       <button class="lf-btn" onclick="document.getElementById('setup-screen').remove();history.replaceState(null,'',location.pathname);authShowLogin()">Go to sign in</button>`);
     return;
   }
-  const isPin = info.kind === 'pin';
+  const isPin = false;   // everyone uses a password now (Nov 2026)
   const esc = v => String(v==null?'':v).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   el.innerHTML = card(`
     <div style="font-size:20px;font-weight:800;color:#0F1E2E;margin-bottom:4px">${info.reset ? 'Choose a new ' + (isPin?'PIN':'password') : 'Welcome, ' + esc(info.first_name) + '!'}</div>
@@ -7314,6 +7316,8 @@ window.addEventListener('load', async () => {
           const { data: cos } = await sb.from('companies').select('id,code,name,logo,departments').eq('id', prof.company_id).limit(1);
           await authApplyProfile({ ...prof, has_login:true }, cos && cos[0]);
           authEnterApp();
+          // Still on an old 6-digit PIN (from before Nov 2026)? Ask for a password now.
+          if(AUTH_OLD_PIN_ROLES.includes(prof.role) && !(session.user && session.user.user_metadata && session.user.user_metadata.pw)) authAskNewPassword(null);
           return;
         }
         await sb.auth.signOut();
@@ -7362,7 +7366,7 @@ function closeProfileMenu(){
   if(menu) menu.style.display = 'none';
 }
 
-// ── MY ACCOUNT: see your login details, change your photo / PIN / password ──
+// ── MY ACCOUNT: see your login details, change your photo / password ──
 const ROLE_NAMES = { superadmin:'Super Admin', director:'Director', manager:'Manager', supervisor:'Supervisor', teammember:'Team Member', dailyworker:'Daily Worker' };
 async function accountApi(body){
   const { data } = await sb.auth.getSession();
@@ -7374,8 +7378,7 @@ function openMyAccount(){
   if(!myProfile){ openEditProfileDemo(); return; }
   const esc = v => String(v==null?'':v).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const p = myProfile;
-  const isPin = ['supervisor','teammember','dailyworker'].includes(p.role);
-  const what = isPin ? 'PIN' : 'password';
+  const what = 'password';
   const photo = p.photo || '';
   const row = (label, value) => `<div style="display:flex;justify-content:space-between;gap:12px;padding:11px 0;border-bottom:1px solid #F1F5F9;font-size:13px"><span style="color:#64748B">${label}</span><span style="font-weight:700;color:#0F1E2E;text-align:right">${value}</span></div>`;
   let el = document.getElementById('account-modal');
@@ -7459,9 +7462,48 @@ function chatLookHtml(){
   </div>`;
 }
 chatLookApply();
+// ── Old 6-digit PINs → passwords (Nov 2026). Everyone now logs in with a password, like most apps. ──
+const AUTH_OLD_PIN_ROLES = ['supervisor','teammember','dailyworker'];
+window.authAskNewPassword = function(current){
+  if(document.getElementById('newpw-modal')) return;
+  const el = document.createElement('div'); el.id = 'newpw-modal';
+  el.style.cssText = 'position:fixed;inset:0;background:rgba(15,30,46,.6);z-index:10050;display:flex;align-items:center;justify-content:center;padding:16px';
+  const inp = (id, label, ac) => `<label class="lf-label" for="${id}" style="margin-top:12px">${label}</label>
+    <div style="position:relative"><input class="lf-input" id="${id}" type="password" autocomplete="${ac}" placeholder="••••••••" style="padding-right:64px;margin-bottom:0">
+    <button type="button" onclick="const i=document.getElementById('${id}');i.type=i.type==='password'?'text':'password';this.textContent=i.type==='password'?'Show':'Hide'" style="position:absolute;right:8px;top:0;height:46px;display:flex;align-items:center;background:none;border:none;color:#0D9488;font-weight:700;font-size:12.5px;cursor:pointer;font-family:Inter,sans-serif">Show</button></div>`;
+  el.innerHTML = `<form onsubmit="event.preventDefault();authSaveNewPassword()" style="background:white;border-radius:18px;width:100%;max-width:400px;padding:24px;font-family:Inter,sans-serif;box-sizing:border-box;max-height:92vh;overflow:auto">
+    <input type="text" autocomplete="username" value="${(myProfile && myProfile.username) || ''}" style="display:none" readonly>
+    <div style="font-size:20px;font-weight:800;color:#0F1E2E;margin-bottom:6px">Choose a password</div>
+    <div style="font-size:14px;color:#475569;line-height:1.5">Mavis now uses a password instead of a PIN, like most apps. It needs at least 8 characters - letters, numbers, anything. You'll stay signed in on this phone.</div>
+    ${current ? '' : inp('newpw-cur', 'Your current PIN', 'current-password')}
+    ${inp('newpw-1', 'New password', 'new-password')}
+    ${inp('newpw-2', 'Type it again', 'new-password')}
+    <div id="newpw-err" role="alert" style="color:#DC2626;font-size:13px;font-weight:600;min-height:18px;margin:10px 0 6px"></div>
+    <button class="lf-btn" type="submit" id="newpw-btn">Save password</button>
+  </form>`;
+  el.dataset.cur = current || '';
+  document.body.appendChild(el);
+  setTimeout(() => document.getElementById(current ? 'newpw-1' : 'newpw-cur')?.focus(), 60);
+};
+window.authSaveNewPassword = async function(){
+  const el = document.getElementById('newpw-modal'); if(!el) return;
+  const v = id => (document.getElementById(id) || {}).value || '';
+  const err = m => { document.getElementById('newpw-err').textContent = m || ''; };
+  const cur = el.dataset.cur || v('newpw-cur'), a = v('newpw-1'), b = v('newpw-2');
+  if(!cur) return err('Please type your PIN.');
+  if(a.length < 8) return err('Your password needs at least 8 characters.');
+  if(a !== b) return err("The two don't match - please type them again.");
+  const btn = document.getElementById('newpw-btn'); btn.disabled = true; btn.textContent = 'Saving…'; err('');
+  let d = {};
+  try{ d = await accountApi({ action:'change_secret', current: cur, secret: a }); }catch(e){ d = {}; }
+  btn.disabled = false; btn.textContent = 'Save password';
+  if(!d.ok) return err(d.message || 'Could not save it - please check your connection and try again.');
+  if(d.session) await sb.auth.setSession({ access_token: d.session.access_token, refresh_token: d.session.refresh_token });
+  el.remove();
+  toast('Password saved ✓');
+};
 window.accountShowChange = function(){
-  const isPin = ['supervisor','teammember','dailyworker'].includes(myProfile.role);
-  const what = isPin ? 'PIN' : 'password';
+  const isPin = false, what = 'password';
   const inp = (id, label) => `<label style="display:block;font-size:11px;font-weight:700;color:#64748B;margin:10px 0 5px">${label}</label>
     <input id="${id}" type="password" ${isPin ? 'inputmode="numeric" maxlength="6" pattern="[0-9]*"' : ''} autocomplete="${id==='acct-cur'?'current-password':'new-password'}" style="width:100%;padding:10px 12px;border:1.5px solid #E2E8F0;border-radius:8px;font-family:Inter,sans-serif;font-size:16px;box-sizing:border-box">`;
   document.getElementById('acct-change').innerHTML = `<div style="background:#F8FAFC;border:1px solid #E2E8F0;border-radius:12px;padding:14px">
@@ -7477,7 +7519,7 @@ window.accountShowChange = function(){
 window.accountChangeSecret = async function(){
   const v = id => document.getElementById(id).value;
   const err = m => { document.getElementById('acct-err').textContent = m || ''; };
-  const isPin = ['supervisor','teammember','dailyworker'].includes(myProfile.role);
+  const isPin = false;
   if(!v('acct-cur')) return err('Please type your current ' + (isPin?'PIN':'password') + '.');
   if(isPin ? !/^\d{6}$/.test(v('acct-new')) : v('acct-new').length < 8) return err(isPin ? 'Your new PIN must be exactly 6 numbers.' : 'Your new password must be at least 8 characters.');
   if(v('acct-new') !== v('acct-new2')) return err("The two new ones don't match - please try again.");
@@ -13256,7 +13298,7 @@ function peopleSetupUrl(token){ return location.origin + location.pathname + '?s
 // Shows the one-time link + QR for someone to create (or reset) their login.
 function peopleShowInvite(person, token, isReset){
   const url = peopleSetupUrl(token);
-  const isPin = ['supervisor','teammember','dailyworker'].includes(person.role);
+  const isPin = false;   // everyone uses a password now (Nov 2026)
   const esc = v => String(v==null?'':v).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   let el = document.getElementById('people-invite');
   if(!el){ el = document.createElement('div'); el.id='people-invite'; el.style.cssText='position:fixed;inset:0;background:rgba(15,30,46,.55);z-index:3000;display:flex;align-items:center;justify-content:center;padding:16px'; el.addEventListener('click',e=>{ if(e.target===el) el.remove(); }); document.body.appendChild(el); }
@@ -13327,7 +13369,7 @@ window.peopleResetLogin = function(id){
   const p = PEOPLE.find(x=>String(x.id)===String(id)); if(!p) return;
   // Ask first - this button sits next to Save, so it's easy to tap by accident.
   appConfirmShow({
-    title: p.hasLogin ? 'Reset ' + (p.firstName||'their') + "'s PIN / password?" : 'Make a login link for ' + (p.firstName||'them') + '?',
+    title: p.hasLogin ? 'Reset ' + (p.firstName||'their') + "'s password?" : 'Make a login link for ' + (p.firstName||'them') + '?',
     msg: p.hasLogin ? "This makes a one-time link so they can choose a new one. Their current one keeps working until they use the link." : 'This makes a one-time link (valid 48 hours) so they can set up their login.',
     label: 'Make link',
     onOk: () => peopleResetLoginGo(id)
@@ -13360,7 +13402,7 @@ function peopleOpenForm(personId){
   if(!p) return;
   const real = !!myProfile;
   const role = ADMIN_ROLES.find(r=>r.id===p.role) || ADMIN_ROLES[ADMIN_ROLES.length-1];
-  const isPinRole = r => ['supervisor','teammember','dailyworker'].includes(r);
+  const isPinRole = r => false;   // everyone uses a password now (Nov 2026)
   let bg = document.getElementById('people-drawer');
   if(bg) bg.remove();
   bg = document.createElement('div'); bg.id = 'people-drawer'; bg.className = 'pp-drawer-bg';
@@ -13460,8 +13502,7 @@ window.peoplePickRole = function(roleId){
     b.style.background = on ? b.dataset.color : ''; b.style.borderColor = on ? b.dataset.color : '';
   });
   const r = ADMIN_ROLES.find(x=>x.id===roleId) || {};
-  const pin = ['supervisor','teammember','dailyworker'].includes(roleId);
-  const d = document.getElementById('people-role-desc'); if(d) d.textContent = (r.desc||'') + ' · logs in with a ' + (pin ? '6-digit PIN' : 'password');
+  const d = document.getElementById('people-role-desc'); if(d) d.textContent = (r.desc||'') + ' · logs in with a password';
   const h = document.getElementById('people-email-hint'); if(h) h.textContent = roleId==='superadmin' ? '(needed for Super Admin)' : '(optional)';
   const av = document.getElementById('people-form-photo-preview'); if(av && !peopleFormPhotoData) av.style.background = r.color || '#0F1E2E';
 };
@@ -13744,7 +13785,7 @@ async function peopleSaveForm(){
       if(proposed !== cur.username){
         appConfirmShow({
           title: 'Update their username too?',
-          msg: 'It\'s ' + cur.username + ' now. The new one would be about ' + proposed + '. Their PIN or password stays the same - they just log in with the new username.',
+          msg: 'It\'s ' + cur.username + ' now. The new one would be about ' + proposed + '. Their password stays the same - they just log in with the new username.',
           label: 'Update username', cancelLabel: 'Keep old one',
           onOk: ()=>{ peopleRenameAsked = 'yes'; peopleSaveForm(); },
           onCancel: ()=>{ peopleRenameAsked = 'no'; peopleSaveForm(); }
@@ -13776,7 +13817,7 @@ async function peopleSaveForm(){
     peopleCloseForm();
     await peopleLoadFromSupabase();
     if(!wasNew && d.profile && d.renamed){
-      appConfirmShow({ title:'New username: ' + d.profile.username, msg:'Let ' + firstName + ' know - they log in with this from now on. Their PIN or password hasn\'t changed.', label:'Copy username', cancelLabel:'Done',
+      appConfirmShow({ title:'New username: ' + d.profile.username, msg:'Let ' + firstName + ' know - they log in with this from now on. Their password hasn\'t changed.', label:'Copy username', cancelLabel:'Done',
         onOk: ()=>{ try{ navigator.clipboard.writeText(d.profile.username); }catch(e){} toast('Copied ✓'); } });
       return;
     }

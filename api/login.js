@@ -38,7 +38,9 @@ module.exports = async (req, res) => {
     if (att) await L.db('login_attempts?username=eq.' + encodeURIComponent(key), { method: 'DELETE' });
     await L.db('profiles?id=eq.' + p.id, { method: 'PATCH', body: { last_login: new Date().toISOString() } });
     const co = (await L.db('companies?select=id,code,name,logo&id=eq.' + p.company_id))[0] || null;
-    return L.send(res, 200, { ok: true, session, profile: L.publicProfile(p), company: co });
+    // Signed in with an old 6-digit PIN (or anything under 8 characters): the app asks them to choose a password now.
+    const must_change = String(secret).length < 8;
+    return L.send(res, 200, { ok: true, session, profile: L.publicProfile(p), company: co, must_change });
   } catch (e) {
     console.error('login error', e.message);
     return L.send(res, 500, { ok: false, reason: 'error' });

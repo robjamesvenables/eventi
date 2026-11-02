@@ -9,8 +9,10 @@ const SUPABASE_URL = process.env.SUPABASE_URL || 'https://qjxcpmkiyfrukxicdwkl.s
 const SERVICE_KEY = process.env.SUPABASE_SECRET_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY || '';
 const ANON_KEY = process.env.SUPABASE_PUBLISHABLE_KEY || process.env.SUPABASE_ANON_KEY || 'sb_publishable_bHRgdmEZPalEJSMBBr8prQ_Qhu_h1X9';
 
-// Roles that log in with a 6-digit PIN; everyone above uses a password (8+ characters).
-const PIN_ROLES = ['supervisor', 'teammember', 'dailyworker'];
+// Everyone logs in with a password (8+ characters), like most apps. These roles used a 6-digit PIN before
+// Nov 2026: their old PIN still signs them in once, then the app makes them choose a password.
+const PIN_ROLES = [];
+const OLD_PIN_ROLES = ['supervisor', 'teammember', 'dailyworker'];
 const ROLE_RANK = { superadmin: 6, director: 5, manager: 4, supervisor: 3, teammember: 2, dailyworker: 1 };
 // Who can manage people: managers and above.
 const MANAGE_MIN_RANK = 4;
@@ -107,7 +109,6 @@ function slug(s){ return String(s || '').normalize('NFKD').replace(/[̀-ͯ]/g, '
 function newToken(){ return crypto.randomBytes(24).toString('base64url'); }
 function secretOk(role, secret){
   const s = String(secret || '');
-  if (PIN_ROLES.includes(role)) return /^\d{6}$/.test(s) ? null : 'PIN must be exactly 6 numbers';
   return s.length >= 8 ? null : 'Password must be at least 8 characters';
 }
 function publicProfile(p){
@@ -117,4 +118,4 @@ function publicProfile(p){
     has_login: !!p.user_id, last_login: p.last_login, photo: p.photo || null };
 }
 module.exports = { db, authAdmin, passwordGrant, authSecret, signInProfile, caller, authEmailFor, slug, newToken, secretOk, publicProfile, send, body,
-  PIN_ROLES, ROLE_RANK, MANAGE_MIN_RANK, SERVICE_KEY, SUPABASE_URL, ANON_KEY, serviceHeaders };
+  PIN_ROLES, OLD_PIN_ROLES, ROLE_RANK, MANAGE_MIN_RANK, SERVICE_KEY, SUPABASE_URL, ANON_KEY, serviceHeaders };

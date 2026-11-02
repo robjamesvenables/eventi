@@ -5924,7 +5924,7 @@ html:has(#menuDetailOverlay[style*="flex"]),html:has(#menuDetailOverlay[style*="
     </div>
     <div class="page" id="p-requests" style="padding:28px 28px 40px">
       <div id="req-home"></div>
-      <button id="req-fab" onclick="reqNew()"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.6" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Report something</button>
+      <button id="req-fab" onclick="reqNew()"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.6" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Report</button>
     </div>
     <div class="page" id="p-request" style="padding:24px 28px 0">
       <div id="req-detail"></div>
@@ -29984,49 +29984,89 @@ function reqTracker(r, big){
     <div class="req-tl${big ? ' big' : ''}"><span class="on">${reqEsc(l1)}</span><span class="${step >= 2 ? 'on' : ''}">${reqEsc(l2)}</span><span class="${step >= 3 ? 'on' : ''}">${reqEsc(l3)}</span></div>`;
 }
 
-// ── Home: department tiles, tabs, request cards ──
+// ── Home: one simple list (Nov 2026). Numbers at the top for managers, urgent first, filter by team. ──
+// Who sees what: Manager+ (requestsall) everything; Supervisor (requestsmanage) their department's jobs;
+// everyone else only what they reported or were given.
+const REQ_ST = { open:['Waiting','w'], progress:['On it','o'], closed:['Done','d'] };
+function reqVisible(r){ const me = reqMe(); return reqCanHandle(r) || r.reported_by === me || r.assigned_to === me; }
+function reqDur(ms){
+  const h = ms / 3600000;
+  if(h < 1) return Math.max(1, Math.round(ms / 60000)) + ' min';
+  if(h < 48) return (h < 10 ? Math.round(h * 10) / 10 : Math.round(h)) + ' hrs';
+  return Math.round(h / 24) + ' days';
+}
 function reqRenderList(){
   const el = document.getElementById('req-home'); if(!el) return;
   const fab = document.getElementById('req-fab');
-  if(REQ.notReady){ if(fab) fab.style.display = 'none'; el.innerHTML = reqEmpty('Requests is almost ready', 'It needs a one-time setup step on the database first.'); return; }
+  if(REQ.notReady){ if(fab) fab.style.display = 'none'; el.innerHTML = reqEmpty('Maintenance is almost ready', 'It needs a one-time setup step on the database first.'); return; }
   if(!REQ.ready){ el.innerHTML = `<div style="padding:40px 0;text-align:center;color:#94A3B8;font-size:13px">Loading…</div>`; return; }
   if(fab) fab.style.display = '';
-  const handler = reqIsHandler(), me = reqMe();
-  const tabs = handler ? [['team','For my team'], ['mine','Sent by me'], ['done','Done']] : [['mine','My requests'], ['done','Done']];
-  if(!REQ.tab || !tabs.some(t => t[0] === REQ.tab)) REQ.tab = tabs[0][0];
+  const me = reqMe(), manager = reqIsHandler();
+  const all = REQ.list.filter(reqVisible);
   const open = r => r.status !== 'closed';
+  if(!['open','mine','done','urgent','progress','week'].includes(REQ.tab)) REQ.tab = 'open';
+  const weekAgo = Date.now() - 7 * 86400000;
   const sets = {
-    team: REQ.list.filter(r => open(r) && (reqCanHandle(r) || r.assigned_to === me)),
-    mine: REQ.list.filter(r => open(r) && r.reported_by === me),
-    done: REQ.list.filter(r => !open(r) && (handler || r.reported_by === me || r.assigned_to === me))
+    open: all.filter(open),
+    mine: all.filter(r => open(r) && (r.reported_by === me || r.assigned_to === me)),
+    done: all.filter(r => !open(r)),
+    urgent: all.filter(r => open(r) && r.priority === 'urgent'),
+    progress: all.filter(r => r.status === 'progress'),
+    week: all.filter(r => !open(r) && r.closed_at && new Date(r.closed_at).getTime() >= weekAgo)
   };
   let rows = sets[REQ.tab];
-  const depts = [...new Set(rows.map(r => r.dept))].sort();
-  if(REQ.dept !== 'all' && !depts.includes(REQ.dept)) REQ.dept = 'all';
+  const teams = [...new Set(all.map(r => r.dept).filter(Boolean))].sort();
+  if(REQ.dept !== 'all' && !teams.includes(REQ.dept)) REQ.dept = 'all';
   if(REQ.dept !== 'all') rows = rows.filter(r => r.dept === REQ.dept);
-  const pr = {urgent:0, normal:1, low:2};
-  if(REQ.tab === 'done') rows = rows.sort((a, b) => String(b.closed_at || b.updated_at).localeCompare(String(a.closed_at || a.updated_at))).slice(0, 60);
-  else rows.sort((a, b) => (pr[a.priority] - pr[b.priority]) || (a.status === b.status ? 0 : a.status === 'open' ? -1 : 1) || String(b.created_at).localeCompare(String(a.created_at)));
-  const waiting = sets.team.filter(r => r.status === 'open').length;
+  const pr = {urgent:0, normal:1, low:2}, sr = {open:0, progress:1};
+  if(REQ.tab === 'done' || REQ.tab === 'week') rows = rows.sort((a, b) => String(b.closed_at || b.updated_at).localeCompare(String(a.closed_at || a.updated_at))).slice(0, 100);
+  else rows.sort((a, b) => ((a.priority === 'urgent' ? 0 : 1) - (b.priority === 'urgent' ? 0 : 1)) || (sr[a.status] - sr[b.status]) || String(b.created_at).localeCompare(String(a.created_at)));
 
-  const dl = reqDeptList();
-  const tiles = dl.map(d => {
-    const st = reqDeptStyle(d);
-    return `<button class="req-tile" style="background:${st.bg};color:${st.fg}" onclick="reqNew(this.dataset.d)" data-d="${reqEsc(d)}"><span class="req-tile-ic">${reqIcon(st.icon, 24, st.stroke)}</span>${reqEsc(d)}</button>`;
-  }).join('');
+  // Numbers (managers and supervisors only)
+  let nums = '';
+  if(manager){
+    const done30 = all.filter(r => !open(r) && r.closed_at && new Date(r.closed_at).getTime() >= Date.now() - 30 * 86400000);
+    const avg = done30.length ? done30.reduce((t, r) => t + (new Date(r.closed_at) - new Date(r.created_at)), 0) / done30.length : 0;
+    const n = (k, v, label, cls) => `<button class="req-num ${cls || ''}${REQ.tab === k ? ' on' : ''}" ${k ? `onclick="reqSetTab('${k}')"` : 'disabled'}><b>${v}</b><span>${label}</span></button>`;
+    nums = `<div class="req-nums">${n('open', sets.open.length, 'Open')}${n('urgent', sets.urgent.length, 'Urgent', sets.urgent.length ? 'red' : '')}${n('progress', sets.progress.length, 'Being fixed')}${n('week', sets.week.length, 'Fixed this week')}${n('', done30.length ? reqDur(avg) : '-', 'Average time to fix')}</div>`;
+  }
+  const pills = [['open', 'Open', sets.open.length], ['mine', 'Mine'], ['done', 'Done']].map(([k, l, c]) =>
+    `<button class="req-pill${REQ.tab === k ? ' on' : ''}" onclick="reqSetTab('${k}')">${l}${c ? `<i>${c}</i>` : ''}</button>`).join('');
+  const extra = {urgent:'Urgent', progress:'Being fixed', week:'Fixed this week'}[REQ.tab];
+  const teamSel = teams.length > 1 ? `<select class="req-team" onchange="reqSetDept(this.value)"><option value="all">All teams</option>${teams.map(d => `<option value="${reqEsc(d)}"${REQ.dept === d ? ' selected' : ''}>${reqEsc(d)}</option>`).join('')}</select>` : '';
+  const status = r => { const s = REQ_ST[r.status] || REQ_ST.open; return `<span class="req-st ${s[1]}">${s[0]}</span>`; };
+  const whoOn = r => r.assigned_to ? (r.assigned_to === me ? 'You' : reqName(r.assigned_to, true)) : '';
+  const tag = r => { const st = reqDeptStyle(r.dept); return `<span class="req-dtag" style="background:${st.bg};color:${st.fg}">${reqEsc(r.dept)}</span>`; };
+  const urg = r => r.priority === 'urgent' && open(r);
+  // Phone rows
+  const prow = r => `<div class="req-row${urg(r) ? ' urg' : ''}" onclick="reqOpen('${r.id}')">${reqThumbHtml(r, 48)}
+      <div class="req-row-mid"><div class="req-row-t">${reqEsc(r.title)}</div>
+      <div class="req-row-s">${[r.location, reqAgo(r.created_at), whoOn(r) ? whoOn(r) + ' on it' : '', REQ.dept === 'all' && manager ? r.dept : ''].filter(Boolean).map(reqEsc).join(' · ')}</div></div>${status(r)}</div>`;
+  let phone = '';
+  if(rows.length){
+    const u = rows.filter(urg), rest = rows.filter(r => !urg(r));
+    phone = (u.length ? `<div class="req-sec red">Urgent</div>` : '') + u.map(prow).join('') + (u.length && rest.length ? `<div class="req-sec">${REQ.tab === 'done' || REQ.tab === 'week' ? 'Done' : 'Open'}</div>` : '') + rest.map(prow).join('');
+  }
+  // Laptop table
+  const table = rows.length ? `<table class="req-table"><thead><tr><th></th><th>Problem</th><th>Where</th><th>Team</th><th>Who's on it</th><th>${REQ.tab === 'done' || REQ.tab === 'week' ? 'Fixed' : 'Reported'}</th><th>Status</th></tr></thead><tbody>
+    ${rows.map(r => `<tr onclick="reqOpen('${r.id}')"><td class="u">${urg(r) ? '<span class="req-urg2">URGENT</span>' : ''}</td>
+      <td class="t"><div class="req-tcell">${reqThumbHtml(r, 36)}<span>${reqEsc(r.title)}</span></div></td>
+      <td class="m">${reqEsc(r.location || '-')}</td><td>${tag(r)}</td>
+      <td>${r.assigned_to ? `<span class="req-whocell">${reqAvatar(r.assigned_to, 24)}${reqEsc(whoOn(r))}</span>` : '<span class="m">-</span>'}</td>
+      <td class="m">${reqAgo((REQ.tab === 'done' || REQ.tab === 'week') ? (r.closed_at || r.updated_at) : r.created_at)}</td><td>${status(r)}</td></tr>`).join('')}
+  </tbody></table>` : '';
 
   el.innerHTML = `
-    <div class="req-banner"><div class="req-hello">What needs doing?</div>
-    <div class="req-hello-sub">${dl.length ? 'Tap a team to send them a request' : 'Add your departments in Admin Console to start sending requests'}</div></div>
-    ${dl.length ? `<div class="req-tiles">${tiles}</div>` : ''}
-    <div class="req-tabs">${tabs.map(([id, label]) => `<button class="${REQ.tab === id ? 'on' : ''}" onclick="reqSetTab('${id}')">${label}${id === 'team' && waiting ? `<span class="req-cnt">${waiting}</span>` : ''}</button>`).join('')}</div>
-    ${depts.length > 1 ? `<div class="req-chips">${[['all','All'], ...depts.map(d => [d, d])].map(([id, label]) => `<button class="${REQ.dept === id ? 'on' : ''}" onclick="reqSetDept(this.dataset.d)" data-d="${reqEsc(id)}">${reqEsc(label)}</button>`).join('')}</div>` : ''}
-    <div class="req-list">${rows.length ? rows.map(reqCardHtml).join('') : reqEmptyFor(REQ.tab)}</div>`;
+    <div class="req-banner req-banner2"><div><div class="req-hello">Maintenance</div><div class="req-hello-sub">Everything that needs fixing, in one list</div></div>
+      <button class="req-report" onclick="reqNew()">+ Report a problem</button></div>
+    ${nums}
+    <div class="req-bar2">${pills}${teamSel}${extra ? `<span class="req-showing">Showing: <b>${extra}</b> <button onclick="reqSetTab('open')" aria-label="Clear">×</button></span>` : ''}</div>
+    ${rows.length ? `<div class="req-phone-list">${phone}</div><div class="req-desk-list">${table}</div>` : reqEmptyFor(REQ.tab)}`;
 }
 function reqEmptyFor(tab){
-  if(tab === 'team') return reqEmpty('All clear', 'Nothing waiting for your team right now.');
-  if(tab === 'done') return reqEmpty('Nothing done yet', 'Finished requests show up here.');
-  return reqEmpty('Nothing open', 'Spotted something broken, or a job that needs doing? Tap a team above.');
+  if(tab === 'done' || tab === 'week') return reqEmpty('Nothing fixed yet', 'Finished jobs show up here.');
+  if(tab === 'mine') return reqEmpty('Nothing of yours open', 'Jobs you report, or are given, show up here.');
+  return reqEmpty('All clear', 'Nothing needs fixing right now. Spotted a problem? Tap Report.');
 }
 function reqEmpty(title, sub){
   return `<div class="req-empty"><div class="req-empty-ic">${reqIcon('wrench', 24, '#94A3B8')}</div>
@@ -30052,7 +30092,7 @@ function reqCardHtml(r){
     </div>
   </div>`;
 }
-function reqSetTab(t){ REQ.tab = t; REQ.dept = 'all'; reqRenderList(); }
+function reqSetTab(t){ REQ.tab = t; reqRenderList(); }
 function reqSetDept(d){ REQ.dept = d; reqRenderList(); }
 
 // ── New request: pick a team (if not picked yet) → photo, what, where, how urgent → send ──
@@ -30157,7 +30197,7 @@ async function reqFormSend(){
   reqSheetClose();
   toast('Sent to ' + data.dept);
   reqNotify(data.id, 'new');
-  REQ.tab = reqIsHandler() && reqCanHandle(data) ? 'team' : 'mine';
+  REQ.tab = 'open';
   reqRenderAll();
 }
 function reqEdit(){
@@ -30508,6 +30548,66 @@ reqStyle.textContent = `
 .req-track.big{margin-top:16px}.req-tl.big{font-size:12px}
 .req-empty{text-align:center;padding:40px 16px;color:#94A3B8}
 .req-empty-ic{width:56px;height:56px;border-radius:50%;background:#EEF1F4;display:flex;align-items:center;justify-content:center;margin:0 auto 12px}
+/* ── Maintenance: one simple list (Nov 2026) ── */
+.req-banner2{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.req-report{background:#C4973B;color:#0F1E2E;border:0;border-radius:12px;padding:11px 18px;font:800 14px Inter,sans-serif;cursor:pointer;flex-shrink:0}
+.req-report:hover{background:#B8862F}
+.req-nums{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:14px}
+.req-num{background:#fff;border:1.5px solid #E8ECF1;border-radius:14px;padding:12px 14px;text-align:left;cursor:pointer;font-family:Inter,sans-serif;display:flex;flex-direction:column;gap:2px}
+.req-num b{font-size:24px;font-weight:900;color:#0F1E2E;letter-spacing:-.5px}
+.req-num span{font-size:12px;font-weight:700;color:#64748B}
+.req-num.red b{color:#DC2626}
+.req-num.on{border-color:#0F1E2E;box-shadow:0 0 0 1px #0F1E2E}
+.req-num:disabled{cursor:default}
+.req-num:not(:disabled):hover{border-color:#CBD5E1}
+.req-bar2{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:12px}
+.req-pill{border:0;background:#E8EBEF;color:#475569;border-radius:999px;padding:8px 15px;font:700 13.5px Inter,sans-serif;cursor:pointer;display:flex;align-items:center;gap:6px}
+.req-pill.on{background:#0F1E2E;color:#fff}
+.req-pill i{font-style:normal;background:#DC2626;color:#fff;border-radius:9px;padding:0 6px;font-size:11px;line-height:17px}
+.req-team{border:0;background:#E8EBEF;color:#475569;border-radius:999px;padding:8px 30px 8px 15px;font:700 13.5px Inter,sans-serif;cursor:pointer;appearance:none;-webkit-appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23475569' stroke-width='3' stroke-linecap='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center}
+.req-showing{font-size:13px;color:#475569;display:flex;align-items:center;gap:6px;margin-left:4px}
+.req-showing button{border:0;background:#E8EBEF;border-radius:50%;width:22px;height:22px;cursor:pointer;font-size:15px;line-height:1;color:#475569}
+.req-st{font-size:12px;font-weight:800;border-radius:999px;padding:4px 10px;white-space:nowrap;flex:none}
+.req-st.w{background:#FEE2E2;color:#B91C1C}.req-st.o{background:#FEF3C7;color:#92400E}.req-st.d{background:#DCFCE7;color:#15803D}
+.req-urg2{display:inline-block;background:#DC2626;color:#fff;font-size:10px;font-weight:900;border-radius:5px;padding:2px 6px;letter-spacing:.4px;margin-right:7px;vertical-align:2px}
+.req-phone-list{display:none;background:#fff;border-radius:16px;overflow:hidden;border:1px solid #E8ECF1}
+.req-sec.red{color:#DC2626}
+.req-row.urg{box-shadow:inset 4px 0 0 #DC2626}
+.req-sec{padding:12px 16px 4px;font-size:11.5px;font-weight:800;letter-spacing:.8px;color:#94A3B8;text-transform:uppercase}
+.req-row{display:flex;gap:12px;align-items:center;padding:10px 14px;border-bottom:1px solid #F1F3F6;cursor:pointer}
+.req-row:last-child{border-bottom:0}
+.req-row .req-ph{border-radius:10px;flex:none}
+.req-row .req-ph .req-urg,.req-tcell .req-ph .req-urg{display:none}
+.req-row-mid{flex:1;min-width:0}
+.req-row-t{font-size:15.5px;font-weight:700;color:#0F1E2E;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.req-row-s{font-size:13px;color:#64748B;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.req-desk-list{background:#fff;border-radius:16px;overflow:hidden;border:1px solid #E8ECF1}
+.req-table{width:100%;border-collapse:collapse;font-family:Inter,sans-serif;font-size:14px}
+.req-table th{white-space:nowrap;text-align:left;font-size:11px;letter-spacing:.7px;text-transform:uppercase;color:#94A3B8;padding:11px 14px;border-bottom:1px solid #EEF1F4;font-weight:800}
+.req-table td{padding:9px 14px;border-bottom:1px solid #F1F3F6;vertical-align:middle;white-space:nowrap;color:#0F1E2E}
+.req-table tr:last-child td{border-bottom:0}
+.req-table tbody tr{cursor:pointer}.req-table tbody tr:hover td{background:#FAFBFC}
+.req-table td.u{width:1%;padding-right:0}
+.req-table td.t{font-weight:700;white-space:normal;width:40%}
+.req-table td.m,.req-table .m{color:#64748B}
+.req-tcell{display:flex;align-items:center;gap:11px}
+.req-tcell .req-ph{border-radius:8px;flex:none}
+.req-whocell{display:inline-flex;align-items:center;gap:7px}
+@media(max-width:900px){
+  .req-phone-list{display:block}
+  .req-desk-list{display:none}
+  .req-nums{grid-template-columns:repeat(3,1fr)}
+  .req-nums .req-num:nth-child(n+4){display:none}
+}
+@media(max-width:600px){
+  .req-banner2 .req-report{display:none}
+  .req-nums{gap:8px}
+  .req-num{padding:10px 12px}
+  .req-num b{font-size:21px}
+  .req-num span{font-size:11.5px}
+  #req-home{padding-bottom:90px}
+}
+@media(min-width:601px){ #p-requests.on #req-fab{display:none!important} }
 #req-fab{position:fixed;bottom:22px;right:28px;z-index:40;border:0;height:56px;padding:0 24px;border-radius:18px;background:#0D9488;color:white;display:none;align-items:center;justify-content:center;gap:10px;font-family:Inter,sans-serif;font-size:16px;font-weight:800;box-shadow:0 10px 26px rgba(13,148,136,.4);cursor:pointer}
 #p-requests.on #req-fab{display:flex}
 /* new request sheet */
@@ -30579,7 +30679,8 @@ reqStyle.textContent = `
 #req-assign{position:fixed;inset:0;z-index:10040;background:rgba(15,30,46,.48);display:flex;align-items:center;justify-content:center;padding:18px}
 @media(max-width:600px){
   .req-tiles{grid-template-columns:repeat(3,1fr)}
-  #req-fab{left:16px;right:16px;bottom:16px}
+  #req-fab{left:auto;right:16px;bottom:calc(18px + env(safe-area-inset-bottom));background:#C4973B!important;color:#0F1E2E!important;box-shadow:0 8px 22px rgba(15,30,46,.28)}
+  #req-fab svg{stroke:#0F1E2E}
   #req-sheet{padding:0;align-items:flex-end}
   .req-sheet-card{width:100%;max-height:94vh;border-radius:24px 24px 0 0;padding-bottom:calc(20px + env(safe-area-inset-bottom))}
   .req-grab{display:block}

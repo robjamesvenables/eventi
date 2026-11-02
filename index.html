@@ -8626,7 +8626,7 @@ function ebEnsureUi(){
 .eb-chip{background:#fff;border:1px solid #E7E5E0;border-radius:999px;padding:7px 13px;font:700 13px Inter,sans-serif;color:#64748B;cursor:pointer}
 .eb-chip.on{background:#F3E6C9;border-color:#E9D3A3;color:#7A5A16}
 .eb-board{background:#EFEDE8;border:1px solid #E4E0D8;border-radius:22px;padding:36px 26px 28px;display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:30px 24px;align-items:start;min-height:560px;align-content:start}
-.eb-card{position:relative;background:#fff;border-radius:10px;border:1px solid #ECEAE5;box-shadow:0 1px 2px rgba(15,30,46,.06),0 6px 16px rgba(15,30,46,.06);padding:18px 16px 12px;min-width:0}
+.eb-card{position:relative;background:#fff;border-radius:10px;border:1px solid #ECEAE5;box-shadow:0 1px 2px rgba(15,30,46,.06),0 6px 16px rgba(15,30,46,.06);padding:26px 16px 12px;min-width:0}
 .eb-card.done{opacity:.6}
 .eb-card[data-id]{cursor:grab;touch-action:manipulation;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
 .eb-card.eb-ph{opacity:.25;outline:2px dashed #C4973B;outline-offset:4px}
@@ -8712,30 +8712,29 @@ function ebCardHtml(it){
   const who = it.by || {}, ini = String(who.name || '?').split(/\s+/).map(w => w[0]).join('').slice(0, 2).toUpperCase();
   const col = ({superadmin:'#0F1E2E', director:'#DC2626', manager:'#16A34A', supervisor:'#2563EB', teammember:'#B8862F', dailyworker:'#7C8AA0'})[who.role] || '#0D9488';
   let body = '';
+  if(it.title && !it.text) it = Object.assign({}, it, { text: it.title });
   if(it.type === 'receipt'){
-    if(it.title) body += `<h4>${ebEsc(it.title)}</h4>`;
     const f = files[0];
-    if(f) body += ebIsImg(f) ? `<img class="eb-img" src="${ebEsc(ebUrl(f))}" alt="Receipt" onclick="ebZoom(this.src)" loading="lazy">` : ebDocHtml(f);
+    if(f) body += ebIsImg(f) ? `<img class="eb-img" src="${ebEsc(ebUrl(f))}" alt="" onclick="ebZoom(this.src)" loading="lazy">` : ebDocHtml(f);
+    if(it.text) body += `<div class="eb-txt" style="margin-top:8px;font-size:13.5px">${ebLinks(ebEsc(it.text))}</div>`;
   } else if(it.type === 'map'){
-    if(it.title) body += `<h4>${ebEsc(it.title)}</h4>`;
     const q = it.place || it.link || '';
     if(q) body += `<iframe class="eb-map" loading="lazy" referrerpolicy="no-referrer-when-downgrade" src="https://www.google.com/maps?q=${encodeURIComponent(q)}&output=embed"></iframe>`;
     if(it.text) body += `<div class="eb-txt" style="margin-top:8px;font-size:13.5px">${ebEsc(it.text)}</div>`;
     if(q) body += `<a class="eb-open" target="_blank" rel="noopener" href="${ebEsc(/^https?:/i.test(it.link || '') ? it.link : 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(q))}">Open in Maps ↗</a>`;
   } else {
-    if(it.title) body += `<h4>${ebEsc(it.title)}</h4>`;
     const imgs = files.filter(ebIsImg), docs = files.filter(f => !ebIsImg(f));
     if(imgs.length) body += it.type === 'photo' && imgs.length > 1 ? `<div class="eb-thumbs n${Math.min(3, imgs.length)}">${imgs.map(f => `<img src="${ebEsc(ebUrl(f))}" alt="" onclick="ebZoom(this.src)" loading="lazy">`).join('')}</div>`
       : imgs.map(f => `<img class="eb-img" src="${ebEsc(ebUrl(f))}" alt="" onclick="ebZoom(this.src)" loading="lazy">`).join('');
     docs.forEach(f => body += ebDocHtml(f));
-    if(it.text) body += `<div class="eb-txt"${imgs.length || docs.length ? ' style="margin-top:8px;font-size:13.5px"' : ''}>${ebEsc(it.text)}</div>`;
+    if(it.text) body += `<div class="eb-txt"${imgs.length || docs.length ? ' style="margin-top:8px;font-size:13.5px"' : ''}>${ebLinks(ebEsc(it.text))}</div>`;
     if(it.checklist && it.checklist.length) body += `<ul class="eb-ck">${it.checklist.map((c, i) => `<li class="${c.done ? 'on' : ''}" onclick="ebTick('${it.id}',${i})"><i>${c.done ? ebIc('<path d="M20 6 9 17l-5-5"/>', 12, 3) : ''}</i><span>${ebEsc(c.t)}</span></li>`).join('')}</ul>`;
     if(it.link) body += `<a class="eb-open" target="_blank" rel="noopener" href="${ebEsc(it.link)}">Open link ↗</a>`;
   }
   const label = K.label + ( it.type === 'photo' && files.length > 1 ? ' · ' + files.length : '');
   const more = ebReadOnly() ? '' : `<button class="eb-more" onclick="ebMenu(event,'${it.id}')" aria-label="More">${ebIc('<circle cx="5" cy="12" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/>', 18, 3)}</button>`;
   return `<div class="eb-card${it.done ? ' done' : ''}" data-id="${it.id}">${EB_CLIP}
-    <div class="eb-kind">${ebIc(K.icon, 14, 2.2)} ${ebEsc(label)}</div>${body}
+    ${body}
     <div class="eb-meta"><span class="eb-who"><i style="background:${col}">${ebEsc(ini)}</i><span>${ebEsc((who.name || '').split(' ')[0])}${who.dept ? ' · ' + ebEsc(who.dept) : ''}</span></span><span style="display:flex;align-items:center;gap:2px;flex:none">${ebShortDate(it.at)}${more}</span></div></div>`;
 }
 function ebDocHtml(f){
@@ -8751,7 +8750,7 @@ function ebRender(){
   const cards = items.map(ebCardHtml).join('');
   body.innerHTML = `
     <div class="eb-head"><div><h3>Board</h3><p>Drop anything for this event here${ebReadOnly() || b.items.length < 2 ? '' : ' · ' + (matchMedia('(pointer:coarse)').matches ? 'press and hold a card to move it' : 'drag cards to move them')}</p></div>${ebReadOnly() ? '' : `<button class="eb-add" onclick="ebAddMenu()">+ Add to board</button>`}</div>
-    <div class="eb-board">${cards || `<div class="eb-empty"><div class="ic">${ebIc('<path d="M21.4 11.1 12.2 20.3a6 6 0 0 1-8.5-8.5l9.2-9.2a4 4 0 0 1 5.7 5.7l-9.2 9.2a2 2 0 0 1-2.8-2.8l8.5-8.5"/>', 30)}</div><b class="t">${EB.filter === 'all' ? 'The board is empty' : 'Nothing here yet'}</b><span>Pin receipts, layouts, files, photos, maps, drawings and notes<br>for everyone working on this event.</span>${ebReadOnly() ? '' : '<button class="eb-add" onclick="ebAddMenu()">+ Add to board</button>'}</div>`}</div>`;
+    <div class="eb-board">${cards || `<div class="eb-empty"><div class="ic">${ebIc('<path d="M21.4 11.1 12.2 20.3a6 6 0 0 1-8.5-8.5l9.2-9.2a4 4 0 0 1 5.7 5.7l-9.2 9.2a2 2 0 0 1-2.8-2.8l8.5-8.5"/>', 30)}</div><b class="t">${EB.filter === 'all' ? 'The board is empty' : 'Nothing here yet'}</b><span>Drop photos, PDFs, receipts, layouts or a quick note -<br>everyone working on this event will see it.</span>${ebReadOnly() ? '' : '<button class="eb-add" onclick="ebAddMenu()">+ Add to board</button>'}</div>`}</div>`;
   ebSyncButton();
   ebDragInit();
   const sn = document.getElementById('eb-sec-n'); if(sn){ const n = b.items.length; sn.textContent = n ? '· ' + n + (n === 1 ? ' item' : ' items') : ''; }
@@ -8826,7 +8825,7 @@ window.ebMenu = function(e, id){
   const it = ebBoard().items.find(x => x.id === id); if(!it) return;
   const me = ebMe(), mine = it.by && it.by.id && it.by.id === me.id, can = mine || ebIsManager() || (it.type === 'receipt' && ebCanReceipt());
   const m = document.createElement('div'); m.className = 'eb-menu';
-  m.innerHTML = (it.type !== 'receipt' ? `<button data-a="done">${it.done ? 'Not done yet' : 'Mark as done'}</button>` : '') + (can ? `<button data-a="edit">Edit</button><button data-a="del" class="red">Remove from board</button>` : '') || '<button disabled>Only the person who added it can change it</button>';
+  m.innerHTML = (it.type !== 'receipt' ? `<button data-a="done">${it.done ? 'Not done yet' : 'Mark as done'}</button>` : '') + (can ? `<button data-a="edit">Edit note</button><button data-a="del" class="red">Remove from board</button>` : '') || '<button disabled>Only the person who added it can change it</button>';
   document.body.appendChild(m);
   const r = e.currentTarget.getBoundingClientRect();
   m.style.top = Math.min(window.innerHeight - m.offsetHeight - 10, r.bottom + 4) + 'px';
@@ -8834,7 +8833,7 @@ window.ebMenu = function(e, id){
   m.querySelectorAll('[data-a]').forEach(btn => btn.onclick = () => {
     m.remove();
     if(btn.dataset.a === 'done'){ it.done = !it.done; ebRender(); ebSave(); }
-    if(btn.dataset.a === 'edit') ebForm(it.type, it);
+    if(btn.dataset.a === 'edit') ebEditText(it);
     if(btn.dataset.a === 'del') appConfirmShow({ title:'Remove from the board?', msg: 'This removes it for everyone on the event.', onOk: () => ebDelete(it) });
   });
 };
@@ -8845,20 +8844,54 @@ function ebDelete(it){
   if(paths.length) sb.storage.from(EB_BUCKET).remove(paths).catch(() => {});
   ebRender(); ebSave(); toast('Removed from the board');
 }
-window.ebAddMenu = function(){
+window.ebAddMenu = function(){ ebDump(); };
+// One simple box: drop in any files and/or write something. Each file becomes its own card.
+function ebDump(){
   ebCloseSheets();
-  const opt = (k, title, sub, dis) => `<button data-k="${k}"${dis ? ' disabled' : ''}><span>${ebIc(EB_KINDS[k].icon, 18)}</span><div>${title}<small>${sub}</small></div></button>`;
   const s = document.createElement('div'); s.className = 'eb-sheet';
-  s.innerHTML = `<div class="eb-form"><h3>Add to the board</h3><p class="sub">Everyone on this event will see it</p><div class="eb-pick">
-    ${opt('receipt', 'Receipt', ebCanReceipt() ? 'Photo or PDF of a bank slip' : 'Sales and managers only', !ebCanReceipt())}${opt('layout', 'Layout / floor plan', 'Image or PDF')}
-    ${opt('file', 'File', 'PDF, Word, Excel…')}${opt('photo', 'Photos', 'One or several')}
-    ${opt('map', 'Map / location', 'A place or Google Maps link')}${opt('drawing', 'Drawing', 'Sketch it with your finger')}
-    ${opt('note', 'Note', 'Text and a to-do list')}</div><div class="eb-fbtns"><button class="eb-no">Cancel</button></div></div>`;
+  s.innerHTML = `<div class="eb-form"><h3>Add to the board</h3><p class="sub">Photos, PDFs, receipts, anything - and a note if you like</p>
+    <button type="button" class="eb-filebtn" id="ebd-pick">${ebIc('<path d="M21.4 11.1 12.2 20.3a6 6 0 0 1-8.5-8.5l9.2-9.2a4 4 0 0 1 5.7 5.7l-9.2 9.2a2 2 0 0 1-2.8-2.8l8.5-8.5"/>', 20)}<span id="ebd-names">Choose files</span></button>
+    <input id="ebd-file" type="file" multiple style="display:none">
+    <label>Note (optional)</label><textarea id="ebd-text" placeholder="Write anything - a note, a link, a reminder"></textarea>
+    <div class="eb-fbtns"><button class="eb-no">Cancel</button><button class="eb-go">Add to board</button></div></div>`;
   s.addEventListener('mousedown', e => { if(e.target === s) s.remove(); });
-  s.querySelector('.eb-no').onclick = () => s.remove();
-  s.querySelectorAll('[data-k]').forEach(b => b.onclick = () => { s.remove(); ebAdd(b.dataset.k); });
   document.body.appendChild(s);
-};
+  const pick = s.querySelector('#ebd-pick'), inp = s.querySelector('#ebd-file');
+  pick.onclick = () => inp.click();
+  inp.onchange = () => { const n = Array.from(inp.files || []).map(f => f.name); s.querySelector('#ebd-names').textContent = n.length ? n.join(', ') + ' · tap to change' : 'Choose files'; pick.classList.toggle('has', !!n.length); };
+  s.querySelector('.eb-no').onclick = () => s.remove();
+  s.querySelector('.eb-go').onclick = async () => {
+    const go = s.querySelector('.eb-go'); if(go.disabled) return;
+    const picked = Array.from(inp.files || []).slice(0, 20), text = s.querySelector('#ebd-text').value.trim();
+    if(!picked.length && !text){ toast('Choose a file or write something'); return; }
+    go.disabled = true; go.textContent = 'Saving…';
+    try{
+      const b = ebBoard(), me = ebMe(), now = Date.now(), cards = [];
+      for(let i = 0; i < picked.length; i++){
+        const f = await ebUpload(picked[i]);
+        cards.push({ id:ebId(), type: ebIsImg(f) ? 'photo' : 'file', files:[f], text: i === 0 ? text : '', by:me, at:new Date(now + i).toISOString() });
+      }
+      if(!picked.length) cards.push({ id:ebId(), type:'note', text, by:me, at:new Date(now).toISOString() });
+      b.items.unshift(...cards); b.ordered = true;
+      s.remove(); await ebSignAll(); ebRender(); ebSave();
+      toast(cards.length > 1 ? cards.length + ' added to the board ✓' : 'Added to the board ✓');
+    }catch(e){
+      console.warn('[board]', e); go.disabled = false; go.textContent = 'Add to board';
+      toast(/too big/.test(e.message || '') ? 'A file is too big - the limit is 15 MB each' : 'Could not upload - check your connection and try again');
+    }
+  };
+}
+// Edit a card: just its note
+function ebEditText(it){
+  ebCloseSheets();
+  const s = document.createElement('div'); s.className = 'eb-sheet';
+  s.innerHTML = `<div class="eb-form"><h3>Edit note</h3><textarea id="ebe-text" style="min-height:120px">${ebEsc(it.text || it.title || '')}</textarea><div class="eb-fbtns"><button class="eb-no">Cancel</button><button class="eb-go">Save</button></div></div>`;
+  s.addEventListener('mousedown', e => { if(e.target === s) s.remove(); });
+  document.body.appendChild(s);
+  s.querySelector('.eb-no').onclick = () => s.remove();
+  s.querySelector('.eb-go').onclick = () => { it.text = s.querySelector('#ebe-text').value.trim(); delete it.title; s.remove(); ebRender(); ebSave(); toast('Saved ✓'); };
+}
+function ebLinks(h){ return h.replace(/(https?:\/\/[^\s<]+)/g, '<a href="$1" target="_blank" rel="noopener" style="color:#0D9488;word-break:break-all">$1</a>'); }
 window.ebAdd = function(type, paymentId){ ebForm(type, null, paymentId); };
 
 // One form for every kind of card (new or edit)

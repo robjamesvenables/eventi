@@ -85,6 +85,7 @@ async function requestPush(me, b, res){
   }
   else if (ev === 'new') to = await requestHandlers(r.company_id, r.dept);
   else if (ev === 'sorted') { const P = await requestPeople(r.company_id); to = P.team(r.dept); }
+  else if (ev === 'sentback') { const P = await requestPeople(r.company_id); to = P.coordinators.length ? P.coordinators : P.managers; }
   else {
     to = [r.reported_by, r.assigned_to].filter(Boolean);
     if (!r.assigned_to && (ev === 'note' || ev === 'reopened')) to = to.concat(await requestHandlers(r.company_id, r.dept));
@@ -105,12 +106,15 @@ async function requestPush(me, b, res){
   const assignee = r.assigned_to && String(r.assigned_to) !== String(me.id)
     ? ((await L.db('profiles?select=first_name&id=eq.' + encodeURIComponent(r.assigned_to)).catch(() => []))[0] || {}).first_name : null;
   const what = r.title.length > 90 ? r.title.slice(0, 87) + '…' : r.title;
+  // what was done (newer column - fine if it isn't there yet)
+  const doneNote = ev === 'closed' ? (((await L.db('requests?select=done_note&id=eq.' + encodeURIComponent(r.id)).catch(() => []))[0] || {}).done_note || '') : '';
   const bodyFor = pid => {
     if (ev === 'new' || ev === 'sorted') return what + (r.location ? ' · ' + r.location : '');
     if (ev === 'accepted') return who + ' accepted this job: ' + what;
     if (ev === 'assigned') return String(r.assigned_to) === String(pid) ? who + ' asked you to do this: ' + what : who + ' gave this to ' + (assignee || 'someone') + ': ' + what;
-    if (ev === 'closed') return who + ' marked this as done: ' + what;
+    if (ev === 'closed') return 'Fixed: ' + what + (doneNote ? ' - ' + (doneNote.length > 100 ? doneNote.slice(0, 97) + '…' : doneNote) : '');
     if (ev === 'reopened') return who + ' reopened: ' + what;
+    if (ev === 'sentback') return who + ' sent this back - wrong team: ' + what;
     return who + ': ' + (noteText.length > 120 ? noteText.slice(0, 117) + '…' : noteText);
   };
   webpush.setVapidDetails('mailto:hello@getmavis.co', VAPID_PUBLIC, VAPID_PRIVATE);

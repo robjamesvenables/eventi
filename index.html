@@ -30287,15 +30287,16 @@ function reqRenderDetail(){
       </div></div>`;
   }).join('');
 
-  el.innerHTML = `${hero}
+  el.innerHTML = `<div class="req-dwrap"><div class="req-dleft">${hero}
     <div class="req-dcard">
       <div class="req-dmeta">${r.priority === 'urgent' && r.status !== 'closed' ? '<span class="req-urg static">URGENT</span>' : ''}<span class="req-dtag" style="background:${st.bg};color:${st.fg}">${reqEsc(r.dept)}</span><span class="req-refno">#${r.ref}</span></div>
       <div class="req-dtitle">${reqEsc(r.title)}</div>
       <div class="req-dsub">${[r.location, 'sent by ' + reqName(r.reported_by, true) + ', ' + reqAgo(r.created_at)].filter(Boolean).map(reqEsc).join(' · ')}</div>
       ${r.details ? `<div class="req-details">${reqEsc(r.details).replace(/\n/g, '<br>')}</div>` : ''}
       ${reqTracker(r, true)}
-      <div class="req-thread" id="req-thread">${thread || '<div class="req-nothread">No updates yet</div>'}</div>
-    </div>
+    </div></div>
+    <div class="req-dright"><div class="req-tcard"><div class="req-thd">Updates</div>
+      <div class="req-thread" id="req-thread">${thread || '<div class="req-nothread">No updates yet</div>'}</div></div>
     <div class="req-bottom">
       ${action}
       <div class="req-composer">
@@ -30306,7 +30307,7 @@ function reqRenderDetail(){
         </div>
         <button class="req-send" onclick="reqSendNote()" title="Send"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg></button>
       </div>
-    </div>`;
+    </div></div></div>`;
   const inp = document.getElementById('req-note-input');
   if(inp){
     inp.dataset.rid = r.id;
@@ -30505,7 +30506,7 @@ const REQ_DEMO_DB = {
 const reqStyle = document.createElement('style');
 reqStyle.textContent = `
 #p-requests{max-width:none}
-#p-request{max-width:760px}
+#p-request{max-width:none}
 .req-hello{font-size:28px;font-weight:800;letter-spacing:-.6px;color:#0F1E2E}
 .req-hello-sub{font-size:14.5px;color:#475569;margin-top:3px}
 .req-tiles{display:grid;grid-template-columns:repeat(auto-fill,minmax(118px,1fr));gap:10px;margin:16px 0 22px}
@@ -30639,6 +30640,20 @@ reqStyle.textContent = `
 .req-send-big{width:100%;margin-top:18px;height:54px;border:0;border-radius:16px;background:#0D9488;color:white;font-family:Inter,sans-serif;font-size:16px;font-weight:800;cursor:pointer}
 .req-send-big:disabled{opacity:.6}
 /* one request */
+/* Maintenance job page: two panels on laptop (photo + details | updates + buttons) */
+.req-tcard{background:white;border-radius:0 0 22px 22px;margin-top:-1px;padding:0 18px 12px;position:relative}
+.req-thd{display:none}
+.req-dwrap .req-dcard{border-radius:22px 22px 0 0;min-height:0}
+@media(min-width:901px){
+  .req-dwrap{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:20px;align-items:start}
+  .req-dwrap .req-dleft .req-hero{height:340px;border-radius:20px}
+  .req-dwrap .req-dcard{border-radius:22px;padding-bottom:20px}
+  .req-dright{position:sticky;top:20px;display:flex;flex-direction:column;max-height:calc(100vh - 140px)}
+  .req-tcard{border-radius:22px;padding:16px 18px;flex:1;min-height:260px;overflow-y:auto;margin:0}
+  .req-thd{display:block;font-size:12px;font-weight:800;letter-spacing:.8px;text-transform:uppercase;color:#94A3B8}
+  .req-tcard .req-thread{padding-top:10px}
+  .req-dwrap .req-dright .req-bottom{position:static;margin-top:12px;padding-bottom:0;background:none}
+}
 .req-hero{height:300px;position:relative;overflow:hidden;border-radius:20px;cursor:zoom-in;background:#0F1E2E}
 .req-hero img{width:100%;height:100%;object-fit:cover;display:block}
 .req-hero.none{display:flex;align-items:center;justify-content:center;cursor:default;height:180px}

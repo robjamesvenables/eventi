@@ -35,6 +35,16 @@ h1{margin:0;font-size:26px;line-height:1.2;letter-spacing:-.01em}
 .notes ul,.notes ol{padding-left:20px;margin:6px 0}
 .photos{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
 .photos img{width:92px;height:92px;object-fit:cover;border-radius:10px;cursor:pointer}
+.board{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:14px;margin-top:12px}
+.bcard{position:relative;background:#fff;border:1px solid var(--line);border-radius:12px;padding:14px;box-shadow:0 2px 8px rgba(15,30,46,.05);min-width:0}
+.bcard img{display:block;width:100%;max-height:320px;object-fit:contain;border-radius:8px;background:#F7F7F5;cursor:zoom-in}
+.bcard .thumbs{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}.bcard .thumbs img{height:90px;object-fit:cover}
+.bcard .txt{font-size:14.5px;line-height:1.5;white-space:pre-wrap;word-break:break-word;margin-top:8px}.bcard .txt:first-child{margin-top:0}
+.bcard .doc{display:flex;gap:10px;align-items:center;padding:10px;border:1px solid var(--line);border-radius:10px;color:inherit;text-decoration:none;background:#FAFAF9}
+.bcard .doc i{width:38px;height:46px;border-radius:4px;border:1px solid var(--line);background:#fff;display:flex;align-items:center;justify-content:center;font:900 10px Inter,sans-serif;font-style:normal;color:#2563EB;flex:none}
+.bcard .doc b{display:block;font-size:13.5px;word-break:break-word}.bcard .doc span{font-size:12px;color:var(--muted)}
+.bcard ul{list-style:none;padding:0;margin:6px 0 0}.bcard li{font-size:14px;margin:5px 0}.bcard li.on{text-decoration:line-through;color:var(--muted)}
+.bcard .open{display:inline-block;margin-top:8px;font-weight:800;color:var(--teal);text-decoration:none;font-size:14px}
 .links a{display:block;margin-top:8px;color:#2563EB;font-size:14px;text-decoration:none;word-break:break-all}
 .foot{text-align:center;color:var(--muted);font-size:12.5px;margin-top:26px;line-height:1.7}
 .foot b{color:var(--ink)}
@@ -73,6 +83,26 @@ function clean(html){
 function safeUrl(u){ return /^https?:\/\//i.test(u||'') ? u : ''; }
 function safeImg(u){ return /^data:image\/(png|jpe?g|webp|gif);base64,/i.test(u||'') || /^https:\/\//i.test(u||'') ? u : ''; }
 function zoom(src){ document.getElementById('lbimg').src=src; document.getElementById('lb').style.display='flex'; }
+function fileUrl(f){
+  if(f.path) return '/api/board-file?t='+encodeURIComponent(token)+'&p='+encodeURIComponent(f.path);
+  return /^(https:\/\/|\/)/.test(f.url||'') ? f.url : '';
+}
+function boardHtml(items){
+  items=(items||[]).filter(it=>it&&((it.files||[]).length||it.text||it.place||(it.checklist||[]).length));
+  if(!items.length) return '';
+  return `<section class="card"><h2>Board</h2><div class="board">${items.map(it=>{
+    const files=it.files||[], imgs=files.filter(f=>/^image\//.test(f.type||'')), docs=files.filter(f=>!/^image\//.test(f.type||''));
+    let h='';
+    if(imgs.length>1) h+=`<div class="thumbs">${imgs.map(f=>`<img src="${esc(fileUrl(f))}" alt="" onclick="zoom(this.src)" loading="lazy">`).join('')}</div>`;
+    else if(imgs.length) h+=`<img src="${esc(fileUrl(imgs[0]))}" alt="" onclick="zoom(this.src)" loading="lazy">`;
+    docs.forEach(f=>{ const u=fileUrl(f); if(u) h+=`<a class="doc" href="${esc(u)}" target="_blank" rel="noopener"><i>${esc((String(f.name||'').split('.').pop()||'FILE').slice(0,4).toUpperCase())}</i><div><b>${esc(f.name||'File')}</b><span>Tap to open</span></div></a>`; });
+    if(it.text) h+=`<div class="txt">${esc(it.text).replace(/(https?:\/\/[^\s<]+)/g,'<a href="$1" target="_blank" rel="noopener" style="color:#0D9488">$1</a>')}</div>`;
+    if((it.checklist||[]).length) h+=`<ul>${it.checklist.map(c=>`<li class="${c.done?'on':''}">${c.done?'✓':'○'} ${esc(c.t)}</li>`).join('')}</ul>`;
+    const q=it.place||'';
+    if(q||safeUrl(it.link)) h+=`<a class="open" target="_blank" rel="noopener" href="${esc(safeUrl(it.link)||'https://www.google.com/maps/search/?api=1&query='+encodeURIComponent(q))}">${q?esc(q)+' · ':''}Open in Maps ↗</a>`;
+    return `<div class="bcard">${h}</div>`;
+  }).join('')}</div></section>`;
+}
 function render(d){
   const v=d.view||{};
   document.title=(d.name||'Event Plan')+' · Event Plan';
@@ -96,6 +126,7 @@ function render(d){
       ${(x.photos||[]).length?`<div class="photos">${x.photos.map(safeImg).filter(Boolean).map(p=>`<img src="${esc(p)}" alt="" onclick="zoom(this.src)">`).join('')}</div>`:''}
       ${(x.links||[]).length?`<div class="links">${x.links.filter(l=>safeUrl(l.url)).map(l=>`<a href="${esc(l.url)}" target="_blank" rel="noopener">${esc(l.label||l.url)}</a>`).join('')}</div>`:''}
     </section>`).join('')}
+    ${boardHtml(v.board||[])}
     <div class="foot">This page updates automatically when the plan changes.<br>Event planning by <b>Mavis</b></div>`;
 }
 async function load(){

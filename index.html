@@ -7736,6 +7736,34 @@ const EV_DEMO_PNL = {
     { title:'Décor & Flowers', income:false, color:'#EC4899', rows:[pnlR('Centrepieces', 18, 350000, null, 'c', ''), pnlR('Welcome arch', 1, 4500000, null, 'q', '')] }
   ] }
 };
+
+// Demo company only: a ready-made Event Board on the demo events, so it can be shown and played with.
+// All names, banks and amounts are made up. Files are served from /demo-board/.
+function evDemoBoard(name){
+  const ago = d => new Date(Date.now() - d * 86400000).toISOString();
+  const F = (n, t, sz) => ({ path:'', url:'/demo-board/' + n, name:n, type:t, size:sz });
+  const by = (n, d, role) => ({ name:n, dept:d, role:role || 'teammember' });
+  if(name === 'Horizon Tech Summit 2026 — Welcome Dinner') return { ordered:true, items:[
+    { id:'dm1', type:'note', title:'On the day', text:'Client wants the CEO welcome at 19:30 sharp - stage manager to cue the band to stop.', checklist:[{ t:'2 standing fans by the bar', done:true }, { t:'Name cards on the VIP table', done:true }, { t:'"Private Event" sign at the entrance by 17:00', done:false }, { t:'Lanyards for 6 client staff', done:false }], by:by('Made Sudarta','Engineering','supervisor'), at:ago(0.2) },
+    { id:'dm2', type:'layout', title:'Main Terrace - floor plan', files:[F('floor-plan.jpg','image/jpeg',92000)], by:by('Sarah Lim','Events','manager'), at:ago(2) },
+    { id:'dm3', type:'receipt', title:'1st DP - Rp 92.500.000', files:[F('receipt-1.jpg','image/jpeg',46000)], by:by('Putu Ayu','Sales','supervisor'), at:ago(18) },
+    { id:'dm4', type:'photo', title:'Tasting - final 3 dishes signed off', files:[F('tasting-1.jpg','image/jpeg',76000), F('tasting-2.jpg','image/jpeg',107000), F('tasting-3.jpg','image/jpeg',60000)], by:by('Daniel Reyes','Kitchen','manager'), at:ago(4) },
+    { id:'dm5', type:'map', title:'Coach drop-off', place:'Seminyak Beach, Bali', text:'Two coaches at 18:15. Guest Relations with umbrellas if it rains.', by:by('Sarah Lim','Events','manager'), at:ago(3) },
+    { id:'dm6', type:'drawing', title:'Lounge sofas facing the stage', files:[F('sketch.png','image/png',25000)], by:by('Komang Adi','Housekeeping'), at:ago(1) },
+    { id:'dm7', type:'file', title:'Run of show', files:[F('run-of-show.pdf','application/pdf',76000)], by:by('Sarah Lim','Events','manager'), at:ago(5) },
+    { id:'dm8', type:'receipt', title:'Balance - Rp 92.500.000', files:[F('receipt-2.jpg','image/jpeg',47000)], by:by('Putu Ayu','Sales','supervisor'), at:ago(0.5) }
+  ]};
+  if(name === 'Solaris Beach Festival') return { ordered:true, items:[
+    { id:'ds1', type:'note', title:'Production checklist', checklist:[{ t:'Stage sign-off by the engineer', done:false }, { t:'Generator test at 10:30', done:false }, { t:'Drone permit printed', done:true }], by:by('Rizal Pratama','AV & IT','supervisor'), at:ago(1) },
+    { id:'ds2', type:'map', title:'Artist drop-off - back gate', place:'Seminyak Beach, Bali', by:by('Sarah Lim','Events','manager'), at:ago(2) },
+    { id:'ds3', type:'drawing', title:'Bar layout idea', files:[F('sketch.png','image/png',25000)], by:by('Wayan Arta','Bar'), at:ago(3) }
+  ]};
+  if(name === 'Harrison Family Wedding Reception') return { ordered:true, items:[
+    { id:'dw1', type:'note', title:'From the couple', text:'No red flowers please. First dance: "Can\'t Help Falling in Love" (live).', by:by('Nadia Kusuma','Events','manager'), at:ago(2) },
+    { id:'dw2', type:'photo', title:'Menu tasting', files:[F('tasting-2.jpg','image/jpeg',107000), F('tasting-1.jpg','image/jpeg',76000)], by:by('Daniel Reyes','Kitchen','manager'), at:ago(6) }
+  ]};
+  return null;
+}
 // Demo company only: fill in departments (and owners) on demo events that are still blank.
 async function evDemoTopUp(rows){
   if(!BEO_TEMPLATE || !appIsDemoCompany()) return;
@@ -7748,8 +7776,11 @@ async function evDemoTopUp(rows){
     const blankBodies = bodies.length && bodies.every(b => /^\s*(Type department notes here…)?\s*$/.test(b.textContent));
     const blankPics = pics.length && pics.every(n => !n.textContent.trim());
     const needPnl = EV_DEMO_PNL[row.name] && !(plan.pnl && Array.isArray(plan.pnl.cats));
+    const demoBoard = !plan.board && evDemoBoard(row.name);
+    if(demoBoard && !blankBodies && !blankPics && !needPnl){ row.plan = Object.assign({}, plan, { board: demoBoard }); try { await sb.from('events').update({ plan: row.plan }).eq('id', row.id); } catch(e){} continue; }
+    if(demoBoard) plan.board = demoBoard;
     if(!blankBodies && !blankPics && !needPnl){ continue; }
-    if(!blankBodies && !blankPics){ row.plan = Object.assign({}, plan, { pnl: EV_DEMO_PNL[row.name] }); try { await sb.from('events').update({ plan: row.plan }).eq('id', row.id); } catch(e){} continue; }
+    if(!blankBodies && !blankPics){ row.plan = Object.assign({}, plan, { pnl: needPnl ? EV_DEMO_PNL[row.name] : plan.pnl }); try { await sb.from('events').update({ plan: row.plan }).eq('id', row.id); } catch(e){} continue; }
     if(needPnl) plan.pnl = EV_DEMO_PNL[row.name];
     const depts = evDemoDeptsHtml(blankBodies ? EV_DEMO_DEPTS[row.name] : null, blankBodies && EV_DEMO_DEPTS[row.name] ? BEO_TEMPLATE.depts : plan.depts);
     row.plan = Object.assign({}, plan, { depts });
@@ -7760,9 +7791,9 @@ async function evDemoTopUp(rows){
 // Demo events, added once when the events table is empty, so a demo never looks bare.
 // All names are made up. Dates are relative to today so current/past stay correct.
 function evDemoRows(){
-  const full = { details: BEO_TEMPLATE.details, depts: evDemoDeptsHtml(null), photos:{}, links:{},
+  const full = { details: BEO_TEMPLATE.details, depts: evDemoDeptsHtml(null), photos:{}, links:{}, board: evDemoBoard('Horizon Tech Summit 2026 — Welcome Dinner'),
     timeline: evTimelineHtml([['15:00','Venue handover to events team, AV load-in'],['17:00','Sound check and lighting focus'],['18:30','Guest arrival, welcome drinks on the terrace'],['19:30','Welcome speech by the CEO'],['20:00','Dinner service, 3 courses'],['21:30','Live band set'],['23:00','Last orders, event close']]) };
-  const light = (tl, name)=>({ details: BEO_TEMPLATE.details, depts: evDemoDeptsHtml(EV_DEMO_DEPTS[name]), photos:{}, links:{}, timeline: evTimelineHtml(tl) });
+  const light = (tl, name)=>({ details: BEO_TEMPLATE.details, depts: evDemoDeptsHtml(EV_DEMO_DEPTS[name]), photos:{}, links:{}, board: evDemoBoard(name) || undefined, timeline: evTimelineHtml(tl) });
   return [
     { name:'Horizon Tech Summit 2026 — Welcome Dinner', client:'Nexus Global Indonesia', event_date: evDateShift(12), event_time:'18:30 – 23:00', venue:'Main Terrace', pax:180, status:'Deposit paid', revenue:185000000, cost:72000000, plan: full },
     { name:'Solaris Beach Festival', client:'Solaris Events Asia', event_date: evDateShift(34), event_time:'14:00 – 23:00', venue:'Full venue buyout', pax:900, status:'Confirmed', revenue:420000000, cost:190000000,

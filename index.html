@@ -8000,7 +8000,9 @@ async function beoFlush(){
   if(beoAutoSaveTimer){ clearTimeout(beoAutoSaveTimer); beoAutoSaveTimer=null; await beoSaveNow(); }
 }
 // Share: a link straight to this event inside Mavis (team members log in, then land on it).
-function evLinkFor(id){ return location.origin + location.pathname + '?event=' + encodeURIComponent(id); }
+// Links we hand to people always use the proper Mavis address, even if this device opened the app on the old Vercel address
+function mvBase(){ return /vercel\.app$|getmavis\.co$/.test(location.hostname) ? 'https://app.getmavis.co/' : location.origin + location.pathname.replace(/[^/]*$/, ''); }
+function evLinkFor(id){ return mvBase() + '?event=' + encodeURIComponent(id); }
 window.evShareLink = async function(id){
   const ev = evAll.find(e=>String(e.id)===String(id));
   if(!ev){ toast('Open an event first'); return; }
@@ -9111,7 +9113,7 @@ function beoLoadShare(ev){
   beoShare = { on: !!ev.share_on, token: ev.share_token || null, settings: { show_price: !!st.show_price, board: !!st.board, depts: Array.isArray(st.depts) ? st.depts.slice() : [] } };
   beoRenderClientUi();
 }
-function beoClientUrl(){ return location.origin + location.pathname.replace(/[^/]*$/, '') + 'client.html?t=' + encodeURIComponent(beoShare.token||''); }
+function beoClientUrl(){ return mvBase() + 'client.html?t=' + encodeURIComponent(beoShare.token||''); }
 function beoNewToken(){
   const a='ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789'; const r=new Uint32Array(26); crypto.getRandomValues(r);
   return Array.from(r, n=>a[n % a.length]).join('');
@@ -13294,7 +13296,7 @@ async function peopleApi(body){
   const token = data && data.session && data.session.access_token;
   return authApi('people', { body, token });
 }
-function peopleSetupUrl(token){ return location.origin + location.pathname + '?setup=' + encodeURIComponent(token); }
+function peopleSetupUrl(token){ return mvBase() + '?setup=' + encodeURIComponent(token); }
 // Shows the one-time link + QR for someone to create (or reset) their login.
 function peopleShowInvite(person, token, isReset){
   const url = peopleSetupUrl(token);

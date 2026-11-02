@@ -6824,16 +6824,28 @@ function exportEventPlanPDF(){
 
   toast('Preparing your PDF…');
 
-  html2pdf().set({
+  // Make sure every picture has loaded first; any that can't load are left out of the PDF
+  // (otherwise the PDF maker trips over them).
+  const hidden = [];
+  const imgs = [...beoEl.querySelectorAll('img')].filter(i => i.offsetParent !== null || i.closest('.beo-body'));
+  const ready = Promise.all(imgs.map(i => (i.complete && i.naturalWidth) ? null : new Promise(done => {
+    const t = setTimeout(done, 6000);
+    i.addEventListener('load', () => { clearTimeout(t); done(); }, { once:true });
+    i.addEventListener('error', () => { clearTimeout(t); done(); }, { once:true });
+    if(i.loading === 'lazy') i.loading = 'eager';
+  }))).then(() => imgs.forEach(i => { if(!i.naturalWidth && i.parentNode){ const m = document.createComment('pdf-skip'); i.replaceWith(m); hidden.push([i, m]); } }));
+  const restoreImgs = () => hidden.forEach(([i, m]) => { if(m.parentNode) m.replaceWith(i); });
+
+  ready.then(() => html2pdf().set({
     margin: 10,
     filename: filename,
     image: { type: 'jpeg', quality: 0.95 },
     html2canvas: { scale: 2, useCORS: true, backgroundColor: '#ffffff' },
     jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
     pagebreak: { mode: ['css','legacy'], avoid: ['.dept','.rd-item','tr','.beo-hd','.beo-stats','.beo-sec-hd','.eb-card'] }
-  }).from(beoEl).save()
-    .then(()=>{ restore(); toast('PDF downloaded ✓'); })
-    .catch((err)=>{ restore(); toast('PDF export failed — please try again'); console.error(err); });
+  }).from(beoEl).save())
+    .then(()=>{ restore(); restoreImgs(); toast('PDF downloaded ✓'); })
+    .catch((err)=>{ restore(); restoreImgs(); toast('PDF export failed — please try again'); console.error(err); });
 }
 
 // ── LANGUAGE ──

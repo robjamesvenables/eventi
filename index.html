@@ -652,6 +652,16 @@ body.ev-viewonly .beo-share.off{display:none!important}
 .ft tr{border-bottom:1px solid var(--line)}
 .ft tr:last-child{border-bottom:none}
 .ft tbody:not(:last-child) tr:last-child{border-bottom:1px solid var(--line)}
+.rd-sharebar{display:flex;justify-content:flex-end;margin-top:12px}
+.rd-sharebtn{display:inline-flex;align-items:center;gap:8px;border:0;background:#0D9488;color:#fff;border-radius:12px;padding:11px 18px;font:800 14px Inter,sans-serif;cursor:pointer}
+.rd-sharebtn:hover{background:#0B7F75}
+@media(max-width:700px){.rd-sharebar .rd-sharebtn{width:100%;justify-content:center;padding:13px}}
+.pdf-export-mode .rd-sharebar{display:none!important}
+.rds-prev{background:#F1F5F9;border-radius:12px;padding:10px;max-height:52vh;overflow:auto;text-align:center}
+.rds-prev img{width:100%;max-width:380px;border-radius:8px;display:block;margin:0 auto}
+.rds-btns{display:grid;gap:8px;margin-top:14px}
+.rds-btns button{display:flex;align-items:center;justify-content:center;gap:9px;border:0;border-radius:12px;padding:13px;font:800 15px Inter,sans-serif;cursor:pointer}
+.rds-btns .wa{background:#0D9488;color:#fff}.rds-btns .ch{background:#0F1E2E;color:#fff}.rds-btns .sv{background:#F1F5F9;color:#0F1E2E}
 .evsn{outline:none;border-radius:6px;cursor:text}
 #p-beo .evsn[contenteditable="true"]{background:white;color:#0F1E2E!important;padding:3px 10px;margin:-3px 0 -3px -10px;box-shadow:inset 0 0 0 2px #0D9488!important;font-size:inherit!important;font-weight:inherit!important;min-width:80px;display:inline-block}
 .evsn-pen{border:0;background:none;color:inherit;opacity:.55;cursor:pointer;padding:4px;margin-left:4px;display:inline-flex;align-items:center;vertical-align:middle;border-radius:6px}
@@ -5334,6 +5344,7 @@ html:has(#menuDetailOverlay[style*="flex"]),html:has(#menuDetailOverlay[style*="
                 <div class="rd-item"><div class="rd-time" contenteditable="true">00:00</div><div class="rd-right"><div class="rd-act" contenteditable="true">Add your first timeline item</div><div class="rd-tags"></div></div><button class="del-row" onclick="this.closest('.rd-item').remove()" title="Delete">×</button></div>
               </div>
               <button class="add-row-btn" onclick="addRundownRow()">+ Add Rundown Item</button>
+              <div class="rd-sharebar"><button type="button" class="rd-sharebtn" onclick="rdShareOpen()"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="m8.6 13.5 6.8 4M15.4 6.5l-6.8 4"/></svg><span>Share <span class="rd-share-nm">rundown</span></span></button></div>
             </div>
           </div>
 
@@ -27862,6 +27873,85 @@ window.chat2VoicePlay = function(id){
 };
 // ── Maintenance coordinators: up to 5 people who sort every new maintenance job (Admin Console) ──
 
+
+// ── Share the rundown as a picture (WhatsApp / Mavis chat / save) ──
+function rdShareData(){
+  const v = id => (document.getElementById(id)?.textContent || '').trim();
+  const dv = document.getElementById('det-date')?.value || '';
+  const rows = [...document.querySelectorAll('#rd-list .rd-item')].map(it => ({
+    time: (it.querySelector('.rd-time')?.textContent || '').trim(),
+    act: (it.querySelector('.rd-act')?.textContent || '').replace(/\s+/g, ' ').trim()
+  })).filter(r => r.act && !BEO_PLACEHOLDERS.includes(r.act));
+  return { label: evSnText('rundown'), name: v('det-name') || 'Untitled Event', date: dv ? evDateLabel(dv) : '', time: v('det-time'), venue: v('det-venue'), pax: v('det-pax'), brand: evVenueName(), rows };
+}
+async function rdShareCanvas(d){
+  try{ await document.fonts.ready; }catch(e){}
+  const W = 1080, P = 64, TCOL = 190, F = 'Inter, Arial, sans-serif';
+  const c = document.createElement('canvas'), x = c.getContext('2d');
+  const wrap = (t, font, max) => { x.font = font; const out = []; let line = ''; t.split(' ').forEach(w => { const tryL = line ? line + ' ' + w : w; if(x.measureText(tryL).width > max && line){ out.push(line); line = w; } else line = tryL; }); if(line) out.push(line); return out.length ? out : ['']; };
+  const nameF = '800 54px ' + F, metaF = '600 30px ' + F, timeF = '800 38px ' + F, actF = '500 36px ' + F;
+  const nameL = wrap(d.name, nameF, W - P * 2);
+  const meta = [d.date, d.time, d.venue, d.pax ? d.pax + ' guests' : ''].filter(Boolean).join('  ·  ');
+  const metaL = meta ? wrap(meta, metaF, W - P * 2) : [];
+  const headH = P + 34 + 22 + nameL.length * 66 + (metaL.length ? 14 + metaL.length * 42 : 0) + P - 10;
+  const rowsL = d.rows.map(r => wrap(r.act, actF, W - P * 2 - TCOL));
+  const bodyH = d.rows.length ? rowsL.reduce((n, l) => n + Math.max(1, l.length) * 50 + 52, 0) : 140;
+  c.width = W; c.height = headH + bodyH + 30 + 90;
+  x.fillStyle = '#fff'; x.fillRect(0, 0, W, c.height);
+  x.fillStyle = '#0F1E2E'; x.fillRect(0, 0, W, headH);
+  x.textBaseline = 'top';
+  let y = P;
+  x.font = '800 26px ' + F; x.fillStyle = '#C4973B'; x.fillText(d.label.toUpperCase().split('').join(String.fromCharCode(8202)), P, y);
+  y += 34 + 22;
+  x.fillStyle = '#fff'; x.font = nameF; nameL.forEach(l => { x.fillText(l, P, y); y += 66; });
+  if(metaL.length){ y += 14; x.fillStyle = '#5EEAD4'; x.font = metaF; metaL.forEach(l => { x.fillText(l, P, y); y += 42; }); }
+  y = headH + 30;
+  if(!d.rows.length){ x.fillStyle = '#94A3B8'; x.font = actF; x.fillText('Nothing in the ' + d.label.toLowerCase() + ' yet', P, y + 40); y += 140; }
+  d.rows.forEach((r, i) => {
+    const top = y;
+    x.fillStyle = '#0D9488'; x.font = timeF; x.fillText(r.time || '—', P, y + 26);
+    x.fillStyle = '#0F1E2E'; x.font = actF; rowsL[i].forEach((l, k) => x.fillText(l, P + TCOL, y + 26 + k * 50));
+    y += Math.max(1, rowsL[i].length) * 50 + 52;
+    if(i < d.rows.length - 1){ x.fillStyle = '#E2E8F0'; x.fillRect(P, y - 1, W - P * 2, 2); }
+  });
+  x.fillStyle = '#94A3B8'; x.font = '600 24px ' + F; x.fillText([d.brand, 'Made with Mavis'].filter(Boolean).join('  ·  '), P, c.height - 64);
+  return c;
+}
+window.rdShareOpen = async function(){
+  const d = rdShareData();
+  if(!d.rows.length){ toast('Add some times to the ' + d.label.toLowerCase() + ' first'); return; }
+  const c = await rdShareCanvas(d);
+  const url = c.toDataURL('image/png');
+  const blob = await new Promise(ok => c.toBlob(ok, 'image/png'));
+  const fname = (d.label + ' - ' + d.name).replace(/[\\/:*?"<>|]+/g, '').slice(0, 80) + '.png';
+  const file = new File([blob], fname, { type:'image/png' });
+  const canShare = !!(navigator.canShare && navigator.canShare({ files:[file] })) && matchMedia('(pointer:coarse)').matches;
+  const canCopy = !!(navigator.clipboard && window.ClipboardItem);
+  ebCloseSheets();
+  const s = document.createElement('div'); s.className = 'eb-sheet';
+  const ic = p => `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">${p}</svg>`;
+  s.innerHTML = `<div class="eb-form"><h3>Share ${evEsc(d.label.toLowerCase())}</h3><p class="sub">${canShare ? 'Send this picture to WhatsApp or anywhere else' : 'Copy this picture, then paste it into WhatsApp'}</p>
+    <div class="rds-prev"><img alt="" src="${url}"></div>
+    <div class="rds-btns">
+      ${canShare ? `<button class="wa" data-a="share">${ic('<path d="M4 12v7a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-7"/><path d="M16 6l-4-4-4 4M12 2v13"/>')}Share to WhatsApp</button>` : canCopy ? `<button class="wa" data-a="copy">${ic('<rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>')}Copy picture</button>` : ''}
+      <button class="ch" data-a="chat">${ic('<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>')}Send in Mavis chat</button>
+      <button class="sv" data-a="save">${ic('<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M7 10l5 5 5-5M12 15V3"/>')}Save picture</button>
+    </div>
+    <div class="eb-fbtns" style="margin-top:10px"><button class="eb-no">Close</button></div></div>`;
+  s.addEventListener('mousedown', e => { if(e.target === s) s.remove(); });
+  document.body.appendChild(s);
+  s.querySelector('.eb-no').onclick = () => s.remove();
+  s.querySelectorAll('[data-a]').forEach(b => b.onclick = async () => {
+    const a = b.dataset.a;
+    if(a === 'share'){ try{ await navigator.share({ files:[file], title: d.label + ' - ' + d.name }); }catch(e){} }
+    else if(a === 'copy'){
+      try{ await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]); toast('Picture copied - paste it into WhatsApp with Ctrl+V'); }
+      catch(e){ toast('Could not copy - use Save picture instead'); }
+    }
+    else if(a === 'chat'){ s.remove(); shareToChatOpen(d.label + ' - ' + d.name + (d.date ? ', ' + d.date : ''), url); }
+    else if(a === 'save'){ const l = document.createElement('a'); l.href = url; l.download = fname; document.body.appendChild(l); l.click(); l.remove(); toast('Picture saved'); }
+  });
+};
 // ── Event plan section names ──
 // Company default names (set in Admin Console), which anyone who can edit an event
 // can change on that one event by tapping the title or the pencil.
@@ -27880,7 +27970,9 @@ function evSnApply(names){
     const k = el.dataset.k, own = names && typeof names[k] === 'string' && names[k].trim() ? names[k].trim() : '';
     el.textContent = own || c[k]; el.dataset.custom = own ? '1' : '';
   });
+  rdShareLabel();
 }
+function rdShareLabel(){ const n = document.querySelector('#p-beo .rd-share-nm'); if(n) n.textContent = evSnText('rundown').toLowerCase(); }
 function evSnCollect(){
   const o = {};
   document.querySelectorAll('#p-beo .evsn').forEach(el => { if(el.dataset.custom === '1') o[el.dataset.k] = el.textContent.trim().slice(0, 40); });
@@ -27913,7 +28005,7 @@ document.addEventListener('focusout', e => {
   const c = evSnCompany()[el.dataset.k];
   let t = el.textContent.replace(/\s+/g, ' ').trim().slice(0, 40);
   if(!t || t === c){ t = c; el.dataset.custom = ''; } else el.dataset.custom = '1';
-  el.textContent = t;
+  el.textContent = t; rdShareLabel();
   if(t !== el.dataset.was){ try{ beoTriggerSave(); }catch(err){} }
 });
 function evSnCardRender(){

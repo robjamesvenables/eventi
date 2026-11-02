@@ -30209,8 +30209,6 @@ function reqRecentPlaces(dept){
 }
 function reqSheetRender(){
   const sh = document.getElementById('req-sheet'), f = REQ.form; if(!sh || !f) return;
-  const places = reqRecentPlaces(null);
-  const showOther = f.otherWhere || !places.length;
   sh.innerHTML = `<div class="req-sheet-card"><div class="req-grab"></div>
     <div class="req-sheet-head"><div class="req-sheet-title">Report a problem</div><button class="req-x" onclick="reqSheetClose()" title="Close">×</button></div>
     <label class="req-photo-big${f.photo ? ' has' : ''}">
@@ -30221,8 +30219,7 @@ function reqSheetRender(){
     <div class="req-lab">What's wrong?</div>
     <input id="req-f-what" class="req-inp" maxlength="120" placeholder="e.g. Fridge 2 not cooling" value="${reqEsc(f.what)}" oninput="REQ.form.what=this.value">
     <div class="req-lab">Where?</div>
-    ${places.length ? `<div class="req-pick">${places.map(p => `<button class="${f.where === p && !f.otherWhere ? 'on' : ''}" onclick="reqFormWhere(this.dataset.p)" data-p="${reqEsc(p)}">${reqEsc(p)}</button>`).join('')}<button class="${f.otherWhere ? 'on' : ''}" onclick="reqFormWhere(null)">Somewhere else</button></div>` : ''}
-    ${showOther ? `<input id="req-f-where" class="req-inp" maxlength="80" placeholder="e.g. Pool bar, Room 4" value="${reqEsc(f.otherWhere || !places.length ? f.where : '')}" oninput="REQ.form.where=this.value">` : ''}
+    <input id="req-f-where" class="req-inp" maxlength="120" placeholder="e.g. Pool bar, by the ice machine" value="${reqEsc(f.where)}" oninput="REQ.form.where=this.value">
     <button class="rq-emerbox${f.emergency ? ' on' : ''}" onclick="reqFormSet('emergency', !REQ.form.emergency)">
       <span><b>Emergency?</b><small>Flood, no power, gas or burning smell, someone could get hurt</small></span><i class="rq-tg"></i></button>
     <button class="req-send-big${f.emergency ? ' emer' : ''}" id="req-f-send" onclick="reqFormSend()">${f.emergency ? 'Send emergency' : 'Send'}</button>

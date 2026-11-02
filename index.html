@@ -8638,6 +8638,9 @@ function ebEnsureUi(){
 .eb-form input,.eb-form textarea,.eb-form select{width:100%;border:1.5px solid #E2E8F0;border-radius:10px;padding:10px 12px;font:500 15px Inter,sans-serif;color:#0F1E2E;outline:none;background:#fff}
 .eb-form input:focus,.eb-form textarea:focus,.eb-form select:focus{border-color:#0D9488}
 .eb-form textarea{min-height:90px;resize:vertical}
+.eb-filebtn{display:flex;align-items:center;gap:12px;width:100%;border:2px dashed #E2C98E;background:#FFFBF2;color:#7A5A16;border-radius:12px;padding:16px;font:700 14.5px Inter,sans-serif;cursor:pointer;text-align:left}
+.eb-filebtn span{flex:1;min-width:0;word-break:break-word}
+.eb-filebtn.has{border-style:solid;border-color:#0D9488;background:#F0FDFA;color:#0F766E}
 .eb-fbtns{display:flex;gap:10px;justify-content:flex-end;margin-top:18px}
 .eb-fbtns button{border:0;border-radius:999px;padding:11px 18px;font:800 14px Inter,sans-serif;cursor:pointer}
 .eb-go{background:#0F1E2E;color:#fff}.eb-go:disabled{opacity:.5;cursor:default}.eb-no{background:#F1F5F9;color:#475569}
@@ -8809,6 +8812,7 @@ function ebForm(type, it, paymentId){
   const s = document.createElement('div'); s.className = 'eb-sheet';
   const accept = type === 'receipt' || type === 'layout' ? 'image/*,application/pdf' : type === 'photo' ? 'image/*' : type === 'file' ? '.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.csv,.txt,image/*,application/pdf' : '';
   let f = '';
+  if(accept) f += `<label>${type === 'receipt' ? 'Receipt (photo or PDF)' : type === 'photo' ? 'Photos' : 'File'}</label><button type="button" class="eb-filebtn" id="ebf-pick">${ebIc('<path d="M21.4 11.1 12.2 20.3a6 6 0 0 1-8.5-8.5l9.2-9.2a4 4 0 0 1 5.7 5.7l-9.2 9.2a2 2 0 0 1-2.8-2.8l8.5-8.5"/>', 20)}<span id="ebf-files">${type === 'photo' ? 'Choose photos' : type === 'receipt' ? 'Choose a photo or PDF' : 'Choose a file'}</span></button><input id="ebf-file" type="file" accept="${accept}"${type === 'photo' ? ' multiple' : ''} style="display:none">`;
   if(type === 'receipt'){
     const pid = edit ? it.paymentId : paymentId;
     f += `<label>Which payment</label><select id="ebf-pay">${pays.map(p => `<option value="${p.id}"${p.id === pid ? ' selected' : ''}>${ebEsc(p.label || 'Payment')} · ${ebRp(p.amount)}${p.paid && p.id !== pid ? ' (paid)' : ''}</option>`).join('')}<option value="">Another payment (not on the list)</option></select>
@@ -8825,14 +8829,21 @@ function ebForm(type, it, paymentId){
     f += `<label>Title${type === 'note' ? ' (optional)' : ''}</label><input id="ebf-title" value="${edit ? ebEsc(it.title || '') : ''}" placeholder="${({layout:'e.g. LBG layout - buffet, bar & stage', file:'e.g. Wine list - VIPs only', photo:'e.g. Wristbands - VIP, Managerial, Non-VIP', note:'e.g. On the day', drawing:'e.g. Sofas facing the stage'})[type]}">`;
   }
   if(type === 'drawing') f += `<label>Draw here</label><canvas class="eb-pad" id="ebf-pad"></canvas><div class="eb-padbar"><button data-c="#0F1E2E" class="on">Black</button><button data-c="#DC2626">Red</button><button data-c="#0D9488">Teal</button><button data-w="8">Thick</button><button id="ebf-undo">Undo</button><button id="ebf-clear">Clear</button></div>`;
-  if(accept) f += `<label>${type === 'receipt' ? 'Receipt (photo or PDF)' : type === 'photo' ? 'Photos' : 'File'}</label><input id="ebf-file" type="file" accept="${accept}"${type === 'photo' ? ' multiple' : ''}><div id="ebf-files" style="font-size:12.5px;color:#64748B;margin-top:6px"></div>`;
+
   if(['note','layout','file','photo','drawing'].includes(type)) f += `<label>${type === 'note' ? 'Note' : 'Note (optional)'}</label><textarea id="ebf-text" placeholder="${type === 'note' ? 'e.g. Peanuts in small bowls with the welcome drink' : ''}">${edit ? ebEsc(it.text || '') : ''}</textarea>`;
   if(type === 'note') f += `<label>To-do list (optional, one per line)</label><textarea id="ebf-ck" placeholder="Install 2 standing fans&#10;ARTIST ONLY sign at Elysium by 12pm">${edit && it.checklist ? ebEsc(it.checklist.map(c => c.t).join('\n')) : ''}</textarea>`;
   s.innerHTML = `<div class="eb-form"><h3>${edit ? 'Edit' : 'Add'} ${K.label.toLowerCase()}</h3><p class="sub">${type === 'receipt' ? 'The payment is marked as paid and the totals update' : 'Pinned to the board for everyone on this event'}</p>${f}<div class="eb-fbtns"><button class="eb-no">Cancel</button><button class="eb-go">${edit ? 'Save' : 'Add to board'}</button></div></div>`;
   s.addEventListener('mousedown', e => { if(e.target === s && type !== 'drawing') s.remove(); });
   document.body.appendChild(s);
   const $f = id => s.querySelector('#' + id);
-  const showFiles = () => { const el = $f('ebf-files'); if(el) el.textContent = files.length ? files.map(x => x.name).join(', ') : ''; };
+  const showFiles = () => {
+    const el = $f('ebf-files'), inp = $f('ebf-file'); if(!el) return;
+    const picked = inp && inp.files ? Array.from(inp.files) : [];
+    const names = picked.length ? picked.map(x => x.name) : files.map(x => x.name);
+    el.textContent = names.length ? names.join(', ') + ' · tap to change' : el.textContent;
+    $f('ebf-pick').classList.toggle('has', !!names.length);
+  };
+  if($f('ebf-pick')){ $f('ebf-pick').onclick = () => $f('ebf-file').click(); $f('ebf-file').onchange = showFiles; }
   showFiles();
   const payEl = $f('ebf-pay'), amtEl = $f('ebf-amt');
   if(payEl && amtEl){

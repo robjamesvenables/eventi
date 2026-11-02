@@ -8581,6 +8581,9 @@ function ebEnsureUi(){
 .eb-board{background:#EFEDE8;border:1px solid #E4E0D8;border-radius:22px;padding:36px 26px 28px;display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:30px 24px;align-items:start;min-height:560px;align-content:start}
 .eb-card{position:relative;background:#fff;border-radius:10px;border:1px solid #ECEAE5;box-shadow:0 1px 2px rgba(15,30,46,.06),0 6px 16px rgba(15,30,46,.06);padding:18px 16px 12px;min-width:0}
 .eb-card.done{opacity:.6}
+.eb-card[data-id]{cursor:grab;touch-action:manipulation;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
+.eb-card.eb-ph{opacity:.25;outline:2px dashed #C4973B;outline-offset:4px}
+.eb-ghost{box-shadow:0 24px 50px rgba(15,30,46,.28)!important;transform:rotate(1.5deg) scale(1.02);cursor:grabbing}
 .eb-clip{position:absolute;top:-14px;right:22px}
 .eb-kind{display:flex;align-items:center;gap:6px;font-size:11px;font-weight:800;letter-spacing:.9px;text-transform:uppercase;color:#64748B;margin-bottom:8px;padding-right:34px}
 .eb-kind svg{color:#94A3B8}
@@ -8684,7 +8687,7 @@ function ebCardHtml(it){
   }
   const label = K.label + ( it.type === 'photo' && files.length > 1 ? ' · ' + files.length : '');
   const more = ebReadOnly() ? '' : `<button class="eb-more" onclick="ebMenu(event,'${it.id}')" aria-label="More">${ebIc('<circle cx="5" cy="12" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/>', 18, 3)}</button>`;
-  return `<div class="eb-card${it.done ? ' done' : ''}">${EB_CLIP}
+  return `<div class="eb-card${it.done ? ' done' : ''}" data-id="${it.id}">${EB_CLIP}
     <div class="eb-kind">${ebIc(K.icon, 14, 2.2)} ${ebEsc(label)}</div>${body}
     <div class="eb-meta"><span class="eb-who"><i style="background:${col}">${ebEsc(ini)}</i><span>${ebEsc((who.name || '').split(' ')[0])}${who.dept ? ' · ' + ebEsc(who.dept) : ''}</span></span><span style="display:flex;align-items:center;gap:2px;flex:none">${ebShortDate(it.at)}${more}</span></div></div>`;
 }
@@ -8696,15 +8699,73 @@ function ebRender(){
   const body = document.getElementById('eb-body'); if(!body) return;
   const b = ebBoard();
   const counts = {}; b.items.forEach(it => { const g = (EB_KINDS[it.type] || EB_KINDS.note).group; counts[g] = (counts[g] || 0) + 1; });
-  let items = b.items.slice().sort((x, y) => (x.done ? 1 : 0) - (y.done ? 1 : 0) || String(y.at).localeCompare(String(x.at)));
+  if(!b.ordered){ b.items.sort((x, y) => String(y.at).localeCompare(String(x.at))); b.ordered = true; }
+  let items = b.items.slice();
   if(EB.filter !== 'all') items = items.filter(it => (EB_KINDS[it.type] || EB_KINDS.note).group === EB.filter);
   const cards = items.map(ebCardHtml).join('');
   body.innerHTML = `
-    <div class="eb-head"><div><h3>Board</h3><p>Receipts, layouts, files, photos, maps, drawings and notes - for everyone on this event</p></div>${ebReadOnly() ? '' : `<button class="eb-add" onclick="ebAddMenu()">+ Add to board</button>`}</div>
+    <div class="eb-head"><div><h3>Board</h3><p>Receipts, layouts, files, photos, maps, drawings and notes - for everyone on this event${ebReadOnly() || b.items.length < 2 ? '' : ' · ' + (matchMedia('(pointer:coarse)').matches ? 'press and hold a card to move it' : 'drag cards to move them')}</p></div>${ebReadOnly() ? '' : `<button class="eb-add" onclick="ebAddMenu()">+ Add to board</button>`}</div>
     <div class="eb-chips">${EB_GROUPS.map(([k, l]) => { const n = k === 'all' ? b.items.length : (counts[k] || 0); return `<button class="eb-chip${EB.filter === k ? ' on' : ''}" onclick="ebFilter('${k}')">${l}${n ? ' ' + n : ''}</button>`; }).join('')}</div>
     <div class="eb-board">${cards || `<div class="eb-empty"><div class="ic">${ebIc('<path d="M21.4 11.1 12.2 20.3a6 6 0 0 1-8.5-8.5l9.2-9.2a4 4 0 0 1 5.7 5.7l-9.2 9.2a2 2 0 0 1-2.8-2.8l8.5-8.5"/>', 30)}</div><b class="t">${EB.filter === 'all' ? 'The board is empty' : 'Nothing here yet'}</b><span>Pin receipts, layouts, files, photos, maps, drawings and notes<br>for everyone working on this event.</span>${ebReadOnly() ? '' : '<button class="eb-add" onclick="ebAddMenu()">+ Add to board</button>'}</div>`}</div>`;
   ebSyncButton();
+  ebDragInit();
   const sn = document.getElementById('eb-sec-n'); if(sn){ const n = b.items.length; sn.textContent = n ? '· ' + n + (n === 1 ? ' item' : ' items') : ''; }
+}
+
+// ── Moving cards: drag with a mouse, or press and hold then drag on a phone ──
+function ebDragInit(){
+  const board = document.querySelector('#eb-body .eb-board'); if(!board || ebReadOnly()) return;
+  board.querySelectorAll('.eb-card[data-id]').forEach(c => c.addEventListener('pointerdown', ebDown));
+  if(!board._ebClick){ board._ebClick = true; board.addEventListener('click', e => { if(Date.now() - (EB.dragEnd || 0) < 350){ e.preventDefault(); e.stopPropagation(); } }, true); }
+}
+function ebDown(e){
+  if(e.button > 0 || e.target.closest('button,a,input,textarea,select,iframe,.eb-ck li')) return;
+  const card = e.currentTarget, sx = e.clientX, sy = e.clientY, touch = e.pointerType !== 'mouse';
+  let timer = null, started = false;
+  const cleanup = () => { clearTimeout(timer); document.removeEventListener('pointermove', pre); document.removeEventListener('pointerup', cleanup); document.removeEventListener('pointercancel', cleanup); };
+  const pre = ev => {
+    const far = Math.abs(ev.clientX - sx) > 8 || Math.abs(ev.clientY - sy) > 8;
+    if(touch){ if(far) cleanup(); return; }
+    if(far && !started){ started = true; cleanup(); ebDragStart(card, ev); }
+  };
+  if(touch) timer = setTimeout(() => { cleanup(); if(navigator.vibrate) navigator.vibrate(18); ebDragStart(card, e); }, 320);
+  document.addEventListener('pointermove', pre); document.addEventListener('pointerup', cleanup); document.addEventListener('pointercancel', cleanup);
+}
+function ebDragStart(card, e){
+  const board = card.parentNode, r = card.getBoundingClientRect();
+  const ghost = card.cloneNode(true);
+  ghost.classList.add('eb-ghost');
+  Object.assign(ghost.style, { position:'fixed', left:r.left + 'px', top:r.top + 'px', width:r.width + 'px', margin:0, zIndex:10030, pointerEvents:'none' });
+  document.body.appendChild(ghost);
+  card.classList.add('eb-ph');
+  const off = { x:e.clientX - r.left, y:e.clientY - r.top };
+  let lastY = e.clientY, raf = null;
+  const noScroll = ev => ev.preventDefault();
+  document.addEventListener('touchmove', noScroll, { passive:false });
+  const scrollLoop = () => { const h = window.innerHeight; const d = lastY < 80 ? -14 : lastY > h - 80 ? 14 : 0; if(d) window.scrollBy(0, d); raf = requestAnimationFrame(scrollLoop); };
+  raf = requestAnimationFrame(scrollLoop);
+  const move = ev => {
+    lastY = ev.clientY;
+    ghost.style.left = (ev.clientX - off.x) + 'px'; ghost.style.top = (ev.clientY - off.y) + 'px';
+    const el = document.elementFromPoint(ev.clientX, ev.clientY), over = el && el.closest('.eb-card[data-id]');
+    if(!over || over === card || over.parentNode !== board) return;
+    const cards = Array.from(board.querySelectorAll('.eb-card[data-id]'));
+    board.insertBefore(card, cards.indexOf(over) > cards.indexOf(card) ? over.nextSibling : over);
+  };
+  const up = () => {
+    document.removeEventListener('pointermove', move); document.removeEventListener('pointerup', up); document.removeEventListener('pointercancel', up);
+    document.removeEventListener('touchmove', noScroll); cancelAnimationFrame(raf);
+    ghost.remove(); card.classList.remove('eb-ph'); EB.dragEnd = Date.now();
+    // save the new order (when filtered, the moved cards keep their slots among the rest)
+    const shown = Array.from(board.querySelectorAll('.eb-card[data-id]')).map(c => c.dataset.id);
+    const b = ebBoard(), byId = {}; b.items.forEach(it => byId[it.id] = it);
+    const slots = b.items.map((it, i) => shown.includes(it.id) ? i : -1).filter(i => i > -1);
+    const next = b.items.slice(); slots.forEach((slot, k) => { next[slot] = byId[shown[k]]; });
+    const changed = next.some((it, i) => it !== b.items[i]);
+    b.items = next; b.ordered = true;
+    if(changed) ebSave();
+  };
+  document.addEventListener('pointermove', move); document.addEventListener('pointerup', up); document.addEventListener('pointercancel', up);
 }
 window.ebFilter = function(k){ EB.filter = k; ebRender(); };
 window.ebZoom = function(src){ const v = document.createElement('div'); v.className = 'eb-view'; v.innerHTML = `<img src="${ebEsc(src)}" alt="">`; v.onclick = () => v.remove(); document.body.appendChild(v); };
@@ -8832,7 +8893,7 @@ function ebForm(type, it, paymentId){
           rec.checklist = lines.map(t => ({ t, done: !!was[t] }));
         }
       }
-      if(!edit) b.items.push(rec);
+      if(!edit){ b.items.unshift(rec); b.ordered = true; }
       s.remove();
       await ebSignAll(); ebRender(); ebSave();
       toast(edit ? 'Saved ✓' : 'Added to the board ✓');

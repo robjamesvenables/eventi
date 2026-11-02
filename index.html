@@ -9507,6 +9507,20 @@ function rdTidyTime(t){
   if(h > 23 || m > 59) return null;
   return String(h).padStart(2, '0') + ':' + String(m).padStart(2, '0');
 }
+// While typing: the colon appears by itself (1525 -> 15:25). Only plain numbers are touched.
+document.addEventListener('input', e => {
+  const el = e.target;
+  if(!el || !el.classList || !el.classList.contains('rd-time')) return;
+  const raw = el.textContent;
+  if(!/^\d{3,4}$/.test(raw.replace(':', '')) || !/^[\d:]+$/.test(raw)) return;
+  const d = raw.replace(':', '');
+  if(Number(d.slice(0, 2)) > 23) return;              // e.g. 930 - tidied to 09:30 when you leave the box
+  const v = d.slice(0, 2) + ':' + d.slice(2, 4);
+  if(v === raw) return;
+  el.textContent = v;
+  const r = document.createRange(); r.selectNodeContents(el); r.collapse(false);
+  const sel = window.getSelection(); sel.removeAllRanges(); sel.addRange(r);
+});
 document.addEventListener('focusout', e => {
   const el = e.target;
   if(!el || !el.classList || !el.classList.contains('rd-time')) return;

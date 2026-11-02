@@ -1694,9 +1694,6 @@ body.ev-viewonly .pnl-open,body.ev-viewonly .pnl-pdf-top{display:none!important}
 #p-chat > .ph .ph-title{color:#fff!important;font-size:26px!important;letter-spacing:-.5px}
 #p-chat > .ph .ph-sub{color:#CBD5E1!important}
 #p-chat > .ph{justify-content:space-between;gap:12px}
-.mvchat-get{display:inline-flex;align-items:center;gap:8px;flex:none;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.22);color:#fff;border-radius:999px;padding:6px 14px 6px 6px;font-weight:800;font-size:13px;text-decoration:none;white-space:nowrap}
-.mvchat-get img{width:26px;height:26px;border-radius:7px}
-@media(max-width:700px){#p-chat > .ph{position:relative}#p-chat > .ph .mvchat-get{position:absolute;right:14px;top:16px;padding:4px 11px 4px 4px;font-size:12px;width:auto!important}}
 @media(max-width:700px){#p-chat > .ph{margin:0 16px 14px!important;padding:18px 20px!important}}
 .req-banner{background:#0F1E2E;border-radius:20px;padding:20px 24px;margin-bottom:16px}
 .req-banner .req-hello{color:#fff;font-size:26px;letter-spacing:-.5px}
@@ -5075,19 +5072,16 @@ html:has(#menuDetailOverlay[style*="flex"]),html:has(#menuDetailOverlay[style*="
           <div class="ph-title">Chat</div>
           <div class="ph-sub">Your team, by department or one to one</div>
         </div>
-        <a class="mvchat-get" href="/chat/" title="Mavis Chat opens straight into your chats - add it to your phone's home screen"><img src="/chat/icon-192.png" alt="">Mavis Chat app</a>
       </div>
 
       <div id="chat-card" style="background:white;border:1.5px solid #E2E8F0;border-radius:14px;overflow:hidden;display:flex;min-height:420px">
         <!-- Conversation list -->
-        <div id="chat-list-pane" style="width:320px;flex-shrink:0;border-right:1.5px solid #F1F5F9;display:flex;flex-direction:column;position:relative">
-          <div style="padding:16px;border-bottom:1px solid #F1F5F9">
-            <input id="chat-search" type="text" placeholder="Search by name…" style="width:100%;padding:9px 12px;border:1.5px solid #E2E8F0;border-radius:9px;font-family:'Inter',sans-serif;font-size:16px;box-sizing:border-box;outline:none">
-          </div>
+        <div id="chat-list-pane" style="width:400px;flex-shrink:0;border-right:1px solid #EEF1F4;display:flex;flex-direction:column;position:relative">
+          <div class="cx-top"><div class="cx-title">Chat</div></div>
+          <label class="cx-search"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><input id="chat-search" type="search" placeholder="Search departments, groups and people" autocomplete="off" autocorrect="off" spellcheck="false" enterkeyhint="search"></label>
+          <div class="cx-pills" id="chat-pills"></div>
           <div id="chat-conv-list" style="flex:1;overflow-y:auto"></div>
-          <div style="padding:12px 16px;border-top:1px solid #F1F5F9">
-            <button class="btn btn-navy" style="width:100%" onclick="chatOpenPeopleSelector()">+ New Chat</button>
-          </div>
+          <button class="cx-fab" onclick="chatOpenPeopleSelector()" aria-label="New chat" title="New chat"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></button>
         </div>
 
         <!-- Thread -->
@@ -7425,16 +7419,19 @@ function openMyAccount(){
 // ── Chat look: each person picks their text size and bubble colour (saved on this device) ──
 const CHAT_LOOK_KEY = 'mavis_chat_look';
 const CHAT_LOOK_SIZES = [['s', 'Small', .9], ['m', 'Medium', 1], ['l', 'Large', 1.15], ['xl', 'Extra large', 1.3]];
-const CHAT_LOOK_COLOURS = [['#0F1E2E', 'Navy'], ['#0D9488', 'Teal'], ['#B8862F', 'Gold'], ['#16A34A', 'Green'], ['#2563EB', 'Blue'], ['#7C3AED', 'Purple'], ['#E11D48', 'Rose']];
+const CHAT_LOOK_COLOURS = [['#F6E6C6', 'Cream'], ['#0F1E2E', 'Navy'], ['#0D9488', 'Teal'], ['#B8862F', 'Gold'], ['#16A34A', 'Green'], ['#2563EB', 'Blue'], ['#7C3AED', 'Purple'], ['#E11D48', 'Rose']];
 function chatLookGet(){
   let v = {};
   try{ v = JSON.parse(localStorage.getItem(CHAT_LOOK_KEY) || '{}') || {}; }catch(e){}
-  return { size: CHAT_LOOK_SIZES.some(s => s[0] === v.size) ? v.size : 'm', colour: CHAT_LOOK_COLOURS.some(c => c[0] === v.colour) ? v.colour : '#0F1E2E' };
+  return { size: CHAT_LOOK_SIZES.some(s => s[0] === v.size) ? v.size : 'm', colour: CHAT_LOOK_COLOURS.some(c => c[0] === v.colour) ? v.colour : '#F6E6C6' };
 }
 function chatLookApply(){
   const v = chatLookGet(), sz = CHAT_LOOK_SIZES.find(s => s[0] === v.size);
   document.documentElement.style.setProperty('--chat-scale', sz[2]);
   document.documentElement.style.setProperty('--chat-mine', v.colour);
+  const light = v.colour === '#F6E6C6';
+  document.documentElement.style.setProperty('--chat-mine-ink', light ? '#0F1E2E' : '#fff');
+  document.documentElement.style.setProperty('--chat-mine-meta', light ? '#7A6A4C' : 'rgba(255,255,255,.75)');
 }
 window.chatLookSet = function(k, val){
   const v = chatLookGet(); v[k] = val;
@@ -26948,7 +26945,7 @@ function chat2Avatar(t, size){
     if(sp && sp.i !== 'txt') return `<div style="width:${s}px;height:${s}px;border-radius:50%;background:${bg};display:flex;align-items:center;justify-content:center;flex-shrink:0"><svg width="${Math.round(s*.46)}" height="${Math.round(s*.46)}" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${DEPT_ICON_P[sp.i]}</svg></div>`;
     return `<div style="width:${s}px;height:${s}px;border-radius:50%;background:${bg};display:flex;align-items:center;justify-content:center;flex-shrink:0">${groupSvg}</div>`;
   }
-  const pid = chat2Other(t), p = CH.people[pid];
+  const pid = t._other || chat2Other(t), p = CH.people[pid];
   if(p && p.photo) return `<img src="${p.photo}" alt="" style="width:${s}px;height:${s}px;border-radius:50%;object-fit:cover;flex-shrink:0">`;
   return `<div style="width:${s}px;height:${s}px;border-radius:50%;background:${chat2RoleColor(p && p.role)};color:white;display:flex;align-items:center;justify-content:center;font-size:${fs}px;font-weight:800;flex-shrink:0">${chat2Initials(pid)}</div>`;
 }
@@ -27161,37 +27158,79 @@ window.chatSubscribeDirectRealtime = function(){};
 window.chatRenderList = function(){
   const list = document.getElementById('chat-conv-list');
   if(!list) return;
-  if(!myProfile){ list.innerHTML = `<div style="padding:30px 18px;text-align:center;color:#94A3B8;font-size:12.5px;line-height:1.6">Chat works once you're signed in.</div>`; return; }
-  if(CH.notReady){ list.innerHTML = `<div style="padding:30px 18px;text-align:center;color:#94A3B8;font-size:12.5px;line-height:1.6">Chat is being set up - check back soon.</div>`; return; }
-  if(!CH.ready){ list.innerHTML = `<div style="padding:30px 18px;text-align:center;color:#94A3B8;font-size:12.5px">Loading…</div>`; return; }
+  chat2RenderPills();
+  if(!myProfile){ list.innerHTML = `<div class="cx-empty">Chat works once you're signed in.</div>`; return; }
+  if(CH.notReady){ list.innerHTML = `<div class="cx-empty">Chat is being set up - check back soon.</div>`; return; }
+  if(!CH.ready){ list.innerHTML = `<div class="cx-skel"><i></i><b></b></div>`.repeat(5); return; }
   const q = (document.getElementById('chat-search')?.value || '').trim().toLowerCase();
-  const rows = chatConversations.filter(c => !q || c.name.toLowerCase().includes(q));
-  // Everyone first, then departments A-Z (fixed, easy to find), then made groups by newest message
-  const groups = rows.filter(c => c.isGroup).sort((a, b) => a.sortKey - b.sortKey || (a.kind === 'dept' ? String(a.name).localeCompare(String(b.name)) : String(b.lastAt || '').localeCompare(String(a.lastAt || ''))));
+  const f = CH.filter || 'all';
+  let rows = chatConversations.filter(c => !q || c.name.toLowerCase().includes(q));
+  if(f === 'unread') rows = rows.filter(c => c.unread);
+  if(f === 'groups') rows = rows.filter(c => c.isGroup);
+  if(f === 'direct') rows = rows.filter(c => !c.isGroup);
+  // Everyone first, then departments A-Z, then made groups by newest message
+  const rank = {all:0, dept:1, group:2};
+  const sortG = (a, b) => rank[a.kind] - rank[b.kind] || (a.kind === 'dept' ? String(a.name).localeCompare(String(b.name)) : String(b.lastAt || '').localeCompare(String(a.lastAt || '')));
+  const groups = rows.filter(c => c.isGroup).sort(sortG);
   const directs = rows.filter(c => !c.isGroup);
+  const muted = c => chat2IsMuted(c.id);
   const row = c => {
-    const t = CH.threads[c.id], act = c.id === chatActiveId, last = c.last;
+    const t = CH.threads[c.id], last = c.last, mu = muted(c);
     const who = last && !last.deleted_at ? (last.sender_id === chat2Me() ? 'You: ' : (c.isGroup ? chatEscapeHtml(chat2Name(last.sender_id, true)) + ': ' : '')) : '';
     const prev = last ? who + momentsTwemojiParse(chatEscapeHtml(chat2Preview(last))) : (t.kind === 'direct' ? 'No messages yet' : (n => n + (n === 1 ? ' member' : ' members'))(chat2MemberIds(t).length));
-    return `<div onclick="if(Date.now()-(window._chat2LP||0)<700)return;if(CH.listSel){chat2ListSelect(null);return;}chatOpenConversation('${c.id}')" data-tid="${c.id}" class="chat2-row${act ? ' active' : ''}${CH.listSel === c.id ? ' sel' : ''}">
-      ${chat2Avatar(t, 40)}
-      <div style="flex:1;min-width:0">
-        <div style="display:flex;justify-content:space-between;align-items:center;gap:8px">
-          <span style="font-size:13.5px;font-weight:700;color:#0F1E2E;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${chatEscapeHtml(c.name)}</span>
-          <span style="font-size:10.5px;color:${c.unread && !chat2IsMuted(c.id) ? '#0D9488' : '#94A3B8'};font-weight:${c.unread ? 700 : 500};flex-shrink:0;display:flex;align-items:center;gap:4px">${chat2IsMuted(c.id) ? `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#94A3B8" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-label="Muted">${CHAT2_BELL_OFF}</svg>` : ''}${last ? chat2ListTime(last.created_at) : ''}</span>
-        </div>
-        <div style="display:flex;justify-content:space-between;align-items:center;gap:8px">
-          <span class="chat-preview-text" style="font-size:12px;color:#64748B;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;line-height:1.35">${prev}</span>
-          ${c.mentioned ? `<span class="chat2-unread chat2-at" title="You were mentioned">@</span>` : ''}${c.unread ? `<span class="chat2-unread"${chat2IsMuted(c.id) ? ' style="background:#CBD5E1"' : ''}>${c.unread}</span>` : ''}
-        </div>
+    const right = (mu ? `<span class="cx-ico"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-label="Muted">${CHAT2_BELL_OFF}</svg></span>` : '')
+      + (c.mentioned ? `<span class="chat2-unread chat2-at" title="You were mentioned">@</span>` : '')
+      + (c.unread ? `<span class="chat2-unread${mu ? ' muted' : ''}">${c.unread}</span>` : '');
+    return `<div onclick="if(Date.now()-(window._chat2LP||0)<700)return;if(CH.listSel){chat2ListSelect(null);return;}chatOpenConversation('${c.id}')" data-tid="${c.id}" class="chat2-row${c.id === chatActiveId ? ' active' : ''}${CH.listSel === c.id ? ' sel' : ''}">
+      ${chat2Avatar(t, 52)}
+      <div class="cx-mid">
+        <div class="cx-l1"><b>${chatEscapeHtml(c.name)}</b><span class="cx-tm${c.unread && !mu ? ' new' : ''}">${last ? chat2ListTime(last.created_at) : ''}</span></div>
+        <div class="cx-l2"><span class="chat-preview-text">${prev}</span>${right}</div>
       </div>
     </div>`;
   };
-  let html = q ? '' : chat2PushBanner();
-  if(groups.length) html += `<div class="chat2-section">Groups</div>` + groups.map(row).join('');
-  html += `<div class="chat2-section">Direct messages</div>`;
-  html += directs.length ? directs.map(row).join('') : `<div style="padding:8px 16px 16px;font-size:12px;color:#94A3B8">No direct chats yet - tap <b>+ New Chat</b> to message someone.</div>`;
+  const label = x => `<div class="chat2-section">${x}</div>`;
+  let html = '';
+  if(q){
+    // Searching: departments first, then groups, then chats, then anyone else on the team
+    const depts = groups.filter(c => c.kind !== 'group'), made = groups.filter(c => c.kind === 'group');
+    if(depts.length) html += label('Departments') + depts.map(row).join('');
+    if(made.length) html += label('Groups') + made.map(row).join('');
+    if(directs.length) html += label('Chats') + directs.map(row).join('');
+    if(f === 'all' || f === 'direct'){
+      const me = chat2Me(), have = new Set(chatConversations.filter(c => !c.isGroup).map(c => String(chat2Other(CH.threads[c.id]))));
+      const people = Object.values(CH.people).filter(p => p.active && p.id !== me && !have.has(String(p.id)) && chat2Name(p.id).toLowerCase().includes(q))
+        .sort((a, b) => chat2Name(a.id).localeCompare(chat2Name(b.id))).slice(0, 30);
+      if(people.length) html += label('People') + people.map(p => `<div class="chat2-row" onclick="chatSelectPerson('${p.id}')">
+        ${chat2Avatar({kind:'direct', _other:p.id}, 52)}
+        <div class="cx-mid"><div class="cx-l1"><b>${chatEscapeHtml(chat2Name(p.id))}</b></div><div class="cx-l2"><span class="chat-preview-text">${chatEscapeHtml(chat2Depts(p).join(', ') || 'Start a chat')}</span></div></div>
+      </div>`).join('');
+    }
+    list.innerHTML = html || `<div class="cx-empty">Nothing matches "${chatEscapeHtml(q)}"</div>`;
+    return;
+  }
+  if(f === 'all') html += chat2PushBanner();
+  if(groups.length) html += label('Groups') + groups.map(row).join('');
+  if(directs.length) html += label('Direct messages') + directs.map(row).join('');
+  if(!groups.length && !directs.length) html += `<div class="cx-empty">${f === 'unread' ? 'You\'re all caught up' : f === 'direct' ? 'No one-to-one chats yet.<br>Tap <b>+</b> to message someone.' : 'No chats yet'}</div>`;
+  else if(f === 'all' && !directs.length) html += label('Direct messages') + `<div class="cx-empty" style="padding:8px 20px 16px;text-align:left">No direct chats yet - tap <b>+</b> to message someone.</div>`;
   list.innerHTML = html;
+};
+function chat2RenderPills(){
+  const box = document.getElementById('chat-pills');
+  if(!box) return;
+  const f = CH.filter || 'all';
+  const unread = chatConversations.filter(c => c.unread && !chat2IsMuted(c.id)).length;
+  const marked = Object.keys(CH.marks || {}).length;
+  const flag = `<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linejoin="round">${CHAT2_FLAG}</svg>`;
+  const pills = [['all', 'All'], ['unread', 'Unread' + (unread ? ' ' + unread : '')], ['groups', 'Groups'], ['direct', 'Direct'], ['marked', flag + ' Marked' + (marked ? ' ' + marked : '')]];
+  box.innerHTML = pills.map(([k, l]) => `<button class="cx-pill${f === k ? ' on' : ''}" onclick="chat2Filter('${k}')">${l}</button>`).join('');
+}
+window.chat2Filter = function(k){
+  if(k === 'marked'){ chat2ShowMarked(); return; }
+  CH.filter = k;
+  chatRenderList();
+  const l = document.getElementById('chat-conv-list'); if(l) l.scrollTop = 0;
 };
 
 window.chatRenderDashboardList = function(){
@@ -27258,10 +27297,10 @@ function chat2RenderHeader(){
     <button id="chat-thread-mobile-back" onclick="history.back()" style="display:none;background:none;border:none;cursor:pointer;padding:4px;margin-right:2px;flex-shrink:0">
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#0F1E2E" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
     </button>
-    ${chat2Avatar(t, 36)}
+    ${chat2Avatar(t, 42)}
     <div style="min-width:0;cursor:${t.kind === 'direct' ? 'default' : 'pointer'}" ${t.kind === 'direct' ? '' : `onclick="chat2ShowMembers()" data-tooltip="See who's in this group"`}>
-      <div style="font-size:14px;font-weight:700;color:#0F1E2E;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${chatEscapeHtml(chat2ThreadName(t))}</div>
-      <div style="font-size:11px;color:#94A3B8;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${sub}</div>
+      <div style="font-size:17px;font-weight:700;color:#0F1E2E;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${chatEscapeHtml(chat2ThreadName(t))}</div>
+      <div style="font-size:12.5px;color:#64748B;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${sub}</div>
     </div>
     <div style="margin-left:auto;display:flex;gap:4px">
       <button class="chat-business-btn" onclick="chat2MuteMenu()" data-tooltip="${chat2IsMuted(t.id) ? 'Muted - tap to change' : 'Mute notifications'}" aria-label="Mute"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="${chat2IsMuted(t.id) ? '#C4973B' : 'currentColor'}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${chat2IsMuted(t.id) ? CHAT2_BELL_OFF : CHAT2_BELL}</svg></button>
@@ -27336,7 +27375,7 @@ window.chatRenderMessages = function(){
     const mine = m.sender_id === me;
     const prev = msgs[i - 1];
     const showName = t.kind !== 'direct' && !mine && (!prev || prev.sender_id !== m.sender_id || new Date(prev.created_at).toDateString() !== day);
-    const nameHtml = showName ? `<div style="font-size:10.5px;font-weight:700;color:${chat2RoleColor(CH.people[m.sender_id]?.role)};margin:0 0 2px 4px">${chatEscapeHtml(chat2Name(m.sender_id))}</div>` : '';
+    const nameHtml = showName ? `<div class="cx-who" style="color:${chat2RoleColor(CH.people[m.sender_id]?.role)}">${chatEscapeHtml(chat2Name(m.sender_id))}</div>` : '';
     let inner;
     if(m.deleted_at){
       inner = `<span style="font-style:italic;opacity:.65;display:inline-flex;align-items:center;gap:6px"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="m5.7 5.7 12.6 12.6"/></svg>This message was deleted</span>`;
@@ -27351,14 +27390,14 @@ window.chatRenderMessages = function(){
     }
     const sel = CH.selId === m.id;
     const pop = sel ? `<div class="chat2-emoji-pop ${mine ? 'right' : 'left'}">${CHAT_REACTION_EMOJIS.map(r => `<button onclick="event.stopPropagation();chatToggleReaction(${i},'${r.id}');chat2ClearSel()" aria-label="${r.label}">${momentsTwemojiParse(r.char)}</button>`).join('')}</div>` : '';
-    const pad = m.attachment_type === 'image' && !m.deleted_at ? '6px' : '9px 13px';
-    html += `<div id="chat-message-${i}" data-chat-text="${chatEscapeHtml((m.body || chat2Preview(m)).toLowerCase())}" class="chat-msg-row${sel ? ' chat2-selected' : ''}" style="align-self:${mine ? 'flex-end' : 'flex-start'};max-width:78%;position:relative">
-      ${nameHtml}
+    const pad = m.attachment_type === 'image' && !m.deleted_at ? '4px' : '6px 9px 7px 10px';
+    const meta = `<span class="cx-meta">${CH.marks[m.id] ? `<svg width="11" height="11" viewBox="0 0 24 24" fill="#C4973B" stroke="#C4973B" stroke-width="2" stroke-linejoin="round" aria-label="Marked">${CHAT2_FLAG}</svg>` : ''}${m.edited_at && !m.deleted_at ? 'Edited · ' : ''}${chat2Time(m.created_at)}${chat2Ticks(m, t)}</span>`;
+    const first = !prev || prev.sender_id !== m.sender_id || new Date(prev.created_at).toDateString() !== day;
+    html += `<div id="chat-message-${i}" data-chat-text="${chatEscapeHtml((m.body || chat2Preview(m)).toLowerCase())}" class="chat-msg-row${sel ? ' chat2-selected' : ''}${first ? ' cx-gap' : ''}" style="align-self:${mine ? 'flex-end' : 'flex-start'};max-width:78%;position:relative">
       ${pop}
-      <div class="chat2-bubble ${mine ? 'mine' : ''}" data-i="${i}" style="padding:${pad};position:relative">
-        ${inner}${m.deleted_at || m._tmp ? '' : `<button class="chat2-more-arrow" data-i="${i}" aria-label="Message options"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg></button>`}
+      <div class="chat2-bubble ${mine ? 'mine' : ''}${first ? ' first' : ''}" data-i="${i}" style="padding:${pad};position:relative">
+        ${nameHtml}${inner}${meta}${m.deleted_at || m._tmp ? '' : `<button class="chat2-more-arrow" data-i="${i}" aria-label="Message options"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg></button>`}
       </div>
-      <div style="font-size:10px;color:#94A3B8;margin-top:3px;text-align:${mine ? 'right' : 'left'}">${CH.marks[m.id] ? `<svg width="11" height="11" viewBox="0 0 24 24" fill="#C4973B" stroke="#C4973B" stroke-width="2" stroke-linejoin="round" style="vertical-align:-1px;margin-right:4px" aria-label="Marked">${CHAT2_FLAG}</svg>` : ''}${m.edited_at && !m.deleted_at ? 'Edited · ' : ''}${chat2Time(m.created_at)}${chat2Ticks(m, t)}</div>
       ${m.deleted_at ? '' : chat2ReactionsHtml(i, m)}
     </div>`;
   });
@@ -27622,19 +27661,7 @@ window.chat2ToggleMark = async function(i){
     else toast('Marked - find it under Marked at the top of Chat');
   }
 };
-function chat2MarkedBtn(){
-  const search = document.getElementById('chat-search'); if(!search) return;
-  let b = document.getElementById('chat2-marked-btn');
-  if(!b){
-    const wrap = search.parentElement;
-    wrap.style.display = 'flex'; wrap.style.gap = '8px'; wrap.style.alignItems = 'center';
-    b = document.createElement('button'); b.id = 'chat2-marked-btn'; b.onclick = chat2ShowMarked; b.setAttribute('aria-label', 'Marked messages');
-    wrap.appendChild(b);
-  }
-  const n = Object.keys(CH.marks).length;
-  b.innerHTML = `<svg width="18" height="18" viewBox="0 0 24 24" fill="${n ? '#C4973B' : 'none'}" stroke="${n ? '#C4973B' : '#64748B'}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${CHAT2_FLAG}</svg>${n ? `<span>${n}</span>` : ''}`;
-  b.title = n ? n + ' marked message' + (n === 1 ? '' : 's') : 'Marked messages';
-}
+function chat2MarkedBtn(){ chat2RenderPills(); }
 window.chat2ShowMarked = function(){
   const all = [];
   Object.keys(CH.marks).forEach(id => {
@@ -28536,6 +28563,86 @@ chat2Style.textContent = `
 @media(max-width:600px){#chat2-sheet{padding:0;align-items:flex-end}.chat2-sheet-card{width:100%;max-height:90vh;border-radius:16px 16px 0 0}}
 `;
 document.head.appendChild(chat2Style);
+const cxStyle = document.createElement('style'); cxStyle.id = 'cx-css';
+cxStyle.textContent = `
+/* ── Chat: big WhatsApp-style look (Nov 2026) ── */
+#chat-card{background:#fff!important;border:1px solid #E7EAEE!important;border-radius:16px!important}
+#chat-list-pane{background:#fff}
+.cx-top{display:none;align-items:center;justify-content:space-between;padding:14px 16px 6px 20px}
+.cx-title{font-size:26px;font-weight:900;letter-spacing:-.6px;color:#0F1E2E}
+.cx-search{margin:14px 16px 10px;background:#F1F3F6;border-radius:999px;height:46px;display:flex;align-items:center;gap:10px;padding:0 16px;color:#64748B;cursor:text;flex-shrink:0}
+.cx-search input{flex:1;min-width:0;border:0!important;background:none!important;outline:none;font:16px Inter,sans-serif;color:#0F1E2E;padding:0!important;box-shadow:none!important;height:100%}
+.cx-search input::placeholder{color:#64748B}
+.cx-search input::-webkit-search-cancel-button{display:none}
+.cx-pills{display:flex;gap:6px;padding:0 16px 8px;overflow-x:auto;scrollbar-width:none;flex-shrink:0}
+.cx-pills::-webkit-scrollbar{display:none}
+.cx-pill{flex:none;display:flex;align-items:center;gap:5px;background:#F1F3F6;border:0;border-radius:999px;padding:7px 12px;font:700 14px Inter,sans-serif;color:#64748B;white-space:nowrap;cursor:pointer}
+.cx-pill.on{background:#C4973B;color:#0F1E2E}
+.cx-pill:not(.on):hover{background:#E8EBEF}
+#chat-conv-list{padding-bottom:92px}
+.chat2-section{padding:14px 20px 4px!important;font-size:12px!important;letter-spacing:.8px!important;color:#94A3B8!important}
+.chat2-row{gap:13px!important;padding:9px 16px!important;border-bottom:0!important;background:#fff;align-items:center}
+.chat2-row:hover{background:#FAF8F4!important}.chat2-row.active{background:#F7F2E8!important}
+.cx-mid{flex:1;min-width:0;padding:6px 0 12px;border-bottom:1px solid #EEF1F4;margin-bottom:-12px}
+.cx-l1{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+.cx-l1 b{font-size:16.5px;font-weight:700;color:#0F1E2E;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cx-tm{font-size:12px;color:#64748B;flex:none}.cx-tm.new{color:#B8862F;font-weight:800}
+.cx-l2{display:flex;align-items:center;gap:7px;margin-top:3px;min-height:22px}
+.cx-l2 .chat-preview-text{flex:1;min-width:0;font-size:14.5px!important;color:#64748B;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cx-ico{color:#94A3B8;display:flex}
+.chat2-row .chat2-unread{background:#C4973B;color:#0F1E2E;font-size:12px;font-weight:900;min-width:22px;height:22px;border-radius:11px;padding:0 6px}
+.chat2-row .chat2-unread.muted{background:#CBD5E1;color:#fff}
+.chat2-row .chat2-unread.chat2-at{background:#0D9488!important;color:#fff;margin-right:0}
+.cx-empty{padding:40px 24px;text-align:center;color:#94A3B8;font-size:14px;line-height:1.6}
+.cx-skel{display:flex;gap:13px;align-items:center;padding:12px 16px}
+.cx-skel i{width:52px;height:52px;border-radius:50%;background:#F1F3F6}.cx-skel b{flex:1;height:14px;border-radius:7px;background:#F1F3F6}
+.cx-fab{position:absolute;right:18px;bottom:18px;width:60px;height:60px;border-radius:18px;background:#C4973B;color:#0F1E2E;border:0;display:flex;align-items:center;justify-content:center;box-shadow:0 8px 22px rgba(15,30,46,.28);z-index:3;cursor:pointer}
+.cx-fab:hover{background:#B8862F}
+/* one chat */
+#chat-thread-pane{background:#F4EFE7}
+#chat-thread-empty{background:#F4EFE7;color:#64748B!important;font-size:15px!important}
+#chat-thread-header{background:#fff;border-bottom:1px solid #EEF1F4!important;padding:10px 16px!important}
+#chat-thread-msgs{background:#F4EFE7;padding:10px 14px 6px!important;gap:3px!important}
+.chat-msg-row.cx-gap{margin-top:7px}
+.chat2-bubble{background:#fff!important;color:#0F1E2E!important;border-radius:12px!important;box-shadow:0 1px 1px rgba(0,0,0,.08);font-size:calc(15.5px * var(--chat-scale,1))!important;line-height:1.38!important}
+.chat2-bubble.mine{background:var(--chat-mine,#F6E6C6)!important;color:var(--chat-mine-ink,#0F1E2E)!important}
+.chat2-bubble.first:not(.mine){border-top-left-radius:3px!important}.chat2-bubble.mine.first{border-top-right-radius:3px!important}
+.chat2-bubble{display:flow-root!important}
+.cx-who{font-size:13px;font-weight:800;margin-bottom:1px}
+.cx-meta{float:right;margin:7px 0 -5px 10px;font-size:11px;color:#64748B;display:inline-flex;align-items:center;gap:3px;white-space:nowrap;position:relative;top:1px}
+.chat2-bubble.mine .cx-meta{color:var(--chat-mine-meta,#7A6A4C)}
+.cx-meta .chat-status{margin-left:2px}.cx-meta .chat-status.read{color:#0D9488}.cx-meta .chat-status.pending{color:inherit}
+.chat2-more-arrow{background:#fff!important;color:#64748B!important;width:28px!important;height:24px!important;border-radius:0 12px 0 8px!important;padding:0 6px 0 0!important}
+.chat2-bubble.mine .chat2-more-arrow{background:var(--chat-mine,#F6E6C6)!important;color:var(--chat-mine-ink,#0F1E2E)!important}
+.chat2-selected .chat2-bubble{box-shadow:0 0 0 2px #C4973B!important}
+.chat2-bubble.mine .chat2-tag{color:inherit;text-decoration:underline}
+.chat2-day span{background:#fff!important;color:#64748B!important;font-size:12px!important;padding:5px 12px!important;border-radius:8px!important;box-shadow:0 1px 1px rgba(0,0,0,.06)}
+.chat2-bubble.mine .chat2-vplay{background:#C4973B;color:#0F1E2E}.chat2-vplay{background:#C4973B;color:#0F1E2E}
+.chat2-bubble.mine .chat2-vbar{background:rgba(15,30,46,.15)}.chat2-bubble.mine .chat2-vfill,.chat2-vfill{background:#0D9488}
+#chat-input-row{background:#F4EFE7;border-top:0!important;padding:6px 10px 10px!important;gap:7px!important;align-items:flex-end!important}
+#chat-composer-shell{background:#fff!important;border:0!important;border-radius:24px!important;min-height:48px;height:auto!important;box-shadow:0 1px 1px rgba(0,0,0,.08);padding:0 8px 0 8px!important}
+#chat-input-row > button{width:48px!important;height:48px!important;border-radius:50%!important;background:#C4973B!important;color:#0F1E2E!important;border:0!important;flex-shrink:0}
+#chat-input-row > button svg{stroke:#0F1E2E}
+#chat-input-row > button:hover{background:#B8862F!important}
+#chat-reply-preview,#chat-recording-bar{background:#F4EFE7}
+@media(min-width:701px){
+  #p-chat > .ph{padding:16px 22px!important;margin-bottom:14px!important}
+}
+@media(max-width:700px){
+  #p-chat{padding:0!important}
+  #p-chat > .ph{display:none!important}
+  .cx-top{display:flex}
+  .cx-search{margin-top:4px}
+  #chat-card{border:0!important;border-radius:0!important}
+  #chat-thread-pane.mobile-open{background:#F4EFE7!important}
+  #chat-input-row{padding:6px 8px calc(8px + env(safe-area-inset-bottom))!important}
+  .chat2-row{padding:9px 16px!important}
+  #chat-thread-msgs .chat2-bubble{font-size:calc(16px * var(--chat-scale,1))!important;border-radius:12px!important}
+  #chat-thread-msgs .chat2-bubble:not([style*="padding:4px"]){padding:6px 9px 7px 10px!important}
+  #chat-thread-msgs .chat-msg-row{max-width:84%!important}
+}
+`;
+document.head.appendChild(cxStyle);
 
 </script>
 

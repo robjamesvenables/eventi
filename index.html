@@ -1663,6 +1663,12 @@ body.ev-viewonly .pnl-open,body.ev-viewonly .pnl-pdf-top{display:none!important}
 #p-sandbox .sbx-b-voice{background:#0D9488!important}#p-sandbox .sbx-b-photo{background:#1E3A5F!important}#p-sandbox .sbx-b-link{background:#475569!important}
 #sandbox-feed .sbx-link{background:#0F1E2E!important}
 .pnl-open{background:#0D9488!important}
+.beo-bigbtns{display:flex;gap:10px;flex:none;align-items:center}
+.eb-boardbtn{display:inline-flex;align-items:center;gap:10px;background:#C4973B;color:#0F1E2E;border:0;border-radius:14px;padding:12px 18px;font:800 15px Inter,sans-serif;cursor:pointer;box-shadow:0 8px 22px rgba(196,151,59,.35);text-align:left}
+.eb-boardbtn small{display:block;font-size:10.5px;font-weight:700;opacity:.8;max-width:150px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pdf-export-mode .eb-boardbtn{display:none!important}
+@media(max-width:700px){.beo-hd-bottom:has(.beo-bigbtns){flex-wrap:wrap}.beo-bigbtns{width:100%;margin-top:12px}.beo-bigbtns > button{flex:1 1 0;justify-content:center;margin-top:0!important;width:auto!important;padding:12px 10px!important}}
+
 .fc-hero{background:#0F1E2E!important}.fc-hero.wet{background:#1E3A5F!important}
 .announce-post-hd{background:#F1F5F9!important}
 .hl-story-ring{background:#0D9488!important}
@@ -5206,7 +5212,7 @@ html:has(#menuDetailOverlay[style*="flex"]),html:has(#menuDetailOverlay[style*="
                 <div class="beo-event-title">Horizon Tech Summit 2026 — Welcome Dinner</div>
               </div>
               <div class="beo-share" id="beo-client-pill" onclick="beoClientShareOpen()" style="display:none">Client link on</div>
-              <button class="pnl-open" onclick="pnlOpen()" style="display:inline-flex;align-items:center;gap:10px;background:#0D9488;color:white;border:0;border-radius:14px;padding:12px 18px;font:800 15px Inter,sans-serif;cursor:pointer;box-shadow:0 8px 22px rgba(13,148,136,.35)"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="3"/><path d="M3 9h18M9 21V9"/></svg><span>P&amp;L<small style="display:block;font-size:10.5px;font-weight:700;opacity:.85;text-align:left">Budget &amp; numbers</small></span></button>
+              <div class="beo-bigbtns"><button class="eb-boardbtn" id="eb-open-btn" onclick="ebOpen()"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.4 11.1 12.2 20.3a6 6 0 0 1-8.5-8.5l9.2-9.2a4 4 0 0 1 5.7 5.7l-9.2 9.2a2 2 0 0 1-2.8-2.8l8.5-8.5"/></svg><span>Board<small class="eb-n">Receipts, files &amp; notes</small></span></button><button class="pnl-open" onclick="pnlOpen()" style="display:inline-flex;align-items:center;gap:10px;background:#0D9488;color:white;border:0;border-radius:14px;padding:12px 18px;font:800 15px Inter,sans-serif;cursor:pointer;box-shadow:0 8px 22px rgba(13,148,136,.35)"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="3"/><path d="M3 9h18M9 21V9"/></svg><span>P&amp;L<small style="display:block;font-size:10.5px;font-weight:700;opacity:.85;text-align:left">Budget &amp; numbers</small></span></button></div>
             </div>
           </div>
 
@@ -8322,6 +8328,8 @@ function beoApply(ev){
   deptPhotos = plan.photos || {};
   deptLinks = plan.links || {};
   beoPnl = plan.pnl && Array.isArray(plan.pnl.cats) ? plan.pnl : null;
+  beoBoard = plan.board && typeof plan.board === 'object' ? plan.board : null;
+  try{ EB.urls = {}; EB.filter = 'all'; setTimeout(ebSyncButton, 0); }catch(e){}
   const setT=(id,v)=>{ const el=document.getElementById(id); if(el) el.textContent = v==null?'':v; };
   setT('det-name', (ev.name && ev.name!=='Untitled Event') ? ev.name : '');
   if(!document.getElementById('det-client') && det){
@@ -8433,12 +8441,532 @@ function beoCollect(){
     status: document.getElementById('beo-status')?.value || 'Enquiry',
     revenue: evParseMoney(txt('stat-rev')),
     cost: evParseMoney(txt('stat-cost')),
-    plan: { details: document.getElementById('ft-details').innerHTML, timeline: document.getElementById('rd-list').innerHTML, depts: dp.innerHTML, photos: deptPhotos, links: deptLinks, pnl: beoPnl },
+    plan: { details: document.getElementById('ft-details').innerHTML, timeline: document.getElementById('rd-list').innerHTML, depts: dp.innerHTML, photos: deptPhotos, links: deptLinks, pnl: beoPnl, board: beoBoard },
     share_settings: beoShare.settings,
     client_view: beoBuildClientView(),
     updated_at: new Date().toISOString()
   };
 }
+
+
+// ── EVENT BOARD: receipts, payments, layouts, files, photos, maps, drawings and notes for one event ──
+// Opened from the "Board" button on an event plan (like the P&L). Saved inside the event's plan
+// (plan.board). Files live in the private shared-files storage: <company>/events/<event>/<file>.
+// Receipts are added by Sales (and managers); everyone else on the event can see them.
+let beoBoard = null;
+const EB = { filter:'all', urls:{}, busy:false };
+const EB_BUCKET = 'shared-files';
+const EB_TAX_DEFAULT = 23.2;
+const EB_KINDS = {
+  receipt:{ label:'Receipt', group:'receipts', icon:'<path d="M4 2v20l3-2 3 2 2-2 2 2 3-2 3 2V2l-3 2-3-2-2 2-2-2-3 2z"/><path d="M8 9h8M8 13h6"/>' },
+  layout:{ label:'Layout', group:'maps', icon:'<path d="m3 6 6-3 6 3 6-3v15l-6 3-6-3-6 3z"/><path d="M9 3v15M15 6v15"/>' },
+  map:{ label:'Map', group:'maps', icon:'<path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0z"/><circle cx="12" cy="10" r="3"/>' },
+  file:{ label:'File', group:'files', icon:'<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/>' },
+  photo:{ label:'Photos', group:'photos', icon:'<path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/>' },
+  drawing:{ label:'Drawing', group:'drawings', icon:'<path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/>' },
+  note:{ label:'Note', group:'notes', icon:'<path d="M15.5 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V8.5z"/><path d="M15 3v6h6"/>' }
+};
+const EB_GROUPS = [['all','All'],['receipts','Receipts'],['maps','Maps & layouts'],['files','Files'],['photos','Photos'],['drawings','Drawings'],['notes','Notes']];
+const ebIc = (p, s, w) => `<svg width="${s || 16}" height="${s || 16}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${w || 2}" stroke-linecap="round" stroke-linejoin="round">${p}</svg>`;
+const EB_CLIP = '<svg class="eb-clip" width="22" height="54" viewBox="0 0 22 54" aria-hidden="true"><path d="M7 40V10a5 5 0 0 1 10 0v34a8 8 0 0 1-16 0V14" fill="none" stroke="#9CA3AF" stroke-width="2.6" stroke-linecap="round"/><path d="M7 40V10a5 5 0 0 1 10 0v34a8 8 0 0 1-16 0V14" fill="none" stroke="#E5E7EB" stroke-width="1" stroke-linecap="round"/></svg>';
+function ebEsc(v){ return String(v == null ? '' : v).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function ebRp(n){ return 'Rp ' + Math.round(Number(n) || 0).toLocaleString('id-ID'); }
+function ebNum(v){ const d = String(v == null ? '' : v).replace(/[^0-9]/g, ''); return d ? Number(d) : 0; }
+function ebDate(ds){ if(!ds) return ''; const d = new Date(String(ds).slice(0, 10) + 'T00:00:00'); return isNaN(d) ? '' : d.toLocaleDateString('en-GB', {weekday:'short', day:'numeric', month:'short'}).replace(',', ''); }
+function ebShortDate(ts){ const d = new Date(ts); return isNaN(d) ? '' : d.toLocaleDateString('en-GB', {day:'numeric', month:'short'}); }
+function ebToday(){ return evTodayStr(); }
+function ebId(){ return Date.now().toString(36) + Math.random().toString(36).slice(2, 7); }
+function ebMe(){
+  const p = myProfile || {};
+  const dep = Array.isArray(p.departments) && p.departments[0] ? p.departments[0] : (typeof roleName === 'function' ? roleName(p.role) : '');
+  return { id:p.id || null, name:((p.first_name || '') + ' ' + (p.last_name || '')).trim() || (typeof currentUser !== 'undefined' && currentUser && currentUser.name) || 'Someone', dept:dep || '', role:p.role || '' };
+}
+function ebIsManager(){ return !myProfile || ['superadmin','director','manager'].includes(myProfile.role) || myProfile.is_owner; }
+function ebCanReceipt(){ if(ebReadOnly()) return false; if(ebIsManager()) return true; return (myProfile && (myProfile.departments || []).some(d => /sales/i.test(d))); }
+function ebReadOnly(){ return typeof evViewOnly === 'function' && evViewOnly(); }
+function ebBoard(){
+  if(!beoBoard || typeof beoBoard !== 'object') beoBoard = {};
+  const b = beoBoard;
+  if(!Array.isArray(b.items)) b.items = [];
+  if(!b.pay || typeof b.pay !== 'object') b.pay = {};
+  if(!Array.isArray(b.pay.payments)) b.pay.payments = [];
+  if(b.pay.taxPct == null) b.pay.taxPct = ebTaxDefault();
+  return b;
+}
+function ebTaxDefault(){ try{ const v = appSettings && appSettings.tax_service_pct; const n = parseFloat(v); if(!isNaN(n)) return n; }catch(e){} return EB_TAX_DEFAULT; }
+function ebTotals(){
+  const p = ebBoard().pay;
+  const sub = Number(p.subtotal) || 0, tax = Math.round(sub * (Number(p.taxPct) || 0) / 100), extras = Number(p.extras) || 0;
+  const grand = sub ? sub + tax + extras : (Number(p.grand) || 0);
+  const paid = p.payments.filter(x => x.paid).reduce((s, x) => s + (Number(x.amount) || 0), 0);
+  return { sub, tax, extras, grand, paid, balance: Math.max(0, grand - paid), pct: grand ? Math.min(100, Math.round(paid / grand * 100)) : 0 };
+}
+function ebSave(){
+  beoBoard = JSON.parse(JSON.stringify(ebBoard()));
+  ebSyncButton();
+  if(typeof beoTriggerSave === 'function') beoTriggerSave();
+}
+// Event status follows the money: some paid = Deposit paid, all paid = Fully paid (never undoes a Cancelled)
+function ebSyncStatus(){
+  const sel = document.getElementById('beo-status'); if(!sel) return;
+  const T = ebTotals(), P = ebBoard().pay.payments;
+  if(!P.length || sel.value === 'Cancelled') return;
+  const all = P.every(x => x.paid) && T.grand && T.paid >= T.grand, some = P.some(x => x.paid);
+  const want = all ? 'Fully paid' : some ? 'Deposit paid' : null;
+  if(want && sel.value !== want){ sel.value = want; toast('Event status is now "' + want + '"'); }
+}
+function ebSyncButton(){
+  const b = document.getElementById('eb-open-btn'); if(!b) return;
+  const n = ebBoard().items.length, T = ebTotals();
+  const pay = ebBoard().pay.payments.length ? ` · ${T.pct}% paid` : '';
+  b.querySelector('.eb-n').textContent = n ? n + (n === 1 ? ' item' : ' items') + pay : 'Receipts, files & notes';
+}
+
+// ── Files ──
+async function ebUpload(file){
+  if(file.size > 15 * 1048576) throw new Error('too big');
+  let body = file, type = file.type || 'application/octet-stream', name = file.name || 'file';
+  if(/^image\/(jpeg|png|webp|heic|heif)/.test(type)){
+    try{ body = await ebShrink(file); type = 'image/jpeg'; name = name.replace(/\.[^.]+$/, '') + '.jpg'; }catch(e){}
+  }
+  const safe = name.replace(/[^A-Za-z0-9._-]+/g, '_').slice(-70);
+  const path = (myProfile ? myProfile.company_id + '/' : '') + 'events/' + (beoCurrentId || 'x') + '/' + Date.now() + '-' + safe;
+  const up = await sb.storage.from(EB_BUCKET).upload(path, body, { contentType:type, upsert:false });
+  if(up.error) throw up.error;
+  return { path, name, type, size: body.size || file.size };
+}
+function ebShrink(file){
+  return new Promise((ok, bad) => {
+    const url = URL.createObjectURL(file), img = new Image();
+    img.onload = () => {
+      let w = img.width, h = img.height, M = 2000;
+      if(w > M || h > M){ if(w > h){ h = Math.round(h * M / w); w = M; } else { w = Math.round(w * M / h); h = M; } }
+      const c = document.createElement('canvas'); c.width = w; c.height = h; c.getContext('2d').drawImage(img, 0, 0, w, h);
+      URL.revokeObjectURL(url);
+      c.toBlob(b => b ? ok(b) : bad(new Error('no image')), 'image/jpeg', .85);
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); bad(new Error('not an image')); };
+    img.src = url;
+  });
+}
+async function ebSignAll(){
+  const paths = [];
+  ebBoard().items.forEach(it => (it.files || []).forEach(f => { if(f.path && !EB.urls[f.path]) paths.push(f.path); }));
+  if(!paths.length) return;
+  try{
+    const { data } = await sb.storage.from(EB_BUCKET).createSignedUrls(paths, 43200);
+    (data || []).forEach(r => { if(r.signedUrl) EB.urls[r.path] = r.signedUrl; });
+  }catch(e){ console.warn('[board] links', e); }
+}
+const ebUrl = f => (f && (EB.urls[f.path] || f.url)) || '';
+const ebIsImg = f => f && /^image\//.test(f.type || '');
+function ebSize(b){ b = Number(b) || 0; return b > 1048576 ? (b / 1048576).toFixed(1) + ' MB' : Math.max(1, Math.round(b / 1024)) + ' KB'; }
+
+// ── Overlay ──
+function ebEnsureUi(){
+  if(document.getElementById('eb-ov')) return;
+  const st = document.createElement('style'); st.textContent = `
+#eb-ov{position:fixed;inset:0;background:rgba(15,30,46,.55);display:none;align-items:center;justify-content:center;z-index:10002;padding:20px}
+#eb-ov.on{display:flex}
+.eb-pop{background:#F4F4F2;width:min(1280px,100%);height:min(94vh,100%);border-radius:22px;display:flex;flex-direction:column;overflow:hidden;font-family:Inter,sans-serif;color:#0F1E2E}
+.eb-top{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;padding:20px 24px 14px;background:#fff;border-bottom:1px solid #E7E5E0}
+.eb-top small{font-size:11px;font-weight:800;letter-spacing:1.2px;color:#0D9488}.eb-top h2{margin:2px 0 0;font-size:22px;letter-spacing:-.4px}
+.eb-x{border:0;background:#F1F5F9;width:40px;height:40px;border-radius:50%;font-size:24px;line-height:1;cursor:pointer;color:#475569;flex:none}
+.eb-body{flex:1;overflow-y:auto;padding:20px 24px 30px;-webkit-overflow-scrolling:touch}
+.eb-pay{background:#0F1E2E;color:#fff;border-radius:20px;padding:18px 22px;display:grid;grid-template-columns:repeat(3,minmax(0,1fr)) minmax(0,1.3fr);gap:18px;align-items:center}
+.eb-pay small{display:block;font-size:11px;font-weight:800;letter-spacing:1.2px;color:#94A3B8}
+.eb-pay b{display:block;font-size:21px;margin-top:4px;letter-spacing:-.4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.eb-pay em{font-style:normal;font-size:12.5px;color:#CBD5E1}
+.eb-bar{height:10px;border-radius:5px;background:rgba(255,255,255,.12);overflow:hidden;margin:8px 0 6px}.eb-bar i{display:block;height:100%;background:#2DD4BF}
+.eb-paybtn{margin-top:8px;border:1px solid rgba(255,255,255,.25);background:rgba(255,255,255,.08);color:#fff;border-radius:999px;padding:6px 12px;font:700 12px Inter,sans-serif;cursor:pointer}
+.eb-payempty{background:#0F1E2E;color:#fff;border-radius:20px;padding:18px 22px;display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap}
+.eb-payempty b{font-size:16px}.eb-payempty span{display:block;color:#CBD5E1;font-size:13px;margin-top:3px}
+.eb-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:22px 0 10px;flex-wrap:wrap}
+.eb-head h3{margin:0;font-size:19px}.eb-head p{margin:2px 0 0;color:#64748B;font-size:13.5px}
+.eb-add{background:#C4973B;color:#0F1E2E;border:0;border-radius:999px;padding:11px 18px;font:800 14px Inter,sans-serif;cursor:pointer;display:inline-flex;gap:7px;align-items:center}
+.eb-chips{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:6px}
+.eb-chip{background:#fff;border:1px solid #E7E5E0;border-radius:999px;padding:7px 13px;font:700 13px Inter,sans-serif;color:#64748B;cursor:pointer}
+.eb-chip.on{background:#F3E6C9;border-color:#E9D3A3;color:#7A5A16}
+.eb-board{background:#EFEDE8;border:1px solid #E4E0D8;border-radius:22px;padding:30px 22px 22px;display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:24px 20px;align-items:start}
+.eb-card{position:relative;background:#fff;border-radius:10px;border:1px solid #ECEAE5;box-shadow:0 1px 2px rgba(15,30,46,.06),0 6px 16px rgba(15,30,46,.06);padding:18px 16px 12px;min-width:0}
+.eb-card.done{opacity:.6}
+.eb-clip{position:absolute;top:-14px;right:22px}
+.eb-kind{display:flex;align-items:center;gap:6px;font-size:11px;font-weight:800;letter-spacing:.9px;text-transform:uppercase;color:#64748B;margin-bottom:8px;padding-right:34px}
+.eb-kind svg{color:#94A3B8}
+.eb-card h4{margin:0 0 8px;font-size:15.5px;letter-spacing:-.2px;line-height:1.3;word-break:break-word}
+.eb-amt{font-size:20px;font-weight:900;letter-spacing:-.4px;margin:0 0 8px}
+.eb-img{display:block;width:100%;border-radius:4px;border:1px solid #EEE;cursor:zoom-in;background:#F7F7F5;max-height:360px;object-fit:contain}
+.eb-thumbs{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}.eb-thumbs img{width:100%;height:96px;object-fit:cover;border-radius:4px;cursor:zoom-in;background:#F7F7F5}
+.eb-thumbs.n1{grid-template-columns:1fr}.eb-thumbs.n1 img{height:auto;max-height:360px;object-fit:contain}.eb-thumbs.n2{grid-template-columns:1fr 1fr}.eb-thumbs.n2 img{height:130px}
+.eb-doc{display:flex;gap:12px;align-items:center;text-decoration:none;color:inherit;padding:10px;border:1px solid #EEF0F2;border-radius:8px;background:#FAFAF9}
+.eb-doc .pg{width:46px;height:58px;border-radius:4px;background:#fff;border:1px solid #E2E8F0;display:flex;align-items:center;justify-content:center;color:#2563EB;flex:none;font:900 10px Inter,sans-serif}
+.eb-doc b{display:block;font-size:13.5px;word-break:break-word}.eb-doc span{font-size:12px;color:#64748B}
+.eb-open{display:inline-flex;margin-top:8px;font-size:13px;font-weight:800;color:#0D9488;text-decoration:none}
+.eb-txt{font-size:14.5px;line-height:1.5;white-space:pre-wrap;word-break:break-word;color:#1E293B}
+.eb-ck{list-style:none;padding:0;margin:6px 0 0;font-size:14px;line-height:1.45}
+.eb-ck li{display:flex;gap:9px;align-items:flex-start;margin:7px 0;cursor:pointer}
+.eb-ck li i{width:18px;height:18px;border-radius:5px;border:2px solid #CBD5E1;flex:none;margin-top:1px;display:flex;align-items:center;justify-content:center;color:#fff}
+.eb-ck li.on{color:#94A3B8;text-decoration:line-through}.eb-ck li.on i{background:#0D9488;border-color:#0D9488}
+.eb-map{width:100%;height:170px;border:0;border-radius:4px;display:block;background:#EEF2E9}
+.eb-row{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-top:10px}
+.eb-paid{display:inline-flex;align-items:center;gap:5px;background:#DCFCE7;color:#15803D;font-weight:800;font-size:12px;border-radius:999px;padding:4px 10px}
+.eb-wait{display:inline-flex;align-items:center;gap:5px;background:#FEF3C7;color:#B45309;font-weight:800;font-size:12px;border-radius:999px;padding:4px 10px}
+.eb-late{background:#FEE2E2;color:#B91C1C}
+.eb-drop{border:2px dashed #E2C98E;border-radius:8px;padding:16px;text-align:center;color:#9A7424;font-weight:700;font-size:13.5px;background:#FFFBF2;cursor:pointer;width:100%;font-family:inherit}
+.eb-drop span{display:block;font-weight:600;font-size:12px;color:#B08A3E;margin-top:2px}
+.eb-meta{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-top:10px;font-size:12px;color:#94A3B8;font-weight:600}
+.eb-who{display:flex;align-items:center;gap:6px;min-width:0}.eb-who span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.eb-who i{width:20px;height:20px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;color:#fff;font-style:normal;font-size:9.5px;font-weight:800;flex:none}
+.eb-more{border:0;background:none;color:#94A3B8;cursor:pointer;padding:2px 4px;border-radius:6px;margin-right:-4px;display:flex}
+.eb-more:hover{background:#F1F5F9;color:#475569}
+.eb-empty{grid-column:1/-1;text-align:center;color:#94A3B8;padding:30px 10px;font-size:14px;line-height:1.6}
+.eb-sheet{position:fixed;inset:0;background:rgba(15,30,46,.5);z-index:10010;display:flex;align-items:center;justify-content:center;padding:16px}
+.eb-form{background:#fff;border-radius:18px;width:min(520px,100%);max-height:92vh;overflow-y:auto;padding:20px 20px 16px;font-family:Inter,sans-serif;color:#0F1E2E}
+.eb-form h3{margin:0 0 4px;font-size:19px}.eb-form .sub{color:#64748B;font-size:13px;margin:0 0 14px}
+.eb-form label{display:block;font-size:12px;font-weight:800;color:#475569;margin:12px 0 5px}
+.eb-form input,.eb-form textarea,.eb-form select{width:100%;border:1.5px solid #E2E8F0;border-radius:10px;padding:10px 12px;font:500 15px Inter,sans-serif;color:#0F1E2E;outline:none;background:#fff}
+.eb-form input:focus,.eb-form textarea:focus,.eb-form select:focus{border-color:#0D9488}
+.eb-form textarea{min-height:90px;resize:vertical}
+.eb-fbtns{display:flex;gap:10px;justify-content:flex-end;margin-top:18px}
+.eb-fbtns button{border:0;border-radius:999px;padding:11px 18px;font:800 14px Inter,sans-serif;cursor:pointer}
+.eb-go{background:#0F1E2E;color:#fff}.eb-go:disabled{opacity:.5;cursor:default}.eb-no{background:#F1F5F9;color:#475569}
+.eb-pick{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.eb-pick button{display:flex;align-items:center;gap:12px;text-align:left;border:1.5px solid #E7E5E0;background:#fff;border-radius:14px;padding:14px;font:700 14.5px Inter,sans-serif;color:#0F1E2E;cursor:pointer}
+.eb-pick button:hover{border-color:#C4973B;background:#FFFBF2}
+.eb-pick button span{width:36px;height:36px;border-radius:10px;background:#F3E6C9;color:#7A5A16;display:flex;align-items:center;justify-content:center;flex:none}
+.eb-pick button small{display:block;font-weight:500;color:#64748B;font-size:12px;margin-top:2px}
+.eb-pick button:disabled{opacity:.45;cursor:default}
+.eb-prow{display:grid;grid-template-columns:1.2fr 1fr 1fr 34px;gap:8px;align-items:center;margin-bottom:8px}
+.eb-prow button{border:0;background:#FEE2E2;color:#B91C1C;width:34px;height:40px;border-radius:10px;cursor:pointer;font-size:18px}
+.eb-totline{display:flex;justify-content:space-between;font-size:14px;margin:6px 0;color:#475569}.eb-totline b{color:#0F1E2E}
+.eb-pad{width:100%;height:320px;border:1.5px solid #E2E8F0;border-radius:12px;background:#FFFEFA;touch-action:none;display:block}
+.eb-padbar{display:flex;gap:8px;margin-top:8px;flex-wrap:wrap}.eb-padbar button{border:1.5px solid #E2E8F0;background:#fff;border-radius:999px;padding:7px 12px;font:700 13px Inter,sans-serif;cursor:pointer}
+.eb-padbar button.on{border-color:#0F1E2E;background:#0F1E2E;color:#fff}
+.eb-menu{position:fixed;z-index:10011;background:#fff;border-radius:12px;box-shadow:0 10px 30px rgba(15,30,46,.2);padding:6px;min-width:170px;font-family:Inter,sans-serif}
+.eb-menu button{display:block;width:100%;text-align:left;border:0;background:none;padding:10px 12px;border-radius:8px;font:600 14px Inter,sans-serif;color:#0F1E2E;cursor:pointer}
+.eb-menu button:hover{background:#F1F5F9}.eb-menu button.red{color:#DC2626}
+.eb-view{position:fixed;inset:0;background:rgba(0,0,0,.92);z-index:10020;display:flex;align-items:center;justify-content:center;padding:20px}
+.eb-view img{max-width:100%;max-height:100%;object-fit:contain}
+.pnl-open.eb-btn{background:#C4973B!important;color:#0F1E2E!important}
+@media(max-width:860px){.eb-pay{grid-template-columns:1fr 1fr;gap:14px}.eb-pay>div:last-child{grid-column:1/-1}.eb-pay b{font-size:18px}}
+@media(max-width:700px){#eb-ov{padding:0}.eb-pop{width:100vw;height:100%;border-radius:0}.eb-top{padding:calc(12px + env(safe-area-inset-top)) 16px 12px}.eb-body{padding:14px 14px 30px}.eb-board{grid-template-columns:1fr;padding:26px 14px 14px;gap:24px}.eb-pick{grid-template-columns:1fr}.eb-sheet{align-items:flex-end;padding:0}.eb-form{border-radius:18px 18px 0 0;width:100%;padding-bottom:calc(16px + env(safe-area-inset-bottom))}.eb-prow{grid-template-columns:1fr 1fr 34px;margin-bottom:14px}.eb-prow input:first-child{grid-column:1/-1}}
+`;
+  document.head.appendChild(st);
+  const ov = document.createElement('div'); ov.id = 'eb-ov';
+  ov.innerHTML = `<div class="eb-pop"><div class="eb-top"><div><small id="eb-ev">EVENT BOARD</small><h2 id="eb-title">Board</h2></div><button class="eb-x" onclick="ebClose()" aria-label="Close">×</button></div><div class="eb-body" id="eb-body"></div></div>`;
+  ov.addEventListener('mousedown', e => { if(e.target === ov) ebClose(); });
+  document.body.appendChild(ov);
+}
+window.ebOpen = async function(){
+  ebEnsureUi(); ebBoard();
+  const name = (document.getElementById('det-name')?.textContent || '').trim() || 'Untitled Event';
+  document.getElementById('eb-title').textContent = name;
+  const dt = document.getElementById('det-date')?.value;
+  document.getElementById('eb-ev').textContent = 'EVENT BOARD' + (dt ? ' · ' + ebDate(dt).toUpperCase() : '');
+  document.getElementById('eb-ov').classList.add('on');
+  ebRender();
+  await ebSignAll(); ebRender();
+  try{ history.pushState(Object.assign({}, history.state || {}, { ebOpen:true }), '', location.hash || '#beo'); }catch(e){}
+};
+window.ebClose = function(){ const ov = document.getElementById('eb-ov'); if(ov && ov.classList.contains('on')){ ov.classList.remove('on'); if(history.state && history.state.ebOpen) history.back(); } };
+window.addEventListener('popstate', () => { const ov = document.getElementById('eb-ov'); if(ov && ov.classList.contains('on') && !(history.state && history.state.ebOpen)){ ov.classList.remove('on'); ebCloseSheets(); } });
+
+function ebPayHtml(){
+  const b = ebBoard(), P = b.pay.payments, T = ebTotals();
+  if(!P.length && !T.grand){
+    return `<div class="eb-payempty"><div><b>Payments</b><span>Add the client's total and their payments (deposits, balance) to track what's been paid.</span></div>${ebReadOnly() ? '' : `<button class="eb-add" onclick="ebEditPayments()">Set up payments</button>`}</div>`;
+  }
+  const next = P.filter(x => !x.paid).sort((a, c) => String(a.due || '9').localeCompare(String(c.due || '9')))[0];
+  const late = next && next.due && next.due < ebToday();
+  const steps = P.map(x => `${ebEsc(x.label || 'Payment')} ${x.paid ? '✓' : (x.due && x.due < ebToday() ? '- late' : '- waiting')}`).join(' &nbsp;·&nbsp; ');
+  return `<div class="eb-pay">
+    <div><small>GRAND TOTAL</small><b>${ebRp(T.grand)}</b><em>${T.sub ? 'incl. Tax &amp; Service ' + String(b.pay.taxPct).replace('.', ',') + '%' + (Number(b.pay.taxPct) !== ebTaxDefault() ? ' (special rate)' : '') : 'Total to pay'}</em></div>
+    <div><small>PAID</small><b style="color:#2DD4BF">${ebRp(T.paid)}</b><em>${P.filter(x => x.paid).length} of ${P.length} payment${P.length === 1 ? '' : 's'}</em></div>
+    <div><small>BALANCE</small><b style="color:${T.balance ? (late ? '#F87171' : '#FCD34D') : '#4ADE80'}">${T.balance ? ebRp(T.balance) : 'Paid in full'}</b><em>${next ? (next.due ? (late ? 'Was due ' : 'Due ') + ebDate(next.due) : 'No due date') : 'Nothing left to pay'}</em></div>
+    <div><small>${T.pct}% PAID</small><div class="eb-bar"><i style="width:${T.pct}%"></i></div><em>${steps || 'No payments yet'}</em>${ebReadOnly() ? '' : `<br><button class="eb-paybtn" onclick="ebEditPayments()">Edit total &amp; payments</button>`}</div>
+  </div>`;
+}
+function ebCardHtml(it){
+  const K = EB_KINDS[it.type] || EB_KINDS.note, files = it.files || [];
+  const who = it.by || {}, ini = String(who.name || '?').split(/\s+/).map(w => w[0]).join('').slice(0, 2).toUpperCase();
+  const col = ({superadmin:'#0F1E2E', director:'#DC2626', manager:'#16A34A', supervisor:'#2563EB', teammember:'#B8862F', dailyworker:'#7C8AA0'})[who.role] || '#0D9488';
+  let body = '';
+  if(it.type === 'receipt'){
+    const pay = ebBoard().pay.payments.find(p => p.id === it.paymentId);
+    body += `<div class="eb-amt">${ebRp(it.amount)}</div>`;
+    const f = files[0];
+    if(f) body += ebIsImg(f) ? `<img class="eb-img" src="${ebEsc(ebUrl(f))}" alt="Receipt" onclick="ebZoom(this.src)" loading="lazy">` : ebDocHtml(f);
+    body += `<div class="eb-row">${it.paidOn ? `<span class="eb-paid">${ebIc('<path d="M20 6 9 17l-5-5"/>', 13, 2.6)} Paid ${ebShortDate(it.paidOn + 'T00:00:00')}</span>` : ''}<span style="font-size:12px;color:#64748B;font-weight:700">${ebEsc(it.method || 'Bank transfer')}</span></div>`;
+  } else if(it.type === 'map'){
+    if(it.title) body += `<h4>${ebEsc(it.title)}</h4>`;
+    const q = it.place || it.link || '';
+    if(q) body += `<iframe class="eb-map" loading="lazy" referrerpolicy="no-referrer-when-downgrade" src="https://www.google.com/maps?q=${encodeURIComponent(q)}&output=embed"></iframe>`;
+    if(it.text) body += `<div class="eb-txt" style="margin-top:8px;font-size:13.5px">${ebEsc(it.text)}</div>`;
+    if(q) body += `<a class="eb-open" target="_blank" rel="noopener" href="${ebEsc(/^https?:/i.test(it.link || '') ? it.link : 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(q))}">Open in Maps ↗</a>`;
+  } else {
+    if(it.title) body += `<h4>${ebEsc(it.title)}</h4>`;
+    const imgs = files.filter(ebIsImg), docs = files.filter(f => !ebIsImg(f));
+    if(imgs.length) body += it.type === 'photo' && imgs.length > 1 ? `<div class="eb-thumbs n${Math.min(3, imgs.length)}">${imgs.map(f => `<img src="${ebEsc(ebUrl(f))}" alt="" onclick="ebZoom(this.src)" loading="lazy">`).join('')}</div>`
+      : imgs.map(f => `<img class="eb-img" src="${ebEsc(ebUrl(f))}" alt="" onclick="ebZoom(this.src)" loading="lazy">`).join('');
+    docs.forEach(f => body += ebDocHtml(f));
+    if(it.text) body += `<div class="eb-txt"${imgs.length || docs.length ? ' style="margin-top:8px;font-size:13.5px"' : ''}>${ebEsc(it.text)}</div>`;
+    if(it.checklist && it.checklist.length) body += `<ul class="eb-ck">${it.checklist.map((c, i) => `<li class="${c.done ? 'on' : ''}" onclick="ebTick('${it.id}',${i})"><i>${c.done ? ebIc('<path d="M20 6 9 17l-5-5"/>', 12, 3) : ''}</i><span>${ebEsc(c.t)}</span></li>`).join('')}</ul>`;
+    if(it.link) body += `<a class="eb-open" target="_blank" rel="noopener" href="${ebEsc(it.link)}">Open link ↗</a>`;
+  }
+  const rpay = it.type === 'receipt' ? ebBoard().pay.payments.find(p => p.id === it.paymentId) : null;
+  const label = K.label + (rpay && rpay.label ? ' · ' + rpay.label : it.type === 'photo' && files.length > 1 ? ' · ' + files.length : '');
+  const more = ebReadOnly() ? '' : `<button class="eb-more" onclick="ebMenu(event,'${it.id}')" aria-label="More">${ebIc('<circle cx="5" cy="12" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/>', 18, 3)}</button>`;
+  return `<div class="eb-card${it.done ? ' done' : ''}">${EB_CLIP}
+    <div class="eb-kind">${ebIc(K.icon, 14, 2.2)} ${ebEsc(label)}</div>${body}
+    <div class="eb-meta"><span class="eb-who"><i style="background:${col}">${ebEsc(ini)}</i><span>${ebEsc((who.name || '').split(' ')[0])}${who.dept ? ' · ' + ebEsc(who.dept) : ''}</span></span><span style="display:flex;align-items:center;gap:2px;flex:none">${ebShortDate(it.at)}${more}</span></div></div>`;
+}
+function ebDocHtml(f){
+  const ext = (String(f.name || '').split('.').pop() || 'FILE').slice(0, 4).toUpperCase();
+  return `<a class="eb-doc" href="${ebEsc(ebUrl(f))}" target="_blank" rel="noopener"><div class="pg">${ebEsc(ext)}</div><div><b>${ebEsc(f.name || 'File')}</b><span>${ebSize(f.size)} · Open ↗</span></div></a>`;
+}
+function ebDueCards(){
+  // Payments still waiting get an empty receipt card, so Sales can drop the bank receipt straight in
+  return ebBoard().pay.payments.filter(p => !p.paid).map(p => {
+    const late = p.due && p.due < ebToday();
+    return `<div class="eb-card">${EB_CLIP}<div class="eb-kind">${ebIc(EB_KINDS.receipt.icon, 14, 2.2)} Receipt · ${ebEsc(p.label || 'Payment')}</div><div class="eb-amt">${ebRp(p.amount)}</div>
+      ${ebCanReceipt() ? `<button class="eb-drop" onclick="ebAdd('receipt','${p.id}')">+ Add the bank receipt<span>Photo or PDF of the client's transfer</span></button>` : `<div class="eb-drop" style="cursor:default">Waiting for the client's payment<span>Sales adds the receipt when it arrives</span></div>`}
+      <div class="eb-row"><span class="eb-wait${late ? ' eb-late' : ''}">${ebIc('<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>', 13, 2.4)} ${p.due ? (late ? 'Late · was due ' : 'Due ') + ebDate(p.due) : 'No due date'}</span></div></div>`;
+  }).join('');
+}
+function ebRender(){
+  const body = document.getElementById('eb-body'); if(!body) return;
+  const b = ebBoard();
+  const counts = {}; b.items.forEach(it => { const g = (EB_KINDS[it.type] || EB_KINDS.note).group; counts[g] = (counts[g] || 0) + 1; });
+  const waiting = b.pay.payments.filter(p => !p.paid).length;
+  let items = b.items.slice().sort((x, y) => (x.done ? 1 : 0) - (y.done ? 1 : 0) || String(y.at).localeCompare(String(x.at)));
+  if(EB.filter !== 'all') items = items.filter(it => (EB_KINDS[it.type] || EB_KINDS.note).group === EB.filter);
+  const showDue = EB.filter === 'all' || EB.filter === 'receipts';
+  const cards = (showDue ? ebDueCards() : '') + items.map(ebCardHtml).join('');
+  body.innerHTML = ebPayHtml() + `
+    <div class="eb-head"><div><h3>Board</h3><p>Receipts, layouts, files, photos, maps, drawings and notes - for everyone on this event</p></div>${ebReadOnly() ? '' : `<button class="eb-add" onclick="ebAddMenu()">+ Add to board</button>`}</div>
+    <div class="eb-chips">${EB_GROUPS.map(([k, l]) => { const n = k === 'all' ? b.items.length : (counts[k] || 0) + (k === 'receipts' ? waiting : 0); return `<button class="eb-chip${EB.filter === k ? ' on' : ''}" onclick="ebFilter('${k}')">${l}${n ? ' ' + n : ''}</button>`; }).join('')}</div>
+    <div class="eb-board">${cards || `<div class="eb-empty">Nothing here yet.<br>${ebReadOnly() ? '' : 'Tap <b>+ Add to board</b> to pin a receipt, layout, file, photo, map, drawing or note.'}</div>`}</div>`;
+  ebSyncButton();
+}
+window.ebFilter = function(k){ EB.filter = k; ebRender(); };
+window.ebZoom = function(src){ const v = document.createElement('div'); v.className = 'eb-view'; v.innerHTML = `<img src="${ebEsc(src)}" alt="">`; v.onclick = () => v.remove(); document.body.appendChild(v); };
+window.ebTick = function(id, i){
+  if(ebReadOnly()) return;
+  const it = ebBoard().items.find(x => x.id === id); if(!it || !it.checklist || !it.checklist[i]) return;
+  it.checklist[i].done = !it.checklist[i].done; ebRender(); ebSave();
+};
+function ebCloseSheets(){ document.querySelectorAll('.eb-sheet,.eb-menu').forEach(x => x.remove()); }
+document.addEventListener('mousedown', e => { if(!e.target.closest('.eb-menu') && !e.target.closest('.eb-more')) document.querySelectorAll('.eb-menu').forEach(x => x.remove()); });
+window.ebMenu = function(e, id){
+  e.stopPropagation(); ebCloseSheets();
+  const it = ebBoard().items.find(x => x.id === id); if(!it) return;
+  const me = ebMe(), mine = it.by && it.by.id && it.by.id === me.id, can = mine || ebIsManager() || (it.type === 'receipt' && ebCanReceipt());
+  const m = document.createElement('div'); m.className = 'eb-menu';
+  m.innerHTML = (it.type !== 'receipt' ? `<button data-a="done">${it.done ? 'Not done yet' : 'Mark as done'}</button>` : '') + (can ? `<button data-a="edit">Edit</button><button data-a="del" class="red">Remove from board</button>` : '') || '<button disabled>Only the person who added it can change it</button>';
+  document.body.appendChild(m);
+  const r = e.currentTarget.getBoundingClientRect();
+  m.style.top = Math.min(window.innerHeight - m.offsetHeight - 10, r.bottom + 4) + 'px';
+  m.style.left = Math.max(10, Math.min(window.innerWidth - m.offsetWidth - 10, r.right - m.offsetWidth)) + 'px';
+  m.querySelectorAll('[data-a]').forEach(btn => btn.onclick = () => {
+    m.remove();
+    if(btn.dataset.a === 'done'){ it.done = !it.done; ebRender(); ebSave(); }
+    if(btn.dataset.a === 'edit') ebForm(it.type, it);
+    if(btn.dataset.a === 'del') appConfirmShow({ title:'Remove from the board?', msg: it.type === 'receipt' ? 'The payment it belongs to will go back to "not paid".' : 'This removes it for everyone on the event.', onOk: () => ebDelete(it) });
+  });
+};
+function ebDelete(it){
+  const b = ebBoard();
+  b.items = b.items.filter(x => x.id !== it.id);
+  if(it.type === 'receipt' && it.paymentId){ const p = b.pay.payments.find(x => x.id === it.paymentId); if(p && p.receiptId === it.id){ p.paid = false; p.paidOn = null; p.receiptId = null; } ebSyncStatus(); }
+  const paths = (it.files || []).map(f => f.path).filter(Boolean);
+  if(paths.length) sb.storage.from(EB_BUCKET).remove(paths).catch(() => {});
+  ebRender(); ebSave(); toast('Removed from the board');
+}
+window.ebAddMenu = function(){
+  ebCloseSheets();
+  const opt = (k, title, sub, dis) => `<button data-k="${k}"${dis ? ' disabled' : ''}><span>${ebIc(EB_KINDS[k].icon, 18)}</span><div>${title}<small>${sub}</small></div></button>`;
+  const s = document.createElement('div'); s.className = 'eb-sheet';
+  s.innerHTML = `<div class="eb-form"><h3>Add to the board</h3><p class="sub">Everyone on this event will see it</p><div class="eb-pick">
+    ${opt('receipt', 'Bank receipt', ebCanReceipt() ? 'Proof of a client payment' : 'Sales and managers only', !ebCanReceipt())}${opt('layout', 'Layout / floor plan', 'Image or PDF')}
+    ${opt('file', 'File', 'PDF, Word, Excel…')}${opt('photo', 'Photos', 'One or several')}
+    ${opt('map', 'Map / location', 'A place or Google Maps link')}${opt('drawing', 'Drawing', 'Sketch it with your finger')}
+    ${opt('note', 'Note', 'Text and a to-do list')}</div><div class="eb-fbtns"><button class="eb-no">Cancel</button></div></div>`;
+  s.addEventListener('mousedown', e => { if(e.target === s) s.remove(); });
+  s.querySelector('.eb-no').onclick = () => s.remove();
+  s.querySelectorAll('[data-k]').forEach(b => b.onclick = () => { s.remove(); ebAdd(b.dataset.k); });
+  document.body.appendChild(s);
+};
+window.ebAdd = function(type, paymentId){ ebForm(type, null, paymentId); };
+
+// One form for every kind of card (new or edit)
+function ebForm(type, it, paymentId){
+  ebCloseSheets();
+  const edit = !!it, K = EB_KINDS[type];
+  const b = ebBoard(), pays = b.pay.payments;
+  let files = edit ? (it.files || []).slice() : [];
+  const s = document.createElement('div'); s.className = 'eb-sheet';
+  const accept = type === 'receipt' || type === 'layout' ? 'image/*,application/pdf' : type === 'photo' ? 'image/*' : type === 'file' ? '.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.csv,.txt,image/*,application/pdf' : '';
+  let f = '';
+  if(type === 'receipt'){
+    const pid = edit ? it.paymentId : paymentId;
+    f += `<label>Which payment</label><select id="ebf-pay">${pays.map(p => `<option value="${p.id}"${p.id === pid ? ' selected' : ''}>${ebEsc(p.label || 'Payment')} · ${ebRp(p.amount)}${p.paid && p.id !== pid ? ' (paid)' : ''}</option>`).join('')}<option value="">Another payment (not on the list)</option></select>
+      <label>Amount received (Rp)</label><input id="ebf-amt" inputmode="numeric" value="${edit ? ebEsc((it.amount || 0).toLocaleString('id-ID')) : ''}" placeholder="e.g. 129.483.200">
+      <label>Date paid</label><input id="ebf-date" type="date" value="${edit ? ebEsc(it.paidOn || '') : ebToday()}">
+      <label>How they paid</label><select id="ebf-method">${['Bank transfer','Card','Cash','Other'].map(m => `<option${edit && it.method === m ? ' selected' : ''}>${m}</option>`).join('')}</select>`;
+  }
+  if(type === 'map'){
+    f += `<label>Title</label><input id="ebf-title" value="${edit ? ebEsc(it.title || '') : ''}" placeholder="e.g. Coach drop-off - Luna lobby">
+      <label>Place or Google Maps link</label><input id="ebf-place" value="${edit ? ebEsc(it.link || it.place || '') : ''}" placeholder="e.g. Luna Beach Club, Bali - or paste a maps link">
+      <label>Note (optional)</label><textarea id="ebf-text" placeholder="e.g. GRO with 60 umbrellas here from 14:00">${edit ? ebEsc(it.text || '') : ''}</textarea>`;
+  }
+  if(['layout','file','photo','note','drawing'].includes(type)){
+    f += `<label>Title${type === 'note' ? ' (optional)' : ''}</label><input id="ebf-title" value="${edit ? ebEsc(it.title || '') : ''}" placeholder="${({layout:'e.g. LBG layout - buffet, bar & stage', file:'e.g. Wine list - VIPs only', photo:'e.g. Wristbands - VIP, Managerial, Non-VIP', note:'e.g. On the day', drawing:'e.g. Sofas facing the stage'})[type]}">`;
+  }
+  if(type === 'drawing') f += `<label>Draw here</label><canvas class="eb-pad" id="ebf-pad"></canvas><div class="eb-padbar"><button data-c="#0F1E2E" class="on">Black</button><button data-c="#DC2626">Red</button><button data-c="#0D9488">Teal</button><button data-w="8">Thick</button><button id="ebf-undo">Undo</button><button id="ebf-clear">Clear</button></div>`;
+  if(accept) f += `<label>${type === 'receipt' ? 'Receipt (photo or PDF)' : type === 'photo' ? 'Photos' : 'File'}</label><input id="ebf-file" type="file" accept="${accept}"${type === 'photo' ? ' multiple' : ''}><div id="ebf-files" style="font-size:12.5px;color:#64748B;margin-top:6px"></div>`;
+  if(['note','layout','file','photo','drawing'].includes(type)) f += `<label>${type === 'note' ? 'Note' : 'Note (optional)'}</label><textarea id="ebf-text" placeholder="${type === 'note' ? 'e.g. Peanuts in small bowls with the welcome drink' : ''}">${edit ? ebEsc(it.text || '') : ''}</textarea>`;
+  if(type === 'note') f += `<label>To-do list (optional, one per line)</label><textarea id="ebf-ck" placeholder="Install 2 standing fans&#10;ARTIST ONLY sign at Elysium by 12pm">${edit && it.checklist ? ebEsc(it.checklist.map(c => c.t).join('\n')) : ''}</textarea>`;
+  s.innerHTML = `<div class="eb-form"><h3>${edit ? 'Edit' : 'Add'} ${K.label.toLowerCase()}</h3><p class="sub">${type === 'receipt' ? 'The payment is marked as paid and the totals update' : 'Pinned to the board for everyone on this event'}</p>${f}<div class="eb-fbtns"><button class="eb-no">Cancel</button><button class="eb-go">${edit ? 'Save' : 'Add to board'}</button></div></div>`;
+  s.addEventListener('mousedown', e => { if(e.target === s && type !== 'drawing') s.remove(); });
+  document.body.appendChild(s);
+  const $f = id => s.querySelector('#' + id);
+  const showFiles = () => { const el = $f('ebf-files'); if(el) el.textContent = files.length ? files.map(x => x.name).join(', ') : ''; };
+  showFiles();
+  const payEl = $f('ebf-pay'), amtEl = $f('ebf-amt');
+  if(payEl && amtEl){
+    const fill = () => { const p = pays.find(x => x.id === payEl.value); if(p && !edit) amtEl.value = (Number(p.amount) || 0).toLocaleString('id-ID'); };
+    payEl.onchange = fill; if(!edit) fill();
+    amtEl.addEventListener('input', () => { const n = ebNum(amtEl.value); amtEl.value = n ? n.toLocaleString('id-ID') : ''; });
+  }
+  let pad = null; if(type === 'drawing') pad = ebPad($f('ebf-pad'), s);
+  if(edit && type === 'drawing' && files[0]) pad.load(ebUrl(files[0]));
+  s.querySelector('.eb-no').onclick = () => s.remove();
+  s.querySelector('.eb-go').onclick = async () => {
+    const go = s.querySelector('.eb-go'); if(go.disabled) return;
+    const fileIn = $f('ebf-file'), picked = fileIn && fileIn.files ? Array.from(fileIn.files) : [];
+    if(type === 'receipt' && !picked.length && !files.length){ toast('Add a photo or PDF of the receipt'); return; }
+    if((type === 'layout' || type === 'file' || type === 'photo') && !picked.length && !files.length){ toast('Pick a file to add'); return; }
+    if(type === 'map' && !($f('ebf-place').value || '').trim()){ toast('Type a place or paste a maps link'); return; }
+    if(type === 'note' && !(($f('ebf-text').value || '').trim() || ($f('ebf-ck').value || '').trim() || ($f('ebf-title').value || '').trim())){ toast('Write something first'); return; }
+    if(type === 'drawing' && pad.empty() && !files.length){ toast('Draw something first'); return; }
+    go.disabled = true; go.textContent = 'Saving…';
+    try{
+      if(picked.length){
+        const old = files.slice(); files = type === 'photo' && edit ? files.slice() : [];
+        for(const p of picked.slice(0, 12)) files.push(await ebUpload(p));
+        const keep = new Set(files.map(x => x.path)); const gone = old.map(x => x.path).filter(p => p && !keep.has(p));
+        if(gone.length) sb.storage.from(EB_BUCKET).remove(gone).catch(() => {});
+      }
+      if(type === 'drawing' && pad.dirty()){
+        const blob = await pad.blob();
+        const old = files.slice();
+        files = [await ebUpload(new File([blob], 'drawing.png', { type:'image/png' }))];
+        if(old.length) sb.storage.from(EB_BUCKET).remove(old.map(x => x.path)).catch(() => {});
+      }
+      const rec = edit ? it : { id:ebId(), type, by:ebMe(), at:new Date().toISOString() };
+      rec.files = files;
+      const val = id => ($f(id) ? ($f(id).value || '').trim() : '');
+      if(type === 'receipt'){
+        let pid = val('ebf-pay');
+        const amount = ebNum(val('ebf-amt'));
+        if(!pid){ const np = { id:ebId(), label:'Payment ' + (pays.length + 1), amount, due:null, paid:false }; pays.push(np); pid = np.id; }
+        if(edit && it.paymentId && it.paymentId !== pid){ const op = pays.find(x => x.id === it.paymentId); if(op && op.receiptId === it.id){ op.paid = false; op.paidOn = null; op.receiptId = null; } }
+        Object.assign(rec, { paymentId:pid, amount, paidOn:val('ebf-date') || ebToday(), method:val('ebf-method') || 'Bank transfer' });
+        const p = pays.find(x => x.id === pid); if(p){ p.paid = true; p.paidOn = rec.paidOn; p.receiptId = rec.id; if(!p.amount) p.amount = amount; }
+      } else if(type === 'map'){
+        const place = val('ebf-place');
+        Object.assign(rec, { title:val('ebf-title'), text:val('ebf-text'), link:/^https?:\/\//i.test(place) ? place : '', place:/^https?:\/\//i.test(place) ? ebPlaceFromLink(place) : place });
+      } else {
+        rec.title = val('ebf-title'); rec.text = val('ebf-text');
+        if(type === 'note'){
+          const lines = val('ebf-ck').split('\n').map(x => x.trim()).filter(Boolean);
+          const was = {}; (rec.checklist || []).forEach(c => was[c.t] = c.done);
+          rec.checklist = lines.map(t => ({ t, done: !!was[t] }));
+        }
+      }
+      if(!edit) b.items.push(rec);
+      if(type === 'receipt') ebSyncStatus();
+      s.remove();
+      await ebSignAll(); ebRender(); ebSave();
+      toast(type === 'receipt' ? 'Receipt added - payment marked as paid ✓' : edit ? 'Saved ✓' : 'Added to the board ✓');
+    }catch(e){
+      console.warn('[board]', e); go.disabled = false; go.textContent = edit ? 'Save' : 'Add to board';
+      toast(/too big/.test(e.message || '') ? 'That file is too big - the limit is 15 MB' : 'Could not upload - check your connection and try again');
+    }
+  };
+  const first = s.querySelector('input:not([type=file]):not([type=date]),textarea'); if(first && window.innerWidth > 700) setTimeout(() => first.focus(), 50);
+}
+function ebPlaceFromLink(u){
+  try{ const url = new URL(u); const q = url.searchParams.get('q') || url.searchParams.get('query'); if(q) return q;
+    const m = url.pathname.match(/\/place\/([^/]+)/); if(m) return decodeURIComponent(m[1].replace(/\+/g, ' '));
+    const at = url.pathname.match(/@(-?\d+\.\d+),(-?\d+\.\d+)/); if(at) return at[1] + ',' + at[2]; }catch(e){}
+  return u;
+}
+// Simple drawing pad: finger or mouse, three colours, thick pen, undo, clear
+function ebPad(c, host){
+  const ctx = c.getContext('2d'); let strokes = [], cur = null, col = '#0F1E2E', w = 3, dirty = false, bg = null;
+  const size = () => { const r = c.getBoundingClientRect(), d = window.devicePixelRatio || 1; c.width = r.width * d; c.height = r.height * d; ctx.setTransform(d, 0, 0, d, 0, 0); draw(); };
+  const draw = () => {
+    const r = c.getBoundingClientRect(); ctx.fillStyle = '#FFFEFA'; ctx.fillRect(0, 0, r.width, r.height);
+    if(bg) ctx.drawImage(bg, 0, 0, r.width, r.height);
+    ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+    strokes.concat(cur ? [cur] : []).forEach(s => { ctx.strokeStyle = s.c; ctx.lineWidth = s.w; ctx.beginPath(); s.p.forEach((p, i) => i ? ctx.lineTo(p[0], p[1]) : ctx.moveTo(p[0], p[1])); if(s.p.length === 1) ctx.lineTo(s.p[0][0] + .1, s.p[0][1]); ctx.stroke(); });
+  };
+  const pt = e => { const r = c.getBoundingClientRect(); return [e.clientX - r.left, e.clientY - r.top]; };
+  c.addEventListener('pointerdown', e => { c.setPointerCapture(e.pointerId); cur = { c:col, w, p:[pt(e)] }; draw(); });
+  c.addEventListener('pointermove', e => { if(!cur) return; cur.p.push(pt(e)); draw(); });
+  const end = () => { if(cur){ strokes.push(cur); cur = null; dirty = true; draw(); } };
+  c.addEventListener('pointerup', end); c.addEventListener('pointercancel', end);
+  host.querySelectorAll('.eb-padbar [data-c]').forEach(b => b.onclick = () => { col = b.dataset.c; host.querySelectorAll('.eb-padbar [data-c]').forEach(x => x.classList.toggle('on', x === b)); });
+  const thick = host.querySelector('.eb-padbar [data-w]'); thick.onclick = () => { w = w === 3 ? 8 : 3; thick.classList.toggle('on', w === 8); };
+  host.querySelector('#ebf-undo').onclick = () => { strokes.pop(); dirty = true; draw(); };
+  host.querySelector('#ebf-clear').onclick = () => { strokes = []; bg = null; dirty = true; draw(); };
+  requestAnimationFrame(size);
+  return {
+    empty: () => !strokes.length && !bg, dirty: () => dirty,
+    load: src => { const im = new Image(); im.crossOrigin = 'anonymous'; im.onload = () => { bg = im; draw(); }; im.src = src; },
+    blob: () => new Promise(ok => c.toBlob(ok, 'image/png'))
+  };
+}
+// Total and payments (deposits, balance) for the strip at the top
+window.ebEditPayments = function(){
+  if(ebReadOnly()) return;
+  ebCloseSheets();
+  const b = ebBoard(), pay = b.pay;
+  let rows = pay.payments.map(p => Object.assign({}, p));
+  if(!rows.length) rows = [{ id:ebId(), label:'1st DP', amount:0, due:'' }, { id:ebId(), label:'Balance', amount:0, due:'' }];
+  const before = JSON.parse(JSON.stringify(pay));
+  const s = document.createElement('div'); s.className = 'eb-sheet';
+  const money = v => v ? Number(v).toLocaleString('id-ID') : '';
+  const draw = () => {
+    s.innerHTML = `<div class="eb-form"><h3>Total &amp; payments</h3><p class="sub">What the client pays, and when</p>
+      <label>Subtotal before tax (Rp)</label><input id="ebp-sub" inputmode="numeric" value="${money(pay.subtotal)}" placeholder="e.g. 229.600.000">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px"><div><label>Tax &amp; Service %</label><input id="ebp-tax" inputmode="decimal" value="${ebEsc(String(pay.taxPct).replace('.', ','))}"></div><div><label>Extras after tax (Rp)</label><input id="ebp-ext" inputmode="numeric" value="${money(pay.extras)}" placeholder="e.g. rain stopper"></div></div>
+      <div id="ebp-tot" style="margin:12px 0 4px;padding:12px;border-radius:12px;background:#F8FAFC"></div>
+      <label>Payments</label>
+      ${rows.map((r, i) => `<div class="eb-prow" data-i="${i}"><input class="ebp-l" value="${ebEsc(r.label || '')}" placeholder="e.g. 1st DP"><input class="ebp-a" inputmode="numeric" value="${money(r.amount)}" placeholder="Amount"><input class="ebp-d" type="date" value="${ebEsc(r.due || '')}"><button aria-label="Remove" ${r.paid ? 'disabled title="Paid - remove its receipt first" style="opacity:.35"' : ''}>×</button></div>`).join('')}
+      <button id="ebp-add" style="border:1.5px dashed #CBD5E1;background:#fff;border-radius:10px;padding:9px;width:100%;font:700 13.5px Inter,sans-serif;color:#475569;cursor:pointer">+ Add a payment</button>
+      <button id="ebp-split" style="margin-top:8px;border:0;background:none;color:#0D9488;font:700 13px Inter,sans-serif;cursor:pointer">Make the last payment the balance left to pay</button>
+      <div class="eb-fbtns"><button class="eb-no">Cancel</button><button class="eb-go">Save</button></div></div>`;
+    const grab = () => {
+      pay.subtotal = ebNum(s.querySelector('#ebp-sub').value); pay.extras = ebNum(s.querySelector('#ebp-ext').value);
+      const t = parseFloat(String(s.querySelector('#ebp-tax').value).replace(',', '.')); pay.taxPct = isNaN(t) ? ebTaxDefault() : t;
+      s.querySelectorAll('.eb-prow').forEach(el => { const r = rows[Number(el.dataset.i)]; r.label = el.querySelector('.ebp-l').value.trim(); r.amount = ebNum(el.querySelector('.ebp-a').value); r.due = el.querySelector('.ebp-d').value || null; });
+    };
+    const tot = () => { grab(); const T = ebTotals(), sum = rows.reduce((a, r) => a + (r.amount || 0), 0);
+      s.querySelector('#ebp-tot').innerHTML = `<div class="eb-totline"><span>Tax &amp; Service</span><b>${ebRp(T.tax)}</b></div><div class="eb-totline"><span>Grand total</span><b>${ebRp(T.grand)}</b></div><div class="eb-totline"><span>Payments add up to</span><b style="color:${T.grand && sum !== T.grand ? '#B45309' : '#15803D'}">${ebRp(sum)}${T.grand && sum !== T.grand ? ' · ' + ebRp(Math.abs(T.grand - sum)) + (sum < T.grand ? ' short' : ' over') : ''}</b></div>`; };
+    s.querySelectorAll('input').forEach(inp => inp.addEventListener('input', () => { if(inp.inputMode === 'numeric'){ const n = ebNum(inp.value); inp.value = n ? n.toLocaleString('id-ID') : ''; } tot(); }));
+    s.querySelectorAll('.eb-prow button').forEach(btn => btn.onclick = () => { grab(); rows.splice(Number(btn.parentNode.dataset.i), 1); draw(); });
+    s.querySelector('#ebp-add').onclick = () => { grab(); rows.push({ id:ebId(), label:'', amount:0, due:'' }); draw(); };
+    s.querySelector('#ebp-split').onclick = () => { grab(); const T = ebTotals(); if(!rows.length) return; const others = rows.slice(0, -1).reduce((a, r) => a + (r.amount || 0), 0); rows[rows.length - 1].amount = Math.max(0, T.grand - others); draw(); };
+    s.querySelector('.eb-no').onclick = () => { Object.assign(pay, before); s.remove(); };
+    s.querySelector('.eb-go').onclick = () => { grab(); pay.payments = rows.filter(r => r.label || r.amount || r.paid); s.remove(); ebSyncStatus(); ebRender(); ebSave(); toast('Payments saved ✓'); };
+    tot();
+  };
+  draw();
+  s.addEventListener('mousedown', e => { if(e.target === s){ Object.assign(pay, before); s.remove(); } });
+  document.body.appendChild(s);
+};
 
 // ── CLIENT LINK (live, read-only page for the client: client.html?t=TOKEN) ──
 // Only what's in client_view (plus basic event facts) is ever readable through the link,

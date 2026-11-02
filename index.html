@@ -30292,7 +30292,7 @@ function reqRenderDetail(){
   const urgName = (REQ_URGENCY.find(u => u.id === r.priority) || {}).name || '';
   const canPhoto = canHandle || r.reported_by === me || r.assigned_to === me;
   const photoBox = img
-    ? `<div class="rq-photo" onclick="reqZoom('main')"><img src="${img}" alt="">${canPhoto ? `<label class="rq-chg" onclick="event.stopPropagation()">Change photo<input type="file" accept="image/*" style="display:none" onchange="reqSetPhoto(this)"></label>` : ''}</div>`
+    ? `<div class="rq-photo" onclick="reqZoom('main')"><img src="${img}" alt="">${canPhoto ? `<div class="rq-phbtns" onclick="event.stopPropagation()"><button class="rq-chg rq-rm" onclick="reqRemovePhoto()">Remove</button><label class="rq-chg">Change photo<input type="file" accept="image/*" style="display:none" onchange="reqSetPhoto(this)"></label></div>` : ''}</div>`
     : (canPhoto ? `<label class="rq-addph">${reqIcon('camera', 26, '#0D9488')}<span>Add a photo</span><input type="file" accept="image/*" style="display:none" onchange="reqSetPhoto(this)"></label>` : '');
   const onIt = r.assigned_to ? `${reqAvatar(r.assigned_to, 22)}<span>${r.assigned_to === me ? 'You' : reqEsc(reqName(r.assigned_to, true))}${reqOnItAt(r) ? ' · since ' + chat2Time(reqOnItAt(r)) : ''}</span>` : '<span class="m">Nobody yet</span>';
   const facts = [['Where', reqEsc(r.location || '-')], ['Team', reqEsc(r.dept)], ['Reported by', reqEsc((r.reported_by === me ? 'You' : reqName(r.reported_by, true)) + ' · ' + reqAgo(r.created_at))], ["Who's on it", onIt], ['Urgency', reqEsc(urgName)]]
@@ -30344,6 +30344,16 @@ async function reqSetPhoto(input){
   r.photo = pic.full; r.thumb = pic.thumb;
   toast('Photo added ✓');
   reqRenderAll();
+}
+function reqRemovePhoto(){
+  const r = reqGet(REQ.openId); if(!r) return;
+  appConfirmShow({ title:'Remove photo?', msg:'The photo will be taken off this job.', label:'Remove', onOk: async () => {
+    const { error } = await reqDb().rpc('request_set_photo', { rid:r.id, new_photo:null, new_thumb:null });
+    if(error){ console.warn(error); toast('Could not remove the photo - please try again'); return; }
+    r.photo = null; r.thumb = null;
+    toast('Photo removed');
+    reqRenderAll();
+  }});
 }
 function reqZoom(which){
   const r = reqGet(REQ.openId); if(!r) return;
@@ -30672,7 +30682,7 @@ reqStyle.textContent = `
 .req-send-big:disabled{opacity:.6}
 /* one request */
 /* Maintenance job page (Nov 2026): a tidy ticket - header, photo + facts on the left, updates + buttons on the right */
-#req-detail .rq-wrap{max-width:1180px}
+#req-detail .rq-wrap{max-width:none}
 .rq-back{display:inline-flex;align-items:center;gap:6px;border:0;background:none;font:700 14px Inter,sans-serif;color:#475569;cursor:pointer;padding:4px 0;margin-bottom:12px}
 .rq-card{background:#fff;border:1px solid #E8ECF1;border-radius:18px;overflow:hidden}
 .rq-hd{display:flex;gap:12px;align-items:flex-start;padding:18px 20px;border-bottom:1px solid #EEF1F4}
@@ -30682,12 +30692,14 @@ reqStyle.textContent = `
 .rq-title{font-size:23px;font-weight:800;letter-spacing:-.4px;color:#0F1E2E;line-height:1.25}
 .rq-hd .req-st{font-size:13px;padding:6px 13px;margin-top:2px}
 .rq-more{width:36px;height:36px;border-radius:50%;background:#F1F3F6;border:0;display:flex;align-items:center;justify-content:center;cursor:pointer;flex:none}
-.rq-body{display:grid;grid-template-columns:340px minmax(0,1fr)}
+.rq-body{display:grid;grid-template-columns:minmax(340px,32%) minmax(0,1fr)}
 .rq-left{padding:18px 20px;border-right:1px solid #EEF1F4}
 .rq-photo{position:relative;border-radius:14px;overflow:hidden;cursor:zoom-in;background:#E2E8F0}
-.rq-photo img{display:block;width:100%;height:220px;object-fit:cover}
-.rq-chg{position:absolute;right:10px;bottom:10px;background:rgba(255,255,255,.95);border-radius:999px;padding:6px 12px;font:800 12.5px Inter,sans-serif;color:#0F1E2E;cursor:pointer}
-.rq-addph{height:120px;border-radius:14px;border:2px dashed #CBD5E1;background:#F8FAFC;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;color:#0D9488;font:800 14px Inter,sans-serif;cursor:pointer}
+.rq-photo img{display:block;width:100%;height:260px;object-fit:cover}
+.rq-phbtns{position:absolute;right:10px;bottom:10px;display:flex;gap:6px}
+.rq-rm{border:0;color:#DC2626!important}
+.rq-chg{background:rgba(255,255,255,.95);border-radius:999px;padding:6px 12px;font:800 12.5px Inter,sans-serif;color:#0F1E2E;cursor:pointer}
+.rq-addph{height:160px;border-radius:14px;border:2px dashed #CBD5E1;background:#F8FAFC;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;color:#0D9488;font:800 14px Inter,sans-serif;cursor:pointer}
 .rq-addph:hover{border-color:#0D9488;background:#F0FDFA}
 .rq-left .req-details{margin-top:14px}
 .rq-facts{margin:16px 0 0;display:grid;grid-template-columns:110px minmax(0,1fr);row-gap:11px;font-size:14px}
@@ -30695,6 +30707,7 @@ reqStyle.textContent = `
 .rq-facts dd{margin:0;font-weight:700;color:#0F1E2E;display:flex;align-items:center;gap:7px;min-width:0;word-break:break-word}
 .rq-facts .m{color:#94A3B8;font-weight:600}
 .rq-right{display:flex;flex-direction:column;min-height:440px;min-width:0}
+@media(min-width:901px){.rq-body{min-height:calc(100vh - 210px)}.rq-right .req-thread{max-height:calc(100vh - 400px)}}
 .rq-uh{padding:16px 20px 0;font-size:11.5px;font-weight:800;letter-spacing:.8px;text-transform:uppercase;color:#94A3B8}
 .rq-right .req-thread{flex:1;padding:12px 20px;overflow-y:auto;max-height:calc(100vh - 380px)}
 .rq-right .req-bottom{position:static;margin:0;padding:14px 20px 16px;border-top:1px solid #EEF1F4;background:#fff}

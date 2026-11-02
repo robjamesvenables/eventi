@@ -3656,7 +3656,10 @@ html:has(#menuDetailOverlay[style*="flex"]),html:has(#menuDetailOverlay[style*="
 .beo .rd-item > .rd-bell{position:absolute;top:7px;right:38px;width:32px;height:32px;border:1.5px solid #E9D3A6;background:#FDF8EE;border-radius:9px;color:#C4973B;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0}
 .beo .rd-item > .rd-bell svg{width:17px;height:17px;stroke-width:2.6}
 .beo .rd-item > .rd-bell:hover{background:#FDF3DE;border-color:#C4973B}
-.beo .rd-item.rd-has-alert > .rd-bell{background:#C4973B;border-color:#C4973B;color:#fff}
+.beo .rd-item.rd-has-alert > .rd-bell{background:#C4973B;border-color:#C4973B;color:#fff;box-shadow:0 3px 10px rgba(196,151,59,.35)}
+.beo .rd-item.rd-has-alert > .rd-bell svg{stroke-width:2.8}
+.beo .rd-item.rd-alert-sent > .rd-bell{background:#fff;border-color:#E2E8F0;color:#94A3B8}
+.rd-alertchip.sent{background:#F1F5F9;color:#64748B}
 .rd-alertchip{display:inline-flex;align-items:center;gap:5px;margin-top:6px;background:#FDF3DE;color:#8A6418;border-radius:999px;padding:3px 10px 3px 8px;font:700 12px Inter,sans-serif;user-select:none}
 .rd-alertchip svg{width:12px;height:12px}
 .pdf-export-mode .rd-bell,.pdf-export-mode .rd-alertchip,body.ev-viewonly .rd-bell{display:none !important}
@@ -9513,21 +9516,39 @@ document.addEventListener('focusout', e => {
 function rdBellsEnsure(){
   document.querySelectorAll('#rd-list .rd-item').forEach(it => {
     const tm = it.querySelector('.rd-time'); if(tm && tm.getAttribute('inputmode') !== 'decimal') tm.setAttribute('inputmode', 'decimal');
-    if(!it.querySelector(':scope > .rd-bell')){
-      const b = document.createElement('button'); b.type = 'button'; b.className = 'rd-bell'; b.title = 'Alert a team before this';
-      b.setAttribute('onclick', 'rdBellOpen(event, this)'); b.innerHTML = RD_BELL;
+    let b = it.querySelector(':scope > .rd-bell');
+    if(!b){
+      b = document.createElement('button'); b.className = 'rd-bell';
       const del = it.querySelector(':scope > .del-row'); it.insertBefore(b, del || null);
     }
+    b.type = 'button'; b.setAttribute('onclick', 'rdBellOpen(event, this)');   // saving can strip these - put them back
     rdBellChip(it);
   });
 }
+const RD_BELL_OFF = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M13.73 21a2 2 0 0 1-3.46 0"/><path d="M18.63 13A17.89 17.89 0 0 1 18 8"/><path d="M6.26 6.26A5.86 5.86 0 0 0 6 8c0 7-3 9-3 9h14"/><path d="M18 8a6 6 0 0 0-9.33-5"/><line x1="2" y1="2" x2="22" y2="22"/></svg>';
+// Has this row's alert already gone? (event day passed, or today and the alert time has come)
+function rdAlertSent(it){
+  const ev = typeof evAll !== 'undefined' && typeof beoCurrentId !== 'undefined' ? evAll.find(e => e.id === beoCurrentId) : null;
+  const date = ev && ev.event_date; if(!date) return false;
+  const today = typeof evTodayStr === 'function' ? evTodayStr() : new Date().toISOString().slice(0, 10);
+  if(date < today) return true;
+  if(date > today) return false;
+  const t = rdTidyTime(it.querySelector('.rd-time')?.textContent); if(!t) return false;
+  const now = new Date(), mins = now.getHours() * 60 + now.getMinutes();
+  return mins >= (+t.slice(0, 2) * 60 + +t.slice(3)) - Number(it.dataset.mins || 10);
+}
 function rdBellChip(it){
   const depts = (it.dataset.alert || '').split('|').filter(Boolean), mins = it.dataset.mins || '10';
-  it.classList.toggle('rd-has-alert', depts.length > 0);
+  const sent = depts.length > 0 && rdAlertSent(it);
+  it.classList.toggle('rd-has-alert', depts.length > 0 && !sent);
+  it.classList.toggle('rd-alert-sent', sent);
+  const bell = it.querySelector(':scope > .rd-bell');
+  if(bell){ bell.innerHTML = sent ? RD_BELL_OFF : RD_BELL; bell.title = sent ? 'Alert sent' : depts.length ? 'Alert set - tap to change' : 'Alert a team before this'; }
   let chip = it.querySelector('.rd-alertchip');
   if(!depts.length){ if(chip) chip.remove(); return; }
   if(!chip){ chip = document.createElement('div'); chip.className = 'rd-alertchip'; chip.contentEditable = 'false'; (it.querySelector('.rd-right') || it).appendChild(chip); }
-  chip.innerHTML = RD_BELL + '<span>' + evEsc(depts.join(', ')) + ' · ' + evEsc(mins) + ' min before</span>';
+  chip.classList.toggle('sent', sent);
+  chip.innerHTML = (sent ? RD_BELL_OFF + '<span>Alert sent · ' : RD_BELL + '<span>') + evEsc(depts.join(', ')) + (sent ? '' : ' · ' + evEsc(mins) + ' min before') + '</span>';
 }
 window.rdBellOpen = function(e, btn){
   e.stopPropagation();
@@ -9565,6 +9586,7 @@ window.rdBellSave = function(off){
   if(typeof beoTriggerSave === 'function') beoTriggerSave();
   toast(off ? 'Alert turned off' : 'Alert set - ' + sel.join(', ') + ' get it ' + (m._mins || 10) + ' min before');
 };
+setInterval(() => { if(document.getElementById('p-beo')?.classList.contains('on')) document.querySelectorAll('#rd-list .rd-item').forEach(rdBellChip); }, 30000);
 (function rdBellWatch(){
   const start = () => { const list = document.getElementById('rd-list'); if(!list) return; rdBellsEnsure(); new MutationObserver(muts => { if(muts.some(x => x.type === 'childList' && [...x.addedNodes].some(n => n.classList && n.classList.contains('rd-item')))) rdBellsEnsure(); }).observe(list, { childList:true }); };
   if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start); else start();

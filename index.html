@@ -7866,7 +7866,6 @@ function evDemoBoard(name){
   const F = (n, t, sz) => ({ path:'', url:'/demo-board/' + n, name:n, type:t, size:sz });
   const by = (n, d, role) => ({ name:n, dept:d, role:role || 'teammember' });
   if(name === 'Horizon Tech Summit 2026 — Welcome Dinner') return { ordered:true, items:[
-    { id:'dm1', type:'note', title:'On the day', text:'Client wants the CEO welcome at 19:30 sharp - stage manager to cue the band to stop.', checklist:[{ t:'2 standing fans by the bar', done:true }, { t:'Name cards on the VIP table', done:true }, { t:'"Private Event" sign at the entrance by 17:00', done:false }, { t:'Lanyards for 6 client staff', done:false }], by:by('Made Sudarta','Engineering','supervisor'), at:ago(0.2) },
     { id:'dm2', type:'layout', title:'Main Terrace - floor plan', files:[F('floor-plan.jpg','image/jpeg',92000)], by:by('Sarah Lim','Events','manager'), at:ago(2) },
     { id:'dm3', type:'receipt', title:'1st DP - Rp 92.500.000', files:[F('receipt-1.jpg','image/jpeg',46000)], by:by('Putu Ayu','Sales','supervisor'), at:ago(18) },
     { id:'dm4', type:'photo', title:'Tasting - final 3 dishes signed off', files:[F('tasting-1.jpg','image/jpeg',76000), F('tasting-2.jpg','image/jpeg',107000), F('tasting-3.jpg','image/jpeg',60000)], by:by('Daniel Reyes','Kitchen','manager'), at:ago(4) },
@@ -7876,12 +7875,10 @@ function evDemoBoard(name){
     { id:'dm8', type:'receipt', title:'Balance - Rp 92.500.000', files:[F('receipt-2.jpg','image/jpeg',47000)], by:by('Putu Ayu','Sales','supervisor'), at:ago(0.5) }
   ]};
   if(name === 'Solaris Beach Festival') return { ordered:true, items:[
-    { id:'ds1', type:'note', title:'Production checklist', checklist:[{ t:'Stage sign-off by the engineer', done:false }, { t:'Generator test at 10:30', done:false }, { t:'Drone permit printed', done:true }], by:by('Rizal Pratama','AV & IT','supervisor'), at:ago(1) },
     { id:'ds2', type:'map', title:'Artist drop-off - back gate', place:'Seminyak Beach, Bali', by:by('Sarah Lim','Events','manager'), at:ago(2) },
     { id:'ds3', type:'drawing', title:'Bar layout idea', files:[F('sketch.png','image/png',25000)], by:by('Wayan Arta','Bar'), at:ago(3) }
   ]};
   if(name === 'Harrison Family Wedding Reception') return { ordered:true, items:[
-    { id:'dw1', type:'note', title:'From the couple', text:'No red flowers please. First dance: "Can\'t Help Falling in Love" (live).', by:by('Nadia Kusuma','Events','manager'), at:ago(2) },
     { id:'dw2', type:'photo', title:'Menu tasting', files:[F('tasting-2.jpg','image/jpeg',107000), F('tasting-1.jpg','image/jpeg',76000)], by:by('Daniel Reyes','Kitchen','manager'), at:ago(6) }
   ]};
   return null;
@@ -8640,7 +8637,7 @@ const EB_KINDS = {
   drawing:{ label:'Drawing', group:'drawings', icon:'<path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/>' },
   note:{ label:'Note', group:'notes', icon:'<path d="M15.5 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V8.5z"/><path d="M15 3v6h6"/>' }
 };
-const EB_GROUPS = [['all','All'],['receipts','Receipts'],['maps','Maps & layouts'],['files','Files'],['photos','Photos'],['drawings','Drawings'],['notes','Notes']];
+const EB_GROUPS = [['all','All'],['receipts','Receipts'],['maps','Maps & layouts'],['files','Files'],['photos','Photos'],['drawings','Drawings']];
 const ebIc = (p, s, w) => `<svg width="${s || 16}" height="${s || 16}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${w || 2}" stroke-linecap="round" stroke-linejoin="round">${p}</svg>`;
 const EB_CLIP = '<svg class="eb-clip" width="22" height="54" viewBox="0 0 22 54" aria-hidden="true"><path d="M7 40V10a5 5 0 0 1 10 0v34a8 8 0 0 1-16 0V14" fill="none" stroke="#9CA3AF" stroke-width="2.6" stroke-linecap="round"/><path d="M7 40V10a5 5 0 0 1 10 0v34a8 8 0 0 1-16 0V14" fill="none" stroke="#E5E7EB" stroke-width="1" stroke-linecap="round"/></svg>';
 function ebEsc(v){ return String(v == null ? '' : v).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
@@ -8849,7 +8846,7 @@ function ebCardHtml(it){
       : imgs.map(f => `<img class="eb-img" src="${ebEsc(ebUrl(f))}" alt="" onclick="ebZoom(this.src)" loading="lazy">`).join('');
     docs.forEach(f => body += ebDocHtml(f));
     if(it.text) body += `<div class="eb-txt"${imgs.length || docs.length ? ' style="margin-top:8px;font-size:13.5px"' : ''}>${ebLinks(ebEsc(it.text))}</div>`;
-    if(it.checklist && it.checklist.length) body += `<ul class="eb-ck">${it.checklist.map((c, i) => `<li class="${c.done ? 'on' : ''}" onclick="ebTick('${it.id}',${i})"><i>${c.done ? ebIc('<path d="M20 6 9 17l-5-5"/>', 12, 3) : ''}</i><span>${ebEsc(c.t)}</span></li>`).join('')}</ul>`;
+    if(it.checklist && it.checklist.length) body += `<div class="eb-txt" style="margin-top:6px">${it.checklist.map(c => ebEsc(c.t)).join('<br>')}</div>`;
     if(it.link) body += `<a class="eb-open" target="_blank" rel="noopener" href="${ebEsc(it.link)}">Open link ↗</a>`;
   }
   const label = K.label + ( it.type === 'photo' && files.length > 1 ? ' · ' + files.length : '');
@@ -8871,7 +8868,7 @@ function ebRender(){
   const cards = items.map(ebCardHtml).join('');
   body.innerHTML = `
     <div class="eb-head"><div><h3>Board</h3><p>Drop anything for this event here${ebReadOnly() || b.items.length < 2 ? '' : ' · ' + (matchMedia('(pointer:coarse)').matches ? 'press and hold a card to move it' : 'drag cards to move them')}</p></div>${ebReadOnly() ? '' : `<button class="eb-add" onclick="ebAddMenu()">+ Add to board</button>`}</div>
-    <div class="eb-board">${cards || `<div class="eb-empty"><div class="ic">${ebIc('<path d="M21.4 11.1 12.2 20.3a6 6 0 0 1-8.5-8.5l9.2-9.2a4 4 0 0 1 5.7 5.7l-9.2 9.2a2 2 0 0 1-2.8-2.8l8.5-8.5"/>', 30)}</div><b class="t">${EB.filter === 'all' ? 'The board is empty' : 'Nothing here yet'}</b><span>Drop photos, PDFs, receipts, layouts or a quick note -<br>everyone working on this event will see it.</span>${ebReadOnly() ? '' : '<button class="eb-add" onclick="ebAddMenu()">+ Add to board</button>'}</div>`}</div>`;
+    <div class="eb-board">${cards || `<div class="eb-empty"><div class="ic">${ebIc('<path d="M21.4 11.1 12.2 20.3a6 6 0 0 1-8.5-8.5l9.2-9.2a4 4 0 0 1 5.7 5.7l-9.2 9.2a2 2 0 0 1-2.8-2.8l8.5-8.5"/>', 30)}</div><b class="t">${EB.filter === 'all' ? 'The board is empty' : 'Nothing here yet'}</b><span>Drop photos, PDFs, receipts or layouts -<br>everyone working on this event will see it.</span>${ebReadOnly() ? '' : '<button class="eb-add" onclick="ebAddMenu()">+ Add to board</button>'}</div>`}</div>`;
   ebSyncButton();
   ebDragInit();
   const sn = document.getElementById('eb-sec-n'); if(sn){ const n = b.items.length; sn.textContent = n ? '· ' + n + (n === 1 ? ' item' : ' items') : ''; }
@@ -8982,7 +8979,7 @@ window.ebMenu = function(e, id){
   const it = ebBoard().items.find(x => x.id === id); if(!it) return;
   const me = ebMe(), mine = it.by && it.by.id && it.by.id === me.id, can = mine || ebIsManager() || (it.type === 'receipt' && ebCanReceipt());
   const m = document.createElement('div'); m.className = 'eb-menu';
-  m.innerHTML = (it.type !== 'receipt' ? `<button data-a="done">${it.done ? 'Not done yet' : 'Mark as done'}</button>` : '') + (can ? `<button data-a="edit">Edit note</button><button data-a="del" class="red">Remove from board</button>` : '') || '<button disabled>Only the person who added it can change it</button>';
+  m.innerHTML = (it.type !== 'receipt' ? `<button data-a="done">${it.done ? 'Not done yet' : 'Mark as done'}</button>` : '') + (can ? `<button data-a="edit">Edit</button><button data-a="del" class="red">Remove from board</button>` : '') || '<button disabled>Only the person who added it can change it</button>';
   document.body.appendChild(m);
   const r = e.currentTarget.getBoundingClientRect();
   m.style.top = Math.min(window.innerHeight - m.offsetHeight - 10, r.bottom + 4) + 'px';
@@ -9006,10 +9003,10 @@ window.ebAddMenu = function(){ ebDump(); };
 function ebDump(){
   ebCloseSheets();
   const s = document.createElement('div'); s.className = 'eb-sheet';
-  s.innerHTML = `<div class="eb-form"><h3>Add to the board</h3><p class="sub">Photos, PDFs, receipts, anything - and a note if you like</p>
+  s.innerHTML = `<div class="eb-form"><h3>Add to the board</h3><p class="sub">Photos, PDFs, receipts, layouts - anything for this event</p>
     <button type="button" class="eb-filebtn" id="ebd-pick">${ebIc('<path d="M21.4 11.1 12.2 20.3a6 6 0 0 1-8.5-8.5l9.2-9.2a4 4 0 0 1 5.7 5.7l-9.2 9.2a2 2 0 0 1-2.8-2.8l8.5-8.5"/>', 20)}<span id="ebd-names">Choose files</span></button>
     <input id="ebd-file" type="file" multiple style="display:none">
-    <label>Note (optional)</label><textarea id="ebd-text" placeholder="Write anything - a note, a link, a reminder"></textarea>
+    <label>Caption (optional)</label><textarea id="ebd-text" placeholder="e.g. Receipt for the flowers"></textarea>
     <div class="eb-fbtns"><button class="eb-no">Cancel</button><button class="eb-go">Add to board</button></div></div>`;
   s.addEventListener('mousedown', e => { if(e.target === s) s.remove(); });
   document.body.appendChild(s);
@@ -9020,7 +9017,7 @@ function ebDump(){
   s.querySelector('.eb-go').onclick = async () => {
     const go = s.querySelector('.eb-go'); if(go.disabled) return;
     const picked = Array.from(inp.files || []).slice(0, 20), text = s.querySelector('#ebd-text').value.trim();
-    if(!picked.length && !text){ toast('Choose a file or write something'); return; }
+    if(!picked.length){ toast('Choose a file first'); return; }
     go.disabled = true; go.textContent = 'Saving…';
     try{
       const b = ebBoard(), me = ebMe(), now = Date.now(), cards = [];
@@ -9028,7 +9025,6 @@ function ebDump(){
         const f = await ebUpload(picked[i]);
         cards.push({ id:ebId(), type: ebIsImg(f) ? 'photo' : 'file', files:[f], text: i === 0 ? text : '', by:me, at:new Date(now + i).toISOString() });
       }
-      if(!picked.length) cards.push({ id:ebId(), type:'note', text, by:me, at:new Date(now).toISOString() });
       b.items.unshift(...cards); b.ordered = true;
       s.remove(); await ebSignAll(); ebRender(); ebSave();
       toast(cards.length > 1 ? cards.length + ' added to the board ✓' : 'Added to the board ✓');
@@ -9038,15 +9034,44 @@ function ebDump(){
     }
   };
 }
-// Edit a card: just its note
+// Edit a card: swap the file and/or change the caption
 function ebEditText(it){
   ebCloseSheets();
+  const hasFile = (it.files || []).length > 0 && it.type !== 'drawing';
+  const cur = hasFile ? it.files.map(f => f.name || 'file').join(', ') : '';
   const s = document.createElement('div'); s.className = 'eb-sheet';
-  s.innerHTML = `<div class="eb-form"><h3>Edit note</h3><textarea id="ebe-text" style="min-height:120px">${ebEsc(it.text || it.title || '')}</textarea><div class="eb-fbtns"><button class="eb-no">Cancel</button><button class="eb-go">Save</button></div></div>`;
+  s.innerHTML = `<div class="eb-form"><h3>Edit</h3>
+    ${hasFile ? `<label>${it.type === 'photo' ? 'Photo' : 'File'}</label><button type="button" class="eb-filebtn has" id="ebe-pick">${ebIc('<path d="M21 12a9 9 0 1 1-3-6.7L21 8"/><path d="M21 3v5h-5"/>', 20)}<span id="ebe-name">${ebEsc(cur)} · tap to replace</span></button><input id="ebe-file" type="file" style="display:none">` : ''}
+    <label>Caption</label><textarea id="ebe-text" style="min-height:90px" placeholder="e.g. Receipt for the flowers">${ebEsc(it.text || it.title || '')}</textarea>
+    <div class="eb-fbtns"><button class="eb-no">Cancel</button><button class="eb-go">Save</button></div></div>`;
   s.addEventListener('mousedown', e => { if(e.target === s) s.remove(); });
   document.body.appendChild(s);
+  const inp = s.querySelector('#ebe-file');
+  if(inp){
+    s.querySelector('#ebe-pick').onclick = () => inp.click();
+    inp.onchange = () => { const f = inp.files && inp.files[0]; if(f) s.querySelector('#ebe-name').textContent = f.name + ' · tap to change'; };
+  }
   s.querySelector('.eb-no').onclick = () => s.remove();
-  s.querySelector('.eb-go').onclick = () => { it.text = s.querySelector('#ebe-text').value.trim(); delete it.title; s.remove(); ebRender(); ebSave(); toast('Saved ✓'); };
+  s.querySelector('.eb-go').onclick = async () => {
+    const go = s.querySelector('.eb-go'); if(go.disabled) return;
+    const picked = inp && inp.files && inp.files[0];
+    try{
+      if(picked){
+        go.disabled = true; go.textContent = 'Saving…';
+        const f = await ebUpload(picked);
+        const gone = (it.files || []).map(x => x.path).filter(Boolean);
+        if(gone.length) sb.storage.from(EB_BUCKET).remove(gone).catch(() => {});
+        it.files = [f];
+        if(it.type === 'photo' || it.type === 'file') it.type = ebIsImg(f) ? 'photo' : 'file';
+        await ebSignAll();
+      }
+      it.text = s.querySelector('#ebe-text').value.trim(); delete it.title;
+      s.remove(); ebRender(); ebSave(); toast('Saved ✓');
+    }catch(e){
+      console.warn('[board]', e); go.disabled = false; go.textContent = 'Save';
+      toast(/too big/.test(e.message || '') ? 'That file is too big - the limit is 15 MB' : 'Could not upload - check your connection and try again');
+    }
+  };
 }
 function ebLinks(h){ return h.replace(/(https?:\/\/[^\s<]+)/g, '<a href="$1" target="_blank" rel="noopener" style="color:#0D9488;word-break:break-all">$1</a>'); }
 window.ebAdd = function(type, paymentId){ ebForm(type, null, paymentId); };
@@ -9072,8 +9097,7 @@ function ebForm(type, it, paymentId){
   }
   if(type === 'drawing') f += `<label>Draw here</label><canvas class="eb-pad" id="ebf-pad"></canvas><div class="eb-padbar"><button data-c="#0F1E2E" class="on">Black</button><button data-c="#DC2626">Red</button><button data-c="#0D9488">Teal</button><button data-w="8">Thick</button><button id="ebf-undo">Undo</button><button id="ebf-clear">Clear</button></div>`;
 
-  if(['note','layout','file','photo','drawing'].includes(type)) f += `<label>${type === 'note' ? 'Note' : 'Note (optional)'}</label><textarea id="ebf-text" placeholder="${type === 'note' ? 'e.g. Peanuts in small bowls with the welcome drink' : ''}">${edit ? ebEsc(it.text || '') : ''}</textarea>`;
-  if(type === 'note') f += `<label>To-do list (optional, one per line)</label><textarea id="ebf-ck" placeholder="Install 2 standing fans&#10;ARTIST ONLY sign at Elysium by 12pm">${edit && it.checklist ? ebEsc(it.checklist.map(c => c.t).join('\n')) : ''}</textarea>`;
+  if(['note','layout','file','photo','drawing'].includes(type)) f += `<label>${type === 'note' ? 'Note' : 'Note (optional)'}</label><textarea id="ebf-text" placeholder="">${edit ? ebEsc([it.text || ''].concat(type === 'note' && it.checklist ? it.checklist.map(c => c.t) : []).filter(Boolean).join('\n')) : ''}</textarea>`;
   s.innerHTML = `<div class="eb-form"><h3>${edit ? 'Edit' : 'Add'} ${K.label.toLowerCase()}</h3><p class="sub">Pinned to the board for everyone on this event</p>${f}<div class="eb-fbtns"><button class="eb-no">Cancel</button><button class="eb-go">${edit ? 'Save' : 'Add to board'}</button></div></div>`;
   s.addEventListener('mousedown', e => { if(e.target === s && type !== 'drawing') s.remove(); });
   document.body.appendChild(s);
@@ -9096,7 +9120,7 @@ function ebForm(type, it, paymentId){
     if(type === 'receipt' && !picked.length && !files.length){ toast('Add a photo or PDF of the receipt'); return; }
     if((type === 'layout' || type === 'file' || type === 'photo') && !picked.length && !files.length){ toast('Pick a file to add'); return; }
     if(type === 'map' && !($f('ebf-place').value || '').trim()){ toast('Type a place or paste a maps link'); return; }
-    if(type === 'note' && !(($f('ebf-text').value || '').trim() || ($f('ebf-ck').value || '').trim() || ($f('ebf-title').value || '').trim())){ toast('Write something first'); return; }
+    if(type === 'note' && !(($f('ebf-text').value || '').trim() || ($f('ebf-title').value || '').trim())){ toast('Write something first'); return; }
     if(type === 'drawing' && pad.empty() && !files.length){ toast('Draw something first'); return; }
     go.disabled = true; go.textContent = 'Saving…';
     try{
@@ -9122,11 +9146,7 @@ function ebForm(type, it, paymentId){
         Object.assign(rec, { title:val('ebf-title'), text:val('ebf-text'), link:/^https?:\/\//i.test(place) ? place : '', place:/^https?:\/\//i.test(place) ? ebPlaceFromLink(place) : place });
       } else {
         rec.title = val('ebf-title'); rec.text = val('ebf-text');
-        if(type === 'note'){
-          const lines = val('ebf-ck').split('\n').map(x => x.trim()).filter(Boolean);
-          const was = {}; (rec.checklist || []).forEach(c => was[c.t] = c.done);
-          rec.checklist = lines.map(t => ({ t, done: !!was[t] }));
-        }
+        if(type === 'note') delete rec.checklist;
       }
       if(!edit){ b.items.unshift(rec); b.ordered = true; }
       s.remove();

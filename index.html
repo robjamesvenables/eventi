@@ -8630,7 +8630,9 @@ function ebEnsureUi(){
 .eb-card.done{opacity:.6}
 .eb-card[data-id]{cursor:grab;touch-action:manipulation;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
 .eb-card.eb-ph{opacity:.25;outline:2px dashed #C4973B;outline-offset:4px}
-.eb-ghost{box-shadow:0 24px 50px rgba(15,30,46,.28)!important;transform:rotate(1.5deg) scale(1.02);cursor:grabbing}
+.eb-ghost{box-shadow:0 24px 50px rgba(15,30,46,.28)!important;cursor:grabbing}
+body.eb-dragging,body.eb-dragging *{cursor:grabbing!important;user-select:none!important}
+body.eb-dragging .eb-card iframe{pointer-events:none}
 .eb-clip{position:absolute;top:-14px;right:22px}
 .eb-kind{display:flex;align-items:center;gap:6px;font-size:11px;font-weight:800;letter-spacing:.9px;text-transform:uppercase;color:#64748B;margin-bottom:8px;padding-right:34px}
 .eb-kind svg{color:#94A3B8}
@@ -8778,29 +8780,61 @@ function ebDown(e){
 function ebDragStart(card, e){
   const board = card.parentNode, r = card.getBoundingClientRect();
   const ghost = card.cloneNode(true);
+  ghost.querySelectorAll('iframe').forEach(f => { const d = document.createElement('div'); d.className = 'eb-map'; f.replaceWith(d); });
   ghost.classList.add('eb-ghost');
-  Object.assign(ghost.style, { position:'fixed', left:r.left + 'px', top:r.top + 'px', width:r.width + 'px', margin:0, zIndex:10030, pointerEvents:'none' });
+  Object.assign(ghost.style, { position:'fixed', left:'0', top:'0', width:r.width + 'px', margin:0, zIndex:10030, pointerEvents:'none', willChange:'transform' });
   document.body.appendChild(ghost);
   card.classList.add('eb-ph');
+  document.body.classList.add('eb-dragging');
   const off = { x:e.clientX - r.left, y:e.clientY - r.top };
-  let lastY = e.clientY, raf = null;
+  let px = e.clientX, py = e.clientY, raf = null, lastSwap = 0;
+  const place = () => { ghost.style.transform = `translate3d(${px - off.x}px,${py - off.y}px,0) rotate(1.5deg) scale(1.02)`; };
+  place();
+  // move the other cards smoothly into their new places
+  const flip = fn => {
+    const cards = Array.from(board.querySelectorAll('.eb-card[data-id]'));
+    const before = new Map(cards.map(c => [c, c.getBoundingClientRect()]));
+    fn();
+    cards.forEach(c => {
+      if(c === card) return;
+      const a = before.get(c), b2 = c.getBoundingClientRect(), dx = a.left - b2.left, dy = a.top - b2.top;
+      if(!dx && !dy) return;
+      c.style.transition = 'none'; c.style.transform = `translate(${dx}px,${dy}px)`;
+      requestAnimationFrame(() => { c.style.transition = 'transform .2s ease'; c.style.transform = ''; });
+    });
+  };
+  const tick = () => {
+    place();
+    const h = window.innerHeight, d = py < 90 ? -12 : py > h - 90 ? 12 : 0; if(d) window.scrollBy(0, d);
+    const now = performance.now();
+    if(now - lastSwap > 120){
+      const el = document.elementFromPoint(px, py), over = el && el.closest('.eb-card[data-id]');
+      if(over && over !== card && over.parentNode === board){
+        const o = over.getBoundingClientRect();
+        // only swap once the pointer is well inside the other card, so it doesn't flicker
+        if(px > o.left + 8 && px < o.right - 8 && py > o.top + Math.min(40, o.height * .2) && py < o.bottom - Math.min(40, o.height * .2)){
+          const cards = Array.from(board.querySelectorAll('.eb-card[data-id]'));
+          flip(() => board.insertBefore(card, cards.indexOf(over) > cards.indexOf(card) ? over.nextSibling : over));
+          lastSwap = now;
+        }
+      }
+    }
+    raf = requestAnimationFrame(tick);
+  };
+  raf = requestAnimationFrame(tick);
   const noScroll = ev => ev.preventDefault();
   document.addEventListener('touchmove', noScroll, { passive:false });
-  const scrollLoop = () => { const h = window.innerHeight; const d = lastY < 80 ? -14 : lastY > h - 80 ? 14 : 0; if(d) window.scrollBy(0, d); raf = requestAnimationFrame(scrollLoop); };
-  raf = requestAnimationFrame(scrollLoop);
-  const move = ev => {
-    lastY = ev.clientY;
-    ghost.style.left = (ev.clientX - off.x) + 'px'; ghost.style.top = (ev.clientY - off.y) + 'px';
-    const el = document.elementFromPoint(ev.clientX, ev.clientY), over = el && el.closest('.eb-card[data-id]');
-    if(!over || over === card || over.parentNode !== board) return;
-    const cards = Array.from(board.querySelectorAll('.eb-card[data-id]'));
-    board.insertBefore(card, cards.indexOf(over) > cards.indexOf(card) ? over.nextSibling : over);
-  };
+  const move = ev => { px = ev.clientX; py = ev.clientY; };
   const up = () => {
     document.removeEventListener('pointermove', move); document.removeEventListener('pointerup', up); document.removeEventListener('pointercancel', up);
     document.removeEventListener('touchmove', noScroll); cancelAnimationFrame(raf);
-    ghost.remove(); card.classList.remove('eb-ph'); EB.dragEnd = Date.now();
-    // save the new order (when filtered, the moved cards keep their slots among the rest)
+    // glide the ghost into the card's new spot, then drop it
+    const t = card.getBoundingClientRect();
+    ghost.style.transition = 'transform .16s ease, box-shadow .16s ease';
+    ghost.style.transform = `translate3d(${t.left}px,${t.top}px,0)`;
+    setTimeout(() => { ghost.remove(); card.classList.remove('eb-ph'); }, 170);
+    document.body.classList.remove('eb-dragging');
+    EB.dragEnd = Date.now();
     const shown = Array.from(board.querySelectorAll('.eb-card[data-id]')).map(c => c.dataset.id);
     const b = ebBoard(), byId = {}; b.items.forEach(it => byId[it.id] = it);
     const slots = b.items.map((it, i) => shown.includes(it.id) ? i : -1).filter(i => i > -1);

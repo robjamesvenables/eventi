@@ -3455,6 +3455,9 @@ img.emoji-tw{width:1.15em;height:1.15em;vertical-align:-0.2em;margin:0 1px}
 /* Membership: live in the demo company only, "Coming soon" everywhere else */
 body:not(.mv-demo) #n-membership,body:not(.mv-demo) #home-scan-row{display:none!important}
 body.mv-demo #n-membership-soon{display:none!important}
+/* Maintenance: open in the demo company while it's being finished, Coming soon for everyone else */
+body:not(.mv-demo) #n-requests{display:none!important}
+body.mv-demo #n-requests-soon{display:none!important}
 .home-scan-row{margin-top:16px}
 .home-scan{display:inline-flex;align-items:center;justify-content:center;gap:9px;border:0;border-radius:12px;padding:12px 20px;background:#C4973B;color:#2B1D07;font:800 14px Inter,sans-serif;cursor:pointer}
 .home-scan:hover{filter:brightness(1.06)}
@@ -4044,6 +4047,10 @@ html:has(#menuDetailOverlay[style*="flex"]),html:has(#menuDetailOverlay[style*="
     </button>
 
     <div class="sb-section">Operations</div>
+    <button class="sb-link" id="n-requests" onclick="nav('requests')">
+      <svg class="sb-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94z"/></svg>
+      Maintenance
+    </button>
     <button class="sb-link" id="n-kb" onclick="nav('taskboard')">
       <svg class="sb-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
       Task Board
@@ -4102,7 +4109,7 @@ html:has(#menuDetailOverlay[style*="flex"]),html:has(#menuDetailOverlay[style*="
     </button>
 
     <div class="sb-section mv-sales">Coming Soon</div>
-    <button class="sb-link mv-sales" id="n-requests" onclick="mvSoon('maintenance')">
+    <button class="sb-link mv-sales" id="n-requests-soon" onclick="mvSoon('maintenance')">
       <svg class="sb-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94z"/></svg>
       Maintenance
       <span class="mv-tag soon">COMING SOON</span>
@@ -6259,6 +6266,7 @@ function nav(id, pushState=true){
   // Smart Notetaker is Coming Soon (recording + AI notes not wired up yet)
   if(id === 'notetaker'){ if(typeof mvPlus === 'function') mvPlus('notetaker'); if(!document.querySelector('.page.on')) id = 'home'; else return; }
   if(id === 'membership' && typeof appIsDemoCompany === 'function' && !appIsDemoCompany()){ mvSoon('membership'); return; }
+  if((id === 'requests' || id === 'request') && typeof appIsDemoCompany === 'function' && !appIsDemoCompany()){ mvSoon('maintenance'); return; }
   if(!rolePageAllowed(id)){
     toast("You don't have access to this page - ask your manager");
     return;
@@ -30388,8 +30396,8 @@ document.addEventListener('keydown', e => { if(e.key === 'Escape' && document.ge
 
 // ── Demo mode (not signed in): sample requests kept on this screen only, so the page can be shown ──
 function reqDb(){ return REQ.demo ? REQ_DEMO_DB : sb; }
-// Maintenance is in "Coming Soon": nobody can open it until it launches (same as the other Coming Soon items)
-function reqNavSoon(){ mvSoon('maintenance'); }
+// Maintenance: open in the demo company while it's being finished; Coming Soon for everyone else
+function reqNavSoon(){ if(appIsDemoCompany()) nav('requests'); else mvSoon('maintenance'); }
 const REQ_DEMO = { requests:[], request_notes:[] };
 function reqDemoPic(svg, from, to){
   return 'data:image/svg+xml;utf8,' + encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="400" height="400" viewBox="0 0 400 400"><defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="${from}"/><stop offset="1" stop-color="${to}"/></linearGradient></defs><rect width="400" height="400" fill="url(#g)"/>${svg}</svg>`);

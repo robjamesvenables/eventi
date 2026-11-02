@@ -34,25 +34,31 @@ const ROLE_COLOURS = { superadmin:'#0F1E2E', director:'#DC2626', manager:'#16A34
 const initials = p => (((p.first_name || '?')[0] || '') + ((p.last_name || '')[0] || '')).toUpperCase();
 
 // ── Requests ──
-// POST { request_id, event }  event: new | accepted | assigned | closed | reopened | note
-//   new      -> everyone who handles that department's requests
+// POST { request_id, event }  event: new | sorted | accepted | assigned | closed | reopened | note
+//   new      -> the maintenance coordinators (emergencies: managers too)
+//   sorted   -> everyone in the team it was sent to
 //   anything else -> the person who reported it and whoever is on it (and the department, if nobody is on it yet)
 // Only sent straight after the caller really did that thing (checked against the request and its updates).
 const truthy = v => v === 1 || v === '1' || v === true || v === 'true';
-async function requestHandlers(companyId, dept){
-  const [people, setting] = await Promise.all([
+// Maintenance (Nov 2026): every new job goes to the coordinators to sort (team + urgent yes/no), then to that team.
+async function requestPeople(companyId){
+  const [people, settings] = await Promise.all([
     L.db('profiles?select=id,role,is_owner,departments,active&active=eq.true&company_id=eq.' + encodeURIComponent(companyId)),
-    L.db('app_settings?select=value&key=eq.role_perms&company_id=eq.' + encodeURIComponent(companyId)).catch(() => [])
+    L.db('app_settings?select=key,value&key=in.(role_perms,maint_coordinators)&company_id=eq.' + encodeURIComponent(companyId)).catch(() => [])
   ]);
-  let perms = {};
-  try { const v = setting[0] && setting[0].value; perms = (typeof v === 'string' ? JSON.parse(v) : v) || {}; } catch (e) {}
+  const val = k => { const row = settings.find(x => x.key === k); let v = row && row.value; try { while (typeof v === 'string') v = JSON.parse(v); } catch (e) {} return v; };
+  const perms = val('role_perms') || {}, coords = (Array.isArray(val('maint_coordinators')) ? val('maint_coordinators') : []).map(String);
   const can = (role, mod, dflt) => { const v = perms[role] && perms[role][mod]; return v === undefined || v === null ? dflt : truthy(v); };
-  return people.filter(p => {
-    if (p.is_owner || p.role === 'superadmin') return true;
-    if (can(p.role, 'requestsall', ['director', 'manager'].includes(p.role))) return true;
-    const depts = Array.isArray(p.departments) ? p.departments : [];
-    return can(p.role, 'requestsmanage', ['director', 'manager', 'supervisor'].includes(p.role)) && depts.includes(dept);
-  }).map(p => p.id);
+  const seeAll = p => p.is_owner || p.role === 'superadmin' || can(p.role, 'requestsall', ['director', 'manager'].includes(p.role));
+  return {
+    coordinators: people.filter(p => coords.includes(String(p.id))).map(p => p.id),
+    managers: people.filter(seeAll).map(p => p.id),
+    team: dept => people.filter(p => (Array.isArray(p.departments) ? p.departments : []).includes(dept)).map(p => p.id)
+  };
+}
+async function requestHandlers(companyId, dept){
+  const P = await requestPeople(companyId);
+  return P.coordinators.concat(P.team(dept));
 }
 async function requestPush(me, b, res){
   const log = text => L.db('app_errors', { method: 'POST', body: { company_id: me.company_id, username: me.username, page: 'notify', message: 'Request notification from ' + (fullName(me) || me.username) + ': ' + text } }).catch(() => {});
@@ -71,7 +77,14 @@ async function requestPush(me, b, res){
   if (!ok) { await log('not sent - nothing new on #' + r.ref); return L.send(res, 200, { ok: true, sent: 0, why: 'nothing new' }); }
 
   let to = [];
-  if (ev === 'new') to = await requestHandlers(r.company_id, r.dept);
+  if (ev === 'new' && r.status === 'sort') {
+    // new job -> the coordinators sort it; an emergency (or a company with no coordinators) also tells the managers
+    const P = await requestPeople(r.company_id);
+    to = P.coordinators.slice();
+    if (r.priority === 'urgent' || !to.length) to = to.concat(P.managers);
+  }
+  else if (ev === 'new') to = await requestHandlers(r.company_id, r.dept);
+  else if (ev === 'sorted') { const P = await requestPeople(r.company_id); to = P.team(r.dept); }
   else {
     to = [r.reported_by, r.assigned_to].filter(Boolean);
     if (!r.assigned_to && (ev === 'note' || ev === 'reopened')) to = to.concat(await requestHandlers(r.company_id, r.dept));
@@ -86,13 +99,15 @@ async function requestPush(me, b, res){
   ]);
   const prefBy = {}; prefs.forEach(p => prefBy[p.profile_id] = p);
   const who = me.first_name || 'Someone';
-  const title = (r.priority === 'urgent' ? 'URGENT · ' : '') + 'Request #' + r.ref + ' · ' + r.dept;
+  const title = r.status === 'sort'
+    ? (r.priority === 'urgent' ? 'EMERGENCY · New job to sort' : 'New job to sort')
+    : (r.priority === 'urgent' ? 'URGENT · ' : '') + (ev === 'sorted' ? 'New job for ' + r.dept : 'Job #' + r.ref + ' · ' + r.dept);
   const assignee = r.assigned_to && String(r.assigned_to) !== String(me.id)
     ? ((await L.db('profiles?select=first_name&id=eq.' + encodeURIComponent(r.assigned_to)).catch(() => []))[0] || {}).first_name : null;
   const what = r.title.length > 90 ? r.title.slice(0, 87) + '…' : r.title;
   const bodyFor = pid => {
-    if (ev === 'new') return who + ': ' + what + (r.location ? ' (' + r.location + ')' : '');
-    if (ev === 'accepted') return who + ' is on it: ' + what;
+    if (ev === 'new' || ev === 'sorted') return what + (r.location ? ' · ' + r.location : '');
+    if (ev === 'accepted') return who + ' accepted this job: ' + what;
     if (ev === 'assigned') return String(r.assigned_to) === String(pid) ? who + ' asked you to do this: ' + what : who + ' gave this to ' + (assignee || 'someone') + ': ' + what;
     if (ev === 'closed') return who + ' marked this as done: ' + what;
     if (ev === 'reopened') return who + ' reopened: ' + what;

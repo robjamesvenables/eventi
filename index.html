@@ -30058,31 +30058,36 @@ function reqRenderList(){
   const live = r => r.status !== 'closed';
   const weekAgo = Date.now() - 7 * 86400000;
   const sets = {
+    all: all.filter(live),
     sort: all.filter(r => r.status === 'sort'),
+    waiting: all.filter(r => r.status === 'open'),
     open: all.filter(r => live(r) && (r.status !== 'sort' || !canSort)),
     done: all.filter(r => !live(r)),
     urgent: all.filter(r => live(r) && r.priority === 'urgent'),
     progress: all.filter(r => r.status === 'progress'),
     week: all.filter(r => !live(r) && r.closed_at && new Date(r.closed_at).getTime() >= weekAgo)
   };
-  if(REQ.tabAuto || !REQ.tab || !sets[REQ.tab] || (REQ.tab === 'sort' && !canSort)){ REQ.tab = canSort && sets.sort.length ? 'sort' : 'open'; REQ.tabAuto = true; }
+  if(REQ.tabAuto || !REQ.tab || !sets[REQ.tab] || (REQ.tab === 'sort' && !canSort)){ REQ.tab = 'all'; REQ.tabAuto = true; }
   let rows = sets[REQ.tab];
   const teams = [...new Set(all.map(r => r.dept).filter(Boolean))].sort();
   if(REQ.dept !== 'all' && !teams.includes(REQ.dept)) REQ.dept = 'all';
   if(REQ.dept !== 'all' && REQ.tab !== 'sort') rows = rows.filter(r => r.dept === REQ.dept);
   const sr = {sort:0, open:1, progress:2};
+  const grouped = REQ.tab === 'all';
   if(REQ.tab === 'done' || REQ.tab === 'week') rows = rows.sort((a, b) => String(b.closed_at || b.updated_at).localeCompare(String(a.closed_at || a.updated_at))).slice(0, 100);
   else rows.sort((a, b) => ((a.priority === 'urgent' ? 0 : 1) - (b.priority === 'urgent' ? 0 : 1)) || (sr[a.status] - sr[b.status]) || String(b.created_at).localeCompare(String(a.created_at)));
 
   let nums = '';
   if(canSort){
     const n = (k, v, label, cls) => `<button class="req-num ${cls || ''}${REQ.tab === k ? ' on' : ''}" onclick="reqSetTab('${k}')"><b>${v}</b><span>${label}</span></button>`;
-    nums = `<div class="req-nums">${n('open', sets.open.length, 'Open')}${n('urgent', sets.urgent.length, 'Urgent', sets.urgent.length ? 'red' : '')}${n('progress', sets.progress.length, 'In progress')}${n('week', sets.week.length, 'Fixed this week')}</div>`;
+    nums = `<div class="req-nums">${n('sort', sets.sort.length, 'To sort', sets.sort.length ? 'gold' : '')}${n('waiting', sets.waiting.length, 'Waiting', sets.waiting.length ? 'red' : '')}${n('progress', sets.progress.length, 'In progress')}${n('week', sets.week.length, 'Fixed this week')}</div>`;
   }
-  const tabs = (canSort ? [['sort', 'To sort', sets.sort.length]] : []).concat([['open', 'Open', canSort ? 0 : sets.open.length], ['done', 'Done']]);
-  const pills = tabs.map(([k, l, c]) => `<button class="req-pill${REQ.tab === k ? ' on' : ''}${k === 'sort' && c ? ' gold' : ''}" onclick="reqSetTab('${k}')">${l}${c ? `<i>${c}</i>` : ''}</button>`).join('');
-  const extra = {urgent:'Urgent', progress:'In progress', week:'Fixed this week'}[REQ.tab];
-  const teamSel = REQ.tab !== 'sort' && teams.length > 1 ? `<select class="req-team" onchange="reqSetDept(this.value)"><option value="all">All teams</option>${teams.map(d => `<option value="${reqEsc(d)}"${REQ.dept === d ? ' selected' : ''}>${reqEsc(d)}</option>`).join('')}</select>` : '';
+  const tabs = [['all', 'All', sets.all.length]].concat(canSort ? [['sort', 'To sort', sets.sort.length]] : []).concat([['done', 'Done']]);
+  const pills = tabs.map(([k, l, c]) => `<button class="req-pill${REQ.tab === k ? ' on' : ''}${k === 'sort' && c ? ' gold' : ''}${k === 'all' ? ' alln' : ''}" onclick="reqSetTab('${k}')">${l}${c ? `<i>${c}</i>` : ''}</button>`).join('');
+  const extra = {urgent:'Urgent', progress:'In progress', waiting:'Waiting', week:'Fixed this week', open:'Open'}[REQ.tab];
+  const sortLink = r => r.status === 'sort' && canSort ? `<button class="req-acc gold" onclick="event.stopPropagation();reqOpen('${r.id}')">Sort it</button>` : '';
+  const teamSel = REQ.tab !== 'sort' && teams.length > 1 ? `<button class="req-team${REQ.dept !== 'all' ? ' on' : ''}" onclick="reqTeamMenu(event)">${REQ.dept === 'all' ? 'All teams' : reqEsc(REQ.dept)}<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg></button>` : '';
+  REQ.teamsNow = teams;
   const canAccept = r => r.status === 'open' && reqCanHandle(r);
   const acceptBtn = r => `<button class="req-acc" onclick="event.stopPropagation();reqAccept('${r.id}')">Accept job</button>`;
   const status = r => { const s = REQ_ST[r.status] || REQ_ST.open; return `<span class="req-st ${s[1]}">${s[0]}</span>`; };
@@ -30092,7 +30097,7 @@ function reqRenderList(){
   const prow = r => `<div class="req-row${urg(r) ? ' urg' : ''}" onclick="reqOpen('${r.id}')">${reqThumbHtml(r, 52)}
       <div class="req-row-mid"><div class="req-row-t">${reqEsc(r.title)}</div>
       <div class="req-row-s">${[r.location, reqAgo(r.created_at), whoOn(r), REQ.dept === 'all' && canSort ? r.dept : ''].filter(Boolean).map(reqEsc).join(' · ')}</div>
-      ${canAccept(r) ? acceptBtn(r) : ''}</div>${canAccept(r) ? '' : status(r)}</div>`;
+      ${canAccept(r) ? acceptBtn(r) : sortLink(r)}</div>${canAccept(r) || sortLink(r) ? '' : status(r)}</div>`;
 
   let body;
   if(REQ.tab === 'sort'){
@@ -30102,6 +30107,17 @@ function reqRenderList(){
           <div class="rq-ss">${[r.location, reqName(r.reported_by, true), reqAgo(r.created_at)].filter(Boolean).map(reqEsc).join(' · ')}</div>
           ${reqSortHtml(r)}</div></div>`).join('')}</div>`
       : reqEmpty('Nothing to sort', 'New reports land here for you to send to the right team.');
+  } else if(rows.length && grouped){
+    const groups = [['sort', 'To sort'], ['open', 'Waiting'], ['progress', 'In progress']].map(([st, label]) => [label, rows.filter(r => r.status === st)]).filter(g => g[1].length);
+    const phone = groups.map(([label, list]) => `<div class="req-sec">${label} · ${list.length}</div>` + list.map(prow).join('')).join('');
+    const head = `<thead><tr><th></th><th>Problem</th><th>Where</th><th>Team</th><th>Who's on it</th><th>Reported</th><th>Status</th></tr></thead>`;
+    const trow = r => `<tr onclick="reqOpen('${r.id}')"><td class="u">${urg(r) ? '<span class="req-urg2">URGENT</span>' : ''}</td>
+        <td class="t"><div class="req-tcell">${reqThumbHtml(r, 44)}<span>${reqEsc(r.title)}</span></div></td>
+        <td class="m">${reqEsc(r.location || '-')}</td><td>${tag(r)}</td>
+        <td>${r.assigned_to ? `<span class="req-whocell">${reqAvatar(r.assigned_to, 24)}${reqEsc(whoOn(r))}</span>` : '<span class="m">-</span>'}</td>
+        <td class="m">${reqAgo(r.created_at)}</td><td>${canAccept(r) ? acceptBtn(r) : sortLink(r) || status(r)}</td></tr>`;
+    const table = `<table class="req-table">${head}<tbody>${groups.map(([label, list]) => `<tr class="req-grp"><td colspan="7">${label} · ${list.length}</td></tr>` + list.map(trow).join('')).join('')}</tbody></table>`;
+    body = `<div class="req-phone-list">${phone}</div><div class="req-desk-list">${table}</div>`;
   } else if(rows.length){
     const u = rows.filter(urg), rest = rows.filter(r => !urg(r));
     const phone = (u.length ? `<div class="req-sec red">Urgent</div>` : '') + u.map(prow).join('') + (u.length && rest.length ? `<div class="req-sec">${REQ.tab === 'done' || REQ.tab === 'week' ? 'Done' : 'Open'}</div>` : '') + rest.map(prow).join('');
@@ -30110,7 +30126,7 @@ function reqRenderList(){
         <td class="t"><div class="req-tcell">${reqThumbHtml(r, 44)}<span>${reqEsc(r.title)}</span></div></td>
         <td class="m">${reqEsc(r.location || '-')}</td><td>${tag(r)}</td>
         <td>${r.assigned_to ? `<span class="req-whocell">${reqAvatar(r.assigned_to, 24)}${reqEsc(whoOn(r))}</span>` : '<span class="m">-</span>'}</td>
-        <td class="m">${reqAgo((REQ.tab === 'done' || REQ.tab === 'week') ? (r.closed_at || r.updated_at) : r.created_at)}</td><td>${canAccept(r) ? acceptBtn(r) : status(r)}</td></tr>`).join('')}
+        <td class="m">${reqAgo((REQ.tab === 'done' || REQ.tab === 'week') ? (r.closed_at || r.updated_at) : r.created_at)}</td><td>${canAccept(r) ? acceptBtn(r) : sortLink(r) || status(r)}</td></tr>`).join('')}
     </tbody></table>`;
     body = `<div class="req-phone-list">${phone}</div><div class="req-desk-list">${table}</div>`;
   } else body = reqEmptyFor(REQ.tab);
@@ -30119,7 +30135,7 @@ function reqRenderList(){
     <div class="req-banner req-banner2"><div><div class="req-hello">Maintenance</div><div class="req-hello-sub">${canSort ? 'Everything that needs fixing, in one list' : 'Jobs for your team, and problems you reported'}</div></div>
       ${canReport ? `<button class="req-report" onclick="reqNew()">+ Report a problem</button>` : ''}</div>
     ${nums}
-    <div class="req-bar2">${pills}${teamSel}${extra ? `<span class="req-showing">Showing: <b>${extra}</b> <button onclick="reqSetTab('open')" aria-label="Clear">×</button></span>` : ''}</div>
+    <div class="req-bar2">${pills}${teamSel}${extra ? `<span class="req-showing">Showing: <b>${extra}</b> <button onclick="reqSetTab('all')" aria-label="Clear">×</button></span>` : ''}</div>
     ${body}`;
 }
 // The coordinator's two taps: which team, urgent yes/no -> Send
@@ -30136,6 +30152,18 @@ function reqSortHtml(r){
     <button class="rq-sendbtn" ${sel.dept ? '' : 'disabled'} onclick="reqSortSend('${r.id}')">${sel.dept ? 'Send to ' + reqEsc(sel.dept) : 'Pick a team'}</button>
   </div>`;
 }
+// Team filter: a Mavis-style menu (not the computer's own dropdown)
+function reqTeamMenu(e){
+  e.stopPropagation();
+  document.getElementById('req-menu')?.remove();
+  const m = document.createElement('div'); m.id = 'req-menu';
+  const opts = [['all', 'All teams']].concat((REQ.teamsNow || []).map(d => [d, d]));
+  m.innerHTML = opts.map(([v, l]) => `<button class="${REQ.dept === v ? 'on' : ''}" data-v="${reqEsc(v)}" onclick="document.getElementById('req-menu').remove();reqSetDept(this.dataset.v)">${reqEsc(l)}${REQ.dept === v ? '<span style="float:right;color:#0D9488">✓</span>' : ''}</button>`).join('');
+  const b = e.currentTarget.getBoundingClientRect();
+  m.style.top = (b.bottom + 6) + 'px'; m.style.left = Math.min(b.left, window.innerWidth - 220) + 'px'; m.style.minWidth = '200px';
+  document.body.appendChild(m);
+  setTimeout(() => document.addEventListener('click', function close(){ m.remove(); document.removeEventListener('click', close); }), 0);
+}
 function reqSortPick(id, k, v){ const r = reqGet(id); if(!REQ.sortSel[id]) REQ.sortSel[id] = { dept:null, urgent: !!r && r.priority === 'urgent' }; REQ.sortSel[id][k] = v; reqRenderAll(); }
 async function reqSortSend(id){
   const r = reqGet(id), sel = REQ.sortSel[id];
@@ -30151,6 +30179,7 @@ async function reqSortSend(id){
 }
 function reqResort(){ const r = reqGet(REQ.openId); if(!r) return; REQ.resort = r.id; REQ.sortSel[r.id] = { dept:null, urgent: r.priority === 'urgent' }; reqRenderDetail(); }
 function reqEmptyFor(tab){
+  if(tab === 'all') return reqEmpty('All clear', 'Nothing needs fixing right now.' + (reqCanReport() ? ' Spotted a problem? Tap Report.' : ''));
   if(tab === 'done' || tab === 'week') return reqEmpty('Nothing fixed yet', 'Finished jobs show up here.');
   return reqEmpty('All clear', 'Nothing needs fixing right now. Spotted a problem? Tap Report.');
 }
@@ -30788,7 +30817,9 @@ reqStyle.textContent = `
 .req-pill{border:0;background:#E8EBEF;color:#475569;border-radius:999px;padding:8px 15px;font:700 13.5px Inter,sans-serif;cursor:pointer;display:flex;align-items:center;gap:6px}
 .req-pill.on{background:#0F1E2E;color:#fff}
 .req-pill i{font-style:normal;background:#DC2626;color:#fff;border-radius:9px;padding:0 6px;font-size:11px;line-height:17px}
-.req-team{border:0;background:#E8EBEF;color:#475569;border-radius:999px;padding:8px 30px 8px 15px;font:700 13.5px Inter,sans-serif;cursor:pointer;appearance:none;-webkit-appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23475569' stroke-width='3' stroke-linecap='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center}
+.req-team{border:0;background:#E8EBEF;color:#475569;border-radius:999px;padding:8px 13px 8px 15px;font:700 13.5px Inter,sans-serif;cursor:pointer;display:inline-flex;align-items:center;gap:7px}
+.req-team.on{background:#0F1E2E;color:#fff}
+#req-menu button.on{background:#F0FDFA}
 .req-showing{font-size:13px;color:#475569;display:flex;align-items:center;gap:6px;margin-left:4px}
 .req-showing button{border:0;background:#E8EBEF;border-radius:50%;width:22px;height:22px;cursor:pointer;font-size:15px;line-height:1;color:#475569}
 .req-st{font-size:12px;font-weight:800;border-radius:999px;padding:4px 10px;white-space:nowrap;flex:none}
@@ -30883,6 +30914,10 @@ reqStyle.textContent = `
 .req-pill.gold{background:#FDF3DE;color:#8A6418}.req-pill.gold.on{background:#0F1E2E;color:#fff}
 .req-pill.gold i{background:#C4973B;color:#0F1E2E}
 .req-st.s{background:#EEF2FF;color:#4338CA}
+.req-acc.gold{background:#C4973B;color:#0F1E2E}.req-acc.gold:hover{background:#B8862F}
+.req-num.gold b{color:#B8862F}
+.req-table tr.req-grp td{background:#F8FAFC;font-size:11.5px;font-weight:800;letter-spacing:.7px;text-transform:uppercase;color:#64748B;padding:9px 14px;cursor:default}
+.req-table tbody tr.req-grp:hover td{background:#F8FAFC}
 .req-acc{border:0;background:#0D9488;color:#fff;border-radius:10px;padding:8px 14px;font:800 13.5px Inter,sans-serif;cursor:pointer;white-space:nowrap}
 .req-acc:hover{background:#0F766E}
 .req-row .req-acc{margin-top:8px;width:100%;height:40px;font-size:14.5px}

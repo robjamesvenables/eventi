@@ -22,11 +22,11 @@ const DEMO_VENUES = [
   { name: 'Ombak Beach Club', area: 'Sanur', opens: '10:00', closes: '00:00' },
   { name: 'Saffron & Salt', area: 'Seminyak', opens: '17:00', closes: '23:00' },
   { name: 'Kopi Pagi', area: 'Canggu', opens: '07:00', closes: '17:00' }
-].map(v => Object.assign(v, { map: 'https://maps.google.com', wa: '6281234567890', phone: '+62 812 3456 7890' }));
+].map(v => Object.assign(v, { map: 'https://maps.google.com', wa: '6281234567890', phone: '+62 812 3456 7890', email: v.name.toLowerCase().replace(/[^a-z]+/g, '') + '@example.com' }));
 const DEMO_RENAME = { 'rooftop': 'Senja Rooftop', 'beach club': 'Ombak Beach Club', 'harbour': 'Saffron & Salt', 'garden': 'Kopi Pagi' };
 const isOldDemo = list => Array.isArray(list) && list.some(v => v && DEMO_RENAME[String(v.name || '').toLowerCase().trim()]);
 // Demo only: swap any old venue name for its new made-up place (keeps the saved hours, map and WhatsApp)
-const renameDemo = list => (list || []).map(v => { const n = DEMO_RENAME[String((v && v.name) || '').toLowerCase().trim()]; if (!n) return v; const d = DEMO_VENUES.find(x => x.name === n); return Object.assign({}, v, { name: n, area: v.area || d.area }); });
+const renameDemo = list => (list || []).map(v => { const n = DEMO_RENAME[String((v && v.name) || '').toLowerCase().trim()]; if (!n) return v; const d = DEMO_VENUES.find(x => x.name === n); return Object.assign({}, v, { name: n, area: v.area || d.area, email: v.email || d.email }); });
 
 // Demo company: a page that always looks alive
 function demo(today){
@@ -37,7 +37,6 @@ function demo(today){
     order: SECTIONS.slice(), off: {},
     slides: [
       { id: 'ds1', img: '/demo-guest/martini.jpg', title: '2 for 1 cocktails', line: 'Every day 5–7pm', venue: 'Senja Rooftop' },
-      { id: 'ds2', img: '/demo-guest/party.jpg', title: "New Year's Eve", line: 'Tickets on sale now', venue: 'Senja Rooftop', btn: 'tickets', url: 'https://megatix.co.id' },
       { id: 'ds3', img: '/demo-guest/ombak.jpg', title: 'Pool days', line: 'Daybeds from 10am', venue: 'Ombak Beach Club' },
       { id: 'ds4', img: '/demo-guest/fish.jpg', title: 'New dinner menu', line: 'From 5pm', venue: 'Saffron & Salt' },
       { id: 'ds5', img: '/demo-guest/pasta.jpg', title: 'Breakfast all day', line: 'Coffee from 7am', venue: 'Kopi Pagi' }
@@ -49,10 +48,14 @@ function demo(today){
       { id: 'dd4', img: '/demo-guest/ombak.jpg', title: 'Daybed + bucket of beers · Rp 600k', when: 'Weekdays · 10am–4pm', venue: 'Ombak Beach Club' }
     ],
     events: [
-      { id: 'de1', img: '/demo-guest/party.jpg', title: "New Year's Eve", line: 'Fireworks, DJs, free-flow from Rp 1.5m', date: nye, time: '20:00', venue: 'Senja Rooftop', btn: 'tickets', url: 'https://megatix.co.id' },
-      { id: 'de2', img: '/demo-guest/fish.jpg', title: 'Christmas Lunch', line: 'Four courses by the water', date: xmas, time: '12:00', venue: 'Saffron & Salt', btn: 'wa' },
-      { id: 'de3', img: '/demo-guest/chef.jpg', title: "Chef's Table", line: 'Seven courses, 12 seats only', date: plus(9), time: '19:00', venue: 'Saffron & Salt', btn: 'wa' },
-      { id: 'de4', img: '/demo-guest/party.jpg', title: 'Full Moon Rooftop', line: 'DJ Ayu till late', date: plus(11), time: '21:00', venue: 'Senja Rooftop', btn: 'tickets', url: 'https://megatix.co.id' }
+      { id: 'de1', img: '/demo-guest/party.jpg', title: "New Year's Eve", line: 'Fireworks, DJs, free-flow from Rp 1.5m', date: nye, time: '20:00', time2: '03:00', venue: 'Senja Rooftop', btn: 'tickets', url: 'https://megatix.co.id', hl: true,
+        details: 'DJ Ayu and DJ Kai, a live sax player and fireworks over the ocean at midnight.', age: '21', dress: 'Smart - all white', price: 'From Rp 1.5m, free-flow included', notes: 'Tables for 6+ by WhatsApp. Sells out every year.' },
+      { id: 'de2', img: '/demo-guest/fish.jpg', title: 'Christmas Lunch', line: 'Four courses by the water', date: xmas, time: '12:00', time2: '16:00', venue: 'Saffron & Salt', btn: 'wa',
+        details: 'Four courses, carols, and Santa for the little ones.', age: 'all', dress: 'Smart casual', price: 'Rp 850k, kids half price' },
+      { id: 'de3', img: '/demo-guest/chef.jpg', title: "Chef's Table", line: 'Seven courses, 12 seats only', date: plus(9), time: '19:00', time2: '22:30', venue: 'Saffron & Salt', btn: 'wa',
+        details: 'Seven courses cooked in front of you, with a wine pairing.', dress: 'Smart casual', price: 'Rp 1.2m per person', notes: 'Tell us about any allergies when you book.' },
+      { id: 'de4', img: '/demo-guest/party.jpg', title: 'Full Moon Rooftop', line: 'DJ Ayu till late', date: plus(11), time: '21:00', time2: '02:00', venue: 'Senja Rooftop', btn: 'tickets', url: 'https://megatix.co.id',
+        details: 'DJ Ayu b2b DJ Marco - deep house till late under the full moon.', age: '18', price: 'Free entry - members skip the queue' }
     ],
     gallery: [['senja', 'Senja Rooftop'], ['martini', 'Senja Rooftop'], ['party', 'Senja Rooftop'], ['ombak', 'Ombak Beach Club'], ['saffron', 'Saffron & Salt'], ['chef', 'Saffron & Salt'],
               ['fish', 'Saffron & Salt'], ['truffle', 'Saffron & Salt'], ['squidink', 'Saffron & Salt'], ['pasta', 'Kopi Pagi']].map(([n, v], i) => ({ id: 'dg' + i, img: '/demo-guest/' + n + '.jpg', venue: v })),
@@ -69,6 +72,11 @@ function topUpDemo(c, today){
   out.places = pl;
   const have = new Set((c.gallery || []).map(g => g && g.img).filter(Boolean));
   out.gallery = (c.gallery || []).concat(d.gallery.filter(g => DEMO_NEW_PHOTOS.includes(g.img) && !have.has(g.img)));
+  // Demo events saved before events had details: give them the demo details (once they have their own, theirs win)
+  out.events = (c.events || []).map(e => { const de = e && !('details' in e) && d.events.find(x => x.id === e.id); if (!de) return e;
+    const x = Object.assign({}, e); ['details', 'age', 'dress', 'price', 'notes', 'time2', 'hl'].forEach(k => { if (de[k] != null && x[k] == null) x[k] = de[k]; }); return x; });
+  // The old New Year's Eve photo slide is now the event itself in Highlights
+  if (out.events.some(e => e && e.id === 'de1' && e.hl)) out.slides = (c.slides || []).filter(sl => sl && sl.id !== 'ds2');
   return out;
 }
 
@@ -101,10 +109,16 @@ function build(c, ctx){
     return n && (venues || []).some(x => x.name === n) ? n : ''; };
   const slides = on('slides') ? (c.slides || []).filter(s => img(s)).slice(0, 12).map(s => ({ id: str(s.id, 40), img: img(s), title: str(s.title, 60), line: str(s.line, 90), venue: str(guessPlace(s), 40), btn: button(s, s.title || 'a table') })) : [];
   const deals = (c.deals || []).filter(d => d && d.title).slice(0, 12).map(d => ({ id: str(d.id, 40), img: img(d), title: str(d.title, 60), when: str(d.when, 40), venue: str(d.venue, 40) }));
+  const AGES = { all: 'All ages', '18': '18+ only', '21': '21+ only' };
   const events = (c.events || []).filter(e => e && e.title && (!e.date || e.date >= today) && (!e.from || e.from <= today))
     .sort((a, b) => String(a.date || '9999').localeCompare(String(b.date || '9999'))).slice(0, 12)
-    .map(e => ({ id: str(e.id, 40), img: img(e), title: str(e.title, 60), line: str(e.line, 90), venue: str(e.venue, 40),
-      when: [dateLabel(e.date), timeLabel(e.time)].filter(Boolean).join(' · '), btn: button(e, e.title + (e.date ? ' (' + dateLabel(e.date) + ')' : '')) }));
+    .map(e => { const t1 = timeLabel(e.time), t2 = timeLabel(e.time2);
+      return { id: str(e.id, 40), img: img(e), title: str(e.title, 60), line: str(e.line, 90), venue: str(e.venue, 40),
+        when: [dateLabel(e.date), t1 && t2 ? t1 + ' – ' + t2 : t1].filter(Boolean).join(' · '), btn: button(e, e.title + (e.date ? ' (' + dateLabel(e.date) + ')' : '')),
+        // The details pop-up: what's on, ages, dress code, price, anything else
+        details: str(e.details, 300), age: AGES[e.age] || '', dress: str(e.dress, 60), price: str(e.price, 60), notes: str(e.notes, 200), hl: !!e.hl }; });
+  // Events switched to "Show in Highlights" go in that place's big photos too (tap -> the details pop-up)
+  if (on('slides')) events.filter(e => e.hl && e.img).forEach(e => { if (slides.length < 12) slides.push({ id: 'ev-' + e.id, img: e.img, title: e.title, line: e.when, venue: e.venue, btn: null, ev: e.id }); });
   const gallery = (c.gallery || []).map(g => ({ img: img(g), venue: str(g && g.venue, 40) })).filter(g => g.img).slice(0, 120);
   let order = Array.isArray(c.order) ? c.order.filter(k => SECTIONS.includes(k)) : [];
   SECTIONS.forEach(k => { if (!order.includes(k)) order.push(k); });

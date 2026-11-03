@@ -2188,7 +2188,12 @@ body:not(.mv-demo) #ms-demoqr-btn{display:none!important}
 .ms-vx{width:36px;height:36px;flex:none;border:0;border-radius:9px;background:white;color:#94A3B8;display:flex;align-items:center;justify-content:center;cursor:pointer}.ms-vx:hover{color:#DC2626}
 .ms-pl{font-size:12.5px;font-weight:800;color:#475569;margin:10px 0 6px}
 .ms-prow{display:flex;align-items:center;gap:8px;margin-bottom:6px}
-.ms-prow i{width:36px;height:36px;border-radius:10px;background:#E6F4F1;color:#0D9488;display:flex;align-items:center;justify-content:center;flex:none}
+.ms-pib{width:40px;height:40px;border-radius:11px;background:#E6F4F1;color:#0D9488;display:flex;align-items:center;justify-content:center;flex:none;border:1.5px solid #CDEAE4;cursor:pointer;position:relative;padding:0}
+.ms-pib:after{content:'';position:absolute;right:-3px;bottom:-3px;width:13px;height:13px;border-radius:50%;background:white;border:1.5px solid #CDEAE4;box-sizing:border-box}
+.ms-pib:before{content:'';position:absolute;right:1px;bottom:2px;width:4px;height:4px;border-right:1.5px solid #0D9488;border-bottom:1.5px solid #0D9488;transform:rotate(45deg);z-index:1}
+.ms-pgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(42px,1fr));gap:6px;background:#F8FAFC;border:1.5px solid #E2E8F0;border-radius:12px;padding:8px;margin:0 0 8px}
+.ms-pgrid button{height:42px;border-radius:10px;border:1.5px solid transparent;background:white;color:#334155;display:flex;align-items:center;justify-content:center;cursor:pointer;padding:0}
+.ms-pgrid button.on{border-color:#0D9488;color:#0D9488;background:#E6F4F1}
 .ms-prow input{flex:1;min-width:0;border:1.5px solid #E2E8F0;border-radius:11px;padding:10px 12px;font:600 14px Inter,sans-serif;color:#0F1E2E;background:white}
 .ms-prow input:focus{outline:none;border-color:#0D9488}
 .ms-plist + .ms-vadd{margin-bottom:4px}
@@ -21239,8 +21244,8 @@ const msVenues = () => { try{ return VENUES.map(v => v.name); }catch(e){ return 
 const msToday = () => { const d = new Date(); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); };
 const msCode = s => String(s || '').toUpperCase().replace(/.*\/K\//, '').replace(/[^A-Z0-9]/g, '').slice(0, 16);
 function msPerks(){
-  try{ const v = appSettings && appSettings.member_perks; const p = v ? (typeof v === 'string' ? JSON.parse(v) : v) : null; if(p && (p.member || p.vip)) return { member: p.member || [], vip: p.vip || [] }; }catch(e){}
-  return { member: ['Welcome drink on your first visit', 'Birthday dessert on us'], vip: ['10% off food at all our venues', 'Birthday dessert on us', 'Skip the queue on busy nights'] };
+  try{ const v = appSettings && appSettings.member_perks; const p = v ? (typeof v === 'string' ? JSON.parse(v) : v) : null; if(p && (p.member || p.vip)) return { member: p.member || [], vip: p.vip || [], icons: p.icons || {} }; }catch(e){}
+  return { member: ['Welcome drink on your first visit', 'Birthday dessert on us'], vip: ['10% off food at all our venues', 'Birthday dessert on us', 'Skip the queue on busy nights'], icons: {} };
 }
 function msFace(name, s){
   const w = String(name || '?').trim().split(/\s+/), ini = ((w[0] || '?')[0] + (w[1] ? w[1][0] : '')).toUpperCase();
@@ -21547,10 +21552,19 @@ function msPage(){
   return { venues:[], reward:null };
 }
 // Perks: one box per perk, the icon guests will see comes from the words
-const MS_PI = {"cake": "<path d=\"M20 21v-8a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8\"/><path d=\"M4 16s.5-1 2-1 2.5 2 4 2 2.5-2 4-2 2.5 2 4 2 2-1 2-1\"/><path d=\"M2 21h20M7 8v3M12 8v3M17 8v3\"/>", "glass": "<path d=\"M8 22h8M12 15v7M5 3h14l-1.5 7a5.5 5.5 0 0 1-11 0z\"/>", "pct": "<path d=\"M19 5 5 19\"/><circle cx=\"6.5\" cy=\"6.5\" r=\"2.5\"/><circle cx=\"17.5\" cy=\"17.5\" r=\"2.5\"/>", "star": "<path d=\"m12 2 3.1 6.3 6.9 1-5 4.9 1.2 6.8L12 17.8 5.8 21l1.2-6.8-5-4.9 6.9-1z\"/>", "food": "<path d=\"M3 2v7a3 3 0 0 0 6 0V2M6 2v20M21 15V2a5 5 0 0 0-5 5v6a2 2 0 0 0 2 2h3zm0 0v7\"/>", "gift": "<rect x=\"3\" y=\"8\" width=\"18\" height=\"4\" rx=\"1\"/><path d=\"M12 8v13M19 12v7a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2v-7M7.5 8a2.5 2.5 0 0 1 0-5C10 3 12 8 12 8s2-5 4.5-5a2.5 2.5 0 0 1 0 5\"/>"};
-const msPerkIc = function(t){ t = String(t || '').toLowerCase(); return /birthday|cake/.test(t) ? 'cake' : /%|\boff\b|discount|free.?flow|half price|2 for 1/.test(t) ? 'pct' : /drink|cocktail|wine|beer|shot|bubbles|champagne|coffee/.test(t) ? 'glass' : /queue|priority|vip|skip|first access|early access/.test(t) ? 'star' : /food|dessert|meal|dinner|lunch|breakfast|brunch|dish|plate|snack/.test(t) ? 'food' : 'gift'; };
-function msPerkSvg(t){ return `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">${MS_PI[msPerkIc(t)]}</svg>`; }
-function msPerkRow(t){ return `<div class="ms-prow"><i>${msPerkSvg(t)}</i><input class="ms-pi" maxlength="60" placeholder="e.g. Welcome drink on your first visit" value="${msEsc(t || '')}" oninput="this.previousElementSibling.innerHTML = msPerkSvg(this.value)"><button type="button" class="ms-vx" title="Remove" aria-label="Remove perk" onclick="const l = this.closest('.ms-plist'); this.closest('.ms-prow').remove(); msPerkAddShow(l)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg></button></div>`; }
+const MS_PI = {"gift": "<rect x=\"3\" y=\"8\" width=\"18\" height=\"4\" rx=\"1\"/><path d=\"M12 8v13M19 12v7a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2v-7M7.5 8a2.5 2.5 0 0 1 0-5C10 3 12 8 12 8s2-5 4.5-5a2.5 2.5 0 0 1 0 5\"/>", "glass": "<path d=\"M8 22h8M12 15v7M5 3h14l-1.5 7a5.5 5.5 0 0 1-11 0z\"/>", "cocktail": "<path d=\"M8 22h8M12 11v11M3 3h18l-9 8z\"/><path d=\"M7.5 7h9\"/>", "coffee": "<path d=\"M17 8h1a4 4 0 0 1 0 8h-1\"/><path d=\"M3 8h14v9a4 4 0 0 1-4 4H7a4 4 0 0 1-4-4z\"/><path d=\"M6 2v2M10 2v2M14 2v2\"/>", "food": "<path d=\"M3 2v7a3 3 0 0 0 6 0V2M6 2v20M21 15V2a5 5 0 0 0-5 5v6a2 2 0 0 0 2 2h3zm0 0v7\"/>", "cake": "<path d=\"M20 21v-8a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8\"/><path d=\"M4 16s.5-1 2-1 2.5 2 4 2 2.5-2 4-2 2.5 2 4 2 2-1 2-1\"/><path d=\"M2 21h20M7 8v3M12 8v3M17 8v3\"/>", "pct": "<path d=\"M19 5 5 19\"/><circle cx=\"6.5\" cy=\"6.5\" r=\"2.5\"/><circle cx=\"17.5\" cy=\"17.5\" r=\"2.5\"/>", "star": "<path d=\"m12 2 3.1 6.3 6.9 1-5 4.9 1.2 6.8L12 17.8 5.8 21l1.2-6.8-5-4.9 6.9-1z\"/>", "crown": "<path d=\"m2 18 2-12 5 5 3-7 3 7 5-5 2 12z\"/><path d=\"M4 22h16\"/>", "ticket": "<path d=\"M2 9a3 3 0 0 0 0 6v3a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-3a3 3 0 0 0 0-6V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2z\"/><path d=\"M13 5v2M13 11v2M13 17v2\"/>", "music": "<path d=\"M9 18V5l12-2v13\"/><circle cx=\"6\" cy=\"18\" r=\"3\"/><circle cx=\"18\" cy=\"16\" r=\"3\"/>", "heart": "<path d=\"M19 14c1.5-1.5 3-3.2 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.8 0-3 .5-4.5 2-1.5-1.5-2.7-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4 3 5.5l7 7z\"/>", "sun": "<circle cx=\"12\" cy=\"12\" r=\"4\"/><path d=\"M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4\"/>", "car": "<path d=\"M3 17v-5l2-5h14l2 5v5z\"/><path d=\"M3 12h18\"/><circle cx=\"7.5\" cy=\"17.5\" r=\"2\"/><circle cx=\"16.5\" cy=\"17.5\" r=\"2\"/>", "bed": "<path d=\"M2 20v-8a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v8M2 16h20M6 10V6h12v4\"/>", "phone": "<rect x=\"6\" y=\"2\" width=\"12\" height=\"20\" rx=\"3\"/><path d=\"M11 18h2\"/>"};
+const msPerkIc = function(t){ t = String(t || '').toLowerCase(); return /birthday|cake/.test(t) ? 'cake' : /%|\boff\b|discount|half price|2 for 1/.test(t) ? 'pct' : /coffee/.test(t) ? 'coffee' : /cocktail|martini/.test(t) ? 'cocktail' : /drink|wine|beer|shot|bubbles|champagne|free.?flow/.test(t) ? 'glass' : /queue|priority|skip|first access|early access/.test(t) ? 'star' : /vip/.test(t) ? 'crown' : /ticket|event|party/.test(t) ? 'ticket' : /dj|music/.test(t) ? 'music' : /parking|valet|car\b/.test(t) ? 'car' : /daybed|sunbed|bed\b/.test(t) ? 'bed' : /food|dessert|meal|dinner|lunch|breakfast|brunch|dish|plate|snack/.test(t) ? 'food' : 'gift'; };
+function msPerkSvg(t, ic){ return `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">${MS_PI[MS_PI[ic] ? ic : msPerkIc(t)]}</svg>`; }
+function msPerkRow(t, ic){ const set = !!MS_PI[ic]; return `<div class="ms-prow"${set ? ` data-ic="${ic}"` : ''}><button type="button" class="ms-pib" title="Change icon" aria-label="Change icon" onclick="msPerkPick(this)">${msPerkSvg(t, ic)}</button><input class="ms-pi" maxlength="60" placeholder="e.g. Welcome drink on your first visit" value="${msEsc(t || '')}" oninput="const r = this.closest('.ms-prow'); if(!r.dataset.ic) r.querySelector('.ms-pib').innerHTML = msPerkSvg(this.value)"><button type="button" class="ms-vx" title="Remove" aria-label="Remove perk" onclick="const l = this.closest('.ms-plist'); this.closest('.ms-prow').remove(); msPerkAddShow(l)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg></button></div>`; }
+// Tap a perk's icon: choose one from the list (it stays, even if the words change)
+window.msPerkPick = function(b){
+  const row = b.closest('.ms-prow'), open = row.nextElementSibling && row.nextElementSibling.classList.contains('ms-pgrid');
+  document.querySelectorAll('.ms-pgrid').forEach(g => g.remove());
+  if(open) return;
+  const cur = row.dataset.ic || msPerkIc(row.querySelector('.ms-pi').value);
+  row.insertAdjacentHTML('afterend', `<div class="ms-pgrid">${Object.keys(MS_PI).map(k => `<button type="button" class="${k === cur ? 'on' : ''}" data-k="${k}" aria-label="${k}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">${MS_PI[k]}</svg></button>`).join('')}</div>`);
+  row.nextElementSibling.querySelectorAll('button').forEach(x => x.onclick = () => { row.dataset.ic = x.dataset.k; b.innerHTML = msPerkSvg('', x.dataset.k); row.nextElementSibling.remove(); });
+};
 function msPerkAddShow(l){ const b = l && l.nextElementSibling; if(b) b.style.display = l.querySelectorAll('.ms-prow').length >= 8 ? 'none' : ''; }
 window.msPerkAdd = function(btn){ const l = btn.previousElementSibling; l.insertAdjacentHTML('beforeend', msPerkRow('')); l.lastElementChild.querySelector('input').focus(); msPerkAddShow(l); };
 function msVenueRow(v){
@@ -21587,9 +21601,9 @@ window.msTiers = function(){
       ${anyCode ? `<button type="button" class="ms-prev" onclick="window.open('/k/${encodeURIComponent(anyCode)}?guest=1','_blank')"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>See it as a guest</button>` : ''}
       <div class="ms-gh">PERKS <small>the extras members get</small></div>
       <div class="ms-pl">MEMBERS - everyone with a keyring</div>
-      <div class="ms-plist" id="ms-p-member">${p.member.map(msPerkRow).join('')}</div><button type="button" class="ms-vadd"${p.member.length >= 8 ? ' style="display:none"' : ''} onclick="msPerkAdd(this)">+ Add a perk</button>
+      <div class="ms-plist" id="ms-p-member">${p.member.map((t, i) => msPerkRow(t, (p.icons.member || [])[i])).join('')}</div><button type="button" class="ms-vadd"${p.member.length >= 8 ? ' style="display:none"' : ''} onclick="msPerkAdd(this)">+ Add a perk</button>
       <div class="ms-pl">VIP - members a manager has made VIP</div>
-      <div class="ms-plist" id="ms-p-vip">${p.vip.map(msPerkRow).join('')}</div><button type="button" class="ms-vadd"${p.vip.length >= 8 ? ' style="display:none"' : ''} onclick="msPerkAdd(this)">+ Add a perk</button>
+      <div class="ms-plist" id="ms-p-vip">${p.vip.map((t, i) => msPerkRow(t, (p.icons.vip || [])[i])).join('')}</div><button type="button" class="ms-vadd"${p.vip.length >= 8 ? ' style="display:none"' : ''} onclick="msPerkAdd(this)">+ Add a perk</button>
       <div class="ms-gh">REWARD <small>leave empty to hide</small></div>
       <div class="ms-v2" style="grid-template-columns:96px 1fr"><label class="vdf-f"><span>VISITS</span><input id="ms-rw-n" type="number" inputmode="numeric" min="1" placeholder="e.g. 50" value="${msEsc(rw.visits || '')}"></label>
         <label class="vdf-f"><span>THE REWARD</span><input id="ms-rw-t" placeholder="e.g. Dinner for two on us" value="${msEsc(rw.text || '')}"></label></div>
@@ -21601,8 +21615,9 @@ window.msTiers = function(){
     <div class="vdf-foot"><button class="mns-cancel" onclick="msSheetClose()">Cancel</button><button class="mns-go" id="ms-save">Save</button></div>`);
   document.querySelectorAll('#ms-vlist .ms-vbox').forEach(msVenueSum);
   document.getElementById('ms-save').addEventListener('click', async () => {
-    const lines = id => [...document.querySelectorAll('#' + id + ' .ms-pi')].map(x => x.value.trim()).filter(Boolean).slice(0, 8);
-    const perks = JSON.stringify({ member: lines('ms-p-member'), vip: lines('ms-p-vip') });
+    const rows = id => [...document.querySelectorAll('#' + id + ' .ms-prow')].map(r => ({ t: r.querySelector('.ms-pi').value.trim(), ic: r.dataset.ic || '' })).filter(x => x.t).slice(0, 8);
+    const pm = rows('ms-p-member'), pv = rows('ms-p-vip');
+    const perks = JSON.stringify({ member: pm.map(x => x.t), vip: pv.map(x => x.t), icons: { member: pm.map(x => x.ic), vip: pv.map(x => x.ic) } });
     const n = parseInt(document.getElementById('ms-rw-n').value, 10), t = document.getElementById('ms-rw-t').value.trim();
     const venues = [...document.querySelectorAll('#ms-vlist .ms-vbox')].map(b => ({
       name: b.querySelector('.ms-vn').value.trim(), opens: b.querySelector('.ms-vo').value, closes: b.querySelector('.ms-vc').value,

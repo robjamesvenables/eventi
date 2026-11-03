@@ -123,6 +123,7 @@ module.exports = async (req, res) => {
     const savedPerks = set.member_perks && (set.member_perks.member || set.member_perks.vip) ? set.member_perks : null;
     const perksAll = savedPerks || { member: ['Welcome drink on your first visit', 'Birthday dessert on us'], vip: ['10% off food at all our venues', 'Birthday dessert on us', 'Skip the queue on busy nights'] };
     const perks = Array.isArray(perksAll[tier]) ? perksAll[tier].slice(0, 8) : [];
+    const perkIcons = perks.map((x, i) => { const v = String(((perksAll.icons || {})[tier] || [])[i] || ''); return /^[a-z]{2,10}$/.test(v) ? v : ''; });   // icons a manager picked
 
     // What's on: Entertainment Schedule (DJ name, area, times - nothing else)
     const stageName = {}; stages.forEach(s => { stageName[s.id] = s.name; });
@@ -163,7 +164,7 @@ module.exports = async (req, res) => {
 
     return L.send(res, 200, {
       ok: true, brand, logo, code, first, tier, visits: visits.length, favourite, gp,
-      since: new Date(m.created_at).getFullYear(), perks,
+      since: new Date(m.created_at).getFullYear(), perks, perkIcons,
       birthdayWeek: birthdayWeek(m.birthday, now.date),
       tonight: tonight.slice(0, 12), week: week.slice(0, 40), menus, venues, reward
     });

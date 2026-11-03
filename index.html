@@ -2210,6 +2210,11 @@ body:not(.mv-demo) #ms-demoqr-btn{display:none!important}
   #p-membership > .ph .ms-hbtns .btn,.ms-tiers{padding-left:10px;padding-right:10px;font-size:13px}
   #ms-sheet .vdf-foot button{white-space:nowrap}
 }
+.ms-dlw{display:flex;justify-content:flex-end;margin:-4px 0 10px}
+.ms-dl{display:inline-flex;align-items:center;gap:7px;border:1.5px solid #E2E8F0;background:white;color:#0F1E2E;border-radius:11px;padding:8px 12px;font:700 13px Inter,sans-serif;cursor:pointer}.ms-dl:hover{background:#F8FAFC}
+.ms-xo{display:flex;gap:10px;align-items:flex-start;padding:12px;border:1.5px solid #E2E8F0;border-radius:12px;margin-bottom:8px;cursor:pointer}
+.ms-xo input{width:18px;height:18px;margin:2px 0 0;accent-color:#0D9488;flex:none}.ms-xo span{display:flex;flex-direction:column;gap:2px}.ms-xo b{font-size:14.5px;color:#0F1E2E}.ms-xo small{font-size:12.5px;color:#64748B;font-weight:600}
+.ms-xo:has(input:checked){border-color:#0D9488;background:#F0FDFA}
 .ms-tiers{border:0;background:rgba(255,255,255,.1);color:white;border-radius:12px;padding:11px 14px;font:700 13px Inter,sans-serif;cursor:pointer;white-space:nowrap}
 .ms-tiers:hover{background:rgba(255,255,255,.18)}
 /* ── Guest page editor (Membership > Guest page) ── */
@@ -21324,6 +21329,7 @@ function msRender(){
   const chips = [['all', 'All'], ...venues.map(v => [v, v]), ['vip', 'VIP']];
   el.innerHTML = `<label class="sop-search ms-search"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#94A3B8" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg><input id="ms-q" placeholder="Search name or phone…" value="${msEsc(MS.q)}" oninput="msSearch(this.value)" autocomplete="off"></label>
     <div class="ms-chips">${chips.map(([id, l]) => `<button class="${MS.filter === id ? 'on' : ''}" onclick="msSetFilter(${msEsc(JSON.stringify(id))})">${msEsc(l)}</button>`).join('')}</div>
+    ${msIsMgr() && MS.members.length ? `<div class="ms-dlw"><button class="ms-dl" onclick="msExportOpen()"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12M7 10l5 5 5-5M5 21h14"/></svg>Download list for emails</button></div>` : ''}
     <div id="ms-list"></div>`;
   msRenderList();
 }
@@ -21342,6 +21348,37 @@ function msRenderList(){
     return `<button class="ms-row" onclick="msOpenMember('${m.id}')">${msFace(m.name, 42)}<span class="ms-nm"><b>${msEsc(m.name)}${m.tier === 'vip' ? '<span class="ms-tag vip">VIP</span>' : ''}${isNew(m) ? '<span class="ms-tag new">NEW</span>' : ''}${bd ? '<span class="ms-tag bd" title="Birthday soon"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px"><path d="M20 21v-8a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8"/><path d="M4 16s.5-1 2-1 2.5 2 4 2 2.5-2 4-2 2.5 2 4 2 2-1 2-1"/><path d="M2 21h20M7 8v3M12 8v3M17 8v3"/><path d="M7 4h.01M12 4h.01M17 4h.01"/></svg></span>' : ''}</b>
       <small>${s.last ? msEsc(msAgo(s.last.visit_date) + (s.last.venue ? ' · ' + s.last.venue : '')) : 'No visits yet'}</small></span><span class="ms-v"><b>${s.total}</b><small>VISIT${s.total === 1 ? '' : 'S'}</small></span></button>`; }).join('')}</div>`;
 }
+
+// ── Download members as a spreadsheet (CSV) for bulk emails - Mailchimp, Brevo, Gmail etc. Managers only ──
+window.msExportOpen = function(){
+  if(!msIsMgr()) return;
+  const yes = MS.members.filter(m => m.consent !== false && m.email).length, all = MS.members.length;
+  msSheet(`<div class="vdf-h"><b>Download members</b><div class="dpt-sub">A spreadsheet file you can put into your email tool (Mailchimp, Brevo...)</div></div>
+    <div class="vdf-body">
+      <label class="ms-xo"><input type="radio" name="msx" value="yes" checked><span><b>Happy to get offers - with an email</b><small>${yes} member${yes === 1 ? '' : 's'}. Use this for bulk emails.</small></span></label>
+      <label class="ms-xo"><input type="radio" name="msx" value="all"><span><b>Everyone</b><small>${all} member${all === 1 ? '' : 's'}, including those who said no to offers</small></span></label>
+      <label class="ms-xo"><input type="radio" name="msx" value="vip"><span><b>VIP only</b><small>${(n => n + ' member' + (n === 1 ? '' : 's'))(MS.members.filter(m => m.tier === 'vip').length)}</small></span></label>
+      <div class="vd-note" style="margin-top:12px">${vdSvg('note', 15)}<span>Only email members who said yes to offers. Keep this file private - it has names, emails and phone numbers.</span></div>
+    </div>
+    <div class="vdf-foot"><button class="mns-cancel" onclick="msSheetClose()">Cancel</button><button class="mns-go" onclick="msExport()">Download</button></div>`);
+};
+window.msExport = function(){
+  const pick = (document.querySelector('input[name="msx"]:checked') || {}).value || 'yes';
+  let list = MS.members.slice();
+  if(pick === 'yes') list = list.filter(m => m.consent !== false && m.email);
+  if(pick === 'vip') list = list.filter(m => m.tier === 'vip');
+  if(!list.length){ toast(pick === 'yes' ? 'No members with an email who said yes to offers yet' : 'Nobody to download'); return; }
+  const MON = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const bday = b => /^\d{2}-\d{2}$/.test(b || '') ? (+b.slice(3)) + ' ' + MON[+b.slice(0, 2) - 1] : '';
+  const cell = v => { v = String(v == null ? '' : v); if(/^[=+\-@]/.test(v) && !/^\+?[\d\s().-]+$/.test(v)) v = "'" + v; return /[",\n]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v; };   // safe in Excel
+  const head = ['First name', 'Last name', 'Email', 'Phone', 'Birthday', 'Tier', 'Visits', 'Last visit', 'Favourite place', 'Member since', 'Keyring', 'Happy to get offers'];
+  const rows = list.sort((a, b) => a.name.localeCompare(b.name)).map(m => { const s = msStats(m), parts = String(m.name || '').trim().split(/\s+/);
+    return [parts[0] || '', parts.slice(1).join(' '), m.email || '', m.phone || '', bday(m.birthday), m.tier === 'vip' ? 'VIP' : 'Member', s.total, s.last ? s.last.visit_date : '', s.fav || '', String(m.created_at || '').slice(0, 10), MS.keyrings[m.id] || '', m.consent === false ? 'No' : 'Yes']; });
+  const csv = '\ufeff' + [head].concat(rows).map(r => r.map(cell).join(',')).join('\r\n');
+  const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([csv], { type:'text/csv;charset=utf-8' }));
+  a.download = 'members-' + msToday() + '.csv'; document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1000);
+  msSheetClose(); toast('Downloaded ' + list.length + ' member' + (list.length === 1 ? '' : 's'));
+};
 
 // ── Pop-up sheet shared by profile / sign-up / tiers ──
 function msSheet(html, cls){

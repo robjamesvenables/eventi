@@ -2181,6 +2181,11 @@ body.ev-nomoney .dash-hero .ev-money{display:none!important}
 .rs-tabs button{display:inline-flex;align-items:center;gap:7px;border:0;border-radius:10px;padding:9px 14px;font:800 13.5px Inter,sans-serif;background:#F1F5F9;color:#334155;cursor:pointer}
 .rs-tabs button.on{background:#0F1E2E;color:white}
 .rs-tabs .rs-ted{display:inline-flex;width:22px;height:22px;border-radius:6px;background:rgba(255,255,255,.16);align-items:center;justify-content:center;margin-right:-6px}
+.rs-dwt{display:inline-block;background:#C4973B;color:#2B1D07;font-size:10px;font-weight:900;letter-spacing:.6px;border-radius:5px;padding:2px 5px;margin-left:6px;vertical-align:2px}
+.rs-addp{display:block;width:100%;margin-top:10px;border:1.5px dashed #94A3B8;background:white;border-radius:12px;padding:12px;font:800 14px Inter,sans-serif;color:#0F766E;cursor:pointer}
+.rs-plist{max-height:300px;overflow-y:auto;margin-top:8px;display:flex;flex-direction:column;gap:6px}
+.rs-plist button{display:flex;flex-direction:column;align-items:flex-start;gap:1px;text-align:left;border:1.5px solid #E2E8F0;background:white;border-radius:11px;padding:10px 12px;cursor:pointer;font-family:Inter,sans-serif}
+.rs-plist button b{font-size:14px;color:#0F1E2E}.rs-plist button small{font-size:12px;color:#64748B;font-weight:600}.rs-plist button:hover{border-color:#0D9488}
 .rs-tl{font-size:11px;font-weight:900;letter-spacing:1.2px;color:#94A3B8;text-transform:uppercase;padding:0 6px 0 4px;white-space:nowrap;flex:none}
 .rs-tabs .rs-tadd{background:white;border:1.5px dashed #94A3B8;color:#0F766E}
 .rs-empty{background:white;border-radius:14px;padding:18px;text-align:center;margin-bottom:10px}.rs-empty b{display:block;font-size:15px}.rs-empty span{display:block;font-size:13px;color:#64748B;margin-top:3px}
@@ -22470,7 +22475,7 @@ function rsSetup(){
   let areas = (s.areas && typeof s.areas === 'object') ? s.areas : null;
   // Demo: the floor teams come split into made-up areas, so the tabs are there to show
   if(!areas && typeof appIsDemoCompany === 'function' && appIsDemoCompany()){ const A = ['Beach Club', 'Sunset Bar', 'Pool Deck', 'Garden Restaurant']; areas = { 'operations': A.slice(), 'front of house': A.slice() }; }
-  return { shifts: Array.isArray(s.shifts) && s.shifts.length ? s.shifts : RS_DEF_SHIFTS.map(x => Object.assign({}, x)), areas: areas || {} };
+  return { shifts: Array.isArray(s.shifts) && s.shifts.length ? s.shifts : RS_DEF_SHIFTS.map(x => Object.assign({}, x)), areas: areas || {}, dw: (s.dw && typeof s.dw === 'object') ? s.dw : {} };
 }
 function rsAreas(dept){ return (rsSetup().areas[deptKey(dept)] || []).slice(); }
 function rsDepts(){ const all = (PEOPLE_DEPARTMENTS || []).slice(); return all.length ? all : ['Front of House']; }
@@ -22481,6 +22486,7 @@ function rsCanEdit(dept){
 }
 function rsPeople(dept){
   let list = (PEOPLE || []).filter(p => p.active !== false && (p.departments || []).some(d => deptKey(d) === deptKey(dept)));
+  (rsSetup().dw[deptKey(dept)] || []).forEach(w => list.push({ id: w.id, firstName: w.name, lastName: '', role: 'dw', dw: true }));
   Object.keys(RS.cells).forEach(id => { if(!list.some(p => String(p.id) === id)){ const p = (PEOPLE || []).find(x => String(x.id) === id); if(p) list.push(p); } });
   if(list.length < 4 && appIsDemoCompany()){   // demo: top up with sample staff so the roster looks real
     const N = ['Kadek','Putu','Wayan','Komang','Ayu','Gede'];
@@ -22559,7 +22565,7 @@ function rsRender(){
   if(RS.notReady && !appIsDemoCompany()) h += `<div class="rs-note">${rsIc(RSI.gear, 15)}<span>The roster needs a one-time setup before it can save. Ask Mavis to switch it on.</span></div>`;
   else if(RS.demoFill) h += `<div class="rs-note">${rsIc(RSI.pic, 15)}<span>Demo: a sample week. Tap any box to change it.</span></div>`;
   if(RS.loading && !Object.keys(RS.cells).length) h += '<div class="vac-empty">Loading…</div>';
-  else if(!ppl.length) h += `<div class="vac-empty"><b>Nobody in ${rsEsc(dept)} yet</b><span>Add people to this department in Team, and they appear here.</span></div>`;
+  else if(!ppl.length) h += `<div class="vac-empty"><b>Nobody in ${rsEsc(dept)} yet</b><span>${can ? 'Add someone from your team, or a daily worker.' : 'Check back soon.'}</span></div>${can ? `<button class="rs-addp" onclick="rsAddPerson()">+ Add a person</button>` : ''}`;
   else {
     let rest = [];
     if(RS.area){ const inA = p => days.some(d => { const c = rsCell((RS.cells[p.id] || {})[d]); return c && c.area === RS.area; });
@@ -22567,8 +22573,10 @@ function rsRender(){
     const hours = p => days.reduce((t, d) => { const c = rsCell((RS.cells[p.id] || {})[d]); return t + (c ? c.mins : 0); }, 0);
     const tap = (p, d) => can ? ` role="button" tabindex="0" onclick="rsPick('${p.id}','${d}')"` : '';
     const role = p => ({ superadmin:'Manager', director:'Director', manager:'Manager', supervisor:'Supervisor' }[p.role] || '');
-    const rowsOf = list => list.map(p => `<tr><td class="rs-p"><b>${rsEsc(p.firstName)} ${rsEsc((p.lastName || '').slice(0, 1))}${p.lastName ? '.' : ''}</b><small>${rsEsc(role(p))}</small></td>${days.map(d => `<td class="${d === today ? 'rs-today' : ''}"${tap(p, d)}>${rsBox((RS.cells[p.id] || {})[d], can ? 'rs-tap' : '')}</td>`).join('')}<td class="rs-h">${rsHours(hours(p))}</td></tr>`).join('');
-    const cardsOf = list => list.map(p => `<div class="rs-card"><div class="rs-cn"><b>${rsEsc(p.firstName)} ${rsEsc(p.lastName || '')}</b><span>${rsEsc(role(p))}${role(p) ? ' · ' : ''}${rsHours(hours(p))}</span></div>
+    const nm = (p, full) => `${rsEsc(p.firstName)}${p.lastName ? ' ' + rsEsc(full ? p.lastName : p.lastName.slice(0, 1) + '.') : ''}${p.dw ? '<span class="rs-dwt">DW</span>' : ''}`;
+    const dwTap = p => p.dw && can ? ` role="button" tabindex="0" onclick="rsDwEdit('${p.id}')" style="cursor:pointer"` : '';
+    const rowsOf = list => list.map(p => `<tr><td class="rs-p"${dwTap(p)}><b>${rsEsc(p.firstName)}${p.lastName ? ' ' + rsEsc(p.lastName.slice(0, 1)) + '.' : ''}</b><small>${p.dw ? '<span class="rs-dwt" style="margin:0 4px 0 0">DW</span>Daily worker' : rsEsc(role(p))}</small></td>${days.map(d => `<td class="${d === today ? 'rs-today' : ''}"${tap(p, d)}>${rsBox((RS.cells[p.id] || {})[d], can ? 'rs-tap' : '')}</td>`).join('')}<td class="rs-h">${rsHours(hours(p))}</td></tr>`).join('');
+    const cardsOf = list => list.map(p => `<div class="rs-card"><div class="rs-cn"><b${dwTap(p)}>${nm(p, true)}</b><span>${rsEsc(role(p))}${role(p) ? ' · ' : ''}${rsHours(hours(p))}</span></div>
       <div class="rs-days">${days.map((d, i) => `<div class="rs-dc${d === today ? ' rs-today' : ''}"${tap(p, d)}><i>${RS_DOW[i]}</i>${rsBox((RS.cells[p.id] || {})[d], can ? 'rs-tap' : '', true)}</div>`).join('')}</div></div>`).join('');
     if(RS.area && !ppl.length) h += `<div class="rs-empty"><b>Nobody in ${rsEsc(RS.area)} this week yet</b><span>${can ? 'Tap a box below and pick ' + rsEsc(RS.area) + ' as the place.' : 'Check back soon.'}</span></div>`;
     if(ppl.length) h += `<div class="rs-tw-wrap"><table class="rs-tbl"><thead><tr><th class="rs-p">Team</th>${days.map((d, i) => `<th class="${d === today ? 'rs-today' : ''}">${RS_DOW[i].toUpperCase()}<b>${new Date(d + 'T12:00:00').getDate()}</b></th>`).join('')}<th class="rs-h">Hours</th></tr></thead><tbody>
@@ -22578,6 +22586,7 @@ function rsRender(){
     if(rest.length && can){ const open = RS.restOpen;
       h += `<button class="rs-more" onclick="RS.restOpen = !RS.restOpen; rsRender()">${open ? 'Hide' : 'Show'} the rest of ${rsEsc(dept)} (${rest.length}) - to put them in ${rsEsc(RS.area)}</button>`;
       if(open) h += `<div class="rs-rest"><div class="rs-tw-wrap"><table class="rs-tbl"><tbody>${rowsOf(rest)}</tbody></table></div><div class="rs-cards">${cardsOf(rest)}</div></div>`; }
+    if(can) h += `<button class="rs-addp" onclick="rsAddPerson()">+ Add a person</button>`;
     const st = rsSetup();
     h += `<div class="rs-key">${st.shifts.map(s => `<span style="background:${(RS_COLS[s.c] || RS_COLS.teal)[0]};color:${(RS_COLS[s.c] || RS_COLS.teal)[1]}">${rsEsc(s.name)} ${rsHm(s.a)}–${rsHm(s.b)}${s.a2 ? ' · ' + rsHm(s.a2) + '–' + rsHm(s.b2) : ''}</span>`).join('')}${[['off','Off'],['hol','Holiday'],['sick','Sick']].map(([k, l]) => `<span style="background:${RS_COLS[k][0]};color:${RS_COLS[k][1]}">${l}</span>`).join('')}</div>`;
     if(!can) h += `<div class="rs-ro">Only managers can change this roster.</div>`;
@@ -22671,6 +22680,77 @@ window.rsCopyLast = async function(){
   if(has) appConfirmShow({ title:'Copy last week?', msg:'This week\'s ' + RS.dept + ' roster will be replaced with last week\'s.', label:'Copy', onOk: go }); else go();
 };
 
+// Add a person: someone from the team (joins this department) or a daily worker (just a name, tagged DW)
+window.rsAddPerson = function(){
+  if(!rsCanEdit(RS.dept)) return;
+  ebEnsureUi(); document.querySelectorAll('.eb-sheet').forEach(x => x.remove());
+  const dept = RS.dept, inDept = new Set(rsPeople(dept).map(p => String(p.id)));
+  const others = (PEOPLE || []).filter(p => p.active !== false && !inDept.has(String(p.id))).sort((a, b) => (a.firstName + a.lastName).localeCompare(b.firstName + b.lastName));
+  const s = document.createElement('div'); s.className = 'eb-sheet';
+  const draw = mode => {
+    s.innerHTML = `<div class="eb-form"><h3>Add a person to ${rsEsc(dept)}</h3>
+      <div class="gp-btns gp-2b" style="margin-top:10px"><button type="button" class="${mode === 'team' ? 'on' : ''}" data-m="team">From the team</button><button type="button" class="${mode === 'dw' ? 'on' : ''}" data-m="dw">Daily worker</button></div>
+      ${mode === 'team' ? `<input id="rsap-q" placeholder="Search a name" style="margin-top:12px"><div class="rs-plist" id="rsap-l"></div>
+        <div class="gp-hint" style="margin-top:8px">They join ${rsEsc(dept)} in Team too. New staff? Add them in Team first.</div>`
+      : `<p class="sub" style="margin-top:12px">For someone working a day or two - just their name. No login needed. They show with a <span class="rs-dwt">DW</span> tag.</p>
+        <label>Name</label><input id="rsap-n" maxlength="30" placeholder="e.g. Made">`}
+      <div class="eb-fbtns"><button class="eb-no" id="rsap-no">Cancel</button>${mode === 'dw' ? '<button class="eb-go" id="rsap-go">Add</button>' : ''}</div></div>`;
+    s.querySelectorAll('[data-m]').forEach(b => b.onclick = () => draw(b.dataset.m));
+    s.querySelector('#rsap-no').onclick = () => s.remove();
+    if(mode === 'team'){
+      const list = s.querySelector('#rsap-l'), q = s.querySelector('#rsap-q');
+      const show = () => { const t = q.value.trim().toLowerCase(), l = others.filter(p => !t || (p.firstName + ' ' + p.lastName).toLowerCase().includes(t)).slice(0, 40);
+        list.innerHTML = l.length ? l.map(p => `<button type="button" data-id="${rsEsc(p.id)}"><b>${rsEsc(p.firstName)} ${rsEsc(p.lastName || '')}</b><small>${rsEsc((p.departments || []).join(', ') || 'No department yet')}</small></button>`).join('') : '<div class="gp-hint" style="padding:14px 4px">Nobody else to add - everyone is already here.</div>';
+        list.querySelectorAll('[data-id]').forEach(b => b.onclick = async () => {
+          const p = (PEOPLE || []).find(x => String(x.id) === b.dataset.id); if(!p) return;
+          const deps = (p.departments || []).concat(dept);
+          b.disabled = true; b.querySelector('small').textContent = 'Adding…';
+          try{ const d = await peopleApi({ action:'update', id: p.id, departments: deps, role: p.role });
+            if(!d || !d.ok) throw new Error(d && (d.message || d.reason));
+            p.departments = deps; s.remove(); rsRender(); toast(p.firstName + ' added to ' + dept);
+          }catch(e){ b.disabled = false; b.querySelector('small').textContent = (p.departments || []).join(', '); toast(/higher role|not allowed|cannot/i.test(String(e.message)) ? 'Ask a manager to add ' + p.firstName : 'Could not add - please try again'); }
+        }); };
+      q.oninput = show; show(); setTimeout(() => q.focus(), 60);
+    } else {
+      const n = s.querySelector('#rsap-n'); setTimeout(() => n.focus(), 60);
+      n.onkeydown = e => { if(e.key === 'Enter') s.querySelector('#rsap-go').click(); };
+      s.querySelector('#rsap-go').onclick = async () => {
+        const name = n.value.replace(/\s+/g, ' ').trim(); if(!name){ toast('Type their name'); return; }
+        const cur = rsSetup(), k = deptKey(dept), l = (cur.dw[k] || []).slice();
+        if(l.length >= 40){ toast('Up to 40 daily workers'); return; }
+        l.push({ id: 'dw-' + Math.random().toString(36).slice(2, 9), name }); cur.dw[k] = l;
+        if(!(await rsSaveSetupKeep(cur))) return; s.remove(); rsRender(); toast(name + ' added as a daily worker');
+      };
+    }
+  };
+  s.addEventListener('mousedown', e => { if(e.target === s) s.remove(); });
+  document.body.appendChild(s); draw('team');
+};
+window.rsDwEdit = function(id){
+  if(!rsCanEdit(RS.dept)) return;
+  ebEnsureUi(); document.querySelectorAll('.eb-sheet').forEach(x => x.remove());
+  const dept = RS.dept, k = deptKey(dept), w = (rsSetup().dw[k] || []).find(x => x.id === id); if(!w) return;
+  const s = document.createElement('div'); s.className = 'eb-sheet';
+  s.innerHTML = `<div class="eb-form"><h3>${rsEsc(w.name)} <span class="rs-dwt">DW</span></h3><p class="sub">Daily worker in ${rsEsc(dept)}</p>
+    <label>Name</label><input id="rsdw-n" maxlength="30" value="${rsEsc(w.name)}">
+    <div class="eb-fbtns"><button class="eb-no" id="rsdw-del" style="margin-right:auto;color:#DC2626">Remove</button><button class="eb-no" id="rsdw-no">Cancel</button><button class="eb-go" id="rsdw-go">Save</button></div></div>`;
+  s.addEventListener('mousedown', e => { if(e.target === s) s.remove(); });
+  document.body.appendChild(s);
+  s.querySelector('#rsdw-no').onclick = () => s.remove();
+  s.querySelector('#rsdw-go').onclick = async () => { const name = s.querySelector('#rsdw-n').value.replace(/\s+/g, ' ').trim(); if(!name){ toast('Type their name'); return; }
+    const cur = rsSetup(); cur.dw[k] = (cur.dw[k] || []).map(x => x.id === id ? Object.assign({}, x, { name }) : x); if(!(await rsSaveSetupKeep(cur))) return; s.remove(); rsRender(); toast('Saved'); };
+  s.querySelector('#rsdw-del').onclick = () => rsAfterSheet(s, () => appConfirmShow({ title:'Remove ' + w.name + '?', msg:'They come off the ' + dept + ' roster. Shifts already given this week are cleared.', label:'Remove', onOk: async () => {
+    const cur = rsSetup(); cur.dw[k] = (cur.dw[k] || []).filter(x => x.id !== id); if(!cur.dw[k].length) delete cur.dw[k];
+    if(!(await rsSaveSetupKeep(cur))) return; Object.keys(RS.cells[id] || {}).forEach(d => rsSet(id, d, '')); rsRender(); toast(w.name + ' removed'); } }));
+};
+// Close a pop-up, then open the next one once the phone back-button history has settled (else the new one closes at once)
+function rsAfterSheet(s, fn){
+  s.remove(); let done = false;
+  const go = () => { if(done) return; done = true; removeEventListener('popstate', go); setTimeout(fn, 0); };
+  addEventListener('popstate', go); setTimeout(go, 500);
+}
+async function rsSaveSetupKeep(cur){ return rsSaveSetup(cur); }
+
 // Areas (a split inside a department, e.g. Beach Club, Sunset Bar): add, rename, remove - right from the roster
 async function rsSaveSetup(cur){
   const value = JSON.stringify(cur);
@@ -22705,9 +22785,9 @@ window.rsAreaEdit = function(old){
     if(RS.demoFill) RS.cells = rsDemoCells(dept, RS.week);   // demo: spread the sample week across the areas
     RS.area = nm; s.remove(); rsRender(); toast(old ? 'Saved' : nm + ' added');
   };
-  if($('rsa-del')) $('rsa-del').onclick = () => { s.remove(); appConfirmShow({ title:'Remove ' + old + '?', msg:'The tab goes. Shifts already given stay on the roster, without a place.', label:'Remove', onOk: async () => {
+  if($('rsa-del')) $('rsa-del').onclick = () => rsAfterSheet(s, () => appConfirmShow({ title:'Remove ' + old + '?', msg:'The tab goes. Shifts already given stay on the roster, without a place.', label:'Remove', onOk: async () => {
     const cur = rsSetup(); cur.areas[deptKey(dept)] = (cur.areas[deptKey(dept)] || []).filter(a => a !== old); if(!cur.areas[deptKey(dept)].length) delete cur.areas[deptKey(dept)];
-    if(!(await rsSaveSetup(cur))) return; RS.area = ''; rsRender(); toast(old + ' removed'); } }); };
+    if(!(await rsSaveSetup(cur))) return; RS.area = ''; rsRender(); toast(old + ' removed'); } }));
 };
 
 // Shifts (for every department)
@@ -22809,7 +22889,8 @@ window.rsPicture = async function(){
   const nameW = 170, colW = (W - 64 - nameW) / 7;
   days.forEach((d, i) => { g.fillStyle = '#64748B'; g.font = '800 12px Inter, sans-serif'; g.fillText(RS_DOW[i].toUpperCase() + ' ' + new Date(d + 'T12:00:00').getDate(), 32 + nameW + i * colW + 6, top + 18); });
   ppl.forEach((p, r) => { const y = top + 34 + r * rowH; rr(24, y - 4, W - 48, rowH - 6, 10, 'white');
-    g.fillStyle = '#0F1E2E'; g.font = '800 15px Inter, sans-serif'; g.fillText(p.firstName + (p.lastName ? ' ' + p.lastName[0] + '.' : ''), 38, y + 28);
+    g.fillStyle = '#0F1E2E'; g.font = '800 15px Inter, sans-serif'; const pn = p.firstName + (p.lastName ? ' ' + p.lastName[0] + '.' : ''); g.fillText(pn, 38, y + 28);
+    if(p.dw){ const tw = g.measureText(pn).width + 46; g.fillStyle = '#C4973B'; g.fillRect(tw, y + 15, 28, 17); g.fillStyle = '#2B1D07'; g.font = '900 10px Inter, sans-serif'; g.fillText('DW', tw + 6, y + 27.5); }
     days.forEach((d, i) => { const cl = rsCell((RS.cells[p.id] || {})[d]), col = RS_COLS[cl ? cl.k : 'none'], x = 32 + nameW + i * colW;
       rr(x + 3, y + 2, colW - 6, rowH - 18, 8, col[0]); g.fillStyle = col[1]; g.font = '800 12.5px Inter, sans-serif'; g.fillText(cl ? cl.label : '–', x + 10, y + 19);
       if(cl && (cl.time || cl.area)){ g.font = '600 10.5px Inter, sans-serif'; g.fillText(String(cl.area || cl.time).slice(0, 22), x + 10, y + 33); } }); });

@@ -85,8 +85,11 @@ async function roster(req, res){
   const inDept = ppl.filter(p => p.active !== false && (p.departments || []).some(d => lc(d) === lc(link.dept)));
   const ROLE = { superadmin: 'Manager', director: 'Director', manager: 'Manager', supervisor: 'Supervisor', teammember: '' };
   const week = w => { const r = rows.find(x => String(x.week).slice(0, 10) === w) || {}; const cells = rsParse(r.cells) || {};
-    const ids = new Set(inDept.map(p => String(p.id))); Object.keys(cells).forEach(id => ids.add(id));
-    const people = [...ids].map(id => { const p = ppl.find(x => String(x.id) === id); if (!p) return null;
+    const dws = ((setup.dw || {})[lc(link.dept)] || []).filter(x => x && x.id && x.name);
+    const ids = new Set(inDept.map(p => String(p.id))); dws.forEach(x => ids.add(String(x.id))); Object.keys(cells).forEach(id => ids.add(id));
+    const people = [...ids].map(id => { const w0 = dws.find(x => String(x.id) === id);
+      if (w0) return { name: String(w0.name).slice(0, 30), role: 'Daily worker', dw: true, days: Array.from({ length: 7 }, (_, i) => rsCell((cells[id] || {})[rsAdd(w, i)], shifts)) };
+      const p = ppl.find(x => String(x.id) === id); if (!p) return null;
       const days = Array.from({ length: 7 }, (_, i) => rsCell((cells[id] || {})[rsAdd(w, i)], shifts));
       return { name: (p.first_name || '') + (p.last_name ? ' ' + p.last_name[0] + '.' : ''), role: ROLE[p.role] || '', days }; }).filter(Boolean)
       .sort((a, b) => a.name.localeCompare(b.name));

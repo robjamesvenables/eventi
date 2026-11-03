@@ -136,6 +136,18 @@ svg{display:block}
 .er{display:flex;gap:12px;padding:13px 14px;border-top:1px solid #F1F5F9}.er:first-child{border-top:0}
 .er i{width:36px;height:36px;border-radius:10px;background:#F1F5F9;color:#0F1E2E;display:flex;align-items:center;justify-content:center;flex:none}
 .er div{display:flex;flex-direction:column;gap:2px;min-width:0}.er small{font-size:11px;font-weight:900;letter-spacing:.8px;color:#94A3B8;text-transform:uppercase}.er span{font-size:14.5px;font-weight:600;color:#0F1E2E;line-height:1.45}
+.rv{margin:16px 16px 0;background:white;border-radius:20px;padding:18px;box-shadow:0 1px 3px rgba(15,30,46,.07);text-align:center;position:relative}
+.rv .x{position:absolute;right:10px;top:10px;width:32px;height:32px;border-radius:50%;border:0;background:#F1F5F9;color:#64748B;display:flex;align-items:center;justify-content:center;cursor:pointer}
+.rv .ph{width:64px;height:64px;border-radius:16px;object-fit:cover;display:block;margin:0 auto}
+.rv h3{font-size:19px;font-weight:900;letter-spacing:-.3px;margin:12px 24px 0;line-height:1.25}
+.rv p{font-size:13.5px;color:#64748B;margin-top:4px;line-height:1.45}
+.rv .stars{display:flex;justify-content:center;gap:6px;margin-top:12px;color:#F5B301}
+.rv a{display:flex;align-items:center;justify-content:center;gap:8px;margin-top:14px;background:var(--top,#0F1E2E);color:var(--top-ink,#fff);text-decoration:none;border-radius:14px;padding:14px;font-size:15px;font-weight:800}
+.rv .g{width:20px;height:20px;border-radius:50%;background:white;color:#0F1E2E;font-weight:900;font-size:13px;display:flex;align-items:center;justify-content:center}
+.rv .nn{display:block;margin:6px auto 0;padding:8px 14px;border:0;background:none;font:700 13px Inter,sans-serif;color:#94A3B8;cursor:pointer}
+.rvs{display:flex;align-items:center;gap:12px;padding:13px 14px;width:100%;border:0;background:none;text-align:left;font-family:inherit;color:#0F1E2E;text-decoration:none;cursor:pointer}
+.rvs i{width:40px;height:40px;border-radius:12px;background:#FEF3C7;color:#B45309;display:flex;align-items:center;justify-content:center;flex:none;font-style:normal}
+.rvs span{flex:1;min-width:0;display:flex;flex-direction:column}.rvs b{font-size:15px}.rvs small{font-size:12.5px;color:#64748B;font-weight:600}.rvs em{font-style:normal;flex:none;font-size:13px;font-weight:800;color:var(--acc,#0D9488)}
 .offr{display:flex;align-items:center;gap:14px;padding:14px 16px}.offr .n{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}.offr b{font-size:15px}.offr small{font-size:12.5px;color:#64748B;font-weight:600;line-height:1.4}
 .tgl{flex:none;width:52px;height:30px;border-radius:15px;border:0;background:#CBD5E1;position:relative;cursor:pointer;padding:0;transition:background .15s}
 .tgl i{position:absolute;left:3px;top:3px;width:24px;height:24px;border-radius:50%;background:white;box-shadow:0 1px 3px rgba(15,30,46,.25);transition:left .15s}
@@ -303,7 +315,7 @@ svg{display:block}
     // ── The member's own things (same at every place) ──
     var memberHtml = function(){
       var h = '<div class="card' + (vip ? '' : ' member') + '"><span class="code">' + esc(d.code) + '</span><div class="k">' + (vip ? 'VIP MEMBER' : 'MEMBER') + '</div><h2 translate="no">' + esc(d.first) + '</h2>' +
-        '<div class="row"><div><b>' + esc(d.visits) + '</b>visit' + (d.visits === 1 ? '' : 's') + '</div>' + (d.favourite ? '<div><b translate="no">' + esc(d.favourite) + '</b>favourite</div>' : '') + '<div><b>' + esc(d.since) + '</b>member since</div></div></div>';
+        '<div class="row"><div><b>' + esc(d.visits) + '</b>visit' + (d.visits === 1 ? '' : 's') + '</div>' + (d.favourite ? '<div><b translate="no">' + esc(d.favourite) + '</b>favourite</div>' : '') + '<div><b>' + esc(d.since) + '</b>member since</div></div></div>' + reviewBig();
       if (d.birthdayWeek) h += '<div class="bday"><i>' + svg(I.cake, 24) + '</i><div><b>Happy birthday week!</b><p>' + ((d.perks || []).some(function(p){ return /birthday/i.test(p); }) ? 'Your birthday treat is waiting - just show this screen at any of our venues.' : 'From all of us - have a wonderful one. We hope to see you this week!') + '</p></div></div>';
       if (d.reward) {
         var pct = Math.min(100, Math.round(100 * (d.reward.target - d.reward.left) / d.reward.target));
@@ -351,6 +363,25 @@ svg{display:block}
         (list.length > first ? '<div class="gend" data-gend="' + id + '"></div>' : '') + '</div>';
     };
 
+    // ── Google reviews: a big card after a check-in (top), and a line by Follow us that's always there ──
+    var STAR = '<svg width="26" height="26" viewBox="0 0 24 24" fill="currentColor"><path d="m12 2 3.1 6.3 6.9 1-5 4.9 1.2 6.8L12 17.8 5.8 21l1.2-6.8-5-4.9 6.9-1z"/></svg>';
+    var revOf = function(name){ return (d.venues || []).find(function(v){ return v.review && lc(v.name) === lc(name); }); };
+    var rvKey = function(a){ return 'mv-rv-' + d.code + '-' + a.venue + '-' + a.date; };
+    var rvSeen = function(a){ if (a.demo) return false; try { return localStorage.getItem(rvKey(a)) === '1'; } catch (e) { return false; } };
+    var reviewBig = function(){
+      var a = d.reviewAsk, v = a && revOf(a.venue); if (!v || rvSeen(a)) return '';
+      var p = placeOf(lc(a.venue)) || {};
+      var q = a.when === 'today' ? 'Enjoying ' + a.venue + '?' : a.when === 'yesterday' ? 'How was ' + a.venue + ' last night?' : 'How was your visit to ' + a.venue + '?';
+      return '<div class="rv" id="rvbig"><button class="x" id="rvx" aria-label="Close">' + svg(I.x, 16) + '</button>' + (p.img ? '<img class="ph" src="' + esc(p.img) + '" alt="">' : '') +
+        '<h3 translate="no">' + esc(q) + '</h3><p>Thanks for coming, ' + esc(String(d.first || '').split(' ')[0]) + '. A quick Google review really helps us.</p><div class="stars">' + STAR + STAR + STAR + STAR + STAR + '</div>' +
+        '<a href="' + esc(v.review) + '" target="_blank" rel="noopener" id="rvgo"' + hit('review') + '><span class="g">G</span>Leave a Google review</a><button class="nn" id="rvno">Not now</button></div>';
+    };
+    var reviewLine = function(list){
+      list = (list || []).filter(function(v){ return v.review; }); if (!list.length) return '';
+      var one = list.length === 1;
+      return '<div class="sec"><div class="box"><' + (one ? 'a href="' + esc(list[0].review) + '" target="_blank" rel="noopener"' + hit('review') : 'button id="rvpick"') + ' class="rvs"><i>' + svg(PI.star, 20) + '</i><span><b>Love it here?</b><small>Leave us a Google review</small></span><em>Review ›</em></' + (one ? 'a' : 'button') + '></div></div>';
+    };
+
     // ── Follow us on Instagram (each place's own account) ──
     var igHtml = function(list){
       list = (list || []).filter(function(p){ return p.ig; });
@@ -369,7 +400,7 @@ svg{display:block}
           '<span><b translate="no">' + esc(p.name) + '</b><small>' + esc([p.area, st].filter(Boolean).join(' · ')) + '</small></span></button>';
       }).join('') + '</div></div>';
       if (on.gallery && (gp.gallery || []).length) h += galHtml(gp.gallery, '');
-      h += igHtml(places);
+      h += reviewLine(d.venues) + igHtml(places);
       return h + foot + '</div>';
     };
     var placeHtml = function(key){
@@ -382,11 +413,11 @@ svg{display:block}
       if (sl.length) h += '<div class="vsl">' + slidesHtml(sl, false) + '</div>';
       var body = placeSections(key);
       h += body || '<div class="sec"><div class="box" style="padding:18px;text-align:center;color:#64748B;font-size:14px;font-weight:600">Nothing special on here right now - come and see us!</div></div>';
-      h += igHtml([p]);
+      h += reviewLine([v]) + igHtml([p]);
       return h + foot + '</div>';
     };
     var singleHtml = function(){
-      return '<div class="w">' + topHtml(slidesHtml(gp.slides || [], false)) + memberHtml() + placeSections('') + igHtml(places.slice(0, 1)) + foot + '</div>';
+      return '<div class="w">' + topHtml(slidesHtml(gp.slides || [], false)) + memberHtml() + placeSections('') + reviewLine((d.venues || []).slice(0, 1)) + igHtml(places.slice(0, 1)) + foot + '</div>';
     };
 
     var bookBar = function(key){
@@ -473,6 +504,12 @@ svg{display:block}
         c.onclick = function(e){ if (e.target.closest && e.target.closest('a')) return; evOpen(c.getAttribute('data-ev')); };
         c.onkeydown = function(e){ if (e.key === 'Enter') evOpen(c.getAttribute('data-ev')); };
       });
+      // Google review card: tapping the button or closing it hides it until their next visit
+      var rvDone = function(){ try { if (d.reviewAsk) localStorage.setItem(rvKey(d.reviewAsk), '1'); } catch (e) {} var c = document.getElementById('rvbig'); if (c) c.remove(); };
+      ['rvx', 'rvno'].forEach(function(id){ var b = document.getElementById(id); if (b) b.onclick = rvDone; });
+      var rg = document.getElementById('rvgo'); if (rg) rg.addEventListener('click', function(){ setTimeout(rvDone, 300); });
+      var rp = document.getElementById('rvpick');
+      if (rp) rp.onclick = function(){ chooser('Review which place?', (d.venues || []).filter(function(v){ return v.review; }), function(v){ return v.review; }, PI.star); };
       // "Send me offers": the member's own yes / no (saved straight away; staff preview doesn't save)
       var of = document.getElementById('offr');
       if (of) of.onclick = function(){

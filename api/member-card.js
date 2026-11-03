@@ -106,7 +106,7 @@ module.exports = async (req, res) => {
 
     const weekEnd = addDays(now.date, 6);
     const [visits, stages, bookings] = await Promise.all([
-      safe(L.db('member_visits?select=venue&member_id=eq.' + q(m.id) + '&limit=5000')),
+      safe(L.db('member_visits?select=venue,visit_date&member_id=eq.' + q(m.id) + '&limit=5000')),
       safe(L.db('dj_stages?select=id,name&company_id=eq.' + q(co))),
       safe(L.db('dj_bookings?select=stage_id,date,start_time,end_time,dj_name,type&company_id=eq.' + q(co) + '&date=gte.' + now.date + '&date=lte.' + weekEnd + '&order=date.asc,start_time.asc&limit=200')),
     ]);
@@ -145,8 +145,14 @@ module.exports = async (req, res) => {
     // Venues + rewards (Membership > Guest page)
     let venues = Array.isArray(page.venues) && page.venues.length ? page.venues : (demo ? demo.venues : []);
     if (demo && GP.isOldDemo(venues)) venues = GP.renameDemo(venues);
-    if (demo) venues = venues.map(v => { const dv = v && GP.DEMO_VENUES.find(x => x.name === v.name); return dv && !v.email ? Object.assign({}, v, { email: dv.email }) : v; });   // demo: sample emails
-    venues = venues.filter(v => v && v.name).slice(0, 12).map(v => Object.assign({ name: v.name, area: String(v.area || '').slice(0, 30), email: /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(v.email || '').trim()) ? String(v.email).trim().slice(0, 120) : '', map: v.map || '', wa: String(v.wa || '').replace(/\D/g, ''), phone: v.phone || '' }, openState(v, now.hm)));
+    if (demo) venues = venues.map(v => { const dv = v && GP.DEMO_VENUES.find(x => x.name === v.name); return dv && (!v.email || !v.review) ? Object.assign({}, v, { email: v.email || dv.email, review: v.review || dv.review }) : v; });   // demo: sample emails + review links
+    venues = venues.filter(v => v && v.name).slice(0, 12).map(v => Object.assign({ name: v.name, area: String(v.area || '').slice(0, 30), email: /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(v.email || '').trim()) ? String(v.email).trim().slice(0, 120) : '', map: v.map || '', review: /^https:\/\/[^\s"'<>]+$/i.test(String(v.review || '').trim()) ? String(v.review).trim().slice(0, 400) : '', wa: String(v.wa || '').replace(/\D/g, ''), phone: v.phone || '' }, openState(v, now.hm)));
+    // Google review ask: they were checked in at a place in the last 2 days (demo: always, so it can be shown)
+    let reviewAsk = null;
+    const lastV = visits.filter(v => v.visit_date && v.visit_date >= addDays(now.date, -2) && v.visit_date <= now.date).sort((a, b) => String(b.visit_date).localeCompare(String(a.visit_date)))[0];
+    const vr = name => venues.find(v => v.review && name && v.name.toLowerCase() === String(name).toLowerCase());
+    if (lastV && vr(lastV.venue)) reviewAsk = { venue: vr(lastV.venue).name, date: lastV.visit_date, when: lastV.visit_date === now.date ? 'today' : lastV.visit_date === addDays(now.date, -1) ? 'yesterday' : 'recent' };
+    else if (demo) { const v = venues.find(x => x.review); if (v) reviewAsk = { venue: v.name, date: addDays(now.date, -1), when: 'yesterday', demo: true }; }
     const rw = page.reward && page.reward.visits ? page.reward : (demo ? demo.reward : null);
     const reward = rw && Number(rw.visits) > 0 ? { target: Number(rw.visits), text: String(rw.text || '').slice(0, 80), left: Math.max(0, Number(rw.visits) - visits.length) } : null;
 
@@ -165,7 +171,7 @@ module.exports = async (req, res) => {
 
     return L.send(res, 200, {
       ok: true, brand, logo, code, first, tier, visits: visits.length, favourite, gp,
-      since: new Date(m.created_at).getFullYear(), perks, perkIcons, offers: m.consent === true,
+      since: new Date(m.created_at).getFullYear(), perks, perkIcons, offers: m.consent === true, reviewAsk,
       birthdayWeek: birthdayWeek(m.birthday, now.date),
       tonight: tonight.slice(0, 12), week: week.slice(0, 40), menus, venues, reward
     });

@@ -2248,6 +2248,11 @@ body:not(.mv-demo) #ms-demoqr-btn{display:none!important}
 .gp-chip.wa{background:#DCFCE7;color:#15803D}.gp-chip.book{background:#DBEAFE;color:#1D4ED8}.gp-chip.tickets{background:#EDE9FE;color:#6D28D9}.gp-chip.num{background:#F0FDFA;color:#0F766E}
 .gp-ib{width:36px;height:36px;border-radius:10px;border:0;background:#F1F5F9;color:#334155;display:flex;align-items:center;justify-content:center;cursor:pointer;flex:none}
 .gp-ib.del:hover{background:#FEE2E2;color:#DC2626}
+.gp-pks{display:grid;grid-template-columns:1fr 1fr;gap:10px}@media(max-width:520px){.gp-pks{grid-template-columns:1fr}}
+.gp-pk{background:#F8FAFC;border-radius:12px;padding:10px 12px}.gp-pkl{font-size:10.5px;font-weight:900;letter-spacing:1.2px;color:#94A3B8;margin-bottom:4px}
+.gp-pkr{display:flex;align-items:center;gap:8px;font-size:13.5px;font-weight:600;color:#0F1E2E;padding:4px 0}.gp-pkr i{width:26px;height:26px;border-radius:8px;background:#E6F4F1;color:#0D9488;display:flex;align-items:center;justify-content:center;flex:none}
+.gp-pkw{display:flex;align-items:center;gap:8px;font-size:13.5px;color:#475569;margin-top:10px;font-weight:600}.gp-pkw i{width:26px;height:26px;border-radius:8px;background:#FEF3C7;color:#B45309;display:flex;align-items:center;justify-content:center;flex:none}.gp-pkw b{color:#0F1E2E}
+.gp-big{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;margin-top:12px;background:#0F1E2E;color:white;border:0;border-radius:12px;padding:13px;font:800 14px Inter,sans-serif;cursor:pointer}
 .gp-add{border:1.5px dashed #CBD5E1;background:white;border-radius:12px;padding:12px;font:800 13.5px Inter,sans-serif;color:#0F766E;cursor:pointer}
 .gp-add:hover{border-color:#0D9488;background:#F0FDFA}
 .gp-auto{font-size:12.5px;color:#475569;font-weight:600;background:#F8FAFC;border-radius:10px;padding:10px 12px;line-height:1.45}
@@ -21874,8 +21879,8 @@ function gpRender(){
       <div class="gp-sec${c.off.slides ? ' off' : ''}"><div class="gp-sh"><div class="n"><b>Highlights</b><small>Big photos at the top of a place's page - offers, new menu, big nights. Guests swipe through them</small></div>${tog('slides')}</div>
         ${c.off.slides ? '' : `<div class="gp-body">${c.slides.map((it, j) => gpItemHtml('slides', it, j)).join('')}${c.slides.length < 12 ? `<button class="gp-add" onclick="gpForm('slides')">+ Add a highlight</button>` : ''}</div>`}</div>
       ${gpColoursHtml()}
-      <div class="gp-sec"><div class="gp-sh"><div class="n"><b>Member card</b><small>Their name, visits, perks and reward - always shown</small></div></div>
-        <div class="gp-body"><div class="gp-auto">${mgr ? '<button onclick="msTiers()">Change perks, reward and venues</button>' : 'A manager sets the perks and reward.'}</div></div></div>
+      <div class="gp-sec"><div class="gp-sh"><div class="n"><b>Perks and reward</b><small>On every member's card - always shown</small></div></div>
+        <div class="gp-body">${gpPerksHtml(mgr)}</div></div>
       ${gpPlacesHtml()}
       ${c.order.map(sec).join('')}
     </div>
@@ -21906,6 +21911,14 @@ window.gpColour = async function(k, v){
   gpRender(); await gpSave('Colours saved');
 };
 // Our places: a photo and area for each venue - guests tap one to see only that place
+// Perks and reward at a glance, with a big button to change them
+function gpPerksHtml(mgr){
+  const p = msPerks(), rw = (msPage().reward || {});
+  const list = (k, lab) => `<div class="gp-pk"><div class="gp-pkl">${lab}</div>${(p[k] || []).length ? p[k].map((t, i) => `<div class="gp-pkr"><i>${msIcSvg(((p.icons || {})[k] || [])[i] || 'gift', 15)}</i>${gpEsc(t)}</div>`).join('') : '<div class="gp-pkr" style="color:#94A3B8">None yet</div>'}</div>`;
+  return `<div class="gp-pks">${list('member', 'MEMBERS')}${list('vip', 'VIP')}</div>
+    <div class="gp-pkw"><i>${msIcSvg('gift', 15)}</i><span>${rw.visits ? 'Reward after ' + gpEsc(rw.visits) + ' visits: <b>' + gpEsc(rw.text || 'a treat') + '</b>' : 'No reward set'}</span></div>
+    ${mgr ? `<button class="gp-big" onclick="msTiers()">${gpIc(GPI.edit, 16)} Change perks and reward</button>` : '<div class="gp-auto">A manager sets the perks and reward.</div>'}`;
+}
 function gpPlacesHtml(){
   const vs = (msPage().venues || []).filter(v => v && v.name);
   if(!vs.length) return '';

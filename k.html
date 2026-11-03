@@ -99,6 +99,40 @@ svg{display:block}
 .pv{position:fixed;left:0;right:0;top:0;z-index:30;background:#0D9488;color:white;text-align:center;font-size:12px;font-weight:800;padding:7px 10px;padding-top:calc(7px + env(safe-area-inset-top,0px))}
 .msg{background:white;border-radius:18px;padding:22px;margin:-76px 16px 0;position:relative;box-shadow:0 14px 30px rgba(15,30,46,.15);text-align:center}
 .msg h2{font-size:20px}.msg p{font-size:14px;color:#475569;line-height:1.55;margin-top:8px}
+/* marketing: photo slides, deals, coming up, gallery */
+.sl-wrap{margin:22px -20px 0}
+.sl{display:flex;gap:10px;overflow-x:auto;scroll-snap-type:x mandatory;scrollbar-width:none;padding:0 20px;scroll-padding:0 20px}
+.sl::-webkit-scrollbar{display:none}
+.sd{flex:0 0 calc(100% - 26px);scroll-snap-align:start;height:300px;border-radius:20px;overflow:hidden;position:relative;background:#1E2D3D}
+.sd img{width:100%;height:100%;object-fit:cover;display:block}
+.sd .ov{position:absolute;left:0;right:0;bottom:0;padding:16px 16px 15px;background:rgba(15,30,46,.82);color:white}
+.sd .ov b{display:block;font-size:22px;font-weight:900;letter-spacing:-.4px;line-height:1.15}
+.sd .ov small{display:block;font-size:13px;color:#E2E8F0;margin-top:4px;line-height:1.35}
+.sd .ov a{display:inline-flex;align-items:center;gap:7px;margin-top:10px;background:white;color:#0F1E2E;text-decoration:none;font-size:13px;font-weight:800;border-radius:10px;padding:8px 12px}
+.dots{display:flex;justify-content:center;gap:6px;margin-top:12px}
+.dots i{width:6px;height:6px;border-radius:3px;background:rgba(255,255,255,.3);transition:width .2s,background .2s}
+.dots i.on{width:20px;background:white}
+.deal{display:flex;background:white;border-radius:18px;overflow:hidden;margin-bottom:10px;box-shadow:0 1px 3px rgba(15,30,46,.07)}
+.deal img,.deal .noimg{width:108px;height:108px;object-fit:cover;flex:none;background:#FEF3C7}
+.deal .x{padding:13px 14px;min-width:0;display:flex;flex-direction:column;justify-content:center;gap:4px}
+.deal .w{align-self:flex-start;background:#FEF3C7;color:#92400E;font-size:10.5px;font-weight:900;letter-spacing:.6px;border-radius:6px;padding:3px 8px}
+.deal b{font-size:16px;line-height:1.25}.deal small{font-size:12.5px;color:#64748B;font-weight:600}
+.evs{display:flex;gap:12px;overflow-x:auto;scrollbar-width:none;margin:0 -16px;padding:0 16px 4px;scroll-snap-type:x mandatory;scroll-padding:0 16px}
+.evs::-webkit-scrollbar{display:none}
+.ev{flex:0 0 272px;scroll-snap-align:start;background:white;border-radius:20px;overflow:hidden;box-shadow:0 1px 3px rgba(15,30,46,.07);display:flex;flex-direction:column}
+.ev img,.ev .noimg{width:100%;height:164px;object-fit:cover;display:block;background:#E7EEF2}
+.ev .x{padding:13px 15px 15px;display:flex;flex-direction:column;flex:1}
+.ev .wh{font-size:10.5px;font-weight:900;letter-spacing:1px;color:#0D9488}
+.ev b{font-size:18px;font-weight:900;letter-spacing:-.3px;margin-top:4px}
+.ev small{font-size:13px;color:#64748B;margin-top:3px;line-height:1.4}
+.ev .go{margin-top:auto;padding-top:12px}
+.ev .go a{display:flex;align-items:center;justify-content:center;gap:8px;background:#0F1E2E;color:white;text-decoration:none;border-radius:12px;padding:12px;font-size:14px;font-weight:800}
+.ev .go a.wa{background:#16A34A}
+.gal{display:flex;gap:8px;overflow-x:auto;scrollbar-width:none;margin:0 -16px;padding:0 16px 4px}
+.gal::-webkit-scrollbar{display:none}
+.gal button{flex:0 0 150px;height:200px;border:0;padding:0;border-radius:14px;overflow:hidden;cursor:pointer;background:#E7EEF2}
+.gal img{width:100%;height:100%;object-fit:cover;display:block}
+.big{width:100%;border-radius:14px;display:block}
 @media(min-width:700px){.top{padding-top:34px}}
 </style></head><body><div id="root"><div class="load">Loading your card…</div></div>
 <script>
@@ -132,7 +166,7 @@ svg{display:block}
   if (preview) { var pv = document.createElement('div'); pv.className = 'pv'; pv.textContent = 'Preview - this is what your guest sees'; document.body.insertBefore(pv, document.body.firstChild); document.body.style.paddingTop = '30px'; }
   if (!code) { root.innerHTML = '<div class="w">' + head({ brand:'Members Club' }, 'Members Club', 'This link is missing its keyring code.') + '</div>'; return; }
 
-  fetch('/api/member-card?code=' + encodeURIComponent(code)).then(function(r){ return r.json(); }).then(function(d){
+  fetch('/api/member-card?code=' + encodeURIComponent(code) + (preview ? '&pv=1' : '')).then(function(r){ return r.json(); }).then(function(d){
     if (!d || !d.ok) { root.innerHTML = '<div class="w">' + head({ brand:'Members Club' }, 'Hello!', '') + '<div class="msg"><h2>We couldn\'t find this keyring</h2><p>Please show it to our team and they\'ll sort it out.</p></div></div>'; return; }
     document.title = d.brand + ' - Members Club';
     if (d.blank) {
@@ -141,22 +175,18 @@ svg{display:block}
         '<div class="foot">Keyring ' + esc(code) + '<br><a href="https://getmavis.co">Powered by Mavis</a></div></div>';
       return;
     }
-    var vip = d.tier === 'vip', h = '<div class="w">';
-    h += head(d, 'Welcome back,<br><span translate="no">' + esc(String(d.first).split(' ')[0]) + '</span>', 'Good to see you again. Here\'s what\'s on.');
+    var vip = d.tier === 'vip', h = '<div class="w">', gp = d.gp || {}, slides = gp.slides || [];
+    var hit = function(id){ return id ? ' data-hit="' + esc(id) + '"' : ''; };
+    var btnHtml = function(b, id){ return b ? '<a href="' + esc(b.href) + '" target="_blank" rel="noopener"' + (b.kind === 'wa' ? ' class="wa"' : '') + hit(id) + '>' + (b.kind === 'wa' ? svg(I.wa, 16) : '') + esc(b.label) + '</a>' : ''; };
+    var pic = function(src, alt){ return src ? '<img src="' + esc(src) + '" alt="' + esc(alt || '') + '" loading="lazy">' : '<div class="noimg"></div>'; };
+    var top = head(d, 'Welcome back,<br><span translate="no">' + esc(String(d.first).split(' ')[0]) + '</span>', 'Good to see you again. Here\'s what\'s on.');
+    if (slides.length) top = top.replace(/<\/div>$/, '<div class="sl-wrap"><div class="sl" id="sl">' + slides.map(function(x){
+      return '<div class="sd">' + pic(x.img, x.title) + (x.title || x.line || x.btn ? '<div class="ov">' + (x.title ? '<b>' + esc(x.title) + '</b>' : '') + (x.line ? '<small>' + esc(x.line) + '</small>' : '') + (x.btn ? btnHtml(x.btn, x.id).replace(' class="wa"', '') : '') + '</div>' : '') + '</div>';
+    }).join('') + '</div>' + (slides.length > 1 ? '<div class="dots" id="dots">' + slides.map(function(x, i){ return '<i' + (i ? '' : ' class="on"') + '></i>'; }).join('') + '</div>' : '') + '</div></div>');
+    h += top;
     h += '<div class="card' + (vip ? '' : ' member') + '"><span class="code">' + esc(d.code) + '</span><div class="k">' + (vip ? 'VIP MEMBER' : 'MEMBER') + '</div><h2 translate="no">' + esc(d.first) + '</h2>' +
       '<div class="row"><div><b>' + esc(d.visits) + '</b>visit' + (d.visits === 1 ? '' : 's') + '</div>' + (d.favourite ? '<div><b translate="no">' + esc(d.favourite) + '</b>favourite</div>' : '') + '<div><b>' + esc(d.since) + '</b>member since</div></div></div>';
     if (d.birthdayWeek) h += '<div class="bday"><i>' + svg(I.cake, 24) + '</i><div><b>Happy birthday week!</b><p>' + (d.perks.some(function(p){ return /birthday/i.test(p); }) ? 'Your birthday treat is waiting - just show this screen at any of our venues.' : 'From all of us - have a wonderful one. We hope to see you this week!') + '</p></div></div>';
-    if (d.tonight && d.tonight.length) {
-      h += '<div class="sec"><div class="lab">TONIGHT</div>' + d.tonight.map(function(e){
-        return '<div class="tn"><span class="tag">' + (e.time ? 'FROM ' + esc(e.time.split(' - ')[0]).toUpperCase() : 'TONIGHT') + '</span><h3 translate="no">' + esc(e.title) + '</h3><div class="meta"><span translate="no">' + esc(e.venue) + '</span>' + (e.venue && e.time ? ' · ' : '') + esc(e.time) + '</div>' +
-          (e.sub ? '<div class="sub"><i>' + svg(I.music, 16) + '</i>' + esc(e.sub) + '</div>' : '') + '</div>';
-      }).join('') + '</div>';
-    }
-    if (d.week && d.week.length) {
-      h += '<div class="sec"><div class="lab">THIS WEEK</div><div class="days">' + d.week.map(function(e){
-        return '<div class="day"><div class="d">' + esc(e.day) + '</div><b translate="no">' + esc(e.title) + '</b><small>' + esc(e.sub) + (e.time ? ' · ' + esc(e.time.split(' - ')[0]) : '') + '</small>' + (e.venue ? '<span class="v" translate="no">' + esc(e.venue) + '</span>' : '') + '</div>';
-      }).join('') + '</div></div>';
-    }
     if (d.reward) {
       var pct = Math.min(100, Math.round(100 * (d.reward.target - d.reward.left) / d.reward.target));
       h += '<div class="sec"><div class="lab">YOUR REWARDS</div><div class="box rw"><div class="rw-top"><b>' + (d.reward.left ? d.reward.left + ' more visit' + (d.reward.left === 1 ? '' : 's') : 'You\'ve made it!') + '</b><span>' + Math.min(d.visits, d.reward.target) + ' / ' + d.reward.target + '</span></div>' +
@@ -165,19 +195,42 @@ svg{display:block}
     if (d.perks && d.perks.length) {
       h += '<div class="sec"><div class="lab">YOUR ' + (vip ? 'VIP ' : '') + 'PERKS</div><div class="box">' + d.perks.map(function(p){ return '<div class="perk"><i>' + svg(/birthday/i.test(p) ? I.cake : I.gift, 17) + '</i>' + esc(p) + '</div>'; }).join('') + '</div></div>';
     }
+    var S = { tonight:'', deals:'', events:'', menus:'', gallery:'', venues:'' }, K;
+    K = 'tonight';
+    if (d.tonight && d.tonight.length) {
+      S[K] += '<div class="sec"><div class="lab">TONIGHT</div>' + d.tonight.map(function(e){
+        return '<div class="tn"><span class="tag">' + (e.time ? 'FROM ' + esc(e.time.split(' - ')[0]).toUpperCase() : 'TONIGHT') + '</span><h3 translate="no">' + esc(e.title) + '</h3><div class="meta"><span translate="no">' + esc(e.venue) + '</span>' + (e.venue && e.time ? ' · ' : '') + esc(e.time) + '</div>' +
+          (e.sub ? '<div class="sub"><i>' + svg(I.music, 16) + '</i>' + esc(e.sub) + '</div>' : '') + '</div>';
+      }).join('') + '</div>';
+    }
+    if (d.week && d.week.length) {
+      S[K] += '<div class="sec"><div class="lab">THIS WEEK</div><div class="days">' + d.week.map(function(e){
+        return '<div class="day"><div class="d">' + esc(e.day) + '</div><b translate="no">' + esc(e.title) + '</b><small>' + esc(e.sub) + (e.time ? ' · ' + esc(e.time.split(' - ')[0]) : '') + '</small>' + (e.venue ? '<span class="v" translate="no">' + esc(e.venue) + '</span>' : '') + '</div>';
+      }).join('') + '</div></div>';
+    }
+    K = 'menus';
     var hasFood = d.menus && d.menus.food && d.menus.food.length, hasDrinks = d.menus && d.menus.drinks && d.menus.drinks.length;
     if (hasFood || hasDrinks) {
       var tile = function(k, name, sub, bg, fg, icon){ return '<button class="mn" data-menu="' + k + '"><div class="ph" style="background:' + bg + ';color:' + fg + '">' + svg(icon, 32) + '</div><div class="t"><b>' + name + '</b><small>' + esc(sub) + '</small></div></button>'; };
       var subOf = function(list){ return list.length === 1 ? (list[0].venue || list[0].name) : list.length + ' menus'; };
-      h += '<div class="sec"><div class="lab">MENUS</div><div class="menus">' + (hasFood ? tile('food', 'Food', subOf(d.menus.food), '#FEF3C7', '#B45309', I.food) : '') + (hasDrinks ? tile('drinks', 'Drinks', subOf(d.menus.drinks), '#E0F5F2', '#0F766E', I.drink) : '') + '</div></div>';
+      S[K] += '<div class="sec"><div class="lab">MENUS</div><div class="menus">' + (hasFood ? tile('food', 'Food', subOf(d.menus.food), '#FEF3C7', '#B45309', I.food) : '') + (hasDrinks ? tile('drinks', 'Drinks', subOf(d.menus.drinks), '#E0F5F2', '#0F766E', I.drink) : '') + '</div></div>';
     }
+    K = 'venues';
     if (d.venues && d.venues.length) {
-      h += '<div class="sec"><div class="lab">OUR VENUES</div><div class="box">' + d.venues.map(function(v, i){
+      S[K] += '<div class="sec"><div class="lab">OUR VENUES</div><div class="box">' + d.venues.map(function(v, i){
         var st = v.open === true ? '<span class="open">Open now</span> · ' + esc(v.label) : v.open === false ? '<span class="closed">' + esc(v.label) + '</span>' : esc(v.label || '');
         return '<div class="ven"><div class="ic" style="background:' + VC[i % VC.length] + '">' + esc(v.name.charAt(0).toUpperCase()) + '</div><div class="n"><b translate="no">' + esc(v.name) + '</b>' + (st ? '<small>' + st + '</small>' : '') + '</div>' +
           (v.map ? '<a href="' + esc(v.map) + '" target="_blank" rel="noopener" aria-label="Map">' + svg(I.pin, 18) + '</a>' : '') + '</div>';
       }).join('') + '</div></div>';
     }
+    if (gp.deals && gp.deals.length) S.deals = '<div class="sec"><div class="lab">DAILY DEALS</div>' + gp.deals.map(function(x){
+      return '<div class="deal">' + pic(x.img, x.title) + '<div class="x">' + (x.when ? '<span class="w">' + esc(x.when).toUpperCase() + '</span>' : '') + '<b>' + esc(x.title) + '</b>' + (x.venue ? '<small translate="no">' + esc(x.venue) + '</small>' : '') + '</div></div>';
+    }).join('') + '</div>';
+    if (gp.events && gp.events.length) S.events = '<div class="sec"><div class="lab">COMING UP</div><div class="evs">' + gp.events.map(function(x){
+      return '<div class="ev">' + pic(x.img, x.title) + '<div class="x"><div class="wh">' + esc([x.when, x.venue].filter(Boolean).join(' · ')).toUpperCase() + '</div><b>' + esc(x.title) + '</b>' + (x.line ? '<small>' + esc(x.line) + '</small>' : '') + (x.btn ? '<div class="go">' + btnHtml(x.btn, x.id) + '</div>' : '') + '</div></div>';
+    }).join('') + '</div></div>';
+    if (gp.gallery && gp.gallery.length) S.gallery = '<div class="sec"><div class="lab">GALLERY</div><div class="gal">' + gp.gallery.map(function(src){ return '<button data-big="' + esc(src) + '" aria-label="Open photo"><img src="' + esc(src) + '" alt="" loading="lazy"></button>'; }).join('') + '</div></div>';
+    (gp.order && gp.order.length ? gp.order : ['tonight', 'deals', 'events', 'menus', 'gallery', 'venues']).forEach(function(k){ h += S[k] || ''; });
     h += '<div class="foot">Show your keyring when you arrive<br>and we\'ll look after the rest.<br><br><a href="https://getmavis.co">Powered by Mavis</a></div></div>';
     var waV = (d.venues || []).filter(function(v){ return v.wa; }), phV = (d.venues || []).filter(function(v){ return v.phone; });
     if (waV.length || phV.length) h += '<div class="book"><div class="in">' + (waV.length ? '<button id="bk">' + svg(I.wa, 20) + 'Book a table</button>' : '') + (phV.length ? '<button class="call" id="cl" aria-label="Call">' + svg(I.phone, 20) + '</button>' : '') + '</div></div>';
@@ -202,6 +255,16 @@ svg{display:block}
         }).join(''));
       };
     });
+    Array.prototype.forEach.call(document.querySelectorAll('[data-big]'), function(b){ b.onclick = function(){ open('Gallery', '<img class="big" src="' + esc(b.getAttribute('data-big')) + '" alt="">'); }; });
+    if (!preview) document.addEventListener('click', function(e){ var a = e.target.closest && e.target.closest('[data-hit]'); if (a) try { fetch('/api/gp?a=hit&code=' + encodeURIComponent(d.code) + '&i=' + encodeURIComponent(a.getAttribute('data-hit')), { keepalive: true }); } catch (x) {} });
+    var sl = document.getElementById('sl'), dots = document.getElementById('dots');
+    if (sl && dots) {
+      var idx = 0, n = sl.children.length, held = false, step = function(){ return sl.children[1] ? sl.children[1].offsetLeft - sl.children[0].offsetLeft : sl.clientWidth; };
+      sl.addEventListener('scroll', function(){ var i = Math.round(sl.scrollLeft / step()); if (i !== idx) { idx = i; Array.prototype.forEach.call(dots.children, function(t, k){ t.className = k === idx ? 'on' : ''; }); } }, { passive: true });
+      ['touchstart', 'mouseenter'].forEach(function(ev){ sl.addEventListener(ev, function(){ held = true; }, { passive: true }); });
+      ['touchend', 'mouseleave'].forEach(function(ev){ sl.addEventListener(ev, function(){ setTimeout(function(){ held = false; }, 3000); }, { passive: true }); });
+      setInterval(function(){ if (held || document.hidden) return; sl.scrollTo({ left: ((idx + 1) % n) * step(), behavior: 'smooth' }); }, 4500);
+    }
     var chooser = function(title, list, hrefOf, icon){
       if (list.length === 1) { location.href = hrefOf(list[0]); return; }
       open(title, list.map(function(v){ return '<a class="pick" href="' + esc(hrefOf(v)) + '"' + (/^https/.test(hrefOf(v)) ? ' target="_blank" rel="noopener"' : '') + '><b translate="no">' + esc(v.name) + '</b><i>' + svg(icon, 18) + '</i></a>'; }).join(''));

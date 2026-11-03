@@ -5,6 +5,7 @@
 // (names, prices, descriptions, allergens - never food cost, ingredients or method) and the venue details the
 // managers chose to publish (Membership > Guest page). Never phone, email, notes or birthday.
 const L = require('./_lib');
+const GP = require('./_gp');
 
 const clean = s => String(s || '').toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 16);
 const q = v => encodeURIComponent(v);
@@ -87,9 +88,10 @@ module.exports = async (req, res) => {
     const k = (await L.db('member_keyrings?select=code,company_id,member_id&code=eq.' + q(code)))[0];
     if (!k) return L.send(res, 200, { ok: false, reason: 'unknown' });
     const co = k.company_id;
-    const [cos, settings] = await Promise.all([
+    const [cos, settings, gpRows] = await Promise.all([
       safe(L.db('companies?select=name,code,logo&id=eq.' + q(co))),
-      safe(L.db('app_settings?select=key,value&company_id=eq.' + q(co) + '&key=in.(member_perks,member_page)'))
+      safe(L.db('app_settings?select=key,value&company_id=eq.' + q(co) + '&key=in.(member_perks,member_page)')),
+      safe(L.db('guest_page?select=content&company_id=eq.' + q(co)))
     ]);
     const company = cos[0] || {};
     const isDemo = company.code === 'MAVIS';
@@ -147,8 +149,20 @@ module.exports = async (req, res) => {
     const rw = page.reward && page.reward.visits ? page.reward : (demo ? demo.reward : null);
     const reward = rw && Number(rw.visits) > 0 ? { target: Number(rw.visits), text: String(rw.text || '').slice(0, 80), left: Math.max(0, Number(rw.visits) - visits.length) } : null;
 
+    // Marketing: photo slides, daily deals, coming up, gallery (Membership > Guest page)
+    let gpc = gpRows[0] && gpRows[0].content;
+    if (!GP.hasContent(gpc) && demo) gpc = Object.assign(GP.demo(now.date), gpc && gpc.order ? { order: gpc.order, off: gpc.off || {} } : {});
+    const gp = GP.build(gpc || {}, { company: co, code, venues, today: now.date });
+
+    // The numbers: one page open, and a view for every card shown (not when staff preview it)
+    if (!(req.query && req.query.pv)) {
+      const rows = [{ company_id: co, item: 'page', kind: 'open' }]
+        .concat(gp.slides.concat(gp.deals, gp.events).map(x => ({ company_id: co, item: x.id, kind: 'view' })));
+      try { await L.db('guest_page_hits', { method: 'POST', body: rows, headers: { Prefer: 'return=minimal' } }); } catch (e) {}
+    }
+
     return L.send(res, 200, {
-      ok: true, brand, logo, code, first, tier, visits: visits.length, favourite,
+      ok: true, brand, logo, code, first, tier, visits: visits.length, favourite, gp,
       since: new Date(m.created_at).getFullYear(), perks,
       birthdayWeek: birthdayWeek(m.birthday, now.date),
       tonight: tonight.slice(0, 3), week: week.slice(0, 6), menus, venues, reward

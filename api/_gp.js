@@ -55,7 +55,7 @@ function demo(today){
       { id: 'de4', img: '/demo-guest/party.jpg', title: 'Full Moon Rooftop', line: 'DJ Ayu till late', date: plus(11), time: '21:00', venue: 'Senja Rooftop', btn: 'tickets', url: 'https://megatix.co.id' }
     ],
     gallery: [['senja', 'Senja Rooftop'], ['martini', 'Senja Rooftop'], ['party', 'Senja Rooftop'], ['ombak', 'Ombak Beach Club'], ['saffron', 'Saffron & Salt'], ['chef', 'Saffron & Salt'],
-              ['fish', 'Saffron & Salt'], ['pasta', 'Kopi Pagi']].map(([n, v], i) => ({ id: 'dg' + i, img: '/demo-guest/' + n + '.jpg', venue: v })),
+              ['fish', 'Saffron & Salt'], ['truffle', 'Saffron & Salt'], ['squidink', 'Saffron & Salt'], ['pasta', 'Kopi Pagi']].map(([n, v], i) => ({ id: 'dg' + i, img: '/demo-guest/' + n + '.jpg', venue: v })),
     places: { 'senja rooftop': { img: '/demo-guest/senja.jpg', area: 'Uluwatu', ig: 'senjarooftop.demo' }, 'ombak beach club': { img: '/demo-guest/ombak.jpg', area: 'Sanur', ig: 'ombakbeachclub.demo' },
               'saffron & salt': { img: '/demo-guest/saffron.jpg', area: 'Seminyak', ig: 'saffronandsalt.demo' }, 'kopi pagi': { img: '/demo-guest/pasta.jpg', area: 'Canggu', ig: 'kopipagi.demo' } }
   };

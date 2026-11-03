@@ -136,6 +136,10 @@ svg{display:block}
 .er{display:flex;gap:12px;padding:13px 14px;border-top:1px solid #F1F5F9}.er:first-child{border-top:0}
 .er i{width:36px;height:36px;border-radius:10px;background:#F1F5F9;color:#0F1E2E;display:flex;align-items:center;justify-content:center;flex:none}
 .er div{display:flex;flex-direction:column;gap:2px;min-width:0}.er small{font-size:11px;font-weight:900;letter-spacing:.8px;color:#94A3B8;text-transform:uppercase}.er span{font-size:14.5px;font-weight:600;color:#0F1E2E;line-height:1.45}
+.offr{display:flex;align-items:center;gap:14px;padding:14px 16px}.offr .n{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}.offr b{font-size:15px}.offr small{font-size:12.5px;color:#64748B;font-weight:600;line-height:1.4}
+.tgl{flex:none;width:52px;height:30px;border-radius:15px;border:0;background:#CBD5E1;position:relative;cursor:pointer;padding:0;transition:background .15s}
+.tgl i{position:absolute;left:3px;top:3px;width:24px;height:24px;border-radius:50%;background:white;box-shadow:0 1px 3px rgba(15,30,46,.25);transition:left .15s}
+.tgl.on{background:var(--acc,#0D9488)}.tgl.on i{left:25px}
 .asklab{font-size:12px;font-weight:900;letter-spacing:1px;color:#64748B;text-transform:uppercase;margin:18px 0 8px;text-align:center}
 .ask2{display:flex;gap:8px}.ask2 a{flex:1;display:flex;align-items:center;justify-content:center;gap:8px;border-radius:14px;padding:13px;font-size:14.5px;font-weight:800;text-decoration:none;border:1.5px solid #E2E8F0;background:white;color:#0F1E2E}
 .ask2 a.aw svg{color:#16A34A}
@@ -306,7 +310,9 @@ svg{display:block}
         h += '<div class="sec"><div class="lab">YOUR REWARDS</div><div class="box rw"><div class="rw-top"><b>' + (d.reward.left ? d.reward.left + ' more visit' + (d.reward.left === 1 ? '' : 's') : 'You\'ve made it!') + '</b><span>' + Math.min(d.visits, d.reward.target) + ' / ' + d.reward.target + '</span></div>' +
           '<div class="bar"><i style="width:' + pct + '%"></i></div><p>' + (d.reward.left ? 'Reach ' + d.reward.target + ' visits: ' : 'Your reward: ') + esc(d.reward.text || 'a treat on us') + (d.reward.left ? '' : ' - just ask our team.') + '</p></div></div>';
       }
+      var offersHtml = '<div class="sec"><div class="box offr"><div class="n"><b>Send me offers</b><small>News and member offers from ' + esc(d.brand) + '. Turn off any time.</small></div><button class="tgl' + (d.offers ? ' on' : '') + '" id="offr" role="switch" aria-checked="' + (d.offers ? 'true' : 'false') + '" aria-label="Send me offers"><i></i></button></div></div>';
       if (d.perks && d.perks.length) h += '<div class="sec"><div class="lab">YOUR ' + (vip ? 'VIP ' : '') + 'PERKS</div><div class="box">' + d.perks.map(function(p, i){ var ic = (d.perkIcons || [])[i]; return '<div class="perk"><i>' + svg(PI[ic] || PI.gift, 17) + '</i>' + esc(p) + '</div>'; }).join('') + '</div></div>';
+      h += offersHtml;
       return h;
     };
 
@@ -467,6 +473,13 @@ svg{display:block}
         c.onclick = function(e){ if (e.target.closest && e.target.closest('a')) return; evOpen(c.getAttribute('data-ev')); };
         c.onkeydown = function(e){ if (e.key === 'Enter') evOpen(c.getAttribute('data-ev')); };
       });
+      // "Send me offers": the member's own yes / no (saved straight away; staff preview doesn't save)
+      var of = document.getElementById('offr');
+      if (of) of.onclick = function(){
+        var on = !of.classList.contains('on'); of.classList.toggle('on', on); of.setAttribute('aria-checked', on ? 'true' : 'false'); d.offers = on;
+        if (preview) return;
+        fetch('/api/gp?a=offers&code=' + encodeURIComponent(d.code) + '&on=' + (on ? 1 : 0), { method: 'POST' }).then(function(r){ if (!r.ok) throw 0; }).catch(function(){ of.classList.toggle('on', !on); d.offers = !on; });
+      };
       var chooser = function(title, list, hrefOf, icon){
         if (list.length === 1) { location.href = hrefOf(list[0]); return; }
         open(title, list.map(function(v){ return '<a class="pick" href="' + esc(hrefOf(v)) + '"' + (/^https/.test(hrefOf(v)) ? ' target="_blank" rel="noopener"' : '') + '><b translate="no">' + esc(v.name) + '</b><i>' + svg(icon, 18) + '</i></a>'; }).join(''));

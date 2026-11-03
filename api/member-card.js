@@ -101,7 +101,7 @@ module.exports = async (req, res) => {
     const demo = isDemo ? demoContent(now.date) : null;
 
     if (!k.member_id) return L.send(res, 200, { ok: true, blank: true, brand, logo });
-    const m = (await L.db('members?select=id,name,tier,birthday,created_at&id=eq.' + q(k.member_id)))[0];
+    const m = (await L.db('members?select=id,name,tier,birthday,created_at,consent&id=eq.' + q(k.member_id)))[0];
     if (!m) return L.send(res, 200, { ok: true, blank: true, brand, logo });
 
     const weekEnd = addDays(now.date, 6);
@@ -165,7 +165,7 @@ module.exports = async (req, res) => {
 
     return L.send(res, 200, {
       ok: true, brand, logo, code, first, tier, visits: visits.length, favourite, gp,
-      since: new Date(m.created_at).getFullYear(), perks, perkIcons,
+      since: new Date(m.created_at).getFullYear(), perks, perkIcons, offers: m.consent === true,
       birthdayWeek: birthdayWeek(m.birthday, now.date),
       tonight: tonight.slice(0, 12), week: week.slice(0, 40), menus, venues, reward
     });

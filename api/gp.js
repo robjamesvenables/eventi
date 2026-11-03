@@ -3,6 +3,7 @@
 //       on that company's guest page right now, by sending the browser to a short-lived private link.
 //   GET /api/gp?a=hit&code=<keyring>&i=<card id>      a guest tapped Book / Tickets / WhatsApp on a card - counted for
 //       the Numbers screen. Nothing personal is stored: just the company, which card and when.
+//   POST /api/gp?a=offers&code=<keyring>&on=1|0       the member turns "Send me offers" on or off on their own page.
 const L = require('./_lib');
 const GP = require('./_gp');
 const BUCKET = 'shared-files';
@@ -33,11 +34,22 @@ async function hit(req, res){
   res.status(204).end();
 }
 
+async function offers(req, res){
+  const code = String((req.query && req.query.code) || '').toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 16);
+  const on = String((req.query && req.query.on) || '') === '1';
+  if (req.method !== 'POST' || !code) return L.send(res, 400, { ok: false });
+  const k = (await L.db('member_keyrings?select=member_id&code=eq.' + encodeURIComponent(code)))[0];
+  if (!k || !k.member_id) return L.send(res, 404, { ok: false });
+  await L.db('members?id=eq.' + encodeURIComponent(k.member_id), { method: 'PATCH', body: { consent: on }, headers: { Prefer: 'return=minimal' } });
+  return L.send(res, 200, { ok: true, on });
+}
+
 module.exports = async (req, res) => {
   try {
     const a = String((req.query && req.query.a) || '');
     if (a === 'img') return await photo(req, res);
     if (a === 'hit') return await hit(req, res);
+    if (a === 'offers') return await offers(req, res);
     res.status(404).end();
   } catch (e) { try { res.status(404).end(); } catch (x) {} }
 };

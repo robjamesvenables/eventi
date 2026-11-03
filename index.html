@@ -2325,6 +2325,10 @@ body:not(.mv-demo) #ms-demoqr-btn{display:none!important}
 .ms-wa{display:inline-flex;align-items:center;gap:6px;text-decoration:none}
 .ms-kc{display:flex;align-items:center;gap:11px;background:#F7EEDC;border-radius:12px;padding:10px 12px;margin-bottom:12px}.ms-kc b{font-size:16px;letter-spacing:1.5px;color:#0F1E2E}.ms-kc small{display:block;font-size:11.5px;color:#8A6420;font-weight:700}
 .ms-bdpick{display:flex;gap:6px}.ms-bdpick select{flex:1;min-width:0;border:1.5px solid #E2E8F0;border-radius:10px;padding:11px 8px;font:500 15px Inter,sans-serif;color:#0F1E2E;background:white}
+.ms-ask{background:#F8FAFC;border:1.5px solid #E2E8F0;border-radius:14px;padding:12px;margin:8px 0 6px}.ms-ask b{display:block;font-size:14px;color:#0F1E2E}.ms-ask small{display:block;font-size:12px;color:#64748B;font-weight:600;margin-top:2px}
+.ms-ask.need{border-color:#DC2626;background:#FEF2F2}
+.ms-yn{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}.ms-yn button{border:2px solid #E2E8F0;background:white;border-radius:11px;padding:11px 6px;font:800 14px Inter,sans-serif;color:#0F1E2E;cursor:pointer}
+.ms-yn button.on[data-v="1"]{border-color:#0D9488;background:#F0FDFA;color:#0F766E}.ms-yn button.on[data-v="0"]{border-color:#475569;background:#F1F5F9;color:#0F1E2E}
 .ms-consent{display:flex;gap:9px;align-items:flex-start;font-size:13px;color:#475569;margin:4px 0 6px;cursor:pointer}.ms-consent input{width:18px;height:18px;accent-color:#0D9488;flex:none;margin:1px 0 0}
 #ms-scan{display:none;position:fixed;inset:0;z-index:10010;background:#0b0f12}
 .ms-cam{position:relative;width:100%;height:100%;overflow:hidden}
@@ -21352,7 +21356,7 @@ function msRenderList(){
 // ── Download members as a spreadsheet (CSV) for bulk emails - Mailchimp, Brevo, Gmail etc. Managers only ──
 window.msExportOpen = function(){
   if(!msIsMgr()) return;
-  const yes = MS.members.filter(m => m.consent !== false && m.email).length, all = MS.members.length;
+  const yes = MS.members.filter(m => m.consent === true && m.email).length, all = MS.members.length;
   msSheet(`<div class="vdf-h"><b>Download members</b><div class="dpt-sub">A spreadsheet file you can put into your email tool (Mailchimp, Brevo...)</div></div>
     <div class="vdf-body">
       <label class="ms-xo"><input type="radio" name="msx" value="yes" checked><span><b>Happy to get offers - with an email</b><small>${yes} member${yes === 1 ? '' : 's'}. Use this for bulk emails.</small></span></label>
@@ -21365,7 +21369,7 @@ window.msExportOpen = function(){
 window.msExport = function(){
   const pick = (document.querySelector('input[name="msx"]:checked') || {}).value || 'yes';
   let list = MS.members.slice();
-  if(pick === 'yes') list = list.filter(m => m.consent !== false && m.email);
+  if(pick === 'yes') list = list.filter(m => m.consent === true && m.email);
   if(pick === 'vip') list = list.filter(m => m.tier === 'vip');
   if(!list.length){ toast(pick === 'yes' ? 'No members with an email who said yes to offers yet' : 'Nobody to download'); return; }
   const MON = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
@@ -21373,7 +21377,7 @@ window.msExport = function(){
   const cell = v => { v = String(v == null ? '' : v); if(/^[=+\-@]/.test(v) && !/^\+?[\d\s().-]+$/.test(v)) v = "'" + v; return /[",\n]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v; };   // safe in Excel
   const head = ['First name', 'Last name', 'Email', 'Phone', 'Birthday', 'Tier', 'Visits', 'Last visit', 'Favourite place', 'Member since', 'Keyring', 'Happy to get offers'];
   const rows = list.sort((a, b) => a.name.localeCompare(b.name)).map(m => { const s = msStats(m), parts = String(m.name || '').trim().split(/\s+/);
-    return [parts[0] || '', parts.slice(1).join(' '), m.email || '', m.phone || '', bday(m.birthday), m.tier === 'vip' ? 'VIP' : 'Member', s.total, s.last ? s.last.visit_date : '', s.fav || '', String(m.created_at || '').slice(0, 10), MS.keyrings[m.id] || '', m.consent === false ? 'No' : 'Yes']; });
+    return [parts[0] || '', parts.slice(1).join(' '), m.email || '', m.phone || '', bday(m.birthday), m.tier === 'vip' ? 'VIP' : 'Member', s.total, s.last ? s.last.visit_date : '', s.fav || '', String(m.created_at || '').slice(0, 10), MS.keyrings[m.id] || '', m.consent === true ? 'Yes' : 'No']; });
   const csv = '\ufeff' + [head].concat(rows).map(r => r.map(cell).join(',')).join('\r\n');
   const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([csv], { type:'text/csv;charset=utf-8' }));
   a.download = 'members-' + msToday() + '.csv'; document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1000);
@@ -21513,21 +21517,26 @@ function msSignUp(code, known){
       <div class="vdf-two"><div class="vdf-f"><span>BIRTHDAY (OPTIONAL)</span><div class="ms-bdpick"><select id="ms-bd-d"><option value="">Day</option>${Array.from({ length:31 }, (_, i) => `<option>${i + 1}</option>`).join('')}</select><select id="ms-bd-m"><option value="">Month</option>${months.map((x, i) => `<option value="${i + 1}">${x}</option>`).join('')}</select></div></div>
         <label class="vdf-f"><span>EMAIL (OPTIONAL)</span><input id="ms-email" type="email" inputmode="email" autocapitalize="off" placeholder="name@email.com"></label></div>
       ${venues.length > 1 ? `<div class="vdf-f"><span>JOINED AT</span><div class="vdf-pills">${venues.map(v => `<button type="button" class="vdf-pill ms-ven${v === here ? ' on' : ''}" data-v="${msEsc(v)}">${msEsc(v)}</button>`).join('')}</div></div>` : ''}
-      <label class="ms-consent"><input type="checkbox" id="ms-consent" checked><span>Happy to get news and offers from ${msEsc((myCompany && myCompany.name) || 'us')}</span></label>
+      <div class="ms-ask" id="ms-ask"><b>Ask them: "Happy for us to send you offers?"</b><small>They can change it any time on their keyring page</small>
+        <div class="ms-yn"><button type="button" data-v="1">Yes please</button><button type="button" data-v="0">No thanks</button></div></div>
     </div>
     <div class="vdf-foot"><button class="mns-cancel" onclick="msSheetClose()">Cancel</button><button class="mns-go" id="ms-save">Sign up &amp; check in</button></div>`);
   o.querySelectorAll('.ms-ven').forEach(b => b.addEventListener('click', () => { o.querySelectorAll('.ms-ven').forEach(x => x.classList.remove('on')); b.classList.add('on'); }));
+  // Offers: staff must ask and pick Yes or No - can't sign up without it
+  let offersYes = null;
+  o.querySelectorAll('.ms-yn button').forEach(b => b.addEventListener('click', () => { offersYes = b.dataset.v === '1'; o.querySelectorAll('.ms-yn button').forEach(x => x.classList.toggle('on', x === b)); document.getElementById('ms-ask').classList.remove('need'); }));
   setTimeout(() => { const n = document.getElementById('ms-name'); if(n && innerWidth > 760) n.focus(); }, 60);
   document.getElementById('ms-save').addEventListener('click', async () => {
     const name = document.getElementById('ms-name').value.trim().replace(/\s+/g, ' ');
     const phone = document.getElementById('ms-phone').value.trim();
     if(!name){ toast('Please type their name'); return; }
+    if(offersYes === null){ const a = document.getElementById('ms-ask'); a.classList.add('need'); a.scrollIntoView({ block:'center', behavior:'smooth' }); toast('Ask if they want offers - tap Yes or No'); return; }
     if(phone.replace(/\D/g, '').length < 7){ toast('Please add their WhatsApp number'); return; }
     const d = document.getElementById('ms-bd-d').value, mo = document.getElementById('ms-bd-m').value;
     const email = document.getElementById('ms-email').value.trim();
     if(email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){ toast('That email doesn\'t look right'); return; }
     const venEl = o.querySelector('.ms-ven.on');
-    const row = { name, phone, email, birthday: d && mo ? String(mo).padStart(2,'0') + '-' + String(d).padStart(2,'0') : '', joined_venue: venEl ? venEl.dataset.v : here, tier:'member', consent: document.getElementById('ms-consent').checked, created_by: myProfile ? myProfile.id : null };
+    const row = { name, phone, email, birthday: d && mo ? String(mo).padStart(2,'0') + '-' + String(d).padStart(2,'0') : '', joined_venue: venEl ? venEl.dataset.v : here, tier:'member', consent: offersYes, created_by: myProfile ? myProfile.id : null };
     const btn = document.getElementById('ms-save'); btn.disabled = true; btn.textContent = 'Saving…';
     const ins = await sb.from('members').insert(row).select('*').single();
     if(ins.error || !ins.data){ console.warn(ins.error); btn.disabled = false; btn.textContent = 'Sign up & check in'; toast('Not saved - please try again'); return; }
@@ -21559,6 +21568,7 @@ window.msEdit = function(id){
           <label class="vdf-f"><span>EMAIL</span><input id="ms-email" type="email" value="${msEsc(m.email)}"></label></div>
         ${msIsMgr() ? `<div class="vdf-f"><span>TIER</span><div class="vdf-pills"><button type="button" class="vdf-pill ms-tr${m.tier !== 'vip' ? ' on' : ''}" data-t="member">Member</button><button type="button" class="vdf-pill ms-tr${m.tier === 'vip' ? ' on' : ''}" data-t="vip">VIP</button></div></div>` : ''}
         <label class="vdf-f"><span>NOTES</span><textarea id="ms-notes" rows="3" placeholder="e.g. Likes the corner table on the terrace">${msEsc(m.notes)}</textarea></label>
+        <label class="ms-consent"><input type="checkbox" id="ms-consent"${m.consent === true ? ' checked' : ''}><span><b>Happy to get offers</b> - untick if they ask you to stop</span></label>
       </div>
       <div class="vdf-foot">${msIsMgr() ? '<button class="vdf-del" id="ms-del">Delete</button>' : ''}<button class="mns-cancel" onclick="msSheetClose()">Cancel</button><button class="mns-go" id="ms-save">Save</button></div>`);
     o.querySelectorAll('.ms-tr').forEach(b => b.addEventListener('click', () => { o.querySelectorAll('.ms-tr').forEach(x => x.classList.remove('on')); b.classList.add('on'); }));
@@ -21566,7 +21576,7 @@ window.msEdit = function(id){
       const d = document.getElementById('ms-bd-d').value, mo = document.getElementById('ms-bd-m').value;
       const tierEl = o.querySelector('.ms-tr.on');
       const row = { name: document.getElementById('ms-name').value.trim() || m.name, phone: document.getElementById('ms-phone').value.trim(), email: document.getElementById('ms-email').value.trim(),
-        birthday: d && mo ? String(mo).padStart(2,'0') + '-' + String(d).padStart(2,'0') : '', notes: document.getElementById('ms-notes').value.trim(), tier: tierEl ? tierEl.dataset.t : m.tier };
+        birthday: d && mo ? String(mo).padStart(2,'0') + '-' + String(d).padStart(2,'0') : '', notes: document.getElementById('ms-notes').value.trim(), tier: tierEl ? tierEl.dataset.t : m.tier, consent: document.getElementById('ms-consent').checked };
       const { data, error } = await sb.from('members').update(row).eq('id', m.id).select();
       if(error || !data || !data.length){ console.warn(error); toast('Not saved - please try again'); return; }
       Object.assign(m, row);

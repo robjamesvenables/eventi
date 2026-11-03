@@ -108,12 +108,10 @@ module.exports = async (req, res) => {
     if (!m) return L.send(res, 200, { ok: true, blank: true, brand, logo });
 
     const weekEnd = addDays(now.date, 6);
-    const [visits, stages, bookings, kMenus, bMenus] = await Promise.all([
+    const [visits, stages, bookings] = await Promise.all([
       safe(L.db('member_visits?select=venue&member_id=eq.' + q(m.id) + '&limit=5000')),
       safe(L.db('dj_stages?select=id,name&company_id=eq.' + q(co))),
       safe(L.db('dj_bookings?select=stage_id,date,start_time,end_time,dj_name,type&company_id=eq.' + q(co) + '&date=gte.' + now.date + '&date=lte.' + weekEnd + '&order=date.asc,start_time.asc&limit=200')),
-      safe(L.db('kitchen_menus?select=name,area,section,content&company_id=eq.' + q(co) + '&section=eq.live')),
-      safe(L.db('bar_menus?select=name,area,section,content&company_id=eq.' + q(co) + '&section=eq.live'))
     ]);
 
     // Card
@@ -140,8 +138,8 @@ module.exports = async (req, res) => {
     events.filter(e => e.date > now.date).forEach(e => { if (!week.find(w => w.date === e.date)) week.push(fmtEv(e)); });
 
     // Menus
-    let menus = { food: liveMenus(kMenus, 'food'), drinks: liveMenus(bMenus, 'drinks') };
-    if (demo && !menus.food.length && !menus.drinks.length) menus = demo.menus;
+    // Menus are not on the guest page (it's for what's on and offers)
+    const menus = { food: [], drinks: [] };
 
     // Venues + rewards (Membership > Guest page)
     let venues = Array.isArray(page.venues) && page.venues.length ? page.venues : (demo ? demo.venues : []);

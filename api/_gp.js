@@ -2,7 +2,7 @@
 // member-card (what the guest sees), gp-img (the photos) and gp-hit (the numbers).
 // Content lives in the guest_page table, one row per company: { order, off, slides, deals, events, gallery }.
 
-const SECTIONS = ['tonight', 'deals', 'events', 'menus', 'gallery', 'venues'];
+const SECTIONS = ['tonight', 'deals', 'events', 'gallery', 'venues'];
 const httpsOk = u => /^https:\/\/[^\s"'<>]+$/i.test(String(u || '').trim());
 const str = (v, n) => String(v == null ? '' : v).slice(0, n);
 

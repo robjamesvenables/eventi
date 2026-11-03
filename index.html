@@ -2166,6 +2166,9 @@ body.ev-nomoney .dash-hero .ev-money{display:none!important}
 #p-faq > .ph,#p-vendors > .ph,#p-customers > .ph,#p-membership > .ph{flex-wrap:wrap;row-gap:0}
 .ms-hbtns{display:flex;gap:8px;align-items:center}
 #ms-scan-btn,.ms-tiers{white-space:nowrap}
+.mv-mem-only{display:none!important}
+body.mv-mem .mv-mem-only{display:flex!important}body.mv-mem .sb-section.mv-mem-only{display:block!important}
+body.mv-mem .sb-link:not(.mv-mem-only):not(#n-admin),body.mv-mem .sb-section:not(.mv-mem-only){display:none!important}
 body:not(.mv-demo) #ms-demoqr-btn{display:none!important}
 @media(max-width:760px){#ms-demoqr-btn{display:none!important}}
 .ms-qrs{display:grid;grid-template-columns:1fr 1fr;gap:14px}
@@ -4165,6 +4168,23 @@ html:has(#menuDetailOverlay[style*="flex"]),html:has(#menuDetailOverlay[style*="
       <div class="sb-name" style="display:flex;align-items:center"><span style="color:#0D9488">M</span>avis<span style="color:#C4973B">.</span></div>
     </div>
 
+    <div class="sb-section mv-mem-only">Membership</div>
+    <button class="sb-link mv-mem-only" id="mvm-members" onclick="toggleSidebar(false); nav('membership')">
+      <svg class="sb-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0M16 4.5a3.5 3.5 0 0 1 0 7M21.5 20a6.5 6.5 0 0 0-4-6"/></svg>
+      Members
+    </button>
+    <button class="sb-link mv-mem-only" id="mvm-scan" onclick="toggleSidebar(false); nav('membership'); setTimeout(msScanOpen, 120)">
+      <svg class="sb-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2M7 12h10"/></svg>
+      Scan a keyring
+    </button>
+    <button class="sb-link mv-mem-only" id="mvm-guest" onclick="toggleSidebar(false); nav('membership'); setTimeout(gpOpen, 120)">
+      <svg class="sb-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18M8 14h8"/></svg>
+      Guest page
+    </button>
+    <button class="sb-link mv-mem-only" id="mvm-email" onclick="toggleSidebar(false); nav('membership'); setTimeout(msExportOpen, 400)">
+      <svg class="sb-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-10 6L2 7"/></svg>
+      Email list
+    </button>
     <div class="sb-section">Main</div>
     <button class="sb-link" id="n-home" onclick="nav('home')">
       <svg class="sb-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
@@ -7194,10 +7214,12 @@ function authEnterApp(){
   document.getElementById('app').style.display='flex';
   quickLinksRender();
   chatUpdateBadges();
-  try{ chatStart(); }catch(e){}
-  try{ reqStart(); }catch(e){}
-  try{ ordApplyVisibility(); ordStart(); }catch(e){}
-  nav('home');
+  if(appPlan !== 'membership'){
+    try{ chatStart(); }catch(e){}
+    try{ reqStart(); }catch(e){}
+    try{ ordApplyVisibility(); ordStart(); }catch(e){}
+  }
+  nav(appPlan === 'membership' ? 'membership' : 'home');
   setTimeout(()=>{ if(typeof evOpenPending==='function') evOpenPending(); }, 400);
 }
 // Bottom-left: full name, then role and company - so it's always clear who's logged in.
@@ -7224,12 +7246,22 @@ function setCurrentUserFromEmail(email){
   const cleaned = local.split(/[._\d]+/).filter(Boolean)[0];
   setCurrentUserName(cleaned ? cleaned.charAt(0).toUpperCase() + cleaned.slice(1).toLowerCase() : 'there');
 }
+// What this company pays for: 'full' Mavis, or 'membership' only (set by the Mavis owner in the owner console).
+// Membership only: the menu shows just Members, Scan, Guest page, Email list and Admin Console, and the app opens on Membership.
+let appPlan = 'full';
+const MEM_PAGES = ['membership', 'admin', 'account', 'profile'];
+async function appLoadPlan(){
+  appPlan = 'full';
+  try{ if(myCompany && myCompany.id){ const { data, error } = await sb.from('companies').select('plan').eq('id', myCompany.id).limit(1); if(!error && data && data[0] && data[0].plan === 'membership') appPlan = 'membership'; } }catch(e){}
+  document.body.classList.toggle('mv-mem', appPlan === 'membership');
+}
 async function authApplyProfile(profile, company){
   if(profile && !profile.user_id){
     try{ const { data } = await sb.auth.getSession(); profile.user_id = data && data.session && data.session.user ? data.session.user.id : null; }catch(e){}
   }
   try { mvClean(profile, 'profiles', ''); if(company) mvClean(company, 'companies', ''); } catch(e){}
   myProfile = profile; myCompany = company || myCompany;
+  await appLoadPlan();
   setCurrentUserName(profile.first_name);
   try{ accountApplyAvatar(); }catch(e){}
   authApplyRoleVisibility();
@@ -25711,6 +25743,8 @@ window.nav = function(id, pushState){
   if(id==='sop') setTimeout(sopRenderDeptList, 0);
   if(id==='suggestions') setTimeout(()=>{ suggestionSetTab('submit'); }, 0);
 };
+// Membership-only plan: any other page opens Membership instead
+(function(){ const prev = window.nav; window.nav = function(id, pushState){ if(appPlan === 'membership' && !MEM_PAGES.includes(id)) id = 'membership'; const r = prev(id, pushState); const mm = document.getElementById('mvm-members'); if(mm) mm.classList.toggle('active', appPlan === 'membership' && id === 'membership'); return r; }; })();
 </script>
 <!-- Announcement Modal -->
 <div id="announce-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:9999;align-items:center;justify-content:center" onclick="if(event.target===this)announceCloseModal()">

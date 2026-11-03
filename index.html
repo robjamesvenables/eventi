@@ -2172,7 +2172,7 @@ body.ev-nomoney .dash-hero .ev-money{display:none!important}
 .rs-depts{display:flex;flex-wrap:wrap;gap:8px;padding:2px 0 4px;margin-bottom:12px}
 @media(max-width:760px){.rs-depts{flex-wrap:nowrap;overflow-x:auto;margin:0 -16px 12px;padding:2px 16px 4px;scroll-padding:0 16px}}.rs-depts::-webkit-scrollbar{display:none}
 .rs-depts button{flex:none;display:flex;align-items:center;gap:8px;border:1.5px solid #E2E8F0;background:white;border-radius:14px;padding:6px 12px 6px 6px;font:800 13.5px Inter,sans-serif;color:#334155;cursor:pointer}
-.rs-depts button.on{border-color:#0D9488;background:#F0FDFA;color:#0F766E}
+.rs-depts button.on{border-color:#0D9488;background:#0D9488;color:#fff}
 .rs-bar{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:12px}
 .rs-wk{display:flex;align-items:center;gap:8px}.rs-wk b{font-size:15.5px;font-weight:900;color:#0F1E2E;min-width:150px;text-align:center}
 .rs-wk button{width:36px;height:36px;border-radius:10px;border:0;background:white;color:#475569;display:flex;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 1px 2px rgba(15,30,46,.06)}
@@ -22552,7 +22552,7 @@ function rsRender(){
   const d0 = new Date(days[0] + 'T12:00:00'), d6 = new Date(days[6] + 'T12:00:00');
   const wkLabel = `${RS_DOW[0]} ${d0.getDate()}${d0.getMonth() !== d6.getMonth() ? ' ' + RS_MON[d0.getMonth()] : ''} – ${RS_DOW[6]} ${d6.getDate()} ${RS_MON[d6.getMonth()]}`;
   let ppl = rsPeople(dept); const areas = rsAreas(dept), isThis = RS.week === rsMonday(today);
-  let h = `<div class="rs-depts">${rsDepts().map(d => `<button class="${d === dept ? 'on' : ''}" onclick='rsGo("dept", ${rsEsc(JSON.stringify(d))})'>${deptIconHtml(d, 24)}<span>${rsEsc(d)}</span></button>`).join('')}</div>
+  let h = `<div class="rs-depts">${rsDepts().map(d => `<button class="${d === dept ? 'on' : ''}" onclick='rsGo("dept", ${rsEsc(JSON.stringify(d))})'>${deptIconHtml(d, 24, Object.assign({}, deptIconSpec(d), { c: d === dept ? 'teal' : 'navy' }))}<span>${rsEsc(d)}</span></button>`).join('')}</div>
     <div class="rs-bar"><div class="rs-wk"><button aria-label="Last week" onclick="rsGo('week',-1)">${rsIc(RSI.l, 18)}</button><b>${wkLabel}</b><button aria-label="Next week" onclick="rsGo('week',1)">${rsIc(RSI.r, 18)}</button>${isThis ? '' : `<button class="rs-tw" onclick="rsGo('week',0)">This week</button>`}</div>
     </div>`;
   if(areas.length || can) h += `<div class="rs-tabs"><span class="rs-tl">Split areas</span><button class="${!RS.area ? 'on' : ''}" onclick="rsGo('area','')">All</button>${areas.map(a => `<button class="${RS.area === a ? 'on' : ''}" onclick='rsGo("area", ${rsEsc(JSON.stringify(a))})'>${rsEsc(a)}${RS.area === a && can ? `<span class="rs-ted" role="button" aria-label="Rename or remove" onclick='event.stopPropagation(); rsAreaEdit(${rsEsc(JSON.stringify(a))})'>${rsIc('<path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/>', 13)}</span>` : ''}</button>`).join('')}${can ? `<button class="rs-tadd" onclick="rsAreaEdit()">+ Add</button>` : ''}</div>`;

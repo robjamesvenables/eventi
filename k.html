@@ -276,7 +276,10 @@ svg{display:block}
     var pic = function(src, alt){ return src ? '<img src="' + esc(src) + '" alt="' + esc(alt || '') + '" loading="lazy">' : '<div class="noimg"></div>'; };
     var venueOf = function(key){ return (d.venues || []).find(function(v){ return lc(v.name) === key; }); };
     var placeOf = function(key){ return places.find(function(p){ return lc(p.name) === key; }); };
-    var greet = 'Hi! I\'m a member (' + d.code + ') and I\'d like to book a table.';
+    // Messages sent from the page: warm, with the member's name (first name + initial) and keyring code so the venue knows who it is
+    var me = 'Hi! It\'s ' + d.first + ' here, one of your ' + (d.tier === 'vip' ? 'VIP ' : '') + 'members (' + d.code + ').';
+    var greetAt = function(place){ return me + ' I\'d love to book a table' + (place ? ' at ' + place : '') + ' - could you let me know what you have? Thank you!'; };
+    var greet = greetAt('');
     var sheet = '<div class="sh" id="sh"><div class="shb"><div class="shh"><b id="sht"></b><button id="shx" aria-label="Close">' + svg(I.x, 18) + '</button></div><div class="shc" id="shc"></div></div></div>';
     var foot = '<div class="foot">Show your keyring when you arrive<br>and we\'ll look after the rest.<br><a href="https://getmavis.co">Powered by Mavis</a></div>';
 
@@ -368,7 +371,7 @@ svg{display:block}
       var st = v.open === true ? '<span class="open">Open now</span> · ' + esc(v.label) : v.open === false ? esc(v.label) : '';
       var h = '<div class="w"><div class="vtop">' + (p.img ? '<img src="' + esc(p.img) + '" alt="">' : '') + '<div class="vin"><button class="back" data-home aria-label="All places">' + svg('<path d="m15 18-6-6 6-6"/>', 18) + 'All places</button>' +
         '<div class="vname"><b translate="no">' + esc(p.name) + '</b><small>' + [esc(p.area || ''), st].filter(Boolean).join(' · ') + '</small></div></div></div>';
-      h += '<div class="vacts">' + (v.map ? '<a class="mp" href="' + esc(v.map) + '" target="_blank" rel="noopener">' + svg(I.pin, 17) + 'Map</a>' : '') + (v.wa ? '<a class="bk" href="https://wa.me/' + esc(v.wa) + '?text=' + encodeURIComponent(greet) + '" target="_blank" rel="noopener">' + svg(I.wa, 17) + 'Book a table</a>' : '') + '</div>';
+      h += '<div class="vacts">' + (v.map ? '<a class="mp" href="' + esc(v.map) + '" target="_blank" rel="noopener">' + svg(I.pin, 17) + 'Map</a>' : '') + (v.wa ? '<a class="bk" href="https://wa.me/' + esc(v.wa) + '?text=' + encodeURIComponent(greetAt(p.name)) + '" target="_blank" rel="noopener">' + svg(I.wa, 17) + 'Book a table</a>' : '') + '</div>';
       var sl = (gp.slides || []).filter(function(x){ return at(x, key); });
       if (sl.length) h += '<div class="vsl">' + slidesHtml(sl, false) + '</div>';
       var body = placeSections(key);
@@ -441,10 +444,11 @@ svg{display:block}
         var wa = v.wa || (list.find(function(y){ return y.wa; }) || {}).wa || '', em = v.email || (list.find(function(y){ return y.email; }) || {}).email || '';
         if (!wa && !em) return '';
         var what = x.title + (x.when ? ' (' + x.when + ')' : '') + (v.name ? ' at ' + v.name : '');
-        var msg = "Hi! I'm a member (" + d.code + ") and I have a question about " + what + ':\n\n';
+        var msg = me + ' I have a quick question about ' + what + ':\n\n';
+        var mailBody = msg + '\n\nThanks so much,\n' + String(d.first || '').split(' ')[0];
         return '<div class="asklab">Got a question?</div><div class="ask2">' +
           (wa ? '<a class="aw" href="https://wa.me/' + esc(wa) + '?text=' + encodeURIComponent(msg) + '" target="_blank" rel="noopener"' + hit(x.id) + '>' + svg(I.wa, 17) + 'WhatsApp</a>' : '') +
-          (em ? '<a class="ae" href="mailto:' + esc(em) + '?subject=' + encodeURIComponent(what) + '&body=' + encodeURIComponent(msg) + '"' + hit(x.id) + '>' + svg('<rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-10 6L2 7"/>', 17) + 'Email</a>' : '') + '</div>';
+          (em ? '<a class="ae" href="mailto:' + esc(em) + '?subject=' + encodeURIComponent('Question about ' + what + ' - ' + d.first) + '&body=' + encodeURIComponent(mailBody) + '"' + hit(x.id) + '>' + svg('<rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-10 6L2 7"/>', 17) + 'Email</a>' : '') + '</div>';
       };
       // Event details pop-up: big photo, when, where, line-up, ages, dress code, price, the button
       var evOpen = function(id){
@@ -469,7 +473,7 @@ svg{display:block}
       };
       var list = key ? (d.venues || []).filter(function(v){ return lc(v.name) === key; }) : (d.venues || []);
       var bk = document.getElementById('bk'), cl = document.getElementById('cl');
-      if (bk) bk.onclick = function(){ chooser('Book a table at…', list.filter(function(v){ return v.wa; }), function(v){ return 'https://wa.me/' + v.wa + '?text=' + encodeURIComponent(greet); }, I.wa); };
+      if (bk) bk.onclick = function(){ chooser('Book a table at…', list.filter(function(v){ return v.wa; }), function(v){ return 'https://wa.me/' + v.wa + '?text=' + encodeURIComponent(greetAt(v.name)); }, I.wa); };
       if (cl) cl.onclick = function(){ chooser('Call…', list.filter(function(v){ return v.phone; }), function(v){ return 'tel:' + String(v.phone).replace(/[^\d+]/g, ''); }, I.phone); };
       // Computers: left / right arrows on every sideways row (photos, events, gallery, this week)
       if (window.matchMedia && matchMedia('(hover:hover) and (pointer:fine)').matches) Array.prototype.forEach.call(document.querySelectorAll('.sl,.evs,.gal,.days'), function(row){

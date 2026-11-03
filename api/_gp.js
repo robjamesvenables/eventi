@@ -94,7 +94,7 @@ function timeLabel(hm){ const m = /^(\d{1,2}):(\d{2})/.exec(hm || ''); if (!m) r
 
 // What the guest page gets: only finished, safe values (photo addresses, labels and button links)
 function build(c, ctx){
-  const { company, code, venues, today } = ctx;
+  const { company, code, venues, today } = ctx, who = ctx.who ? "Hi! It's " + ctx.who + ' here, one of your ' + (ctx.vip ? 'VIP ' : '') + 'members (' + code + ').' : "Hi! I'm a member (" + code + ').';
   const img = it => {
     if (it && it.path) return '/api/gp?a=img&c=' + encodeURIComponent(company) + '&p=' + encodeURIComponent(it.path);
     if (it && /^\/demo-(guest|board)\/[a-z0-9._-]+$/i.test(it.img || '')) return it.img;
@@ -103,7 +103,7 @@ function build(c, ctx){
   const waOf = name => { const v = (venues || []).find(x => x.wa && name && x.name.toLowerCase() === String(name).toLowerCase()) || (venues || []).find(x => x.wa); return v ? v.wa : ''; };
   const button = (it, what) => {
     const t = it.btn;
-    if (t === 'wa') { const n = waOf(it.venue); if (!n) return null; return { href: 'https://wa.me/' + n + '?text=' + encodeURIComponent("Hi! I'm a member (" + code + ") and I'd like to book: " + what), label: 'Book on WhatsApp', kind: 'wa' }; }
+    if (t === 'wa') { const n = waOf(it.venue); if (!n) return null; return { href: 'https://wa.me/' + n + '?text=' + encodeURIComponent(who + " I'd love to book " + what + ' - could you help? Thank you!'), label: 'Book on WhatsApp', kind: 'wa' }; }
     if ((t === 'book' || t === 'tickets') && httpsOk(it.url)) return { href: String(it.url).trim(), label: t === 'tickets' ? 'Get tickets' : 'Book now', kind: t };
     return null;
   };

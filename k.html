@@ -133,6 +133,26 @@ svg{display:block}
 .gal button{flex:0 0 150px;height:200px;border:0;padding:0;border-radius:14px;overflow:hidden;cursor:pointer;background:#E7EEF2}
 .gal img{width:100%;height:100%;object-fit:cover;display:block}
 .big{width:100%;border-radius:14px;display:block}
+.pgrid{display:grid;grid-template-columns:1fr;gap:10px}
+.pbig{position:relative;height:150px;border:0;border-radius:20px;overflow:hidden;padding:0;cursor:pointer;background:var(--top,#0F1E2E);text-align:left;font-family:inherit;display:block;width:100%}
+.pbig img{width:100%;height:100%;object-fit:cover;display:block}
+.pbig .ini{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:var(--top-ink,#fff);font-size:44px;font-weight:900}
+.pbig span{position:absolute;left:0;right:0;bottom:0;padding:12px 16px;background:rgba(15,30,46,.78);color:white;display:flex;flex-direction:column}
+.pbig span b{font-size:19px;font-weight:900;letter-spacing:-.3px}.pbig span small{font-size:12.5px;color:#E2E8F0;font-weight:600;margin-top:2px}
+.pbig:after{content:'';position:absolute;right:14px;bottom:20px;width:9px;height:9px;border-right:2.5px solid white;border-top:2.5px solid white;transform:rotate(45deg)}
+.sd .ov .more{display:inline-flex;align-items:center;gap:5px;margin-top:10px;background:white;color:#0F1E2E;border:0;font:800 13px Inter,sans-serif;border-radius:10px;padding:8px 12px;cursor:pointer}
+.sd .ov a.sbtn{display:inline-flex;align-items:center;gap:7px;margin-top:10px;background:white;color:#0F1E2E;text-decoration:none;font-size:13px;font-weight:800;border-radius:10px;padding:8px 12px}
+.vtop{position:relative;height:230px;background:var(--top,#0F1E2E);overflow:hidden}
+.vtop img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.vtop .vin{position:absolute;inset:0;display:flex;flex-direction:column;justify-content:space-between;padding:calc(14px + env(safe-area-inset-top,0px)) 16px 16px}
+.vtop .back{align-self:flex-start;display:inline-flex;align-items:center;gap:4px;border:0;background:rgba(15,30,46,.72);color:white;font:800 13.5px Inter,sans-serif;border-radius:12px;padding:9px 12px 9px 8px;cursor:pointer}
+.vtop .vname{background:rgba(15,30,46,.78);color:white;border-radius:16px;padding:12px 14px}
+.vtop .vname b{display:block;font-size:24px;font-weight:900;letter-spacing:-.5px}.vtop .vname small{display:block;font-size:13px;color:#E2E8F0;font-weight:600;margin-top:2px}
+.vtop .vname .open{color:#86EFAC;font-weight:800}
+.vacts{display:flex;gap:8px;margin:12px 16px 0}
+.vacts a{flex:1;height:48px;border-radius:14px;display:flex;align-items:center;justify-content:center;gap:8px;text-decoration:none;font-size:14.5px;font-weight:800}
+.vacts .mp{flex:0 0 auto;padding:0 18px;background:white;color:#0F1E2E;box-shadow:0 1px 3px rgba(15,30,46,.08)}.vacts .bk{background:#16A34A;color:white}
+.vsl{margin:6px 0 0;padding:0 20px}.vsl .sl-wrap{margin-top:12px}.vsl .dots i{background:#0F1E2E}
 .arw{position:relative}
 .pls{display:flex;gap:8px;overflow-x:auto;scrollbar-width:none;margin:0 -16px;padding:0 16px 4px}
 .pls::-webkit-scrollbar{display:none}
@@ -197,136 +217,155 @@ svg{display:block}
         '<div class="foot">Keyring ' + esc(code) + '<br><a href="https://getmavis.co">Powered by Mavis</a></div></div>';
       return;
     }
-    var vip = d.tier === 'vip', h = '<div class="w">', gp = d.gp || {}, slides = gp.slides || [];
-    var hit = function(id){ return id ? ' data-hit="' + esc(id) + '"' : ''; };
+    var vip = d.tier === 'vip', gp = d.gp || {}, on = {};
+    (gp.order || ['tonight', 'deals', 'events', 'gallery', 'venues']).forEach(function(k){ on[k] = true; });
+    var places = gp.places && gp.places.length ? gp.places : (d.venues || []).map(function(v){ return { name: v.name, area: v.area || '', img: '' }; });
+    var many = places.length > 1;
+    var lc = function(s){ return String(s || '').toLowerCase(); };
+    var at = function(it, key){ return !it.venue || lc(it.venue) === key; };   // shows on this place's page ("All places" shows everywhere)
+
     // Colours chosen in Guest page > Colours (text turns dark on light colours so it stays readable)
     var th = gp.theme || {}, light = function(hx){ var n = parseInt(hx.slice(1), 16), r = n >> 16, g = (n >> 8) & 255, b = n & 255; return (0.299 * r + 0.587 * g + 0.114 * b) > 165; }, rs = document.documentElement.style;
     if (th.top) { rs.setProperty('--top', th.top); rs.setProperty('--top-ink', light(th.top) ? '#0F1E2E' : '#FFFFFF'); rs.setProperty('--top-sub', light(th.top) ? 'rgba(15,30,46,.7)' : 'rgba(255,255,255,.78)'); var mt = document.querySelector('meta[name=theme-color]'); if (mt) mt.setAttribute('content', th.top); }
     if (th.acc) { rs.setProperty('--acc', th.acc); rs.setProperty('--acc-ink', light(th.acc) ? '#0F1E2E' : '#FFFFFF'); }
     if (th.pg) rs.setProperty('--pg', th.pg);
-    var btnHtml = function(b, id){ return b ? '<a href="' + esc(b.href) + '" target="_blank" rel="noopener"' + (b.kind === 'wa' ? ' class="wa"' : '') + hit(id) + '>' + (b.kind === 'wa' ? svg(I.wa, 16) : '') + esc(b.label) + '</a>' : ''; };
+
+    var hit = function(id){ return id ? ' data-hit="' + esc(id) + '"' : ''; };
+    var btnHtml = function(b, id, cls){ return b ? '<a href="' + esc(b.href) + '" target="_blank" rel="noopener" class="' + (cls || '') + (b.kind === 'wa' ? ' wa' : '') + '"' + hit(id) + '>' + (b.kind === 'wa' ? svg(I.wa, 16) : '') + esc(b.label) + '</a>' : ''; };
     var pic = function(src, alt){ return src ? '<img src="' + esc(src) + '" alt="' + esc(alt || '') + '" loading="lazy">' : '<div class="noimg"></div>'; };
-    var top = head(d, 'Welcome back,<br><span translate="no">' + esc(String(d.first).split(' ')[0]) + '</span>', 'Good to see you again. Here\'s what\'s on.');
-    if (slides.length) top = top.replace(/<\/div>$/, '<div class="sl-wrap"><div class="sl" id="sl">' + slides.map(function(x){
-      return '<div class="sd">' + pic(x.img, x.title) + (x.title || x.line || x.btn ? '<div class="ov">' + (x.title ? '<b>' + esc(x.title) + '</b>' : '') + (x.line ? '<small>' + esc(x.line) + '</small>' : '') + (x.btn ? btnHtml(x.btn, x.id).replace(' class="wa"', '') : '') + '</div>' : '') + '</div>';
-    }).join('') + '</div>' + (slides.length > 1 ? '<div class="dots" id="dots">' + slides.map(function(x, i){ return '<i' + (i ? '' : ' class="on"') + '></i>'; }).join('') + '</div>' : '') + '</div></div>');
-    h += top;
-    h += '<div class="card' + (vip ? '' : ' member') + '"><span class="code">' + esc(d.code) + '</span><div class="k">' + (vip ? 'VIP MEMBER' : 'MEMBER') + '</div><h2 translate="no">' + esc(d.first) + '</h2>' +
-      '<div class="row"><div><b>' + esc(d.visits) + '</b>visit' + (d.visits === 1 ? '' : 's') + '</div>' + (d.favourite ? '<div><b translate="no">' + esc(d.favourite) + '</b>favourite</div>' : '') + '<div><b>' + esc(d.since) + '</b>member since</div></div></div>';
-    if (d.birthdayWeek) h += '<div class="bday"><i>' + svg(I.cake, 24) + '</i><div><b>Happy birthday week!</b><p>' + (d.perks.some(function(p){ return /birthday/i.test(p); }) ? 'Your birthday treat is waiting - just show this screen at any of our venues.' : 'From all of us - have a wonderful one. We hope to see you this week!') + '</p></div></div>';
-    if (d.reward) {
-      var pct = Math.min(100, Math.round(100 * (d.reward.target - d.reward.left) / d.reward.target));
-      h += '<div class="sec"><div class="lab">YOUR REWARDS</div><div class="box rw"><div class="rw-top"><b>' + (d.reward.left ? d.reward.left + ' more visit' + (d.reward.left === 1 ? '' : 's') : 'You\'ve made it!') + '</b><span>' + Math.min(d.visits, d.reward.target) + ' / ' + d.reward.target + '</span></div>' +
-        '<div class="bar"><i style="width:' + pct + '%"></i></div><p>' + (d.reward.left ? 'Reach ' + d.reward.target + ' visits: ' : 'Your reward: ') + esc(d.reward.text || 'a treat on us') + (d.reward.left ? '' : ' - just ask our team.') + '</p></div></div>';
-    }
-    if (d.perks && d.perks.length) {
-      h += '<div class="sec"><div class="lab">YOUR ' + (vip ? 'VIP ' : '') + 'PERKS</div><div class="box">' + d.perks.map(function(p){ return '<div class="perk"><i>' + svg(/birthday/i.test(p) ? I.cake : I.gift, 17) + '</i>' + esc(p) + '</div>'; }).join('') + '</div></div>';
-    }
-    var S = { tonight:'', deals:'', events:'', menus:'', gallery:'', venues:'' }, K;
-    K = 'tonight';
-    if (d.tonight && d.tonight.length) {
-      S[K] += '<div class="sec"><div class="lab">TONIGHT</div>' + d.tonight.map(function(e){
-        return '<div class="tn" data-v="' + esc(String(e.venue || '').toLowerCase()) + '"><span class="tag">' + (e.time ? 'FROM ' + esc(e.time.split(' - ')[0]).toUpperCase() : 'TONIGHT') + '</span><h3 translate="no">' + esc(e.title) + '</h3><div class="meta"><span translate="no">' + esc(e.venue) + '</span>' + (e.venue && e.time ? ' · ' : '') + esc(e.time) + '</div>' +
-          (e.sub ? '<div class="sub"><i>' + svg(I.music, 16) + '</i>' + esc(e.sub) + '</div>' : '') + '</div>';
+    var venueOf = function(key){ return (d.venues || []).find(function(v){ return lc(v.name) === key; }); };
+    var placeOf = function(key){ return places.find(function(p){ return lc(p.name) === key; }); };
+    var greet = 'Hi! I\'m a member (' + d.code + ') and I\'d like to book a table.';
+    var sheet = '<div class="sh" id="sh"><div class="shb"><div class="shh"><b id="sht"></b><button id="shx" aria-label="Close">' + svg(I.x, 18) + '</button></div><div class="shc" id="shc"></div></div></div>';
+    var foot = '<div class="foot">Show your keyring when you arrive<br>and we\'ll look after the rest.<br><br><a href="https://getmavis.co">Powered by Mavis</a></div>';
+
+    // ── Slides (photos at the top) ──
+    var slidesHtml = function(list, home){
+      if (!list.length) return '';
+      return '<div class="sl-wrap"><div class="sl" id="sl">' + list.map(function(x){
+        var where = home && x.venue && many ? 'at ' + x.venue : '';
+        var go = home && x.venue && many && placeOf(lc(x.venue)) ? '<button class="more" data-go="' + esc(lc(x.venue)) + '"' + hit(x.id) + '>See more ' + svg('<path d="m9 18 6-6-6-6"/>', 14) + '</button>' : btnHtml(x.btn, x.id, 'sbtn');
+        return '<div class="sd">' + pic(x.img, x.title) + '<div class="ov">' + (x.title ? '<b>' + esc(x.title) + '</b>' : '') + (x.line || where ? '<small>' + esc([x.line, where].filter(Boolean).join(' · ')) + '</small>' : '') + go + '</div></div>';
+      }).join('') + '</div>' + (list.length > 1 ? '<div class="dots" id="dots">' + list.map(function(x, i){ return '<i' + (i ? '' : ' class="on"') + '></i>'; }).join('') + '</div>' : '') + '</div>';
+    };
+    var topHtml = function(inner){ return head(d, 'Welcome back,<br><span translate="no">' + esc(String(d.first).split(' ')[0]) + '</span>', 'Good to see you again. Here\'s what\'s on.').replace(/<\/div>$/, inner + '</div>'); };
+
+    // ── The member's own things (same at every place) ──
+    var memberHtml = function(){
+      var h = '<div class="card' + (vip ? '' : ' member') + '"><span class="code">' + esc(d.code) + '</span><div class="k">' + (vip ? 'VIP MEMBER' : 'MEMBER') + '</div><h2 translate="no">' + esc(d.first) + '</h2>' +
+        '<div class="row"><div><b>' + esc(d.visits) + '</b>visit' + (d.visits === 1 ? '' : 's') + '</div>' + (d.favourite ? '<div><b translate="no">' + esc(d.favourite) + '</b>favourite</div>' : '') + '<div><b>' + esc(d.since) + '</b>member since</div></div></div>';
+      if (d.birthdayWeek) h += '<div class="bday"><i>' + svg(I.cake, 24) + '</i><div><b>Happy birthday week!</b><p>' + ((d.perks || []).some(function(p){ return /birthday/i.test(p); }) ? 'Your birthday treat is waiting - just show this screen at any of our venues.' : 'From all of us - have a wonderful one. We hope to see you this week!') + '</p></div></div>';
+      if (d.reward) {
+        var pct = Math.min(100, Math.round(100 * (d.reward.target - d.reward.left) / d.reward.target));
+        h += '<div class="sec"><div class="lab">YOUR REWARDS</div><div class="box rw"><div class="rw-top"><b>' + (d.reward.left ? d.reward.left + ' more visit' + (d.reward.left === 1 ? '' : 's') : 'You\'ve made it!') + '</b><span>' + Math.min(d.visits, d.reward.target) + ' / ' + d.reward.target + '</span></div>' +
+          '<div class="bar"><i style="width:' + pct + '%"></i></div><p>' + (d.reward.left ? 'Reach ' + d.reward.target + ' visits: ' : 'Your reward: ') + esc(d.reward.text || 'a treat on us') + (d.reward.left ? '' : ' - just ask our team.') + '</p></div></div>';
+      }
+      if (d.perks && d.perks.length) h += '<div class="sec"><div class="lab">YOUR ' + (vip ? 'VIP ' : '') + 'PERKS</div><div class="box">' + d.perks.map(function(p){ return '<div class="perk"><i>' + svg(/birthday/i.test(p) ? I.cake : I.gift, 17) + '</i>' + esc(p) + '</div>'; }).join('') + '</div></div>';
+      return h;
+    };
+
+    // ── One place's things (or everything, for a business with one place) ──
+    var placeSections = function(key){
+      var S = {}, f = function(list){ return (list || []).filter(function(x){ return !key || at(x, key); }); };
+      var tn = f(d.tonight), wk = f(d.week), dl = f(gp.deals), ev = f(gp.events), gl = f(gp.gallery);
+      if (tn.length || wk.length) S.tonight = (tn.length ? '<div class="sec"><div class="lab">TONIGHT</div>' + tn.map(function(e){
+          return '<div class="tn"><span class="tag">' + (e.time ? 'FROM ' + esc(e.time.split(' - ')[0]).toUpperCase() : 'TONIGHT') + '</span><h3 translate="no">' + esc(e.title) + '</h3><div class="meta">' + esc(key ? e.time : [e.venue, e.time].filter(Boolean).join(' · ')) + '</div>' +
+            (e.sub ? '<div class="sub"><i>' + svg(I.music, 16) + '</i>' + esc(e.sub) + '</div>' : '') + '</div>';
+        }).join('') + '</div>' : '') +
+        (wk.length ? '<div class="sec"><div class="lab">THIS WEEK</div><div class="days">' + wk.map(function(e){
+          return '<div class="day"><div class="d">' + esc(e.day) + '</div><b translate="no">' + esc(e.title) + '</b><small>' + esc(e.sub) + (e.time ? ' · ' + esc(e.time.split(' - ')[0]) : '') + '</small></div>';
+        }).join('') + '</div></div>' : '');
+      if (dl.length) S.deals = '<div class="sec"><div class="lab">DAILY DEALS</div>' + dl.map(function(x){
+        return '<div class="deal">' + pic(x.img, x.title) + '<div class="x">' + (x.when ? '<span class="w">' + esc(x.when).toUpperCase() + '</span>' : '') + '<b>' + esc(x.title) + '</b>' + (!x.venue ? '<small>At all our places</small>' : '') + '</div></div>';
       }).join('') + '</div>';
-    }
-    if (d.week && d.week.length) {
-      S[K] += '<div class="sec"><div class="lab">THIS WEEK</div><div class="days">' + d.week.map(function(e){
-        return '<div class="day" data-v="' + esc(String(e.venue || '').toLowerCase()) + '"><div class="d">' + esc(e.day) + '</div><b translate="no">' + esc(e.title) + '</b><small>' + esc(e.sub) + (e.time ? ' · ' + esc(e.time.split(' - ')[0]) : '') + '</small>' + (e.venue ? '<span class="v" translate="no">' + esc(e.venue) + '</span>' : '') + '</div>';
+      if (ev.length) S.events = '<div class="sec"><div class="lab">COMING UP</div><div class="evs">' + ev.map(function(x){
+        return '<div class="ev">' + pic(x.img, x.title) + '<div class="x"><div class="wh">' + esc(x.when).toUpperCase() + '</div><b>' + esc(x.title) + '</b>' + (x.line ? '<small>' + esc(x.line) + '</small>' : '') + (x.btn ? '<div class="go">' + btnHtml(x.btn, x.id) + '</div>' : '') + '</div></div>';
       }).join('') + '</div></div>';
-    }
-    K = 'menus';
-    var hasFood = d.menus && d.menus.food && d.menus.food.length, hasDrinks = d.menus && d.menus.drinks && d.menus.drinks.length;
-    if (hasFood || hasDrinks) {
-      var tile = function(k, name, sub, bg, fg, icon){ return '<button class="mn" data-menu="' + k + '"><div class="ph" style="background:' + bg + ';color:' + fg + '">' + svg(icon, 32) + '</div><div class="t"><b>' + name + '</b><small>' + esc(sub) + '</small></div></button>'; };
-      var subOf = function(list){ return list.length === 1 ? (list[0].venue || list[0].name) : list.length + ' menus'; };
-      S[K] += '<div class="sec"><div class="lab">MENUS</div><div class="menus">' + (hasFood ? tile('food', 'Food', subOf(d.menus.food), '#FEF3C7', '#B45309', I.food) : '') + (hasDrinks ? tile('drinks', 'Drinks', subOf(d.menus.drinks), '#E0F5F2', '#0F766E', I.drink) : '') + '</div></div>';
-    }
-    K = 'venues';
-    if (d.venues && d.venues.length) {
-      S[K] += '<div class="sec"><div class="lab">OUR VENUES</div><div class="box">' + d.venues.map(function(v, i){
+      if (gl.length) S.gallery = '<div class="sec"><div class="lab">GALLERY</div><div class="gal">' + gl.map(function(x){ return '<button data-big="' + esc(x.img) + '" aria-label="Open photo"><img src="' + esc(x.img) + '" alt="" loading="lazy"></button>'; }).join('') + '</div></div>';
+      if (!key && d.venues && d.venues.length) S.venues = '<div class="sec"><div class="lab">FIND US</div><div class="box">' + d.venues.map(function(v, i){
         var st = v.open === true ? '<span class="open">Open now</span> · ' + esc(v.label) : v.open === false ? '<span class="closed">' + esc(v.label) + '</span>' : esc(v.label || '');
-        return '<div class="ven" data-v="' + esc(String(v.name || '').toLowerCase()) + '"><div class="ic" style="background:' + VC[i % VC.length] + '">' + esc(v.name.charAt(0).toUpperCase()) + '</div><div class="n"><b translate="no">' + esc(v.name) + '</b>' + (st ? '<small>' + st + '</small>' : '') + '</div>' +
+        return '<div class="ven"><div class="ic" style="background:' + VC[i % VC.length] + '">' + esc(v.name.charAt(0).toUpperCase()) + '</div><div class="n"><b translate="no">' + esc(v.name) + '</b>' + (st ? '<small>' + st + '</small>' : '') + '</div>' +
           (v.map ? '<a href="' + esc(v.map) + '" target="_blank" rel="noopener" aria-label="Map">' + svg(I.pin, 18) + '</a>' : '') + '</div>';
       }).join('') + '</div></div>';
-    }
-    if (gp.deals && gp.deals.length) S.deals = '<div class="sec"><div class="lab">DAILY DEALS</div>' + gp.deals.map(function(x){
-      return '<div class="deal" data-v="' + esc(String(x.venue || '').toLowerCase()) + '">' + pic(x.img, x.title) + '<div class="x">' + (x.when ? '<span class="w">' + esc(x.when).toUpperCase() + '</span>' : '') + '<b>' + esc(x.title) + '</b>' + (x.venue ? '<small translate="no">' + esc(x.venue) + '</small>' : '') + '</div></div>';
-    }).join('') + '</div>';
-    if (gp.events && gp.events.length) S.events = '<div class="sec"><div class="lab">COMING UP</div><div class="evs">' + gp.events.map(function(x){
-      return '<div class="ev" data-v="' + esc(String(x.venue || '').toLowerCase()) + '">' + pic(x.img, x.title) + '<div class="x"><div class="wh">' + esc([x.when, x.venue].filter(Boolean).join(' · ')).toUpperCase() + '</div><b>' + esc(x.title) + '</b>' + (x.line ? '<small>' + esc(x.line) + '</small>' : '') + (x.btn ? '<div class="go">' + btnHtml(x.btn, x.id) + '</div>' : '') + '</div></div>';
-    }).join('') + '</div></div>';
-    if (gp.gallery && gp.gallery.length) S.gallery = '<div class="sec"><div class="lab">GALLERY</div><div class="gal">' + gp.gallery.map(function(src){ return '<button data-big="' + esc(src) + '" aria-label="Open photo"><img src="' + esc(src) + '" alt="" loading="lazy"></button>'; }).join('') + '</div></div>';
-    var places = gp.places || [];
-    if (places.length > 1) { S.venues = ''; h += '<div class="sec" id="plsec"><div class="lab">PICK A PLACE</div><div class="pls" id="pls">' + places.map(function(p){
-      return '<button class="pl" data-pl="' + esc(String(p.name).toLowerCase()) + '">' + (p.img ? '<img src="' + esc(p.img) + '" alt="" loading="lazy">' : '<div class="ini">' + esc(String(p.name).charAt(0).toUpperCase()) + '</div>') + '<span><b translate="no">' + esc(p.name) + '</b>' + (p.area ? '<small>' + esc(p.area) + '</small>' : '') + '</span></button>';
-    }).join('') + '</div><div id="plstrip"></div></div>'; }
-    (gp.order && gp.order.length ? gp.order : ['tonight', 'deals', 'events', 'gallery', 'venues']).forEach(function(k){ h += S[k] || ''; });
-    h += '<div class="foot">Show your keyring when you arrive<br>and we\'ll look after the rest.<br><br><a href="https://getmavis.co">Powered by Mavis</a></div></div>';
-    var waV = (d.venues || []).filter(function(v){ return v.wa; }), phV = (d.venues || []).filter(function(v){ return v.phone; });
-    if (waV.length || phV.length) h += '<div class="book"><div class="in">' + (waV.length ? '<button id="bk">' + svg(I.wa, 20) + 'Book a table</button>' : '') + (phV.length ? '<button class="call" id="cl" aria-label="Call">' + svg(I.phone, 20) + '</button>' : '') + '</div></div>';
-    h += '<div class="sh" id="sh"><div class="shb"><div class="shh"><b id="sht"></b><button id="shx" aria-label="Close">' + svg(I.x, 18) + '</button></div><div class="shc" id="shc"></div></div></div>';
-    root.innerHTML = h;
-
-    var sh = document.getElementById('sh');
-    var open = function(title, html){ document.getElementById('sht').textContent = title; document.getElementById('shc').innerHTML = html; sh.classList.add('on'); document.body.style.overflow = 'hidden'; };
-    var close = function(){ sh.classList.remove('on'); document.body.style.overflow = ''; };
-    document.getElementById('shx').onclick = close;
-    sh.addEventListener('click', function(e){ if (e.target === sh) close(); });
-    Array.prototype.forEach.call(document.querySelectorAll('[data-menu]'), function(b){
-      b.onclick = function(){
-        var list = d.menus[b.getAttribute('data-menu')];
-        open(b.getAttribute('data-menu') === 'food' ? 'Food' : 'Drinks', list.map(function(mn){
-          return '<div class="mh" translate="no">' + esc(mn.name) + (mn.venue ? '<small>' + esc(mn.venue) + '</small>' : '') + '</div>' + mn.sections.map(function(s){
-            return (s.name ? '<div class="ms">' + esc(s.name).toUpperCase() + '</div>' : '') + s.dishes.map(function(x){
-              return '<div class="dish">' + (x.photo ? '<img src="' + esc(x.photo) + '" alt="">' : '') + '<div class="x"><div class="r"><b>' + esc(x.name) + '</b><span class="p">' + rp(x.price) + '</span></div>' + (x.desc ? '<p>' + esc(x.desc) + '</p>' : '') +
-                (x.allergens && x.allergens.length ? '<div class="al">' + x.allergens.map(function(a){ return '<span>' + esc(a) + '</span>'; }).join('') + '</div>' : '') + '</div></div>';
-            }).join('');
-          }).join('');
-        }).join(''));
-      };
-    });
-    Array.prototype.forEach.call(document.querySelectorAll('[data-big]'), function(b){ b.onclick = function(){ open('Gallery', '<img class="big" src="' + esc(b.getAttribute('data-big')) + '" alt="">'); }; });
-    if (!preview) document.addEventListener('click', function(e){ var a = e.target.closest && e.target.closest('[data-hit]'); if (a) try { fetch('/api/gp?a=hit&code=' + encodeURIComponent(d.code) + '&i=' + encodeURIComponent(a.getAttribute('data-hit')), { keepalive: true }); } catch (x) {} });
-    // Computers: left / right arrows on every sideways row (photos, events, gallery, this week)
-    if (window.matchMedia && matchMedia('(hover:hover) and (pointer:fine)').matches) Array.prototype.forEach.call(document.querySelectorAll('.sl,.evs,.gal,.days'), function(row){
-      if (row.scrollWidth <= row.clientWidth + 4) return;
-      var box = document.createElement('div'); box.className = 'arw'; row.parentNode.insertBefore(box, row); box.appendChild(row);
-      var mk = function(dir){ var b = document.createElement('button'); b.className = 'ar ' + (dir < 0 ? 'l' : 'r'); b.setAttribute('aria-label', dir < 0 ? 'Back' : 'More'); b.innerHTML = svg(dir < 0 ? '<path d="m15 18-6-6 6-6"/>' : '<path d="m9 18 6-6-6-6"/>', 20); b.onclick = function(){ row.scrollBy({ left: dir * row.clientWidth * 0.8, behavior: 'smooth' }); }; box.appendChild(b); return b; };
-      var l = mk(-1), r = mk(1), upd = function(){ l.style.display = row.scrollLeft > 4 ? '' : 'none'; r.style.display = row.scrollLeft + row.clientWidth < row.scrollWidth - 4 ? '' : 'none'; };
-      row.addEventListener('scroll', upd, { passive: true }); upd();
-    });
-    // Our places: tap a venue to see only its things, All to see everything again
-    var pls = document.getElementById('pls');
-    if (pls) {
-      var pick = function(key){
-        Array.prototype.forEach.call(pls.children, function(b){ b.classList.toggle('on', b.getAttribute('data-pl') === key); });
-        pls.classList.toggle('picked', !!key);
-        Array.prototype.forEach.call(document.querySelectorAll('[data-v]'), function(el){ var v = el.getAttribute('data-v'); el.style.display = !key || !v || v === key ? '' : 'none'; });
-        Array.prototype.forEach.call(document.querySelectorAll('.sec'), function(sec){ if (sec.id === 'plsec') return; var items = sec.querySelectorAll('[data-v]'); if (!items.length) return; sec.style.display = Array.prototype.some.call(items, function(x){ return x.style.display !== 'none'; }) ? '' : 'none'; });
-        var strip = document.getElementById('plstrip'), v = key ? (d.venues || []).find(function(x){ return String(x.name).toLowerCase() === key; }) : null, p = key ? places.find(function(x){ return String(x.name).toLowerCase() === key; }) : null;
-        strip.innerHTML = key ? '<div class="strip"><div class="n"><b translate="no">' + esc((v || p).name) + '</b><small>' + (v && v.open === true ? '<span style="color:#15803D;font-weight:800">Open now</span> · ' + esc(v.label) : v && v.label ? esc(v.label) : '') + (p && p.area ? (v && v.label ? ' · ' : '') + esc(p.area) : '') + '</small></div>' +
-          (v && v.map ? '<a class="mp" href="' + esc(v.map) + '" target="_blank" rel="noopener" aria-label="Map">' + svg(I.pin, 18) + '</a>' : '') +
-          (v && v.wa ? '<a class="bk" href="https://wa.me/' + esc(v.wa) + '?text=' + encodeURIComponent(greet) + '" target="_blank" rel="noopener">' + svg(I.wa, 16) + 'Book</a>' : '') + '</div>' : '';
-      };
-      Array.prototype.forEach.call(pls.children, function(b){ b.onclick = function(){ pick(b.getAttribute('data-pl')); }; });
-      pick(gp.home || pls.children[0].getAttribute('data-pl'));
-      var on = pls.querySelector('.pl.on'); if (on) pls.scrollLeft = Math.max(0, on.offsetLeft - 16);
-    }
-    var sl = document.getElementById('sl'), dots = document.getElementById('dots');
-    if (sl && dots) {
-      var idx = 0, step = function(){ return sl.children[1] ? sl.children[1].offsetLeft - sl.children[0].offsetLeft : sl.clientWidth; };
-      sl.addEventListener('scroll', function(){ var i = Math.round(sl.scrollLeft / step()); if (i !== idx) { idx = i; Array.prototype.forEach.call(dots.children, function(t, k){ t.className = k === idx ? 'on' : ''; }); } }, { passive: true });
-      Array.prototype.forEach.call(dots.children, function(t, k){ t.onclick = function(){ sl.scrollTo({ left: k * step(), behavior: 'smooth' }); }; });
-    }
-    var chooser = function(title, list, hrefOf, icon){
-      if (list.length === 1) { location.href = hrefOf(list[0]); return; }
-      open(title, list.map(function(v){ return '<a class="pick" href="' + esc(hrefOf(v)) + '"' + (/^https/.test(hrefOf(v)) ? ' target="_blank" rel="noopener"' : '') + '><b translate="no">' + esc(v.name) + '</b><i>' + svg(icon, 18) + '</i></a>'; }).join(''));
+      return (gp.order || ['tonight', 'deals', 'events', 'gallery', 'venues']).map(function(k){ return on[k] ? (S[k] || '') : ''; }).join('');
     };
-    var greet = 'Hi! I\'m a member (' + d.code + ') and I\'d like to book a table.';
-    var bk = document.getElementById('bk'), cl = document.getElementById('cl');
-    if (bk) bk.onclick = function(){ chooser('Book a table at…', waV, function(v){ return 'https://wa.me/' + v.wa + '?text=' + encodeURIComponent(greet); }, I.wa); };
-    if (cl) cl.onclick = function(){ chooser('Call…', phV, function(v){ return 'tel:' + String(v.phone).replace(/[^\d+]/g, ''); }, I.phone); };
+
+    // ── Screens ──
+    var homeHtml = function(){
+      var h = '<div class="w">' + topHtml(slidesHtml(gp.slides || [], true)) + memberHtml();
+      h += '<div class="sec"><div class="lab">WHERE ARE YOU HEADING?</div><div class="pgrid">' + places.map(function(p){
+        var v = venueOf(lc(p.name)), st = v ? (v.open === true ? 'Open now' : v.open === false ? v.label : '') : '';
+        return '<button class="pbig" data-go="' + esc(lc(p.name)) + '">' + (p.img ? '<img src="' + esc(p.img) + '" alt="" loading="lazy">' : '<div class="ini">' + esc(String(p.name).charAt(0).toUpperCase()) + '</div>') +
+          '<span><b translate="no">' + esc(p.name) + '</b><small>' + esc([p.area, st].filter(Boolean).join(' · ')) + '</small></span></button>';
+      }).join('') + '</div></div>';
+      return h + foot + '</div>';
+    };
+    var placeHtml = function(key){
+      var p = placeOf(key) || { name: key }, v = venueOf(key) || {};
+      var st = v.open === true ? '<span class="open">Open now</span> · ' + esc(v.label) : v.open === false ? esc(v.label) : '';
+      var h = '<div class="w"><div class="vtop">' + (p.img ? '<img src="' + esc(p.img) + '" alt="">' : '') + '<div class="vin"><button class="back" data-home aria-label="All places">' + svg('<path d="m15 18-6-6 6-6"/>', 18) + 'All places</button>' +
+        '<div class="vname"><b translate="no">' + esc(p.name) + '</b><small>' + [esc(p.area || ''), st].filter(Boolean).join(' · ') + '</small></div></div></div>';
+      h += '<div class="vacts">' + (v.map ? '<a class="mp" href="' + esc(v.map) + '" target="_blank" rel="noopener">' + svg(I.pin, 17) + 'Map</a>' : '') + (v.wa ? '<a class="bk" href="https://wa.me/' + esc(v.wa) + '?text=' + encodeURIComponent(greet) + '" target="_blank" rel="noopener">' + svg(I.wa, 17) + 'Book a table</a>' : '') + '</div>';
+      var sl = (gp.slides || []).filter(function(x){ return at(x, key); });
+      if (sl.length) h += '<div class="vsl">' + slidesHtml(sl, false) + '</div>';
+      var body = placeSections(key);
+      h += body || '<div class="sec"><div class="box" style="padding:18px;text-align:center;color:#64748B;font-size:14px;font-weight:600">Nothing special on here right now - come and see us!</div></div>';
+      return h + foot + '</div>';
+    };
+    var singleHtml = function(){
+      return '<div class="w">' + topHtml(slidesHtml(gp.slides || [], false)) + memberHtml() + placeSections('') + foot + '</div>';
+    };
+
+    var bookBar = function(key){
+      var list = key ? (d.venues || []).filter(function(v){ return lc(v.name) === key; }) : (d.venues || []);
+      var waV = list.filter(function(v){ return v.wa; }), phV = list.filter(function(v){ return v.phone; });
+      if (key && waV.length) return '';   // the place's own Book button is at the top
+      return waV.length || phV.length ? '<div class="book"><div class="in">' + (waV.length ? '<button id="bk">' + svg(I.wa, 20) + 'Book a table</button>' : '') + (phV.length ? '<button class="call" id="cl" aria-label="Call">' + svg(I.phone, 20) + '</button>' : '') + '</div></div>' : '';
+    };
+
+    var show = function(key, push){
+      root.innerHTML = (!many ? singleHtml() : key ? placeHtml(key) : homeHtml()) + bookBar(many ? key : '') + sheet;
+      document.body.classList.toggle('inplace', !!key);
+      if (push) { try { history.pushState({ place: key }, '', location.pathname + location.search); } catch (e) {} window.scrollTo(0, 0); }
+      wire(key);
+    };
+    window.addEventListener('popstate', function(e){ if (many) show(e.state && e.state.place ? e.state.place : '', false); window.scrollTo(0, 0); });
+
+    var wire = function(key){
+      var sh = document.getElementById('sh');
+      var open = function(title, html){ document.getElementById('sht').textContent = title; document.getElementById('shc').innerHTML = html; sh.classList.add('on'); document.body.style.overflow = 'hidden'; };
+      var close = function(){ sh.classList.remove('on'); document.body.style.overflow = ''; };
+      document.getElementById('shx').onclick = close;
+      sh.addEventListener('click', function(e){ if (e.target === sh) close(); });
+      Array.prototype.forEach.call(document.querySelectorAll('[data-go]'), function(b){ b.onclick = function(){ show(b.getAttribute('data-go'), true); }; });
+      Array.prototype.forEach.call(document.querySelectorAll('[data-home]'), function(b){ b.onclick = function(){ if (history.state && history.state.place) history.back(); else show('', false); }; });
+      Array.prototype.forEach.call(document.querySelectorAll('[data-big]'), function(b){ b.onclick = function(){ open('Gallery', '<img class="big" src="' + esc(b.getAttribute('data-big')) + '" alt="">'); }; });
+      var chooser = function(title, list, hrefOf, icon){
+        if (list.length === 1) { location.href = hrefOf(list[0]); return; }
+        open(title, list.map(function(v){ return '<a class="pick" href="' + esc(hrefOf(v)) + '"' + (/^https/.test(hrefOf(v)) ? ' target="_blank" rel="noopener"' : '') + '><b translate="no">' + esc(v.name) + '</b><i>' + svg(icon, 18) + '</i></a>'; }).join(''));
+      };
+      var list = key ? (d.venues || []).filter(function(v){ return lc(v.name) === key; }) : (d.venues || []);
+      var bk = document.getElementById('bk'), cl = document.getElementById('cl');
+      if (bk) bk.onclick = function(){ chooser('Book a table at…', list.filter(function(v){ return v.wa; }), function(v){ return 'https://wa.me/' + v.wa + '?text=' + encodeURIComponent(greet); }, I.wa); };
+      if (cl) cl.onclick = function(){ chooser('Call…', list.filter(function(v){ return v.phone; }), function(v){ return 'tel:' + String(v.phone).replace(/[^\d+]/g, ''); }, I.phone); };
+      // Computers: left / right arrows on every sideways row (photos, events, gallery, this week)
+      if (window.matchMedia && matchMedia('(hover:hover) and (pointer:fine)').matches) Array.prototype.forEach.call(document.querySelectorAll('.sl,.evs,.gal,.days'), function(row){
+        if (row.scrollWidth <= row.clientWidth + 4) return;
+        var box = document.createElement('div'); box.className = 'arw'; row.parentNode.insertBefore(box, row); box.appendChild(row);
+        var mk = function(dir){ var b = document.createElement('button'); b.className = 'ar ' + (dir < 0 ? 'l' : 'r'); b.setAttribute('aria-label', dir < 0 ? 'Back' : 'More'); b.innerHTML = svg(dir < 0 ? '<path d="m15 18-6-6 6-6"/>' : '<path d="m9 18 6-6-6-6"/>', 20); b.onclick = function(){ row.scrollBy({ left: dir * row.clientWidth * 0.8, behavior: 'smooth' }); }; box.appendChild(b); return b; };
+        var l = mk(-1), r = mk(1), upd = function(){ l.style.display = row.scrollLeft > 4 ? '' : 'none'; r.style.display = row.scrollLeft + row.clientWidth < row.scrollWidth - 4 ? '' : 'none'; };
+        row.addEventListener('scroll', upd, { passive: true }); upd();
+      });
+      var sl = document.getElementById('sl'), dots = document.getElementById('dots');
+      if (sl && dots) {
+        var idx = 0, step = function(){ return sl.children[1] ? sl.children[1].offsetLeft - sl.children[0].offsetLeft : sl.clientWidth; };
+        sl.addEventListener('scroll', function(){ var i = Math.round(sl.scrollLeft / step()); if (i !== idx) { idx = i; Array.prototype.forEach.call(dots.children, function(t, k){ t.className = k === idx ? 'on' : ''; }); } }, { passive: true });
+        Array.prototype.forEach.call(dots.children, function(t, k){ t.onclick = function(){ sl.scrollTo({ left: k * step(), behavior: 'smooth' }); }; });
+      }
+    };
+    if (!preview) document.addEventListener('click', function(e){ var a = e.target.closest && e.target.closest('[data-hit]'); if (a) try { fetch('/api/gp?a=hit&code=' + encodeURIComponent(d.code) + '&i=' + encodeURIComponent(a.getAttribute('data-hit')), { keepalive: true }); } catch (x) {} });
+    try { history.replaceState({ place: '' }, '', location.pathname + location.search); } catch (e) {}
+    show('', false);
   }).catch(function(){ root.innerHTML = '<div class="w">' + head({ brand:'Members Club' }, 'Hello!', '') + '<div class="msg"><h2>Couldn\'t load your card</h2><p>Check your connection and try again.</p></div></div>'; });
 })();
 </script></body></html>

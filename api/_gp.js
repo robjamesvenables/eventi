@@ -34,25 +34,26 @@ function demo(today){
   return {
     order: SECTIONS.slice(), off: {},
     slides: [
-      { id: 'ds0', img: '/demo-guest/senja.jpg', title: 'Sunset at Senja', line: 'Every day from 4pm · Uluwatu' },
-      { id: 'ds1', img: '/demo-guest/martini.jpg', title: '2 for 1 cocktails', line: 'Every day 5–7pm at Senja Rooftop' },
-      { id: 'ds2', img: '/demo-guest/party.jpg', title: "New Year's Eve", line: 'Tickets on sale now', btn: 'tickets', url: 'https://megatix.co.id' },
-      { id: 'ds3', img: '/demo-guest/fish.jpg', title: 'New dinner menu', line: 'Saffron & Salt · from 5pm' }
+      { id: 'ds1', img: '/demo-guest/martini.jpg', title: '2 for 1 cocktails', line: 'Every day 5–7pm', venue: 'Senja Rooftop' },
+      { id: 'ds2', img: '/demo-guest/party.jpg', title: "New Year's Eve", line: 'Tickets on sale now', venue: 'Senja Rooftop', btn: 'tickets', url: 'https://megatix.co.id' },
+      { id: 'ds3', img: '/demo-guest/ombak.jpg', title: 'Pool days', line: 'Daybeds from 10am', venue: 'Ombak Beach Club' },
+      { id: 'ds4', img: '/demo-guest/fish.jpg', title: 'New dinner menu', line: 'From 5pm', venue: 'Saffron & Salt' },
+      { id: 'ds5', img: '/demo-guest/pasta.jpg', title: 'Breakfast all day', line: 'Coffee from 7am', venue: 'Kopi Pagi' }
     ],
     deals: [
       { id: 'dd1', img: '/demo-guest/martini.jpg', title: '2 for 1 cocktails', when: 'Daily · 5–7pm', venue: 'Senja Rooftop' },
       { id: 'dd2', img: '/demo-guest/pasta.jpg', title: 'Breakfast + coffee · Rp 95k', when: 'Daily · 7–11am', venue: 'Kopi Pagi' },
-      { id: 'dd3', img: '/demo-guest/fish.jpg', title: 'Early dinner · 20% off', when: 'Mon–Thu · 5–7pm', venue: 'Saffron & Salt' }
+      { id: 'dd3', img: '/demo-guest/fish.jpg', title: 'Early dinner · 20% off', when: 'Mon–Thu · 5–7pm', venue: 'Saffron & Salt' },
+      { id: 'dd4', img: '/demo-guest/ombak.jpg', title: 'Daybed + bucket of beers · Rp 600k', when: 'Weekdays · 10am–4pm', venue: 'Ombak Beach Club' }
     ],
     events: [
-      { id: 'de1', img: '/demo-guest/party.jpg', title: "New Year's Eve", line: 'Fireworks, DJs, free-flow from Rp 1.5m', date: nye, time: '20:00', venue: 'Ombak Beach Club', btn: 'tickets', url: 'https://megatix.co.id' },
+      { id: 'de1', img: '/demo-guest/party.jpg', title: "New Year's Eve", line: 'Fireworks, DJs, free-flow from Rp 1.5m', date: nye, time: '20:00', venue: 'Senja Rooftop', btn: 'tickets', url: 'https://megatix.co.id' },
       { id: 'de2', img: '/demo-guest/fish.jpg', title: 'Christmas Lunch', line: 'Four courses by the water', date: xmas, time: '12:00', venue: 'Saffron & Salt', btn: 'wa' },
       { id: 'de3', img: '/demo-guest/chef.jpg', title: "Chef's Table", line: 'Seven courses, 12 seats only', date: plus(9), time: '19:00', venue: 'Saffron & Salt', btn: 'wa' },
       { id: 'de4', img: '/demo-guest/party.jpg', title: 'Full Moon Rooftop', line: 'DJ Ayu till late', date: plus(11), time: '21:00', venue: 'Senja Rooftop', btn: 'tickets', url: 'https://megatix.co.id' }
     ],
-    gallery: [{ id: 'dg6', img: '/demo-guest/senja.jpg' }, { id: 'dg7', img: '/demo-guest/ombak.jpg' }, { id: 'dg8', img: '/demo-guest/saffron.jpg' }, { id: 'dg1', img: '/demo-guest/chef.jpg' }, { id: 'dg2', img: '/demo-guest/pasta.jpg' }, { id: 'dg3', img: '/demo-guest/party.jpg' },
-              { id: 'dg4', img: '/demo-guest/fish.jpg' }, { id: 'dg5', img: '/demo-guest/martini.jpg' }],
-    home: 'senja rooftop',
+    gallery: [['senja', 'Senja Rooftop'], ['martini', 'Senja Rooftop'], ['party', 'Senja Rooftop'], ['ombak', 'Ombak Beach Club'], ['saffron', 'Saffron & Salt'], ['chef', 'Saffron & Salt'],
+              ['fish', 'Saffron & Salt'], ['pasta', 'Kopi Pagi']].map(([n, v], i) => ({ id: 'dg' + i, img: '/demo-guest/' + n + '.jpg', venue: v })),
     places: { 'senja rooftop': { img: '/demo-guest/senja.jpg', area: 'Uluwatu' }, 'ombak beach club': { img: '/demo-guest/ombak.jpg', area: 'Sanur' },
               'saffron & salt': { img: '/demo-guest/saffron.jpg', area: 'Seminyak' }, 'kopi pagi': { img: '/demo-guest/pasta.jpg', area: 'Canggu' } }
   };
@@ -80,13 +81,13 @@ function build(c, ctx){
     return null;
   };
   const on = k => !(c.off && c.off[k]);
-  const slides = on('slides') ? (c.slides || []).filter(s => img(s)).slice(0, 5).map(s => ({ id: str(s.id, 40), img: img(s), title: str(s.title, 60), line: str(s.line, 90), btn: button(s, s.title || 'a table') })) : [];
+  const slides = on('slides') ? (c.slides || []).filter(s => img(s)).slice(0, 12).map(s => ({ id: str(s.id, 40), img: img(s), title: str(s.title, 60), line: str(s.line, 90), venue: str(s.venue, 40), btn: button(s, s.title || 'a table') })) : [];
   const deals = (c.deals || []).filter(d => d && d.title).slice(0, 12).map(d => ({ id: str(d.id, 40), img: img(d), title: str(d.title, 60), when: str(d.when, 40), venue: str(d.venue, 40) }));
   const events = (c.events || []).filter(e => e && e.title && (!e.date || e.date >= today) && (!e.from || e.from <= today))
     .sort((a, b) => String(a.date || '9999').localeCompare(String(b.date || '9999'))).slice(0, 12)
     .map(e => ({ id: str(e.id, 40), img: img(e), title: str(e.title, 60), line: str(e.line, 90), venue: str(e.venue, 40),
       when: [dateLabel(e.date), timeLabel(e.time)].filter(Boolean).join(' · '), btn: button(e, e.title + (e.date ? ' (' + dateLabel(e.date) + ')' : '')) }));
-  const gallery = (c.gallery || []).map(img).filter(Boolean).slice(0, 12);
+  const gallery = (c.gallery || []).map(g => ({ img: img(g), venue: str(g && g.venue, 40) })).filter(g => g.img).slice(0, 60);
   let order = Array.isArray(c.order) ? c.order.filter(k => SECTIONS.includes(k)) : [];
   SECTIONS.forEach(k => { if (!order.includes(k)) order.push(k); });
   order = order.filter(on);
@@ -96,8 +97,7 @@ function build(c, ctx){
   // Colours (Guest page > Colours)
   const hex = v => /^#[0-9a-f]{6}$/i.test(v || '') ? v : '';
   const th = c.theme || {}, theme = { top: hex(th.top), acc: hex(th.acc), pg: hex(th.pg) };
-  const home = places.find(p => p.name.toLowerCase() === String(c.home || '').toLowerCase()) ? String(c.home).toLowerCase() : (places[0] ? places[0].name.toLowerCase() : '');
-  return { order, slides, deals, events, gallery, places, theme, home };
+  return { order, slides, deals, events, gallery, places, theme };
 }
 
 module.exports = { SECTIONS, paths, demo, hasContent, build, DEMO_VENUES, DEMO_RENAME, isOldDemo, renameDemo };

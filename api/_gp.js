@@ -81,7 +81,12 @@ function build(c, ctx){
     return null;
   };
   const on = k => !(c.off && c.off[k]);
-  const slides = on('slides') ? (c.slides || []).filter(s => img(s)).slice(0, 12).map(s => ({ id: str(s.id, 40), img: img(s), title: str(s.title, 60), line: str(s.line, 90), venue: str(s.venue, 40), btn: button(s, s.title || 'a table') })) : [];
+  // A slide saved before slides had a place: work the place out from its words ("at the Rooftop" -> that place)
+  const guessPlace = sl => { if (sl.venue) return sl.venue; const t = ((sl.title || '') + ' ' + (sl.line || '')).toLowerCase();
+    const v = (venues || []).find(x => x.name && t.includes(String(x.name).toLowerCase())); if (v) return v.name;
+    const old = Object.keys(DEMO_RENAME).find(k => t.includes(k)); const n = old && DEMO_RENAME[old];
+    return n && (venues || []).some(x => x.name === n) ? n : ''; };
+  const slides = on('slides') ? (c.slides || []).filter(s => img(s)).slice(0, 12).map(s => ({ id: str(s.id, 40), img: img(s), title: str(s.title, 60), line: str(s.line, 90), venue: str(guessPlace(s), 40), btn: button(s, s.title || 'a table') })) : [];
   const deals = (c.deals || []).filter(d => d && d.title).slice(0, 12).map(d => ({ id: str(d.id, 40), img: img(d), title: str(d.title, 60), when: str(d.when, 40), venue: str(d.venue, 40) }));
   const events = (c.events || []).filter(e => e && e.title && (!e.date || e.date >= today) && (!e.from || e.from <= today))
     .sort((a, b) => String(a.date || '9999').localeCompare(String(b.date || '9999'))).slice(0, 12)

@@ -21352,9 +21352,32 @@ async function msLoad(){
     MS.members = m.data || [];
     MS.visits = {}; (v.data || []).forEach(x => (MS.visits[x.member_id] = MS.visits[x.member_id] || []).push(x));
     MS.keyrings = {}; (k.data || []).forEach(x => { if(x.member_id) MS.keyrings[x.member_id] = x.code; });
+    if(typeof appIsDemoCompany === 'function' && appIsDemoCompany()) msDemoFreshen();
     MS.loaded = true;
   }catch(e){ console.warn('Membership not set up yet', e); MS.notReady = true; MS.loaded = true; }
   MS.loading = false;
+}
+// Demo only (on screen, nothing saved): the sample members always look current - their visits move up so the latest was
+// yesterday, old place names become the four demo places, and a regular with lots of visits isn't tagged NEW.
+function msDemoFreshen(){
+  const names = (msPage().venues || []).map(v => v && v.name).filter(Boolean); if(!names.length) return;
+  const old = { 'rooftop':'Senja Rooftop', 'beach club':'Ombak Beach Club', 'harbour':'Saffron & Salt', 'garden':'Kopi Pagi' };
+  const seed = id => String(id).split('').reduce((a, c) => a + c.charCodeAt(0), 0);
+  const place = (n, id) => names.includes(n) ? n : (old[String(n || '').toLowerCase().trim()] && names.includes(old[String(n || '').toLowerCase().trim()])) ? old[String(n || '').toLowerCase().trim()] : names[seed(id) % names.length];
+  const all = Object.values(MS.visits).flat();
+  const day = d => new Date(d + 'T12:00:00Z').getTime(), ymd = t => new Date(t).toISOString().slice(0, 10);
+  const yesterday = ymd(Date.now() + 8 * 3600e3 - 864e5);
+  const latest = all.map(x => x.visit_date).filter(Boolean).sort().pop();
+  const shift = latest && latest < yesterday ? day(yesterday) - day(latest) : 0;
+  Object.entries(MS.visits).forEach(([id, list]) => list.forEach(x => {
+    x.venue = place(x.venue, id);
+    if(shift && x.visit_date){ x.visit_date = ymd(day(x.visit_date) + shift); if(x.created_at) x.created_at = x.visit_date + 'T20:00:00Z'; }
+  }));
+  MS.members.forEach(m => {
+    const v = (MS.visits[m.id] || []).map(x => x.visit_date).sort();
+    if(v.length > 3){ const first = day(v[0]) - 14 * 864e5; if(new Date(m.created_at).getTime() > first) m.created_at = new Date(first).toISOString(); }
+    if(m.joined_venue && !names.includes(m.joined_venue)) m.joined_venue = place(m.joined_venue, m.id);
+  });
 }
 async function msOpenPage(){
   msRender();

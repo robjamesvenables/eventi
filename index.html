@@ -2166,6 +2166,8 @@ body.ev-nomoney .dash-hero .ev-money{display:none!important}
 #p-faq > .ph,#p-vendors > .ph,#p-customers > .ph,#p-membership > .ph{flex-wrap:wrap;row-gap:0}
 .ms-hbtns{display:flex;gap:8px;align-items:center}
 #ms-scan-btn,.ms-tiers{white-space:nowrap}
+@media(max-width:760px){#p-dash #evsn-btn{order:2}}
+#p-dash #evsn-btn{background:rgba(255,255,255,.1)!important;background-image:none!important;color:white!important;border:1px solid rgba(255,255,255,.25)!important;box-shadow:none!important}
 .mv-mem-only{display:none!important}
 body.mv-mem .mv-mem-only{display:flex!important}body.mv-mem .sb-section.mv-mem-only{display:block!important}
 body.mv-mem .sb-link:not(.mv-mem-only):not(#n-admin),body.mv-mem .sb-section:not(.mv-mem-only){display:none!important}
@@ -5358,7 +5360,7 @@ html:has(#menuDetailOverlay[style*="flex"]),html:has(#menuDetailOverlay[style*="
           <div class="ph-title" data-en="Current Events" data-id="Acara Aktif">Current Events</div>
           <div class="ph-sub" id="dash-sub">Live overview</div>
         </div>
-        <button class="btn btn-navy" onclick="beoCreateNew()" data-en="+ Create Event Plan" data-id="+ Buat Rencana Acara">+ Create Event Plan</button>
+        <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn btn-ghost" id="evsn-btn" onclick="evSnOpen()" style="display:none">Section names</button><button class="btn btn-navy" onclick="beoCreateNew()" data-en="+ Create Event Plan" data-id="+ Buat Rencana Acara">+ Create Event Plan</button></div>
       </div>
 
       <div class="stats">
@@ -6295,7 +6297,7 @@ html:has(#menuDetailOverlay[style*="flex"]),html:has(#menuDetailOverlay[style*="
         <div id="admin-role-cards" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:14px;margin-bottom:28px"></div>
 
         <div id="admin-perm-editor" style="display:none;margin-bottom:28px"></div>
-        <div id="admin-event-names" style="margin-bottom:14px"></div>
+
         <div id="admin-maint-settings" style="margin-bottom:14px"></div>
         <div id="admin-gp-editors" style="margin-bottom:14px"></div>
         <div id="admin-chat-settings" style="margin-bottom:28px"></div>
@@ -25768,7 +25770,7 @@ window.nav = function(id, pushState){
   if(id==='suggestions') setTimeout(()=>{ suggestionSetTab('submit'); }, 0);
 };
 // Membership-only plan: any other page opens Membership instead
-(function(){ const prev = window.nav; window.nav = function(id, pushState){ if(appPlan === 'membership' && !MEM_PAGES.includes(id)) id = 'membership'; const r = prev(id, pushState); const mm = document.getElementById('mvm-members'); if(mm) mm.classList.toggle('active', appPlan === 'membership' && id === 'membership'); return r; }; })();
+(function(){ const prev = window.nav; window.nav = function(id, pushState){ if(appPlan === 'membership' && !MEM_PAGES.includes(id)) id = 'membership'; const r = prev(id, pushState); if(id === 'dash'){ try{ evSnCardRender(); }catch(e){} } const mm = document.getElementById('mvm-members'); if(mm) mm.classList.toggle('active', appPlan === 'membership' && id === 'membership'); return r; }; })();
 </script>
 <!-- Announcement Modal -->
 <div id="announce-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:9999;align-items:center;justify-content:center" onclick="if(event.target===this)announceCloseModal()">
@@ -28887,25 +28889,23 @@ document.addEventListener('focusout', e => {
   el.textContent = t; rdShareLabel();
   if(t !== el.dataset.was){ try{ beoTriggerSave(); }catch(err){} }
 });
-function evSnCardRender(){
-  const el = document.getElementById('admin-event-names');
-  if(!el) return;
-  if(!myProfile){ el.innerHTML = ''; return; }
-  const canEdit = roleCan('adminconsole');
+// Section names: set on the Events page (managers and up). Each event can still rename its own.
+function evSnCanEdit(){ return !!myProfile && (myProfile.is_owner || ['manager','director','superadmin'].includes(myProfile.role) || roleCan('adminconsole')); }
+function evSnCardRender(){ const b = document.getElementById('evsn-btn'); if(b) b.style.display = evSnCanEdit() ? '' : 'none'; }
+window.evSnOpen = function(){
+  if(!evSnCanEdit()) return;
+  ebEnsureUi(); document.querySelectorAll('.eb-sheet').forEach(x => x.remove());
   const c = evSnCompany();
-  const row = (k, lab, hint) => `<label style="display:block;margin-top:12px"><span style="display:block;font-size:12px;font-weight:800;color:#0F1E2E">${lab}</span><span style="display:block;font-size:11.5px;color:#64748B;margin:1px 0 6px">${hint}</span><input id="evsn-in-${k}" maxlength="40" value="${chatEscapeHtml(c[k])}" placeholder="${EV_SN_DEF[k]}" ${canEdit ? '' : 'disabled'} style="width:100%;max-width:340px;box-sizing:border-box;border:1.5px solid #E2E8F0;border-radius:10px;padding:10px 12px;font:500 15px Inter,sans-serif;color:#0F1E2E;background:white"></label>`;
-  el.innerHTML = `<div style="background:white;border:1.5px solid #E2E8F0;border-radius:12px;padding:16px 18px;display:flex;align-items:flex-start;gap:16px;flex-wrap:wrap">
-    <div style="width:40px;height:40px;border-radius:10px;background:#E6F4F1;color:#0D9488;display:flex;align-items:center;justify-content:center;flex-shrink:0"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg></div>
-    <div style="flex:1;min-width:220px">
-      <div style="font-size:14px;font-weight:800;color:#0F1E2E">Event plan section names</div>
-      <div style="font-size:12px;color:#64748B;margin-top:2px;line-height:1.45">What your team calls each part of an event plan. Anyone who can edit an event can still rename them on that one event.</div>
-      ${row('info', 'Top table', 'Name, client, date, venue, guests')}
-      ${row('rundown', 'Times', 'What happens when on the day')}
-      ${row('details', 'Department notes', 'PIC and notes for each team')}
-      ${canEdit ? `<button class="btn btn-navy" style="margin-top:14px" onclick="evSnSave()">Save</button>` : ''}
-    </div>
-  </div>`;
-}
+  const row = (k, lab, hint) => `<label>${lab}</label><div style="font-size:12px;color:#64748B;margin:-2px 0 6px">${hint}</div><input id="evsn-in-${k}" maxlength="40" value="${chatEscapeHtml(c[k])}" placeholder="${EV_SN_DEF[k]}">`;
+  const s = document.createElement('div'); s.className = 'eb-sheet';
+  s.innerHTML = `<div class="eb-form"><h3>Section names</h3><p class="sub">What your team calls each part of every event plan. Anyone editing an event can still rename them on that one event.</p>
+    ${row('info', 'Top table', 'Name, client, date, venue, guests')}${row('rundown', 'Times', 'What happens when on the day')}${row('details', 'Department notes', 'PIC and notes for each team')}
+    <div class="eb-fbtns"><button class="eb-no">Cancel</button><button class="eb-go">Save</button></div></div>`;
+  s.addEventListener('mousedown', e => { if(e.target === s) s.remove(); });
+  document.body.appendChild(s);
+  s.querySelector('.eb-no').onclick = () => s.remove();
+  s.querySelector('.eb-go').onclick = async () => { await evSnSave(); s.remove(); };
+};
 window.evSnSave = async function(){
   const o = {};
   Object.keys(EV_SN_DEF).forEach(k => { const v = (document.getElementById('evsn-in-' + k)?.value || '').replace(/\s+/g, ' ').trim().slice(0, 40); o[k] = v || EV_SN_DEF[k]; });

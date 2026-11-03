@@ -128,6 +128,10 @@ svg{display:block}
 .ev .go{margin-top:auto;padding-top:12px}
 .ev .go a{display:flex;align-items:center;justify-content:center;gap:8px;background:var(--top,#0F1E2E);color:var(--top-ink,#fff);text-decoration:none;border-radius:12px;padding:12px;font-size:14px;font-weight:800}
 .ev .go a.wa{background:#16A34A}
+.ev .go{display:flex;flex-direction:column;gap:8px}
+.ev .go .ask{display:flex;align-items:center;justify-content:center;gap:7px;border:1.5px solid #E2E8F0;background:white;color:#0F1E2E;border-radius:12px;padding:10px;font:800 13.5px Inter,sans-serif;cursor:pointer}
+.ev .go .ask:hover{background:#F8FAFC}
+.askp{font-size:13.5px;color:#475569;margin:4px 0 12px;line-height:1.45}
 .gal{display:flex;gap:8px;overflow-x:auto;scrollbar-width:none;margin:0 -16px;padding:0 16px 4px}
 .gal::-webkit-scrollbar{display:none}
 .gal button{flex:0 0 150px;height:200px;border:0;padding:0;border-radius:14px;overflow:hidden;cursor:pointer;background:#E7EEF2}
@@ -237,6 +241,10 @@ svg{display:block}
     var venueOf = function(key){ return (d.venues || []).find(function(v){ return lc(v.name) === key; }); };
     var placeOf = function(key){ return places.find(function(p){ return lc(p.name) === key; }); };
     var greet = 'Hi! I\'m a member (' + d.code + ') and I\'d like to book a table.';
+    // Ask about an event: WhatsApp or the guest's own email app, to that place (or the first place that has one)
+    var contactFor = function(x){ var key = lc(x.venue), list = d.venues || [], v = list.find(function(y){ return lc(y.name) === key; }) || {};
+      return { wa: v.wa || (list.find(function(y){ return y.wa; }) || {}).wa || '', email: v.email || (list.find(function(y){ return y.email; }) || {}).email || '', place: v.name || x.venue || d.brand }; };
+    var askable = function(x){ var c = contactFor(x); return !!(c.wa || c.email); };
     var sheet = '<div class="sh" id="sh"><div class="shb"><div class="shh"><b id="sht"></b><button id="shx" aria-label="Close">' + svg(I.x, 18) + '</button></div><div class="shc" id="shc"></div></div></div>';
     var foot = '<div class="foot">Show your keyring when you arrive<br>and we\'ll look after the rest.<br><br><a href="https://getmavis.co">Powered by Mavis</a></div>';
 
@@ -281,7 +289,7 @@ svg{display:block}
         return '<div class="deal">' + pic(x.img, x.title) + '<div class="x">' + (x.when ? '<span class="w">' + esc(x.when).toUpperCase() + '</span>' : '') + '<b>' + esc(x.title) + '</b>' + (!x.venue ? '<small>At all our places</small>' : '') + '</div></div>';
       }).join('') + '</div>';
       if (ev.length) S.events = '<div class="sec"><div class="lab">COMING UP</div><div class="evs">' + ev.map(function(x){
-        return '<div class="ev">' + pic(x.img, x.title) + '<div class="x"><div class="wh">' + esc(x.when).toUpperCase() + '</div><b>' + esc(x.title) + '</b>' + (x.line ? '<small>' + esc(x.line) + '</small>' : '') + (x.btn ? '<div class="go">' + btnHtml(x.btn, x.id) + '</div>' : '') + '</div></div>';
+        return '<div class="ev">' + pic(x.img, x.title) + '<div class="x"><div class="wh">' + esc(x.when).toUpperCase() + '</div><b>' + esc(x.title) + '</b>' + (x.line ? '<small>' + esc(x.line) + '</small>' : '') + '<div class="go">' + btnHtml(x.btn, x.id) + (askable(x) ? '<button class="ask" data-ask="' + esc(x.id) + '">' + svg('<circle cx="12" cy="12" r="10"/><path d="M9.1 9a3 3 0 0 1 5.8 1c0 2-3 3-3 3M12 17h.01"/>', 16) + 'Ask about it</button>' : '') + '</div></div></div>';
       }).join('') + '</div></div>';
       if (gl.length) S.gallery = '<div class="sec"><div class="lab">GALLERY</div><div class="gal">' + gl.map(function(x){ return '<button data-big="' + esc(x.img) + '" aria-label="Open photo"><img src="' + esc(x.img) + '" alt="" loading="lazy"></button>'; }).join('') + '</div></div>';
       if (!key && d.venues && d.venues.length) S.venues = '<div class="sec"><div class="lab">FIND US</div><div class="box">' + d.venues.map(function(v, i){
@@ -341,6 +349,18 @@ svg{display:block}
       sh.addEventListener('click', function(e){ if (e.target === sh) close(); });
       Array.prototype.forEach.call(document.querySelectorAll('[data-go]'), function(b){ b.onclick = function(){ show(b.getAttribute('data-go'), true); }; b.onkeydown = function(e){ if (e.key === 'Enter') show(b.getAttribute('data-go'), true); }; });
       Array.prototype.forEach.call(document.querySelectorAll('[data-home]'), function(b){ b.onclick = function(){ if (history.state && history.state.place) history.back(); else show('', false); }; });
+      Array.prototype.forEach.call(document.querySelectorAll('[data-ask]'), function(b){ b.onclick = function(){
+        var x = (gp.events || []).find(function(e){ return e.id === b.getAttribute('data-ask'); }); if (!x) return;
+        var c = contactFor(x), what = x.title + (x.when ? ' (' + x.when + ')' : '') + (c.place ? ' at ' + c.place : '');
+        var msg = 'Hi! I\'m a member (' + d.code + ') and I have a question about ' + what + ':\n\n';
+        var wa = c.wa ? 'https://wa.me/' + c.wa + '?text=' + encodeURIComponent(msg) : '', mail = c.email ? 'mailto:' + c.email + '?subject=' + encodeURIComponent(what) + '&body=' + encodeURIComponent(msg) : '';
+        if (!preview) try { fetch('/api/gp?a=hit&code=' + encodeURIComponent(d.code) + '&i=' + encodeURIComponent(x.id), { keepalive: true }); } catch (e) {}
+        if (wa && !mail) { window.open(wa, '_blank'); return; }
+        if (mail && !wa) { location.href = mail; return; }
+        open('Ask about ' + x.title, '<p class="askp">Send us your question - we\'ll get back to you.</p>' +
+          '<a class="pick" href="' + esc(wa) + '" target="_blank" rel="noopener"><b>WhatsApp</b><i style="background:#16A34A">' + svg(I.wa, 18) + '</i></a>' +
+          '<a class="pick" href="' + esc(mail) + '"><b>Email</b><i>' + svg('<rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-10 6L2 7"/>', 18) + '</i></a>');
+      }; });
       Array.prototype.forEach.call(document.querySelectorAll('[data-big]'), function(b){ b.onclick = function(){ open('Gallery', '<img class="big" src="' + esc(b.getAttribute('data-big')) + '" alt="">'); }; });
       var chooser = function(title, list, hrefOf, icon){
         if (list.length === 1) { location.href = hrefOf(list[0]); return; }

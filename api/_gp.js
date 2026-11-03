@@ -20,11 +20,11 @@ const DEMO_VENUES = [
   { name: 'Ombak Beach Club', area: 'Sanur', opens: '10:00', closes: '00:00' },
   { name: 'Saffron & Salt', area: 'Seminyak', opens: '17:00', closes: '23:00' },
   { name: 'Kopi Pagi', area: 'Canggu', opens: '07:00', closes: '17:00' }
-].map(v => Object.assign(v, { map: 'https://maps.google.com', wa: '6281234567890', phone: '+62 812 3456 7890' }));
+].map(v => Object.assign(v, { map: 'https://maps.google.com', wa: '6281234567890', phone: '+62 812 3456 7890', email: v.name.toLowerCase().replace(/[^a-z]+/g, '') + '@example.com' }));
 const DEMO_RENAME = { 'rooftop': 'Senja Rooftop', 'beach club': 'Ombak Beach Club', 'harbour': 'Saffron & Salt', 'garden': 'Kopi Pagi' };
 const isOldDemo = list => Array.isArray(list) && list.some(v => v && DEMO_RENAME[String(v.name || '').toLowerCase().trim()]);
 // Demo only: swap any old venue name for its new made-up place (keeps the saved hours, map and WhatsApp)
-const renameDemo = list => (list || []).map(v => { const n = DEMO_RENAME[String((v && v.name) || '').toLowerCase().trim()]; if (!n) return v; const d = DEMO_VENUES.find(x => x.name === n); return Object.assign({}, v, { name: n, area: v.area || d.area }); });
+const renameDemo = list => (list || []).map(v => { const n = DEMO_RENAME[String((v && v.name) || '').toLowerCase().trim()]; if (!n) return v; const d = DEMO_VENUES.find(x => x.name === n); return Object.assign({}, v, { name: n, area: v.area || d.area, email: v.email || d.email }); });
 
 // Demo company: a page that always looks alive
 function demo(today){

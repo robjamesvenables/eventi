@@ -21517,7 +21517,7 @@ window.msEdit = function(id){
 // Guest page settings (managers): perks, reward, venues - everything a guest sees when they scan their keyring.
 // Tonight / This week come from the Entertainment Schedule, menus from Kitchen & Bar live menus.
 const GP_DEMO_VENUES = [['Senja Rooftop','Uluwatu','16:00','01:00'], ['Ombak Beach Club','Sanur','10:00','00:00'], ['Saffron & Salt','Seminyak','17:00','23:00'], ['Kopi Pagi','Canggu','07:00','17:00']]
-  .map(([name, area, opens, closes]) => ({ name, area, opens, closes, map:'https://maps.google.com', wa:'6281234567890', phone:'+62 812 3456 7890' }));
+  .map(([name, area, opens, closes]) => ({ name, area, opens, closes, map:'https://maps.google.com', wa:'6281234567890', phone:'+62 812 3456 7890', email: name.toLowerCase().replace(/[^a-z]+/g, '') + '@example.com' }));
 function msPage(){
   try{ const v = appSettings && appSettings.member_page; const p = v ? (typeof v === 'string' ? JSON.parse(v) : v) : null;
     // Demo: older demo venues (Rooftop / Harbour / Garden / Beach Club) become the four made-up places around Bali
@@ -21536,7 +21536,8 @@ function msVenueRow(v){
   return `<div class="ms-vbox"><div class="ms-vtop"><input class="ms-vn" placeholder="Venue name, e.g. Rooftop" value="${msEsc(v.name || '')}"><button type="button" class="ms-vx" title="Remove" onclick="this.closest('.ms-vbox').remove()"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg></button></div>
     <div class="ms-v2"><label><span>OPENS</span><input type="time" class="ms-vo" value="${msEsc(v.opens || '')}"></label><label><span>CLOSES</span><input type="time" class="ms-vc" value="${msEsc(v.closes || '')}"></label></div>
     <label><span>GOOGLE MAPS LINK</span><input class="ms-vm" inputmode="url" placeholder="https://maps.app.goo.gl/..." value="${msEsc(v.map || '')}"></label>
-    <div class="ms-v2"><label><span>WHATSAPP (BOOKINGS)</span><input class="ms-vw" type="tel" placeholder="+62 812..." value="${msEsc(v.wa ? '+' + String(v.wa).replace(/\D/g, '') : '')}"></label><label><span>PHONE</span><input class="ms-vp" type="tel" placeholder="+62 361..." value="${msEsc(v.phone || '')}"></label></div></div>`;
+    <div class="ms-v2"><label><span>WHATSAPP (BOOKINGS)</span><input class="ms-vw" type="tel" placeholder="+62 812..." value="${msEsc(v.wa ? '+' + String(v.wa).replace(/\D/g, '') : '')}"></label><label><span>PHONE</span><input class="ms-vp" type="tel" placeholder="+62 361..." value="${msEsc(v.phone || '')}"></label></div>
+    <label><span>EMAIL (GUEST QUESTIONS)</span><input class="ms-ve" type="email" inputmode="email" placeholder="e.g. hello@yourvenue.com" value="${msEsc(v.email || '')}"></label></div>`;
 }
 window.msTiers = function(){
   if(!msIsMgr()) return;
@@ -21563,8 +21564,10 @@ window.msTiers = function(){
     const n = parseInt(document.getElementById('ms-rw-n').value, 10), t = document.getElementById('ms-rw-t').value.trim();
     const venues = [...document.querySelectorAll('#ms-vlist .ms-vbox')].map(b => ({
       name: b.querySelector('.ms-vn').value.trim(), opens: b.querySelector('.ms-vo').value, closes: b.querySelector('.ms-vc').value,
-      map: b.querySelector('.ms-vm').value.trim(), wa: b.querySelector('.ms-vw').value.replace(/\D/g, ''), phone: b.querySelector('.ms-vp').value.trim()
+      map: b.querySelector('.ms-vm').value.trim(), wa: b.querySelector('.ms-vw').value.replace(/\D/g, ''), phone: b.querySelector('.ms-vp').value.trim(), email: (b.querySelector('.ms-ve') || {}).value ? b.querySelector('.ms-ve').value.trim() : ''
     })).filter(v => v.name);
+    const badMail = venues.find(v => v.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.email));
+    if(badMail){ toast('The email for ' + badMail.name + ' doesn\'t look right'); return; }
     const bad = venues.find(v => v.map && !/^https?:\/\//i.test(v.map));
     if(bad){ toast('The map link for ' + bad.name + ' should start with https://'); return; }
     const page = JSON.stringify(Object.assign({}, msPage(), { venues, reward: n > 0 ? { visits:n, text:t } : null }));

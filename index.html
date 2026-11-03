@@ -22466,7 +22466,10 @@ const RSI = { copy:'<rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5
 function rsSetup(){
   let s = null; try{ const v = appSettings && appSettings.roster_setup; s = v ? (typeof v === 'string' ? JSON.parse(v) : v) : null; }catch(e){}
   s = s || {};
-  return { shifts: Array.isArray(s.shifts) && s.shifts.length ? s.shifts : RS_DEF_SHIFTS.map(x => Object.assign({}, x)), areas: (s.areas && typeof s.areas === 'object') ? s.areas : {} };
+  let areas = (s.areas && typeof s.areas === 'object') ? s.areas : null;
+  // Demo: the floor teams come split into made-up areas, so the tabs are there to show
+  if(!areas && typeof appIsDemoCompany === 'function' && appIsDemoCompany()){ const A = ['Beach Club', 'Sunset Bar', 'Pool Deck', 'Garden Restaurant']; areas = { 'operations': A.slice(), 'front of house': A.slice() }; }
+  return { shifts: Array.isArray(s.shifts) && s.shifts.length ? s.shifts : RS_DEF_SHIFTS.map(x => Object.assign({}, x)), areas: areas || {} };
 }
 function rsAreas(dept){ return (rsSetup().areas[deptKey(dept)] || []).slice(); }
 function rsDepts(){ const all = (PEOPLE_DEPARTMENTS || []).slice(); return all.length ? all : ['Front of House']; }

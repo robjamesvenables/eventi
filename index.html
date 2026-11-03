@@ -7253,6 +7253,7 @@ const MEM_PAGES = ['membership', 'admin', 'account', 'profile'];
 async function appLoadPlan(){
   appPlan = 'full';
   try{ if(myCompany && myCompany.id){ const { data, error } = await sb.from('companies').select('plan').eq('id', myCompany.id).limit(1); if(!error && data && data[0] && data[0].plan === 'membership') appPlan = 'membership'; } }catch(e){}
+  try{ if(/[?&]plan=membership\b/.test(location.search)) appPlan = 'membership'; }catch(e){}   // look only: see the membership-only app (open app.getmavis.co/?plan=membership)
   document.body.classList.toggle('mv-mem', appPlan === 'membership');
 }
 async function authApplyProfile(profile, company){

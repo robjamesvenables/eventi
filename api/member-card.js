@@ -128,7 +128,7 @@ module.exports = async (req, res) => {
     const stageName = {}; stages.forEach(s => { stageName[s.id] = s.name; });
     let events = bookings.filter(b => b.dj_name).map(b => ({
       date: b.date, start: (b.start_time || '').slice(0, 5), end: (b.end_time || '').slice(0, 5),
-      title: b.dj_name, sub: b.type === 'takeover' ? 'Takeover' : 'Live DJ', venue: stageName[b.stage_id] || ''
+      title: b.dj_name, sub: b.type === 'takeover' ? 'Takeover' : 'Live DJ', venue: (isDemo && GP.DEMO_RENAME[String(stageName[b.stage_id] || '').toLowerCase().trim()]) || stageName[b.stage_id] || ''
     }));
     if (!events.length && demo) events = demo.events;
     const fmtEv = e => ({ day: dow(e.date), date: e.date, title: e.title, sub: e.sub, venue: e.venue,
@@ -143,7 +143,7 @@ module.exports = async (req, res) => {
 
     // Venues + rewards (Membership > Guest page)
     let venues = Array.isArray(page.venues) && page.venues.length ? page.venues : (demo ? demo.venues : []);
-    if (demo && GP.isOldDemo(venues)) venues = demo.venues;
+    if (demo && GP.isOldDemo(venues)) venues = GP.renameDemo(venues);
     venues = venues.filter(v => v && v.name).slice(0, 12).map(v => Object.assign({ name: v.name, area: String(v.area || '').slice(0, 30), map: v.map || '', wa: String(v.wa || '').replace(/\D/g, ''), phone: v.phone || '' }, openState(v, now.hm)));
     const rw = page.reward && page.reward.visits ? page.reward : (demo ? demo.reward : null);
     const reward = rw && Number(rw.visits) > 0 ? { target: Number(rw.visits), text: String(rw.text || '').slice(0, 80), left: Math.max(0, Number(rw.visits) - visits.length) } : null;

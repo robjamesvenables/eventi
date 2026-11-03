@@ -22,7 +22,9 @@ const DEMO_VENUES = [
   { name: 'Kopi Pagi', area: 'Canggu', opens: '07:00', closes: '17:00' }
 ].map(v => Object.assign(v, { map: 'https://maps.google.com', wa: '6281234567890', phone: '+62 812 3456 7890' }));
 const DEMO_RENAME = { 'rooftop': 'Senja Rooftop', 'beach club': 'Ombak Beach Club', 'harbour': 'Saffron & Salt', 'garden': 'Kopi Pagi' };
-const isOldDemo = list => Array.isArray(list) && list.length > 0 && list.every(v => v && DEMO_RENAME[String(v.name || '').toLowerCase()]);
+const isOldDemo = list => Array.isArray(list) && list.some(v => v && DEMO_RENAME[String(v.name || '').toLowerCase().trim()]);
+// Demo only: swap any old venue name for its new made-up place (keeps the saved hours, map and WhatsApp)
+const renameDemo = list => (list || []).map(v => { const n = DEMO_RENAME[String((v && v.name) || '').toLowerCase().trim()]; if (!n) return v; const d = DEMO_VENUES.find(x => x.name === n); return Object.assign({}, v, { name: n, area: v.area || d.area }); });
 
 // Demo company: a page that always looks alive
 function demo(today){
@@ -95,4 +97,4 @@ function build(c, ctx){
   return { order, slides, deals, events, gallery, places, theme };
 }
 
-module.exports = { SECTIONS, paths, demo, hasContent, build, DEMO_VENUES, DEMO_RENAME, isOldDemo };
+module.exports = { SECTIONS, paths, demo, hasContent, build, DEMO_VENUES, DEMO_RENAME, isOldDemo, renameDemo };

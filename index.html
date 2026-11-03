@@ -21520,7 +21520,10 @@ const GP_DEMO_VENUES = [['Senja Rooftop','Uluwatu','16:00','01:00'], ['Ombak Bea
 function msPage(){
   try{ const v = appSettings && appSettings.member_page; const p = v ? (typeof v === 'string' ? JSON.parse(v) : v) : null;
     // Demo: older demo venues (Rooftop / Harbour / Garden / Beach Club) become the four made-up places around Bali
-    if(p && typeof appIsDemoCompany === 'function' && appIsDemoCompany() && Array.isArray(p.venues) && p.venues.length && p.venues.every(x => x && ['rooftop','harbour','garden','beach club'].includes(String(x.name || '').toLowerCase()))) return Object.assign({}, p, { venues: GP_DEMO_VENUES.map(x => Object.assign({}, x)) });
+    if(p && typeof appIsDemoCompany === 'function' && appIsDemoCompany() && Array.isArray(p.venues)){
+      const map = { 'rooftop':'Senja Rooftop', 'beach club':'Ombak Beach Club', 'harbour':'Saffron & Salt', 'garden':'Kopi Pagi' };
+      if(p.venues.some(x => x && map[String(x.name || '').toLowerCase().trim()])) return Object.assign({}, p, { venues: p.venues.map(x => { const n = x && map[String(x.name || '').toLowerCase().trim()]; return n ? Object.assign({}, x, { name: n, area: x.area || (GP_DEMO_VENUES.find(d => d.name === n) || {}).area }) : x; }) });
+    }
     if(p) return p; }catch(e){}
   if(typeof appIsDemoCompany === 'function' && appIsDemoCompany() && myProfile){
     return { venues: GP_DEMO_VENUES.map(v => Object.assign({}, v)), reward:{ visits:50, text:'Dinner for two on us' } };

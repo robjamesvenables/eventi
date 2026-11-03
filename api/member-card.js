@@ -121,7 +121,9 @@ module.exports = async (req, res) => {
     const parts = String(m.name || '').trim().split(/\s+/);
     const first = parts[0] + (parts[1] ? ' ' + parts[1][0] + '.' : '');
     const tier = m.tier === 'vip' ? 'vip' : 'member';
-    const perksAll = set.member_perks || {};
+    // Same starting perks the app shows until a manager changes them (Membership > Perks, reward and venues)
+    const savedPerks = set.member_perks && (set.member_perks.member || set.member_perks.vip) ? set.member_perks : null;
+    const perksAll = savedPerks || { member: ['Welcome drink on your first visit', 'Birthday dessert on us'], vip: ['10% off food at all our venues', 'Birthday dessert on us', 'Skip the queue on busy nights'] };
     const perks = Array.isArray(perksAll[tier]) ? perksAll[tier].slice(0, 8) : [];
 
     // What's on: Entertainment Schedule (DJ name, area, times - nothing else)

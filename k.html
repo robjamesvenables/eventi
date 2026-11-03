@@ -133,6 +133,10 @@ svg{display:block}
 .gal button{flex:0 0 150px;height:200px;border:0;padding:0;border-radius:14px;overflow:hidden;cursor:pointer;background:#E7EEF2}
 .gal img{width:100%;height:100%;object-fit:cover;display:block}
 .big{width:100%;border-radius:14px;display:block}
+.arw{position:relative}
+.ar{position:absolute;top:50%;transform:translateY(-50%);width:42px;height:42px;border-radius:50%;border:0;background:white;color:#0F1E2E;display:flex;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 2px 8px rgba(15,30,46,.18);z-index:3}
+.ar.l{left:6px}.ar.r{right:6px}.ar:hover{background:#F1F5F9}
+.dots i{cursor:pointer}
 @media(min-width:700px){.top{padding-top:34px}}
 </style></head><body><div id="root"><div class="load">Loading your card…</div></div>
 <script>
@@ -257,13 +261,19 @@ svg{display:block}
     });
     Array.prototype.forEach.call(document.querySelectorAll('[data-big]'), function(b){ b.onclick = function(){ open('Gallery', '<img class="big" src="' + esc(b.getAttribute('data-big')) + '" alt="">'); }; });
     if (!preview) document.addEventListener('click', function(e){ var a = e.target.closest && e.target.closest('[data-hit]'); if (a) try { fetch('/api/gp?a=hit&code=' + encodeURIComponent(d.code) + '&i=' + encodeURIComponent(a.getAttribute('data-hit')), { keepalive: true }); } catch (x) {} });
+    // Computers: left / right arrows on every sideways row (photos, events, gallery, this week)
+    if (window.matchMedia && matchMedia('(hover:hover) and (pointer:fine)').matches) Array.prototype.forEach.call(document.querySelectorAll('.sl,.evs,.gal,.days'), function(row){
+      if (row.scrollWidth <= row.clientWidth + 4) return;
+      var box = document.createElement('div'); box.className = 'arw'; row.parentNode.insertBefore(box, row); box.appendChild(row);
+      var mk = function(dir){ var b = document.createElement('button'); b.className = 'ar ' + (dir < 0 ? 'l' : 'r'); b.setAttribute('aria-label', dir < 0 ? 'Back' : 'More'); b.innerHTML = svg(dir < 0 ? '<path d="m15 18-6-6 6-6"/>' : '<path d="m9 18 6-6-6-6"/>', 20); b.onclick = function(){ row.scrollBy({ left: dir * row.clientWidth * 0.8, behavior: 'smooth' }); }; box.appendChild(b); return b; };
+      var l = mk(-1), r = mk(1), upd = function(){ l.style.display = row.scrollLeft > 4 ? '' : 'none'; r.style.display = row.scrollLeft + row.clientWidth < row.scrollWidth - 4 ? '' : 'none'; };
+      row.addEventListener('scroll', upd, { passive: true }); upd();
+    });
     var sl = document.getElementById('sl'), dots = document.getElementById('dots');
     if (sl && dots) {
-      var idx = 0, n = sl.children.length, held = false, step = function(){ return sl.children[1] ? sl.children[1].offsetLeft - sl.children[0].offsetLeft : sl.clientWidth; };
+      var idx = 0, step = function(){ return sl.children[1] ? sl.children[1].offsetLeft - sl.children[0].offsetLeft : sl.clientWidth; };
       sl.addEventListener('scroll', function(){ var i = Math.round(sl.scrollLeft / step()); if (i !== idx) { idx = i; Array.prototype.forEach.call(dots.children, function(t, k){ t.className = k === idx ? 'on' : ''; }); } }, { passive: true });
-      ['touchstart', 'mouseenter'].forEach(function(ev){ sl.addEventListener(ev, function(){ held = true; }, { passive: true }); });
-      ['touchend', 'mouseleave'].forEach(function(ev){ sl.addEventListener(ev, function(){ setTimeout(function(){ held = false; }, 3000); }, { passive: true }); });
-      setInterval(function(){ if (held || document.hidden) return; sl.scrollTo({ left: ((idx + 1) % n) * step(), behavior: 'smooth' }); }, 4500);
+      Array.prototype.forEach.call(dots.children, function(t, k){ t.onclick = function(){ sl.scrollTo({ left: k * step(), behavior: 'smooth' }); }; });
     }
     var chooser = function(title, list, hrefOf, icon){
       if (list.length === 1) { location.href = hrefOf(list[0]); return; }

@@ -67,7 +67,7 @@ function rsCell(v, shifts){
 async function roster(req, res){
   const t = String((req.query && req.query.t) || '').replace(/[^A-Za-z0-9]/g, '').slice(0, 40);
   if (!t) return L.send(res, 404, { ok: false });
-  const link = (await L.db('roster_links?select=company_id,venue,dept&token=eq.' + encodeURIComponent(t)))[0];
+  const link = (await L.db('roster_links?select=company_id,venue,dept,area&token=eq.' + encodeURIComponent(t)))[0];
   if (!link) return L.send(res, 404, { ok: false, reason: 'gone' });
   const co = link.company_id, q = encodeURIComponent;
   const tz = 'Asia/Makassar';
@@ -92,7 +92,7 @@ async function roster(req, res){
       .sort((a, b) => a.name.localeCompare(b.name));
     return { start: w, days: Array.from({ length: 7 }, (_, i) => rsAdd(w, i)), people, updated: r.updated_at || null }; };
   res.setHeader('Cache-Control', 'no-store');
-  return L.send(res, 200, { ok: true, company: (cos[0] || {}).name || '', dept: link.dept, areas: ((setup.areas || {})[lc(link.dept)] || []).slice(0, 20), today, weeks: [week(w1), week(w2)] });
+  return L.send(res, 200, { ok: true, company: (cos[0] || {}).name || '', dept: link.dept, areas: ((setup.areas || {})[lc(link.dept)] || []).slice(0, 20), area: link.area || '', today, weeks: [week(w1), week(w2)] });
 }
 
 module.exports = async (req, res) => {

@@ -75,7 +75,7 @@ body{font-family:Inter,system-ui,-apple-system,"Segoe UI",sans-serif;background:
   function load(){
     fetch('/api/gp?a=roster&t=' + encodeURIComponent(token), { cache: 'no-store' }).then(function(r){ return r.json(); }).then(function(d){
       if(!d || !d.ok){ document.getElementById('dp').textContent = 'Roster'; document.getElementById('root').innerHTML = '<div class="msg"><b>This link has stopped working</b><p>Ask your manager for the new roster link.</p></div>'; return; }
-      D = d; document.getElementById('co').textContent = d.company || 'Roster'; document.getElementById('dp').textContent = d.dept; document.title = d.dept + ' roster'; document.getElementById('live').style.display = '';
+      D = d; if(d.area){ area = d.area; d.areas = []; } document.getElementById('co').textContent = (d.company || 'Roster') + (d.area ? ' · ' + d.dept : ''); document.getElementById('dp').textContent = d.area || d.dept; document.title = (d.area || d.dept) + ' roster'; document.getElementById('live').style.display = '';
       render();
     }).catch(function(){ if(!D) document.getElementById('root').innerHTML = '<div class="msg"><b>Couldn\'t load the roster</b><p>Check your connection and try again.</p></div>'; });
   }

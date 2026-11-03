@@ -2177,7 +2177,15 @@ body.ev-nomoney .dash-hero .ev-money{display:none!important}
 .rs-wk{display:flex;align-items:center;gap:8px}.rs-wk b{font-size:15.5px;font-weight:900;color:#0F1E2E;min-width:150px;text-align:center}
 .rs-wk button{width:36px;height:36px;border-radius:10px;border:0;background:white;color:#475569;display:flex;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 1px 2px rgba(15,30,46,.06)}
 .rs-wk .rs-tw{width:auto;padding:0 12px;font:800 12.5px Inter,sans-serif;color:#0F766E}
-.rs-areas{display:flex;gap:6px;flex-wrap:wrap}.rs-areas button{border:0;border-radius:20px;padding:8px 13px;font:800 12.5px Inter,sans-serif;background:white;color:#475569;cursor:pointer}.rs-areas button.on{background:#0F1E2E;color:white}
+.rs-tabs{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin:-2px 0 14px;padding:10px;background:white;border-radius:14px;box-shadow:0 1px 2px rgba(15,30,46,.05)}
+.rs-tabs button{display:inline-flex;align-items:center;gap:7px;border:0;border-radius:10px;padding:9px 14px;font:800 13.5px Inter,sans-serif;background:#F1F5F9;color:#334155;cursor:pointer}
+.rs-tabs button.on{background:#0F1E2E;color:white}
+.rs-tabs .rs-ted{display:inline-flex;width:22px;height:22px;border-radius:6px;background:rgba(255,255,255,.16);align-items:center;justify-content:center;margin-right:-6px}
+.rs-tabs .rs-tadd{background:white;border:1.5px dashed #94A3B8;color:#0F766E}
+.rs-empty{background:white;border-radius:14px;padding:18px;text-align:center;margin-bottom:10px}.rs-empty b{display:block;font-size:15px}.rs-empty span{display:block;font-size:13px;color:#64748B;margin-top:3px}
+.rs-more{display:block;width:100%;margin-top:12px;border:1.5px dashed #CBD5E1;background:transparent;border-radius:12px;padding:12px;font:800 13.5px Inter,sans-serif;color:#475569;cursor:pointer}
+.rs-rest{margin-top:10px;opacity:.95}
+@media(max-width:760px){.rs-tabs{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;margin-left:-16px;margin-right:-16px;border-radius:0;padding:10px 16px}.rs-tabs::-webkit-scrollbar{display:none}.rs-tabs button{flex:none}}
 .rs-note{display:flex;gap:9px;align-items:center;background:#FFFBEB;color:#92400E;border-radius:12px;padding:10px 14px;font-size:13px;font-weight:600;margin-bottom:12px}
 .rs-tw-wrap{background:white;border-radius:16px;overflow:hidden;box-shadow:0 1px 3px rgba(15,30,46,.06)}
 .rs-tbl{width:100%;border-collapse:collapse;table-layout:fixed}
@@ -2197,6 +2205,7 @@ body.ev-nomoney .dash-hero .ev-money{display:none!important}
 .rs-cn{display:flex;justify-content:space-between;align-items:baseline;gap:8px;margin-bottom:8px}.rs-cn b{font-size:14.5px}.rs-cn span{font-size:11.5px;color:#64748B;font-weight:700;white-space:nowrap}
 .rs-days{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px}
 .rs-dc i{display:block;font-style:normal;font-size:9.5px;font-weight:900;letter-spacing:.3px;color:#94A3B8;text-align:center;margin-bottom:3px}
+.rs-dc .rs-b small.rs-ar{white-space:normal;font-size:8.5px;line-height:1.1;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;text-overflow:clip}
 .rs-dc .rs-b{padding:6px 1px;min-height:44px;text-align:center;display:flex;flex-direction:column;justify-content:center}.rs-dc .rs-b b{font-size:11.5px;overflow:hidden;text-overflow:clip}.rs-dc .rs-b small{font-size:9px}
 .rs-dc.rs-today i{color:#0D9488}.rs-dc.rs-today .rs-b{box-shadow:0 0 0 2px #fff,0 0 0 4px #0D9488}
 .rs-key{display:flex;gap:6px;flex-wrap:wrap;margin-top:14px}.rs-key span{border-radius:8px;padding:6px 10px;font-size:12px;font-weight:800}
@@ -22491,8 +22500,9 @@ function rsCell(v){
 function rsBox(v, cls, small){
   const c = rsCell(v), col = RS_COLS[c ? c.k : 'none'] || RS_COLS.slate;
   const dim = RS.area && (!c || c.area !== RS.area) ? ' rs-dim' : '';
-  const inner = !c ? '<b style="font-weight:600">–</b>' : small ? `<b>${rsEsc(c.short || c.label)}</b>${c.area ? `<small class="rs-ar">${rsEsc(c.area)}</small>` : ''}`
-    : `<b>${rsEsc(c.label)}</b>${c.time ? `<small>${rsEsc(c.time)}</small>` : ''}${c.area ? `<small class="rs-ar">${rsEsc(c.area)}</small>` : ''}`;
+  const ar = c && c.area && c.area !== RS.area ? `<small class="rs-ar">${rsEsc(c.area)}</small>` : '';   // in an area's tab its own name is obvious
+  const inner = !c ? '<b style="font-weight:600">–</b>' : small ? `<b>${rsEsc(c.short || c.label)}</b>${ar}`
+    : `<b>${rsEsc(c.label)}</b>${c.time ? `<small>${rsEsc(c.time)}</small>` : ''}${ar}`;
   return `<div class="rs-b${cls ? ' ' + cls : ''}${dim}" style="background:${col[0]};color:${col[1]}">${inner}</div>`;
 }
 const rsH = t => { const m = /^(\d{1,2}):(\d{2})/.exec(t || ''); if(!m) return ''; const h = (+m[1]) % 12 || 12; return h + (m[2] !== '00' ? ':' + m[2] : ''); };   // 16:00 -> 4 (short, for phones)
@@ -22534,26 +22544,36 @@ function rsRender(){
   const v = (VENUES || []).find(x => x.id === currentVenue);
   const sub = document.getElementById('rs-sub'); if(sub) sub.textContent = [v && VENUES.length > 1 && !/^Venue [A-Z]$/.test(v.name) ? v.name : '', dept].filter(Boolean).join(' · ');
   const hb = document.getElementById('rs-hbtns');
-  if(hb) hb.innerHTML = (can ? `<button class="btn btn-ghost" onclick="rsCopyLast()">${rsIc(RSI.copy, 15)} Copy last week</button><button class="btn btn-ghost" onclick="rsSetupOpen()">${rsIc(RSI.gear, 15)} Shifts &amp; areas</button>` : '') + `<button class="btn btn-navy" onclick="rsShare()">${rsIc(RSI.share, 15)} Share</button>`;
+  if(hb) hb.innerHTML = (can ? `<button class="btn btn-ghost" onclick="rsCopyLast()">${rsIc(RSI.copy, 15)} Copy last week</button><button class="btn btn-ghost" onclick="rsSetupOpen()">${rsIc(RSI.gear, 15)} Shifts</button>` : '') + `<button class="btn btn-navy" onclick="rsShare()">${rsIc(RSI.share, 15)} Share</button>`;
   const d0 = new Date(days[0] + 'T12:00:00'), d6 = new Date(days[6] + 'T12:00:00');
   const wkLabel = `${RS_DOW[0]} ${d0.getDate()}${d0.getMonth() !== d6.getMonth() ? ' ' + RS_MON[d0.getMonth()] : ''} – ${RS_DOW[6]} ${d6.getDate()} ${RS_MON[d6.getMonth()]}`;
-  const ppl = rsPeople(dept), areas = rsAreas(dept), isThis = RS.week === rsMonday(today);
+  let ppl = rsPeople(dept); const areas = rsAreas(dept), isThis = RS.week === rsMonday(today);
   let h = `<div class="rs-depts">${rsDepts().map(d => `<button class="${d === dept ? 'on' : ''}" onclick='rsGo("dept", ${rsEsc(JSON.stringify(d))})'>${deptIconHtml(d, 24)}<span>${rsEsc(d)}</span></button>`).join('')}</div>
     <div class="rs-bar"><div class="rs-wk"><button aria-label="Last week" onclick="rsGo('week',-1)">${rsIc(RSI.l, 18)}</button><b>${wkLabel}</b><button aria-label="Next week" onclick="rsGo('week',1)">${rsIc(RSI.r, 18)}</button>${isThis ? '' : `<button class="rs-tw" onclick="rsGo('week',0)">This week</button>`}</div>
-      ${areas.length ? `<div class="rs-areas"><button class="${!RS.area ? 'on' : ''}" onclick="rsGo('area','')">All areas</button>${areas.map(a => `<button class="${RS.area === a ? 'on' : ''}" onclick='rsGo("area", ${rsEsc(JSON.stringify(a))})'>${rsEsc(a)}</button>`).join('')}</div>` : ''}</div>`;
+    </div>`;
+  if(areas.length || can) h += `<div class="rs-tabs">${areas.length ? `<button class="${!RS.area ? 'on' : ''}" onclick="rsGo('area','')">All</button>` : ''}${areas.map(a => `<button class="${RS.area === a ? 'on' : ''}" onclick='rsGo("area", ${rsEsc(JSON.stringify(a))})'>${rsEsc(a)}${RS.area === a && can ? `<span class="rs-ted" role="button" aria-label="Rename or remove" onclick='event.stopPropagation(); rsAreaEdit(${rsEsc(JSON.stringify(a))})'>${rsIc('<path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/>', 13)}</span>` : ''}</button>`).join('')}${can ? `<button class="rs-tadd" onclick="rsAreaEdit()">+ ${areas.length ? 'Add' : 'Split ' + rsEsc(dept) + ' into areas, e.g. Beach Club, Cave Club'}</button>` : ''}</div>`;
   if(RS.notReady && !appIsDemoCompany()) h += `<div class="rs-note">${rsIc(RSI.gear, 15)}<span>The roster needs a one-time setup before it can save. Ask Mavis to switch it on.</span></div>`;
   else if(RS.demoFill) h += `<div class="rs-note">${rsIc(RSI.pic, 15)}<span>Demo: a sample week. Tap any box to change it.</span></div>`;
   if(RS.loading && !Object.keys(RS.cells).length) h += '<div class="vac-empty">Loading…</div>';
   else if(!ppl.length) h += `<div class="vac-empty"><b>Nobody in ${rsEsc(dept)} yet</b><span>Add people to this department in Team, and they appear here.</span></div>`;
   else {
+    let rest = [];
+    if(RS.area){ const inA = p => days.some(d => { const c = rsCell((RS.cells[p.id] || {})[d]); return c && c.area === RS.area; });
+      rest = ppl.filter(p => !inA(p)); ppl = ppl.filter(inA); }
     const hours = p => days.reduce((t, d) => { const c = rsCell((RS.cells[p.id] || {})[d]); return t + (c ? c.mins : 0); }, 0);
     const tap = (p, d) => can ? ` role="button" tabindex="0" onclick="rsPick('${p.id}','${d}')"` : '';
     const role = p => ({ superadmin:'Manager', director:'Director', manager:'Manager', supervisor:'Supervisor' }[p.role] || '');
-    h += `<div class="rs-tw-wrap"><table class="rs-tbl"><thead><tr><th class="rs-p">Team</th>${days.map((d, i) => `<th class="${d === today ? 'rs-today' : ''}">${RS_DOW[i].toUpperCase()}<b>${new Date(d + 'T12:00:00').getDate()}</b></th>`).join('')}<th class="rs-h">Hours</th></tr></thead><tbody>
-      ${ppl.map(p => `<tr><td class="rs-p"><b>${rsEsc(p.firstName)} ${rsEsc((p.lastName || '').slice(0, 1))}${p.lastName ? '.' : ''}</b><small>${rsEsc(role(p))}</small></td>${days.map(d => `<td class="${d === today ? 'rs-today' : ''}"${tap(p, d)}>${rsBox((RS.cells[p.id] || {})[d], can ? 'rs-tap' : '')}</td>`).join('')}<td class="rs-h">${rsHours(hours(p))}</td></tr>`).join('')}
+    const rowsOf = list => list.map(p => `<tr><td class="rs-p"><b>${rsEsc(p.firstName)} ${rsEsc((p.lastName || '').slice(0, 1))}${p.lastName ? '.' : ''}</b><small>${rsEsc(role(p))}</small></td>${days.map(d => `<td class="${d === today ? 'rs-today' : ''}"${tap(p, d)}>${rsBox((RS.cells[p.id] || {})[d], can ? 'rs-tap' : '')}</td>`).join('')}<td class="rs-h">${rsHours(hours(p))}</td></tr>`).join('');
+    const cardsOf = list => list.map(p => `<div class="rs-card"><div class="rs-cn"><b>${rsEsc(p.firstName)} ${rsEsc(p.lastName || '')}</b><span>${rsEsc(role(p))}${role(p) ? ' · ' : ''}${rsHours(hours(p))}</span></div>
+      <div class="rs-days">${days.map((d, i) => `<div class="rs-dc${d === today ? ' rs-today' : ''}"${tap(p, d)}><i>${RS_DOW[i]}</i>${rsBox((RS.cells[p.id] || {})[d], can ? 'rs-tap' : '', true)}</div>`).join('')}</div></div>`).join('');
+    if(RS.area && !ppl.length) h += `<div class="rs-empty"><b>Nobody in ${rsEsc(RS.area)} this week yet</b><span>${can ? 'Tap a box below and pick ' + rsEsc(RS.area) + ' as the place.' : 'Check back soon.'}</span></div>`;
+    if(ppl.length) h += `<div class="rs-tw-wrap"><table class="rs-tbl"><thead><tr><th class="rs-p">Team</th>${days.map((d, i) => `<th class="${d === today ? 'rs-today' : ''}">${RS_DOW[i].toUpperCase()}<b>${new Date(d + 'T12:00:00').getDate()}</b></th>`).join('')}<th class="rs-h">Hours</th></tr></thead><tbody>
+      ${rowsOf(ppl)}
     </tbody></table></div>
-    <div class="rs-cards">${ppl.map(p => `<div class="rs-card"><div class="rs-cn"><b>${rsEsc(p.firstName)} ${rsEsc(p.lastName || '')}</b><span>${rsEsc(role(p))}${role(p) ? ' · ' : ''}${rsHours(hours(p))}</span></div>
-      <div class="rs-days">${days.map((d, i) => `<div class="rs-dc${d === today ? ' rs-today' : ''}"${tap(p, d)}><i>${RS_DOW[i]}</i>${rsBox((RS.cells[p.id] || {})[d], can ? 'rs-tap' : '', true)}</div>`).join('')}</div></div>`).join('')}</div>`;
+    <div class="rs-cards">${cardsOf(ppl)}</div>`;
+    if(rest.length && can){ const open = RS.restOpen;
+      h += `<button class="rs-more" onclick="RS.restOpen = !RS.restOpen; rsRender()">${open ? 'Hide' : 'Show'} the rest of ${rsEsc(dept)} (${rest.length}) - to put them in ${rsEsc(RS.area)}</button>`;
+      if(open) h += `<div class="rs-rest"><div class="rs-tw-wrap"><table class="rs-tbl"><tbody>${rowsOf(rest)}</tbody></table></div><div class="rs-cards">${cardsOf(rest)}</div></div>`; }
     const st = rsSetup();
     h += `<div class="rs-key">${st.shifts.map(s => `<span style="background:${(RS_COLS[s.c] || RS_COLS.teal)[0]};color:${(RS_COLS[s.c] || RS_COLS.teal)[1]}">${rsEsc(s.name)} ${rsHm(s.a)}–${rsHm(s.b)}${s.a2 ? ' · ' + rsHm(s.a2) + '–' + rsHm(s.b2) : ''}</span>`).join('')}${[['off','Off'],['hol','Holiday'],['sick','Sick']].map(([k, l]) => `<span style="background:${RS_COLS[k][0]};color:${RS_COLS[k][1]}">${l}</span>`).join('')}</div>`;
     if(!can) h += `<div class="rs-ro">Only managers can change this roster.</div>`;
@@ -22567,7 +22587,7 @@ window.rsPick = function(pid, day){
   ebEnsureUi(); document.querySelectorAll('.eb-sheet').forEach(x => x.remove());
   const p = rsPeople(RS.dept).find(x => String(x.id) === String(pid)); if(!p) return;
   const st = rsSetup(), areas = rsAreas(RS.dept), cur = (RS.cells[pid] || {})[day] || '';
-  let [code, area] = cur.split('@'); area = area || '';
+  let [code, area] = cur.split('@'); area = area || (cur ? '' : RS.area || '');
   const d = new Date(day + 'T12:00:00');
   const opt = (c, label, sub, k) => { const col = RS_COLS[k] || RS_COLS.teal; return `<button type="button" class="rs-o${code === c ? ' on' : ''}" data-c="${c}" style="background:${col[0]};color:${col[1]}"><b>${rsEsc(label)}</b>${sub ? `<small>${rsEsc(sub)}</small>` : ''}</button>`; };
   const tm = code.startsWith('t:') ? code.slice(2).split('-') : ['', ''];
@@ -22647,14 +22667,53 @@ window.rsCopyLast = async function(){
   if(has) appConfirmShow({ title:'Copy last week?', msg:'This week\'s ' + RS.dept + ' roster will be replaced with last week\'s.', label:'Copy', onOk: go }); else go();
 };
 
-// Shifts (for every department) and areas (for this department)
+// Areas (a split inside a department, e.g. Beach Club, Cave Club): add, rename, remove - right from the roster
+async function rsSaveSetup(cur){
+  const value = JSON.stringify(cur);
+  const { error } = await sb.from('app_settings').upsert({ key:'roster_setup', value }, { onConflict:'company_id,key' });
+  if(error){ toast('Not saved - please try again'); return false; }
+  appSettings.roster_setup = value; return true;
+}
+window.rsAreaEdit = function(old){
+  if(!rsCanEdit(RS.dept)) return;
+  ebEnsureUi(); document.querySelectorAll('.eb-sheet').forEach(x => x.remove());
+  const dept = RS.dept, s = document.createElement('div'); s.className = 'eb-sheet';
+  s.innerHTML = `<div class="eb-form"><h3>${old ? 'Change ' + rsEsc(old) : 'Add an area to ' + rsEsc(dept)}</h3><p class="sub">${old ? 'Rename it, or remove it from ' + rsEsc(dept) : 'A part of ' + rsEsc(dept) + ' with its own roster tab - e.g. Beach Club, Cave Club, Beer Garden. Staff can work in different areas on different days.'}</p>
+    <label>Name</label><input id="rsa-n" maxlength="30" value="${rsEsc(old || '')}" placeholder="e.g. Cave Club">
+    <div class="eb-fbtns">${old ? '<button class="eb-no" id="rsa-del" style="margin-right:auto;color:#DC2626">Remove</button>' : ''}<button class="eb-no" id="rsa-no">Cancel</button><button class="eb-go" id="rsa-go">${old ? 'Save' : 'Add'}</button></div></div>`;
+  s.addEventListener('mousedown', e => { if(e.target === s) s.remove(); });
+  document.body.appendChild(s);
+  const $ = id => s.querySelector('#' + id);
+  setTimeout(() => $('rsa-n').focus(), 60);
+  $('rsa-no').onclick = () => s.remove();
+  $('rsa-n').onkeydown = e => { if(e.key === 'Enter') $('rsa-go').click(); };
+  $('rsa-go').onclick = async () => {
+    const nm = $('rsa-n').value.replace(/\s+/g, ' ').trim().replace(/@/g, '');
+    if(!nm){ toast('Type a name'); return; }
+    const cur = rsSetup(), list = (cur.areas[deptKey(dept)] || []).slice();
+    if(list.some(a => a.toLowerCase() === nm.toLowerCase() && a !== old)){ toast(nm + ' is already there'); return; }
+    if(old){ const i = list.indexOf(old); if(i > -1) list[i] = nm; } else { if(list.length >= 20){ toast('Up to 20 areas'); return; } list.push(nm); }
+    cur.areas[deptKey(dept)] = list;
+    if(!(await rsSaveSetup(cur))) return;
+    if(old && nm !== old){   // boxes already set to the old name follow the new one
+      Object.keys(RS.cells).forEach(pid => Object.entries(RS.cells[pid]).forEach(([d, v]) => { const [c, a] = String(v).split('@'); if(a === old) rsSet(pid, d, c + '@' + nm); }));
+    }
+    if(RS.demoFill) RS.cells = rsDemoCells(dept, RS.week);   // demo: spread the sample week across the areas
+    RS.area = nm; s.remove(); rsRender(); toast(old ? 'Saved' : nm + ' added');
+  };
+  if($('rsa-del')) $('rsa-del').onclick = () => { s.remove(); appConfirmShow({ title:'Remove ' + old + '?', msg:'The tab goes. Shifts already given stay on the roster, without a place.', label:'Remove', onOk: async () => {
+    const cur = rsSetup(); cur.areas[deptKey(dept)] = (cur.areas[deptKey(dept)] || []).filter(a => a !== old); if(!cur.areas[deptKey(dept)].length) delete cur.areas[deptKey(dept)];
+    if(!(await rsSaveSetup(cur))) return; RS.area = ''; rsRender(); toast(old + ' removed'); } }); };
+};
+
+// Shifts (for every department)
 window.rsSetupOpen = function(){
   ebEnsureUi(); document.querySelectorAll('.eb-sheet').forEach(x => x.remove());
   const st = rsSetup(), dept = RS.dept;
   let shifts = st.shifts.map(x => Object.assign({}, x)), areas = rsAreas(dept);
   const s = document.createElement('div'); s.className = 'eb-sheet';
   const draw = () => {
-    s.innerHTML = `<div class="eb-form"><h3>Shifts &amp; areas</h3><p class="sub">Shifts are for every department. Areas are just for ${rsEsc(dept)}.</p>
+    s.innerHTML = `<div class="eb-form"><h3>Shifts</h3><p class="sub">Your usual shifts - one tap on the roster. They're the same for every department.</p>
       <div class="gp-sub" style="margin-top:6px">Shifts</div>
       ${shifts.map((x, i) => `<div class="rs-se" data-i="${i}">
         <div class="rs-se-top"><input class="rs-sn" maxlength="20" value="${rsEsc(x.name)}" placeholder="Name, e.g. Morning"><button type="button" class="ms-vx" aria-label="Remove shift" data-del="${i}">${rsIc(RSI.x, 16)}</button></div>
@@ -22663,9 +22722,6 @@ window.rsSetupOpen = function(){
         <div class="rs-cols">${RS_SHIFT_COLS.map(c => `<button type="button" aria-label="${c}" data-col="${c}" style="background:${RS_COLS[c][0]};box-shadow:${x.c === c ? '0 0 0 2px #fff,0 0 0 4px #0F1E2E' : 'none'}">${x.c === c ? '<i style="background:#fff"></i>' : ''}</button>`).join('')}</div>
       </div>`).join('')}
       ${shifts.length < 12 ? '<button type="button" class="gp-add" id="rss-add">+ Add a shift</button>' : ''}
-      <div class="gp-sub">Areas in ${rsEsc(dept)} <small>Optional - e.g. Beer Garden, Main Stage, Restaurant. Staff can move between them day to day.</small></div>
-      <div id="rss-areas">${areas.map((a, i) => `<div class="rs-ae"><input maxlength="30" value="${rsEsc(a)}" data-ai="${i}" placeholder="Area name"><button type="button" class="ms-vx" aria-label="Remove area" data-adel="${i}">${rsIc(RSI.x, 16)}</button></div>`).join('')}</div>
-      ${areas.length < 20 ? '<button type="button" class="gp-add" id="rss-aadd">+ Add an area</button>' : ''}
       <div class="eb-fbtns"><button class="eb-no" id="rss-no">Cancel</button><button class="eb-go" id="rss-go">Save</button></div></div>`;
     const read = () => { s.querySelectorAll('.rs-se').forEach(r => { const x = shifts[+r.dataset.i]; x.name = r.querySelector('.rs-sn').value.trim(); x.a = r.querySelector('.rs-a').value; x.b = r.querySelector('.rs-b').value; if(r.querySelector('.rs-a2')){ x.a2 = r.querySelector('.rs-a2').value; x.b2 = r.querySelector('.rs-b2').value; } });
       areas = [...s.querySelectorAll('[data-ai]')].map(i => i.value.trim()); };
@@ -22683,12 +22739,8 @@ window.rsSetupOpen = function(){
       if(bad){ toast(bad.name ? 'Add the times for ' + bad.name : 'Every shift needs a name and times'); return; }
       if(!shifts.length){ toast('Keep at least one shift'); return; }
       const names = shifts.map(x => x.name.toLowerCase()); if(new Set(names).size !== names.length){ toast('Two shifts have the same name'); return; }
-      areas = [...new Set(areas.filter(Boolean))];
-      const cur = rsSetup(); cur.shifts = shifts; cur.areas = Object.assign({}, cur.areas, { [deptKey(dept)]: areas }); if(!areas.length) delete cur.areas[deptKey(dept)];
-      const value = JSON.stringify(cur);
-      const { error } = await sb.from('app_settings').upsert({ key:'roster_setup', value }, { onConflict:'company_id,key' });
-      if(error){ toast('Not saved - please try again'); return; }
-      appSettings.roster_setup = value; if(RS.area && !areas.includes(RS.area)) RS.area = '';
+      const cur = rsSetup(); cur.shifts = shifts;
+      if(!(await rsSaveSetup(cur))) return;
       s.remove(); rsRender(); toast('Saved');
     };
   };
@@ -22698,12 +22750,12 @@ window.rsSetupOpen = function(){
 
 // Share: a live link (no login, always the latest), WhatsApp, Mavis Chat, or a picture
 async function rsLink(fresh){
-  const q = () => sb.from('roster_links').select('token').eq('venue', currentVenue || 'a').eq('dept', RS.dept).limit(1);
+  const q = () => sb.from('roster_links').select('token').eq('venue', currentVenue || 'a').eq('dept', RS.dept).eq('area', RS.area || '').limit(1);
   if(!fresh){ const { data, error } = await q(); if(error) throw error; if(data && data[0]) return data[0].token; }
-  else { const { error } = await sb.from('roster_links').delete().eq('venue', currentVenue || 'a').eq('dept', RS.dept); if(error) throw error; }
+  else { const { error } = await sb.from('roster_links').delete().eq('venue', currentVenue || 'a').eq('dept', RS.dept).eq('area', RS.area || ''); if(error) throw error; }
   const A = 'abcdefghijkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789', r = crypto.getRandomValues(new Uint8Array(12));
   const token = [...r].map(x => A[x % A.length]).join('');
-  const { error } = await sb.from('roster_links').insert({ token, venue: currentVenue || 'a', dept: RS.dept, created_by: myProfile ? myProfile.id : null });
+  const { error } = await sb.from('roster_links').insert({ token, venue: currentVenue || 'a', dept: RS.dept, area: RS.area || '', created_by: myProfile ? myProfile.id : null });
   if(error) throw error;
   return token;
 }
@@ -22712,7 +22764,7 @@ window.rsShare = async function(){
   ebEnsureUi(); document.querySelectorAll('.eb-sheet').forEach(x => x.remove());
   const can = rsCanEdit(RS.dept);
   const s = document.createElement('div'); s.className = 'eb-sheet';
-  s.innerHTML = `<div class="eb-form"><h3>Share the roster</h3><p class="sub">${rsEsc(RS.dept)} · this week and next</p>
+  s.innerHTML = `<div class="eb-form"><h3>Share the roster</h3><p class="sub">${rsEsc(RS.area ? RS.dept + ' · ' + RS.area : RS.dept)} · this week and next${RS.area ? '' : ''}</p>
     <div class="rs-link"><b>Live link</b><small>Anyone with the link can see it - no login. It always shows the latest, so when you change a shift, it updates.</small><div class="rs-lu"><span id="rsl-u">Getting the link…</span><button type="button" id="rsl-copy" disabled>Copy</button></div></div>
     <button type="button" class="rs-sh" id="rsl-wa"><i style="background:#DCFCE7;color:#16A34A">${rsIc(RSI.wa, 18)}</i><span><b>Send on WhatsApp</b><small>The link, ready for the team group</small></span></button>
     <button type="button" class="rs-sh" id="rsl-chat"><i style="background:#E0F5F2;color:#0D9488">${rsIc(RSI.chat, 18)}</i><span><b>Send in Mavis Chat</b><small>To the ${rsEsc(RS.dept)} group or anyone</small></span></button>
@@ -22725,7 +22777,7 @@ window.rsShare = async function(){
   $('rsl-no').onclick = () => s.remove();
   $('rsl-pic').onclick = () => rsPicture();
   let url = '';
-  const msg = () => RS.dept + ' roster' + ((myCompany && myCompany.name) ? ' - ' + myCompany.name : '') + ' (always up to date):\n' + url;
+  const msg = () => (RS.area || RS.dept) + ' roster' + ((myCompany && myCompany.name) ? ' - ' + myCompany.name : '') + ' (always up to date):\n' + url;
   const set = t => { url = location.origin + '/r/' + t; $('rsl-u').textContent = url.replace(/^https?:\/\//, ''); $('rsl-copy').disabled = false; };
   const need = () => { if(!url){ toast(RS.notReady ? 'The roster needs a one-time setup first' : 'Getting the link - one moment'); return false; } return true; };
   $('rsl-copy').onclick = async () => { if(!need()) return; try{ await navigator.clipboard.writeText(url); toast('Link copied'); }catch(e){ prompt('Copy the link:', url); } };
@@ -22735,7 +22787,7 @@ window.rsShare = async function(){
   try{
     let t = null;
     if(can) t = await rsLink(false);
-    else { const { data, error } = await sb.from('roster_links').select('token').eq('venue', currentVenue || 'a').eq('dept', RS.dept).limit(1); if(error) throw error; t = data && data[0] && data[0].token; }
+    else { const { data, error } = await sb.from('roster_links').select('token').eq('venue', currentVenue || 'a').eq('dept', RS.dept).eq('area', RS.area || '').limit(1); if(error) throw error; t = data && data[0] && data[0].token; }
     if(t) set(t); else $('rsl-u').textContent = 'Ask a manager to share it first';
   }catch(e){ console.warn(e); $('rsl-u').textContent = RS.notReady ? 'Needs the one-time setup' : 'Could not get the link'; }
 };

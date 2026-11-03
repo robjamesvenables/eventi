@@ -21738,8 +21738,8 @@ function gpRender(){
       ${code ? `<button class="gp-tb t2" onclick="window.open('/k/${encodeURIComponent(code)}?guest=1','_blank')">${gpIc(GPI.eye)}<span>See it as a guest</span></button>` : ''}</div>
     ${GPE.missing ? `<div style="max-width:1160px;margin:16px auto 0;padding:0 20px"><div class="gp-auto" style="background:#FFF7ED;color:#9A3412">The guest page needs a one-time setup before changes can be saved. Ask Mavis support.</div></div>` : ''}
     <div class="gp-wrap"><div class="gp-col">
-      <div class="gp-sec${c.off.slides ? ' off' : ''}"><div class="gp-sh"><div class="n"><b>Photo slides</b><small>Big photos at the top - each one is for a place, guests swipe through them</small></div>${tog('slides')}</div>
-        ${c.off.slides ? '' : `<div class="gp-body">${c.slides.map((it, j) => gpItemHtml('slides', it, j)).join('')}${c.slides.length < 12 ? `<button class="gp-add" onclick="gpForm('slides')">+ Add a photo slide</button>` : ''}</div>`}</div>
+      <div class="gp-sec${c.off.slides ? ' off' : ''}"><div class="gp-sh"><div class="n"><b>Highlights</b><small>Big photos at the top of a place's page - offers, new menu, big nights. Guests swipe through them</small></div>${tog('slides')}</div>
+        ${c.off.slides ? '' : `<div class="gp-body">${c.slides.map((it, j) => gpItemHtml('slides', it, j)).join('')}${c.slides.length < 12 ? `<button class="gp-add" onclick="gpForm('slides')">+ Add a highlight</button>` : ''}</div>`}</div>
       ${gpColoursHtml()}
       <div class="gp-sec"><div class="gp-sh"><div class="n"><b>Member card</b><small>Their name, visits, perks and reward - always shown</small></div></div>
         <div class="gp-body"><div class="gp-auto">${mgr ? '<button onclick="msTiers()">Change perks, reward and venues</button>' : 'A manager sets the perks and reward.'}</div></div></div>
@@ -21846,7 +21846,7 @@ window.gpForm = function(k, i){
   const edit = i != null, it = edit ? Object.assign({}, GPE.c[k][i]) : { id: gpId() };
   const venues = (msPage().venues || []).map(v => v.name).filter(Boolean);
   let file = null, btn = it.btn || '';
-  const title = { slides:'photo slide', deals:'daily deal', events:'event' }[k];
+  const title = { slides:'highlight', deals:'daily deal', events:'event' }[k];
   const venueSel = `<label>Place</label><select id="gpf-venue"><option value="">All places</option>${venues.map(v => `<option${v === it.venue ? ' selected' : ''}>${gpEsc(v)}</option>`).join('')}</select>`;
   let f = `<label>Photo${k === 'slides' ? '' : ' (optional)'}</label><div class="gp-ph${gpSrc(it) ? ' has' : ''}" id="gpf-ph" role="button" tabindex="0">${gpSrc(it) ? `<img src="${gpEsc(gpSrc(it))}" alt=""><span>Change photo</span>` : `${gpIc(GPI.cam, 22)}&nbsp; Choose a photo`}</div>`;
   if(k === 'slides') f += `<label>Big words (optional)</label><input id="gpf-title" maxlength="60" value="${gpEsc(it.title || '')}" placeholder="e.g. 2 for 1 cocktails"><label>Small line (optional)</label><input id="gpf-line" maxlength="90" value="${gpEsc(it.line || '')}" placeholder="e.g. Every day 5–7pm">${venueSel}<div class="gp-hint">On the first page it says "at" the place, with a See more button that opens that place.</div>`;
@@ -21914,7 +21914,7 @@ window.gpNumbers = async function(){
   const cnt = {}; let opens = 0, taps = 0;
   (data || []).forEach(r => { if(r.kind === 'open'){ opens++; return; } const c = cnt[r.item] || (cnt[r.item] = { view:0, tap:0 }); c[r.kind] = (c[r.kind] || 0) + 1; if(r.kind === 'tap') taps++; });
   const items = [];
-  ['events','slides','deals'].forEach(k => (GPE.c ? GPE.c[k] : []).forEach(it => items.push({ name: it.title || 'Photo slide', kind: { events:'Coming up', slides:'Photo slide', deals:'Daily deal' }[k], view: (cnt[it.id] || {}).view || 0, tap: (cnt[it.id] || {}).tap || 0 })));
+  ['events','slides','deals'].forEach(k => (GPE.c ? GPE.c[k] : []).forEach(it => items.push({ name: it.title || 'Highlight', kind: { events:'Coming up', slides:'Highlight', deals:'Daily deal' }[k], view: (cnt[it.id] || {}).view || 0, tap: (cnt[it.id] || {}).tap || 0 })));
   items.sort((a, b) => b.tap - a.tap || b.view - a.view);
   const top = Math.max(1, ...items.map(x => x.tap));
   body.style.cssText = '';

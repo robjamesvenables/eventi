@@ -128,9 +128,25 @@ svg{display:block}
 .ev .go{margin-top:auto;padding-top:12px}
 .ev .go a{display:flex;align-items:center;justify-content:center;gap:8px;background:var(--top,#0F1E2E);color:var(--top-ink,#fff);text-decoration:none;border-radius:12px;padding:12px;font-size:14px;font-weight:800}
 .ev .go a.wa{background:#16A34A}
-.gal{display:flex;gap:8px;overflow-x:auto;scrollbar-width:none;margin:0 -16px;padding:0 16px 4px}
+.gal{display:grid;grid-template-columns:repeat(3,1fr);gap:3px;border-radius:16px;overflow:hidden}
 .gal::-webkit-scrollbar{display:none}
-.gal button{flex:0 0 150px;height:200px;border:0;padding:0;border-radius:14px;overflow:hidden;cursor:pointer;background:#E7EEF2}
+.gal button{aspect-ratio:1/1;border:0;padding:0;overflow:hidden;cursor:pointer;background:#E7EEF2;display:block;width:100%}
+.gal button.hid{display:none}.gal.all button.hid{display:block}
+.gmore{display:block;width:100%;margin-top:10px;background:white;border:0;border-radius:14px;padding:13px;font:800 14px Inter,sans-serif;color:var(--top,#0F1E2E);cursor:pointer;box-shadow:0 1px 3px rgba(15,30,46,.07)}
+.lb{position:fixed;inset:0;background:#0B1520;z-index:30;display:none;flex-direction:column}
+.lb.on{display:flex}
+.lbx{position:absolute;top:calc(12px + env(safe-area-inset-top,0px));right:12px;width:42px;height:42px;border-radius:50%;border:0;background:rgba(255,255,255,.14);color:white;display:flex;align-items:center;justify-content:center;cursor:pointer;z-index:2}
+.lbn{position:absolute;top:calc(22px + env(safe-area-inset-top,0px));left:18px;color:#CBD5E1;font-size:13px;font-weight:700;z-index:2}
+.lbr{flex:1;display:flex;overflow-x:auto;scroll-snap-type:x mandatory;scrollbar-width:none;overscroll-behavior:contain}
+.lbr::-webkit-scrollbar{display:none}
+.lbs{flex:0 0 100%;scroll-snap-align:start;display:flex;flex-direction:column;justify-content:center;min-width:0}
+.lbs img{width:100%;max-height:calc(100vh - 190px);object-fit:contain;display:block}
+.lbf{padding:14px 18px calc(18px + env(safe-area-inset-bottom,0px));display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:76px;box-sizing:border-box}
+.lbf b{color:white;font-size:16px;font-weight:800;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.lbf button span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.lbf button{flex:0 1 auto;max-width:100%;min-width:0;margin:0 auto;padding:13px 18px;font-size:15px !important;display:flex;align-items:center;gap:6px;background:white;color:#0F1E2E;border:0;border-radius:12px;padding:11px 14px;font:800 14px Inter,sans-serif;cursor:pointer}
+.lba{position:absolute;top:50%;transform:translateY(-50%);width:46px;height:46px;border-radius:50%;border:0;background:rgba(255,255,255,.14);color:white;display:none;align-items:center;justify-content:center;cursor:pointer;z-index:2}
+.lba.l{left:16px}.lba.r{right:16px}
+@media (hover:hover) and (pointer:fine){.lba{display:flex}}
 .gal img{width:100%;height:100%;object-fit:cover;display:block}
 .big{width:100%;border-radius:14px;display:block}
 .pgrid{display:grid;grid-template-columns:1fr;gap:10px}
@@ -283,7 +299,7 @@ svg{display:block}
       if (ev.length) S.events = '<div class="sec"><div class="lab">COMING UP</div><div class="evs">' + ev.map(function(x){
         return '<div class="ev">' + pic(x.img, x.title) + '<div class="x"><div class="wh">' + esc(x.when).toUpperCase() + '</div><b>' + esc(x.title) + '</b>' + (x.line ? '<small>' + esc(x.line) + '</small>' : '') + (x.btn ? '<div class="go">' + btnHtml(x.btn, x.id) + '</div>' : '') + '</div></div>';
       }).join('') + '</div></div>';
-      if (gl.length) S.gallery = '<div class="sec"><div class="lab">GALLERY</div><div class="gal">' + gl.map(function(x){ return '<button data-big="' + esc(x.img) + '" aria-label="Open photo"><img src="' + esc(x.img) + '" alt="" loading="lazy"></button>'; }).join('') + '</div></div>';
+      if (gl.length) S.gallery = galHtml(gl, key);
       if (!key && d.venues && d.venues.length) S.venues = '<div class="sec"><div class="lab">FIND US</div><div class="box">' + d.venues.map(function(v, i){
         var st = v.open === true ? '<span class="open">Open now</span> · ' + esc(v.label) : v.open === false ? '<span class="closed">' + esc(v.label) + '</span>' : esc(v.label || '');
         return '<div class="ven"><div class="ic" style="background:' + VC[i % VC.length] + '">' + esc(v.name.charAt(0).toUpperCase()) + '</div><div class="n"><b translate="no">' + esc(v.name) + '</b>' + (st ? '<small>' + st + '</small>' : '') + '</div>' +
@@ -292,14 +308,23 @@ svg{display:block}
       return (gp.order || ['tonight', 'deals', 'events', 'gallery', 'venues']).map(function(k){ return on[k] ? (S[k] || '') : ''; }).join('');
     };
 
+    // ── Gallery: Instagram-style squares, tap one to see it big ──
+    var galHtml = function(list, key){
+      var id = 'g' + (++galN); GAL[id] = { list: list, key: key };
+      var first = list.length <= 3 ? list.length : Math.min(9, list.length - list.length % 3);   // full rows of 3 only
+      return '<div class="sec"><div class="lab">GALLERY</div><div class="gal" id="' + id + '">' + list.map(function(x, i){ return '<button data-gal="' + id + '" data-i="' + i + '"' + (i >= first ? ' class="hid"' : '') + ' aria-label="Open photo"><img src="' + esc(x.img) + '" alt="" loading="lazy"></button>'; }).join('') + '</div>' +
+        (list.length > first ? '<button class="gmore" data-gmore="' + id + '">See all ' + list.length + ' photos</button>' : '') + '</div>';
+    };
+
     // ── Screens ──
     var homeHtml = function(){
-      var h = '<div class="w">' + topHtml(slidesHtml(gp.slides || [], true)) + memberHtml();
+      var h = '<div class="w">' + topHtml('') + memberHtml();
       h += '<div class="sec"><div class="lab">WHERE ARE YOU HEADING?</div><div class="pgrid">' + places.map(function(p){
         var v = venueOf(lc(p.name)), st = v ? (v.open === true ? 'Open now' : v.open === false ? v.label : '') : '';
         return '<button class="pbig" data-go="' + esc(lc(p.name)) + '">' + (p.img ? '<img src="' + esc(p.img) + '" alt="" loading="lazy">' : '<div class="ini">' + esc(String(p.name).charAt(0).toUpperCase()) + '</div>') +
           '<span><b translate="no">' + esc(p.name) + '</b><small>' + esc([p.area, st].filter(Boolean).join(' · ')) + '</small></span></button>';
       }).join('') + '</div></div>';
+      if (on.gallery && (gp.gallery || []).length) h += galHtml(gp.gallery, '');
       return h + foot + '</div>';
     };
     var placeHtml = function(key){
@@ -325,13 +350,15 @@ svg{display:block}
       return waV.length || phV.length ? '<div class="book"><div class="in">' + (waV.length ? '<button id="bk">' + svg(I.wa, 20) + 'Book a table</button>' : '') + (phV.length ? '<button class="call" id="cl" aria-label="Call">' + svg(I.phone, 20) + '</button>' : '') + '</div></div>' : '';
     };
 
+    var GAL = {}, galN = 0;
     var show = function(key, push){
-      root.innerHTML = (!many ? singleHtml() : key ? placeHtml(key) : homeHtml()) + bookBar(many ? key : '') + sheet;
+      GAL = {}; galN = 0;
+      root.innerHTML = (!many ? singleHtml() : key ? placeHtml(key) : homeHtml()) + bookBar(many ? key : '') + sheet + '<div class="lb" id="lb"></div>';
       document.body.classList.toggle('inplace', !!key);
       if (push) { try { history.pushState({ place: key }, '', location.pathname + location.search); } catch (e) {} window.scrollTo(0, 0); }
       wire(key);
     };
-    window.addEventListener('popstate', function(e){ if (many) show(e.state && e.state.place ? e.state.place : '', false); window.scrollTo(0, 0); });
+    window.addEventListener('popstate', function(e){ var lb = document.getElementById('lb'); if (lb && lb.classList.contains('on')) { lb.classList.remove('on'); lb.innerHTML = ''; document.body.style.overflow = ''; return; } if (many) show(e.state && e.state.place ? e.state.place : '', false); window.scrollTo(0, 0); });
 
     var wire = function(key){
       var sh = document.getElementById('sh');
@@ -341,7 +368,29 @@ svg{display:block}
       sh.addEventListener('click', function(e){ if (e.target === sh) close(); });
       Array.prototype.forEach.call(document.querySelectorAll('[data-go]'), function(b){ b.onclick = function(){ show(b.getAttribute('data-go'), true); }; b.onkeydown = function(e){ if (e.key === 'Enter') show(b.getAttribute('data-go'), true); }; });
       Array.prototype.forEach.call(document.querySelectorAll('[data-home]'), function(b){ b.onclick = function(){ if (history.state && history.state.place) history.back(); else show('', false); }; });
-      Array.prototype.forEach.call(document.querySelectorAll('[data-big]'), function(b){ b.onclick = function(){ open('Gallery', '<img class="big" src="' + esc(b.getAttribute('data-big')) + '" alt="">'); }; });
+      Array.prototype.forEach.call(document.querySelectorAll('[data-gmore]'), function(b){ b.onclick = function(){ document.getElementById(b.getAttribute('data-gmore')).classList.add('all'); b.remove(); }; });
+      Array.prototype.forEach.call(document.querySelectorAll('[data-gal]'), function(b){ b.onclick = function(){ viewer(GAL[b.getAttribute('data-gal')], +b.getAttribute('data-i')); }; });
+      var viewer = function(g, start){
+        var lb = document.getElementById('lb'), n = g.list.length;
+        lb.innerHTML = '<span class="lbn" id="lbn">' + (start + 1) + ' / ' + n + '</span><button class="lbx" id="lbx" aria-label="Close">' + svg(I.x, 20) + '</button>' +
+          '<div class="lbr" id="lbr">' + g.list.map(function(x){
+            var pk = x.venue && many && !g.key && placeOf(lc(x.venue)) ? lc(x.venue) : '';
+            return '<div class="lbs"><img src="' + esc(x.img) + '" alt=""><div class="lbf">' + (pk ? '<button data-lbgo="' + esc(pk) + '"><span translate="no">Go to ' + esc(x.venue) + '</span>' + svg('<path d="m9 18 6-6-6-6"/>', 15) + '</button>' : '<b translate="no">' + esc(x.venue && many ? x.venue : '') + '</b>') + '</div></div>';
+          }).join('') + '</div>' + (n > 1 ? '<button class="lba l" id="lbl" aria-label="Back">' + svg('<path d="m15 18-6-6 6-6"/>', 22) + '</button><button class="lba r" id="lbrr" aria-label="Next">' + svg('<path d="m9 18 6-6-6-6"/>', 22) + '</button>' : '');
+        lb.classList.add('on'); document.body.style.overflow = 'hidden';
+        try { history.pushState({ place: key, lb: 1 }, '', location.pathname + location.search); } catch (e) {}
+        var row = document.getElementById('lbr'); row.scrollLeft = start * row.clientWidth;
+        row.addEventListener('scroll', function(){ document.getElementById('lbn').textContent = (Math.round(row.scrollLeft / row.clientWidth) + 1) + ' / ' + n; }, { passive: true });
+        var by = function(dir){ row.scrollBy({ left: dir * row.clientWidth, behavior: 'smooth' }); };
+        if (n > 1) { document.getElementById('lbl').onclick = function(){ by(-1); }; document.getElementById('lbrr').onclick = function(){ by(1); }; }
+        document.getElementById('lbx').onclick = function(){ history.back(); };
+        lb.onkeydown = null; document.onkeydown = function(e){ if (!lb.classList.contains('on')) { document.onkeydown = null; return; } if (e.key === 'Escape') history.back(); else if (e.key === 'ArrowRight') by(1); else if (e.key === 'ArrowLeft') by(-1); };
+        Array.prototype.forEach.call(lb.querySelectorAll('[data-lbgo]'), function(b){ b.onclick = function(){
+          lb.classList.remove('on'); lb.innerHTML = ''; document.body.style.overflow = '';
+          try { history.replaceState({ place: b.getAttribute('data-lbgo') }, '', location.pathname + location.search); } catch (e) {}
+          show(b.getAttribute('data-lbgo'), false); window.scrollTo(0, 0);
+        }; });
+      };
       var chooser = function(title, list, hrefOf, icon){
         if (list.length === 1) { location.href = hrefOf(list[0]); return; }
         open(title, list.map(function(v){ return '<a class="pick" href="' + esc(hrefOf(v)) + '"' + (/^https/.test(hrefOf(v)) ? ' target="_blank" rel="noopener"' : '') + '><b translate="no">' + esc(v.name) + '</b><i>' + svg(icon, 18) + '</i></a>'; }).join(''));

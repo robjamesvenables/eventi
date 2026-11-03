@@ -151,6 +151,7 @@ module.exports = async (req, res) => {
     // Marketing: photo slides, daily deals, coming up, gallery (Membership > Guest page)
     let gpc = gpRows[0] && gpRows[0].content;
     if (!GP.hasContent(gpc) && demo) gpc = Object.assign(GP.demo(now.date), gpc && gpc.order ? { order: gpc.order, off: gpc.off || {} } : {});
+    else if (demo && gpc) gpc = GP.topUpDemo(gpc, now.date);   // a saved demo page still gets newer demo extras (Instagram names, new photos)
     const gp = GP.build(gpc || {}, { company: co, code, venues, today: now.date });
 
     // The numbers: one page open, and a view for every card shown (not when staff preview it)

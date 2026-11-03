@@ -61,6 +61,17 @@ function demo(today){
   };
 }
 
+// Demo company with a saved page: add Instagram names it doesn't have yet, and demo photos added since it was saved
+const DEMO_NEW_PHOTOS = ['/demo-guest/truffle.jpg', '/demo-guest/squidink.jpg'];
+function topUpDemo(c, today){
+  const d = demo(today), out = Object.assign({}, c), pl = Object.assign({}, c.places || {});
+  Object.keys(d.places).forEach(k => { if (!(pl[k] && pl[k].ig)) pl[k] = Object.assign({}, pl[k] || {}, { ig: d.places[k].ig }); });
+  out.places = pl;
+  const have = new Set((c.gallery || []).map(g => g && g.img).filter(Boolean));
+  out.gallery = (c.gallery || []).concat(d.gallery.filter(g => DEMO_NEW_PHOTOS.includes(g.img) && !have.has(g.img)));
+  return out;
+}
+
 function hasContent(c){ return !!c && ['slides', 'deals', 'events', 'gallery'].some(k => Array.isArray(c[k]) && c[k].length); }
 
 const DOW = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'], MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
@@ -107,4 +118,4 @@ function build(c, ctx){
   return { order, slides, deals, events, gallery, places, theme };
 }
 
-module.exports = { igName, SECTIONS, paths, demo, hasContent, build, DEMO_VENUES, DEMO_RENAME, isOldDemo, renameDemo };
+module.exports = { igName, topUpDemo, SECTIONS, paths, demo, hasContent, build, DEMO_VENUES, DEMO_RENAME, isOldDemo, renameDemo };

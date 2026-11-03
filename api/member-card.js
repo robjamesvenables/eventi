@@ -135,7 +135,7 @@ module.exports = async (req, res) => {
       time: e.start ? niceTime(e.start) + (e.end ? ' - ' + niceTime(e.end) : '') : '' });
     const tonight = events.filter(e => e.date === now.date && !(e.end && toMin(e.end) > toMin(e.start || '00:00') && toMin(e.end) <= toMin(now.hm))).map(fmtEv);
     const week = [];
-    events.filter(e => e.date > now.date).forEach(e => { if (!week.find(w => w.date === e.date)) week.push(fmtEv(e)); });
+    events.filter(e => e.date > now.date).forEach(e => { if (!week.find(w => w.date === e.date && w.venue === e.venue)) week.push(fmtEv(e)); });
 
     // Menus
     // Menus are not on the guest page (it's for what's on and offers)
@@ -164,7 +164,7 @@ module.exports = async (req, res) => {
       ok: true, brand, logo, code, first, tier, visits: visits.length, favourite, gp,
       since: new Date(m.created_at).getFullYear(), perks,
       birthdayWeek: birthdayWeek(m.birthday, now.date),
-      tonight: tonight.slice(0, 3), week: week.slice(0, 6), menus, venues, reward
+      tonight: tonight.slice(0, 12), week: week.slice(0, 40), menus, venues, reward
     });
   } catch (e) {
     console.error(e);

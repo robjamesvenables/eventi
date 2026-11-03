@@ -21770,13 +21770,16 @@ function gpPlacesHtml(){
   const vs = (msPage().venues || []).filter(v => v && v.name);
   if(vs.length < 2) return '';
   const pl = GPE.c.places || {};
-  return `<div class="gp-sec"><div class="gp-sh"><div class="n"><b>Our places</b><small>A photo for each venue. Guests tap one to see only that place's deals and events</small></div></div>
-    <div class="gp-body">${vs.map(v => { const p = pl[v.name.toLowerCase()] || {}, src = gpSrc(p), area = p.area || v.area || '';
+  const home = String(GPE.c.home || '').toLowerCase(), homeOk = vs.some(v => v.name.toLowerCase() === home);
+  return `<div class="gp-sec"><div class="gp-sh"><div class="n"><b>Our places</b><small>Guests pick a place at the top and see only that place - its DJ, deals, events and Book button</small></div></div>
+    <div class="gp-body"><label style="font-size:13px;font-weight:800;color:#0F1E2E">Page opens on
+      <select onchange="gpHome(this.value)" style="display:block;width:100%;margin-top:6px;border:1.5px solid #E2E8F0;border-radius:10px;padding:10px 12px;font:600 15px Inter,sans-serif;color:#0F1E2E;background:white">${vs.map((v, i) => `<option value="${gpEsc(v.name)}"${(homeOk ? v.name.toLowerCase() === home : i === 0) ? ' selected' : ''}>${gpEsc(v.name)}</option>`).join('')}</select></label>${vs.map(v => { const p = pl[v.name.toLowerCase()] || {}, src = gpSrc(p), area = p.area || v.area || '';
       return `<div class="gp-it">${src ? `<img class="th" src="${gpEsc(src)}" alt="">` : '<div class="th" style="display:flex;align-items:center;justify-content:center;color:#94A3B8">' + gpIc(GPI.cam, 20) + '</div>'}
         <div class="x"><b>${gpEsc(v.name)}</b><small>${area ? gpEsc(area) : 'No area yet - e.g. Canggu'}</small></div>
         <button class="gp-ib" title="Change" aria-label="Change ${gpEsc(v.name)}" onclick="gpPlaceForm('${gpEsc(v.name.replace(/'/g, "\\'"))}')">${gpIc(GPI.edit)}</button></div>`; }).join('')}
     ${msIsMgr() ? '<div class="gp-auto">Add or rename venues in <button onclick="msTiers()">Change venues</button></div>' : ''}</div></div>`;
 }
+window.gpHome = async function(name){ GPE.c.home = name; await gpSave('Guests now land on ' + name); };
 window.gpPlaceForm = function(name){
   document.querySelectorAll('.eb-sheet').forEach(x => x.remove());
   const key = name.toLowerCase(), v = (msPage().venues || []).find(x => x.name === name) || {}, it = Object.assign({}, (GPE.c.places || {})[key] || {});

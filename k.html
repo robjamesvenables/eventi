@@ -145,7 +145,7 @@ svg{display:block}
 .pl.all{width:78px;background:white;border-color:#E2E8F0;color:#0F1E2E;font-size:15px;font-weight:900;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;text-align:center}
 .pl.all small{font-size:10.5px;font-weight:700;color:#64748B}
 .pl.on{border-color:var(--acc,#0D9488)}.pl.all.on{background:var(--top,#0F1E2E);border-color:var(--top,#0F1E2E);color:var(--top-ink,#fff)}.pl.all.on small{color:var(--top-sub,#CBD5E1)}
-.pls.picked .pl:not(.on){opacity:.55}
+.pls.picked .pl:not(.on){opacity:.6}
 .strip{margin-top:12px;background:white;border-radius:18px;padding:14px 16px;display:flex;align-items:center;gap:12px;box-shadow:0 1px 3px rgba(15,30,46,.07)}
 .strip .n{flex:1;min-width:0}.strip b{display:block;font-size:17px;font-weight:900}.strip small{display:block;font-size:12.5px;color:#64748B;font-weight:600;margin-top:2px}
 .strip a{height:44px;border-radius:12px;display:flex;align-items:center;justify-content:center;flex:none;text-decoration:none}
@@ -257,11 +257,10 @@ svg{display:block}
     }).join('') + '</div></div>';
     if (gp.gallery && gp.gallery.length) S.gallery = '<div class="sec"><div class="lab">GALLERY</div><div class="gal">' + gp.gallery.map(function(src){ return '<button data-big="' + esc(src) + '" aria-label="Open photo"><img src="' + esc(src) + '" alt="" loading="lazy"></button>'; }).join('') + '</div></div>';
     var places = gp.places || [];
-    if (places.length > 1) h += '<div class="sec" id="plsec"><div class="lab">OUR PLACES</div><div class="pls" id="pls"><button class="pl all on" data-pl="">All<small>' + places.length + ' places</small></button>' + places.map(function(p){
+    if (places.length > 1) { S.venues = ''; h += '<div class="sec" id="plsec"><div class="lab">PICK A PLACE</div><div class="pls" id="pls">' + places.map(function(p){
       return '<button class="pl" data-pl="' + esc(String(p.name).toLowerCase()) + '">' + (p.img ? '<img src="' + esc(p.img) + '" alt="" loading="lazy">' : '<div class="ini">' + esc(String(p.name).charAt(0).toUpperCase()) + '</div>') + '<span><b translate="no">' + esc(p.name) + '</b>' + (p.area ? '<small>' + esc(p.area) + '</small>' : '') + '</span></button>';
-    }).join('') + '</div><div id="plstrip"></div></div>';
+    }).join('') + '</div><div id="plstrip"></div></div>'; }
     (gp.order && gp.order.length ? gp.order : ['tonight', 'deals', 'events', 'gallery', 'venues']).forEach(function(k){ h += S[k] || ''; });
-    if (places.length > 1) h += '<button class="allbtn" id="allbtn" style="display:none">See all ' + places.length + ' places</button>';
     h += '<div class="foot">Show your keyring when you arrive<br>and we\'ll look after the rest.<br><br><a href="https://getmavis.co">Powered by Mavis</a></div></div>';
     var waV = (d.venues || []).filter(function(v){ return v.wa; }), phV = (d.venues || []).filter(function(v){ return v.phone; });
     if (waV.length || phV.length) h += '<div class="book"><div class="in">' + (waV.length ? '<button id="bk">' + svg(I.wa, 20) + 'Book a table</button>' : '') + (phV.length ? '<button class="call" id="cl" aria-label="Call">' + svg(I.phone, 20) + '</button>' : '') + '</div></div>';
@@ -308,10 +307,10 @@ svg{display:block}
         strip.innerHTML = key ? '<div class="strip"><div class="n"><b translate="no">' + esc((v || p).name) + '</b><small>' + (v && v.open === true ? '<span style="color:#15803D;font-weight:800">Open now</span> · ' + esc(v.label) : v && v.label ? esc(v.label) : '') + (p && p.area ? (v && v.label ? ' · ' : '') + esc(p.area) : '') + '</small></div>' +
           (v && v.map ? '<a class="mp" href="' + esc(v.map) + '" target="_blank" rel="noopener" aria-label="Map">' + svg(I.pin, 18) + '</a>' : '') +
           (v && v.wa ? '<a class="bk" href="https://wa.me/' + esc(v.wa) + '?text=' + encodeURIComponent(greet) + '" target="_blank" rel="noopener">' + svg(I.wa, 16) + 'Book</a>' : '') + '</div>' : '';
-        var ab = document.getElementById('allbtn'); if (ab) ab.style.display = key ? '' : 'none';
       };
       Array.prototype.forEach.call(pls.children, function(b){ b.onclick = function(){ pick(b.getAttribute('data-pl')); }; });
-      var ab = document.getElementById('allbtn'); if (ab) ab.onclick = function(){ pick(''); document.getElementById('plsec').scrollIntoView({ behavior: 'smooth', block: 'start' }); };
+      pick(gp.home || pls.children[0].getAttribute('data-pl'));
+      var on = pls.querySelector('.pl.on'); if (on) pls.scrollLeft = Math.max(0, on.offsetLeft - 16);
     }
     var sl = document.getElementById('sl'), dots = document.getElementById('dots');
     if (sl && dots) {

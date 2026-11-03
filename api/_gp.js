@@ -51,6 +51,7 @@ function demo(today){
     ],
     gallery: [{ id: 'dg1', img: '/demo-guest/chef.jpg' }, { id: 'dg2', img: '/demo-guest/pasta.jpg' }, { id: 'dg3', img: '/demo-guest/party.jpg' },
               { id: 'dg4', img: '/demo-guest/fish.jpg' }, { id: 'dg5', img: '/demo-guest/martini.jpg' }],
+    home: 'senja rooftop',
     places: { 'senja rooftop': { img: '/demo-guest/martini.jpg', area: 'Uluwatu' }, 'ombak beach club': { img: '/demo-guest/party.jpg', area: 'Sanur' },
               'saffron & salt': { img: '/demo-guest/fish.jpg', area: 'Seminyak' }, 'kopi pagi': { img: '/demo-guest/pasta.jpg', area: 'Canggu' } }
   };
@@ -94,7 +95,8 @@ function build(c, ctx){
   // Colours (Guest page > Colours)
   const hex = v => /^#[0-9a-f]{6}$/i.test(v || '') ? v : '';
   const th = c.theme || {}, theme = { top: hex(th.top), acc: hex(th.acc), pg: hex(th.pg) };
-  return { order, slides, deals, events, gallery, places, theme };
+  const home = places.find(p => p.name.toLowerCase() === String(c.home || '').toLowerCase()) ? String(c.home).toLowerCase() : (places[0] ? places[0].name.toLowerCase() : '');
+  return { order, slides, deals, events, gallery, places, theme, home };
 }
 
 module.exports = { SECTIONS, paths, demo, hasContent, build, DEMO_VENUES, DEMO_RENAME, isOldDemo, renameDemo };

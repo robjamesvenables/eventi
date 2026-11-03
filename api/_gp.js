@@ -86,7 +86,7 @@ function topUpDemo(c, today){
   return out;
 }
 
-function hasContent(c){ return !!c && ['slides', 'deals', 'events', 'gallery'].some(k => Array.isArray(c[k]) && c[k].length); }
+function hasContent(c){ return !!c && ['slides', 'deals', 'events', 'gallery', 'acts'].some(k => Array.isArray(c[k]) && c[k].length); }
 
 const DOW = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'], MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 function dateLabel(ymd){ if (!/^\d{4}-\d{2}-\d{2}$/.test(ymd || '')) return ''; const d = new Date(ymd + 'T12:00:00Z'); return DOW[d.getUTCDay()] + ' ' + d.getUTCDate() + ' ' + MON[d.getUTCMonth()]; }

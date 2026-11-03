@@ -131,6 +131,18 @@ module.exports = async (req, res) => {
       date: b.date, start: (b.start_time || '').slice(0, 5), end: (b.end_time || '').slice(0, 5),
       title: b.dj_name, sub: b.type === 'takeover' ? 'Takeover' : 'Live DJ', venue: (isDemo && GP.DEMO_RENAME[String(stageName[b.stage_id] || '').toLowerCase().trim()]) || stageName[b.stage_id] || ''
     }));
+    // Who's playing, typed in on the Guest page (for places that don't use the Entertainment Schedule): a date, or every week on set days
+    const gpRaw = gpRows[0] && gpRows[0].content;
+    const acts = Array.isArray(gpRaw && gpRaw.acts) ? gpRaw.acts : [];
+    const tm = v => /^\d{2}:\d{2}$/.test(v || '') ? v : '';
+    for (let i = 0; i <= 6; i++) {
+      const day = addDays(now.date, i), wd = new Date(day + 'T12:00:00Z').getUTCDay();
+      acts.forEach(a => { if (!a || !a.title) return;
+        const on = a.date ? a.date === day : Array.isArray(a.every) && a.every.map(Number).includes(wd);
+        if (on) events.push({ date: day, start: tm(a.start), end: tm(a.end), title: String(a.title).slice(0, 60), sub: String(a.line || '').slice(0, 60), venue: String(a.venue || '').slice(0, 40) });
+      });
+    }
+    events.sort((a, b) => (a.date + (a.start || '')).localeCompare(b.date + (b.start || '')));
     if (!events.length && demo) events = demo.events;
     const fmtEv = e => ({ day: dow(e.date), date: e.date, title: e.title, sub: e.sub, venue: e.venue,
       time: e.start ? niceTime(e.start) + (e.end ? ' - ' + niceTime(e.end) : '') : '' });

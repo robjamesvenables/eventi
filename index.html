@@ -2244,6 +2244,7 @@ body:not(.mv-demo) #ms-demoqr-btn{display:none!important}
 .gp-it .th{width:78px;height:58px;border-radius:9px;object-fit:cover;background:#E7EEF2;flex:none;display:block}
 .gp-it .x{flex:1;min-width:0}.gp-it .x b{display:block;font-size:14.5px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .gp-it .x small{display:block;font-size:12px;color:#64748B;font-weight:600;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.gp-it .x b,.gp-it .x small{white-space:normal;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;line-height:1.3}
 .gp-chip{display:inline-block;font-size:10.5px;font-weight:800;border-radius:6px;padding:2px 7px;margin:5px 4px 0 0;background:#F1F5F9;color:#334155}
 .gp-chip.wa{background:#DCFCE7;color:#15803D}.gp-chip.book{background:#DBEAFE;color:#1D4ED8}.gp-chip.tickets{background:#EDE9FE;color:#6D28D9}.gp-chip.num{background:#F0FDFA;color:#0F766E}
 .gp-ib{width:36px;height:36px;border-radius:10px;border:0;background:#F1F5F9;color:#334155;display:flex;align-items:center;justify-content:center;cursor:pointer;flex:none}
@@ -2274,6 +2275,8 @@ body:not(.mv-demo) #ms-demoqr-btn{display:none!important}
 .gp-btns button.on{border-color:#0D9488;background:#F0FDFA;color:#0F766E}
 .gp-pf{display:flex;align-items:center;gap:10px;margin-top:8px}.gp-pf i{width:22px;flex:none;color:#64748B;display:flex;justify-content:center}
 .gp-pf em{font-style:normal;font-size:13.5px;color:#475569;font-weight:700;width:58px;flex:none}.gp-pf input{flex:1;min-width:0}
+.gp-btns.gp-2b{grid-template-columns:repeat(2,minmax(0,1fr))}
+.gp-wd{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:5px}.gp-wd button{border:2px solid #E2E8F0;background:white;border-radius:10px;padding:10px 0;font:800 12.5px Inter,sans-serif;color:#0F1E2E;cursor:pointer}.gp-wd button.on{border-color:#0D9488;background:#F0FDFA;color:#0F766E}
 .gp-btns.gp-3{grid-template-columns:repeat(3,minmax(0,1fr))}
 .gp-dr{display:flex;gap:8px;align-items:flex-start}.gp-dr > input,.gp-dr > textarea,.gp-dr > .gp-btns,.gp-dr > .gp-mrx{flex:1;min-width:0}
 .gp-mr{margin-bottom:8px}.gp-mrx{display:flex;flex-direction:column;gap:6px}.eb-form .gp-mrx .gp-ml{font-weight:700}
@@ -21716,7 +21719,7 @@ window.msTiers = function(){
 // What members see when they scan their keyring (k.html). Saved in the guest_page table (one row per company).
 // Who can edit: managers and up, the Marketing department, and people picked by name in Admin Console.
 const GP_BUCKET = 'shared-files';
-const GP_SECS = { tonight:['Tonight and This week', 'Your DJs and live acts'], deals:['Daily deals', 'Happy hours and set menus, with their times'], events:['Coming up', 'Events with a Book or Tickets button - each hides itself after its date'], gallery:['Gallery', 'Photos of your venues, food and nights'], venues:['Find us', 'Opening hours, map and Book for each venue'] };
+const GP_SECS = { tonight:['Tonight and This week', "Who's playing - DJs, bands, live music"], deals:['Daily deals', 'Happy hours and set menus, with their times'], events:['Coming up', 'Events with a Book or Tickets button - each hides itself after its date'], gallery:['Gallery', 'Photos of your venues, food and nights'], venues:['Find us', 'Opening hours, map and Book for each venue'] };
 const GP_ORDER = ['tonight', 'deals', 'events', 'gallery', 'venues'];
 const GPE = { c:null, urls:{}, missing:false, loaded:false };
 const gpEsc = v => String(v == null ? '' : v).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -21770,7 +21773,7 @@ function gpDemo(today){
 function gpBlank(){ return { order: GP_ORDER.slice(), off: {}, slides: [], deals: [], events: [], gallery: [] }; }
 function gpNorm(c){
   c = Object.assign(gpBlank(), c || {});
-  ['slides','deals','events','gallery'].forEach(k => { if(!Array.isArray(c[k])) c[k] = []; });
+  ['slides','deals','events','gallery','acts'].forEach(k => { if(!Array.isArray(c[k])) c[k] = []; });
   c.order = (Array.isArray(c.order) ? c.order : []).filter(k => GP_ORDER.includes(k)); GP_ORDER.forEach(k => { if(!c.order.includes(k)) c.order.push(k); });
   if(!c.off || typeof c.off !== 'object') c.off = {};
   if(!c.places || typeof c.places !== 'object' || Array.isArray(c.places)) c.places = {};
@@ -21866,7 +21869,8 @@ function gpRender(){
     if(k === 'deals' || k === 'events') body = c[k].map((it, j) => gpItemHtml(k, it, j)).join('') + `<button class="gp-add" onclick="gpForm('${k}')">+ Add ${k === 'deals' ? 'a deal' : 'an event'}</button>`;
     else if(k === 'gallery') body = `<div class="gp-gal">${c.gallery.map((it, j) => `<div><img src="${gpEsc(gpSrc(it))}" alt=""><button aria-label="Remove photo" onclick="gpRemove('gallery',${j})">${gpIc(GPI.x, 14)}</button><span class="gp-gpl">${gpEsc(it.venue || 'All places')}</span></div>`).join('')}</div><button class="gp-add" onclick="gpGalleryAdd()">+ Add photos</button>`;
     else if(k === 'venues') body = `<div class="gp-auto">Comes from your venues list.${mgr ? ' <button onclick="msTiers()">Change venues</button>' : ' A manager can change it.'}</div>`;
-    else body = `<div class="gp-auto">Shows by itself: the DJs and acts you've booked in the Entertainment Schedule appear here, e.g. "Tonight: DJ Kai from 5pm". <button onclick="gpClose(); nav('djsched')">Open Entertainment Schedule</button></div>`;
+    else if(k === 'tonight') body = (c.acts || []).map((a, j) => gpActHtml(a, j)).join('') + `<button class="gp-add" onclick="gpActForm()">+ Add who's playing</button><div class="gp-hint" style="margin-top:8px">Guests see it under Tonight on the day, and in This week. DJs booked in the Entertainment Schedule show here too.</div>`;
+    else body = `<div class="gp-auto">Fills itself - nothing to type here.</div>`;
     return `<div class="gp-sec${c.off[k] ? ' off' : ''}"><div class="gp-sh"><div class="gp-mv"><button aria-label="Move up" ${i ? '' : 'disabled'} onclick="gpMove('${k}',-1)">${gpIc(GPI.up, 14)}</button><button aria-label="Move down" ${i < c.order.length - 1 ? '' : 'disabled'} onclick="gpMove('${k}',1)">${gpIc(GPI.down, 14)}</button></div>
       <div class="n"><b>${name}</b><small>${sub}</small></div>${tog(k)}</div>${c.off[k] ? '' : `<div class="gp-body">${body}</div>`}</div>`;
   };
@@ -22025,6 +22029,56 @@ function gpGalleryPick(venue){
   };
   inp.click();
 }
+// Who's playing (typed in here, for places not using the Entertainment Schedule): one date, or every week on chosen days
+const GP_WD = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+function gpActWhen(a){ const t = [a.start, a.end].filter(Boolean).map(gpHm).join(' – ');
+  const d = a.date ? gpDate(a.date) : (a.every || []).length === 7 ? 'Every day' : 'Every ' + [1,2,3,4,5,6,0].filter(x => (a.every || []).map(Number).includes(x)).map(x => GP_WD[x]).join(', ');
+  return [d, t, a.venue].filter(Boolean).join(' · '); }
+function gpHm(t){ const m = /^(\d{1,2}):(\d{2})/.exec(t || ''); if(!m) return ''; let h = +m[1]; const ap = h >= 12 ? 'pm' : 'am'; h = h % 12 || 12; return h + (m[2] !== '00' ? ':' + m[2] : '') + ap; }
+function gpActHtml(a, j){
+  const past = a.date && a.date < gpToday();
+  return `<div class="gp-it"><div class="th" style="display:flex;align-items:center;justify-content:center;color:#0D9488;background:#E6F4F1">${msIcSvg('music', 20)}</div>
+    <div class="x"><b>${gpEsc(a.title)}</b><small>${gpEsc(gpActWhen(a))}</small>${past ? '<div><span class="gp-chip">Finished - hidden</span></div>' : ''}</div>
+    <button class="gp-ib" title="Change" aria-label="Change" onclick="gpActForm(${j})">${gpIc(GPI.edit)}</button>
+    <button class="gp-ib del" title="Remove" aria-label="Remove" onclick="gpActRemove(${j})">${gpIc(GPI.x)}</button></div>`;
+}
+window.gpActRemove = async function(j){ GPE.c.acts.splice(j, 1); gpRender(); await gpSave('Removed'); };
+window.gpActForm = function(i){
+  document.querySelectorAll('.eb-sheet').forEach(x => x.remove());
+  const edit = i != null, it = edit ? Object.assign({}, GPE.c.acts[i]) : { id: gpId() };
+  const venues = (msPage().venues || []).map(v => v.name).filter(Boolean);
+  let mode = it.date ? 'date' : (it.every && it.every.length ? 'week' : 'date'), every = (it.every || []).map(Number);
+  const s = document.createElement('div'); s.className = 'eb-sheet';
+  s.innerHTML = `<div class="eb-form"><h3>${edit ? 'Change' : 'Add'} who's playing</h3><p class="sub">Shows under Tonight and This week on the guest page</p>
+    <label>Who or what</label><input id="gpa-t" maxlength="60" value="${gpEsc(it.title || '')}" placeholder="e.g. DJ Kai, Live jazz trio">
+    <label>One line about it (optional)</label><input id="gpa-l" maxlength="60" value="${gpEsc(it.line || '')}" placeholder="e.g. Deep house into disco">
+    ${venues.length > 1 ? `<label>Place</label><select id="gpa-v"><option value="">All places</option>${venues.map(v => `<option${v === it.venue ? ' selected' : ''}>${gpEsc(v)}</option>`).join('')}</select>` : ''}
+    <label>When</label><div class="gp-btns gp-2b" id="gpa-m"><button type="button" data-m="date">One date</button><button type="button" data-m="week">Every week</button></div>
+    <div id="gpa-dw"><label>Date</label><input id="gpa-d" type="date" value="${gpEsc(it.date || '')}"></div>
+    <div id="gpa-ww"><label>Which days</label><div class="gp-wd" id="gpa-wd">${[1,2,3,4,5,6,0].map(x => `<button type="button" data-d="${x}">${GP_WD[x]}</button>`).join('')}</div></div>
+    <div class="gp-2"><div><label>Starts</label><input id="gpa-s" type="time" value="${gpEsc(it.start || '')}"></div><div><label>Finishes (optional)</label><input id="gpa-e" type="time" value="${gpEsc(it.end || '')}"></div></div>
+    <div class="eb-fbtns"><button class="eb-no">Cancel</button><button class="eb-go">Save</button></div></div>`;
+  s.addEventListener('mousedown', e => { if(e.target === s) s.remove(); });
+  document.body.appendChild(s);
+  const $ = id => s.querySelector('#' + id);
+  const show = () => { s.querySelectorAll('#gpa-m button').forEach(b => b.classList.toggle('on', b.dataset.m === mode)); $('gpa-dw').style.display = mode === 'date' ? '' : 'none'; $('gpa-ww').style.display = mode === 'week' ? '' : 'none';
+    s.querySelectorAll('#gpa-wd button').forEach(b => b.classList.toggle('on', every.includes(+b.dataset.d))); };
+  s.querySelectorAll('#gpa-m button').forEach(b => b.onclick = () => { mode = b.dataset.m; show(); });
+  s.querySelectorAll('#gpa-wd button').forEach(b => b.onclick = () => { const d = +b.dataset.d; every = every.includes(d) ? every.filter(x => x !== d) : every.concat(d); show(); });
+  show();
+  s.querySelector('.eb-no').onclick = () => s.remove();
+  s.querySelector('.eb-go').onclick = async () => {
+    const rec = { id: it.id, title: $('gpa-t').value.trim(), line: $('gpa-l').value.trim(), venue: $('gpa-v') ? $('gpa-v').value : (venues[0] || ''), start: $('gpa-s').value, end: $('gpa-e').value };
+    if(!rec.title){ toast("Type who's playing"); return; }
+    if(mode === 'date'){ rec.date = $('gpa-d').value; if(!rec.date){ toast('Pick the date'); return; } if(rec.date < gpToday()){ toast('That date has already passed'); return; } }
+    else { if(!every.length){ toast('Tap the days it happens'); return; } rec.every = every.slice().sort(); }
+    if(!rec.start){ toast('Add the start time'); return; }
+    ['line', 'end', 'venue'].forEach(k => { if(!rec[k]) delete rec[k]; });
+    if(!Array.isArray(GPE.c.acts)) GPE.c.acts = [];
+    if(edit) GPE.c.acts[i] = rec; else GPE.c.acts.push(rec);
+    s.remove(); gpRender(); await gpSave(edit ? 'Saved - guests see it now' : 'Added - guests see it now');
+  };
+};
 // An event's own extra detail: icon + name + words (e.g. Parking - free valet)
 function gpMoreRow(m){ m = m || {}; return `<div class="gp-dr gp-mr" data-icrow${MS_PI[m.ic] ? ` data-ic="${m.ic}"` : ''}>${msIcBtn(m.ic)}<div class="gp-mrx"><input class="gp-ml" maxlength="30" placeholder="e.g. Parking" value="${gpEsc(m.label || '')}"><input class="gp-mt" maxlength="120" placeholder="e.g. Free valet at the front" value="${gpEsc(m.text || '')}"></div><button type="button" class="ms-vx" aria-label="Remove" onclick="document.querySelectorAll('.ms-pgrid').forEach(g => g.remove()); this.closest('.gp-mr').remove(); document.getElementById('gpf-moreadd').style.display = ''"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg></button></div>`; }
 window.gpMoreAdd = function(){ const l = document.getElementById('gpf-more'); l.insertAdjacentHTML('beforeend', gpMoreRow()); const r = l.lastElementChild; mvIconPick(r.querySelector('.ms-pib')); r.querySelector('.gp-ml').focus(); if(l.children.length >= 6) document.getElementById('gpf-moreadd').style.display = 'none'; };

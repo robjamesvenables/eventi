@@ -21757,11 +21757,14 @@ function gpColoursHtml(){
     return `<div style="margin-top:10px"><div style="font-size:13px;font-weight:800">${name} <span style="font-weight:600;color:#64748B;font-size:12px">· ${sub}</span></div>
       <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:8px;align-items:center">${opts.map(o => `<button aria-label="${o}" title="${o}" onclick="gpColour('${k}','${o}')" style="width:34px;height:34px;border-radius:50%;background:${o};cursor:pointer;border:${o.toUpperCase() === cur ? '3px solid #0D9488;box-shadow:inset 0 0 0 2px #fff' : '1.5px solid #CBD5E1'}"></button>`).join('')}
       <label style="display:inline-flex;align-items:center;gap:6px;font-size:12.5px;font-weight:700;color:#475569;cursor:pointer;margin-left:4px"><input type="color" value="${cur.toLowerCase()}" onchange="gpColour('${k}',this.value)" style="width:34px;height:34px;border:0;padding:0;background:none;cursor:pointer">Your own</label></div></div>`; };
-  return `<div class="gp-sec"><div class="gp-sh"><div class="n"><b>Colours</b><small>Match your venue - text changes colour by itself so it stays easy to read</small></div>${Object.keys(t).some(k => t[k]) ? `<button class="gp-tb" style="background:#F1F5F9;color:#334155" onclick="gpColour('reset')">Reset</button>` : ''}</div>
-    <div class="gp-body" style="gap:4px">${row('top')}${row('acc')}${row('pg')}</div></div>`;
+  const dflt = !Object.keys(t).some(k => t[k]);
+  const opt = (on, label, sub, click) => `<button onclick="${click}" style="flex:1;min-width:150px;text-align:left;border:2px solid ${on ? '#0D9488' : '#E2E8F0'};background:${on ? '#F0FDFA' : 'white'};border-radius:12px;padding:12px 14px;cursor:pointer;font-family:Inter,sans-serif"><div style="font-size:14px;font-weight:800;color:${on ? '#0F766E' : '#0F1E2E'}">${label}</div><div style="font-size:12px;color:#64748B;font-weight:600;margin-top:2px">${sub}</div></button>`;
+  return `<div class="gp-sec"><div class="gp-sh"><div class="n"><b>Colours</b><small>Keep the Mavis look, or match your venue</small></div></div>
+    <div class="gp-body" style="gap:8px"><div style="display:flex;gap:8px;flex-wrap:wrap">${opt(dflt, 'Mavis colours', 'Navy and teal - nothing to set', "gpColour('reset')")}${opt(!dflt || GPE.custom, 'Our own colours', 'Pick colours to match your venue', 'GPE.custom = true; gpRender()')}</div>
+    ${!dflt || GPE.custom ? `<div style="display:flex;flex-direction:column;gap:4px">${row('top')}${row('acc')}${row('pg')}<div class="gp-hint">Text changes colour by itself so it stays easy to read.</div></div>` : ''}</div></div>`;
 }
 window.gpColour = async function(k, v){
-  if(k === 'reset') GPE.c.theme = {};
+  if(k === 'reset'){ GPE.c.theme = {}; GPE.custom = false; }
   else { if(!/^#[0-9a-f]{6}$/i.test(v || '')) return; GPE.c.theme[k] = v.toUpperCase() === GP_COL[k][2] ? '' : v; if(!GPE.c.theme[k]) delete GPE.c.theme[k]; }
   gpRender(); await gpSave('Colours saved');
 };

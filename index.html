@@ -21626,8 +21626,8 @@ function gpDemo(today){
     ],
     gallery: [['senja', 'Senja Rooftop'], ['martini', 'Senja Rooftop'], ['party', 'Senja Rooftop'], ['ombak', 'Ombak Beach Club'], ['saffron', 'Saffron & Salt'], ['chef', 'Saffron & Salt'],
               ['fish', 'Saffron & Salt'], ['pasta', 'Kopi Pagi']].map(([n, v], i) => ({ id: 'dg' + i, img: '/demo-guest/' + n + '.jpg', venue: v })),
-    places: { 'senja rooftop': { img: '/demo-guest/senja.jpg', area: 'Uluwatu' }, 'ombak beach club': { img: '/demo-guest/ombak.jpg', area: 'Sanur' },
-              'saffron & salt': { img: '/demo-guest/saffron.jpg', area: 'Seminyak' }, 'kopi pagi': { img: '/demo-guest/pasta.jpg', area: 'Canggu' } }
+    places: { 'senja rooftop': { img: '/demo-guest/senja.jpg', area: 'Uluwatu', ig: 'senjarooftop.demo' }, 'ombak beach club': { img: '/demo-guest/ombak.jpg', area: 'Sanur', ig: 'ombakbeachclub.demo' },
+              'saffron & salt': { img: '/demo-guest/saffron.jpg', area: 'Seminyak', ig: 'saffronandsalt.demo' }, 'kopi pagi': { img: '/demo-guest/pasta.jpg', area: 'Canggu', ig: 'kopipagi.demo' } }
   };
 }
 function gpBlank(){ return { order: GP_ORDER.slice(), off: {}, slides: [], deals: [], events: [], gallery: [] }; }
@@ -21775,12 +21775,12 @@ window.gpColour = async function(k, v){
 // Our places: a photo and area for each venue - guests tap one to see only that place
 function gpPlacesHtml(){
   const vs = (msPage().venues || []).filter(v => v && v.name);
-  if(vs.length < 2) return '';
-  const pl = GPE.c.places || {};
-  return `<div class="gp-sec"><div class="gp-sh"><div class="n"><b>Our places</b><small>The big photos guests tap to open each place's own page</small></div></div>
+  if(!vs.length) return '';
+  const pl = GPE.c.places || {}, one = vs.length === 1;
+  return `<div class="gp-sec"><div class="gp-sh"><div class="n"><b>${one ? 'Instagram' : 'Our places'}</b><small>${one ? 'Guests see a Follow us button' : 'The big photos guests tap to open each place\'s own page, and each place\'s Instagram'}</small></div></div>
     <div class="gp-body">${vs.map(v => { const p = pl[v.name.toLowerCase()] || {}, src = gpSrc(p), area = p.area || v.area || '';
       return `<div class="gp-it">${src ? `<img class="th" src="${gpEsc(src)}" alt="">` : '<div class="th" style="display:flex;align-items:center;justify-content:center;color:#94A3B8">' + gpIc(GPI.cam, 20) + '</div>'}
-        <div class="x"><b>${gpEsc(v.name)}</b><small>${area ? gpEsc(area) : 'No area yet - e.g. Canggu'}</small></div>
+        <div class="x"><b>${gpEsc(v.name)}</b><small>${one ? (p.ig ? '@' + gpEsc(String(p.ig).replace(/^@/, '')) : 'No Instagram yet') : [area || 'No area yet - e.g. Canggu', p.ig ? '@' + String(p.ig).replace(/^@/, '') : ''].filter(Boolean).map(gpEsc).join(' · ')}</small></div>
         <button class="gp-ib" title="Change" aria-label="Change ${gpEsc(v.name)}" onclick="gpPlaceForm('${gpEsc(v.name.replace(/'/g, "\\'"))}')">${gpIc(GPI.edit)}</button></div>`; }).join('')}
     ${msIsMgr() ? '<div class="gp-auto">Add or rename venues in <button onclick="msTiers()">Change venues</button></div>' : ''}</div></div>`;
 }
@@ -21789,9 +21789,11 @@ window.gpPlaceForm = function(name){
   const key = name.toLowerCase(), v = (msPage().venues || []).find(x => x.name === name) || {}, it = Object.assign({}, (GPE.c.places || {})[key] || {});
   let file = null;
   const s = document.createElement('div'); s.className = 'eb-sheet';
-  s.innerHTML = `<div class="eb-form"><h3>${gpEsc(name)}</h3><p class="sub">How this place shows in "Our places"</p>
-    <label>Photo</label><div class="gp-ph${gpSrc(it) ? ' has' : ''}" id="gpp-ph" role="button" tabindex="0">${gpSrc(it) ? `<img src="${gpEsc(gpSrc(it))}" alt=""><span>Change photo</span>` : `${gpIc(GPI.cam, 22)}&nbsp; Choose a photo`}</div>
-    <label>Area</label><input id="gpp-area" maxlength="30" value="${gpEsc(it.area || v.area || '')}" placeholder="e.g. Canggu">
+  const one = (msPage().venues || []).filter(x => x && x.name).length === 1;
+  s.innerHTML = `<div class="eb-form"><h3>${gpEsc(name)}</h3><p class="sub">${one ? 'Your Instagram, for the Follow us button' : 'How this place shows in "Our places"'}</p>
+    <div${one ? ' style="display:none"' : ''}><label>Photo</label><div class="gp-ph${gpSrc(it) ? ' has' : ''}" id="gpp-ph" role="button" tabindex="0">${gpSrc(it) ? `<img src="${gpEsc(gpSrc(it))}" alt=""><span>Change photo</span>` : `${gpIc(GPI.cam, 22)}&nbsp; Choose a photo`}</div></div>
+    <div${one ? ' style="display:none"' : ''}><label>Area</label><input id="gpp-area" maxlength="30" value="${gpEsc(it.area || v.area || '')}" placeholder="e.g. Canggu"></div>
+    <label>Instagram</label><input id="gpp-ig" maxlength="80" value="${gpEsc(it.ig ? '@' + String(it.ig).replace(/^@/, '') : '')}" placeholder="e.g. @senjarooftop" autocapitalize="off" autocorrect="off" spellcheck="false">
     <input type="file" id="gpp-file" accept="image/*" style="display:none"><div class="eb-fbtns"><button class="eb-no">Cancel</button><button class="eb-go">Save</button></div></div>`;
   s.addEventListener('mousedown', e => { if(e.target === s) s.remove(); });
   document.body.appendChild(s);
@@ -21802,6 +21804,9 @@ window.gpPlaceForm = function(name){
   s.querySelector('.eb-go').onclick = async () => {
     const go = s.querySelector('.eb-go'); if(go.disabled) return;
     it.area = s.querySelector('#gpp-area').value.trim();
+    const igv = s.querySelector('#gpp-ig').value.trim(), igm = /^(?:https?:\/\/)?(?:www\.)?(?:instagram\.com\/)?@?([a-z0-9._]{1,30})\/?(?:\?.*)?$/i.exec(igv);
+    if(igv && !igm){ toast('That Instagram name doesn\'t look right - e.g. @senjarooftop'); return; }
+    it.ig = igm ? igm[1] : ''; if(!it.ig) delete it.ig;
     go.disabled = true; go.textContent = 'Saving…';
     try{ if(file){ const old = { path: it.path }; it.path = await gpUpload(file); delete it.img; if(old.path) gpForgetFile(old); } }
     catch(e){ go.disabled = false; go.textContent = 'Save'; toast('Could not upload the photo - check your connection'); return; }
@@ -21831,7 +21836,7 @@ window.gpGalleryAdd = function(){
 function gpGalleryPick(venue){
   const inp = document.createElement('input'); inp.type = 'file'; inp.accept = 'image/*'; inp.multiple = true;
   inp.onchange = async () => {
-    const files = Array.from(inp.files || []).slice(0, 60 - GPE.c.gallery.length);
+    const files = Array.from(inp.files || []).slice(0, 120 - GPE.c.gallery.length);
     if(!files.length){ toast('The gallery is full - remove some photos first'); return; }
     toast('Adding ' + files.length + ' photo' + (files.length === 1 ? '' : 's') + '…');
     try{ for(const f of files) GPE.c.gallery.push({ id: gpId(), path: await gpUpload(f), venue }); }

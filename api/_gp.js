@@ -5,6 +5,8 @@
 const SECTIONS = ['tonight', 'deals', 'events', 'gallery', 'venues'];
 const httpsOk = u => /^https:\/\/[^\s"'<>]+$/i.test(String(u || '').trim());
 const str = (v, n) => String(v == null ? '' : v).slice(0, n);
+// An Instagram name from whatever was typed: "@senja", "senja" or an instagram.com link -> "senja"
+const igName = v => { const m = /^(?:https?:\/\/)?(?:www\.)?(?:instagram\.com\/)?@?([a-z0-9._]{1,30})\/?(?:\?.*)?$/i.exec(String(v || '').trim()); return m ? m[1] : ''; };
 
 // Every stored photo path in the content (so gp-img only ever serves photos that are really on the page)
 function paths(c){
@@ -54,8 +56,8 @@ function demo(today){
     ],
     gallery: [['senja', 'Senja Rooftop'], ['martini', 'Senja Rooftop'], ['party', 'Senja Rooftop'], ['ombak', 'Ombak Beach Club'], ['saffron', 'Saffron & Salt'], ['chef', 'Saffron & Salt'],
               ['fish', 'Saffron & Salt'], ['pasta', 'Kopi Pagi']].map(([n, v], i) => ({ id: 'dg' + i, img: '/demo-guest/' + n + '.jpg', venue: v })),
-    places: { 'senja rooftop': { img: '/demo-guest/senja.jpg', area: 'Uluwatu' }, 'ombak beach club': { img: '/demo-guest/ombak.jpg', area: 'Sanur' },
-              'saffron & salt': { img: '/demo-guest/saffron.jpg', area: 'Seminyak' }, 'kopi pagi': { img: '/demo-guest/pasta.jpg', area: 'Canggu' } }
+    places: { 'senja rooftop': { img: '/demo-guest/senja.jpg', area: 'Uluwatu', ig: 'senjarooftop.demo' }, 'ombak beach club': { img: '/demo-guest/ombak.jpg', area: 'Sanur', ig: 'ombakbeachclub.demo' },
+              'saffron & salt': { img: '/demo-guest/saffron.jpg', area: 'Seminyak', ig: 'saffronandsalt.demo' }, 'kopi pagi': { img: '/demo-guest/pasta.jpg', area: 'Canggu', ig: 'kopipagi.demo' } }
   };
 }
 
@@ -92,17 +94,17 @@ function build(c, ctx){
     .sort((a, b) => String(a.date || '9999').localeCompare(String(b.date || '9999'))).slice(0, 12)
     .map(e => ({ id: str(e.id, 40), img: img(e), title: str(e.title, 60), line: str(e.line, 90), venue: str(e.venue, 40),
       when: [dateLabel(e.date), timeLabel(e.time)].filter(Boolean).join(' · '), btn: button(e, e.title + (e.date ? ' (' + dateLabel(e.date) + ')' : '')) }));
-  const gallery = (c.gallery || []).map(g => ({ img: img(g), venue: str(g && g.venue, 40) })).filter(g => g.img).slice(0, 60);
+  const gallery = (c.gallery || []).map(g => ({ img: img(g), venue: str(g && g.venue, 40) })).filter(g => g.img).slice(0, 120);
   let order = Array.isArray(c.order) ? c.order.filter(k => SECTIONS.includes(k)) : [];
   SECTIONS.forEach(k => { if (!order.includes(k)) order.push(k); });
   order = order.filter(on);
   // Our places: a photo and area for each venue (Guest page > Our places)
   const pl = (c.places && typeof c.places === 'object') ? c.places : {};
-  const places = (venues || []).map(v => { const p = pl[String(v.name).toLowerCase()] || {}; return { name: v.name, area: str(p.area || v.area || '', 30), img: img(p) }; });
+  const places = (venues || []).map(v => { const p = pl[String(v.name).toLowerCase()] || {}; return { name: v.name, area: str(p.area || v.area || '', 30), img: img(p), ig: igName(p.ig) }; });
   // Colours (Guest page > Colours)
   const hex = v => /^#[0-9a-f]{6}$/i.test(v || '') ? v : '';
   const th = c.theme || {}, theme = { top: hex(th.top), acc: hex(th.acc), pg: hex(th.pg) };
   return { order, slides, deals, events, gallery, places, theme };
 }
 
-module.exports = { SECTIONS, paths, demo, hasContent, build, DEMO_VENUES, DEMO_RENAME, isOldDemo, renameDemo };
+module.exports = { igName, SECTIONS, paths, demo, hasContent, build, DEMO_VENUES, DEMO_RENAME, isOldDemo, renameDemo };

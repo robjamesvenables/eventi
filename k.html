@@ -132,6 +132,11 @@ svg{display:block}
 .gal::-webkit-scrollbar{display:none}
 .gal button{aspect-ratio:1/1;border:0;padding:0;overflow:hidden;cursor:pointer;background:#E7EEF2;display:block;width:100%}
 .gal button.hid{display:none}.gal.all button.hid{display:block}
+.gend{height:1px}
+.ig{display:flex;align-items:center;gap:12px;padding:13px 14px;text-decoration:none;color:#0F1E2E;border-top:1px solid #F1F5F9}.ig:first-child{border-top:0}
+.ig i{width:40px;height:40px;border-radius:12px;background:var(--top,#0F1E2E);color:var(--top-ink,#fff);display:flex;align-items:center;justify-content:center;flex:none;font-style:normal}
+.ig .n{flex:1;min-width:0;display:flex;flex-direction:column}.ig .n b{font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.ig .n small{font-size:12.5px;color:#64748B;font-weight:600;margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ig .f{flex:none;background:var(--acc,#0D9488);color:var(--acc-ink,#fff);font-size:13px;font-weight:800;border-radius:10px;padding:8px 12px}
 .gmore{display:block;width:100%;margin-top:10px;background:white;border:0;border-radius:14px;padding:13px;font:800 14px Inter,sans-serif;color:var(--top,#0F1E2E);cursor:pointer;box-shadow:0 1px 3px rgba(15,30,46,.07)}
 .lb{position:fixed;inset:0;background:#0B1520;z-index:30;display:none;flex-direction:column}
 .lb.on{display:flex}
@@ -211,6 +216,7 @@ svg{display:block}
   var I = {
     tick:'<path d="M20 6 9 17l-5-5"/>', cake:'<path d="M20 21v-8a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8"/><path d="M4 16s.5-1 2-1 2.5 2 4 2 2.5-2 4-2 2.5 2 4 2 2-1 2-1"/><path d="M2 21h20M7 8v3M12 8v3M17 8v3"/>',
     music:'<path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/>', pin:'<path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0z"/><circle cx="12" cy="10" r="3"/>',
+    ig:'<rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r=".6" fill="currentColor"/>',
     wa:'<path d="M3 21l1.65-3.8a9 9 0 1 1 3.4 2.9z"/>', phone:'<path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1.9.4 1.8.7 2.7a2 2 0 0 1-.5 2.1L8 9.8a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.5c.9.3 1.8.6 2.7.7a2 2 0 0 1 1.7 2z"/>',
     food:'<path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 0 0 2-2V2M7 2v20M21 15V2a5 5 0 0 0-5 5v6c0 1.1.9 2 2 2h3zm0 0v7"/>', drink:'<path d="M8 22h8M12 11v11M5 3h14l-7 8z"/>',
     x:'<path d="M18 6 6 18M6 6l12 12"/>', gift:'<path d="M20 12v10H4V12M2 7h20v5H2zM12 22V7M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7zM12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z"/>'
@@ -313,7 +319,16 @@ svg{display:block}
       var id = 'g' + (++galN); GAL[id] = { list: list, key: key };
       var first = list.length <= 3 ? list.length : Math.min(9, list.length - list.length % 3);   // full rows of 3 only
       return '<div class="sec"><div class="lab">GALLERY</div><div class="gal" id="' + id + '">' + list.map(function(x, i){ return '<button data-gal="' + id + '" data-i="' + i + '"' + (i >= first ? ' class="hid"' : '') + ' aria-label="Open photo"><img src="' + esc(x.img) + '" alt="" loading="lazy"></button>'; }).join('') + '</div>' +
-        (list.length > first ? '<button class="gmore" data-gmore="' + id + '">See all ' + list.length + ' photos</button>' : '') + '</div>';
+        (list.length > first ? '<div class="gend" data-gend="' + id + '"></div>' : '') + '</div>';
+    };
+
+    // ── Follow us on Instagram (each place's own account) ──
+    var igHtml = function(list){
+      list = (list || []).filter(function(p){ return p.ig; });
+      if (!list.length) return '';
+      return '<div class="sec"><div class="lab">FOLLOW US</div><div class="box">' + list.map(function(p){
+        return '<a class="ig" href="https://instagram.com/' + encodeURIComponent(p.ig) + '" target="_blank" rel="noopener"><i>' + svg(I.ig, 20) + '</i><span class="n"><b translate="no">' + esc(many ? p.name : '@' + p.ig) + '</b><small>' + (many ? '@' + esc(p.ig) : 'on Instagram') + '</small></span><span class="f">Follow</span></a>';
+      }).join('') + '</div></div>';
     };
 
     // ── Screens ──
@@ -325,6 +340,7 @@ svg{display:block}
           '<span><b translate="no">' + esc(p.name) + '</b><small>' + esc([p.area, st].filter(Boolean).join(' · ')) + '</small></span></button>';
       }).join('') + '</div></div>';
       if (on.gallery && (gp.gallery || []).length) h += galHtml(gp.gallery, '');
+      h += igHtml(places);
       return h + foot + '</div>';
     };
     var placeHtml = function(key){
@@ -337,10 +353,11 @@ svg{display:block}
       if (sl.length) h += '<div class="vsl">' + slidesHtml(sl, false) + '</div>';
       var body = placeSections(key);
       h += body || '<div class="sec"><div class="box" style="padding:18px;text-align:center;color:#64748B;font-size:14px;font-weight:600">Nothing special on here right now - come and see us!</div></div>';
+      h += igHtml([p]);
       return h + foot + '</div>';
     };
     var singleHtml = function(){
-      return '<div class="w">' + topHtml(slidesHtml(gp.slides || [], false)) + memberHtml() + placeSections('') + foot + '</div>';
+      return '<div class="w">' + topHtml(slidesHtml(gp.slides || [], false)) + memberHtml() + placeSections('') + igHtml(places.slice(0, 1)) + foot + '</div>';
     };
 
     var bookBar = function(key){
@@ -368,7 +385,14 @@ svg{display:block}
       sh.addEventListener('click', function(e){ if (e.target === sh) close(); });
       Array.prototype.forEach.call(document.querySelectorAll('[data-go]'), function(b){ b.onclick = function(){ show(b.getAttribute('data-go'), true); }; b.onkeydown = function(e){ if (e.key === 'Enter') show(b.getAttribute('data-go'), true); }; });
       Array.prototype.forEach.call(document.querySelectorAll('[data-home]'), function(b){ b.onclick = function(){ if (history.state && history.state.place) history.back(); else show('', false); }; });
-      Array.prototype.forEach.call(document.querySelectorAll('[data-gmore]'), function(b){ b.onclick = function(){ document.getElementById(b.getAttribute('data-gmore')).classList.add('all'); b.remove(); }; });
+      // Endless gallery: 12 more photos each time you scroll near the end (like Instagram)
+      Array.prototype.forEach.call(document.querySelectorAll('[data-gend]'), function(end){
+        var grid = document.getElementById(end.getAttribute('data-gend'));
+        var more = function(){ var h = grid.querySelectorAll('button.hid'); for (var i = 0; i < Math.min(12, h.length); i++) h[i].classList.remove('hid'); if (h.length <= 12) { end.remove(); return false; } return true; };
+        if (!('IntersectionObserver' in window)) { while (more()); return; }
+        var io = new IntersectionObserver(function(es){ if (!es[0].isIntersecting) return; if (!more()) { io.disconnect(); return; } setTimeout(function(){ io.unobserve(end); io.observe(end); }, 150); }, { rootMargin: '600px 0px' });   // re-check: still near the end -> show more
+        io.observe(end);
+      });
       Array.prototype.forEach.call(document.querySelectorAll('[data-gal]'), function(b){ b.onclick = function(){ viewer(GAL[b.getAttribute('data-gal')], +b.getAttribute('data-i')); }; });
       var viewer = function(g, start){
         var lb = document.getElementById('lb'), n = g.list.length;

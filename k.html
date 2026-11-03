@@ -213,6 +213,8 @@ svg{display:block}
   var root = document.getElementById('root');
   var esc = function(v){ return String(v == null ? '' : v).replace(/[&<>"']/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); };
   var svg = function(p, s){ return '<svg width="' + (s || 18) + '" height="' + (s || 18) + '" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">' + p + '</svg>'; };
+  var PI = {"cake": "<path d=\"M20 21v-8a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8\"/><path d=\"M4 16s.5-1 2-1 2.5 2 4 2 2.5-2 4-2 2.5 2 4 2 2-1 2-1\"/><path d=\"M2 21h20M7 8v3M12 8v3M17 8v3\"/>", "glass": "<path d=\"M8 22h8M12 15v7M5 3h14l-1.5 7a5.5 5.5 0 0 1-11 0z\"/>", "pct": "<path d=\"M19 5 5 19\"/><circle cx=\"6.5\" cy=\"6.5\" r=\"2.5\"/><circle cx=\"17.5\" cy=\"17.5\" r=\"2.5\"/>", "star": "<path d=\"m12 2 3.1 6.3 6.9 1-5 4.9 1.2 6.8L12 17.8 5.8 21l1.2-6.8-5-4.9 6.9-1z\"/>", "food": "<path d=\"M3 2v7a3 3 0 0 0 6 0V2M6 2v20M21 15V2a5 5 0 0 0-5 5v6a2 2 0 0 0 2 2h3zm0 0v7\"/>", "gift": "<rect x=\"3\" y=\"8\" width=\"18\" height=\"4\" rx=\"1\"/><path d=\"M12 8v13M19 12v7a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2v-7M7.5 8a2.5 2.5 0 0 1 0-5C10 3 12 8 12 8s2-5 4.5-5a2.5 2.5 0 0 1 0 5\"/>"};
+  var perkIc = function(t){ t = String(t || '').toLowerCase(); return /birthday|cake/.test(t) ? 'cake' : /%|\boff\b|discount|free.?flow|half price|2 for 1/.test(t) ? 'pct' : /drink|cocktail|wine|beer|shot|bubbles|champagne|coffee/.test(t) ? 'glass' : /queue|priority|vip|skip|first access|early access/.test(t) ? 'star' : /food|dessert|meal|dinner|lunch|breakfast|brunch|dish|plate|snack/.test(t) ? 'food' : 'gift'; };   // the perk's icon comes from its words
   var I = {
     tick:'<path d="M20 6 9 17l-5-5"/>', cake:'<path d="M20 21v-8a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8"/><path d="M4 16s.5-1 2-1 2.5 2 4 2 2.5-2 4-2 2.5 2 4 2 2-1 2-1"/><path d="M2 21h20M7 8v3M12 8v3M17 8v3"/>',
     music:'<path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/>', pin:'<path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0z"/><circle cx="12" cy="10" r="3"/>',
@@ -284,7 +286,7 @@ svg{display:block}
         h += '<div class="sec"><div class="lab">YOUR REWARDS</div><div class="box rw"><div class="rw-top"><b>' + (d.reward.left ? d.reward.left + ' more visit' + (d.reward.left === 1 ? '' : 's') : 'You\'ve made it!') + '</b><span>' + Math.min(d.visits, d.reward.target) + ' / ' + d.reward.target + '</span></div>' +
           '<div class="bar"><i style="width:' + pct + '%"></i></div><p>' + (d.reward.left ? 'Reach ' + d.reward.target + ' visits: ' : 'Your reward: ') + esc(d.reward.text || 'a treat on us') + (d.reward.left ? '' : ' - just ask our team.') + '</p></div></div>';
       }
-      if (d.perks && d.perks.length) h += '<div class="sec"><div class="lab">YOUR ' + (vip ? 'VIP ' : '') + 'PERKS</div><div class="box">' + d.perks.map(function(p){ return '<div class="perk"><i>' + svg(/birthday/i.test(p) ? I.cake : I.gift, 17) + '</i>' + esc(p) + '</div>'; }).join('') + '</div></div>';
+      if (d.perks && d.perks.length) h += '<div class="sec"><div class="lab">YOUR ' + (vip ? 'VIP ' : '') + 'PERKS</div><div class="box">' + d.perks.map(function(p){ return '<div class="perk"><i>' + svg(PI[perkIc(p)], 17) + '</i>' + esc(p) + '</div>'; }).join('') + '</div></div>';
       return h;
     };
 

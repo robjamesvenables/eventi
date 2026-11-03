@@ -45,15 +45,12 @@ function birthdayWeek(bd, today){
 function demoContent(today){
   const ev = (k, start, end, dj, sub, venue) => ({ date: addDays(today, k), start, end, title: dj, sub, venue });
   return {
-    events: [ev(0, '17:00', '23:00', 'Sunset Sessions', 'DJ Kai · deep house into disco', 'Rooftop'),
-             ev(1, '19:00', '23:00', 'Latin Night', 'Live band', 'Harbour'),
-             ev(2, '20:00', '01:00', 'Full Moon Party', 'DJ Ayu', 'Beach Club'),
-             ev(3, '11:00', '15:00', 'Jazz Brunch', 'The Garden Trio', 'Garden'),
-             ev(5, '17:00', '22:00', 'Sunset Sessions', 'DJ Marco', 'Rooftop')],
-    venues: [{ name: 'Rooftop', opens: '16:00', closes: '01:00', map: 'https://maps.google.com', wa: '6281234567890', phone: '+62 812 3456 7890' },
-             { name: 'Harbour', opens: '11:00', closes: '23:00', map: 'https://maps.google.com', wa: '6281234567890', phone: '+62 812 3456 7890' },
-             { name: 'Garden', opens: '08:00', closes: '16:00', map: 'https://maps.google.com', wa: '6281234567890', phone: '+62 812 3456 7890' },
-             { name: 'Beach Club', opens: '10:00', closes: '00:00', map: 'https://maps.google.com', wa: '6281234567890', phone: '+62 812 3456 7890' }],
+    events: [ev(0, '17:00', '23:00', 'Sunset Sessions', 'DJ Kai · deep house into disco', 'Senja Rooftop'),
+             ev(1, '19:00', '23:00', 'Latin Night', 'Live band', 'Saffron & Salt'),
+             ev(2, '20:00', '01:00', 'Pool Party', 'DJ Ayu', 'Ombak Beach Club'),
+             ev(3, '09:00', '12:00', 'Acoustic Breakfast', 'The Garden Trio', 'Kopi Pagi'),
+             ev(5, '17:00', '22:00', 'Sunset Sessions', 'DJ Marco', 'Senja Rooftop')],
+    venues: GP.DEMO_VENUES,
     reward: { visits: 50, text: 'Dinner for two on us' },
     menus: {
       food: [{ name: 'Dinner', venue: 'Harbour', sections: [
@@ -117,7 +114,8 @@ module.exports = async (req, res) => {
     // Card
     const byVenue = {};
     visits.forEach(v => { const n = v.venue || 'Other'; byVenue[n] = (byVenue[n] || 0) + 1; });
-    const favourite = Object.keys(byVenue).sort((a, b) => byVenue[b] - byVenue[a])[0] || '';
+    let favourite = Object.keys(byVenue).sort((a, b) => byVenue[b] - byVenue[a])[0] || '';
+    if (isDemo && GP.DEMO_RENAME[favourite.toLowerCase()]) favourite = GP.DEMO_RENAME[favourite.toLowerCase()];
     const parts = String(m.name || '').trim().split(/\s+/);
     const first = parts[0] + (parts[1] ? ' ' + parts[1][0] + '.' : '');
     const tier = m.tier === 'vip' ? 'vip' : 'member';
@@ -145,7 +143,8 @@ module.exports = async (req, res) => {
 
     // Venues + rewards (Membership > Guest page)
     let venues = Array.isArray(page.venues) && page.venues.length ? page.venues : (demo ? demo.venues : []);
-    venues = venues.filter(v => v && v.name).slice(0, 12).map(v => Object.assign({ name: v.name, map: v.map || '', wa: String(v.wa || '').replace(/\D/g, ''), phone: v.phone || '' }, openState(v, now.hm)));
+    if (demo && GP.isOldDemo(venues)) venues = demo.venues;
+    venues = venues.filter(v => v && v.name).slice(0, 12).map(v => Object.assign({ name: v.name, area: String(v.area || '').slice(0, 30), map: v.map || '', wa: String(v.wa || '').replace(/\D/g, ''), phone: v.phone || '' }, openState(v, now.hm)));
     const rw = page.reward && page.reward.visits ? page.reward : (demo ? demo.reward : null);
     const reward = rw && Number(rw.visits) > 0 ? { target: Number(rw.visits), text: String(rw.text || '').slice(0, 80), left: Math.max(0, Number(rw.visits) - visits.length) } : null;
 

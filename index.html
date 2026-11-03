@@ -2204,6 +2204,8 @@ body.ev-nomoney .dash-hero .ev-money{display:none!important}
 .rs-os{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:6px}
 .rs-o{border:2px solid transparent;border-radius:12px;padding:12px;text-align:left;cursor:pointer;font-family:Inter,sans-serif}.rs-o b{display:block;font-size:14px}.rs-o small{display:block;font-size:12px;font-weight:600;opacity:.9;margin-top:1px}
 .rs-o.on{border-color:currentColor}
+.rs-savesh{display:flex!important;align-items:flex-start;gap:10px;margin-top:12px;background:#F8FAFC;border-radius:12px;padding:11px;cursor:pointer;text-transform:none!important;letter-spacing:0!important}
+.eb-form .rs-savesh input{width:20px;height:20px;margin:1px 0 0;padding:0;accent-color:#0D9488;flex:none}.rs-savesh span{display:flex;flex-direction:column;gap:1px}.rs-savesh b{font-size:14px;color:#0F1E2E}.rs-savesh small{font-size:12px;color:#64748B;font-weight:600}
 .rs-own{width:100%;margin-top:8px;border:1.5px dashed #CBD5E1;background:white;border-radius:12px;padding:11px;font:800 13.5px Inter,sans-serif;color:#475569;cursor:pointer}.rs-own.on{border-style:solid;border-color:#0369A1;color:#0369A1;background:#F0F9FF}
 .rs-as{display:flex;gap:6px;flex-wrap:wrap}.rs-as button{border:1.5px solid #E2E8F0;background:white;border-radius:20px;padding:9px 14px;font:800 13px Inter,sans-serif;color:#334155;cursor:pointer}.rs-as button.on{background:#0F1E2E;border-color:#0F1E2E;color:white}
 .rs-se{border:1.5px solid #E2E8F0;border-radius:13px;padding:10px;margin-top:8px}
@@ -22573,18 +22575,30 @@ window.rsPick = function(pid, day){
   s.innerHTML = `<div class="eb-form"><h3>${rsEsc(p.firstName)} · ${RS_DOW[(d.getDay() + 6) % 7]} ${d.getDate()} ${RS_MON[d.getMonth()]}</h3><p class="sub">Tap a shift${areas.length ? ', then where' : ''}</p>
     <div class="rs-os">${st.shifts.map(x => opt('s:' + x.id, x.name, rsHm(x.a) + '–' + rsHm(x.b) + (x.a2 ? ' · ' + rsHm(x.a2) + '–' + rsHm(x.b2) : ''), x.c)).join('')}${opt('off', 'Off', '', 'off')}${opt('hol', 'Holiday', '', 'hol')}${opt('sick', 'Sick', '', 'sick')}</div>
     <button type="button" class="rs-own${code.startsWith('t:') ? ' on' : ''}" id="rsp-own">+ Other times</button>
-    <div id="rsp-tw" style="display:${code.startsWith('t:') ? 'grid' : 'none'}" class="gp-2"><div><label>Starts</label><input type="time" id="rsp-a" value="${rsEsc(tm[0])}"></div><div><label>Finishes</label><input type="time" id="rsp-b" value="${rsEsc(tm[1])}"></div></div>
+    <div id="rsp-tw" style="display:${code.startsWith('t:') ? 'block' : 'none'}"><div class="gp-2"><div><label>Starts</label><input type="time" id="rsp-a" value="${rsEsc(tm[0])}"></div><div><label>Finishes</label><input type="time" id="rsp-b" value="${rsEsc(tm[1])}"></div></div>
+      <label class="rs-savesh"><input type="checkbox" id="rsp-keep"><span><b>Save as a shift</b><small>So it's one tap next time</small></span></label>
+      <input id="rsp-nm" maxlength="20" placeholder="Name it, e.g. Early" style="display:none;margin-top:8px"></div>
     ${areas.length ? `<label>Where</label><div class="rs-as">${areas.map(a => `<button type="button" class="${a === area ? 'on' : ''}" data-a="${rsEsc(a)}">${rsEsc(a)}</button>`).join('')}</div>` : ''}
     <div class="eb-fbtns">${cur ? '<button class="eb-no" id="rsp-clear" style="margin-right:auto;color:#DC2626">Clear</button>' : ''}<button class="eb-no" id="rsp-no">Cancel</button>${areas.length ? '<button class="eb-go" id="rsp-go">Save</button>' : ''}</div></div>`;
   s.addEventListener('mousedown', e => { if(e.target === s) s.remove(); });
   document.body.appendChild(s);
   const $ = id => s.querySelector('#' + id);
-  const done = () => { let c = code; if(c === 't:'){ const a = $('rsp-a').value, b = $('rsp-b').value; if(!a || !b){ toast('Add the start and finish times'); return; } c = 't:' + a + '-' + b; }
+  $('rsp-keep').onchange = () => { $('rsp-nm').style.display = $('rsp-keep').checked ? '' : 'none'; if($('rsp-keep').checked) $('rsp-nm').focus(); };
+  const done = async () => { let c = code; if(c === 't:'){ const a = $('rsp-a').value, b = $('rsp-b').value; if(!a || !b){ toast('Add the start and finish times'); return; }
+      if($('rsp-keep').checked){
+        const nm = $('rsp-nm').value.trim(); if(!nm){ toast('Give the shift a name'); $('rsp-nm').focus(); return; }
+        const cur = rsSetup(); if(cur.shifts.some(x => x.name.toLowerCase() === nm.toLowerCase())){ toast('There is already a shift called ' + nm); return; }
+        const used = cur.shifts.map(x => x.c), sh = { id: Math.random().toString(36).slice(2, 7), name: nm, a, b, c: RS_SHIFT_COLS.find(k => !used.includes(k)) || 'slate' };
+        cur.shifts.push(sh); const value = JSON.stringify(cur);
+        const { error } = await sb.from('app_settings').upsert({ key:'roster_setup', value }, { onConflict:'company_id,key' });
+        if(error){ toast('Shift not saved - please try again'); return; }
+        appSettings.roster_setup = value; c = 's:' + sh.id; toast(nm + ' added to your shifts');
+      } else c = 't:' + a + '-' + b; }
     if(!c){ toast('Tap a shift'); return; }
     const work = c.startsWith('s:') || c.startsWith('t:');
     rsSet(pid, day, c + (work && area ? '@' + area : '')); s.remove(); };
   s.querySelectorAll('.rs-o').forEach(b => b.onclick = () => { code = b.dataset.c; s.querySelectorAll('.rs-o').forEach(x => x.classList.toggle('on', x === b)); $('rsp-own').classList.remove('on'); $('rsp-tw').style.display = 'none'; if(!areas.length) done(); });
-  $('rsp-own').onclick = () => { code = 't:'; s.querySelectorAll('.rs-o').forEach(x => x.classList.remove('on')); $('rsp-own').classList.add('on'); $('rsp-tw').style.display = 'grid'; if(!areas.length && !$('rsp-go')){ const f = s.querySelector('.eb-fbtns'); f.insertAdjacentHTML('beforeend', '<button class="eb-go" id="rsp-go">Save</button>'); $('rsp-go').onclick = done; } $('rsp-a').focus(); };
+  $('rsp-own').onclick = () => { code = 't:'; s.querySelectorAll('.rs-o').forEach(x => x.classList.remove('on')); $('rsp-own').classList.add('on'); $('rsp-tw').style.display = 'block'; if(!areas.length && !$('rsp-go')){ const f = s.querySelector('.eb-fbtns'); f.insertAdjacentHTML('beforeend', '<button class="eb-go" id="rsp-go">Save</button>'); $('rsp-go').onclick = done; } $('rsp-a').focus(); };
   s.querySelectorAll('.rs-as button').forEach(b => b.onclick = () => { area = area === b.dataset.a ? '' : b.dataset.a; s.querySelectorAll('.rs-as button').forEach(x => x.classList.toggle('on', x.dataset.a === area)); });
   $('rsp-no').onclick = () => s.remove();
   if($('rsp-go')) $('rsp-go').onclick = done;

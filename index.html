@@ -22237,12 +22237,15 @@ window.gpNumbers = async function(){
   (data || []).forEach(r => { if(r.kind === 'open'){ opens++; return; } const c = cnt[r.item] || (cnt[r.item] = { view:0, tap:0 }); c[r.kind] = (c[r.kind] || 0) + 1; if(r.kind === 'tap') taps++; });
   const items = [];
   ['events','slides','deals'].forEach(k => (GPE.c ? GPE.c[k] : []).forEach(it => items.push({ name: it.title || 'Highlight', kind: { events:'Coming up', slides:'Highlight', deals:'Daily deal' }[k], view: (cnt[it.id] || {}).view || 0, tap: (cnt[it.id] || {}).tap || 0 })));
+  // Demo company with no real numbers yet: show believable sample numbers so the screen can be shown
+  const sample = typeof appIsDemoCompany === 'function' && appIsDemoCompany() && !opens;
+  if(sample){ opens = 1240; taps = 0; items.forEach((x, i) => { const v = Math.max(40, 190 - i * 17 - (x.name.length % 5) * 6); x.view = v; x.tap = Math.round(v * (x.kind === 'Coming up' ? .24 : x.kind === 'Highlight' ? .15 : .09) + (i % 3)); taps += x.tap; }); }
   items.sort((a, b) => b.tap - a.tap || b.view - a.view);
   const top = Math.max(1, ...items.map(x => x.tap));
   body.style.cssText = '';
   body.innerHTML = `<div class="gp-nums"><div><b>${opens}</b><small>PAGE OPENS</small></div><div><b style="color:#0D9488">${taps}</b><small>BUTTON TAPS</small></div><div><b style="color:#B45309">${opens ? Math.round(100 * taps / opens) : 0}%</b><small>TAP RATE</small></div></div>
     ${items.length ? items.map(x => `<div class="gp-nrow"><div class="r"><div><b>${gpEsc(x.name)}</b><div style="font-size:11.5px;color:#64748B;font-weight:600">${x.kind}</div></div><span>${x.tap} taps · ${x.view} views</span></div><div class="bar"><i style="width:${Math.round(100 * x.tap / top)}%"></i></div></div>`).join('') : '<div class="gp-auto">Nothing yet - add some deals or events.</div>'}
-    <div class="gp-hint" style="margin-top:8px">Views = how many times members saw the card. Taps = how many pressed its button. Staff previews aren't counted.</div>`;
+    ${sample ? '<div class="gp-hint" style="margin-top:8px;color:#B45309">Demo: sample numbers. Real venues see their own.</div>' : ''}<div class="gp-hint" style="margin-top:8px">Views = how many times members saw the card. Taps = how many pressed its button. Staff previews aren't counted.</div>`;
 };
 // Admin Console: who can change the guest page (by name)
 function gpEdCardRender(){

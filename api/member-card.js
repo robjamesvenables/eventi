@@ -121,7 +121,7 @@ module.exports = async (req, res) => {
     const tier = m.tier === 'vip' ? 'vip' : 'member';
     // Same starting perks the app shows until a manager changes them (Membership > Perks, reward and venues)
     const savedPerks = set.member_perks && (set.member_perks.member || set.member_perks.vip) ? set.member_perks : null;
-    const perksAll = savedPerks || { member: ['Welcome drink on your first visit', 'Birthday dessert on us'], vip: ['10% off food at all our venues', 'Birthday dessert on us', 'Skip the queue on busy nights'] };
+    const perksAll = savedPerks || { member: ['Welcome drink on your first visit', 'Birthday dessert on us'], vip: ['10% off food at all our venues', 'Birthday dessert on us', 'Skip the queue on busy nights'], icons: { member: ['glass', 'cake'], vip: ['pct', 'cake', 'star'] } };
     const perks = Array.isArray(perksAll[tier]) ? perksAll[tier].slice(0, 8) : [];
     const perkIcons = perks.map((x, i) => { const v = String(((perksAll.icons || {})[tier] || [])[i] || ''); return /^[a-z]{2,10}$/.test(v) ? v : ''; });   // icons a manager picked
 

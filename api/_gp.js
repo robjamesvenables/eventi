@@ -49,7 +49,7 @@ function demo(today){
     ],
     events: [
       { id: 'de1', img: '/demo-guest/party.jpg', title: "New Year's Eve", line: 'Fireworks, DJs, free-flow from Rp 1.5m', date: nye, time: '20:00', time2: '03:00', venue: 'Senja Rooftop', btn: 'tickets', url: 'https://megatix.co.id', hl: true,
-        details: 'DJ Ayu and DJ Kai, a live sax player and fireworks over the ocean at midnight.', age: '21', dress: 'Smart - all white', price: 'From Rp 1.5m, free-flow included', notes: 'Tables for 6+ by WhatsApp. Sells out every year.' },
+        details: 'DJ Ayu and DJ Kai, a live sax player and fireworks over the ocean at midnight.', age: '21', dress: 'Smart - all white', price: 'From Rp 1.5m, free-flow included', notes: 'Tables for 6+ by WhatsApp. Sells out every year.', more: [{ ic: 'car', label: 'Parking', text: 'Free valet at the front' }] },
       { id: 'de2', img: '/demo-guest/fish.jpg', title: 'Christmas Lunch', line: 'Four courses by the water', date: xmas, time: '12:00', time2: '16:00', venue: 'Saffron & Salt', btn: 'wa',
         details: 'Four courses, carols, and Santa for the little ones.', age: 'all', dress: 'Smart casual', price: 'Rp 850k, kids half price' },
       { id: 'de3', img: '/demo-guest/chef.jpg', title: "Chef's Table", line: 'Seven courses, 12 seats only', date: plus(9), time: '19:00', time2: '22:30', venue: 'Saffron & Salt', btn: 'wa',
@@ -74,9 +74,15 @@ function topUpDemo(c, today){
   out.gallery = (c.gallery || []).concat(d.gallery.filter(g => DEMO_NEW_PHOTOS.includes(g.img) && !have.has(g.img)));
   // Demo events saved before events had details: give them the demo details (once they have their own, theirs win)
   out.events = (c.events || []).map(e => { const de = e && !('details' in e) && d.events.find(x => x.id === e.id); if (!de) return e;
-    const x = Object.assign({}, e); ['details', 'age', 'dress', 'price', 'notes', 'time2', 'hl'].forEach(k => { if (de[k] != null && x[k] == null) x[k] = de[k]; }); return x; });
+    const x = Object.assign({}, e); ['details', 'age', 'dress', 'price', 'notes', 'time2', 'hl', 'more'].forEach(k => { if (de[k] != null && x[k] == null) x[k] = de[k]; }); return x; });
+  // Items saved with the old demo place names (Rooftop, Harbour...) -> the new names, so they show on the right place's page
+  const ren = it => { const n = it && DEMO_RENAME[String(it.venue || '').toLowerCase().trim()]; return n ? Object.assign({}, it, { venue: n }) : it; };
+  ['slides', 'deals', 'gallery'].forEach(k => { if (Array.isArray(out[k] || c[k])) out[k] = (out[k] || c[k]).map(ren); });
+  out.events = out.events.map(ren);
+  // New Year's Eve always on the demo (at Senja Rooftop)
+  if (!out.events.some(e => e && (e.id === 'de1' || /new year/i.test(e.title || '')))) out.events = [d.events.find(e => e.id === 'de1')].concat(out.events);
   // The old New Year's Eve photo slide is now the event itself in Highlights
-  if (out.events.some(e => e && e.id === 'de1' && e.hl)) out.slides = (c.slides || []).filter(sl => sl && sl.id !== 'ds2');
+  if (out.events.some(e => e && e.id === 'de1' && e.hl)) out.slides = (out.slides || []).filter(sl => sl && sl.id !== 'ds2');
   return out;
 }
 
@@ -116,7 +122,10 @@ function build(c, ctx){
       return { id: str(e.id, 40), img: img(e), title: str(e.title, 60), line: str(e.line, 90), venue: str(e.venue, 40),
         when: [dateLabel(e.date), t1 && t2 ? t1 + ' – ' + t2 : t1].filter(Boolean).join(' · '), btn: button(e, e.title + (e.date ? ' (' + dateLabel(e.date) + ')' : '')),
         // The details pop-up: what's on, ages, dress code, price, anything else
-        details: str(e.details, 300), age: AGES[e.age] || '', dress: str(e.dress, 60), price: str(e.price, 60), notes: str(e.notes, 200), hl: !!e.hl }; });
+        details: str(e.details, 300), age: AGES[e.age] || '', dress: str(e.dress, 60), price: str(e.price, 60), notes: str(e.notes, 200), hl: !!e.hl,
+        // the icons staff chose for each detail, and their own extra details
+        ic: ['details', 'age', 'dress', 'price', 'notes'].reduce((o, k) => { const v = String(((e.ic || {})[k]) || ''); if (/^[a-z]{2,10}$/.test(v)) o[k] = v; return o; }, {}),
+        more: (Array.isArray(e.more) ? e.more : []).filter(m => m && m.text).slice(0, 6).map(m => ({ ic: /^[a-z]{2,10}$/.test(String(m.ic || '')) ? m.ic : '', label: str(m.label, 30), text: str(m.text, 120) })) }; });
   // Events switched to "Show in Highlights" go in that place's big photos too (tap -> the details pop-up)
   if (on('slides')) events.filter(e => e.hl && e.img).forEach(e => { if (slides.length < 12) slides.push({ id: 'ev-' + e.id, img: e.img, title: e.title, line: e.when, venue: e.venue, btn: null, ev: e.id }); });
   const gallery = (c.gallery || []).map(g => ({ img: img(g), venue: str(g && g.venue, 40) })).filter(g => g.img).slice(0, 120);

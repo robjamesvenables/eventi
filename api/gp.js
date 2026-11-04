@@ -74,28 +74,43 @@ async function roster(req, res){
   const today = new Intl.DateTimeFormat('en-CA', { timeZone: tz, year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date());
   const w1 = rsMonday(today), w2 = rsAdd(w1, 7);
   const [cos, sets, rows, ppl] = await Promise.all([
-    L.db('companies?select=name&id=eq.' + q(co)),
+    L.db('companies?select=name,code&id=eq.' + q(co)),
     L.db('app_settings?select=key,value&company_id=eq.' + q(co) + '&key=eq.roster_setup'),
     L.db('rosters?select=week,cells,updated_at&company_id=eq.' + q(co) + '&venue=eq.' + q(link.venue) + '&dept=eq.' + q(link.dept) + '&week=in.(' + w1 + ',' + w2 + ')'),
     L.db('profiles?select=id,first_name,last_name,role,departments,active&company_id=eq.' + q(co))
   ]);
   const setup = rsParse(sets[0] && sets[0].value) || {};
+  const isDemo = String((cos[0] || {}).code || '').toUpperCase() === 'MAVIS';
+  if (isDemo && !(setup.areas && typeof setup.areas === 'object')) { const A = ['Beach Club', 'Sunset Bar', 'Pool Deck', 'Garden Restaurant']; setup.areas = { 'operations': A.slice(), 'front of house': A.slice() }; }
   const shifts = Array.isArray(setup.shifts) && setup.shifts.length ? setup.shifts : RS_DEF_SHIFTS;
   const lc = s => String(s || '').toLowerCase().trim();
   const inDept = ppl.filter(p => p.active !== false && (p.departments || []).some(d => lc(d) === lc(link.dept)));
   const ROLE = { superadmin: 'Manager', director: 'Director', manager: 'Manager', supervisor: 'Supervisor', teammember: '' };
-  const week = w => { const r = rows.find(x => String(x.week).slice(0, 10) === w) || {}; const cells = rsParse(r.cells) || {};
+  const splitAreas = (a => a.length >= 2 ? a : [])(((setup.areas || {})[lc(link.dept)] || []).slice(0, 20));
+  // Demo company: an empty week shows the same sample week the app shows (same people, same pattern)
+  const demoWeek = (w, dws) => {
+    let list = inDept.map(p => ({ id: String(p.id), f: p.first_name || '', l: p.last_name || '' })).concat(dws.map(x => ({ id: String(x.id), f: x.name, l: '' })));
+    const extra = [];
+    if (list.length < 4) ['Kadek','Putu','Wayan','Komang','Ayu','Gede'].slice(0, 6 - list.length).forEach((n, i) => { const x = { id: 'demo-' + lc(link.dept).replace(/\W+/g, '') + '-' + i, first_name: n, last_name: ['S','R','A','P','L','M'][i], role: i ? 'teammember' : 'supervisor' }; extra.push(x); list.push({ id: x.id, f: n, l: x.last_name }); });
+    list.sort((a, b) => (a.f + a.l).localeCompare(b.f + b.l));
+    const P = ['s:m','s:m','off','s:e','s:e','s:e','off'], Q = ['s:e','s:e','s:e','off','off','s:s','s:s'], R = ['hol','hol','hol','s:m','s:m','off','s:m'], S = ['s:m','off','sick','s:m','s:e','s:e','off'], T = ['off','s:e','s:e','s:e','s:m','off','t:17:00-01:00'], U = ['s:s','s:s','s:m','off','off','s:e','s:e'];
+    const cells = {}; list.forEach((p, i) => { cells[p.id] = {}; [P, Q, R, S, T, U][i % 6].forEach((v, d) => { cells[p.id][rsAdd(w, d)] = v + (splitAreas.length && /^[st]:/.test(v) ? '@' + splitAreas[(i + d) % splitAreas.length] : ''); }); });
+    return { cells, extra };
+  };
+  const week = w => { const r = rows.find(x => String(x.week).slice(0, 10) === w) || {}; let cells = rsParse(r.cells) || {};
     const dws = ((setup.dw || {})[lc(link.dept)] || []).filter(x => x && x.id && x.name);
+    let extra = [];
+    if (isDemo && !Object.keys(cells).length) ({ cells, extra } = demoWeek(w, dws));
     const ids = new Set(inDept.map(p => String(p.id))); dws.forEach(x => ids.add(String(x.id))); Object.keys(cells).forEach(id => ids.add(id));
     const people = [...ids].map(id => { const w0 = dws.find(x => String(x.id) === id);
       if (w0) return { name: String(w0.name).slice(0, 30), role: 'Daily worker', dw: true, days: Array.from({ length: 7 }, (_, i) => rsCell((cells[id] || {})[rsAdd(w, i)], shifts)) };
-      const p = ppl.find(x => String(x.id) === id); if (!p) return null;
+      const p = ppl.find(x => String(x.id) === id) || extra.find(x => x.id === id); if (!p) return null;
       const days = Array.from({ length: 7 }, (_, i) => rsCell((cells[id] || {})[rsAdd(w, i)], shifts));
       return { name: (p.first_name || '') + (p.last_name ? ' ' + p.last_name[0] + '.' : ''), role: ROLE[p.role] || '', days }; }).filter(Boolean)
       .sort((a, b) => a.name.localeCompare(b.name));
     return { start: w, days: Array.from({ length: 7 }, (_, i) => rsAdd(w, i)), people, updated: r.updated_at || null }; };
   res.setHeader('Cache-Control', 'no-store');
-  return L.send(res, 200, { ok: true, company: (cos[0] || {}).name || '', dept: link.dept, areas: (a => a.length >= 2 ? a : [])(((setup.areas || {})[lc(link.dept)] || []).slice(0, 20)), area: link.area || '', today, weeks: [week(w1), week(w2)] });
+  return L.send(res, 200, { ok: true, company: (cos[0] || {}).name || '', dept: link.dept, areas: splitAreas, area: link.area || '', today, weeks: [week(w1), week(w2)] });
 }
 
 module.exports = async (req, res) => {

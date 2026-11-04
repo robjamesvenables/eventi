@@ -95,7 +95,7 @@ async function roster(req, res){
       .sort((a, b) => a.name.localeCompare(b.name));
     return { start: w, days: Array.from({ length: 7 }, (_, i) => rsAdd(w, i)), people, updated: r.updated_at || null }; };
   res.setHeader('Cache-Control', 'no-store');
-  return L.send(res, 200, { ok: true, company: (cos[0] || {}).name || '', dept: link.dept, areas: ((setup.areas || {})[lc(link.dept)] || []).slice(0, 20), area: link.area || '', today, weeks: [week(w1), week(w2)] });
+  return L.send(res, 200, { ok: true, company: (cos[0] || {}).name || '', dept: link.dept, areas: (a => a.length >= 2 ? a : [])(((setup.areas || {})[lc(link.dept)] || []).slice(0, 20)), area: link.area || '', today, weeks: [week(w1), week(w2)] });
 }
 
 module.exports = async (req, res) => {

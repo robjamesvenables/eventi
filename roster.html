@@ -56,7 +56,7 @@ body{font-family:Inter,system-ui,-apple-system,"Segoe UI",sans-serif;background:
     if(!D){ return; }
     var w = D.weeks[wk];
     var h = '<div class="chips"><button data-w="0"' + (wk === 0 ? ' class="on"' : '') + '>This week</button><button data-w="1"' + (wk === 1 ? ' class="on"' : '') + '>Next week</button></div>';
-    if(D.areas && D.areas.length) h += '<div class="chips"><button data-a=""' + (!area ? ' class="on"' : '') + '>All areas</button>' + D.areas.map(function(a){ return '<button data-a="' + esc(a) + '"' + (area === a ? ' class="on"' : '') + '>' + esc(a) + '</button>'; }).join('') + '</div>';
+    if(D.areas && D.areas.length) h += '<div class="chips"><button data-a=""' + (!area ? ' class="on"' : '') + '>Everyone</button>' + D.areas.map(function(a){ return '<button data-a="' + esc(a) + '"' + (area === a ? ' class="on"' : '') + '>' + esc(a) + '</button>'; }).join('') + '</div>';
     h += '<div class="wk">' + fd(w.days[0]) + ' – ' + fd(w.days[6]) + '</div>';
     var list = w.people.filter(function(p){ return !area || p.days.some(function(c){ return c && c.area === area; }); });
     if(!list.length) h += '<div class="msg"><b>' + (w.people.length ? 'Nobody in ' + esc(area) + ' this week' : 'Nothing on the roster yet') + '</b><p>Check back soon - this page updates by itself.</p></div>';
@@ -64,7 +64,7 @@ body{font-family:Inter,system-ui,-apple-system,"Segoe UI",sans-serif;background:
       return '<div class="pr"><div class="n"><span class="nm">' + esc(p.name) + (p.dw ? '<b class="dw">DW</b>' : '') + '</span><span>' + esc(p.role) + '</span></div><div class="days">' + p.days.map(function(c, i){
         var today = w.days[i] === D.today ? ' today' : '', dim = area && (!c || c.area !== area) ? ' dim' : '';
         if(!c) return '<div class="d k-none' + today + dim + '"><i>' + DOW[i] + '</i>–</div>';
-        return '<div class="d k-' + esc(c.k) + today + dim + '"><i>' + DOW[i] + '</i><span class="sm">' + esc(c.short || c.label) + '</span><span class="lg">' + esc(c.label) + (c.time ? '<em>' + esc(c.time) + '</em>' : '') + '</span>' + (c.area ? '<em class="ar">' + esc(c.area) + '</em>' : '') + '</div>';
+        return '<div class="d k-' + esc(c.k) + today + dim + '"><i>' + DOW[i] + '</i><span class="sm">' + esc(c.short || c.label) + '</span><span class="lg">' + esc(c.label) + (c.time ? '<em>' + esc(c.time) + '</em>' : '') + '</span>' + (c.area && D.split ? '<em class="ar">' + esc(c.area) + '</em>' : '') + '</div>';
       }).join('') + '</div></div>';
     }).join('');
     h += '<div class="foot">This page always shows the latest roster.<br><a href="https://getmavis.co">Powered by Mavis</a></div>';
@@ -76,7 +76,7 @@ body{font-family:Inter,system-ui,-apple-system,"Segoe UI",sans-serif;background:
   function load(){
     fetch('/api/gp?a=roster&t=' + encodeURIComponent(token), { cache: 'no-store' }).then(function(r){ return r.json(); }).then(function(d){
       if(!d || !d.ok){ document.getElementById('dp').textContent = 'Roster'; document.getElementById('root').innerHTML = '<div class="msg"><b>This link has stopped working</b><p>Ask your manager for the new roster link.</p></div>'; return; }
-      D = d; if(d.area){ area = d.area; d.areas = []; } document.getElementById('co').textContent = (d.company || 'Roster') + (d.area ? ' · ' + d.dept : ''); document.getElementById('dp').textContent = d.area || d.dept; document.title = (d.area || d.dept) + ' roster'; document.getElementById('live').style.display = '';
+      D = d; if(d.area){ area = d.area; d.areas = []; } var split = !!(d.area || (d.areas && d.areas.length)); D.split = split; document.getElementById('co').textContent = (d.company || 'Roster') + (d.area ? ' · ' + d.dept : ''); document.getElementById('dp').textContent = d.area || d.dept; document.title = (d.area || d.dept) + ' roster'; document.getElementById('live').style.display = '';
       render();
     }).catch(function(){ if(!D) document.getElementById('root').innerHTML = '<div class="msg"><b>Couldn\'t load the roster</b><p>Check your connection and try again.</p></div>'; });
   }

@@ -2181,6 +2181,10 @@ body.ev-nomoney .dash-hero .ev-money{display:none!important}
 .rs-tabs button{display:inline-flex;align-items:center;gap:7px;border:0;border-radius:10px;padding:9px 14px;font:800 13.5px Inter,sans-serif;background:#F1F5F9;color:#334155;cursor:pointer}
 .rs-tabs button.on{background:#0F1E2E;color:white}
 .rs-tabs .rs-ted{display:inline-flex;width:22px;height:22px;border-radius:6px;background:rgba(255,255,255,.16);align-items:center;justify-content:center;margin-right:-6px}
+.rs-tabs.rs-tabs-w{flex-wrap:wrap;overflow:visible}
+.rs-thint{font-size:12.5px;color:#64748B;font-weight:600;align-self:center;padding:0 4px}
+.rs-noar{font-style:italic;opacity:.85}
+.rs-as.rs-need{outline:2px solid #DC2626;outline-offset:4px;border-radius:12px}
 .rs-dwt{display:inline-block;background:#C4973B;color:#2B1D07;font-size:10px;font-weight:900;letter-spacing:.6px;border-radius:5px;padding:2px 5px;margin-left:6px;vertical-align:2px}
 .rs-addp{display:block;width:100%;margin-top:10px;border:1.5px dashed #94A3B8;background:white;border-radius:12px;padding:12px;font:800 14px Inter,sans-serif;color:#0F766E;cursor:pointer}
 .rs-plist{max-height:300px;overflow-y:auto;margin-top:8px;display:flex;flex-direction:column;gap:6px}
@@ -22478,6 +22482,8 @@ function rsSetup(){
   return { shifts: Array.isArray(s.shifts) && s.shifts.length ? s.shifts : RS_DEF_SHIFTS.map(x => Object.assign({}, x)), areas: areas || {}, dw: (s.dw && typeof s.dw === 'object') ? s.dw : {} };
 }
 function rsAreas(dept){ return (rsSetup().areas[deptKey(dept)] || []).slice(); }
+// A real split needs two or more areas - one area on its own isn't a split
+function rsSplit(dept){ const a = rsAreas(dept); return a.length >= 2 ? a : []; }
 function rsDepts(){ const all = (PEOPLE_DEPARTMENTS || []).slice(); return all.length ? all : ['Front of House']; }
 function rsCanEdit(dept){
   if(!myProfile) return true;
@@ -22510,7 +22516,9 @@ function rsCell(v){
 function rsBox(v, cls, small){
   const c = rsCell(v), col = RS_COLS[c ? c.k : 'none'] || RS_COLS.slate;
   const dim = RS.area && (!c || c.area !== RS.area) ? ' rs-dim' : '';
-  const ar = c && c.area && c.area !== RS.area ? `<small class="rs-ar">${rsEsc(c.area)}</small>` : '';   // in an area's tab its own name is obvious
+  const split = rsSplit(RS.dept).length, work = c && (c.k !== 'off' && c.k !== 'hol' && c.k !== 'sick' && c.k !== 'none');
+  const ar = !split ? '' : c && c.area && c.area !== RS.area ? `<small class="rs-ar">${rsEsc(c.area)}</small>`
+    : work && !c.area ? '<small class="rs-ar rs-noar">No area yet</small>' : '';   // in an area's tab its own name is obvious
   const inner = !c ? '<b style="font-weight:600">–</b>' : small ? `<b>${rsEsc(c.short || c.label)}</b>${ar}`
     : `<b>${rsEsc(c.label)}</b>${c.time ? `<small>${rsEsc(c.time)}</small>` : ''}${ar}`;
   return `<div class="rs-b${cls ? ' ' + cls : ''}${dim}" style="background:${col[0]};color:${col[1]}">${inner}</div>`;
@@ -22521,7 +22529,7 @@ const rsHours = m => { const h = Math.round(m / 6) / 10; return (h % 1 ? h.toFix
 // Demo: a believable week so the screen is never empty
 function rsDemoCells(dept, week){
   const P = ['s:m','s:m','off','s:e','s:e','s:e','off'], Q = ['s:e','s:e','s:e','off','off','s:s','s:s'], R = ['hol','hol','hol','s:m','s:m','off','s:m'], S = ['s:m','off','sick','s:m','s:e','s:e','off'], T = ['off','s:e','s:e','s:e','s:m','off','t:17:00-01:00'], U = ['s:s','s:s','s:m','off','off','s:e','s:e'];
-  const ar = rsAreas(dept), out = {};
+  const ar = rsSplit(dept), out = {};
   rsPeople(dept).forEach((p, i) => { const pat = [P, Q, R, S, T, U][i % 6]; out[p.id] = {}; pat.forEach((v, d) => { out[p.id][rsAdd(week, d)] = v + (ar.length && v.startsWith('s:') || ar.length && v.startsWith('t:') ? '@' + ar[(i + d) % ar.length] : ''); }); });
   return out;
 }
@@ -22557,11 +22565,16 @@ function rsRender(){
   if(hb) hb.innerHTML = (can ? `<button class="btn btn-ghost" onclick="rsCopyLast()">${rsIc(RSI.copy, 15)} Copy last week</button><button class="btn btn-ghost" onclick="rsSetupOpen()">${rsIc(RSI.gear, 15)} Shifts</button>` : '') + `<button class="btn btn-navy" onclick="rsShare()">${rsIc(RSI.share, 15)} Share</button>`;
   const d0 = new Date(days[0] + 'T12:00:00'), d6 = new Date(days[6] + 'T12:00:00');
   const wkLabel = `${RS_DOW[0]} ${d0.getDate()}${d0.getMonth() !== d6.getMonth() ? ' ' + RS_MON[d0.getMonth()] : ''} – ${RS_DOW[6]} ${d6.getDate()} ${RS_MON[d6.getMonth()]}`;
-  let ppl = rsPeople(dept); const areas = rsAreas(dept), isThis = RS.week === rsMonday(today);
+  let ppl = rsPeople(dept); const areas = rsSplit(dept), allAreas = rsAreas(dept), isThis = RS.week === rsMonday(today);
   let h = `<div class="rs-depts">${rsDepts().map(d => `<button class="${d === dept ? 'on' : ''}" onclick='rsGo("dept", ${rsEsc(JSON.stringify(d))})'>${deptIconHtml(d, 24, Object.assign({}, deptIconSpec(d), { c: d === dept ? 'teal' : 'navy' }))}<span>${rsEsc(d)}</span></button>`).join('')}</div>
     <div class="rs-bar"><div class="rs-wk"><button aria-label="Last week" onclick="rsGo('week',-1)">${rsIc(RSI.l, 18)}</button><b>${wkLabel}</b><button aria-label="Next week" onclick="rsGo('week',1)">${rsIc(RSI.r, 18)}</button>${isThis ? '' : `<button class="rs-tw" onclick="rsGo('week',0)">This week</button>`}</div>
     </div>`;
-  if(areas.length || can) h += `<div class="rs-tabs"><span class="rs-tl">Split areas</span><button class="${!RS.area ? 'on' : ''}" onclick="rsGo('area','')">All</button>${areas.map(a => `<button class="${RS.area === a ? 'on' : ''}" onclick='rsGo("area", ${rsEsc(JSON.stringify(a))})'>${rsEsc(a)}${RS.area === a && can ? `<span class="rs-ted" role="button" aria-label="Rename or remove" onclick='event.stopPropagation(); rsAreaEdit(${rsEsc(JSON.stringify(a))})'>${rsIc('<path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/>', 13)}</span>` : ''}</button>`).join('')}${can ? `<button class="rs-tadd" onclick="rsAreaEdit()">+ Add</button>` : ''}</div>`;
+  if(!areas.includes(RS.area)) RS.area = '';
+  const pen = a => `<span class="rs-ted" role="button" aria-label="Rename or remove" onclick='event.stopPropagation(); rsAreaEdit(${rsEsc(JSON.stringify(a))})'>${rsIc('<path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/>', 13)}</span>`;
+  if(areas.length) h += `<div class="rs-tabs"><span class="rs-tl">Split areas</span><button class="${!RS.area ? 'on' : ''}" onclick="rsGo('area','')">Everyone</button>${areas.map(a => `<button class="${RS.area === a ? 'on' : ''}" onclick='rsGo("area", ${rsEsc(JSON.stringify(a))})'>${rsEsc(a)}${RS.area === a && can ? `<span class="rs-ted" role="button" aria-label="Rename or remove" onclick='event.stopPropagation(); rsAreaEdit(${rsEsc(JSON.stringify(a))})'>${rsIc('<path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/>', 13)}</span>` : ''}</button>`).join('')}${can ? `<button class="rs-tadd" onclick="rsAreaEdit()">+ Add</button>` : ''}</div>`;
+  else if(can) h += `<div class="rs-tabs rs-tabs-w"><span class="rs-tl">Split areas</span>${allAreas.length === 1
+    ? `<button onclick='rsAreaEdit(${rsEsc(JSON.stringify(allAreas[0]))})'>${rsEsc(allAreas[0])}${pen(allAreas[0])}</button><button class="rs-tadd" onclick="rsAreaEdit()">+ Add a 2nd area</button>`
+    : `<button class="rs-tadd" onclick="rsAreaEdit()">+ Split into areas</button>`}</div>`;
   if(RS.notReady && !appIsDemoCompany()) h += `<div class="rs-note">${rsIc(RSI.gear, 15)}<span>The roster needs a one-time setup before it can save. Ask Mavis to switch it on.</span></div>`;
   else if(RS.demoFill) h += `<div class="rs-note">${rsIc(RSI.pic, 15)}<span>Demo: a sample week. Tap any box to change it.</span></div>`;
   if(RS.loading && !Object.keys(RS.cells).length) h += '<div class="vac-empty">Loading…</div>';
@@ -22599,8 +22612,8 @@ window.rsPick = function(pid, day){
   if(!rsCanEdit(RS.dept)) return;
   ebEnsureUi(); document.querySelectorAll('.eb-sheet').forEach(x => x.remove());
   const p = rsPeople(RS.dept).find(x => String(x.id) === String(pid)); if(!p) return;
-  const st = rsSetup(), areas = rsAreas(RS.dept), cur = (RS.cells[pid] || {})[day] || '';
-  let [code, area] = cur.split('@'); area = area || (cur ? '' : RS.area || '');
+  const st = rsSetup(), areas = rsSplit(RS.dept), cur = (RS.cells[pid] || {})[day] || '';
+  let [code, area] = cur.split('@'); area = areas.includes(area) ? area : (RS.area || '');
   const d = new Date(day + 'T12:00:00');
   const opt = (c, label, sub, k) => { const col = RS_COLS[k] || RS_COLS.teal; return `<button type="button" class="rs-o${code === c ? ' on' : ''}" data-c="${c}" style="background:${col[0]};color:${col[1]}"><b>${rsEsc(label)}</b>${sub ? `<small>${rsEsc(sub)}</small>` : ''}</button>`; };
   const tm = code.startsWith('t:') ? code.slice(2).split('-') : ['', ''];
@@ -22629,10 +22642,11 @@ window.rsPick = function(pid, day){
       } else c = 't:' + a + '-' + b; }
     if(!c){ toast('Tap a shift'); return; }
     const work = c.startsWith('s:') || c.startsWith('t:');
+    if(work && areas.length && !area){ toast('Pick where they work'); const w = s.querySelector('.rs-as'); if(w){ w.classList.add('rs-need'); w.scrollIntoView({ block:'nearest' }); } return; }
     rsSet(pid, day, c + (work && area ? '@' + area : '')); s.remove(); };
   s.querySelectorAll('.rs-o').forEach(b => b.onclick = () => { code = b.dataset.c; s.querySelectorAll('.rs-o').forEach(x => x.classList.toggle('on', x === b)); $('rsp-own').classList.remove('on'); $('rsp-tw').style.display = 'none'; if(!areas.length) done(); });
   $('rsp-own').onclick = () => { code = 't:'; s.querySelectorAll('.rs-o').forEach(x => x.classList.remove('on')); $('rsp-own').classList.add('on'); $('rsp-tw').style.display = 'block'; if(!areas.length && !$('rsp-go')){ const f = s.querySelector('.eb-fbtns'); f.insertAdjacentHTML('beforeend', '<button class="eb-go" id="rsp-go">Save</button>'); $('rsp-go').onclick = done; } $('rsp-a').focus(); };
-  s.querySelectorAll('.rs-as button').forEach(b => b.onclick = () => { area = area === b.dataset.a ? '' : b.dataset.a; s.querySelectorAll('.rs-as button').forEach(x => x.classList.toggle('on', x.dataset.a === area)); });
+  s.querySelectorAll('.rs-as button').forEach(b => b.onclick = () => { area = b.dataset.a; s.querySelector('.rs-as').classList.remove('rs-need'); s.querySelectorAll('.rs-as button').forEach(x => x.classList.toggle('on', x.dataset.a === area)); });
   $('rsp-no').onclick = () => s.remove();
   if($('rsp-go')) $('rsp-go').onclick = done;
   if($('rsp-clear')) $('rsp-clear').onclick = () => { rsSet(pid, day, ''); s.remove(); };
@@ -22761,33 +22775,51 @@ async function rsSaveSetup(cur){
 window.rsAreaEdit = function(old){
   if(!rsCanEdit(RS.dept)) return;
   ebEnsureUi(); document.querySelectorAll('.eb-sheet').forEach(x => x.remove());
-  const dept = RS.dept, s = document.createElement('div'); s.className = 'eb-sheet';
-  s.innerHTML = `<div class="eb-form"><h3>${old ? 'Change ' + rsEsc(old) : 'Add an area to ' + rsEsc(dept)}</h3><p class="sub">${old ? 'Rename it, or remove it from ' + rsEsc(dept) : 'A part of ' + rsEsc(dept) + ' with its own roster tab - e.g. Beach Club, Sunset Bar, Pool Deck. Staff can work in different areas on different days.'}</p>
-    <label>Name</label><input id="rsa-n" maxlength="30" value="${rsEsc(old || '')}" placeholder="e.g. Sunset Bar">
-    <div class="eb-fbtns">${old ? '<button class="eb-no" id="rsa-del" style="margin-right:auto;color:#DC2626">Remove</button>' : ''}<button class="eb-no" id="rsa-no">Cancel</button><button class="eb-go" id="rsa-go">${old ? 'Save' : 'Add'}</button></div></div>`;
+  const dept = RS.dept, k = deptKey(dept), have = rsAreas(dept), first = !old && !have.length;
+  const s = document.createElement('div'); s.className = 'eb-sheet';
+  const title = old ? 'Change ' + rsEsc(old) : first ? 'Split ' + rsEsc(dept) + ' into areas' : have.length === 1 ? 'Add one more to split' : 'Add an area to ' + rsEsc(dept);
+  const sub = old ? 'Rename it, or remove it from ' + rsEsc(dept)
+    : first ? 'Each area gets its own tab. A split needs at least two - staff can work in a different one each day.'
+    : have.length === 1 ? 'A split needs at least two areas. Add the second, and the tabs appear.' : 'Another part of ' + rsEsc(dept) + ' with its own tab.';
+  s.innerHTML = `<div class="eb-form"><h3>${title}</h3><p class="sub">${sub}</p>
+    ${first ? `<label>First area</label><input id="rsa-n" maxlength="30" placeholder="e.g. Beach Club"><label>Second area</label><input id="rsa-n2" maxlength="30" placeholder="e.g. Sunset Bar">`
+      : `<label>Name</label><input id="rsa-n" maxlength="30" value="${rsEsc(old || '')}" placeholder="e.g. Sunset Bar">`}
+    <div class="eb-fbtns">${old ? '<button class="eb-no" id="rsa-del" style="margin-right:auto;color:#DC2626">Remove</button>' : ''}<button class="eb-no" id="rsa-no">Cancel</button><button class="eb-go" id="rsa-go">${old ? 'Save' : first ? 'Split' : 'Add'}</button></div></div>`;
   s.addEventListener('mousedown', e => { if(e.target === s) s.remove(); });
   document.body.appendChild(s);
   const $ = id => s.querySelector('#' + id);
+  const clean = v => v.replace(/\s+/g, ' ').trim().replace(/@/g, '');
   setTimeout(() => $('rsa-n').focus(), 60);
   $('rsa-no').onclick = () => s.remove();
-  $('rsa-n').onkeydown = e => { if(e.key === 'Enter') $('rsa-go').click(); };
+  $('rsa-n').onkeydown = e => { if(e.key === 'Enter') (first ? $('rsa-n2').focus() : $('rsa-go').click()); };
+  if(first) $('rsa-n2').onkeydown = e => { if(e.key === 'Enter') $('rsa-go').click(); };
   $('rsa-go').onclick = async () => {
-    const nm = $('rsa-n').value.replace(/\s+/g, ' ').trim().replace(/@/g, '');
-    if(!nm){ toast('Type a name'); return; }
-    const cur = rsSetup(), list = (cur.areas[deptKey(dept)] || []).slice();
+    const nm = clean($('rsa-n').value), nm2 = first ? clean($('rsa-n2').value) : '';
+    if(!nm || (first && !nm2)){ toast(first ? 'A split needs two areas - name both' : 'Type a name'); return; }
+    if(first && nm.toLowerCase() === nm2.toLowerCase()){ toast('Give the two areas different names'); return; }
+    const cur = rsSetup(), list = (cur.areas[k] || []).slice();
     if(list.some(a => a.toLowerCase() === nm.toLowerCase() && a !== old)){ toast(nm + ' is already there'); return; }
-    if(old){ const i = list.indexOf(old); if(i > -1) list[i] = nm; } else { if(list.length >= 20){ toast('Up to 20 areas'); return; } list.push(nm); }
-    cur.areas[deptKey(dept)] = list;
+    if(old){ const i = list.indexOf(old); if(i > -1) list[i] = nm; }
+    else { if(list.length >= 20){ toast('Up to 20 areas'); return; } list.push(nm); if(first) list.push(nm2); }
+    cur.areas[k] = list;
     if(!(await rsSaveSetup(cur))) return;
     if(old && nm !== old){   // boxes already set to the old name follow the new one
       Object.keys(RS.cells).forEach(pid => Object.entries(RS.cells[pid]).forEach(([d, v]) => { const [c, a] = String(v).split('@'); if(a === old) rsSet(pid, d, c + '@' + nm); }));
     }
     if(RS.demoFill) RS.cells = rsDemoCells(dept, RS.week);   // demo: spread the sample week across the areas
-    RS.area = nm; s.remove(); rsRender(); toast(old ? 'Saved' : nm + ' added');
+    RS.area = list.length >= 2 ? (old ? nm : '') : ''; s.remove(); rsRender();
+    toast(old ? 'Saved' : first ? dept + ' split into ' + nm + ' and ' + nm2 : list.length === 2 ? dept + ' is now split' : nm + ' added');
   };
-  if($('rsa-del')) $('rsa-del').onclick = () => rsAfterSheet(s, () => appConfirmShow({ title:'Remove ' + old + '?', msg:'The tab goes. Shifts already given stay on the roster, without a place.', label:'Remove', onOk: async () => {
-    const cur = rsSetup(); cur.areas[deptKey(dept)] = (cur.areas[deptKey(dept)] || []).filter(a => a !== old); if(!cur.areas[deptKey(dept)].length) delete cur.areas[deptKey(dept)];
-    if(!(await rsSaveSetup(cur))) return; RS.area = ''; rsRender(); toast(old + ' removed'); } }));
+  if($('rsa-del')) $('rsa-del').onclick = () => {
+    const ends = have.length <= 2;   // taking one of the last two away ends the split
+    rsAfterSheet(s, () => appConfirmShow({ title: ends ? 'Remove the split?' : 'Remove ' + old + '?',
+      msg: ends ? (have.length === 2 ? 'A split needs two areas, so ' + have.join(' and ') + ' both go and ' + dept + ' is one roster again.' : old + ' goes and ' + dept + ' is one roster again.') + ' Shifts already given stay.'
+        : 'The tab goes. Shifts given in ' + old + ' stay, marked "No area yet".',
+      label:'Remove', onOk: async () => {
+        const cur = rsSetup();
+        if(ends) delete cur.areas[k]; else cur.areas[k] = (cur.areas[k] || []).filter(a => a !== old);
+        if(!(await rsSaveSetup(cur))) return; RS.area = ''; rsRender(); toast(ends ? 'Split removed' : old + ' removed'); } }));
+  };
 };
 
 // Shifts (for every department)

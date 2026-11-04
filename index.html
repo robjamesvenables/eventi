@@ -899,6 +899,7 @@ select.search-inp{max-width:150px;cursor:pointer}
   z-index:150;
   transition:transform 0.15s;
 }
+#dash-chat-panel.mv-role-off{display:none!important}
 #chat-float-btn:hover{transform:translateY(-2px) scale(1.03)}
 #chat-float-badge{
   position:absolute;
@@ -6618,7 +6619,7 @@ function nav(id, pushState=true){
   if(id==='marketing'){ if(pushState) marketingActiveFolder = null; marketingRender(); marketingMaybeResign(); }  // closing a pop-up goes 'back' - stay in the open folder
   if(id==='chat'){ chatInit(); }
   const chatFloatBtn = document.getElementById('chat-float-btn');
-  if(chatFloatBtn) chatFloatBtn.style.display = (id==='home') ? 'flex' : 'none';
+  if(chatFloatBtn) chatFloatBtn.style.display = (id==='home' && rolePageAllowed('chat')) ? 'flex' : 'none';
   if(id==='taskboard'){taskboardRenderRoot();}
   if(id==='requests'){ if(REQ.tab !== 'done') REQ.tab = null; reqStart(); reqRenderList(); }
   if(id==='ordering'){ ordStart(); ordRender(); }
@@ -14584,6 +14585,7 @@ function roleApplyMenus(){
     });
   });
   document.body.classList.toggle('mv-buyer', !!myProfile && (myProfile.is_owner || ['superadmin','director'].includes(myProfile.role)));
+  const dcp = document.getElementById('dash-chat-panel'); if(dcp) dcp.classList.toggle('mv-role-off', !rolePageAllowed('chat'));   // no Chat for this role: no chat panel on the dashboard either
   const adminLink = document.getElementById('n-admin');
   if(adminLink) adminLink.style.display = (myProfile && !roleCan('adminconsole')) ? 'none' : '';
   // "+ Create Event Plan" buttons only for people who can edit events

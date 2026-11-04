@@ -1914,16 +1914,12 @@ body.ev-nomoney .dash-hero .ev-money{display:none!important}
 }
 @media(hover:none){.kb-hov{display:none}.kb-more{opacity:1}}
 @media(max-width:900px){
- #kb-tabs{display:flex!important;justify-content:flex-end;background:none;box-shadow:none!important;padding:0!important;margin:2px 0 10px!important;border-radius:12px;padding:4px;gap:4px;margin:4px 0 12px;box-shadow:0 1px 3px rgba(15,30,46,.08)}
+ #kb-tabs{display:none!important;background:white;border-radius:12px;padding:4px;gap:4px;margin:4px 0 12px;box-shadow:0 1px 3px rgba(15,30,46,.08)}
  #kb-tabs button{flex:1;min-width:0;border:0;background:none;font:800 12px Inter,sans-serif;padding:9px 4px;border-radius:9px;color:#64748B;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
  #kb-tabs button b{display:inline-block;background:rgba(15,30,46,.08);border-radius:20px;padding:1px 7px;margin-left:5px;font-size:11px}
  #kb-tabs button.on{background:var(--kbc);color:white}
  #kb-tabs button.on b{background:rgba(255,255,255,.22)}
- #p-kb .kanban-col{flex:0 0 82%!important;width:82%!important}
- #kb-tabs .kb-all-btn{flex:none!important;display:inline-flex;align-items:center;gap:7px;background:#0F1E2E!important;color:white!important;border-radius:20px!important;padding:8px 14px!important;font:800 12.5px Inter,sans-serif!important}
- #p-kb.kb-all .kanban-wrap{overflow:hidden!important;scroll-snap-type:none!important;gap:8px!important;zoom:var(--kbz,.38);padding-right:0}
- #p-kb.kb-all .kanban-col{flex:0 0 300px!important;width:300px!important;cursor:zoom-in}
- #p-kb.kb-all .kanban-card{pointer-events:none}   /* Trello-style: the next column peeks in from the right; swipe across */
+ #p-kb .kanban-col{flex:0 0 82%!important;width:82%!important}   /* Trello-style: the next column peeks in from the right; swipe across */
  #p-kb .kanban-wrap{scroll-padding-left:0;padding-right:16px}
  .kb-hov{display:none}.kb-more{opacity:1}
 }
@@ -12953,24 +12949,24 @@ async function kbOpenFromUrl(){
 
 // Phone: tabs above the board jump straight to a column
 function kbTabsRender(){
-  const t = document.getElementById('kb-tabs'), w = document.getElementById('kanban-wrap'), pg = document.getElementById('p-kb');
-  if(!t || !w || !pg) return;
-  const all = pg.classList.contains('kb-all');
-  const ic = all ? '<path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/>' : '<path d="M4 14h6v6M20 10h-6V4M14 10l7-7M3 21l7-7"/>';
-  t.innerHTML = `<button class="kb-all-btn" onclick="kbSeeAll()"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">${ic}</svg>${all ? 'Back to normal' : 'See all'}</button>`;
-  if(!w.dataset.allTap){ w.dataset.allTap = 1;
-    w.addEventListener('click', e => { if(!pg.classList.contains('kb-all')) return; const col = e.target.closest('.kanban-col'); if(!col) return; e.stopPropagation(); kbSeeAll(false); kbTabGo(col.id.replace('kbcol-', '')); }, true); }
+  const t = document.getElementById('kb-tabs'), w = document.getElementById('kanban-wrap');
+  if(!t || !w) return;
+  const cols = ['todo','progress','done'];
+  const act = t.dataset.on || 'todo';
+  t.innerHTML = cols.map(c => {
+    const nm = (document.getElementById('kbtitle-'+c)||{}).textContent || KB_COL_DEFAULT_TITLES[c];
+    const n = (document.getElementById('count-'+c)||{}).textContent || '0';
+    const clr = getComputedStyle(document.getElementById('kbcol-'+c)).getPropertyValue('--kbc').trim() || KB_COL_DEFAULT_COLOURS[c];
+    return `<button class="${c===act?'on':''}" style="--kbc:${clr}" onclick="kbTabGo('${c}')">${nm.replace(/</g,'&lt;')}<b>${n}</b></button>`;
+  }).join('');
+  if(!w.dataset.tabs){ w.dataset.tabs = 1;
+    w.addEventListener('scroll', () => { clearTimeout(w._tt); w._tt = setTimeout(() => {
+      const i = Math.round(w.scrollLeft / (w.scrollWidth / 3)); const c = cols[Math.max(0, Math.min(2, i))];
+      if(t.dataset.on !== c){ t.dataset.on = c; kbTabsRender(); } }, 80); }); }
 }
-// Phone: zoom out so all the columns fit on screen at once (tap a column to zoom back in)
-window.kbSeeAll = function(on){
-  const pg = document.getElementById('p-kb'), w = document.getElementById('kanban-wrap'); if(!pg || !w) return;
-  const want = on === undefined ? !pg.classList.contains('kb-all') : !!on;
-  pg.classList.toggle('kb-all', want);
-  if(want){ w.scrollLeft = 0; const avail = w.parentElement.clientWidth; pg.style.setProperty('--kbz', Math.min(.6, avail / 916).toFixed(3)); }
-  kbTabsRender();
-};
 window.kbTabGo = function(c){
-  const w = document.getElementById('kanban-wrap'), el = document.getElementById('kbcol-'+c);
+  const w = document.getElementById('kanban-wrap'), el = document.getElementById('kbcol-'+c), t = document.getElementById('kb-tabs');
+  if(t){ t.dataset.on = c; kbTabsRender(); }
   if(w && el) w.scrollTo({ left: el.offsetLeft - w.offsetLeft, behavior: 'smooth' });
 };
 function kbInitColColours(){

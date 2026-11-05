@@ -6,6 +6,7 @@
 // managers chose to publish (Membership > Guest page). Never phone, email, notes or birthday.
 const L = require('./_lib');
 const GP = require('./_gp');
+const PR = require('./_prospects');
 
 const clean = s => String(s || '').toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 16);
 const q = v => encodeURIComponent(v);
@@ -78,10 +79,32 @@ function liveMenus(rows, kind){
   }).filter(m => m.sections.length);
 }
 
+// Sales demo keyring (see _prospects.js): the same page a member gets, filled with that venue's own content
+function prospectCard(pro, code){
+  const now = localNow('Asia/Makassar');
+  const venues = pro.venues.map(v => Object.assign({ name: v.name, area: v.area || '', email: v.email || '', map: v.map || '', review: v.review || '', wa: v.wa || '', phone: v.phone || '' }, openState(v, now.hm)));
+  const events = [];
+  for (let i = 0; i <= 6; i++) {
+    const day = addDays(now.date, i), wd = new Date(day + 'T12:00:00Z').getUTCDay();
+    (pro.acts || []).forEach(a => { if (a.every.includes(wd)) events.push({ date: day, start: a.start, end: a.end, title: a.title, sub: a.line, venue: a.venue }); });
+  }
+  const fmtEv = e => ({ day: dow(e.date), date: e.date, title: e.title, sub: e.sub, venue: e.venue, time: e.start ? niceTime(e.start) + (e.end ? ' - ' + niceTime(e.end) : '') : '' });
+  const tonight = events.filter(e => e.date === now.date && !(e.end && toMin(e.end) > toMin(e.start || '00:00') && toMin(e.end) <= toMin(now.hm))).map(fmtEv);
+  const week = events.filter(e => e.date > now.date).map(fmtEv);
+  const gp = GP.build(pro.content(now.date), { company: 'demo', code, venues, today: now.date, who: pro.first, vip: pro.tier === 'vip' });
+  const rv = venues.find(v => v.review);
+  return { ok: true, brand: pro.brand, logo: pro.logo, code, first: pro.first, tier: pro.tier, visits: pro.visits, favourite: pro.favourite, gp,
+    since: pro.since, perks: pro.perks, perkIcons: pro.perkIcons, offers: true, reviewAsk: rv ? { venue: rv.name, date: addDays(now.date, -1), when: 'yesterday', demo: true } : null,
+    birthdayWeek: false, tonight, week, menus: { food: [], drinks: [] }, venues,
+    reward: pro.reward ? { target: pro.reward.target, text: pro.reward.text, left: Math.max(0, pro.reward.target - pro.visits) } : null };
+}
+
 module.exports = async (req, res) => {
   try {
     const code = clean((req.query && req.query.code) || '');
     if (!code) return L.send(res, 400, { ok: false, reason: 'no code' });
+    const pro = PR.get(code);
+    if (pro) return L.send(res, 200, prospectCard(pro, code));   // sales demo keyring: that venue's own page, no database
     const k = (await L.db('member_keyrings?select=code,company_id,member_id&code=eq.' + q(code)))[0];
     if (!k) return L.send(res, 200, { ok: false, reason: 'unknown' });
     const co = k.company_id;

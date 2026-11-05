@@ -39,6 +39,7 @@ async function offers(req, res){
   const code = String((req.query && req.query.code) || '').toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 16);
   const on = String((req.query && req.query.on) || '') === '1';
   if (req.method !== 'POST' || !code) return L.send(res, 400, { ok: false });
+  if (require('./_prospects').get(code)) return L.send(res, 200, { ok: true, on });   // sales demo keyring: nothing to save
   const k = (await L.db('member_keyrings?select=member_id&code=eq.' + encodeURIComponent(code)))[0];
   if (!k || !k.member_id) return L.send(res, 404, { ok: false });
   await L.db('members?id=eq.' + encodeURIComponent(k.member_id), { method: 'PATCH', body: { consent: on }, headers: { Prefer: 'return=minimal' } });

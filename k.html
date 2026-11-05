@@ -203,6 +203,10 @@ svg{display:block}
 .vtop .vname .open{color:#86EFAC;font-weight:800}
 .vacts{display:flex;gap:8px;margin:12px 16px 0}
 .vacts a{flex:1;height:48px;border-radius:14px;display:flex;align-items:center;justify-content:center;gap:8px;text-decoration:none;font-size:14.5px;font-weight:800}
+.vmenu{display:flex;gap:8px;margin:8px 16px 0;flex-wrap:wrap}
+.vmenu a{flex:1 1 40%;min-width:0;height:48px;border-radius:14px;display:flex;align-items:center;justify-content:center;gap:8px;text-decoration:none;font-size:14.5px;font-weight:800;background:white;color:#0F1E2E;box-shadow:0 1px 3px rgba(15,30,46,.08);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding:0 12px}
+.vmenu a svg{flex:none;color:var(--acc,#0D9488)}
+.single-menu{margin-top:14px}
 .vacts .mp{flex:0 0 auto;padding:0 18px;background:white;color:#0F1E2E;box-shadow:0 1px 3px rgba(15,30,46,.08)}.vacts .bk{background:#16A34A;color:white}
 .vsl{margin:6px 0 0;padding:0 20px}.vsl .sl-wrap{margin-top:12px}.vsl .dots i{background:#0F1E2E}
 .arw{position:relative}
@@ -403,12 +407,19 @@ svg{display:block}
       h += reviewLine(d.venues) + igHtml(places);
       return h + foot + '</div>';
     };
+    // Menus for one place: one button each (Food, Drinks...) - opens the venue's own file
+    var menuHtml = function(p){
+      var ms = (p && p.menus) || []; if (!ms.length) return '';
+      return '<div class="vmenu">' + ms.map(function(m){ var food = /food|lunch|dinner|brunch|break|kitchen|eat/i.test(m.name), drink = /drink|bar|cocktail|wine|bev/i.test(m.name);
+        return '<a href="' + esc(m.url) + '" target="_blank" rel="noopener">' + svg(drink && !food ? PI.cocktail : PI.food, 18) + '<span>' + esc(m.name) + '</span></a>'; }).join('') + '</div>';
+    };
     var placeHtml = function(key){
       var p = placeOf(key) || { name: key }, v = venueOf(key) || {};
       var st = v.open === true ? '<span class="open">Open now</span> · ' + esc(v.label) : v.open === false ? esc(v.label) : '';
       var h = '<div class="w"><div class="vtop">' + (p.img ? '<img src="' + esc(p.img) + '" alt="">' : '') + '<div class="vin"><button class="back" data-home aria-label="All places">' + svg('<path d="m15 18-6-6 6-6"/>', 18) + 'All places</button>' +
         '<div class="vname"><b translate="no">' + esc(p.name) + '</b><small>' + [esc(p.area || ''), st].filter(Boolean).join(' · ') + '</small></div></div></div>';
       h += '<div class="vacts">' + (v.map ? '<a class="mp" href="' + esc(v.map) + '" target="_blank" rel="noopener">' + svg(I.pin, 17) + 'Map</a>' : '') + (v.wa ? '<a class="bk" href="https://wa.me/' + esc(v.wa) + '?text=' + encodeURIComponent(greetAt(p.name)) + '" target="_blank" rel="noopener">' + svg(I.wa, 17) + 'Book a table</a>' : '') + '</div>';
+      h += menuHtml(p);
       var sl = (gp.slides || []).filter(function(x){ return at(x, key); });
       if (sl.length) h += '<div class="vsl">' + slidesHtml(sl, false) + '</div>';
       var body = placeSections(key);
@@ -417,7 +428,7 @@ svg{display:block}
       return h + foot + '</div>';
     };
     var singleHtml = function(){
-      return '<div class="w">' + topHtml(slidesHtml(gp.slides || [], false)) + memberHtml() + placeSections('') + reviewLine((d.venues || []).slice(0, 1)) + igHtml(places.slice(0, 1)) + foot + '</div>';
+      return '<div class="w">' + topHtml(slidesHtml(gp.slides || [], false)) + memberHtml() + (places[0] && places[0].menus && places[0].menus.length ? '<div class="single-menu">' + menuHtml(places[0]) + '</div>' : '') + placeSections('') + reviewLine((d.venues || []).slice(0, 1)) + igHtml(places.slice(0, 1)) + foot + '</div>';
     };
 
     var bookBar = function(key){

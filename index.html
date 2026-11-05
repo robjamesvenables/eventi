@@ -2414,6 +2414,15 @@ body:not(.mv-demo) #ms-demoqr-btn{display:none!important}
 .dc-out{display:flex;justify-content:center;align-items:center;background:#F1F5F9;border-radius:14px;padding:14px;min-height:240px}
 .dc-out img{max-height:min(54vh,520px);max-width:100%;border-radius:18px;box-shadow:0 14px 30px rgba(15,30,46,.2);display:block}
 .dc-load{font:700 13px Inter,sans-serif;color:#64748B}
+.gp-mn{display:flex;align-items:flex-start;gap:10px;border:1.5px solid #E2E8F0;border-radius:12px;padding:10px;margin-bottom:8px;background:white}
+.gp-mn > i{width:36px;height:36px;border-radius:10px;background:#F0FDFA;color:#0F766E;display:flex;align-items:center;justify-content:center;flex:none}
+.gp-mn .x{flex:1;min-width:0;display:flex;flex-direction:column;gap:5px}
+.gp-mn input{width:100%;box-sizing:border-box;border:1.5px solid #E2E8F0;border-radius:9px;padding:8px 10px;font:700 16px Inter,sans-serif;color:#0F1E2E;margin:0}
+.gp-mn input.gp-mnu{font-weight:600;font-size:16px}
+.gp-mn small{font:600 12px Inter,sans-serif;color:#64748B;line-height:1.4}.gp-mn small.old{color:#B45309}
+.gp-mn small button{border:0;background:none;padding:0;font:800 12px Inter,sans-serif;color:#0F766E;cursor:pointer;text-decoration:underline}
+.gp-mnx{border:0;background:#FEF2F2;color:#B91C1C;width:34px;height:34px;border-radius:9px;display:flex;align-items:center;justify-content:center;cursor:pointer;flex:none}
+.gp-mnadd{display:flex;gap:8px;flex-wrap:wrap}.gp-mnadd label.gp-add{color:#0F766E;font:800 13.5px Inter,sans-serif}.gp-mnadd .gp-add{flex:1 1 40%;text-align:center;cursor:pointer;margin:0}
 @media(max-width:360px){#p-membership > .ph .ms-hbtns > button svg{display:none}}
 .dc-sheet .vdf-foot{flex-wrap:wrap}.dc-sheet .vdf-foot button{flex:1 1 30%;justify-content:center}.dc-sheet #dc-send{display:inline-flex;align-items:center;gap:6px;justify-content:center}
 @media(max-width:520px){.dc-sheet #dc-send{flex:1 1 100%;order:-1}}
@@ -22505,10 +22514,10 @@ function gpPlacesHtml(){
   const vs = (msPage().venues || []).filter(v => v && v.name);
   if(!vs.length) return '';
   const pl = GPE.c.places || {}, one = vs.length === 1;
-  return `<div class="gp-sec"><div class="gp-sh"><div class="n"><b>${one ? 'Your place' : 'Our places'}</b><small>Tap the pencil: photo, hours, WhatsApp, email, Instagram and Google reviews</small></div></div>
+  return `<div class="gp-sec"><div class="gp-sh"><div class="n"><b>${one ? 'Your place' : 'Our places'}</b><small>Tap the pencil: photo, hours, WhatsApp, email, Instagram, Google reviews and menus</small></div></div>
     <div class="gp-body">${vs.map(v => { const p = pl[v.name.toLowerCase()] || {}, src = gpSrc(p), area = p.area || v.area || '';
       return `<div class="gp-it">${src ? `<img class="th" src="${gpEsc(src)}" alt="">` : '<div class="th" style="display:flex;align-items:center;justify-content:center;color:#94A3B8">' + gpIc(GPI.cam, 20) + '</div>'}
-        <div class="x"><b>${gpEsc(v.name)}</b><small>${one ? (p.ig ? '@' + gpEsc(String(p.ig).replace(/^@/, '')) : 'No Instagram yet') : [area || 'No area yet - e.g. Canggu', p.ig ? '@' + String(p.ig).replace(/^@/, '') : ''].filter(Boolean).map(gpEsc).join(' · ')}</small></div>
+        <div class="x"><b>${gpEsc(v.name)}</b><small>${one ? (p.ig ? '@' + gpEsc(String(p.ig).replace(/^@/, '')) : 'No Instagram yet') : [area || 'No area yet - e.g. Canggu', p.ig ? '@' + String(p.ig).replace(/^@/, '') : ''].filter(Boolean).map(gpEsc).join(' · ')}${(p.menus || []).length ? ' · ' + p.menus.length + ' menu' + (p.menus.length === 1 ? '' : 's') : ''}</small></div>
         <button class="gp-ib" title="Change" aria-label="Change ${gpEsc(v.name)}" onclick="gpPlaceForm('${gpEsc(v.name.replace(/'/g, "\\'"))}')">${gpIc(GPI.edit)}</button></div>`; }).join('')}
     ${msIsMgr() ? '<div class="gp-auto">Add or rename venues in <button onclick="msTiers()">Change venues</button></div>' : ''}</div></div>`;
 }
@@ -22538,6 +22547,8 @@ window.gpPlaceForm = function(name){
     ${row(IC.ig, `<input id="gpp-ig" maxlength="80" value="${gpEsc(it.ig ? '@' + String(it.ig).replace(/^@/, '') : '')}" placeholder="Instagram, e.g. @senjarooftop" autocapitalize="off" autocorrect="off" spellcheck="false">`)}
     ${row(IC.star, `<input id="gpp-rv" inputmode="url" autocapitalize="off" placeholder="Google review link" value="${gpEsc(v.review || '')}"${mgr ? '' : ' disabled'}>`)}
     <div class="gp-hint" style="margin-left:32px">Google review link: in your Google Business Profile tap "Ask for reviews" and copy the link.</div>
+    <div class="gp-sub">Menus <small>Food, drinks... guests tap to open them</small></div>
+    <div id="gpp-menus"></div>
     <input type="file" id="gpp-file" accept="image/*" style="display:none"><div class="eb-fbtns"><button class="eb-no">Cancel</button><button class="eb-go">Save</button></div></div>`;
   s.addEventListener('mousedown', e => { if(e.target === s) s.remove(); });
   document.body.appendChild(s);
@@ -22545,9 +22556,50 @@ window.gpPlaceForm = function(name){
   const ph = $('gpp-ph'), fin = $('gpp-file');
   ph.onclick = () => fin.click(); ph.onkeydown = e => { if(e.key === 'Enter') fin.click(); };
   fin.onchange = () => { file = fin.files && fin.files[0]; if(!file) return; ph.classList.add('has'); ph.innerHTML = `<img src="${URL.createObjectURL(file)}" alt=""><span>Change photo</span>`; };
-  s.querySelector('.eb-no').onclick = () => s.remove();
+  // Menus: up to 4 per place - a PDF or picture (uploaded straight away) or a link to their own menu page
+  let menus = (Array.isArray(it.menus) ? it.menus : []).map(m => Object.assign({}, m));
+  const added = [], dropped = [];
+  const MNI = '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M8 13h8M8 17h5"/>', LKI = '<path d="M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.7 1.7"/><path d="M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.7-1.7"/>';
+  const guess = n => { n = String(n || ''); const m = /(food|lunch|dinner|brunch|breakfast|dessert|drink|cocktail|wine|bar|beverage|coffee|kids)/i.exec(n); if(m){ const w = m[1].toLowerCase(); return w === 'drink' || w === 'bar' || w === 'beverage' ? 'Drinks' : w.charAt(0).toUpperCase() + w.slice(1); }
+    const used = menus.map(x => x.name); return !used.includes('Food') ? 'Food' : !used.includes('Drinks') ? 'Drinks' : 'Menu'; };
+  const agoTxt = iso => { const d = Math.floor((Date.now() - new Date(iso || Date.now()).getTime()) / 864e5); return d < 1 ? 'today' : d < 31 ? d + ' day' + (d === 1 ? '' : 's') + ' ago' : Math.floor(d / 30) + ' month' + (d < 60 ? '' : 's') + ' ago'; };
+  const drawMenus = () => {
+    const box = $('gpp-menus'); if(!box) return;
+    box.innerHTML = menus.map((m, i) => { const old = m.at && Date.now() - new Date(m.at).getTime() > 90 * 864e5;
+      return `<div class="gp-mn"><i>${sv(m.path ? MNI : LKI)}</i><div class="x"><input class="gp-mnn" data-i="${i}" maxlength="30" value="${gpEsc(m.name || '')}" placeholder="Name, e.g. Food">
+        ${m.path ? `<small class="${old ? 'old' : ''}">${m.type === 'pdf' ? 'PDF' : 'Picture'} · uploaded ${agoTxt(m.at)}${old ? ' - still up to date?' : ''} · <button type="button" data-view="${i}">View</button></small>` : `<input class="gp-mnu" data-i="${i}" inputmode="url" autocapitalize="off" placeholder="Paste the link, e.g. https://..." value="${gpEsc(m.url || '')}">`}</div>
+        <button type="button" class="gp-mnx" data-rm="${i}" aria-label="Remove menu">${gpIc(GPI.x, 15)}</button></div>`; }).join('') +
+      (menus.length < 4 ? `<div class="gp-mnadd"><label class="gp-add">+ Add a menu file<input type="file" accept="application/pdf,image/*" hidden id="gpp-mf"></label><button type="button" class="gp-add" id="gpp-ml">+ Add a link</button></div>` : '') +
+      `<div class="gp-hint" style="margin:6px 0 0 2px">A PDF or a picture, up to 15 MB. Each menu gets its own button on this place's page.</div>`;
+    box.querySelectorAll('.gp-mnn').forEach(x => x.oninput = () => { menus[+x.dataset.i].name = x.value; });
+    box.querySelectorAll('.gp-mnu').forEach(x => x.oninput = () => { menus[+x.dataset.i].url = x.value.trim(); });
+    box.querySelectorAll('[data-rm]').forEach(b => b.onclick = () => { const m = menus.splice(+b.dataset.rm, 1)[0]; if(m && m.path){ if(added.includes(m.path)) gpForgetFile(m); else dropped.push(m); } drawMenus(); });
+    box.querySelectorAll('[data-view]').forEach(b => b.onclick = async () => { const m = menus[+b.dataset.view]; const w = window.open('', '_blank'); const r = await sb.storage.from(GP_BUCKET).createSignedUrl(m.path, 600); const u = r.data && r.data.signedUrl; if(u && w) w.location = u; else { if(w) w.close(); toast('Could not open it - check your connection'); } });
+    const ml = $('gpp-ml'); if(ml) ml.onclick = () => { menus.push({ id:'mn' + Date.now(), name: guess(''), url:'', at: new Date().toISOString() }); drawMenus(); const u = box.querySelectorAll('.gp-mnu'); if(u.length) u[u.length - 1].focus(); };
+    const mf = $('gpp-mf'); if(mf) mf.onchange = async () => {
+      const f = mf.files && mf.files[0]; mf.value = ''; if(!f) return;
+      const pdf = /pdf/i.test(f.type || '') || /\.pdf$/i.test(f.name || '');
+      if(!pdf && !/^image\//.test(f.type || '')){ toast('Please pick a PDF or a picture'); return; }
+      if(f.size > 15 * 1048576){ toast('That file is ' + Math.round(f.size / 1048576) + ' MB - please use one under 15 MB (ask your designer for a smaller PDF)'); return; }
+      const lab = mf.closest('label'); if(lab) lab.firstChild.textContent = 'Uploading…';
+      try{
+        let path;
+        if(pdf){ path = myProfile.company_id + '/guestpage/menu-' + Date.now() + '-' + Math.random().toString(36).slice(2, 6) + '.pdf'; const r = await sb.storage.from(GP_BUCKET).upload(path, f, { contentType:'application/pdf', upsert:false }); if(r.error) throw r.error; }
+        else path = await gpUpload(f);
+        added.push(path);
+        menus.push({ id:'mn' + Date.now(), name: guess(f.name), path, type: pdf ? 'pdf' : 'img', at: new Date().toISOString() });
+      }catch(e){ console.warn('[menu upload]', e); toast('Could not upload the menu - check your connection'); }
+      drawMenus();
+    };
+  };
+  drawMenus();
+  const cancel = () => { added.forEach(p => gpForgetFile({ path:p })); s.remove(); };
+  s.addEventListener('mousedown', e => { if(e.target === s) added.forEach(p => gpForgetFile({ path:p })); }, true);
+  s.querySelector('.eb-no').onclick = cancel;
   s.querySelector('.eb-go').onclick = async () => {
     const go = s.querySelector('.eb-go'); if(go.disabled) return;
+    for(const m of menus){ if(!m.path){ const u = String(m.url || '').trim(); if(!u){ toast('Paste the menu link, or remove that menu'); return; } m.url = /^https?:\/\//i.test(u) ? u.replace(/^http:/i, 'https:') : 'https://' + u; if(!/^https:\/\/[^\s]+\.[^\s]+/i.test(m.url)){ toast('That menu link doesn\'t look right'); return; } } m.name = String(m.name || '').trim() || 'Menu'; }
+    if(menus.length) it.menus = menus.map(m => { const o = { id:m.id, name:m.name, at:m.at }; if(m.path){ o.path = m.path; o.type = m.type; } else o.url = m.url; return o; }); else delete it.menus;
     it.area = val('gpp-area');
     const igv = val('gpp-ig'), igm = /^(?:https?:\/\/)?(?:www\.)?(?:instagram\.com\/)?@?([a-z0-9._]{1,30})\/?(?:\?.*)?$/i.exec(igv);
     if(igv && !igm){ toast('That Instagram name doesn\'t look right - e.g. @senjarooftop'); return; }
@@ -22572,7 +22624,8 @@ window.gpPlaceForm = function(name){
       if(r.error){ console.warn(r.error); go.disabled = false; go.textContent = 'Save'; toast('Not saved - please try again'); return; }
       appSettings.member_page = page;
     }
-    GPE.c.places[key] = it; s.remove(); gpRender(); await gpSave('Saved');
+    GPE.c.places[key] = it; s.remove(); gpRender();
+    if(await gpSave('Saved')) dropped.forEach(gpForgetFile);
   };
 };
 window.gpToggle = async function(k){ GPE.c.off[k] = !GPE.c.off[k]; if(!GPE.c.off[k]) delete GPE.c.off[k]; gpRender(); await gpSave(GPE.c.off[k] ? 'Hidden from guests' : 'Showing to guests'); };

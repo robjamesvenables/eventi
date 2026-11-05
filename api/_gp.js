@@ -12,7 +12,7 @@ const igName = v => { const m = /^(?:https?:\/\/)?(?:www\.)?(?:instagram\.com\/)
 function paths(c){
   const out = [];
   ['slides', 'deals', 'events', 'gallery'].forEach(k => (Array.isArray(c && c[k]) ? c[k] : []).forEach(it => { if (it && it.path) out.push(String(it.path)); }));
-  Object.values((c && c.places) || {}).forEach(p => { if (p && p.path) out.push(String(p.path)); });
+  Object.values((c && c.places) || {}).forEach(p => { if (p && p.path) out.push(String(p.path)); (Array.isArray(p && p.menus) ? p.menus : []).forEach(m => { if (m && m.path) out.push(String(m.path)); }); });
   return out;
 }
 
@@ -134,7 +134,9 @@ function build(c, ctx){
   order = order.filter(on);
   // Our places: a photo and area for each venue (Guest page > Our places)
   const pl = (c.places && typeof c.places === 'object') ? c.places : {};
-  const places = (venues || []).map(v => { const p = pl[String(v.name).toLowerCase()] || {}; return { name: v.name, area: str(p.area || v.area || '', 30), img: img(p), ig: igName(p.ig) }; });
+  const places = (venues || []).map(v => { const p = pl[String(v.name).toLowerCase()] || {}; // Menus: a file marketing uploaded (PDF or picture) or a link to their own menu page
+    const menus = (Array.isArray(p.menus) ? p.menus : []).slice(0, 4).map(m => ({ name: str(m && m.name, 30) || 'Menu', url: m && m.path ? img(m) : httpsOk(m && m.url) ? String(m.url).trim() : (m && /^\/demo-guest\/[a-z0-9._-]+$/i.test(m.img || '') ? m.img : '') })).filter(m => m.url);
+    return { name: v.name, area: str(p.area || v.area || '', 30), img: img(p), ig: igName(p.ig), menus }; });
   // Colours (Guest page > Colours)
   const hex = v => /^#[0-9a-f]{6}$/i.test(v || '') ? v : '';
   const th = c.theme || {}, theme = { top: hex(th.top), acc: hex(th.acc), pg: hex(th.pg) };

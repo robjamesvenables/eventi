@@ -3784,12 +3784,14 @@ img.emoji-tw{width:1.15em;height:1.15em;vertical-align:-0.2em;margin:0 1px}
   .admin-stats4{grid-template-columns:1fr 1fr!important;gap:10px!important;margin-bottom:20px!important}
 }
 .vac-c{min-width:0}.vac-acts{flex-wrap:wrap}
-/* Membership: live in the demo company only, "Coming soon" everywhere else */
-body:not(.mv-demo) #n-membership,body:not(.mv-demo) #home-scan-row{display:none!important}
-body.mv-demo #n-membership-soon{display:none!important}
+/* Membership is its own product: in full Mavis (demo included) it's a Mavis Plus add-on that can't be opened.
+   Companies on the Membership plan get it (they have their own menu). */
+body:not(.mv-mem) #n-membership,body:not(.mv-mem) #home-scan-row{display:none!important}
+body.mv-mem #n-membership-soon{display:none!important}
 /* Maintenance: open in the demo company while it's being finished, Coming soon for everyone else */
 body:not(.mv-demo) #n-requests{display:none!important}
 body.mv-demo #n-requests-soon{display:none!important}
+body.mv-demo #sb-soon-h{display:none!important}   /* nothing left under it in the demo */
 .home-scan-row{margin-top:16px}
 .home-scan{display:inline-flex;align-items:center;justify-content:center;gap:9px;border:0;border-radius:12px;padding:12px 20px;background:#C4973B;color:#2B1D07;font:800 14px Inter,sans-serif;cursor:pointer}
 .home-scan:hover{filter:brightness(1.06)}
@@ -4508,18 +4510,18 @@ html:has(#menuDetailOverlay[style*="flex"]),html:has(#menuDetailOverlay[style*="
       Suggestion Box
     </button>
 
-    <div class="sb-section mv-sales">Coming Soon</div>
+    <div class="sb-section mv-sales" id="sb-soon-h">Coming Soon</div>
     <button class="sb-link mv-sales" id="n-requests-soon" onclick="mvSoon('maintenance')">
       <svg class="sb-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94z"/></svg>
       Maintenance
       <span class="mv-tag soon">COMING SOON</span>
     </button>
-    <button class="sb-link mv-sales" id="n-membership-soon" onclick="mvSoon('membership')">
+    <div class="sb-section mv-sales">Mavis Plus</div>
+    <button class="sb-link mv-sales" id="n-membership-soon" onclick="mvPlus('membership')">
       <svg class="sb-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="15" r="4"/><path d="M10.85 12.15L19 4M18 5l2 2M15 8l2 2"/></svg>
       Membership
-      <span class="mv-tag soon">COMING SOON</span>
+      <span class="mv-tag plus">PLUS</span>
     </button>
-    <div class="sb-section mv-sales">Mavis Plus</div>
     <button class="sb-link mv-sales" id="n-notetaker" onclick="mvPlus('notetaker')">
       <svg class="sb-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
       Smart Notetaker
@@ -6683,7 +6685,7 @@ function adminChangeAnalyticsPin(){
 function nav(id, pushState=true){
   // Smart Notetaker is Coming Soon (recording + AI notes not wired up yet)
   if(id === 'notetaker'){ if(typeof mvPlus === 'function') mvPlus('notetaker'); if(!document.querySelector('.page.on')) id = 'home'; else return; }
-  if(id === 'membership' && typeof appIsDemoCompany === 'function' && !appIsDemoCompany() && !(typeof appPlan !== 'undefined' && appPlan === 'membership')){ mvSoon('membership'); return; }
+  if(id === 'membership' && !(typeof appPlan !== 'undefined' && appPlan === 'membership')){ mvPlus('membership'); return; }   // its own product: an add-on in full Mavis
   if((id === 'requests' || id === 'request') && typeof appIsDemoCompany === 'function' && !appIsDemoCompany()){ mvSoon('maintenance'); return; }
   if(!rolePageAllowed(id)){
     toast("You don't have access to this page - ask your manager");
@@ -7164,6 +7166,7 @@ const MV_SOON = {
   membership:{ t:'Membership', d:'Member keyrings and cards with QR codes, linked to each guest, with visits and perks tracked automatically.' }
 };
 const MV_PLUS = {
+  membership:{ t:'Membership', d:'Wooden QR keyrings for your regulars, a beautiful guest page with your deals, events and menus, digital member cards on WhatsApp, and an email list that grows itself.' },
   notetaker:{ t:'Smart Notetaker', d:'Record a meeting and Mavis writes the key points, decisions and who does what.' },
   ordering:{ t:'Ordering & Inventory', d:'Order from suppliers, approve spend, and know exactly what stock you have, what\'s running low and what\'s going missing.' },
   crm:{ t:'Guests & CRM', d:'Know your regulars: visits, spend and preferences, linked to your POS. Built around your venue\'s own systems.' },
@@ -23465,6 +23468,7 @@ async function msOpenFromUrl(){
   if(!code) return;
   try{ history.replaceState(history.state, '', location.pathname + location.hash); }catch(e){}
   if(typeof roleCan === 'function' && !roleCan('membership')){ toast('Your role can\'t open Membership'); return; }
+  if(!(typeof appPlan !== 'undefined' && appPlan === 'membership')){ mvPlus('membership'); return; }   // add-on not on this plan
   nav('membership');
   setTimeout(() => msHandleCode(msCode(code)), 300);
 }

@@ -1,0 +1,158 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Mavis Key demo</title>
+<meta name="robots" content="noindex">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+body{font-family:Inter,system-ui,sans-serif;color:#0F1E2E;background:#F4F6F8;min-height:100vh}
+button{font:inherit;border:0;cursor:pointer}
+.scr{display:none;min-height:100vh;flex-direction:column}.scr.on{display:flex}
+/* staff */
+.top{background:#0F1E2E;color:#fff;padding:calc(18px + env(safe-area-inset-top)) 18px 16px;display:flex;align-items:center;justify-content:space-between}
+.top b{font-size:17px;font-weight:800}.chip{background:#0D9488;color:#fff;font-size:12px;font-weight:700;padding:4px 10px;border-radius:20px}
+.back{color:#9fb3c8;font-size:14px;font-weight:600;background:none;padding:0;margin-right:10px}
+.body{padding:20px 18px 30px;flex:1;max-width:520px;width:100%;margin:0 auto}
+.ic{width:58px;height:58px;border-radius:50%;background:#E6F5F3;display:flex;align-items:center;justify-content:center;margin-bottom:14px}
+h1{font-size:23px;font-weight:900;line-height:1.2}
+.p{font-size:15px;color:#4a5866;line-height:1.5;margin-top:8px}
+.pills{margin:14px 0 4px}.pill{display:inline-block;background:#fff;border:1px solid #E2E6EA;border-radius:8px;padding:6px 10px;font-size:13px;font-weight:700;margin:0 6px 6px 0}
+.ask{background:#FFF8EA;border:1px solid #F0DDB5;border-radius:14px;padding:14px;margin:16px 0 6px;font-size:14px;line-height:1.5}
+.ask b{display:block;color:#8a6420;font-size:12px;letter-spacing:.6px;text-transform:uppercase;margin-bottom:4px}
+.btn{display:block;width:100%;text-align:center;border-radius:14px;padding:16px;font-weight:800;font-size:16px;margin-top:12px}
+.b1{background:#0D9488;color:#fff}.b2{background:#fff;border:2px solid #0F1E2E;color:#0F1E2E}
+.opt{display:flex;gap:14px;align-items:center;background:#fff;border:2px solid #E2E6EA;border-radius:14px;padding:16px;margin-top:12px;text-align:left;width:100%}
+.opt.sel{border-color:#0D9488;background:#F0FAF8}.opt .oi{width:42px;height:42px;border-radius:12px;background:#F1EFEA;display:flex;align-items:center;justify-content:center;flex:none}
+.opt b{font-size:15px;display:block}.opt span{font-size:13px;color:#667}
+.lab{font-size:12px;font-weight:700;color:#6b7785;margin:16px 0 6px;text-transform:uppercase;letter-spacing:.5px}
+input{width:100%;font:inherit;font-size:16px;font-weight:600;padding:14px;border:1.5px solid #D9DEE3;border-radius:12px;background:#fff;color:#0F1E2E}
+input:focus{outline:none;border-color:#0D9488}
+.seg{display:flex;gap:8px}.seg button{flex:1;padding:12px;border-radius:12px;border:1.5px solid #D9DEE3;background:#fff;font-weight:700;font-size:14px;color:#0F1E2E}.seg .on{background:#0F1E2E;color:#fff;border-color:#0F1E2E}
+.ok{color:#0D9488;font-size:13px;font-weight:700;margin-top:6px}
+.done{text-align:center;padding-top:40px}.done .ic{width:86px;height:86px;margin:0 auto 18px}
+.hint{margin-top:26px;background:#0F1E2E;color:#fff;border-radius:14px;padding:16px;font-size:14px;line-height:1.5;text-align:left}
+.hint b{color:#5EEAD4}
+.scan{background:#1f262e;border-radius:18px;height:200px;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:12px;color:#BFEDE6;font-weight:700;margin-top:16px}
+.scan .fr{width:110px;height:110px;border:4px solid #0D9488;border-radius:16px;display:flex;align-items:center;justify-content:center;background:#fff}
+/* guest */
+.g{background:#111;color:#fff}
+.gh{text-align:center;padding:calc(34px + env(safe-area-inset-top)) 20px 6px}
+.mk{display:flex;align-items:center;justify-content:center;gap:9px;font-weight:900;letter-spacing:3px;font-size:14px}
+.gh h2{font-size:26px;font-weight:800;margin-top:18px}.gh p{font-size:14px;opacity:.65;margin-top:4px}
+.tiles{padding:8px 16px 30px;max-width:520px;margin:0 auto;width:100%}
+.tile{display:block;width:100%;height:200px;margin-top:14px;border-radius:22px;background-size:cover;background-position:center;position:relative;overflow:hidden;text-align:left;color:#fff}
+.tile .sh{position:absolute;inset:0;background:rgba(0,0,0,.36)}
+.tile .w{position:absolute;left:18px;bottom:16px}.tile .w b{display:block;font-size:26px;letter-spacing:6px;font-weight:600}.tile .w span{font-size:13px;font-weight:600;opacity:.92}
+.tag{position:absolute;right:14px;top:14px;font-size:11px;font-weight:800;padding:5px 10px;border-radius:20px;color:#fff}
+.gf{text-align:center;font-size:12px;opacity:.45;padding:6px 0 24px}
+.vp{background:#F3EFE8}
+.hero{height:290px;background-size:cover;background-position:center;position:relative}
+.sw{position:absolute;top:calc(14px + env(safe-area-inset-top));left:14px;background:rgba(0,0,0,.6);color:#fff;font-size:13px;font-weight:700;padding:8px 13px;border-radius:20px}
+.bar{background:#1E1C1A;color:#fff;padding:18px}.bar b{letter-spacing:7px;font-weight:600;font-size:23px}.bar div{font-size:13px;opacity:.75;margin-top:5px}
+.card{background:#fff;margin:14px;border-radius:16px;padding:16px}.card h3{font-size:15px;font-weight:800}.card p{font-size:14px;color:#555;margin-top:5px;line-height:1.6}
+.strip{display:flex;gap:10px;overflow-x:auto;padding:0 14px 20px}.strip div{flex:none;width:150px;height:110px;border-radius:14px;background-size:cover;background-position:center}
+.note{font-size:12px;color:#888;text-align:center;padding:0 20px 30px}
+</style></head><body>
+
+<!-- ============ STAFF (QR 1) ============ -->
+<section class="scr" id="s1">
+  <div class="top"><b>Scan Mavis Key</b><span class="chip">Masonry</span></div>
+  <div class="body">
+    <div class="ic"><svg width="32" height="32" viewBox="0 0 100 100"><path fill="#0D9488" d="M34 30a14 14 0 0 0-6 26.6L23 82h22l-5-25.4A14 14 0 0 0 34 30z"/><g fill="none" stroke="#0D9488" stroke-width="8" stroke-linecap="round"><path d="M58 36a20 20 0 0 1 0 28"/><path d="M70 26a34 34 0 0 1 0 48"/><path d="M82 16a48 48 0 0 1 0 68"/></g></svg></div>
+    <h1>This guest already has a Mavis Key</h1>
+    <div class="p">They're not a Masonry member yet. You can add Masonry to the key they already carry.</div>
+    <div class="pills"><span class="pill">Key S8HLTR</span><span class="pill">Already works at 1 venue</span></div>
+    <div class="ask"><b>Ask the guest</b>"Would you like us to add Masonry to your key? Or would you like a new one — maybe you've lost yours, or one for your partner?"</div>
+    <button class="btn b1" onclick="go('s2a')">Add Masonry to this key</button>
+    <button class="btn b2" onclick="go('s2b')">Give a new keyring</button>
+  </div>
+</section>
+
+<section class="scr" id="s2a">
+  <div class="top"><div style="display:flex;align-items:center"><button class="back" onclick="go('s1')">‹</button><b>Add to Masonry</b></div><span class="chip">Masonry</span></div>
+  <div class="body">
+    <div class="p" style="margin-top:0">Masonry's own details for this guest. Only Masonry sees them.</div>
+    <div class="lab">First name</div><input id="fn" value="Robbie">
+    <div class="lab">Phone</div><input id="ph" value="+62 812 3456 4471" inputmode="tel"><div class="ok">✓ Matches this Mavis Key</div>
+    <div class="lab">Email</div><input id="em" value="robbie@email.com" inputmode="email">
+    <div class="lab">Masonry tier</div><div class="seg" id="tier"><button onclick="tier(this)">Member</button><button class="on" onclick="tier(this)">VIP</button><button onclick="tier(this)">Owner's</button></div>
+    <button class="btn b1" style="margin-top:24px" onclick="doneAdd()">Add to Masonry</button>
+  </div>
+</section>
+
+<section class="scr" id="s2b">
+  <div class="top"><div style="display:flex;align-items:center"><button class="back" onclick="go('s1')">‹</button><b>New keyring</b></div><span class="chip">Masonry</span></div>
+  <div class="body">
+    <h1 style="font-size:20px">Who is the new key for?</h1>
+    <button class="opt" onclick="newFor('lost')"><span class="oi"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#0F1E2E" stroke-width="2" stroke-linecap="round"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v5h5"/></svg></span><span><b>Lost their key</b><span>Replace it. The old key stops working.</span></span></button>
+    <button class="opt" onclick="newFor('other')"><span class="oi"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#0F1E2E" stroke-width="2" stroke-linecap="round"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.8-3.5 3.4-5.5 6.5-5.5s5.7 2 6.5 5.5"/><path d="M18 8v6M15 11h6"/></svg></span><span><b>Someone else</b><span>A partner or friend gets their own key.</span></span></button>
+  </div>
+</section>
+
+<section class="scr" id="s3b">
+  <div class="top"><div style="display:flex;align-items:center"><button class="back" onclick="go('s2b')">‹</button><b id="s3bt">New keyring</b></div><span class="chip">Masonry</span></div>
+  <div class="body">
+    <div class="p" id="s3bp" style="margin-top:0"></div>
+    <div class="lab">First name</div><input id="nfn" value="Sarah">
+    <div class="lab">Phone</div><input id="nph" value="+62 813 9876 2210" inputmode="tel">
+    <div class="lab">Email</div><input id="nem" value="sarah@email.com" inputmode="email">
+    <div class="lab">Scan the new keyring</div>
+    <div class="scan" id="nscan" onclick="newScanned()"><div class="fr"><svg width="70" height="70" viewBox="0 0 21 21"><path fill="#000" d="M0 0h7v7H0zM14 0h7v7h-7zM0 14h7v7H0zM2 2v3h3V2zM16 2v3h3V2zM2 16v3h3v-3zM9 0h2v2H9zm2 3h2v3h-2zM8 8h3v2H8zm5 1h3v3h-3zm-5 4h2v4H8zm6 2h2v2h-2zm2 3h3v2h-3zM11 11h2v2h-2zm7-3h3v3h-3z"/></svg></div><span>Tap to scan the new key</span></div>
+    <button class="btn b1" style="margin-top:20px" onclick="doneNew()">Save new key</button>
+  </div>
+</section>
+
+<section class="scr" id="s4">
+  <div class="top"><b>Done</b><span class="chip">Masonry</span></div>
+  <div class="body done">
+    <div class="ic"><svg width="44" height="44" viewBox="0 0 24 24"><path d="M5 12l5 5 9-10" fill="none" stroke="#0D9488" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+    <h1 id="dt"></h1><div class="p" id="dp"></div>
+    <button class="btn b2" style="margin-top:22px" onclick="go('s1')">Scan next guest</button>
+    <div class="hint" id="dh"></div>
+  </div>
+</section>
+
+<!-- ============ GUEST (QR 2) ============ -->
+<section class="scr g" id="g1">
+  <div class="gh">
+    <div class="mk"><svg width="22" height="22" viewBox="0 0 100 100"><path fill="#fff" d="M34 30a14 14 0 0 0-6 26.6L23 82h22l-5-25.4A14 14 0 0 0 34 30z"/><g fill="none" stroke="#fff" stroke-width="8" stroke-linecap="round"><path d="M58 36a20 20 0 0 1 0 28"/><path d="M70 26a34 34 0 0 1 0 48"/><path d="M82 16a48 48 0 0 1 0 68"/></g></svg>MAVIS KEY</div>
+    <h2>Hi Robbie</h2><p>Your key works at 2 venues</p>
+  </div>
+  <div class="tiles">
+    <button class="tile" style="background-image:url(/demo-guest/p-masonry-c-spread.jpg)" onclick="go('g2')"><span class="sh"></span><span class="tag" style="background:#C4973B">NEW · VIP</span><span class="w"><b>MASONRY</b><span>Canggu · Uluwatu · Bar Vera · Welcome gift waiting</span></span></button>
+    <a class="tile" style="background-image:url(/demo-guest/p-shelter-fire.jpg)" href="/k/S8HLTR"><span class="sh"></span><span class="tag" style="background:#B5643C">VIP</span><span class="w"><b>SHELTER</b><span>Pererenan · 12 visits</span></span></a>
+  </div>
+  <div class="gf">Tap a venue to open it</div>
+</section>
+
+<section class="scr vp" id="g2">
+  <div class="hero" style="background-image:url(/demo-guest/p-masonry-c-cocktails.jpg)"><button class="sw" onclick="go('g1')">‹ My venues</button></div>
+  <div class="bar"><b>MASONRY</b><div>Welcome, Robbie · VIP</div></div>
+  <div class="card"><h3>Your welcome gift</h3><p>A glass of house red on your next visit. Show this screen to your server.</p></div>
+  <div class="card"><h3>Your VIP perks</h3><p>• Priority bookings at all Masonry venues<br>• Chef's taster with dinner<br>• Birthday bottle on us</p></div>
+  <div class="strip"><div style="background-image:url(/demo-guest/p-masonry-u-scallop.jpg)"></div><div style="background-image:url(/demo-guest/p-masonry-v-martini.jpg)"></div><div style="background-image:url(/demo-guest/p-masonry-c-flatbread.jpg)"></div><div style="background-image:url(/demo-guest/p-masonry-v-room.jpg)"></div></div>
+  <div class="note">Demo page · the real Masonry page will have their events, deals and menus</div>
+</section>
+
+<script>
+function go(id){document.querySelectorAll('.scr').forEach(s=>s.classList.toggle('on',s.id===id));scrollTo(0,0)}
+function tier(b){[...b.parentNode.children].forEach(x=>x.classList.toggle('on',x===b))}
+let nf='other';
+function newFor(k){nf=k;
+  if(k==='lost'){document.getElementById('s3bt').textContent='Replace lost key';document.getElementById('s3bp').textContent="We'll move all their venues onto the new key. The old key stops working.";
+    ['nfn','nph','nem'].forEach((id,i)=>document.getElementById(id).value=['Robbie','+62 812 3456 4471','robbie@email.com'][i]);}
+  else{document.getElementById('s3bt').textContent='Key for someone else';document.getElementById('s3bp').textContent="They get their own key and their own Masonry membership.";
+    ['nfn','nph','nem'].forEach((id,i)=>document.getElementById(id).value=['Sarah','+62 813 9876 2210','sarah@email.com'][i]);}
+  go('s3b')}
+function newScanned(){document.getElementById('nscan').innerHTML='<div style="font-size:15px;color:#5EEAD4">✓ New key M7WQ2K scanned</div>'}
+function v(id){return document.getElementById(id).value.trim()||'Guest'}
+function done(t,p,h){document.getElementById('dt').textContent=t;document.getElementById('dp').innerHTML=p;document.getElementById('dh').innerHTML=h;go('s4')}
+function doneAdd(){const n=v('fn'),t=document.querySelector('#tier .on').textContent;
+  done(n+' is a Masonry '+t,'Same keyring, now works at 2 venues.<br>No new keyring needed.','<b>Now scan QR 2</b> to see what '+n+' sees on his phone.')}
+function doneNew(){const n=v('nfn');
+  if(nf==='lost')done('New key for '+n,'Key M7WQ2K now opens all of '+n+"'s venues.<br>The old key S8HLTR is switched off.",'Lost keys can never be used by someone else.');
+  else done(n+' has her own key','Key M7WQ2K · Masonry member.<br>'+n+"'s details are saved for Masonry only.",'<b>Sales tip:</b> a key for the partner = another member for Masonry.')}
+go(location.search.indexOf('guest')>-1?'g1':'s1');
+</script>
+</body></html>

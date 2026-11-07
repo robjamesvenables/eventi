@@ -298,6 +298,39 @@ async function suggestionPush(me, b, res){
   return L.send(res, 200, { ok: true, sent, devices: subs.length });
 }
 
+// ── Mavis Key: a VIP just checked in ──
+// POST { mk_vip: member_id, venue }  -> the company's managers (not the person who scanned), if "VIP alert" is on
+async function vipPush(me, b, res){
+  const m = (await L.db('members?select=*&id=eq.' + encodeURIComponent(b.mk_vip)).catch(() => []))[0];
+  if (!m || !m.company_id || String(m.company_id) !== String(me.company_id) || m.tier !== 'vip') return L.send(res, 200, { ok: true, sent: 0, why: 'not a VIP here' });
+  const since = new Date(Date.now() - 3 * 60000).toISOString();
+  const v = (await L.db('member_visits?select=venue,created_at&member_id=eq.' + encodeURIComponent(m.id) + '&by_profile=eq.' + encodeURIComponent(me.id) + '&created_at=gte.' + encodeURIComponent(since) + '&order=created_at.desc&limit=1').catch(() => []))[0];
+  if (!v) return L.send(res, 200, { ok: true, sent: 0, why: 'no check-in just now' });
+  const st = (await L.db('app_settings?select=value&key=eq.mk_settings&company_id=eq.' + encodeURIComponent(me.company_id)).catch(() => []))[0];
+  let on = false; try { let x = st && st.value; while (typeof x === 'string') x = JSON.parse(x); on = !!(x && x.vip && x.vip.on); } catch (e) {}
+  if (!on) return L.send(res, 200, { ok: true, sent: 0, why: 'VIP alert is off' });
+  const people = await L.db('profiles?select=id,role,is_owner,active&company_id=eq.' + encodeURIComponent(me.company_id));
+  const mgrs = people.filter(p => p.active !== false && String(p.id) !== String(me.id) && (p.is_owner || ['superadmin', 'director', 'manager'].includes(p.role)));
+  if (!mgrs.length) return L.send(res, 200, { ok: true, sent: 0, why: 'no managers' });
+  const ids = mgrs.map(p => encodeURIComponent(p.id)).join(',');
+  const [subs, prefs] = await Promise.all([
+    L.db('push_subs?select=*&profile_id=in.(' + ids + ')'),
+    L.db('chat_prefs?select=*&profile_id=in.(' + ids + ')').catch(() => [])
+  ]);
+  if (!subs.length) return L.send(res, 200, { ok: true, sent: 0, why: 'notifications not turned on' });
+  webpush.setVapidDetails('mailto:hello@getmavis.co', VAPID_PUBLIC, VAPID_PRIVATE);
+  const now = new Date(), venue = v.venue || 'your venue';
+  let sent = 0;
+  await Promise.all(subs.map(async sub => {
+    const pref = prefs.find(p => String(p.profile_id) === String(sub.profile_id));
+    if (inQuiet(pref, now)) return;
+    const payload = JSON.stringify({ title: 'VIP in · ' + venue, body: (m.name || 'A VIP') + ' just checked in' + (m.notes ? ' - ' + String(m.notes).slice(0, 80) : ''), thread: 'mkvip-' + m.id, url: '/', who: 'VIP', colour: '#C4973B' });
+    try { await webpush.sendNotification({ endpoint: sub.endpoint, keys: { p256dh: sub.p256dh, auth: sub.auth } }, payload, { TTL: 1800, urgency: 'high' }); sent++; }
+    catch (e) { if (e.statusCode === 404 || e.statusCode === 410) await L.db('push_subs?endpoint=eq.' + encodeURIComponent(sub.endpoint), { method: 'DELETE' }).catch(() => {}); }
+  }));
+  return L.send(res, 200, { ok: true, sent, devices: subs.length });
+}
+
 module.exports = async (req, res) => {
   if (req.method !== 'POST') return L.send(res, 405, { ok: false });
   if (!L.SERVICE_KEY) return L.send(res, 503, { ok: false, reason: 'notset' });
@@ -328,6 +361,7 @@ module.exports = async (req, res) => {
     if (b.order_id) return await orderPush(me, b, res);
     if (b.task_id) return await taskPush(me, b, res);
     if (b.suggestion) return await suggestionPush(me, b, res);
+    if (b.mk_vip) return await vipPush(me, b, res);
     const msg = (await L.db('chat_msgs?select=*&id=eq.' + encodeURIComponent(b.msg_id || '')))[0];
     // only the person who sent it, and only straight after sending
     if (!msg) { await note(me, 'not sent - message not found'); return L.send(res, 200, { ok: true, sent: 0, why: 'message not found' }); }

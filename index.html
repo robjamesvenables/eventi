@@ -2610,6 +2610,11 @@ body:not(.mv-demo) #ms-demoqr-btn{display:none!important}
 .ms-bill > span{font-size:13px;font-weight:800;color:#0F1E2E;white-space:nowrap}
 .ms-bill input{flex:1;min-width:0;border:0;background:none;font:600 15px Inter,sans-serif;color:#0F1E2E;padding:8px 4px;outline:none}
 .ms-bill button{border:0;border-radius:9px;background:#0D9488;color:white;font:800 13px Inter,sans-serif;padding:9px 14px;cursor:pointer}
+.ms-rwbar{height:8px;border-radius:8px;background:#F1F5F9;overflow:hidden;margin-top:4px}.ms-rwbar i{display:block;height:100%;background:#0D9488;border-radius:8px}
+.ms-rwnote{font-size:12px;color:#64748B;margin-top:6px;line-height:1.4}
+.ms-xbtn{border:0;background:none;color:#0D9488;font:800 13.5px Inter,sans-serif;padding:8px 0 0;cursor:pointer}
+.ms-xlog{margin-top:8px;border-top:1px solid #F1F5F9;padding-top:6px}.ms-xlog div{display:flex;gap:8px;font-size:12px;color:#475569;padding:3px 0}.ms-xlog b{color:#0F766E}
+.ms-billadd{margin-left:auto;background:white!important;color:#0F766E!important;border:1.5px solid #B9DDD6!important;padding:6px 10px!important}
 .ms-bill.saved{background:#F0FDFA;border-color:#B9DDD6;color:#0F766E;padding:10px 12px}.ms-bill.saved > span{font-weight:600;color:#0F766E}.ms-bill.saved svg{flex:none}
 #mki{margin-top:14px}
 .mki-kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:12px}
@@ -22024,6 +22029,8 @@ async function msStockTake(){
   if(left === 10 && msIsMgr()) setTimeout(() => toast('Only 10 keyrings left - time to order more'), 1800);
 }
 // The bill at check-in (optional) - so Insights can show what members spend
+function msBillSaved(id, total){ return `<div class="ms-bill saved" id="ms-billbox"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg><span>Bills today <b>${msRp(total)}</b></span><button type="button" class="ms-billadd" onclick="msBillMore('${id}')">+ Add another</button></div>`; }
+window.msBillMore = function(id){ const b = document.getElementById('ms-billbox'); if(!b) return; b.outerHTML = `<div class="ms-bill" id="ms-billbox"><span>Add a bill</span><input id="ms-bill" inputmode="numeric" placeholder="Rp" autocomplete="off" onkeydown="if(event.key==='Enter') msBill('${id}')"><button onclick="msBill('${id}')">Add</button></div>`; const i = document.getElementById('ms-bill'); if(i) i.focus(); };
 window.msBill = async function(id){
   const inp = document.getElementById('ms-bill'); if(!inp) return;
   let n = parseInt(String(inp.value).replace(/\D/g, ''), 10);
@@ -22031,16 +22038,16 @@ window.msBill = async function(id){
   if(n < 10000) n *= 1000;   // "450" means Rp 450k
   const venue = msVenue(), day = msToday();
   const v = (MS.visits[id] || []).find(x => x.venue === venue && x.visit_date === day);
-  const { data, error } = await sb.from('member_visits').update({ spend:n }).eq('member_id', id).eq('venue', venue).eq('visit_date', day).select();
+  const total = ((v && +v.spend) || 0) + n;   // lunch and dinner at the same place: the bills add up, nothing is lost
+  const { data, error } = await sb.from('member_visits').update({ spend:total }).eq('member_id', id).eq('venue', venue).eq('visit_date', day).select();
   if((error || !data || !data.length) && !msDemo()){ console.warn(error); toast('Bill not saved - please try again'); return; }
-  if(v) v.spend = n;
-  const box = document.getElementById('ms-billbox'); if(box) box.outerHTML = `<div class="ms-bill saved" id="ms-billbox"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg><span>Bill <b>${msRp(n)}</b> saved</span></div>`;
-  toast('Bill saved ✓');
+  if(v) v.spend = total;
+  const box = document.getElementById('ms-billbox'); if(box) box.outerHTML = msBillSaved(id, total); toast(total > n ? 'Added ✓ - ' + msRp(total) + ' today' : 'Bill saved ✓');
 };
 // ── Mavis Club settings (managers): every switch for the club in one place, saved as you tap ──
 const MK_EMO = ['🍸','🥂','🍹','🍰','🎉','🎂','🌅','🎶','📍','⭐'];
 const MKS_DEF = () => ({ bonus:{ on:false, limit:30 }, stamp:{ on:false, visits:10, reward:'Free cocktail' }, bday:{ treat:false, gift:'Dessert' }, friend:{ on:false, offer:'Welcome cocktail' },
-  levels:{ on:false, gold:10, black:25 }, club:{ on:false }, emoji:{ on:true }, vip:{ on: msDemo() }, welcome:{ on:true }, imp:{ on: msDemo() }, senders:[], fbto:[] });
+  levels:{ on:false, gold:10, black:25 }, club:{ on:false }, emoji:{ on:true }, vip:{ on: msDemo() }, welcome:{ on:true }, imp:{ on: msDemo() }, senders:[], fbto:[], extra:[] });
 function mkS(){ const d = MKS_DEF(), s = msJson('mk_settings') || {}; Object.keys(d).forEach(k => { if(s[k] != null) d[k] = Array.isArray(d[k]) ? s[k] : Object.assign(d[k], s[k]); }); return d; }
 const msCanSend = () => msIsMgr() || (!!myProfile && mkS().senders.map(String).includes(String(myProfile.id)));
 const msCanMsg = () => msCanSend() || (typeof gpCanEdit === 'function' && gpCanEdit());
@@ -22085,12 +22092,14 @@ async function msSettingsRender(){
     <div class="mks-card">
       ${mksRow('VIP alert', 'Managers get a phone notification when a VIP checks in.', mksSw('vip.on', s.vip.on))}
       ${mksRow('Guest feedback alerts', 'When a member gives 1 to 3 stars, these people get a phone notification straight away - so someone can go and see the guest while they\'re still here. Nobody picked = all managers.', '', (Object.keys(MS.staff || {}).length ? `<div class="mks-f"><span>Who gets them</span><div class="vdf-pills mks-pills">${Object.entries(MS.staff || {}).map(([id, n]) => `<button type="button" class="vdf-pill${s.fbto.map(String).includes(String(id)) ? ' on' : ''}" onclick="mksFbTo('${id}')">${msEsc(n)}</button>`).join('')}</div></div>` : '<div class="mks-hint">Add your team in People first - then pick who gets these.</div>'))}
+      ${mksRow('Who can add a visit', 'If a guest says a visit was missed, these people can add one extra visit a day for them (with a reason). Managers always can.', '', (Object.keys(MS.staff || {}).length ? `<div class="mks-f"><span>Also allowed</span><div class="vdf-pills mks-pills">${Object.entries(MS.staff || {}).map(([id, n]) => `<button type="button" class="vdf-pill${(s.extra || []).map(String).includes(String(id)) ? ' on' : ''}" onclick="mksExtra('${id}')">${msEsc(n)}</button>`).join('')}</div></div>` : '<div class="mks-hint">Add your team in People first - then pick who can do this.</div>'))}
       ${mksRow('Welcome WhatsApp', 'After a sign-up, staff send the guest a welcome message with their member card - one tap.', mksSw('welcome.on', s.welcome.on))}
       ${mksRow('Emojis in messages', MK_EMO.join(' '), mksSw('emoji.on', s.emoji.on))}
       ${mksRow('Import members', 'Bring in a list you already have, from Excel or a CSV file.', mksSw('imp.on', s.imp.on), s.imp.on ? `<button class="mki-btn" style="margin-top:0" onclick="msImportOpen()">Import members</button>` : '')}
       ${mksRow('Who can send messages', 'Managers can always send. Anyone else can ask, and a manager says OK.', '', staff.length ? `<div class="mks-f"><span>Also allowed to send</span><div class="vdf-pills mks-pills">${staff.map(([id, n]) => { const on = s.senders.map(String).includes(String(id)); return `<button type="button" class="vdf-pill${on ? ' on' : ''}" onclick="mksSender('${id}')">${msEsc(n)}</button>`; }).join('')}</div></div>` : '<div class="mks-hint">Your team will show here.</div>')}
     </div>`;
 }
+window.mksExtra = function(id){ const s = mkS(), l = (s.extra || []).map(String); mksSet('extra', l.includes(String(id)) ? l.filter(x => x !== String(id)) : l.concat(String(id))); };
 window.mksFbTo = function(id){ const s = mkS(), l = s.fbto.map(String); mksSet('fbto', l.includes(String(id)) ? l.filter(x => x !== String(id)) : l.concat(String(id))); };
 window.mksSender = function(id){ const s = mkS(), l = s.senders.map(String); mksSet('senders', l.includes(String(id)) ? l.filter(x => x !== String(id)) : l.concat(String(id))); };
 
@@ -22526,9 +22535,10 @@ window.msOpenMember = function(id, checked){
       ${m.allergy ? `<div class="ms-alg">${mkiSvg('warn', 17)}<span><b>Allergy</b> ${msEsc(m.allergy)}</span></div>` : ''}
       ${(r => r ? `<div class="ms-rwd"><i>${mkiSvg('gift', 20)}</i><div><b>Reward ready</b><small>${msEsc(String(m.name || '').split(' ')[0])} has reached ${r.target} visits. Give them their reward, then tap the button.</small></div><button onclick="msRewardGive('${m.id}')">Reward given</button></div>` : '')(msRewardReady(m))}
       ${checked ? `<div class="ms-done ${checked.already ? 'again' : ''}">${ok}${checked.already ? 'Already checked in today at ' + msEsc(checked.venue) : 'Checked in at ' + msEsc(checked.venue) + ' · ' + new Date().toLocaleTimeString('en-GB', { hour:'2-digit', minute:'2-digit' })}</div>` : ''}
-      ${checked && msHasSpend() ? (tv => tv && tv.spend ? `<div class="ms-bill saved" id="ms-billbox"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg><span>Bill <b>${msRp(tv.spend)}</b> saved</span></div>` : `<div class="ms-bill" id="ms-billbox"><span>Their bill</span><input id="ms-bill" inputmode="numeric" placeholder="Rp - optional" autocomplete="off" onkeydown="if(event.key==='Enter') msBill('${m.id}')"><button onclick="msBill('${m.id}')">Save</button></div>`)((MS.visits[m.id] || []).find(x => x.venue === checked.venue && x.visit_date === msToday())) : ''}
+      ${checked && msHasSpend() ? (tv => tv && tv.spend ? msBillSaved(m.id, tv.spend) : `<div class="ms-bill" id="ms-billbox"><span>Their bill</span><input id="ms-bill" inputmode="numeric" placeholder="Rp - optional" autocomplete="off" onkeydown="if(event.key==='Enter') msBill('${m.id}')"><button onclick="msBill('${m.id}')">Save</button></div>`)((MS.visits[m.id] || []).find(x => x.venue === checked.venue && x.visit_date === msToday())) : ''}
       ${msWelcomeHtml(m)}
-      <div class="ms-g3"><div><b>${s.total}</b><small>VISITS</small></div><div><b>${s.month}</b><small>THIS MONTH</small></div><div><b class="${s.fav.length > 8 ? 'sm' : ''}">${msEsc(s.fav || '-')}</b><small>FAVOURITE</small></div></div>
+      <div class="ms-g3"><div><b>${msCounted(m)}</b><small>VISITS</small></div><div><b>${s.month}</b><small>THIS MONTH</small></div><div><b class="${s.fav.length > 8 ? 'sm' : ''}">${msEsc(s.fav || '-')}</b><small>FAVOURITE</small></div></div>
+      ${msRwCard(m)}
       ${perks.length ? `<div class="ms-card"><div class="ms-lab">PERKS · ${m.tier === 'vip' ? 'VIP' : 'MEMBER'}</div>${perks.map(p => `<div class="ms-perk"><i>${ok}</i>${msEsc(p)}</div>`).join('')}</div>` : ''}
       ${s.recent.length ? `<div class="ms-card"><div class="ms-lab">RECENT VISITS</div>${s.recent.map(v => `<div class="ms-vrow"><b>${msEsc(v.venue || '-')}</b><span>${msEsc(msAgo(v.visit_date))}${v.spend ? ' · ' + msRp(v.spend) : ''}</span></div>`).join('')}</div>` : ''}
       ${m.notes ? `<div class="vd-note">${vdSvg('note', 15)}<span>${msEsc(m.notes)}</span></div>` : ''}
@@ -22537,9 +22547,35 @@ window.msOpenMember = function(id, checked){
   if(checked && !checked.already){ const d = o.querySelector('.ms-done'); if(d){ d.classList.add('pop'); } }
 };
 // Rewards: every [target] visits a member earns a reward; staff tap "Reward given" and the count starts again at 0
+// Visits that count towards the reward: one per day (however many places or scans) + extra visits staff added
+function msExtras(id){ const l = (msJson('mk_extra') || {})[id]; return Array.isArray(l) ? l : []; }
+function msCounted(m){ return new Set((MS.visits[m.id] || []).map(v => v.visit_date).filter(Boolean)).size + msExtras(m.id).length; }
+const msCanExtra = () => msIsMgr() || (!!myProfile && (mkS().extra || []).map(String).includes(String(myProfile.id)));
+function msRwCard(m){
+  const rw = (msPage() || {}).reward, t = rw && +rw.visits; if(!t) return '';
+  const given = ((msJson('mk_rewards') || {})[m.id] || []).length, n = Math.max(0, Math.min(t, msCounted(m) - given * t)), ex = msExtras(m.id);
+  const today = ex.some(x => String(x.at || '').slice(0, 10) === new Date().toISOString().slice(0, 10) || x.day === msToday());
+  return `<div class="ms-card" id="ms-rwc"><div class="ms-lab">REWARD · ${n} OF ${t} VISITS</div><div class="ms-rwbar"><i style="width:${Math.round(100 * n / t)}%"></i></div>
+    <div class="ms-rwnote">One visit a day counts, however many places they go to.</div>
+    ${msCanExtra() ? (today ? `<div class="ms-rwnote" style="color:#0F766E;font-weight:700">An extra visit was already added today.</div>` : `<div id="ms-xtra"><button type="button" class="ms-xbtn" onclick="msExtraOpen('${m.id}')">+ Add a visit</button></div>`) : ''}
+    ${ex.length ? `<div class="ms-xlog">${ex.slice().reverse().slice(0, 5).map(x => `<div><b>+1</b><span>${msEsc(msAgo(x.day || String(x.at).slice(0, 10)))} · ${msEsc(x.reason || '')} · ${msEsc((MS.staff || {})[x.by] || 'staff')}</span></div>`).join('')}</div>` : ''}</div>`;
+}
+window.msExtraOpen = function(id){
+  const b = document.getElementById('ms-xtra'); if(!b) return;
+  b.innerHTML = `<div class="ms-rwnote" style="margin-top:8px;font-weight:700;color:#0F1E2E">Why are you adding a visit?</div><div class="vdf-pills" style="margin-top:6px">${['Second visit today', 'Forgot to scan last time', 'Other'].map(r => `<button type="button" class="vdf-pill" onclick="msExtraAdd('${id}', ${msEsc(JSON.stringify(r))})">${r}</button>`).join('')}</div><button type="button" class="ms-xbtn" style="color:#64748B" onclick="msOpenMember('${id}')">Cancel</button>`;
+};
+window.msExtraAdd = async function(id, reason){
+  const all = Object.assign({}, msJson('mk_extra') || {}), l = Array.isArray(all[id]) ? all[id] : [];
+  if(l.some(x => x.day === msToday())){ toast('Only one extra visit a day'); return; }
+  all[id] = l.concat([{ at: new Date().toISOString(), day: msToday(), by: myProfile && myProfile.id, venue: msVenue(), reason }]);
+  appSettings.mk_extra = JSON.stringify(all);
+  const ok = await msSetting('mk_extra', all);
+  toast(ok || msDemo() ? 'Visit added ✓' : 'Not saved - check your connection');
+  const m = MS.members.find(x => String(x.id) === String(id)); if(m) msOpenMember(id); msRender();
+};
 function msRewardReady(m){
   const rw = (msPage() || {}).reward, t = rw && +rw.visits; if(!t) return null;
-  const given = ((msJson('mk_rewards') || {})[m.id] || []).length, inRound = (MS.visits[m.id] || []).length - given * t;
+  const given = ((msJson('mk_rewards') || {})[m.id] || []).length, inRound = msCounted(m) - given * t;
   return inRound >= t ? { target:t } : null;
 }
 window.msRewardGive = async function(id){

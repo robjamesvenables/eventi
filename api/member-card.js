@@ -118,7 +118,7 @@ module.exports = async (req, res) => {
     const co = k.company_id;
     const [cos, settings, gpRows] = await Promise.all([
       safe(L.db('companies?select=name,code,logo&id=eq.' + q(co))),
-      safe(L.db('app_settings?select=key,value&company_id=eq.' + q(co) + '&key=in.(member_perks,member_page,mk_rewards)')),
+      safe(L.db('app_settings?select=key,value&company_id=eq.' + q(co) + '&key=in.(member_perks,member_page,mk_rewards,mk_extra)')),
       safe(L.db('guest_page?select=content&company_id=eq.' + q(co)))
     ]);
     const company = cos[0] || {};
@@ -199,7 +199,9 @@ module.exports = async (req, res) => {
     const rw = page.reward && page.reward.visits ? page.reward : (demo ? demo.reward : null);
     // Rounds: every time staff tap "Reward given" the count starts again (Mavis Club > member > Reward given)
     const given = Array.isArray((set.mk_rewards || {})[m.id]) ? set.mk_rewards[m.id].length : 0;
-    const tgt = rw ? Number(rw.visits) : 0, inRound = tgt ? Math.max(0, visits.length - given * tgt) : 0;
+    // Visits that count: one per day (however many places or scans), plus any extra visits staff added (Mavis Club > member > + Add a visit)
+    const days = new Set(visits.map(v => v.visit_date).filter(Boolean)).size, extra = Array.isArray((set.mk_extra || {})[m.id]) ? set.mk_extra[m.id].length : 0, counted = days + extra;
+    const tgt = rw ? Number(rw.visits) : 0, inRound = tgt ? Math.max(0, counted - given * tgt) : 0;
     const reward = rw && tgt > 0 ? { target: tgt, text: String(rw.text || '').slice(0, 80), done: Math.min(inRound, tgt), left: Math.max(0, tgt - inRound), round: given } : null;
 
     // Marketing: photo slides, daily deals, coming up, gallery (Membership > Guest page)
@@ -216,7 +218,7 @@ module.exports = async (req, res) => {
     }
 
     return L.send(res, 200, {
-      ok: true, brand, logo, code, first, tier, visits: visits.length, favourite, gp,
+      ok: true, brand, logo, code, first, tier, visits: counted, favourite, gp,
       since: new Date(m.created_at).getFullYear(), perks, perkIcons, offers: m.consent === true, reviewAsk,
       birthdayWeek: birthdayWeek(m.birthday, now.date),
       tonight: tonight.slice(0, 12), week: week.slice(0, 40), menus, venues, reward, stay: https(page.stay), stayWa: waOf(page.stayWa), stayPhone: phoneOf(page.stayPhone), contact: cleanContact(page.contact)

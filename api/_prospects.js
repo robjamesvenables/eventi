@@ -93,7 +93,7 @@ P.trans = {
           details: 'Count down on the rooftop with a DJ, free-flow packages and fireworks across the skyline.' },
         { id: 'te3', img: tr('wedding'), title: 'Wedding showcase', line: 'Meet our wedding team', date: addDays(today, 10), time: '10:00', time2: '15:00', venue: 'The Lobby Lounge', btn: 'book', url: TRANS_BOOK }
       ],
-      gallery: ['pool', 'beach', 'rooftop', 'villapool', 'villa', 'room', 'balcony', 'spa', 'lobby', 'lounge', 'dining', 'kids', 'ballroom', 'entrance'].map((n, i) => ({ id: 'tg' + i, img: tr(n), venue: n === 'rooftop' ? 'The 18th Rooftop Bar' : n === 'dining' ? 'The Restaurant' : n === 'lobby' || n === 'lounge' ? 'The Lobby Lounge' : '' })),
+      gallery: ['pool', 'beach', 'rooftop', '18day', 'villapool', 'villa', 'room', 'balcony', 'spa', 'lobby', 'lounge', 'dining', 'kids', 'ballroom', 'entrance'].map((n, i) => ({ id: 'tg' + i, img: tr(n), venue: n === 'rooftop' || n === '18day' ? 'The 18th Rooftop Bar' : n === 'dining' ? 'The Restaurant' : n === 'lobby' || n === 'lounge' ? 'The Lobby Lounge' : '' })),
       places: {
         'the 18th rooftop bar': { img: tr('rooftop'), area: 'Rooftop · sunset views', ig: 'thetransresortbali' },
         'the restaurant': { img: tr('dining'), area: 'All-day dining by the pool', ig: 'thetransresortbali' },

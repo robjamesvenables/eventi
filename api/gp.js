@@ -87,6 +87,29 @@ async function fbPush(co, stars, text, venue, m, fid){
   await Promise.all(subs.map(sub => webpush.sendNotification({ endpoint: sub.endpoint, keys: { p256dh: sub.p256dh, auth: sub.auth } }, payload, { TTL: 86400 }).catch(() => {})));
 }
 
+// ── Phone alerts for members (news and offers) ──
+//   POST /api/gp?a=sub&code=<keyring>  { endpoint, keys:{ p256dh, auth } }   the member turned alerts on (on = 0 turns them off)
+// Saved per venue in app_settings 'mk_push' (newest first, one per phone). Sent from Members Club > Messages > Phone alert.
+const PUSH_HOSTS = /^https:\/\/([a-z0-9-]+\.)*(googleapis\.com|mozilla\.com|mozaws\.net|windows\.com|notify\.windows\.com|push\.apple\.com)\//i;
+async function subscribe(req, res){
+  const code = String((req.query && req.query.code) || '').toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 16);
+  if (req.method !== 'POST' || !code) return L.send(res, 400, { ok: false });
+  const b = L.body(req), off = String((req.query && req.query.on) || '1') === '0';
+  const ep = String(b.endpoint || ''), k = b.keys || {};
+  if (!PUSH_HOSTS.test(ep) || ep.length > 900) return L.send(res, 400, { ok: false });
+  if (!off && !(/^[\w-]{40,200}$/.test(String(k.p256dh || '')) && /^[\w-]{10,60}$/.test(String(k.auth || '')))) return L.send(res, 400, { ok: false });
+  const kr = (await L.db('member_keyrings?select=company_id,member_id&code=eq.' + encodeURIComponent(code)))[0];
+  if (!kr) return L.send(res, 200, { ok: true, saved: false });   // a sales sample with no venue behind it: nothing to save
+  const co = kr.company_id, q = encodeURIComponent;
+  const row = (await L.db('app_settings?select=value&company_id=eq.' + q(co) + '&key=eq.mk_push'))[0];
+  let list = []; try { let x = row && row.value; while (typeof x === 'string') x = JSON.parse(x); if (Array.isArray(x)) list = x; } catch (e) {}
+  list = list.filter(x => x && x.endpoint !== ep);
+  if (!off) list.unshift({ code, mid: kr.member_id || null, endpoint: ep, p256dh: String(k.p256dh), auth: String(k.auth), at: new Date().toISOString() });
+  list = list.slice(0, 4000);
+  await L.db('app_settings?on_conflict=company_id,key', { method: 'POST', body: [{ company_id: co, key: 'mk_push', value: JSON.stringify(list) }, { company_id: co, key: 'mk_push_n', value: JSON.stringify({ n: list.length, codes: [...new Set(list.map(x => x.code))].length, mids: [...new Set(list.map(x => x.mid).filter(Boolean).map(String))], at: new Date().toISOString() }) }], headers: { Prefer: 'resolution=merge-duplicates,return=minimal' } });
+  return L.send(res, 200, { ok: true, saved: true, on: !off });
+}
+
 // ── Roster live link: /r/<token> shows one department's roster (this week and next), no login ──
 const RS_DEF_SHIFTS = [{ id: 'm', name: 'Morning', a: '08:00', b: '16:00', c: 'teal' }, { id: 'e', name: 'Evening', a: '16:00', b: '00:00', c: 'indigo' }, { id: 's', name: 'Split', a: '11:00', b: '15:00', a2: '18:00', b2: '23:00', c: 'amber' }];
 const rsParse = v => { if (!v) return null; if (typeof v === 'object') return v; try { return JSON.parse(v); } catch (e) { return null; } };
@@ -162,6 +185,7 @@ module.exports = async (req, res) => {
       const sd = require('./_prospects').seed(String((req.query && req.query.as) || '').replace(/[^a-z]/g, ''), String((req.query && req.query.d) || '').replace(/[^0-9-]/g, '').slice(0, 10) || new Date().toISOString().slice(0, 10));
       return sd ? L.send(res, 200, Object.assign({ ok: true }, sd)) : L.send(res, 404, { ok: false });
     }
+    if (a === 'sub') return await subscribe(req, res);
     if (a === 'img') return await photo(req, res);
     if (a === 'hit') return await hit(req, res);
     if (a === 'offers') return await offers(req, res);

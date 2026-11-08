@@ -110,6 +110,7 @@ svg{display:block}
 .addhome i{width:38px;height:38px;border-radius:11px;background:#fff;color:var(--top,#0F1E2E);display:flex;align-items:center;justify-content:center;flex:none;box-shadow:0 1px 3px rgba(15,30,46,.08)}
 .ahtip{position:fixed;z-index:60;background:#0F1E2E;color:#fff;border-radius:14px;padding:12px 16px;font-size:14.5px;font-weight:600;line-height:1.45;text-align:center;box-shadow:0 8px 24px rgba(0,0,0,.3);animation:ahb 1.2s ease-in-out infinite}
 .ahtip b{font-weight:900;color:#fff}
+.addhome.al i{color:var(--acc,#0D9488)}.addhome.al .ahb{background:var(--acc,#0D9488);color:var(--acc-ink,#fff)}.addhome.al.done{border-style:solid;border-color:rgba(22,163,74,.35);cursor:default}.addhome.al.done .ahb{background:#16A34A;color:#fff}
 .ahtip.down{left:50%;bottom:calc(14px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);width:max-content;max-width:calc(100% - 32px)}
 .ahtip.down::after{content:'';position:absolute;bottom:-9px;left:50%;margin-left:-9px;border:9px solid transparent;border-top-color:#0F1E2E;border-bottom:0}
 .ahtip.up{right:10px;top:calc(10px + env(safe-area-inset-top,0px));max-width:calc(100% - 20px)}
@@ -393,6 +394,10 @@ svg{display:block}
 
   // Staff preview: a small quiet label in the corner (none inside the editor's live preview)
   window.addEventListener('beforeinstallprompt', function(e){ e.preventDefault(); window.__mvInstall = e; });
+  // Members' page helper (alerts only - see k-sw.js); never inside the back office preview
+  if ('serviceWorker' in navigator && !/[?&]embed=1/.test(location.search)) { try { navigator.serviceWorker.register('/k-sw.js', { scope: '/k/' }).catch(function(){}); } catch (e) {} }
+  var VAPID = 'BGfKLEwZ6ZDqoozMUz2jqNJonJni6l-sA2FU8yHkUAm5FnnwHb44ZGBlEolJXr4QSZospqPa1_z-N2dMjTtKCJc';
+  var b64u = function(s){ var p = '='.repeat((4 - s.length % 4) % 4), b = atob((s + p).replace(/-/g, '+').replace(/_/g, '/')), a = new Uint8Array(b.length); for (var i = 0; i < b.length; i++) a[i] = b.charCodeAt(i); return a; };
   window.addEventListener('appinstalled', function(){ var r = document.getElementById('addhome'); if (r) r.remove(); });
   document.addEventListener('click', function(e){ var b = e.target.closest && e.target.closest('[data-copy]'); if (!b) return; e.stopPropagation(); e.preventDefault(); var c = b.getAttribute('data-copy');
     var done = function(){ b.textContent = 'Copied'; setTimeout(function(){ b.textContent = 'Copy'; }, 1800); };
@@ -477,7 +482,12 @@ svg{display:block}
       window.scrollTo(0, 0);
       document.getElementById('mvcb').onclick = function(){ if (history.state && history.state.club) history.back(); else show('', false); };
     };
-    var foot = homeRow + '<div class="foot">Show your keyring when you arrive<br>and we\'ll look after the rest.<br><a href="https://getmavis.co">Powered by Mavis</a></div>';
+    // "Get our news": the venue's phone alerts (events, offers) - one tap to allow. iPhone: only once it's saved to the home screen (Apple's rule), so the tip shows how
+    var embed = /[?&]embed=1/.test(location.search);
+    var canPush = 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window;
+    var pushOn = false; try { pushOn = localStorage.getItem('mvpush:' + code) === '1' && canPush && Notification.permission === 'granted'; } catch (e) {}
+    var alertRow = embed || (canPush && Notification.permission === 'denied') ? '' : '<button class="addhome al' + (pushOn ? ' done' : '') + '" id="mvalert" type="button"><i>' + svg('<path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.9 1.9 0 0 0 3.4 0"/>', 18) + '</i><span><b>' + (pushOn ? 'News alerts are on' : 'Get our news') + '</b><small>' + (pushOn ? 'Events and offers come straight to your phone' : 'Events and offers, straight to your phone') + '</small></span><em class="ahb">' + (pushOn ? 'On' : 'Turn on') + '</em></button>';
+    var foot = alertRow + homeRow + '<div class="foot">Show your keyring when you arrive<br>and we\'ll look after the rest.<br><a href="https://getmavis.co">Powered by Mavis</a></div>';
 
     // ── Slides (photos at the top) ──
     var slidesHtml = function(list, home){
@@ -740,6 +750,33 @@ svg{display:block}
       var close = function(){ if (history.state && history.state.sh) history.back(); else { sh.classList.remove('on'); document.body.style.overflow = ''; var sc = document.getElementById('shc'); if (sc.querySelector('iframe')) sc.innerHTML = ''; } };
       document.getElementById('shx').onclick = close;
       var mvc = document.getElementById('mvc'); if (mvc) mvc.onclick = function(){ showClub(true); };
+      var al = document.getElementById('mvalert');
+      if (al) al.onclick = function(){
+        if (al.classList.contains('done') || al.dataset.busy) return;
+        var tipOf = function(html){ var old = document.getElementById('ahtip'); if (old) old.remove(); var t = document.createElement('div'); t.id = 'ahtip'; t.className = 'ahtip down'; t.innerHTML = html; t.onclick = function(){ t.remove(); }; document.body.appendChild(t); setTimeout(function(){ if (t.parentNode) t.remove(); }, 12000); };
+        var ios = /iphone|ipad|ipod/i.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+        if (!canPush) {   // iPhone in Safari: alerts only work once the page is on the home screen
+          var share = '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-3px;margin:0 2px"><path d="M12 3v12M8 7l4-4 4 4"/><path d="M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7"/></svg>';
+          tipOf(ios ? 'First save it: tap Share ' + share + ' below, then <b>Add to Home Screen</b>.<br>Open it from there and tap <b>Turn on</b>.' : 'This phone can\'t get alerts - try Chrome');
+          return;
+        }
+        var lab = al.querySelector('.ahb'), set = function(t){ lab.textContent = t; };
+        al.dataset.busy = '1'; set('…');
+        Notification.requestPermission().then(function(p){
+          if (p !== 'granted') { delete al.dataset.busy; set('Turn on'); if (p === 'denied') { al.remove(); } return; }
+          return navigator.serviceWorker.register('/k-sw.js', { scope: '/k/' }).then(function(){ return navigator.serviceWorker.getRegistration('/k/'); }).then(function(reg){
+            var go = function(){ return reg.pushManager.getSubscription().then(function(s){ return s || reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: b64u(VAPID) }); }); };
+            return (reg.active ? Promise.resolve() : new Promise(function(r){ var w = reg.installing || reg.waiting; if (!w) return r(); w.addEventListener('statechange', function(){ if (w.state === 'activated') r(); }); setTimeout(r, 4000); })).then(go);
+          }).then(function(sub){
+            return fetch('/api/gp?a=sub&code=' + encodeURIComponent(code), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(sub) }).then(function(r){ return r.json(); });
+          }).then(function(r){
+            delete al.dataset.busy;
+            if (!r || !r.ok) { set('Try again'); return; }
+            try { localStorage.setItem('mvpush:' + code, '1'); } catch (e) {}
+            al.classList.add('done'); al.querySelector('b').textContent = 'News alerts are on'; al.querySelector('small').textContent = 'Events and offers come straight to your phone'; set('On');
+          });
+        }).catch(function(){ delete al.dataset.busy; set('Try again'); });
+      };
       var ah = document.getElementById('addhome');
       if (ah) ah.onclick = function(){   // same as Mavis: Android installs with a tap; iPhone can't (Apple), so one short line says where to tap
         if (window.__mvInstall) { var ev = window.__mvInstall; window.__mvInstall = null; ev.prompt(); return; }

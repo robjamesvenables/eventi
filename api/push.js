@@ -331,6 +331,43 @@ async function vipPush(me, b, res){
   return L.send(res, 200, { ok: true, sent, devices: subs.length });
 }
 
+// ── Members Club phone alerts: a manager (or someone they allowed) sends news to every member who turned alerts on ──
+// POST { mk_alert: { title, body, url? }, test: '<keyring code>'? }   test = only the phones of that one keyring
+async function memberAlert(me, b, res){
+  const a = b.mk_alert || {};
+  const title = String(a.title || '').replace(/\s+/g, ' ').trim().slice(0, 60), text = String(a.body || '').replace(/[ \t]+/g, ' ').trim().slice(0, 180);
+  if (!title || !text) return L.send(res, 400, { ok: false, why: 'title and message please' });
+  const q = encodeURIComponent, co = me.company_id;
+  const rows = await L.db('app_settings?select=key,value&company_id=eq.' + q(co) + '&key=in.(mk_push,mk_settings,mk_alerts)').catch(() => []);
+  const val = k => { const r = rows.find(x => x.key === k); let v = r && r.value; try { while (typeof v === 'string') v = JSON.parse(v); } catch (e) {} return v; };
+  const st = val('mk_settings') || {};
+  const mgr = me.is_owner || ['superadmin', 'director', 'manager'].includes(me.role) || (Array.isArray(st.senders) && st.senders.map(String).includes(String(me.id)));
+  if (!mgr) return L.send(res, 403, { ok: false, why: 'only managers can send' });
+  let subs = Array.isArray(val('mk_push')) ? val('mk_push') : [];
+  const test = b.test ? String(b.test).toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 16) : '';
+  if (test) subs = subs.filter(x => x.code === test);
+  else if (Array.isArray(b.mids)) { const want = new Set(b.mids.map(String)); subs = subs.filter(x => x.mid && want.has(String(x.mid))); }
+  if (!subs.length) return L.send(res, 200, { ok: false, sent: 0, why: test ? 'no-phone' : 'nobody' });
+  webpush.setVapidDetails('mailto:hello@getmavis.co', VAPID_PUBLIC, VAPID_PRIVATE);
+  const co2 = (await L.db('companies?select=name&id=eq.' + q(co)).catch(() => []))[0] || {};
+  let sent = 0; const gone = [];
+  await Promise.all(subs.map(async x => {
+    const url = '/k/' + x.code + '?home=1' + (a.ev ? '&ev=' + encodeURIComponent(String(a.ev).slice(0, 40)) : '');
+    try { await webpush.sendNotification({ endpoint: x.endpoint, keys: { p256dh: x.p256dh, auth: x.auth } }, JSON.stringify({ title, body: text, url, brand: co2.name || '' }), { TTL: 86400, urgency: 'normal' }); sent++; }
+    catch (e) { if (e.statusCode === 404 || e.statusCode === 410) gone.push(x.endpoint); }
+  }));
+  if (gone.length) {   // phones that switched alerts off or deleted the page: forget them
+    const all = (Array.isArray(val('mk_push')) ? val('mk_push') : []).filter(x => !gone.includes(x.endpoint));
+    await L.db('app_settings?on_conflict=company_id,key', { method: 'POST', body: [{ company_id: co, key: 'mk_push', value: JSON.stringify(all) }, { company_id: co, key: 'mk_push_n', value: JSON.stringify({ n: all.length, codes: [...new Set(all.map(x => x.code))].length, mids: [...new Set(all.map(x => x.mid).filter(Boolean).map(String))], at: new Date().toISOString() }) }], headers: { Prefer: 'resolution=merge-duplicates,return=minimal' } }).catch(() => {});
+  }
+  if (!test) {
+    const log = (Array.isArray(val('mk_alerts')) ? val('mk_alerts') : []);
+    log.unshift({ id: Date.now().toString(36), at: new Date().toISOString(), by: me.id, title, body: text, sent, total: subs.length });
+    await L.db('app_settings?on_conflict=company_id,key', { method: 'POST', body: { company_id: co, key: 'mk_alerts', value: JSON.stringify(log.slice(0, 60)) }, headers: { Prefer: 'resolution=merge-duplicates,return=minimal' } }).catch(() => {});
+  }
+  return L.send(res, 200, { ok: sent > 0, sent, total: subs.length, gone: gone.length });
+}
+
 module.exports = async (req, res) => {
   if (req.method !== 'POST') return L.send(res, 405, { ok: false });
   if (!L.SERVICE_KEY) return L.send(res, 503, { ok: false, reason: 'notset' });
@@ -339,6 +376,7 @@ module.exports = async (req, res) => {
     const me = await L.caller(req);
     if (!me) return L.send(res, 401, { ok: false });
     const b = L.body(req);
+    if (b.mk_alert) return await memberAlert(me, b, res);
     // "Send me a test" from My Account: notify only my own devices and say exactly what happened
     if (b.test) {
       const subs = await L.db('push_subs?select=*&profile_id=eq.' + encodeURIComponent(me.id));

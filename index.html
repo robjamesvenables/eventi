@@ -2576,7 +2576,12 @@ body:not(.mv-demo) #ms-demoqr-btn{display:none!important}
 .mkm-new i{width:40px;height:40px;border-radius:12px;background:#E0F5F2;color:#0D9488;display:flex;align-items:center;justify-content:center;margin-bottom:6px}.mkm-new i.wa{background:#DCFCE7;color:#15803D}
 .mkm-new b{font-size:15px;color:#0F1E2E}.mkm-new small{font-size:12.5px;color:#64748B;font-weight:600}
 .mkm-row{display:flex;align-items:center;gap:12px;padding:13px 0;border-top:1px solid #EEF1F4;flex-wrap:wrap}.mks-card > .mkm-row:first-child{border-top:0}
-.mkm-row > i{width:36px;height:36px;border-radius:11px;background:#E0F5F2;color:#0D9488;display:flex;align-items:center;justify-content:center;flex:none}.mkm-row > i.wa{background:#DCFCE7;color:#15803D}
+.mkm-row > i{width:36px;height:36px;border-radius:11px;background:#E0F5F2;color:#0D9488;display:flex;align-items:center;justify-content:center;flex:none}.mkm-row > i.wa{background:#DCFCE7;color:#15803D}.mkm-row > i.alert{background:#FEF3C7;color:#B45309}
+.mkm-new.three{grid-template-columns:repeat(3,minmax(0,1fr))}.mkm-new i.al{background:#FEF3C7;color:#B45309}
+@media(max-width:760px){.mkm-new.three{grid-template-columns:1fr 1fr}.mkm-new.three button:last-child{grid-column:1 / -1}}
+.mkr-warn{display:flex;gap:10px;align-items:flex-start;background:#FFFBEB;border:1.5px solid #FCD34D;border-radius:12px;padding:11px 12px;margin:2px 0 12px;font-size:13.5px;color:#78350F;line-height:1.45}.mkr-warn b{color:#78350F}.mkr-warn label{display:flex;gap:8px;align-items:center;margin-top:7px;font-weight:700;cursor:pointer}.mkr-warn input{width:18px;height:18px;accent-color:#B45309}
+.mka-prev{background:#E9EDF2;border-radius:16px;padding:12px}.mka-n{display:flex;gap:10px;align-items:flex-start;background:rgba(255,255,255,.92);border-radius:14px;padding:10px 12px;box-shadow:0 2px 8px rgba(15,30,46,.1)}.mka-n img{width:34px;height:34px;border-radius:9px;flex:none}.mka-n div{flex:1;min-width:0}.mka-n small{display:block;font-size:11px;color:#64748B;font-weight:600}.mka-n b{display:block;font-size:14px;color:#0F1E2E;margin-top:1px;overflow-wrap:anywhere}.mka-n p{margin:2px 0 0;font-size:13.5px;color:#334155;line-height:1.35;overflow-wrap:anywhere;white-space:pre-line}
+.mka-test{display:flex;gap:8px;align-items:center;margin-top:10px;flex-wrap:wrap}.mka-test input{width:120px;border:1.5px solid #E2E8F0;border-radius:10px;padding:8px 10px;font:600 14px Inter,sans-serif;text-transform:uppercase}.mka-test button{border:1.5px solid #E2E8F0;background:#fff;border-radius:10px;padding:8px 12px;font:700 13.5px Inter,sans-serif;cursor:pointer;color:#0F1E2E}
 .mkm-t{flex:1;min-width:180px}.mkm-t b{display:block;font-size:14.5px;color:#0F1E2E}.mkm-t small{display:block;font-size:12px;color:#64748B;font-weight:600;margin:2px 0 5px;line-height:1.4}
 .mkm-st{display:inline-block;font-size:9.5px;font-weight:900;letter-spacing:.7px;border-radius:6px;padding:3px 7px}.mkm-st.ok{background:#DCFCE7;color:#15803D}.mkm-st.go{background:#E0F5F2;color:#0F766E}.mkm-st.wait{background:#F7EEDC;color:#8A6420}.mkm-st.no{background:#F1F5F9;color:#64748B}
 .mkm-btns{display:flex;gap:8px;margin-left:auto}.mkm-btns .mki-btn{margin-top:0;padding:9px 14px}
@@ -6749,7 +6754,7 @@ let appSettings = {};
 
 async function loadAppSettings(){
   try{
-    const { data, error } = await sb.from('app_settings').select('*');
+    const { data, error } = await sb.from('app_settings').select('*').neq('key', 'mk_push');   // members' phone alert addresses stay on the server
     if(error) throw error;
     appSettings = {};
     (data||[]).forEach(row => { appSettings[row.key] = row.value; });
@@ -22109,7 +22114,7 @@ window.msBill = async function(id){
 // ── Mavis Club settings (managers): every switch for the club in one place, saved as you tap ──
 const MK_EMO = ['🍸','🥂','🍹','🍰','🎉','🎂','🌅','🎶','📍','⭐'];
 const MKS_DEF = () => ({ bonus:{ on:false, limit:30 }, stamp:{ on:false, visits:10, reward:'Free cocktail' }, bday:{ treat:false, gift:'Dessert' }, friend:{ on:false, offer:'Welcome cocktail' },
-  levels:{ on:false, gold:10, black:25 }, club:{ on:false }, emoji:{ on:true }, vip:{ on: msDemo() }, welcome:{ on:true }, imp:{ on: msDemo() }, senders:[], fbto:[], eg:'gmail' });
+  levels:{ on:false, gold:10, black:25 }, club:{ on:false }, emoji:{ on:true }, vip:{ on: msDemo() }, welcome:{ on:true }, imp:{ on: msDemo() }, senders:[], fbto:[], eg:'gmail', rest:3 });
 function mkS(){ const d = MKS_DEF(), s = msJson('mk_settings') || {}; Object.keys(d).forEach(k => { if(s[k] == null) return; d[k] = Array.isArray(d[k]) || typeof d[k] !== 'object' ? s[k] : Object.assign(d[k], typeof s[k] === 'object' ? s[k] : {}); }); return d; }
 const msCanSend = () => msIsMgr() || (!!myProfile && mkS().senders.map(String).includes(String(myProfile.id)));
 const msCanMsg = () => msCanSend() || (typeof gpCanEdit === 'function' && gpCanEdit());
@@ -22159,6 +22164,7 @@ async function msSettingsRender(){
       ${mksRow('VIP alert', 'Managers get a phone notification when a VIP checks in.', mksSw('vip.on', s.vip.on))}
       ${mksRow('Guest feedback alerts', 'When a member gives 1 to 3 stars, these people get a phone notification straight away - so someone can go and see the guest while they\'re still here. Nobody picked = all managers.', '', (Object.keys(MS.staff || {}).length ? `<div class="mks-f"><span>Who gets them</span><div class="vdf-pills mks-pills">${Object.entries(MS.staff || {}).map(([id, n]) => `<button type="button" class="vdf-pill${s.fbto.map(String).includes(String(id)) ? ' on' : ''}" onclick="mksFbTo('${id}')">${msEsc(n)}</button>`).join('')}</div></div>` : '<div class="mks-hint">Add your team in People first - then pick who gets these.</div>'))}
       ${mksRow('Welcome WhatsApp', 'After a sign-up, staff send the guest a welcome message with their member card - one tap.', mksSw('welcome.on', s.welcome.on))}
+      ${mksRow('Time between messages', 'So guests aren\'t messaged too often. Mavis warns you, and leaves out anyone you messaged more recently than this.', '', `<div class="vdf-pills mks-pills">${[1, 2, 3, 5, 7].map(n => `<button type="button" class="vdf-pill${+s.rest === n ? ' on' : ''}" onclick="mksSet('rest', ${n})">${n} day${n > 1 ? 's' : ''}</button>`).join('')}</div>`)}
       ${mksRow('Emojis in messages', MK_EMO.join(' '), mksSw('emoji.on', s.emoji.on))}
       ${mksRow('Import members', 'Bring in a list you already have, from Excel or a CSV file.', mksSw('imp.on', s.imp.on), s.imp.on ? `<button class="mki-btn" style="margin-top:0" onclick="msImportOpen()">Import members</button>` : '')}
       ${mksRow('Who can send messages', 'Managers can always send. Anyone else can ask, and a manager says OK.', '', staff.length ? `<div class="mks-f"><span>Also allowed to send</span><div class="vdf-pills mks-pills">${staff.map(([id, n]) => { const on = s.senders.map(String).includes(String(id)); return `<button type="button" class="vdf-pill${on ? ' on' : ''}" onclick="mksSender('${id}')">${msEsc(n)}</button>`; }).join('')}</div></div>` : '<div class="mks-hint">Your team will show here.</div>')}
@@ -22219,7 +22225,8 @@ const MK_TYPES = {
 const msFill = (t, m) => String(t).replace(/\{name\}/g, String(m.name || '').split(' ')[0]).replace(/\{venue\}/g, msStats(m).fav || (myCompany && myCompany.name) || 'us');
 const msNoEmo = t => MK_EMO.reduce((s, e) => s.split(' ' + e).join('').split(e + ' ').join('').split(e).join(''), t);
 function msAud(key, kind){
-  const ok = m => m.consent === true && (kind === 'email' ? /@/.test(m.email || '') : String(m.phone || '').replace(/\D/g, '').length >= 7);
+  const al = kind === 'alert' ? msAlertIds() : null;
+  const ok = m => kind === 'alert' ? al.has(String(m.id)) : m.consent === true && (kind === 'email' ? /@/.test(m.email || '') : String(m.phone || '').replace(/\D/g, '').length >= 7);
   const mm = String(new Date().getMonth() + 1).padStart(2, '0');
   const t0 = new Date(), lm = new Date(t0.getFullYear(), t0.getMonth() - 1, 1), lmon = lm.getFullYear() + '-' + String(lm.getMonth() + 1).padStart(2, '0');
   const cut = new Date(); cut.setDate(cut.getDate() - 30); const cutS = cut.toISOString().slice(0, 10);
@@ -22241,6 +22248,26 @@ function msDemoEmails(){
   MS_FAKE = Array.from({ length: 620 }, (_, i) => { const f = F[(i * 7) % F.length], l = L[(i * 11 + Math.floor(i / 40)) % L.length];
     return { id: 'demo-e' + i, name: f + ' ' + l, email: (f + '.' + l + (i + 1)).toLowerCase() + '@example.com', consent: true, demo: true }; });
   return MS_FAKE;
+}
+// Phone alerts: which members turned them on (the server keeps their phones; the app only gets who and how many).
+// Demo: members who said yes to offers count as having alerts on, so the screens can be shown.
+function msAlertIds(){
+  const n = msJson('mk_push_n') || {};
+  if(Array.isArray(n.mids) && n.mids.length) return new Set(n.mids.map(String));
+  return new Set(msDemo() ? MS.members.filter(m => m.consent === true).map(m => String(m.id)) : []);
+}
+// Who heard from the venue lately (any email, WhatsApp or phone alert) - so nobody is messaged too often
+function msRecent(){
+  const days = +mkS().rest || 3, cut = Date.now() - days * 864e5, r = {};
+  msMsgs().forEach(c => { if(c.status === 'requested' || c.status === 'declined') return; const t = new Date(c.go || c.at).getTime(); if(!(t >= cut)) return;
+    (c.ids || []).forEach(id => { if(c.kind === 'wa' && !(c.sent && c.sent[id])) return; if(!r[id] || r[id].t < t) r[id] = { t, kind: c.kind }; }); });
+  return r;
+}
+function msRecentWarn(ids){
+  const r = msRecent(), hit = ids.filter(id => r[id]); if(!hit.length) return null;
+  const last = hit.map(id => r[id]).sort((a, b) => b.t - a.t)[0], d = Math.floor((new Date().setHours(0, 0, 0, 0) - new Date(last.t).setHours(0, 0, 0, 0)) / 864e5);
+  const what = { email:'an email', wa:'a WhatsApp', alert:'a phone alert' }[last.kind] || 'a message', when = d <= 0 ? 'today' : d === 1 ? 'yesterday' : d + ' days ago';
+  return { n: hit.length, of: ids.length, text: (hit.length === ids.length ? (ids.length === 1 ? 'They' : 'All ' + ids.length) : hit.length + ' of these ' + ids.length) + ' got ' + what + ' ' + when + '.', ids: hit };
 }
 function msAudList(){
   const v = [...new Set(MS.members.map(m => msStats(m).fav).filter(Boolean))];
@@ -22308,49 +22335,91 @@ async function msMessagesRender(){
   const audName = k => (msAudList().find(a => a[0] === k) || [k, k])[1];
   const waiting = l.filter(c => c.status === 'requested');
   const row = c => { const p = msMsgProgress(c), t = (MK_TYPES[c.type] || ['Message'])[0];
-    const st = c.status === 'requested' ? '<span class="mkm-st wait">WAITING FOR OK</span>' : c.status === 'declined' ? '<span class="mkm-st no">NOT SENT</span>' : p.done ? `<span class="mkm-st ok">ALL SENT</span>` : `<span class="mkm-st go">${c.kind === 'email' ? 'IN BATCHES' : 'IN PROGRESS'}</span>`;
-    return `<div class="mkm-row"><i class="${c.kind}">${c.kind === 'email' ? '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-10 6L2 7"/></svg>' : vdSvg('wa', 17)}</i>
-      <div class="mkm-t"><b>${msEsc(c.kind === 'email' ? (c.subject || t) : t)}</b><small>${msEsc(audName(c.aud))} · ${c.status === 'requested' || c.status === 'declined' ? c.ids.length + ' people' : p.n + ' of ' + p.total + ' sent'} · ${msEsc(msWho(c.by))} · ${msEsc(msWhen(c.at))}</small>${st}</div>
+    const st = c.status === 'requested' ? '<span class="mkm-st wait">WAITING FOR OK</span>' : c.status === 'declined' ? '<span class="mkm-st no">NOT SENT</span>' : c.kind === 'alert' ? `<span class="mkm-st ok">SENT TO ${c.phones || 0} PHONE${c.phones === 1 ? '' : 'S'}</span>` : p.done ? `<span class="mkm-st ok">ALL SENT</span>` : `<span class="mkm-st go">${c.kind === 'email' ? 'IN BATCHES' : 'IN PROGRESS'}</span>`;
+    return `<div class="mkm-row"><i class="${c.kind}">${c.kind === 'alert' ? '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.9 1.9 0 0 0 3.4 0"/></svg>' : c.kind === 'email' ? '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-10 6L2 7"/></svg>' : vdSvg('wa', 17)}</i>
+      <div class="mkm-t"><b>${msEsc(c.kind === 'email' || c.kind === 'alert' ? (c.subject || t) : t)}</b><small>${msEsc(audName(c.aud))} · ${c.status === 'requested' || c.status === 'declined' ? c.ids.length + ' people' : p.n + ' of ' + p.total + ' sent'} · ${msEsc(msWho(c.by))} · ${msEsc(msWhen(c.at))}</small>${st}</div>
       ${c.status === 'requested' && can ? `<div class="mkm-btns"><button class="mki-btn ghost" onclick="msMsgDecide('${c.id}', false)">No</button><button class="mki-btn" onclick="msMsgDecide('${c.id}', true)">OK, send</button></div>`
         : c.status === 'sending' && !p.done && can ? `<div class="mkm-btns"><button class="mki-btn" onclick="${c.kind === 'email' ? 'msEmailOpen' : 'msQueueOpen'}('${c.id}')">${c.kind === 'email' ? 'Open batches' : 'Carry on'}</button></div>` : ''}
     </div>`; };
-  el.innerHTML = `<div class="mkm-new">
+  el.innerHTML = `<div class="mkm-new${can ? ' three' : ''}">
       <button onclick="msCompose('email')"><i><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-10 6L2 7"/></svg></i><b>${can ? 'New email' : 'Ask to send an email'}</b><small>From your own email, free</small></button>
-      <button onclick="msCompose('wa')"><i class="wa">${vdSvg('wa', 20)}</i><b>${can ? 'New WhatsApp' : 'Ask to send a WhatsApp'}</b><small>One by one, from your phone</small></button></div>
+      <button onclick="msCompose('wa')"><i class="wa">${vdSvg('wa', 20)}</i><b>${can ? 'New WhatsApp' : 'Ask to send a WhatsApp'}</b><small>One by one, from your phone</small></button>
+      ${can ? `<button onclick="msCompose('alert')"><i class="al"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.9 1.9 0 0 0 3.4 0"/></svg></i><b>New phone alert</b><small>Pops up on their phone, free</small></button>` : ''}</div>
     ${can ? msBatchDue().map(x => `<button class="mke-due" onclick="msEmailOpen('${x.c.id}')"><i><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-10 6L2 7"/></svg></i><span><b>Batch ${x.i + 1} of ${x.n} is ready to send today</b><small>${msEsc(x.c.subject || 'Email')}</small></span><em>Open</em></button>`).join('') : ''}
     ${waiting.length && can ? `<div class="mks-h">WAITING FOR YOUR OK</div><div class="mks-card">${waiting.map(row).join('')}</div>` : ''}
     <div class="mks-h">SENT</div>
     <div class="mks-card">${l.filter(c => !(can && c.status === 'requested')).map(row).join('') || '<div class="mki-empty">Nothing sent yet</div>'}</div>`;
+}
+// Phone alerts are short: no {name} (one message for everyone), cut to fit the phone
+const msAlertText = v => String(v || '').replace(/\s*\{name\}/g, '').replace(/\{venue\}/g, 'us').replace(/^Hi[!,]?\s*/i, '').replace(/[ \t]+\n/g, '\n').trim().slice(0, 180);
+const msAlertCut = (v, al) => { if(!al) return v; const t = msAlertText(v), m = t.match(/^[\s\S]{20,170}?[.!?](\s|$)/); return (m ? m[0] : t).trim(); };
+async function msAlertSend(body){
+  try{ const { data } = await sb.auth.getSession(); const token = data && data.session && data.session.access_token;
+    if(!token) return { ok:false, demo:true };
+    const r = await authApi('push', { body, token });
+    if(r && r.reason) return { ok:false, why:'off' };
+    return r || { ok:false };
+  }catch(e){ return { ok:false, demo:true }; }
 }
 window.msCompose = function(kind, aud, type){
   if(!document.getElementById('noto-emoji')){ const l = document.createElement('link'); l.id = 'noto-emoji'; l.rel = 'stylesheet'; l.href = 'https://fonts.googleapis.com/css2?family=Noto+Color+Emoji&display=swap'; document.head.appendChild(l); }
   const s = mkS(), can = msCanSend();
   aud = aud || 'all'; type = type || '';
   const t = MK_TYPES[type];
-  const o = msSheet(`<div class="vdf-h"><b>${kind === 'email' ? 'New email' : 'New WhatsApp'}</b><div class="dpt-sub">${kind === 'email' ? 'You send it from your own email - free. We split the list into batches for you.' : 'You send them one by one from this phone'}</div></div>
+  const AL = kind === 'alert', tk = gpKeyring() || '';
+  const o = msSheet(`<div class="vdf-h"><b>${AL ? 'New phone alert' : kind === 'email' ? 'New email' : 'New WhatsApp'}</b><div class="dpt-sub">${AL ? 'Pops up on their phone like a message - free. Only members who turned on alerts get it.' : kind === 'email' ? 'You send it from your own email - free. We split the list into batches for you.' : 'You send them one by one from this phone'}</div></div>
     <div class="vdf-body">
       <div class="vdf-f"><span>WHO GETS IT</span><div class="vdf-pills" id="mkc-aud">${msAudList().map(([k, n]) => { const c = msAud(k, kind).length; return `<button type="button" class="vdf-pill${k === aud ? ' on' : ''}" data-k="${msEsc(k)}"${c ? '' : ' disabled'}>${msEsc(n)} <em>${c}</em></button>`; }).join('')}</div></div>
       <div class="vdf-f"><span>WHAT'S IT ABOUT? <small>we write it for you</small></span><div class="vdf-pills" id="mkc-type">${Object.entries(MK_TYPES).map(([k, v]) => `<button type="button" class="vdf-pill${k === type ? ' on' : ''}" data-k="${k}">${msEsc(v[0])}</button>`).join('')}</div></div>
-      ${kind === 'email' ? `<label class="vdf-f"><span>SUBJECT</span><input id="mkc-sub" maxlength="90" placeholder="e.g. A members-only offer" value="${t ? msEsc(t[1]) : ''}"></label>` : ''}
-      <label class="vdf-f"><span>MESSAGE</span><textarea id="mkc-body" rows="6" maxlength="900" placeholder="Pick what it's about above, or write your own">${t ? msEsc(s.emoji.on ? t[2] : msNoEmo(t[2])) : ''}</textarea></label>
+      <div id="mkc-warn"></div>
+      ${kind === 'email' || AL ? `<label class="vdf-f"><span>${AL ? 'TITLE' : 'SUBJECT'}</span><input id="mkc-sub" maxlength="${AL ? 60 : 90}" placeholder="${AL ? 'e.g. New Year\'s Eve at The 18th' : 'e.g. A members-only offer'}" value="${t ? msEsc(t[1]) : ''}"></label>` : ''}
+      <label class="vdf-f"><span>MESSAGE</span><textarea id="mkc-body" rows="${AL ? 3 : 6}" maxlength="${AL ? 180 : 900}" placeholder="Pick what it's about above, or write your own">${t ? msEsc(msAlertCut(s.emoji.on ? t[2] : msNoEmo(t[2]), AL)) : ''}</textarea></label>
       ${s.emoji.on ? `<div class="mkc-emo">${MK_EMO.map(e => `<button type="button" data-e="${e}">${e}</button>`).join('')}</div>` : ''}
-      <div class="mkc-tip"><b>{name}</b> = their first name · <b>{venue}</b> = their favourite place · change anything in [brackets]. Only members who said yes to offers get it.</div>
+      ${AL ? `<div class="vdf-f"><span>WHAT THEY SEE</span><div class="mka-prev"><div class="mka-n"><img src="${msEsc((myCompany && myCompany.logo) || '/icon-192-v6.png')}" alt=""><div><small>${msEsc((myCompany && myCompany.name) || 'Members Club')} · now</small><b id="mka-t"></b><p id="mka-b"></p></div></div></div></div>
+        <div class="mkc-tip">Short is best - phones cut long alerts. Tapping it opens their member page. ${tk ? '' : ''}</div>
+        <div class="mka-test"><span class="mkc-tip" style="margin:0">Try it first on keyring</span><input id="mka-code" maxlength="16" value="${msEsc(tk)}" placeholder="CODE"><button type="button" id="mka-testgo">Send me a test</button></div>`
+      : `<div class="mkc-tip"><b>{name}</b> = their first name · <b>{venue}</b> = their favourite place · change anything in [brackets]. Only members who said yes to offers get it.</div>`}
     </div>
-    <div class="vdf-foot"><button class="mns-cancel" onclick="msSheetClose()">Cancel</button><button class="mns-go" id="mkc-go">${can ? (kind === 'email' ? 'Next' : 'Start sending') : 'Ask a manager'}</button></div>`);
+    <div class="vdf-foot"><button class="mns-cancel" onclick="msSheetClose()">Cancel</button><button class="mns-go" id="mkc-go">${can ? (AL ? 'Send alert' : kind === 'email' ? 'Next' : 'Start sending') : 'Ask a manager'}</button></div>`);
   const body = o.querySelector('#mkc-body'), sub = o.querySelector('#mkc-sub');
-  o.querySelectorAll('#mkc-aud .vdf-pill').forEach(b => b.onclick = () => { o.querySelectorAll('#mkc-aud .vdf-pill').forEach(x => x.classList.toggle('on', x === b)); });
-  o.querySelectorAll('#mkc-type .vdf-pill').forEach(b => b.onclick = () => { o.querySelectorAll('#mkc-type .vdf-pill').forEach(x => x.classList.toggle('on', x === b)); const v = MK_TYPES[b.dataset.k]; body.value = s.emoji.on ? v[2] : msNoEmo(v[2]); if(sub) sub.value = v[1]; });
+  // Heard from you lately? Say so, and leave them out unless the manager says otherwise
+  const warn = () => { const a = o.querySelector('#mkc-aud .vdf-pill.on'), el = o.querySelector('#mkc-warn'); if(!el) return;
+    const w = a ? msRecentWarn(msAud(a.dataset.k, kind).map(m => m.id)) : null;
+    el.innerHTML = w ? `<div class="mkr-warn"><span>⚠️</span><div><b>${msEsc(w.text)}</b> Sending again so soon can annoy them.<label><input type="checkbox" id="mkc-skip" checked> Leave out those ${w.n === 1 ? '1 guest' : w.n + ' guests'} this time</label></div></div>` : ''; };
+  const prev = () => { if(!AL) return; o.querySelector('#mka-t').textContent = (sub.value.trim() || 'Your title'); o.querySelector('#mka-b').textContent = msAlertText(body.value) || 'Your message'; };
+  o.querySelectorAll('#mkc-aud .vdf-pill').forEach(b => b.onclick = () => { o.querySelectorAll('#mkc-aud .vdf-pill').forEach(x => x.classList.toggle('on', x === b)); warn(); });
+  o.querySelectorAll('#mkc-type .vdf-pill').forEach(b => b.onclick = () => { o.querySelectorAll('#mkc-type .vdf-pill').forEach(x => x.classList.toggle('on', x === b)); const v = MK_TYPES[b.dataset.k]; body.value = msAlertCut(s.emoji.on ? v[2] : msNoEmo(v[2]), AL); if(sub) sub.value = v[1]; prev(); });
+  warn(); prev(); if(AL){ body.addEventListener('input', prev); sub.addEventListener('input', prev); }
+  const tb = o.querySelector('#mka-testgo'); if(tb) tb.onclick = async () => {
+    const code = o.querySelector('#mka-code').value.trim().toUpperCase(), title = sub.value.trim(), text = msAlertText(body.value);
+    if(!code){ toast('Type your keyring code'); return; } if(!title || !text){ toast('Add a title and message first'); return; }
+    tb.disabled = true; tb.textContent = 'Sending…';
+    const r = await msAlertSend({ mk_alert: { title, body: text }, test: code });
+    tb.disabled = false; tb.textContent = 'Send me a test';
+    toast(r.ok ? 'Test sent ✓ - check your phone' : r.why === 'no-phone' ? 'That keyring hasn\'t turned on alerts yet - open its page and tap Turn on' : r.why === 'off' ? 'Phone alerts aren\'t switched on for Mavis yet' : 'Not sent - try again');
+  };
   o.querySelectorAll('.mkc-emo button').forEach(b => b.onclick = () => { const p = body.selectionStart != null ? body.selectionStart : body.value.length; body.value = body.value.slice(0, p) + b.dataset.e + body.value.slice(p); body.focus(); body.selectionStart = body.selectionEnd = p + b.dataset.e.length; });
   o.querySelector('#mkc-go').onclick = async () => {
     const a = o.querySelector('#mkc-aud .vdf-pill.on'), ty = o.querySelector('#mkc-type .vdf-pill.on');
     if(!a){ toast('Pick who gets it'); return; }
     const text = body.value.trim(), subject = sub ? sub.value.trim() : '';
     if(!text){ toast('Write the message first'); return; }
-    if(sub && !subject){ toast('Add a subject'); return; }
+    if(sub && !subject){ toast(AL ? 'Add a title' : 'Add a subject'); return; }
     if(/\[[^\]]+\]/.test(text + subject)){ toast('Change the words in [brackets] first'); body.focus(); return; }
-    const ids = msAud(a.dataset.k, kind).map(m => m.id);
-    if(!ids.length){ toast('Nobody in that group yet'); return; }
+    let ids = msAud(a.dataset.k, kind).map(m => m.id);
+    if(!ids.length){ toast(AL ? 'Nobody in that group has alerts on yet' : 'Nobody in that group yet'); return; }
+    const sk = o.querySelector('#mkc-skip'); if(sk && sk.checked){ const r = msRecent(); ids = ids.filter(id => !r[id]); }
+    if(!ids.length){ toast('Everyone in that group heard from you recently - try again in a few days'); return; }
     const now = new Date().toISOString();
+    if(AL){
+      const go = o.querySelector('#mkc-go'); go.disabled = true; go.textContent = 'Sending…';
+      const r = await msAlertSend({ mk_alert: { title: subject, body: msAlertText(text) }, mids: msDemo() ? undefined : ids.map(String) });
+      go.disabled = false; go.textContent = 'Send alert';
+      if(!r.ok && !(r.demo && msDemo())){ toast(r.why === 'nobody' ? 'Nobody has turned on alerts yet' : r.why === 'off' ? 'Phone alerts aren\'t switched on for Mavis yet' : 'Not sent - try again'); return; }
+      const c = { id: 'c' + Date.now().toString(36), kind: 'alert', aud: a.dataset.k, type: ty ? ty.dataset.k : 'own', subject, body: msAlertText(text), ids, by: myProfile ? myProfile.id : null, at: now, go: now, ok_by: myProfile ? myProfile.id : null, status: 'sent', sent: Object.fromEntries(ids.map(id => [id, 1])), phones: r.ok ? r.sent : ids.length };
+      const l = msMsgs(); l.unshift(c); await msMsgsSave(l);
+      msSheetClose(); msRender(); setTimeout(() => toast('Sent to ' + c.phones + ' phone' + (c.phones === 1 ? '' : 's') + ' ✓'), 80); return;
+    }
     const c = { id: 'c' + Date.now().toString(36), kind, aud: a.dataset.k, type: ty ? ty.dataset.k : 'own', subject, body: text, ids, by: myProfile ? myProfile.id : null, at: now, status: can ? 'sending' : 'requested', sent:{} };
     if(can){ c.go = now; c.ok_by = c.by; }
     const l = msMsgs(); l.unshift(c);

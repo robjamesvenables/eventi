@@ -112,7 +112,17 @@ module.exports = async (req, res) => {
     const code = clean((req.query && req.query.code) || '');
     if (!code) return L.send(res, 400, { ok: false, reason: 'no code' });
     const pro = PR.get(code);
-    if (pro) return L.send(res, 200, prospectCard(pro, code));   // sales demo keyring: that venue's own page, no database
+    if (pro) {   // sales demo keyring: that venue's own page, no database
+      const card = prospectCard(pro, code);
+      // Mavis Club network: only when the demo company switched it on (Members Club > Settings). Off = nothing shows.
+      try {
+        const kk = (await L.db('member_keyrings?select=company_id&code=eq.' + q(code)))[0];
+        const st = kk ? (await L.db('app_settings?select=value&company_id=eq.' + q(kk.company_id) + '&key=eq.mk_settings'))[0] : null;
+        const ms = st ? parse(st.value) : null;
+        if (ms && ms.club && ms.club.on && Array.isArray(pro.club)) card.club = PR.club(pro.club, card.first);
+      } catch (e) {}
+      return L.send(res, 200, card);
+    }
     const k = (await L.db('member_keyrings?select=code,company_id,member_id&code=eq.' + q(code)))[0];
     if (!k) return L.send(res, 200, { ok: false, reason: 'unknown' });
     const co = k.company_id;

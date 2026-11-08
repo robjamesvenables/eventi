@@ -336,6 +336,21 @@ svg{display:block}
 .ar.l{left:6px}.ar.r{right:6px}.ar:hover{background:#F1F5F9}
 .dots i{cursor:pointer}
 @media(min-width:700px){.top{padding-top:34px}}
+.mvc{display:flex;align-items:center;gap:12px;width:100%;padding:14px;border:0;border-radius:18px;background:#fff;box-shadow:0 1px 3px rgba(15,30,46,.07);font-family:inherit;text-align:left;color:#0F1E2E;cursor:pointer}
+.mvc i{width:42px;height:42px;border-radius:50%;background:var(--top,#0F1E2E);color:var(--top-ink,#fff);display:flex;align-items:center;justify-content:center;flex:none;font-style:normal;font-weight:900;font-size:18px}
+.mvc span{flex:1;min-width:0}.mvc b{display:block;font-size:16px;font-weight:900}.mvc small{display:block;font-size:12.5px;color:#64748B;font-weight:600;margin-top:2px;line-height:1.35}
+.mvc em{flex:none;font-style:normal;background:var(--acc,#C4973B);color:var(--acc-ink,#fff);font-size:13px;font-weight:900;border-radius:20px;min-width:28px;height:28px;padding:0 8px;display:flex;align-items:center;justify-content:center}.mvc>svg{flex:none;color:#94A3B8}
+.mvcp{min-height:100vh;background:#F4F6F8;padding-bottom:30px}
+.mvch{background:#0F1E2E;color:#fff;padding:calc(18px + env(safe-area-inset-top,0px)) 18px 26px}
+.mvch .bk2{display:inline-flex;align-items:center;gap:4px;border:0;background:rgba(255,255,255,.14);color:#fff;font:700 13px Inter,sans-serif;border-radius:20px;padding:7px 12px 7px 8px;cursor:pointer;max-width:100%}
+.mvch .bk2 span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mvch h1{margin:18px 0 6px;font-size:26px;font-weight:900;display:flex;align-items:center;gap:10px}.mvch h1 i{width:36px;height:36px;border-radius:50%;border:3px solid #fff;display:flex;align-items:center;justify-content:center;font-style:normal;font-size:15px;flex:none}
+.mvch p{margin:0;font-size:14px;line-height:1.45;color:rgba(255,255,255,.8)}.mvch p b{color:#E2C27A}
+.mvcg{display:grid;gap:14px;padding:18px 16px 0}@media(min-width:620px){.mvcg{grid-template-columns:1fr 1fr}}
+.mvct{display:block;background:#fff;border-radius:18px;overflow:hidden;text-decoration:none;color:#0F1E2E;box-shadow:0 1px 3px rgba(15,30,46,.08)}
+.mvct .lo{height:110px;display:flex;align-items:center;justify-content:center;padding:14px}.mvct .lo img{max-width:70%;max-height:70px;object-fit:contain}.mvct .lo b{color:#fff;font-size:24px;font-weight:900}
+.mvct .t{display:flex;align-items:center;gap:10px;padding:12px 14px}.mvct .t span{flex:1;min-width:0}.mvct .t b{display:block;font-size:16px;font-weight:900}.mvct .t small{display:block;font-size:12.5px;color:#64748B;font-weight:600;margin-top:2px}.mvct .t svg{flex:none;color:#94A3B8}
+.mvcn{margin:18px 16px 0;font-size:13px;color:#64748B;text-align:center;line-height:1.5}
 </style></head><body><div id="root"><div class="load" aria-label="Opening"><i></i><i></i><i></i></div></div>
 <script>
 (function(){
@@ -412,6 +427,8 @@ svg{display:block}
         '<div class="foot">Keyring ' + esc(code) + '<br><a href="https://getmavis.co">Powered by Mavis</a></div></div>';
       return;
     }
+    var nq = (location.search.match(/[?&]n=([^&]+)/) || [])[1];   // a sales demo opened from My Mavis Club: greet the same guest by name
+    if (nq && SAMPLES.indexOf(code) >= 0) { try { nq = decodeURIComponent(nq).replace(/[^\p{L} .'-]/gu, '').slice(0, 30); } catch (e) { nq = ''; } if (nq) d.first = nq; }
     var vip = d.tier === 'vip', gp = d.gp || {}, on = {};
     (gp.order || ['tonight', 'deals', 'events', 'gallery', 'venues']).forEach(function(k){ on[k] = true; });
     var places = gp.places && gp.places.length ? gp.places : (d.venues || []).map(function(v){ return { name: v.name, area: v.area || '', img: '' }; });
@@ -442,6 +459,24 @@ svg{display:block}
     // "Keep this on your phone": one quiet line at the bottom (never a pop-up) - hidden once it's opened from the home screen, and in the back office preview
     var standalone = (window.matchMedia && matchMedia('(display-mode: standalone)').matches) || window.navigator.standalone === true || /[?&]home=1/.test(location.search);
     var homeRow = standalone || /[?&]embed=1/.test(location.search) ? '' : '<button class="addhome" id="addhome" type="button"><i>' + svg('<rect x="6" y="2" width="12" height="20" rx="3"/><path d="M12 7v7M9 11l3 3 3-3"/>', 18) + '</i><span><b>Save to your phone</b><small id="ahtx">No keyring needed to open it</small></span><em class="ahb">Add</em></button>';
+    // Mavis Club network (only when the venue switched it on): one card on the main page that opens the guest's other venues
+    var club = Array.isArray(d.club) ? d.club.filter(function(c){ return c && c.name && c.href; }) : [];
+    var clubRow = club.length ? '<div class="sec"><button class="mvc" id="mvc" type="button"><i>M</i><span><b>My Mavis Club</b><small>Your other Mavis venues</small></span><em>' + club.length + '</em>' + svg('<path d="m9 18 6-6-6-6"/>', 18) + '</button></div>' : '';
+    var clubHtml = function(){
+      return '<div class="mvcp" id="mvcp"><div class="mvch"><button class="bk2" id="mvcb" type="button">' + svg('<path d="m15 18-6-6 6-6"/>', 16) + '<span translate="no">' + esc(d.brand) + '</span></button>' +
+        '<h1><i>M</i>My Mavis Club</h1><p>Your <b translate="no">' + esc(d.brand) + '</b> keyring works at these venues too. Tap one to see your perks there.</p></div>' +
+        '<div class="mvcg">' + club.map(function(c){
+          var sub = [c.since ? 'Member since ' + c.since : '', c.visits ? c.visits + (c.visits === 1 ? ' visit' : ' visits') : ''].filter(Boolean).join(' · ') || c.area || '';
+          return '<a class="mvct" href="' + esc(c.href) + '"><div class="lo" style="background:' + esc(/^#[0-9a-f]{6}$/i.test(c.top || '') ? c.top : '#0F1E2E') + '">' + (c.logo ? '<img src="' + esc(c.logo) + '" alt="' + esc(c.name) + '" onload="mkEdge(this)">' : '<b translate="no">' + esc(c.name) + '</b>') + '</div>' +
+            '<div class="t"><span><b translate="no">' + esc(c.name) + '</b>' + (sub ? '<small>' + esc(sub) + '</small>' : '') + '</span>' + svg('<path d="m9 18 6-6-6-6"/>', 18) + '</div></a>';
+        }).join('') + '</div><div class="mvcn">Just show your keyring when you arrive.<br><a href="https://getmavis.co" style="color:#94A3B8;font-weight:700;text-decoration:none">Powered by Mavis</a></div></div>';
+    };
+    var showClub = function(push){
+      root.innerHTML = clubHtml(); document.body.classList.remove('inplace');
+      if (push) { try { history.pushState({ club: 1 }, '', location.pathname + location.search); } catch (e) {} }
+      window.scrollTo(0, 0);
+      document.getElementById('mvcb').onclick = function(){ if (history.state && history.state.club) history.back(); else show('', false); };
+    };
     var foot = homeRow + '<div class="foot">Show your keyring when you arrive<br>and we\'ll look after the rest.<br><a href="https://getmavis.co">Powered by Mavis</a></div>';
 
     // ── Slides (photos at the top) ──
@@ -557,7 +592,7 @@ svg{display:block}
           '<span><b translate="no">' + esc(p.name) + '</b>' + (st ? '<small>' + esc(st) + '</small>' : '') + '</span></button>';   // just the name (+ open / closed when they set hours)
       }).join('') + '</div></div>';
       if (on.gallery && (gp.gallery || []).length) h += galHtml(gp.gallery, '');
-      h += reviewLine(d.venues) + igHtml(places);
+      h += reviewLine(d.venues) + igHtml(places) + clubRow;
       return h + foot + '</div>';
     };
     // Menus for one place: one button each (Food, Drinks...) - opens the venue's own file
@@ -580,7 +615,7 @@ svg{display:block}
       return h + foot + '</div>';
     };
     var singleHtml = function(){
-      return '<div class="w">' + topAndCard(slidesHtml(gp.slides || [], false)) + (places[0] && places[0].menus && places[0].menus.length ? '<div class="single-menu">' + menuHtml(places[0]) + '</div>' : '') + placeSections('') + reviewLine((d.venues || []).slice(0, 1)) + igHtml(places.slice(0, 1)) + foot + '</div>';
+      return '<div class="w">' + topAndCard(slidesHtml(gp.slides || [], false)) + (places[0] && places[0].menus && places[0].menus.length ? '<div class="single-menu">' + menuHtml(places[0]) + '</div>' : '') + placeSections('') + reviewLine((d.venues || []).slice(0, 1)) + igHtml(places.slice(0, 1)) + clubRow + foot + '</div>';
     };
 
     // ── Rewards: dots (up to 12 visits, a bar above that). At the target: "You've reached it", a Claim button, and a pop-up
@@ -686,7 +721,7 @@ svg{display:block}
         if (!el) return null;
         return m.id && m.sec === 'events' && el.matches('[data-ev]') ? el : (el.closest('.sec') || el);
       };
-      if (key !== curKey) show(key, false);
+      if (key !== curKey || document.getElementById('mvcp')) show(key, false);
       var el = find();
       if (!m.sec) { window.scrollTo(0, 0); return; }   // just the place: its page, from the top
       if (!el && curKey && m.sec !== 'contact' && m.sec !== 'book') { show('', false); el = find(); }   // not on that place's page: try the main page
@@ -696,13 +731,14 @@ svg{display:block}
       document.querySelectorAll('.mvglow').forEach(function(x){ x.classList.remove('mvglow'); });
       el.classList.add('mvglow'); setTimeout(function(){ el.classList.remove('mvglow'); }, 2600);
     };
-    window.addEventListener('popstate', function(e){ var shx = document.getElementById('sh'); if (shx && shx.classList.contains('on')) { shx.classList.remove('on'); var sc = document.getElementById('shc'); if (sc && sc.querySelector('iframe')) sc.innerHTML = ''; document.body.style.overflow = ''; return; } var lb = document.getElementById('lb'); if (lb && lb.classList.contains('on')) { lb.classList.remove('on'); lb.innerHTML = ''; document.body.style.overflow = ''; return; } if (many) show(e.state && e.state.place ? e.state.place : '', false); window.scrollTo(0, 0); });
+    window.addEventListener('popstate', function(e){ var shx = document.getElementById('sh'); if (shx && shx.classList.contains('on')) { shx.classList.remove('on'); var sc = document.getElementById('shc'); if (sc && sc.querySelector('iframe')) sc.innerHTML = ''; document.body.style.overflow = ''; return; } var lb = document.getElementById('lb'); if (lb && lb.classList.contains('on')) { lb.classList.remove('on'); lb.innerHTML = ''; document.body.style.overflow = ''; return; } if (e.state && e.state.club) { showClub(false); return; } if (many || document.getElementById('mvcp')) show(e.state && e.state.place ? e.state.place : '', false); window.scrollTo(0, 0); });
 
     var wire = function(key){
       var sh = document.getElementById('sh');
       var open = function(title, html){ document.getElementById('sht').textContent = title; document.getElementById('shc').innerHTML = html; document.getElementById('shc').scrollTop = 0; if (!sh.classList.contains('on')) { try { history.pushState({ place: key, sh: 1 }, '', location.pathname + location.search); } catch (e) {} } sh.classList.add('on'); document.body.style.overflow = 'hidden'; };
       var close = function(){ if (history.state && history.state.sh) history.back(); else { sh.classList.remove('on'); document.body.style.overflow = ''; var sc = document.getElementById('shc'); if (sc.querySelector('iframe')) sc.innerHTML = ''; } };
       document.getElementById('shx').onclick = close;
+      var mvc = document.getElementById('mvc'); if (mvc) mvc.onclick = function(){ showClub(true); };
       var ah = document.getElementById('addhome');
       if (ah) ah.onclick = function(){   // same as Mavis: Android installs with a tap; iPhone can't (Apple), so one short line says where to tap
         if (window.__mvInstall) { var ev = window.__mvInstall; window.__mvInstall = null; ev.prompt(); return; }

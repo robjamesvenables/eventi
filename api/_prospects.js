@@ -60,6 +60,7 @@ const P = {
 const TRANS_BOOK = 'https://reservations.transresortbali.com/book/dates-of-stay';
 const tr = n => '/demo-guest/p-trans-' + n + '.jpg';
 P.trans = {
+  club: [{ key: 'shelter', since: 'Mar 2025', visits: 3 }],   // Mavis Club network demo: the other venues this guest belongs to (shown only when switched on)
   brand: 'The Trans Resort Bali', logo: '/demo-guest/p-trans-logo.png', first: 'Alexander', tier: 'vip', visits: 6, since: 2025, favourite: 'The 18th',
   perks: ['Welcome drink at The 18th Rooftop', 'Late check-out until 2pm, when available', '15% off at the spa', 'Free kids club afternoons'],
   perkIcons: ['cocktail', 'key', 'leaf', 'smile'],
@@ -115,4 +116,9 @@ P.trans = {
 };
 
 const CODES = { S8HLTR: 'shelter', T7RNSB: 'trans', '5NKGZJ': 'trans' };   // 5NKGZJ = the printed sample card, shown as Trans for the GM demo
-module.exports = { get: code => P[CODES[code]] || null, nextDow };
+// Mavis Club network: each of the guest's other venues as a logo tile (their colour, logo, how long they've been a member there)
+const KEY_CODE = { shelter: 'S8HLTR', trans: 'T7RNSB' };
+const club = (list, who) => list.map(c => { const v = P[c.key]; if (!v) return null; const t = (v.content('2026-01-01').theme) || {};
+  return { name: v.brand, logo: v.logo, top: t.top || '#0F1E2E', area: (v.venues[0] || {}).area || '', since: c.since || '', visits: c.visits || 0,
+    href: '/k/' + KEY_CODE[c.key] + '?n=' + encodeURIComponent(String(who || '').split(' ')[0]) }; }).filter(Boolean);
+module.exports = { get: code => P[CODES[code]] || null, nextDow, club };

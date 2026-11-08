@@ -2558,6 +2558,10 @@ body:not(.mv-demo) #ms-demoqr-btn{display:none!important}
 .mks-num{width:110px;border:1.5px solid #E2E8F0;border-radius:10px;padding:9px 12px;font:600 16px Inter,sans-serif;color:#0F1E2E}
 .mks-other{width:100%;box-sizing:border-box;margin-top:8px;border:1.5px solid #E2E8F0;border-radius:10px;padding:10px 12px;font:500 16px Inter,sans-serif;color:#0F1E2E;outline:none}.mks-other:focus{border-color:#0D9488}
 .mks-hint{font-size:12.5px;color:#64748B;line-height:1.45}
+.mkn-s{display:flex;gap:10px;align-items:flex-start;margin-bottom:10px}.mkn-s:last-child{margin-bottom:0}.mkn-s i{width:24px;height:24px;border-radius:50%;background:#0F1E2E;color:#fff;font:800 12px Inter,sans-serif;font-style:normal;display:flex;align-items:center;justify-content:center;flex:none;margin-top:1px}
+.mkn-s b{display:block;font-size:14px;color:#0F1E2E}.mkn-s small{display:block;font-size:12.5px;color:#64748B;line-height:1.45;margin-top:1px}
+.mkn-v{display:flex;align-items:center;gap:10px;background:#fff;border-radius:12px;padding:8px 10px;margin-bottom:6px}.mkn-v i{width:44px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;flex:none}.mkn-v img{max-width:80%;max-height:22px;object-fit:contain}
+.mkn-v b{display:block;font-size:14px;color:#0F1E2E}.mkn-v small{display:block;font-size:12px;color:#64748B}
 .mkb{background:white;border-radius:18px;box-shadow:0 1px 3px rgba(15,30,46,.07);padding:16px;margin-bottom:12px;border:2px solid #C4973B}
 .mkb.set{display:flex;align-items:center;gap:10px;border:0}
 .mkb > i,.mkb-h > i{width:34px;height:34px;border-radius:10px;background:#F7EEDC;color:#8A6420;display:flex;align-items:center;justify-content:center;flex:none}
@@ -22092,7 +22096,7 @@ window.msBill = async function(id){
 const MK_EMO = ['🍸','🥂','🍹','🍰','🎉','🎂','🌅','🎶','📍','⭐'];
 const MKS_DEF = () => ({ bonus:{ on:false, limit:30 }, stamp:{ on:false, visits:10, reward:'Free cocktail' }, bday:{ treat:false, gift:'Dessert' }, friend:{ on:false, offer:'Welcome cocktail' },
   levels:{ on:false, gold:10, black:25 }, club:{ on:false }, emoji:{ on:true }, vip:{ on: msDemo() }, welcome:{ on:true }, imp:{ on: msDemo() }, senders:[], fbto:[], eg:'gmail' });
-function mkS(){ const d = MKS_DEF(), s = msJson('mk_settings') || {}; Object.keys(d).forEach(k => { if(s[k] != null) d[k] = Array.isArray(d[k]) ? s[k] : Object.assign(d[k], s[k]); }); return d; }
+function mkS(){ const d = MKS_DEF(), s = msJson('mk_settings') || {}; Object.keys(d).forEach(k => { if(s[k] == null) return; d[k] = Array.isArray(d[k]) || typeof d[k] !== 'object' ? s[k] : Object.assign(d[k], typeof s[k] === 'object' ? s[k] : {}); }); return d; }
 const msCanSend = () => msIsMgr() || (!!myProfile && mkS().senders.map(String).includes(String(myProfile.id)));
 const msCanMsg = () => msCanSend() || (typeof gpCanEdit === 'function' && gpCanEdit());
 window.mksSet = async function(path, val){
@@ -22132,6 +22136,10 @@ async function msSettingsRender(){
       ${mksRow('Levels <span class="mks-soon">SOON</span>', 'Member, then Gold, then Black - guests move up the more they visit.', mksSw('levels.on', s.levels.on),
         s.levels.on ? `<div class="mks-two"><div class="mks-f"><span>Gold after (visits)</span>${num('levels.gold', s.levels.gold, 2, 200)}</div><div class="mks-f"><span>Black after (visits)</span>${num('levels.black', s.levels.black, 3, 500)}</div></div>` : '')}
     </div>
+    <div class="mks-h">MAVIS CLUB NETWORK</div>
+    <div class="mks-card">
+      ${mksRow('Join the Mavis Club network', 'One keyring for every Mavis venue. Your members can join other Mavis venues, and their members can join yours, with no new keyring. Off unless you switch it on.', mksSw('club.on', s.club.on), s.club.on ? mksNetwork() : '')}
+    </div>
     <div class="mks-h">FOR YOUR TEAM</div>
     <div class="mks-card">
       ${mksRow('VIP alert', 'Managers get a phone notification when a VIP checks in.', mksSw('vip.on', s.vip.on))}
@@ -22141,6 +22149,19 @@ async function msSettingsRender(){
       ${mksRow('Import members', 'Bring in a list you already have, from Excel or a CSV file.', mksSw('imp.on', s.imp.on), s.imp.on ? `<button class="mki-btn" style="margin-top:0" onclick="msImportOpen()">Import members</button>` : '')}
       ${mksRow('Who can send messages', 'Managers can always send. Anyone else can ask, and a manager says OK.', '', staff.length ? `<div class="mks-f"><span>Also allowed to send</span><div class="vdf-pills mks-pills">${staff.map(([id, n]) => { const on = s.senders.map(String).includes(String(id)); return `<button type="button" class="vdf-pill${on ? ' on' : ''}" onclick="mksSender('${id}')">${msEsc(n)}</button>`; }).join('')}</div></div>` : '<div class="mks-hint">Your team will show here.</div>')}
     </div>`;
+}
+// Mavis Club network: how it works, in 3 steps, who else is in it, and a look at the guest's "My Mavis Club" page
+function mksNetwork(){
+  const step = (n, t, x) => `<div class="mkn-s"><i>${n}</i><div><b>${t}</b><small>${x}</small></div></div>`;
+  const others = msDemo() ? [['Shelter', 'Pererenan', '#3F5A4F', '/demo-guest/p-shelter-logo.png']] : [];
+  return `<div class="mks-f"><span>How it works</span>
+      ${step(1, 'A guest shows another venue\'s keyring', 'Staff scan it here, the same as any keyring.')}
+      ${step(2, 'One tap adds them to your club', 'Mavis asks "Add them to your club?". They get your perks, and keep their own keyring.')}
+      ${step(3, 'They get a "My Mavis Club" page', 'A button on their page opens all their venues. Their keyring always opens the venue that gave it first.')}</div>
+    <div class="mks-f"><span>Private</span><div class="mks-hint">You only see your own visits, spend and feedback. Other venues never see your members' details, and you never see theirs.</div></div>
+    <div class="mks-f"><span>Other venues in the network</span>${others.length ? others.map(o => `<div class="mkn-v"><i style="background:${o[2]}"><img src="${o[3]}" alt=""></i><div><b>${msEsc(o[0])}</b><small>${msEsc(o[1])}</small></div></div>`).join('') : '<div class="mks-hint">Venues show here as they join.</div>'}</div>
+    ${msDemo() ? '<div class="mks-f"><span>Your members also at other venues</span><div class="mks-hint"><b style="color:#0F1E2E">1 member</b> - Alexander is also a Shelter member.</div></div>' : ''}
+    <button class="mki-btn" style="margin-top:4px" onclick="gpLive()">See it on the guest page</button>`;
 }
 window.mksFbTo = function(id){ const s = mkS(), l = s.fbto.map(String); mksSet('fbto', l.includes(String(id)) ? l.filter(x => x !== String(id)) : l.concat(String(id))); };
 window.mksSender = function(id){ const s = mkS(), l = s.senders.map(String); mksSet('senders', l.includes(String(id)) ? l.filter(x => x !== String(id)) : l.concat(String(id))); };

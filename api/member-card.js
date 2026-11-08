@@ -102,7 +102,7 @@ function prospectCard(pro, code){
   return { ok: true, brand: pro.brand, logo: pro.logo, code, first: pro.first, tier: pro.tier, visits: pro.visits, favourite: pro.favourite, gp,
     since: pro.since, perks: pro.perks, perkIcons: pro.perkIcons, offers: true, reviewAsk: rv ? { venue: rv.name, date: addDays(now.date, -1), when: 'yesterday', demo: true } : null,
     birthdayWeek: false, tonight, week, menus: { food: [], drinks: [] }, venues, stay: https(pro.stay), contact: cleanContact(pro.contact),
-    reward: pro.reward ? { target: pro.reward.target, text: pro.reward.text, left: Math.max(0, pro.reward.target - pro.visits) } : null };
+    reward: pro.reward ? { target: pro.reward.target, text: pro.reward.text, done: Math.min(pro.visits, pro.reward.target), left: Math.max(0, pro.reward.target - pro.visits), round: 0 } : null };
 }
 
 module.exports = async (req, res) => {
@@ -116,7 +116,7 @@ module.exports = async (req, res) => {
     const co = k.company_id;
     const [cos, settings, gpRows] = await Promise.all([
       safe(L.db('companies?select=name,code,logo&id=eq.' + q(co))),
-      safe(L.db('app_settings?select=key,value&company_id=eq.' + q(co) + '&key=in.(member_perks,member_page)')),
+      safe(L.db('app_settings?select=key,value&company_id=eq.' + q(co) + '&key=in.(member_perks,member_page,mk_rewards)')),
       safe(L.db('guest_page?select=content&company_id=eq.' + q(co)))
     ]);
     const company = cos[0] || {};
@@ -195,7 +195,10 @@ module.exports = async (req, res) => {
     if (lastV && vr(lastV.venue)) reviewAsk = { venue: vr(lastV.venue).name, date: lastV.visit_date, when: lastV.visit_date === now.date ? 'today' : lastV.visit_date === addDays(now.date, -1) ? 'yesterday' : 'recent' };
     else if (demo) { const v = venues.find(x => x.review); if (v) reviewAsk = { venue: v.name, date: addDays(now.date, -1), when: 'yesterday', demo: true }; }
     const rw = page.reward && page.reward.visits ? page.reward : (demo ? demo.reward : null);
-    const reward = rw && Number(rw.visits) > 0 ? { target: Number(rw.visits), text: String(rw.text || '').slice(0, 80), left: Math.max(0, Number(rw.visits) - visits.length) } : null;
+    // Rounds: every time staff tap "Reward given" the count starts again (Mavis Club > member > Reward given)
+    const given = Array.isArray((set.mk_rewards || {})[m.id]) ? set.mk_rewards[m.id].length : 0;
+    const tgt = rw ? Number(rw.visits) : 0, inRound = tgt ? Math.max(0, visits.length - given * tgt) : 0;
+    const reward = rw && tgt > 0 ? { target: tgt, text: String(rw.text || '').slice(0, 80), done: Math.min(inRound, tgt), left: Math.max(0, tgt - inRound), round: given } : null;
 
     // Marketing: photo slides, daily deals, coming up, gallery (Membership > Guest page)
     let gpc = gpRows[0] && gpRows[0].content;

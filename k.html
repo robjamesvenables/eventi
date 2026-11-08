@@ -67,6 +67,20 @@ svg{display:block}
 .rw-top b{font-size:18px}.rw-top span{font-size:14px;color:#64748B;font-weight:700;white-space:nowrap}
 .bar{height:10px;border-radius:10px;background:#F1F5F9;margin-top:12px;overflow:hidden}
 .bar i{display:block;height:100%;border-radius:10px;background:var(--acc,#0D9488)}
+.rwdots{display:grid;gap:7px;margin-top:14px}
+.rwdots i{aspect-ratio:1;border-radius:50%;border:2px solid #E7E1D6;background:#fff;display:flex;align-items:center;justify-content:center;color:var(--acc,#0D9488);max-width:34px}
+.rwdots i.on{background:var(--acc,#0D9488);border-color:var(--acc,#0D9488);color:var(--acc-ink,#fff)}
+.rwdots i.gift{border-style:dashed;border-color:var(--acc,#0D9488)}.rwdots i.gift.on{border-style:solid}
+.rwdots i svg{width:60%;height:60%}
+.rwclaim{display:flex;align-items:center;justify-content:center;gap:8px;margin-top:14px;height:52px;border-radius:14px;background:#16A34A;color:#fff;text-decoration:none;font-size:15.5px;font-weight:800}.rwclaim.call{background:var(--top,#0F1E2E);color:var(--top-ink,#fff)}
+.rwsent{margin-top:10px;font-size:13px;color:#64748B;font-weight:600;text-align:center}
+.rwp{position:fixed;inset:0;z-index:40;background:rgba(15,30,46,.55);display:flex;align-items:center;justify-content:center;padding:22px}
+.rwpb{background:#fff;border-radius:24px;padding:28px 22px 18px;text-align:center;width:100%;max-width:380px;position:relative}
+.rwpx{position:absolute;right:12px;top:12px;width:34px;height:34px;border-radius:50%;border:0;background:#F1F5F9;color:#64748B;display:flex;align-items:center;justify-content:center;cursor:pointer}
+.rwpi{width:64px;height:64px;border-radius:50%;background:var(--acc,#0D9488);color:var(--acc-ink,#fff);display:flex;align-items:center;justify-content:center;margin:0 auto}
+.rwpb h3{font-size:23px;font-weight:900;letter-spacing:-.4px;margin-top:14px}
+.rwpb p{font-size:15px;color:#475569;line-height:1.45;margin-top:6px}
+.rwpl{display:block;margin:8px auto 0;border:0;background:none;color:#94A3B8;font:700 14px Inter,sans-serif;padding:8px;cursor:pointer}
 .rw p{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;font-size:14.5px;color:#475569;margin-top:10px;line-height:1.45}
 .perk{display:flex;align-items:center;gap:14px;padding:15px 16px;border-top:1px solid #F1F5F9;font-size:16px;font-weight:700;line-height:1.3}
 .perk span,.perk>div{min-width:0;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;overflow-wrap:anywhere}
@@ -388,11 +402,7 @@ svg{display:block}
       var h = '<div class="card' + (vip ? '' : ' member') + '"><span class="code">' + esc(d.code) + '</span><div class="k">' + (vip ? 'VIP MEMBER' : 'MEMBER') + '</div><h2 translate="no">' + esc(d.first) + '</h2>' +
         '<div class="row"><div><b>' + esc(d.visits) + '</b>visit' + (d.visits === 1 ? '' : 's') + '</div>' + (d.favourite ? '<div><b translate="no">' + esc(d.favourite) + '</b>favourite</div>' : '') + '<div><b>' + esc(d.since) + '</b>member since</div></div></div>' + reviewBig();
       if (d.birthdayWeek) h += '<div class="bday"><i>' + svg(I.cake, 24) + '</i><div><b>Happy birthday week!</b><p>' + ((d.perks || []).some(function(p){ return /birthday/i.test(p); }) ? 'Your birthday treat is waiting - just show this screen at any of our venues.' : 'From all of us - have a wonderful one. We hope to see you this week!') + '</p></div></div>';
-      if (d.reward) {
-        var pct = Math.min(100, Math.round(100 * (d.reward.target - d.reward.left) / d.reward.target));
-        h += '<div class="sec"><div class="lab">YOUR REWARDS</div><div class="box rw"><div class="rw-top"><b>' + (d.reward.left ? d.reward.left + ' more visit' + (d.reward.left === 1 ? '' : 's') : 'You\'ve made it!') + '</b><span>' + Math.min(d.visits, d.reward.target) + ' / ' + d.reward.target + '</span></div>' +
-          '<div class="bar"><i style="width:' + pct + '%"></i></div><p>' + (d.reward.left ? 'Reach ' + d.reward.target + ' visits: ' : 'Your reward: ') + esc(d.reward.text || 'a treat on us') + (d.reward.left ? '' : ' - just ask our team.') + '</p></div></div>';
-      }
+      if (d.reward) h += rewardHtml();
       var offersHtml = '<div class="sec"><div class="box offr"><div class="n"><b>Send me offers</b><small>News and member offers from ' + esc(d.brand) + '. Turn off any time.</small></div><button class="tgl' + (d.offers ? ' on' : '') + '" id="offr" role="switch" aria-checked="' + (d.offers ? 'true' : 'false') + '" aria-label="Send me offers"><i></i></button></div></div>';
       if (d.perks && d.perks.length) h += '<div class="sec"><div class="lab">YOUR ' + (vip ? 'VIP ' : '') + 'PERKS</div><div class="box">' + d.perks.map(function(p, i){ var ic = (d.perkIcons || [])[i]; return '<div class="perk"><i>' + svg(PI[ic] || PI.gift, 17) + '</i><span>' + esc(p) + '</span></div>'; }).join('') + '</div></div>';
       h += offersHtml;
@@ -503,6 +513,24 @@ svg{display:block}
     };
     var singleHtml = function(){
       return '<div class="w">' + topHtml(slidesHtml(gp.slides || [], false)) + memberHtml() + (places[0] && places[0].menus && places[0].menus.length ? '<div class="single-menu">' + menuHtml(places[0]) + '</div>' : '') + placeSections('') + reviewLine((d.venues || []).slice(0, 1)) + igHtml(places.slice(0, 1)) + foot + '</div>';
+    };
+
+    // ── Rewards: dots (up to 12 visits, a bar above that). At the target: "You've reached it", a Claim button, and a pop-up
+    // every time they open the page until they tap Claim. Staff tap "Reward given" in the app and it starts again at 0.
+    var GIFT = '<rect x="3" y="8" width="18" height="4" rx="1"/><path d="M12 8v13M19 12v7a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2v-7M7.5 8a2.5 2.5 0 0 1 0-5C10 3 12 8 12 8s2-5 4.5-5a2.5 2.5 0 0 1 0 5"/>';
+    var rwKey = function(){ return 'rwc:' + d.code + ':' + ((d.reward && d.reward.round) || 0); };
+    var rwClaimed = function(){ try { return localStorage.getItem(rwKey()) === '1'; } catch (e) { return false; } };
+    var claimBtn = function(){
+      if (ct.wa) return '<a class="rwclaim" data-claim href="https://wa.me/' + esc(ct.wa) + '?text=' + encodeURIComponent('Hi, it\'s ' + String(d.first || '').split(' ')[0] + ' here, member ' + d.code + '. I\'ve reached ' + d.reward.target + ' visits and I\'d like to claim my reward.') + '" target="_blank" rel="noopener">' + svg(I.wa, 18) + 'Claim on WhatsApp</a>';
+      if (ct.phone) return '<a class="rwclaim call" data-claim href="' + telOf(ct.phone) + '">' + svg(I.phone, 18) + 'Call us to claim</a>';
+      return '';
+    };
+    var rewardHtml = function(){
+      var r = d.reward, t = r.target, n = r.done != null ? r.done : Math.min(d.visits, t), ready = n >= t;
+      var meter = t <= 12 ? '<div class="rwdots" style="grid-template-columns:repeat(' + t + ',1fr)">' + Array.apply(null, Array(t)).map(function(_, i){ var last = i === t - 1; return '<i class="' + (i < n ? 'on' : '') + (last ? ' gift' : '') + '">' + (last ? svg(GIFT, 14) : '') + '</i>'; }).join('') + '</div>'
+        : '<div class="bar"><i style="width:' + Math.round(100 * n / t) + '%"></i></div>';
+      return '<div class="sec"><div class="lab">YOUR REWARDS</div><div class="box rw' + (ready ? ' ready' : '') + '"><div class="rw-top"><b>' + (ready ? 'You\'ve reached ' + t + ' visits!' : (t - n) + ' more visit' + (t - n === 1 ? '' : 's')) + '</b><span>' + n + ' / ' + t + '</span></div>' + meter +
+        '<p>' + (ready ? 'Your reward is waiting. ' + (claimBtn() ? 'Message us to claim it.' : 'Show this page to our team.') : 'Reach ' + t + ' visits for a reward from us.') + '</p>' + (ready ? claimBtn() + (rwClaimed() ? '<div class="rwsent">Sent? We\'ll be in touch. Tap again to send another message.</div>' : '') : '') + '</div></div>';
     };
 
     // ── Bottom bar: the same two buttons for every venue - Book and Contact (rules: see bookRows / contactRows) ──
@@ -673,6 +701,18 @@ svg{display:block}
         if (list.length === 1) { location.href = hrefOf(list[0]); return; }
         open(title, list.map(function(v){ return '<a class="pick" href="' + esc(hrefOf(v)) + '"' + (/^https/.test(hrefOf(v)) ? ' target="_blank" rel="noopener"' : '') + '><b translate="no">' + esc(v.name) + '</b><i>' + svg(icon, 18) + '</i></a>'; }).join(''));
       };
+      // Reward pop-up: on opening the page, until they tap Claim
+      var rwDone = function(){ try { localStorage.setItem(rwKey(), '1'); } catch (e) {} var p = document.getElementById('rwp'); if (p) p.remove(); };
+      Array.prototype.forEach.call(document.querySelectorAll('[data-claim]'), function(a){ a.addEventListener('click', function(){ setTimeout(function(){ rwDone(); }, 300); }); });
+      if (d.reward && (d.reward.done != null ? d.reward.done : d.visits) >= d.reward.target && claimBtn() && !rwClaimed() && !window.__rwShown) {
+        window.__rwShown = true;
+        var pop = document.createElement('div'); pop.className = 'rwp'; pop.id = 'rwp';
+        pop.innerHTML = '<div class="rwpb" role="dialog" aria-label="Reward"><button class="rwpx" aria-label="Close">' + svg(I.x, 16) + '</button><div class="rwpi">' + svg(GIFT, 32) + '</div><h3>You\'ve reached ' + d.reward.target + ' visits!</h3><p>Thank you for being one of our regulars. You\'ve earned a reward from us.</p>' + claimBtn() + '<button class="rwpl">Later</button></div>';
+        document.body.appendChild(pop);
+        var shut = function(){ pop.remove(); };
+        pop.querySelector('.rwpx').onclick = shut; pop.querySelector('.rwpl').onclick = shut; pop.onclick = function(e){ if (e.target === pop) shut(); };
+        pop.querySelector('[data-claim]').addEventListener('click', function(){ setTimeout(rwDone, 300); });
+      }
       var bk = document.getElementById('bk'), cl = document.getElementById('cl');
       if (bk) bk.onclick = function(){ var rows = bookRows(key); if (rows.length === 1) { var r = rows[0]; if (/^https/.test(r.href)) window.open(r.href, '_blank', 'noopener'); else location.href = r.href; return; } open('Book', '<div class="rws">' + rowsHtml(rows) + '</div>'); };   // only one choice: straight there
       if (cl) cl.onclick = function(){ open('Contact', '<div class="rws">' + rowsHtml(contactRows()) + '</div>');

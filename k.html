@@ -506,8 +506,7 @@ svg{display:block}
         var lb = document.getElementById('lb'), n = g.list.length;
         lb.innerHTML = '<span class="lbn" id="lbn">' + (start + 1) + ' / ' + n + '</span><button class="lbx" id="lbx" aria-label="Close">' + svg(I.x, 20) + '</button>' +
           '<div class="lbr" id="lbr">' + g.list.map(function(x){
-            var pk = x.venue && many && !g.key && placeOf(lc(x.venue)) ? lc(x.venue) : '';
-            return '<div class="lbs"><img src="' + esc(x.img) + '" alt=""><div class="lbf">' + (pk ? '<button data-lbgo="' + esc(pk) + '"><span translate="no">Go to ' + esc(x.venue) + '</span>' + svg('<path d="m9 18 6-6-6-6"/>', 15) + '</button>' : '<b translate="no">' + esc(x.venue && many ? x.venue : '') + '</b>') + '</div></div>';
+            return '<div class="lbs"><img src="' + esc(x.img) + '" alt=""><div class="lbf"></div></div>';   // just the photo, like Instagram - no buttons
           }).join('') + '</div>' + (n > 1 ? '<button class="lba l" id="lbl" aria-label="Back">' + svg('<path d="m15 18-6-6 6-6"/>', 22) + '</button><button class="lba r" id="lbrr" aria-label="Next">' + svg('<path d="m9 18 6-6-6-6"/>', 22) + '</button>' : '');
         lb.classList.add('on'); document.body.style.overflow = 'hidden';
         try { history.pushState({ place: key, lb: 1 }, '', location.pathname + location.search); } catch (e) {}
@@ -587,19 +586,31 @@ svg{display:block}
         sl.addEventListener('scroll', function(){ var i = Math.round(sl.scrollLeft / step()); if (i !== idx) { idx = i; Array.prototype.forEach.call(dots.children, function(t, k){ t.className = k === idx ? 'on' : ''; }); } }, { passive: true });
         Array.prototype.forEach.call(dots.children, function(t, k){ t.onclick = function(){ sl.scrollTo({ left: k * step(), behavior: 'smooth' }); }; });
       }
-      clearInterval(window.__slT);
+      clearTimeout(window.__slT);
       if (sl && gp.motion && sl.children.length > 1) {
-        var calm = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches, held = 0, cur = -1;
+        // Slideshow that moves on by itself - our own steady timing (same speed on every phone):
+        // 2.5s on each photo, then a 0.6s glide to the next. Pauses 3s only after the guest really swipes it.
+        var calm = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches, held = 0, cur = -1, gliding = false;
         sl.parentNode.classList.add('mo');
-        var live = function(){ var i = Math.round(sl.scrollLeft / (sl.children[1].offsetLeft - sl.children[0].offsetLeft)); if (i !== cur) { cur = i; Array.prototype.forEach.call(sl.children, function(c, k){ c.classList.toggle('live', k === i); }); } };
-        sl.addEventListener('scroll', live, { passive: true }); setTimeout(live, 60);
-        ['touchstart', 'pointerdown', 'wheel'].forEach(function(ev){ sl.addEventListener(ev, function(){ held = Date.now(); }, { passive: true }); });
-        if (!calm) window.__slT = setInterval(function(){
-          if (document.hidden || Date.now() - held < 3000) return;
-          var r = sl.getBoundingClientRect(); if (r.bottom < 0 || r.top > innerHeight) return;
-          var w = sl.children[1].offsetLeft - sl.children[0].offsetLeft, n = sl.children.length, nx = (Math.round(sl.scrollLeft / w) + 1) % n;
-          sl.scrollTo({ left: nx * w, behavior: nx ? 'smooth' : 'auto' });
-        }, 2500);
+        var gap = function(){ return sl.children[1].offsetLeft - sl.children[0].offsetLeft; };
+        var live = function(){ var i = Math.round(sl.scrollLeft / gap()); if (i !== cur) { cur = i; Array.prototype.forEach.call(sl.children, function(c, k){ c.classList.toggle('live', k === i); }); } };
+        sl.addEventListener('scroll', function(){ if (!gliding) held = Date.now(); live(); }, { passive: true }); setTimeout(live, 60);
+        var glide = function(to, done){
+          var from = sl.scrollLeft, t0 = 0, ms = 600; gliding = true; sl.style.scrollSnapType = 'none';
+          var ease = function(x){ return x < .5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2; };
+          var stepF = function(ts){ if (!t0) t0 = ts; var k = Math.min(1, (ts - t0) / ms); sl.scrollLeft = from + (to - from) * ease(k);
+            if (k < 1) requestAnimationFrame(stepF); else { sl.style.scrollSnapType = ''; setTimeout(function(){ gliding = false; }, 50); done(); } };
+          requestAnimationFrame(stepF);
+        };
+        var tick = function(){
+          var r = sl.getBoundingClientRect();
+          if (!document.body.contains(sl) ) return;
+          if (document.hidden || Date.now() - held < 3000 || r.bottom < 0 || r.top > innerHeight) { window.__slT = setTimeout(tick, 500); return; }
+          var w = gap(), nx = (Math.round(sl.scrollLeft / w) + 1) % sl.children.length;
+          var next = function(){ window.__slT = setTimeout(tick, 2500); };
+          if (nx) glide(nx * w, next); else { gliding = true; sl.style.scrollSnapType = 'none'; sl.scrollLeft = 0; sl.style.scrollSnapType = ''; setTimeout(function(){ gliding = false; }, 50); next(); }   // back to the first photo: straight there, no rewind swoosh
+        };
+        if (!calm) window.__slT = setTimeout(tick, 2500);
       }
     };
     if (!preview) document.addEventListener('click', function(e){ var a = e.target.closest && e.target.closest('[data-hit]'); if (a) try { fetch('/api/gp?a=hit&code=' + encodeURIComponent(d.code) + '&i=' + encodeURIComponent(a.getAttribute('data-hit')), { keepalive: true }); } catch (x) {} });

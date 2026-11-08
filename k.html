@@ -449,8 +449,10 @@ svg{display:block}
     var revOf = function(name){ return (d.venues || []).find(function(v){ return v.review && lc(v.name) === lc(name); }); };
     var rvKey = function(a){ return 'mv-rv-' + d.code + '-' + a.venue + '-' + a.date; };
     var rvSeen = function(a){ if (a.demo) return false; try { return localStorage.getItem(rvKey(a)) === '1'; } catch (e) { return false; } };
+    var bigRv = false;
     var reviewBig = function(){
       var a = d.reviewAsk, v = a && revOf(a.venue); if (!v || rvSeen(a)) return '';
+      bigRv = true;
       var p = placeOf(lc(a.venue)) || {};
       var q = a.when === 'today' ? 'Enjoying ' + a.venue + '?' : a.when === 'yesterday' ? 'How was ' + a.venue + ' last night?' : 'How was your visit to ' + a.venue + '?';
       return '<div class="rv" id="rvbig"><button class="x" id="rvx" aria-label="Close">' + svg(I.x, 16) + '</button>' + (p.img ? '<img class="ph" src="' + esc(p.img) + '" alt="">' : '') +
@@ -459,6 +461,7 @@ svg{display:block}
         '<div id="rvstep"></div><button class="nn" id="rvno">Not now</button></div>';   // empty stars: they rate here first, then 4-5 go to Google, 1-3 tell the manager
     };
     var reviewLine = function(list){
+      if (bigRv) return '';   // the big review card is already on this screen - only ever one review ask
       list = (list || []).filter(function(v){ return v.review; }); if (!list.length) return '';
       var one = list.length === 1;
       return '<div class="sec"><div class="box"><' + (one ? 'a href="' + esc(list[0].review) + '" target="_blank" rel="noopener"' + hit('review') : 'button id="rvpick"') + ' class="rvs"><i>' + svg(PI.star, 20) + '</i><span><b>Love it here?</b><small>Leave us a Google review</small></span><em>Review ›</em></' + (one ? 'a' : 'button') + '></div></div>';
@@ -578,7 +581,7 @@ svg{display:block}
 
     var GAL = {}, galN = 0;
     var show = function(key, push){
-      GAL = {}; galN = 0;
+      GAL = {}; galN = 0; bigRv = false;
       root.innerHTML = (!many ? singleHtml() : key ? placeHtml(key) : homeHtml()) + bookBar(many ? key : '') + sheet + '<div class="lb" id="lb"></div>';
       document.body.classList.toggle('inplace', !!key);
       if (push) { try { history.pushState({ place: key }, '', location.pathname + location.search); } catch (e) {} window.scrollTo(0, 0); }

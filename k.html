@@ -764,7 +764,7 @@ svg{display:block}
         al.dataset.busy = '1'; set('…');
         Notification.requestPermission().then(function(p){
           if (p !== 'granted') { delete al.dataset.busy; set('Turn on'); if (p === 'denied') { al.remove(); } return; }
-          return navigator.serviceWorker.register('/k-sw.js', { scope: '/k/' }).then(function(){ return navigator.serviceWorker.getRegistration('/k/'); }).then(function(reg){
+          return navigator.serviceWorker.register('/k-sw.js', { scope: '/k/' }).then(function(reg){   // always the members' helper - never the staff app's
             var go = function(){ return reg.pushManager.getSubscription().then(function(s){ return s || reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: b64u(VAPID) }); }); };
             return (reg.active ? Promise.resolve() : new Promise(function(r){ var w = reg.installing || reg.waiting; if (!w) return r(); w.addEventListener('statechange', function(){ if (w.state === 'activated') r(); }); setTimeout(r, 4000); })).then(go);
           }).then(function(sub){

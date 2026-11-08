@@ -92,6 +92,12 @@ self.addEventListener('notificationclick', (event) => {
   const data = event.notification.data || {};
   event.waitUntil((async () => {
     const wins = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
+    // A venue's news for a member (their page lives at /k/...): open that page, never the staff app
+    if (data.url && String(data.url).startsWith('/k/')) {
+      const page = wins.find(w => new URL(w.url).pathname.startsWith('/k/'));
+      if (page) { try { await page.navigate(data.url); } catch (e) {} return page.focus(); }
+      return self.clients.openWindow(data.url);
+    }
     const ours = wins.filter(w => new URL(w.url).origin === self.location.origin);
     const isChatWin = w => new URL(w.url).pathname.startsWith('/chat');
     // Everything opens full Mavis (chat lives inside Mavis). An old /chat window is only used if it is all that's open.

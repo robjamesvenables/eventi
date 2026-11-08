@@ -419,7 +419,7 @@ svg{display:block}
         var go = home && x.venue && many && placeOf(lc(x.venue)) ? '<span class="more">See more ' + svg('<path d="m9 18 6-6-6-6"/>', 14) + '</span>' : '';   // slides only ever say "See more" (to that place) - booking lives in the Book button
         var goKey = home && x.venue && many && placeOf(lc(x.venue)) ? lc(x.venue) : '';
         if (x.ev && !goKey) return '<div class="sd tap" data-ev="' + esc(x.ev) + '" role="button" tabindex="0">' + pic(x.img, x.title) + '<div class="ov"><b>' + esc(x.title) + '</b>' + (x.line ? '<small>' + esc(x.line) + '</small>' : '') + '<span class="more">See more ' + svg('<path d="m9 18 6-6-6-6"/>', 14) + '</span></div></div>';
-        return '<div class="sd' + (goKey ? ' tap' : '') + '"' + (goKey ? ' data-go="' + esc(goKey) + '"' + hit(x.id) + ' role="link" tabindex="0"' : '') + '>' + pic(x.img, x.title) + '<div class="ov">' + (x.title ? '<b>' + esc(x.title) + '</b>' : '') + (x.line || where ? '<small>' + esc([x.line, where].filter(Boolean).join(' · ')) + '</small>' : '') + go + '</div></div>';
+        return '<div class="sd' + (goKey ? ' tap' : '') + '"' + (goKey ? ' data-go="' + esc(goKey) + '"' + (x.ev ? ' data-goev="' + esc(x.ev) + '"' : '') + hit(x.id) + ' role="link" tabindex="0"' : '') + '>' + pic(x.img, x.title) + '<div class="ov">' + (x.title ? '<b>' + esc(x.title) + '</b>' : '') + (x.line || where ? '<small>' + esc([x.line, where].filter(Boolean).join(' · ')) + '</small>' : '') + go + '</div></div>';
       }).join('') + '</div>' + (list.length > 1 ? '<div class="dots" id="dots">' + list.map(function(x, i){ return '<i' + (i ? '' : ' class="on"') + '></i>'; }).join('') + '</div>' : '') + '</div>';
     };
     var topHtml = function(inner){ return head(d, 'Welcome back,<br><span translate="no">' + esc(String(d.first).split(' ')[0]) + '</span>', 'Good to see you again. Here\'s what\'s on.').replace(/<\/div>$/, inner + '</div>'); };
@@ -677,7 +677,10 @@ svg{display:block}
       if (hv) { var fit = function(){ hv.style.setProperty('--hk', (hv.clientWidth / 1280 * 1.3).toFixed(4)); }; fit(); window.addEventListener('resize', fit); }
       var fb = document.getElementById('film'); if (fb) fb.onclick = function(){ open(d.brand, '<div class="vid"><iframe src="https://www.youtube-nocookie.com/embed/' + encodeURIComponent(gp.film) + '?autoplay=1&playsinline=1&rel=0" allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowfullscreen title="Film"></iframe></div>'); };
       sh.addEventListener('click', function(e){ if (e.target === sh) close(); });
-      Array.prototype.forEach.call(document.querySelectorAll('[data-go]'), function(b){ b.onclick = function(){ show(b.getAttribute('data-go'), true); }; b.onkeydown = function(e){ if (e.key === 'Enter') show(b.getAttribute('data-go'), true); }; });
+      // See more: to that place's page - or, if staff chose an event, straight to that event (its card on the place's page, details open)
+      var goTo = function(b){ var ev = b.getAttribute('data-goev'); show(b.getAttribute('data-go'), true);
+        if (ev && window.__evOpen) setTimeout(function(){ var c = document.querySelector('.ev[data-ev="' + ev.replace(/"/g, '') + '"]'); if (c) c.scrollIntoView({ block: 'center' }); window.__evOpen(ev); }, 60); };
+      Array.prototype.forEach.call(document.querySelectorAll('[data-go]'), function(b){ b.onclick = function(){ goTo(b); }; b.onkeydown = function(e){ if (e.key === 'Enter') goTo(b); }; });
       Array.prototype.forEach.call(document.querySelectorAll('[data-home]'), function(b){ b.onclick = function(){ if (history.state && history.state.place) history.back(); else show('', false); }; });
       // Endless gallery: 12 more photos each time you scroll near the end (like Instagram)
       Array.prototype.forEach.call(document.querySelectorAll('[data-gend]'), function(end){
@@ -721,7 +724,7 @@ svg{display:block}
           (em ? '<a class="ae" href="mailto:' + esc(em) + '?subject=' + encodeURIComponent('Question about ' + what + ' - ' + d.first) + '&body=' + encodeURIComponent(mailBody) + '"' + hit(x.id) + '>' + svg('<rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-10 6L2 7"/>', 17) + 'Email</a>' : '') + '</div>';
       };
       // Event details pop-up: big photo, when, where, line-up, ages, dress code, price, the button
-      var evOpen = function(id){
+      var evOpen = window.__evOpen = function(id){
         var x = (gp.events || []).find(function(e){ return e.id === id; }); if (!x) return;
         var ic = function(k, def){ return PI[(x.ic || {})[k]] || PI[def]; };
         var row = function(ic, lab, val){ return val ? '<div class="er"><i>' + svg(ic, 18) + '</i><div><small>' + lab + '</small><span>' + esc(val) + '</span></div></div>' : ''; };

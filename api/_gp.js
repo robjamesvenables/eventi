@@ -118,7 +118,7 @@ function build(c, ctx){
     const v = (venues || []).find(x => x.name && t.includes(String(x.name).toLowerCase())); if (v) return v.name;
     const old = Object.keys(DEMO_RENAME).find(k => t.includes(k)); const n = old && DEMO_RENAME[old];
     return n && (venues || []).some(x => x.name === n) ? n : ''; };
-  const slides = on('slides') ? (c.slides || []).filter(s => img(s)).slice(0, 12).map(s => ({ id: str(s.id, 40), img: img(s), title: str(s.title, 60), line: str(s.line, 90), venue: str(guessPlace(s), 40), btn: button(s, s.title || 'a table') })) : [];
+  const slides = on('slides') ? (c.slides || []).filter(s => img(s)).slice(0, 12).map(s => ({ id: str(s.id, 40), img: img(s), title: str(s.title, 60), line: str(s.line, 90), venue: str(guessPlace(s), 40), ev: str(s.ev, 40), btn: button(s, s.title || 'a table') })) : [];
   const deals = (c.deals || []).filter(d => d && d.title).slice(0, 12).map(d => ({ id: str(d.id, 40), img: img(d), title: str(d.title, 60), when: str(d.when, 40), venue: str(d.venue, 40) }));
   const AGES = { all: 'All ages', '18': '18+ only', '21': '21+ only' };
   const events = (c.events || []).filter(e => e && e.title && (!e.date || e.date >= today) && (!e.from || e.from <= today))
@@ -132,6 +132,7 @@ function build(c, ctx){
         ic: ['details', 'age', 'dress', 'price', 'notes'].reduce((o, k) => { const v = String(((e.ic || {})[k]) || ''); if (/^[a-z]{2,10}$/.test(v)) o[k] = v; return o; }, {}),
         more: (Array.isArray(e.more) ? e.more : []).filter(m => m && m.text).slice(0, 6).map(m => ({ ic: /^[a-z]{2,10}$/.test(String(m.ic || '')) ? m.ic : '', label: str(m.label, 30), text: str(m.text, 120) })) }; });
   // Events switched to "Show in Highlights" go in that place's big photos too (tap -> the details pop-up)
+  slides.forEach(s => { if (!s.ev || !events.some(e => e.id === s.ev)) delete s.ev; });   // a slide's See more can go straight to an event - only while that event is still on
   if (on('slides')) events.filter(e => e.hl && e.img).forEach(e => { if (slides.length < 12) slides.push({ id: 'ev-' + e.id, img: e.img, title: e.title, line: e.when, venue: e.venue, btn: null, ev: e.id }); });
   const gallery = (c.gallery || []).map(g => ({ img: img(g), venue: str(g && g.venue, 40) })).filter(g => g.img).slice(0, 120);
   let order = Array.isArray(c.order) ? c.order.filter(k => SECTIONS.includes(k)) : [];

@@ -298,7 +298,7 @@ async function suggestionPush(me, b, res){
   return L.send(res, 200, { ok: true, sent, devices: subs.length });
 }
 
-// ── Mavis Key: a VIP just checked in ──
+// ── Mavis Club: a VIP just checked in ──
 // POST { mk_vip: member_id, venue }  -> the company's managers (not the person who scanned), if "VIP alert" is on
 async function vipPush(me, b, res){
   const m = (await L.db('members?select=*&id=eq.' + encodeURIComponent(b.mk_vip)).catch(() => []))[0];

@@ -60,7 +60,7 @@ const P = {
 const TRANS_BOOK = 'https://www.transresortbali.com/';
 const tr = n => '/demo-guest/p-trans-' + n + '.jpg';
 P.trans = {
-  brand: 'The Trans Resort Bali', logo: '/demo-guest/p-trans-logo.png', first: 'Guest', tier: 'vip', visits: 6, since: 2025, favourite: 'The 18th',
+  brand: 'The Trans Resort Bali', logo: '/demo-guest/p-trans-logo.png', first: 'Alexander', tier: 'vip', visits: 6, since: 2025, favourite: 'The 18th',
   perks: ['Welcome drink at The 18th Rooftop', 'Late check-out until 2pm, when available', '15% off at the spa', 'Free kids club afternoons'],
   perkIcons: ['cocktail', 'key', 'leaf', 'smile'],
   reward: { target: 10, text: 'One night in a pool villa' },
@@ -110,5 +110,5 @@ P.trans = {
   }
 };
 
-const CODES = { S8HLTR: 'shelter', T7RNSB: 'trans' };
+const CODES = { S8HLTR: 'shelter', T7RNSB: 'trans', '5NKGZJ': 'trans' };   // 5NKGZJ = the printed sample card, shown as Trans for the GM demo
 module.exports = { get: code => P[CODES[code]] || null, nextDow };

@@ -101,11 +101,16 @@ function build(c, ctx){
     return '';
   };
   const waOf = name => { const v = (venues || []).find(x => x.wa && name && x.name.toLowerCase() === String(name).toLowerCase()) || (venues || []).find(x => x.wa); return v ? v.wa : ''; };
-  const button = (it, what) => {
-    const t = it.btn;
+  const DISC = [5, 10, 15, 20, 25, 30, 40, 50];
+  const button = (it, what0, disc) => {
+    let t = it.btn; const what = what0 + (disc ? ' with my ' + disc + '% member discount' : '');
+    // Member discount on a ticket / booking site: show the member code; no code typed in -> members book by WhatsApp (or a call) instead
+    const mcode = String(it.code || '').trim().toUpperCase().replace(/[^A-Z0-9_-]/g, '').slice(0, 30);
+    if (disc && (t === 'book' || t === 'tickets') && !mcode) t = 'wa';
+    if (disc && (t === 'book' || t === 'tickets') && httpsOk(it.url)) return { href: String(it.url).trim(), label: t === 'tickets' ? 'Get tickets' : 'Book now', kind: t, code: mcode };
     // WhatsApp / Call / Email: the number or address typed on this item, else its place's, else the main contact
     const vOf = name => (venues || []).find(x => name && x.name.toLowerCase() === String(name).toLowerCase()) || {}, main = ctx.contact || {}, own = String(it.to || '').trim();
-    if (t === 'wa') { const n = own.replace(/\D/g, '').slice(0, 16) || String(vOf(it.venue).wa || '') || String(main.wa || '') || waOf(it.venue); if (!n) return null; return { href: 'https://wa.me/' + n + '?text=' + encodeURIComponent(who + " I'd love to book " + what + ' - could you help? Thank you!'), label: 'Book on WhatsApp', kind: 'wa', wa: n }; }
+    if (t === 'wa') { const n = own.replace(/\D/g, '').slice(0, 16) || String(vOf(it.venue).wa || '') || String(main.wa || '') || waOf(it.venue); if (!n && disc && it.btn !== 'wa') { t = 'call'; } else if (!n) return null; else return { href: 'https://wa.me/' + n + '?text=' + encodeURIComponent(who + " I'd love to book " + what + ' - could you help? Thank you!'), label: 'Book on WhatsApp', kind: 'wa', wa: n }; }
     if (t === 'call') { const p = own.replace(/[^\d+]/g, '').slice(0, 20) || String(vOf(it.venue).phone || main.phone || '').replace(/[^\d+]/g, ''); if (!p) return null; return { href: 'tel:' + p, label: 'Call to book', kind: 'call' }; }
     if (t === 'email') { const ok = e => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e) ? e : ''; const e = ok(own) || ok(String(vOf(it.venue).email || '')) || ok(String(main.email || '')); if (!e) return null;
       return { href: 'mailto:' + e + '?subject=' + encodeURIComponent('Booking: ' + what) + '&body=' + encodeURIComponent(who + "\n\nI'd love to book " + what + '.\n\nThank you!'), label: 'Email to book', kind: 'email', email: e }; }
@@ -125,7 +130,7 @@ function build(c, ctx){
     .sort((a, b) => String(a.date || '9999').localeCompare(String(b.date || '9999'))).slice(0, 12)
     .map(e => { const t1 = timeLabel(e.time), t2 = timeLabel(e.time2);
       return { id: str(e.id, 40), img: img(e), title: str(e.title, 60), line: str(e.line, 90), venue: str(e.venue, 40),
-        when: [dateLabel(e.date), t1 && t2 ? t1 + ' – ' + t2 : t1].filter(Boolean).join(' · '), btn: button(e, e.title + (e.date ? ' (' + dateLabel(e.date) + ')' : '')),
+        when: [dateLabel(e.date), t1 && t2 ? t1 + ' – ' + t2 : t1].filter(Boolean).join(' · '), disc: DISC.includes(+e.disc) ? +e.disc : 0, btn: button(e, e.title + (e.date ? ' (' + dateLabel(e.date) + ')' : ''), DISC.includes(+e.disc) ? +e.disc : 0),
         // The details pop-up: what's on, ages, dress code, price, anything else
         blast: str(e.blast, 1500).replace(/\r/g, '').replace(/\n{3,}/g, '\n\n').trim(), details: str(e.details, 300), age: AGES[e.age] || '', dress: str(e.dress, 60), price: str(e.price, 60), notes: str(e.notes, 200), hl: !!e.hl,
         // the icons staff chose for each detail, and their own extra details

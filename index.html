@@ -23729,6 +23729,10 @@ window.gpForm = function(k, i){
   if(k !== 'deals') f += `<label>Button goes to</label><div class="gp-btns gp-3b" id="gpf-btns"><button type="button" data-b="">No button</button><button type="button" data-b="wa">WhatsApp</button><button type="button" data-b="call">Call</button><button type="button" data-b="email">Email</button><button type="button" data-b="book">Booking site</button><button type="button" data-b="tickets">Tickets</button></div>
     <div id="gpf-urlw"><label id="gpf-urll">Link</label><input id="gpf-url" inputmode="url" value="${gpEsc(it.url || '')}" placeholder="https://..."></div>
     <div id="gpf-tow"><label id="gpf-tol">Number</label><input id="gpf-to" value="${gpEsc(it.to || '')}"></div><div class="gp-hint gp-goes" id="gpf-wah"></div>`;
+  if(k === 'events') f += `<label>Member discount</label><select id="gpf-disc"><option value="">No member discount</option>${[5,10,15,20,25,30,40,50].map(n => `<option value="${n}"${+it.disc === n ? ' selected' : ''}>${n}% off for members</option>`).join('')}</select>
+    <div class="gp-hint">Members see a gold badge on the event, like "Members 15% off". If they book by WhatsApp, Call or Email, the message already says they want their member discount.</div>
+    <div id="gpf-codew"><label>Member discount code (from the ticket website)</label><input id="gpf-code" maxlength="30" autocapitalize="characters" style="text-transform:uppercase" value="${gpEsc(it.code || (it.disc ? '' : (GPE.c.mcode || '')))}" placeholder="e.g. MEMBER15">
+      <div class="gp-tip"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 16v-4M12 8h.01"/></svg><span><b>Using a ticket website</b> (Megatix, Ticketmaster, Eventbrite...)? First make a member discount code on that website, then type the exact same code here. If you're not sure how, ask the ticket company. Leave this empty and members will book by WhatsApp instead.</span></div></div>`;
   if(k === 'events') f += `<label>Show it from (optional)</label><input id="gpf-from" type="date" value="${gpEsc(it.from || '')}"><div class="gp-hint">Leave empty to show it straight away. It disappears by itself after the event.</div>`;
   const s = document.createElement('div'); s.className = 'eb-sheet';
   s.innerHTML = `<div class="eb-form"><h3>${edit ? 'Change' : 'Add a'} ${title}</h3><p class="sub">Shows on the guest page as soon as you save</p>${f}<input type="file" id="gpf-file" accept="image/*" style="display:none"><div class="eb-fbtns"><button class="eb-no">Cancel</button><button class="eb-go">Save</button></div></div>`;
@@ -23759,6 +23763,8 @@ window.gpForm = function(k, i){
   };
   if($('gpf-to')) $('gpf-to').oninput = showBtn; if($('gpf-venue')) $('gpf-venue').addEventListener('change', showBtn);
   s.querySelectorAll('#gpf-btns button').forEach(b => b.onclick = () => { btn = b.dataset.b; showBtn(); });
+  const showDisc = () => { const w = $('gpf-codew'); if(!w) return; w.style.display = $('gpf-disc').value && (btn === 'book' || btn === 'tickets') ? '' : 'none'; };
+  if($('gpf-disc')){ $('gpf-disc').onchange = showDisc; s.querySelectorAll('#gpf-btns button').forEach(b => b.addEventListener('click', showDisc)); showDisc(); }
   let age = it.age || '';
   const showAge = () => s.querySelectorAll('#gpf-ages button').forEach(b => b.classList.toggle('on', b.dataset.a === age));
   s.querySelectorAll('#gpf-ages button').forEach(b => b.onclick = () => { age = age === b.dataset.a ? '' : b.dataset.a; showAge(); });   // tap again to clear
@@ -23778,7 +23784,10 @@ window.gpForm = function(k, i){
       const noIc = more.find(x => !x.ic); if(noIc){ toast('Choose an icon for "' + (noIc.label || noIc.text) + '"'); noIc.r.scrollIntoView({ block:'center' }); if(!noIc.r.nextElementSibling || !noIc.r.nextElementSibling.classList.contains('ms-pgrid')) mvIconPick(noIc.r.querySelector('.ms-pib')); return; }
       const noTx = more.find(x => !x.text); if(noTx){ toast('Type the words for "' + noTx.label + '"'); return; }
       rec.more = more.map(x => ({ ic: x.ic, label: x.label, text: x.text })); if(!rec.more.length) delete rec.more;
-      ['time2', 'blast', 'details', 'age', 'dress', 'price', 'notes'].forEach(x => { if(!rec[x]) delete rec[x]; }); if(!rec.hl) delete rec.hl;
+      rec.disc = +($('gpf-disc') ? $('gpf-disc').value : 0) || 0;
+      rec.code = rec.disc && (btn === 'book' || btn === 'tickets') ? val('gpf-code').toUpperCase().replace(/[^A-Z0-9_-]/g, '') : '';
+      if(rec.code) GPE.c.mcode = rec.code;   // remembered: the next event fills it in by itself
+      ['time2', 'blast', 'details', 'age', 'dress', 'price', 'notes', 'disc', 'code'].forEach(x => { if(!rec[x]) delete rec[x]; }); if(!rec.hl) delete rec.hl;
       if(rec.hl && !file && !gpSrc(it)){ toast('Add a photo to show it in Highlights'); return; }
       if(!rec.title){ toast('Type the event name'); return; } if(!rec.date){ toast('Pick the date - it hides itself after that day'); return; } if(rec.date < gpToday()){ toast('That date has already passed'); return; } }
     if(k !== 'deals'){

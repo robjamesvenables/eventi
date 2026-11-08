@@ -209,6 +209,11 @@ svg{display:block}
 .eva{display:flex;align-items:center;gap:6px;font-size:14px;font-weight:700;color:#334155;margin-top:6px}.eva svg{color:#64748B;flex:none}
 .evl{font-size:14.5px;color:#475569;line-height:1.5;margin-top:8px}
 .ers{margin-top:14px}
+.ev{position:relative}.evdisc{position:absolute;left:10px;top:10px;z-index:1;display:inline-flex;align-items:center;gap:5px;background:#C4973B;color:#fff;font-size:12px;font-weight:900;border-radius:20px;padding:6px 11px;box-shadow:0 2px 8px rgba(0,0,0,.25);white-space:nowrap}
+.evdl{margin-top:10px}.evdl .evdisc{position:static;box-shadow:none}
+.mcode{display:flex;align-items:center;gap:10px;margin-top:12px;background:#FBF6EA;border:1.5px dashed #C4973B;border-radius:12px;padding:9px 10px 9px 12px}
+.mcode div{flex:1;min-width:0;font-size:12.5px;color:#6B5523;font-weight:700;line-height:1.35}.mcode b{display:block;font-size:17px;color:#0F1E2E;letter-spacing:1px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.mcode button{flex:none;border:0;background:#C4973B;color:#fff;font:800 12.5px Inter,sans-serif;border-radius:9px;padding:9px 13px;cursor:pointer}
 .evblast{margin-top:14px;padding:16px;font-size:15px;line-height:1.6;white-space:pre-line;overflow-wrap:anywhere;color:#0F1E2E}
 .er{display:flex;gap:12px;padding:13px 14px;border-top:1px solid #F1F5F9}.er:first-child{border-top:0}
 .er i{width:36px;height:36px;border-radius:10px;background:#F1F5F9;color:#0F1E2E;display:flex;align-items:center;justify-content:center;flex:none}
@@ -361,6 +366,9 @@ svg{display:block}
     '<div class="hi">' + hi + '</div><div class="hi-s">' + sub + '</div></div>'; };
 
   // Staff preview: a small quiet label in the corner (none inside the editor's live preview)
+  document.addEventListener('click', function(e){ var b = e.target.closest && e.target.closest('[data-copy]'); if (!b) return; e.stopPropagation(); e.preventDefault(); var c = b.getAttribute('data-copy');
+    var done = function(){ b.textContent = 'Copied'; setTimeout(function(){ b.textContent = 'Copy'; }, 1800); };
+    try { navigator.clipboard.writeText(c).then(done, function(){ prompt('Your member code', c); }); } catch (x) { done(); } }, true);
   if (/[?&]embed=1/.test(location.search)) window.addEventListener('message', function(e){ if (e.origin !== location.origin || !e.data || e.data.mv !== 'go') return; window.__mvGoQ = e.data; if (window.__mvGoApply && document.querySelector('.book,.sec,.card')) window.__mvGoApply(); });
   if (preview && SAMPLES.indexOf(code) < 0 && !/[?&]embed=1/.test(location.search)) { var pv = document.createElement('div'); pv.className = 'pv'; pv.textContent = 'Preview'; document.body.appendChild(pv); }
   if (!code) { root.innerHTML = '<div class="w">' + head({ brand:'Members Club' }, 'Members Club', 'This link is missing its keyring code.') + '</div>'; return; }
@@ -401,6 +409,9 @@ svg{display:block}
     var hit = function(id){ return id ? ' data-hit="' + esc(id) + '"' : ''; };
     var btnHtml = function(b, id, cls){ if (!b) return ''; var ic = { wa: I.wa, call: I.phone, email: I.mail }[b.kind];
       return '<a href="' + esc(b.href) + '"' + (/^https/.test(b.href) ? ' target="_blank" rel="noopener"' : '') + ' class="' + (cls || '') + (b.kind === 'wa' ? ' wa' : '') + '"' + hit(id) + '>' + (ic ? svg(ic, 16) : '') + esc(b.label) + '</a>'; };
+    // Member discount: a gold badge on the event photo, and (ticket sites) the member code with a Copy button
+    var discBadge = function(x){ return x.disc ? '<span class="evdisc">' + svg(PI.pct, 13) + 'Members ' + x.disc + '% off</span>' : ''; };
+    var codeBox = function(x){ var c = x.disc && x.btn && x.btn.code; return c ? '<div class="mcode"><div>Your member code<b>' + esc(c) + '</b>Use it at checkout</div><button type="button" data-copy="' + esc(c) + '">Copy</button></div>' : ''; };
     var pic = function(src, alt){ return src ? '<img src="' + esc(src) + '" alt="' + esc(alt || '') + '" loading="lazy">' : '<div class="noimg"></div>'; };
     var venueOf = function(key){ return (d.venues || []).find(function(v){ return lc(v.name) === key; }); };
     var placeOf = function(key){ return places.find(function(p){ return lc(p.name) === key; }); };
@@ -460,8 +471,8 @@ svg{display:block}
         return '<div class="deal">' + pic(x.img, x.title) + '<div class="x"><b>' + esc(x.title) + '</b>' + (x.when ? '<span class="dw">' + svg('<circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/>', 14) + '<em>' + esc(x.when) + '</em></span>' : '') + (!x.venue ? '<small>At all our places</small>' : '') + '</div></div>';
       }).join('') + '</div>';
       if (ev.length) S.events = '<div class="sec"><div class="lab">Coming up</div><div class="evs">' + ev.map(function(x){
-        return '<div class="ev" data-ev="' + esc(x.id) + '" role="button" tabindex="0">' + pic(x.img, x.title) + '<div class="x"><div class="wh">' + esc(x.when).toUpperCase() + '</div><b>' + esc(x.title) + '</b>' + (x.line ? '<small>' + esc(x.line) + '</small>' : '') +
-          '<span class="det">See details ' + svg('<path d="m9 18 6-6-6-6"/>', 14) + '</span>' + (x.btn ? '<div class="go">' + btnHtml(x.btn, x.id) + '</div>' : '') + '</div></div>';
+        return '<div class="ev" data-ev="' + esc(x.id) + '" role="button" tabindex="0">' + discBadge(x) + pic(x.img, x.title) + '<div class="x"><div class="wh">' + esc(x.when).toUpperCase() + '</div><b>' + esc(x.title) + '</b>' + (x.line ? '<small>' + esc(x.line) + '</small>' : '') +
+          '<span class="det">See details ' + svg('<path d="m9 18 6-6-6-6"/>', 14) + '</span>' + codeBox(x) + (x.btn ? '<div class="go">' + btnHtml(x.btn, x.id) + '</div>' : '') + '</div></div>';
       }).join('') + '</div></div>';
       if (gl.length) S.gallery = galHtml(gl, key);
       if (!key && d.venues && d.venues.length) S.venues = '<div class="sec"><div class="lab">Find us</div><div class="box">' + d.venues.map(function(v, i){
@@ -730,7 +741,7 @@ svg{display:block}
         var row = function(ic, lab, val){ return val ? '<div class="er"><i>' + svg(ic, 18) + '</i><div><small>' + lab + '</small><span>' + esc(val) + '</span></div></div>' : ''; };
         open(x.title, (x.img ? '<img class="evbig" src="' + esc(x.img) + '" alt="">' : '') +
           '<div class="evw">' + esc(x.when) + '</div>' + (x.venue && many ? '<div class="eva">' + svg(I.pin, 15) + '<span translate="no">' + esc(x.venue) + '</span></div>' : '') +
-          (x.line ? '<p class="evl">' + esc(x.line) + '</p>' : '') +
+          (x.line ? '<p class="evl">' + esc(x.line) + '</p>' : '') + (x.disc ? '<div class="evdl">' + discBadge(x) + '</div>' : '') + codeBox(x) +
           (x.blast ? '<div class="box evblast">' + esc(x.blast) + '</div>' : '') +   // the venue's own WhatsApp / email message, pasted as it was sent
           '<div class="box ers">' + row(ic('details', 'music'), "What's on", x.details) + row(ic('age', 'who'), 'Ages', x.age) + row(ic('dress', 'shirt'), 'Dress code', x.dress) + row(ic('price', 'tag'), 'Price', x.price) + row(ic('notes', 'info'), 'Good to know', x.notes) +
             (x.more || []).map(function(m){ return row(PI[m.ic] || PI.info, m.label, m.text); }).join('') + '</div>' +

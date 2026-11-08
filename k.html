@@ -136,6 +136,7 @@ svg{display:block}
 .msg h2{font-size:20px}.msg p{font-size:14px;color:#475569;line-height:1.55;margin-top:8px}
 /* marketing: photo slides, deals, coming up, gallery */
 .sl-wrap{margin:22px -20px 0}
+.slsec{margin-top:20px}.slsec .sl-wrap{margin:0 -16px}.slsec .sl{padding:0 16px;scroll-padding:0 16px}.slsec .dots i{background:rgba(15,30,46,.18)}.slsec .dots i.on{background:var(--acc,#0D9488)}
 .sl{display:flex;gap:10px;overflow-x:auto;scroll-snap-type:x mandatory;scrollbar-width:none;padding:0 20px;scroll-padding:0 20px}
 .sl::-webkit-scrollbar{display:none}
 .sd{flex:0 0 calc(100% - 26px);scroll-snap-align:start;height:300px;border-radius:20px;overflow:hidden;position:relative;background:#1E2D3D}
@@ -398,9 +399,18 @@ svg{display:block}
     var topHtml = function(inner){ return head(d, 'Welcome back,<br><span translate="no">' + esc(String(d.first).split(' ')[0]) + '</span>', 'Good to see you again. Here\'s what\'s on.').replace(/<\/div>$/, inner + '</div>'); };
 
     // ── The member's own things (same at every place) ──
-    var memberHtml = function(){
+    // Their film plays on its own at the very top (muted, on a loop); 'Sound on' opens it full with sound
+    var filmHtml = function(){
+      if (gp.video) return '<div class="hv' + (gp.videoTall ? ' tall' : '') + '"><video id="hvv" autoplay muted loop playsinline disableremoteplayback disablepictureinpicture x-webkit-airplay="deny" controlslist="nodownload nofullscreen noremoteplayback" preload="auto" poster="' + esc(gp.video.replace(/\.mp4$/, '.jpg')) + '" src="' + esc(gp.video) + '"></video><button id="hvs">' + svg('<path d="M11 5 6 9H2v6h4l5 4V5z"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/><path d="M19 5a10 10 0 0 1 0 14"/>', 16) + '<span>Sound on</span></button></div>';
+      return gp.film ? '<div class="hv" id="hv"><iframe src="https://www.youtube-nocookie.com/embed/' + esc(gp.film) + '?autoplay=1&mute=1&loop=1&playlist=' + esc(gp.film) + '&controls=0&playsinline=1&rel=0&modestbranding=1&iv_load_policy=3&disablekb=1" allow="autoplay; encrypted-media" title="Film" tabindex="-1"></iframe><button id="film">' + svg('<path d="M11 5 6 9H2v6h4l5 4V5z"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/><path d="M19 5a10 10 0 0 1 0 14"/>', 16) + 'Sound on</button></div>' : ''; };
+    // With a video at the top, the photo slideshow moves to just under the member card - the video and the photos never sit on top of each other
+    var topAndCard = function(slides){
+      var film = filmHtml(), sw = slides ? '<div class="sec slsec">' + slides + '</div>' : '';
+      return film ? topHtml(film) + memberHtml(sw) : topHtml(slides) + memberHtml();
+    };
+    var memberHtml = function(after){
       var h = '<div class="card' + (vip ? '' : ' member') + '"><span class="code">' + esc(d.code) + '</span><div class="k">' + (vip ? 'VIP MEMBER' : 'MEMBER') + '</div><h2 translate="no">' + esc(d.first) + '</h2>' +
-        '<div class="row"><div><b>' + esc(d.visits) + '</b>visit' + (d.visits === 1 ? '' : 's') + '</div>' + (d.favourite ? '<div><b translate="no">' + esc(d.favourite) + '</b>favourite</div>' : '') + '<div><b>' + esc(d.since) + '</b>member since</div></div></div>' + reviewBig();
+        '<div class="row"><div><b>' + esc(d.visits) + '</b>visit' + (d.visits === 1 ? '' : 's') + '</div>' + (d.favourite ? '<div><b translate="no">' + esc(d.favourite) + '</b>favourite</div>' : '') + '<div><b>' + esc(d.since) + '</b>member since</div></div></div>' + (after || '') + reviewBig();
       if (d.birthdayWeek) h += '<div class="bday"><i>' + svg(I.cake, 24) + '</i><div><b>Happy birthday week!</b><p>' + ((d.perks || []).some(function(p){ return /birthday/i.test(p); }) ? 'Your birthday treat is waiting - just show this screen at any of our venues.' : 'From all of us - have a wonderful one. We hope to see you this week!') + '</p></div></div>';
       if (d.reward) h += rewardHtml();
       var offersHtml = '<div class="sec"><div class="box offr"><div class="n"><b>Send me offers</b><small>News and member offers from ' + esc(d.brand) + '. Turn off any time.</small></div><button class="tgl' + (d.offers ? ' on' : '') + '" id="offr" role="switch" aria-checked="' + (d.offers ? 'true' : 'false') + '" aria-label="Send me offers"><i></i></button></div></div>';
@@ -481,11 +491,7 @@ svg{display:block}
 
     // ── Screens ──
     var homeHtml = function(){
-      // Their film plays on its own at the very top (muted, on a loop); 'Sound on' opens it full with sound
-      var filmHtml = function(){
-        if (gp.video) return '<div class="hv' + (gp.videoTall ? ' tall' : '') + '"><video id="hvv" autoplay muted loop playsinline disableremoteplayback disablepictureinpicture x-webkit-airplay="deny" controlslist="nodownload nofullscreen noremoteplayback" preload="auto" poster="' + esc(gp.video.replace(/\.mp4$/, '.jpg')) + '" src="' + esc(gp.video) + '"></video><button id="hvs">' + svg('<path d="M11 5 6 9H2v6h4l5 4V5z"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/><path d="M19 5a10 10 0 0 1 0 14"/>', 16) + '<span>Sound on</span></button></div>';
-        return gp.film ? '<div class="hv" id="hv"><iframe src="https://www.youtube-nocookie.com/embed/' + esc(gp.film) + '?autoplay=1&mute=1&loop=1&playlist=' + esc(gp.film) + '&controls=0&playsinline=1&rel=0&modestbranding=1&iv_load_policy=3&disablekb=1" allow="autoplay; encrypted-media" title="Film" tabindex="-1"></iframe><button id="film">' + svg('<path d="M11 5 6 9H2v6h4l5 4V5z"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/><path d="M19 5a10 10 0 0 1 0 14"/>', 16) + 'Sound on</button></div>' : ''; };
-    var h = '<div class="w">' + topHtml(filmHtml() + (gp.motion ? slidesHtml(gp.slides || [], true) : '')) + memberHtml();
+    var h = '<div class="w">' + topAndCard(gp.motion ? slidesHtml(gp.slides || [], true) : '');
       h += '<div class="sec"><div class="lab">OUR OTHER PLACES</div><div class="pgrid">' + places.map(function(p){
         var v = venueOf(lc(p.name)), st = v ? (v.open === true ? 'Open now' : v.open === false ? v.label : '') : '';
         return '<button class="pbig" data-go="' + esc(lc(p.name)) + '">' + (p.img ? '<img src="' + esc(p.img) + '" alt="" loading="lazy">' : '<div class="ini">' + esc(String(p.name).charAt(0).toUpperCase()) + '</div>') +
@@ -515,7 +521,7 @@ svg{display:block}
       return h + foot + '</div>';
     };
     var singleHtml = function(){
-      return '<div class="w">' + topHtml(slidesHtml(gp.slides || [], false)) + memberHtml() + (places[0] && places[0].menus && places[0].menus.length ? '<div class="single-menu">' + menuHtml(places[0]) + '</div>' : '') + placeSections('') + reviewLine((d.venues || []).slice(0, 1)) + igHtml(places.slice(0, 1)) + foot + '</div>';
+      return '<div class="w">' + topAndCard(slidesHtml(gp.slides || [], false)) + (places[0] && places[0].menus && places[0].menus.length ? '<div class="single-menu">' + menuHtml(places[0]) + '</div>' : '') + placeSections('') + reviewLine((d.venues || []).slice(0, 1)) + igHtml(places.slice(0, 1)) + foot + '</div>';
     };
 
     // ── Rewards: dots (up to 12 visits, a bar above that). At the target: "You've reached it", a Claim button, and a pop-up

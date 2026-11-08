@@ -117,7 +117,11 @@ svg{display:block}
 .film .th i{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#fff}
 .film b{display:block;font-size:15px;font-weight:800}.film small{display:block;font-size:12px;opacity:.8;margin-top:2px}
 .hv{position:relative;margin-top:20px;padding-top:56.25%;border-radius:20px;overflow:hidden;background:#000}
-.hv iframe{position:absolute;top:50%;left:50%;width:100%;height:100%;transform:translate(-50%,-50%) scale(1.02);border:0;pointer-events:none}
+/* the player is drawn big (1280x720) then shrunk and zoomed 30%, so YouTube's title bar and logo sit outside the box */
+.hv iframe{position:absolute;top:50%;left:50%;width:1280px;height:720px;transform:translate(-50%,-50%) scale(var(--hk,.3));transform-origin:center;border:0;pointer-events:none}
+.hv .pst{position:absolute;inset:0;background-size:cover;background-position:center;transition:opacity 1s;z-index:1}
+.hv .pst.off{opacity:0}
+.hv button{z-index:2}
 .hv button{position:absolute;right:10px;bottom:10px;display:inline-flex;align-items:center;gap:6px;background:rgba(15,30,46,.72);color:#fff;border:0;border-radius:999px;padding:7px 12px;font:inherit;font-size:13px;font-weight:800;cursor:pointer}
 .vid{position:relative;padding-top:56.25%;border-radius:14px;overflow:hidden;background:#000}.vid iframe{position:absolute;inset:0;width:100%;height:100%;border:0}
 /* slow photo slideshow (gentle zoom on the photo in view, moves on by itself) */
@@ -418,7 +422,7 @@ svg{display:block}
     // ── Screens ──
     var homeHtml = function(){
       // Their film plays on its own at the very top (muted, on a loop); 'Sound on' opens it full with sound
-      var filmHtml = function(){ return gp.film ? '<div class="hv"' + ((gp.slides || [])[0] ? ' style="background:#000 url(' + esc(gp.slides[0].img) + ') center/cover"' : '') + '><iframe src="https://www.youtube-nocookie.com/embed/' + esc(gp.film) + '?autoplay=1&mute=1&loop=1&playlist=' + esc(gp.film) + '&controls=0&playsinline=1&rel=0&modestbranding=1&iv_load_policy=3&disablekb=1" allow="autoplay; encrypted-media" title="Film" tabindex="-1"></iframe><button id="film">' + svg('<path d="M11 5 6 9H2v6h4l5 4V5z"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/><path d="M19 5a10 10 0 0 1 0 14"/>', 16) + 'Sound on</button></div>' : ''; };
+      var filmHtml = function(){ return gp.film ? '<div class="hv" id="hv">' + ((gp.slides || [])[0] ? '<div class="pst" style="background-image:url(' + esc(gp.slides[0].img) + ')"></div>' : '') + '<iframe src="https://www.youtube-nocookie.com/embed/' + esc(gp.film) + '?autoplay=1&mute=1&loop=1&playlist=' + esc(gp.film) + '&controls=0&playsinline=1&rel=0&modestbranding=1&iv_load_policy=3&disablekb=1" allow="autoplay; encrypted-media" title="Film" tabindex="-1"></iframe><button id="film">' + svg('<path d="M11 5 6 9H2v6h4l5 4V5z"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/><path d="M19 5a10 10 0 0 1 0 14"/>', 16) + 'Sound on</button></div>' : ''; };
     var h = '<div class="w">' + topHtml(filmHtml() + (gp.motion ? slidesHtml(gp.slides || [], true) : '')) + memberHtml();
       h += '<div class="sec"><div class="lab">WHERE ARE YOU HEADING?</div><div class="pgrid">' + places.map(function(p){
         var v = venueOf(lc(p.name)), st = v ? (v.open === true ? 'Open now' : v.open === false ? v.label : '') : '';
@@ -475,6 +479,8 @@ svg{display:block}
       var open = function(title, html){ document.getElementById('sht').textContent = title; document.getElementById('shc').innerHTML = html; document.getElementById('shc').scrollTop = 0; if (!sh.classList.contains('on')) { try { history.pushState({ place: key, sh: 1 }, '', location.pathname + location.search); } catch (e) {} } sh.classList.add('on'); document.body.style.overflow = 'hidden'; };
       var close = function(){ if (history.state && history.state.sh) history.back(); else { sh.classList.remove('on'); document.body.style.overflow = ''; var sc = document.getElementById('shc'); if (sc.querySelector('iframe')) sc.innerHTML = ''; } };
       document.getElementById('shx').onclick = close;
+      var hv = document.getElementById('hv');
+      if (hv) { var fit = function(){ hv.style.setProperty('--hk', (hv.clientWidth / 1280 * 1.3).toFixed(4)); }; fit(); window.addEventListener('resize', fit); var ps = hv.querySelector('.pst'); if (ps) setTimeout(function(){ ps.classList.add('off'); }, 5500); }   // photo covers YouTube's first seconds (title), then fades to the film
       var fb = document.getElementById('film'); if (fb) fb.onclick = function(){ open(d.brand, '<div class="vid"><iframe src="https://www.youtube-nocookie.com/embed/' + encodeURIComponent(gp.film) + '?autoplay=1&playsinline=1&rel=0" allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowfullscreen title="Film"></iframe></div>'); };
       sh.addEventListener('click', function(e){ if (e.target === sh) close(); });
       Array.prototype.forEach.call(document.querySelectorAll('[data-go]'), function(b){ b.onclick = function(){ show(b.getAttribute('data-go'), true); }; b.onkeydown = function(e){ if (e.key === 'Enter') show(b.getAttribute('data-go'), true); }; });

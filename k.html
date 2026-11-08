@@ -276,6 +276,12 @@ svg{display:block}
 .gmore{display:block;width:100%;margin-top:10px;background:white;border:0;border-radius:14px;padding:13px;font:800 14px Inter,sans-serif;color:var(--top,#0F1E2E);cursor:pointer;box-shadow:0 1px 3px rgba(15,30,46,.07)}
 .lb{position:fixed;inset:0;background:#0B1520;z-index:30;display:none;flex-direction:column}
 .lb.on{display:flex}
+.lb.mv{background:#F4F1EC}
+.mvh{flex:none;display:flex;align-items:center;gap:12px;padding:calc(10px + env(safe-area-inset-top,0px)) 12px 10px 18px;background:#0F1E2E;color:white;min-height:62px;box-sizing:border-box}
+.mvh b{flex:1;min-width:0;font-size:17px;font-weight:800;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.lb.mv .lbx{position:static;flex:none}
+.mvp{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;padding:12px 0 calc(24px + env(safe-area-inset-bottom,0px))}
+.mvp img{display:block;width:100%;max-width:760px;height:auto;margin:0 auto 12px;background:white;box-shadow:0 1px 4px rgba(15,30,46,.12)}
 .lbx{position:absolute;top:calc(12px + env(safe-area-inset-top,0px));right:12px;width:42px;height:42px;border-radius:50%;border:0;background:rgba(255,255,255,.14);color:white;display:flex;align-items:center;justify-content:center;cursor:pointer;z-index:2}
 .lbn{position:absolute;top:calc(22px + env(safe-area-inset-top,0px));left:18px;color:#CBD5E1;font-size:13px;font-weight:700;z-index:2}
 .lbr{flex:1;display:flex;overflow-x:auto;scroll-snap-type:x mandatory;scrollbar-width:none;overscroll-behavior:contain}
@@ -609,8 +615,9 @@ svg{display:block}
     // Menus for one place: one button each (Food, Drinks...) - opens the venue's own file
     var menuHtml = function(p){
       var ms = (p && p.menus) || []; if (!ms.length) return '';
-      return '<div class="vmenu">' + ms.map(function(m){ var food = /food|lunch|dinner|brunch|break|kitchen|eat/i.test(m.name), drink = /drink|bar|cocktail|wine|bev/i.test(m.name);
-        return '<a href="' + esc(m.url) + '" target="_blank" rel="noopener">' + svg(drink && !food ? PI.cocktail : PI.food, 18) + '<span>' + esc(m.name) + '</span></a>'; }).join('') + '</div>';
+      return '<div class="vmenu">' + ms.map(function(m, i){ var food = /food|lunch|dinner|brunch|break|kitchen|eat/i.test(m.name), drink = /drink|bar|cocktail|wine|bev/i.test(m.name);
+        var ic = svg(drink && !food ? PI.cocktail : PI.food, 18) + '<span>' + esc(m.name) + '</span>';
+        return (m.pages && m.pages.length) ? '<a href="#" role="button" data-menu="' + i + '">' + ic + '</a>' : '<a href="' + esc(m.url) + '" target="_blank" rel="noopener">' + ic + '</a>'; }).join('') + '</div>';
     };
     var placeHtml = function(key){
       var p = placeOf(key) || { name: key }, v = venueOf(key) || {};
@@ -811,8 +818,19 @@ svg{display:block}
         io.observe(end);
       });
       Array.prototype.forEach.call(document.querySelectorAll('[data-gal]'), function(b){ b.onclick = function(){ viewer(GAL[b.getAttribute('data-gal')], +b.getAttribute('data-i')); }; });
+      // Menu: its pictures, one under the other, inside the page (scroll, pinch to zoom, X to close) - never a download
+      Array.prototype.forEach.call(document.querySelectorAll('[data-menu]'), function(b){ b.onclick = function(e){ e.preventDefault();
+        var m = ((placeOf(key) || {}).menus || [])[+b.getAttribute('data-menu')]; if (!m || !m.pages || !m.pages.length) return;
+        var lb = document.getElementById('lb'); lb.classList.add('mv');
+        lb.innerHTML = '<div class="mvh"><b>' + esc(m.name) + '</b><button class="lbx" id="lbx" aria-label="Close">' + svg(I.x, 20) + '</button></div>' +
+          '<div class="mvp">' + m.pages.map(function(u, j){ return '<img src="' + esc(u) + '" alt="' + esc(m.name) + ' page ' + (j + 1) + '"' + (j ? ' loading="lazy"' : '') + '>'; }).join('') + '</div>';
+        lb.classList.add('on'); document.body.style.overflow = 'hidden';
+        try { history.pushState({ place: key, lb: 1 }, '', location.pathname + location.search); } catch (e) {}
+        document.getElementById('lbx').onclick = function(){ history.back(); };
+        document.onkeydown = function(e){ if (!lb.classList.contains('on')) { document.onkeydown = null; return; } if (e.key === 'Escape') history.back(); };
+      }; });
       var viewer = function(g, start){
-        var lb = document.getElementById('lb'), n = g.list.length;
+        var lb = document.getElementById('lb'), n = g.list.length; lb.classList.remove('mv');
         lb.innerHTML = '<span class="lbn" id="lbn">' + (start + 1) + ' / ' + n + '</span><button class="lbx" id="lbx" aria-label="Close">' + svg(I.x, 20) + '</button>' +
           '<div class="lbr" id="lbr">' + g.list.map(function(x){
             return '<div class="lbs"><img src="' + esc(x.img) + '" alt=""><div class="lbf"></div></div>';   // just the photo, like Instagram - no buttons

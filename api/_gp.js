@@ -12,7 +12,7 @@ const igName = v => { const m = /^(?:https?:\/\/)?(?:www\.)?(?:instagram\.com\/)
 function paths(c){
   const out = [];
   ['slides', 'deals', 'events', 'gallery'].forEach(k => (Array.isArray(c && c[k]) ? c[k] : []).forEach(it => { if (it && it.path) out.push(String(it.path)); }));
-  Object.values((c && c.places) || {}).forEach(p => { if (p && p.path) out.push(String(p.path)); (Array.isArray(p && p.menus) ? p.menus : []).forEach(m => { if (m && m.path) out.push(String(m.path)); }); });
+  Object.values((c && c.places) || {}).forEach(p => { if (p && p.path) out.push(String(p.path)); (Array.isArray(p && p.menus) ? p.menus : []).forEach(m => { if (m && m.path) out.push(String(m.path)); (Array.isArray(m && m.pages) ? m.pages : []).forEach(pg => { if (pg && pg.path) out.push(String(pg.path)); }); }); });
   return out;
 }
 
@@ -145,8 +145,13 @@ function build(c, ctx){
   order = order.filter(on);
   // Our places: a photo and area for each venue (Guest page > Our places)
   const pl = (c.places && typeof c.places === 'object') ? c.places : {};
-  const places = (venues || []).map(v => { const p = pl[String(v.name).toLowerCase()] || {}; // Menus: a file marketing uploaded (PDF or picture) or a link to their own menu page
-    const menus = (Array.isArray(p.menus) ? p.menus : []).slice(0, 4).map(m => ({ name: str(m && m.name, 30) || 'Menu', url: m && m.path ? img(m) : httpsOk(m && m.url) ? String(m.url).trim() : (m && /^\/demo-guest\/[a-z0-9._-]+$/i.test(m.img || '') ? m.img : '') })).filter(m => m.url);
+  const places = (venues || []).map(v => { const p = pl[String(v.name).toLowerCase()] || {};
+    // Menus: pictures (one per page) shown inside the page; older menus may still be a single file or a link
+    const menus = (Array.isArray(p.menus) ? p.menus : []).slice(0, 4).map(m => { m = m || {};
+      const pages = (Array.isArray(m.pages) ? m.pages : []).slice(0, 12).map(img).filter(Boolean);
+      if (!pages.length && m.type !== 'pdf' && (m.path || /\.(jpe?g|png|webp)$/i.test(m.img || ''))) { const one = img(m); if (one) pages.push(one); }
+      const url = pages.length ? '' : m.path ? img(m) : httpsOk(m.url) ? String(m.url).trim() : (/^\/demo-guest\/[a-z0-9._-]+$/i.test(m.img || '') ? m.img : '');
+      return { name: str(m.name, 30) || 'Menu', pages, url }; }).filter(m => m.pages.length || m.url);
     return { name: v.name, area: str(p.area || v.area || '', 30), img: img(p), ig: igName(p.ig), menus }; });
   // Colours (Guest page > Colours)
   const hex = v => /^#[0-9a-f]{6}$/i.test(v || '') ? v : '';

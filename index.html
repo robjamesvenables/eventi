@@ -2594,7 +2594,7 @@ body:not(.mv-demo) #ms-demoqr-btn{display:none!important}
 .mk-klow{display:flex;gap:12px;align-items:flex-start;background:#FFFBEB;border:1.5px solid #FCD34D;border-radius:14px;padding:12px 14px;margin-bottom:12px}.mk-klow>i{width:36px;height:36px;border-radius:10px;background:#F59E0B;color:#fff;display:flex;align-items:center;justify-content:center;flex:none;font-style:normal;font-weight:900;font-size:18px}
 .mk-klow>div{flex:1;min-width:0}.mk-klow b{display:block;font-size:14.5px;color:#0F1E2E}.mk-klow span{display:block;font-size:13px;color:#475569;margin-top:2px}.mk-klow .mki-btn{margin-top:10px}
 .mk-kok{background:#F0FDFA;border:1.5px solid #B9DDD6;border-radius:14px;padding:12px 14px;margin-bottom:12px}.mk-kok b{display:block;font-size:14.5px;color:#0F766E}.mk-kok span{display:block;font-size:13px;color:#475569;margin:2px 0 8px}
-.mk-kp{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.mk-kp button{border:2px solid #E2E8F0;background:#fff;border-radius:12px;padding:14px 4px;font:900 17px Inter,sans-serif;color:#0F1E2E;cursor:pointer}.mk-kp button.on{border-color:#0D9488;background:#F0FDFA;color:#0F766E}
+.mk-kp{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px}.mk-kp button{border:2px solid #E2E8F0;background:#fff;border-radius:12px;padding:14px 4px;font:900 17px Inter,sans-serif;color:#0F1E2E;cursor:pointer}.mk-kp button.on{border-color:#0D9488;background:#F0FDFA;color:#0F766E}
 .mki-card .mk-klow,.mki-card .mk-kok{margin:10px 0 8px}
 .mke-step{display:flex;gap:10px;align-items:flex-start;font-size:13.5px;color:#334155;line-height:1.45;margin:12px 0 6px}.mke-step>b{width:24px;height:24px;border-radius:50%;background:#0D9488;color:#fff;font-size:12.5px;display:flex;align-items:center;justify-content:center;flex:none}
 .mke-groups{display:grid;gap:8px;margin:8px 0 4px 34px}.mke-g{display:flex;align-items:center;gap:8px;background:#fff;border:1.5px solid #E2E8F0;border-radius:12px;padding:10px}.mke-g>div{flex:1;min-width:0}.mke-g b{display:block;font-size:14px}.mke-g small{font-size:12px;color:#64748B;font-weight:600}
@@ -21703,8 +21703,9 @@ function quickLinksDelete(id){
 const MS = { loaded:false, loading:false, notReady:false, members:[], visits:{}, keyrings:{}, q:'', filter:'all', stream:null, raf:null };
 const msEsc = v => String(v == null ? '' : v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 const msIsMgr = () => !myProfile || myProfile.is_owner || ['superadmin','director','manager'].includes(myProfile.role);
-const msVenue = () => { try{ const v = VENUES.find(x => x.id === currentVenue) || VENUES[0]; return v ? v.name : ''; }catch(e){ return ''; } };
-const msVenues = () => { try{ return VENUES.map(v => v.name); }catch(e){ return []; } };
+const msVenue = () => { if(typeof demoAs === 'function' && demoAs()){ const n = msVenues(); return n[0] || ''; } try{ const v = VENUES.find(x => x.id === currentVenue) || VENUES[0]; return v ? v.name : ''; }catch(e){ return ''; } };
+const msVenues = () => { if(typeof demoAs === 'function' && demoAs()) return (msPage().venues || []).map(v => v && v.name).filter(Boolean);   // demo dressed as a prospect: their places
+  try{ return VENUES.map(v => v.name); }catch(e){ return []; } };
 const msToday = () => { const d = new Date(); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); };
 // Mavis Club opens for companies on the Mavis Club plan, and in the Mavis Demo company (where it still shows as a Mavis Plus add-on)
 function msUnlocked(){ return (typeof appPlan !== 'undefined' && appPlan === 'membership') || (!!myProfile && typeof appIsDemoCompany === 'function' && appIsDemoCompany()); }
@@ -22068,15 +22069,15 @@ function msKeyState(){ const st = msJson('mk_stock'), left = st && st.left != nu
 function msKeyBox(){
   if(!msIsMgr()) return '';
   const k = msKeyState();
-  if(k.ord) return `<div class="mk-kok"><b>${k.ord.n} keyrings on the way</b><span>Ordered ${msEsc(new Date(k.ord.at).toLocaleDateString('en-GB', { weekday:'short', day:'numeric', month:'short' }))}. Usually up to a week.</span><button type="button" class="mki-btn ghost" onclick="msKeyArrived()">They've arrived</button></div>`;
-  if(k.low) return `<div class="mk-klow"><i>!</i><div><b>Only ${k.left} keyring${k.left === 1 ? '' : 's'} left</b><span>Order more now. Delivery can take up to a week.</span><button type="button" class="mki-btn" onclick="msKeyOrder()">Order more keyrings</button></div></div>`;
+  if(k.ord) return `<div class="mk-kok"><b>${k.ord.n} keyrings on the way</b><span>Ordered ${msEsc(new Date(k.ord.at).toLocaleDateString('en-GB', { weekday:'short', day:'numeric', month:'short' }))}. Usually 1 to 2 weeks.</span><button type="button" class="mki-btn ghost" onclick="msKeyArrived()">They've arrived</button></div>`;
+  if(k.low) return `<div class="mk-klow"><i>!</i><div><b>Only ${k.left} keyring${k.left === 1 ? '' : 's'} left</b><span>Order more now. New keyrings take 1 to 2 weeks.</span><button type="button" class="mki-btn" onclick="msKeyOrder()">Order more keyrings</button></div></div>`;
   return '';
 }
 window.msKeyOrder = function(){
   let n = 50;
   const o = msSheet(`<div class="vdf-h"><b>Order more keyrings</b><div class="dpt-sub">They're made and delivered by Mavis</div></div>
-    <div class="vdf-body"><div class="vdf-f"><span>HOW MANY KEYRINGS?</span><div class="mk-kp" id="mk-kp">${[20, 50, 100].map(x => `<button type="button" data-n="${x}" class="${x === n ? 'on' : ''}">${x}</button>`).join('')}</div></div>
-      <div class="vd-note">${vdSvg('note', 15)}<span>Only order what you'll hand out. Delivery can take up to a week.</span></div></div>
+    <div class="vdf-body"><div class="vdf-f"><span>HOW MANY KEYRINGS?</span><div class="mk-kp" id="mk-kp">${[50, 100, 150, 200, 250].map(x => `<button type="button" data-n="${x}" class="${x === n ? 'on' : ''}">${x}</button>`).join('')}</div></div>
+      <div class="vd-note">${vdSvg('note', 15)}<span>Keyrings come in packs of 50. They're made for you, so allow 1 to 2 weeks. Run out? New members still get their app on WhatsApp.</span></div></div>
     <div class="vdf-foot"><button class="mns-cancel" onclick="msSheetClose()">Cancel</button><button class="mns-go" id="mk-ksend">Send order to Mavis</button></div>`);
   o.querySelectorAll('#mk-kp button').forEach(b => b.onclick = () => { n = +b.dataset.n; o.querySelectorAll('#mk-kp button').forEach(x => x.classList.toggle('on', x === b)); });
   o.querySelector('#mk-ksend').onclick = async () => {

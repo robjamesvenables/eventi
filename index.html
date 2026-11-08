@@ -22409,7 +22409,11 @@ window.msCompose = function(kind, aud, type){
     let ids = msAud(a.dataset.k, kind).map(m => m.id);
     if(!ids.length){ toast(AL ? 'Nobody in that group has notifications on yet' : 'Nobody in that group yet'); return; }
     const sk = o.querySelector('#mkc-skip'); if(sk && sk.checked){ const r = msRecent(); ids = ids.filter(id => !r[id]); }
-    if(!ids.length){ toast('Everyone in that group heard from you recently - try again in a few days'); return; }
+    if(!ids.length){   // everyone heard from you lately: say so plainly, and let the manager send anyway with one more tap
+      sk.checked = false; const g = o.querySelector('#mkc-go'); g.textContent = 'Send anyway';
+      const wbox = o.querySelector('.mkr-warn'); if(wbox){ wbox.querySelector('label').style.display = 'none'; const n = document.createElement('div'); n.style.cssText = 'margin-top:6px;font-weight:800'; n.textContent = 'That\'s everyone in this group. Tap Send anyway if you\'re sure.'; wbox.querySelector('div').appendChild(n); wbox.scrollIntoView({ block:'center', behavior:'smooth' }); }
+      return;
+    }
     const now = new Date().toISOString();
     if(AL){
       const go = o.querySelector('#mkc-go'); go.disabled = true; go.textContent = 'Sending…';

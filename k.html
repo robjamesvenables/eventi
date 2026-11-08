@@ -110,6 +110,10 @@ svg{display:block}
 .sd .ov small{display:block;font-size:13px;color:#E2E8F0;margin-top:4px;line-height:1.35}
 .sd .ov a{display:inline-flex;align-items:center;gap:7px;margin-top:10px;background:white;color:#0F1E2E;text-decoration:none;font-size:13px;font-weight:800;border-radius:10px;padding:8px 12px}
 .dots{display:flex;justify-content:center;gap:6px;margin-top:12px}
+/* slow photo slideshow (gentle zoom on the photo in view, moves on by itself) */
+.mo .sd img{transform:scale(1.02);transition:transform 7s ease-out}
+.mo .sd.live img{transform:scale(1.12)}
+@media (prefers-reduced-motion:reduce){.mo .sd img,.mo .sd.live img{transform:none;transition:none}}
 .dots i{width:6px;height:6px;border-radius:3px;background:var(--top-ink,#fff);opacity:.3;transition:width .2s,opacity .2s}
 .dots i.on{width:20px;opacity:1}
 .deal{display:flex;background:white;border-radius:18px;overflow:hidden;margin-bottom:10px;box-shadow:0 1px 3px rgba(15,30,46,.07)}
@@ -269,7 +273,7 @@ svg{display:block}
     '<div class="hi">' + hi + '</div><div class="hi-s">' + sub + '</div></div>'; };
 
   // Staff preview: a small quiet label in the corner (none inside the editor's live preview)
-  if (preview && !/[?&]embed=1/.test(location.search)) { var pv = document.createElement('div'); pv.className = 'pv'; pv.textContent = 'Preview'; document.body.appendChild(pv); }
+  if (preview && SAMPLES.indexOf(code) < 0 && !/[?&]embed=1/.test(location.search)) { var pv = document.createElement('div'); pv.className = 'pv'; pv.textContent = 'Preview'; document.body.appendChild(pv); }
   if (!code) { root.innerHTML = '<div class="w">' + head({ brand:'Members Club' }, 'Members Club', 'This link is missing its keyring code.') + '</div>'; return; }
 
   fetch('/api/member-card?code=' + encodeURIComponent(code) + (preview ? '&pv=1' : '')).then(function(r){ return r.json(); }).then(function(d){
@@ -552,6 +556,19 @@ svg{display:block}
         var idx = 0, step = function(){ return sl.children[1] ? sl.children[1].offsetLeft - sl.children[0].offsetLeft : sl.clientWidth; };
         sl.addEventListener('scroll', function(){ var i = Math.round(sl.scrollLeft / step()); if (i !== idx) { idx = i; Array.prototype.forEach.call(dots.children, function(t, k){ t.className = k === idx ? 'on' : ''; }); } }, { passive: true });
         Array.prototype.forEach.call(dots.children, function(t, k){ t.onclick = function(){ sl.scrollTo({ left: k * step(), behavior: 'smooth' }); }; });
+      }
+      if (sl && gp.motion && sl.children.length > 1) {
+        var calm = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches, held = 0, cur = -1;
+        sl.parentNode.classList.add('mo');
+        var live = function(){ var i = Math.round(sl.scrollLeft / (sl.children[1].offsetLeft - sl.children[0].offsetLeft)); if (i !== cur) { cur = i; Array.prototype.forEach.call(sl.children, function(c, k){ c.classList.toggle('live', k === i); }); } };
+        sl.addEventListener('scroll', live, { passive: true }); setTimeout(live, 60);
+        ['touchstart', 'pointerdown', 'wheel'].forEach(function(ev){ sl.addEventListener(ev, function(){ held = Date.now(); }, { passive: true }); });
+        if (!calm) setInterval(function(){
+          if (document.hidden || Date.now() - held < 9000) return;
+          var r = sl.getBoundingClientRect(); if (r.bottom < 0 || r.top > innerHeight) return;
+          var w = sl.children[1].offsetLeft - sl.children[0].offsetLeft, n = sl.children.length, nx = (Math.round(sl.scrollLeft / w) + 1) % n;
+          sl.scrollTo({ left: nx * w, behavior: nx ? 'smooth' : 'auto' });
+        }, 5500);
       }
     };
     if (!preview) document.addEventListener('click', function(e){ var a = e.target.closest && e.target.closest('[data-hit]'); if (a) try { fetch('/api/gp?a=hit&code=' + encodeURIComponent(d.code) + '&i=' + encodeURIComponent(a.getAttribute('data-hit')), { keepalive: true }); } catch (x) {} });

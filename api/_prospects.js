@@ -72,12 +72,14 @@ P.trans = {
   content: today => {
     const y = year(today);
     return {
-      theme: { top: '#7A1F1F', acc: '#B8923A', pg: '#F7F3EC' },
+      theme: { top: '#7A1F1F', acc: '#B8923A', pg: '#F7F3EC' }, motion: true,
       slides: [
-        { id: 'ts1', img: tr('pool'), title: 'The lagoon pool', line: '80 metres, with its own sand beach', venue: 'The Trans Resort Bali', btn: 'book', url: TRANS_BOOK },
-        { id: 'ts2', img: tr('rooftop'), title: 'Sunsets at The 18th', line: 'Rooftop cocktails and tapas', venue: 'The Trans Resort Bali' },
-        { id: 'ts3', img: tr('villapool'), title: 'Private pool villas', line: 'Your own garden and pool', venue: 'The Trans Resort Bali', btn: 'book', url: TRANS_BOOK },
-        { id: 'ts4', img: tr('spa'), title: 'The spa', line: 'Balinese treatments, members save 15%', venue: 'The Trans Resort Bali' }
+        { id: 'ts1', img: tr('pool'), title: 'The lagoon pool', line: 'Swim up to the bar as the sun goes down', venue: 'The Trans Resort Bali', btn: 'book', url: TRANS_BOOK },
+        { id: 'ts2', img: tr('rooftop'), title: 'Sunsets at The 18th', line: 'Rooftop cocktails over Seminyak', venue: 'The Trans Resort Bali' },
+        { id: 'ts3', img: tr('villa'), title: 'Private pool villas', line: 'Wake up steps from your own pool', venue: 'The Trans Resort Bali', btn: 'book', url: TRANS_BOOK },
+        { id: 'ts4', img: tr('dining'), title: 'Poolside dining', line: 'Breakfast to dinner, all day', venue: 'The Trans Resort Bali' },
+        { id: 'ts5', img: tr('spa'), title: 'The spa', line: 'Balinese treatments, members save 15%', venue: 'The Trans Resort Bali' },
+        { id: 'ts6', img: tr('balcony'), title: 'Suites with a view', line: 'Your own bath on the balcony', venue: 'The Trans Resort Bali', btn: 'book', url: TRANS_BOOK }
       ],
       deals: [
         { id: 'td1', img: tr('rooftop'), title: 'Rooftop happy hour · 2 for 1', when: 'Daily · 5–7pm', venue: 'The Trans Resort Bali' },

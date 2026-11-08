@@ -29,8 +29,8 @@ const P = {
         slides: [
           { id: 'ps1', img: sh('fire'), title: 'Grilled over fire', line: 'Whole fish on the open pit', venue: 'Shelter Pererenan', btn: 'book', url: SHELTER_BOOK },
           { id: 'ps2', img: sh('scallops'), title: 'Wood roasted moon scallops', line: 'Lemon butter, chilli salt', venue: 'Shelter Pererenan', btn: 'book', url: SHELTER_BOOK },
-          { id: 'ps3', img: sh('drink'), title: 'The Sinaloa', line: 'Mezcal, tequila reposado, agave, cucumber', venue: 'Shelter Pererenan' },
-          { id: 'ps4', img: sh('coals'), title: 'Charred over the coals, by hand', line: 'Wood fired Middle Eastern & Mediterranean', venue: 'Shelter Uluwatu' }
+          { id: 'ps3', img: sh('drink'), title: 'The Sinaloa', line: 'Mezcal, reposado, agave, cucumber', venue: 'Shelter Pererenan' },
+          { id: 'ps4', img: sh('coals'), title: 'Charred over coals, by hand', line: 'Wood-fired Middle Eastern', venue: 'Shelter Uluwatu' }
         ],
         deals: [
           { id: 'pd1', img: sh('drink'), title: 'Mezcal hour · 2 for 1 Sinaloa', when: 'Daily · 5–7pm', venue: 'Shelter Pererenan' },
@@ -40,7 +40,7 @@ const P = {
         events: [
           { id: 'pe1', img: sh('coals'), title: 'Shelter Sessions Vol. 12', line: 'Guest chef, one night only', date: addDays(today, 9), time: '18:00', time2: '23:00', venue: 'Shelter Pererenan', btn: 'tickets', url: SHELTER_BOOK, hl: true,
             details: 'A guest chef joins the Shelter team at the fire for one night - a set menu cooked over wood, with paired drinks.', price: 'Set menu, paired drinks available', notes: 'Members get first pick of tables.' },
-          { id: 'pe2', img: sh('fire'), title: 'Bonfire Sessions', line: 'An intimate fireside night with Charlie Pretet', date: addDays(today, 4), time: '19:00', time2: '23:00', venue: 'Shelter Pererenan', btn: 'book', url: SHELTER_BOOK,
+          { id: 'pe2', img: sh('fire'), title: 'Bonfire Sessions', line: 'Fireside night with Charlie Pretet', date: addDays(today, 4), time: '19:00', time2: '23:00', venue: 'Shelter Pererenan', btn: 'book', url: SHELTER_BOOK,
             details: 'Live music around the fire pit, wood-fired sharing plates and the bar open late.' },
           { id: 'pe3', img: sh('octopus'), title: 'Christmas by the fire', line: 'Long table lunch, cooked over wood', date: y + '-12-25', time: '12:00', time2: '17:00', venue: 'Shelter Pererenan', btn: 'book', url: SHELTER_BOOK,
             details: 'A Christmas long lunch from the fire - whole roasted fish, slow cooked meats and all the sides.' },
@@ -78,14 +78,14 @@ P.trans = {
     return {
       theme: { top: '#7A1F1F', acc: '#B8923A', pg: '#F7F3EC' }, motion: true, video: '/demo-guest/p-trans-film.mp4',
       slides: [
-        { id: 'ts1', img: tr('pool'), title: 'The lagoon pool', line: 'Swim up to the bar as the sun goes down', venue: '', btn: 'book', url: TRANS_BOOK },
+        { id: 'ts1', img: tr('pool'), title: 'The lagoon pool', line: 'Swim-up bar as the sun goes down', venue: '', btn: 'book', url: TRANS_BOOK },
         { id: 'ts2', img: tr('rooftop'), title: 'Sunsets at The 18th', line: 'Rooftop cocktails over Seminyak', venue: 'The 18th Rooftop Bar' },
         { id: 'ts9', img: tr('18couple'), title: 'Sunset dinner for two', line: 'A private table on the rooftop', venue: 'The 18th Rooftop Bar', btn: 'book', url: TRANS_BOOK },
         { id: 'ts3', img: tr('villa'), title: 'Private pool villas', line: 'Wake up steps from your own pool', venue: '', btn: 'book', url: TRANS_BOOK },
-        { id: 'ts4', img: tr('restoroom'), title: 'The Restaurant', line: 'Breakfast to dinner, right by the pool', venue: 'The Restaurant' },
-        { id: 'ts7', img: tr('lobster'), title: 'Lobster thermidor', line: 'Baked with cheese, served with garlic rice', venue: 'The Restaurant' },
-        { id: 'ts8', img: tr('llcocktails'), title: 'Cocktails in the lobby', line: 'Shaken at the bar, served to your sofa', venue: 'The Lobby Lounge' },
-        { id: 'ts5', img: tr('spa'), title: 'The spa', line: 'Balinese treatments, members save 15%', venue: '' },
+        { id: 'ts4', img: tr('restoroom'), title: 'The Restaurant', line: 'Breakfast to dinner, by the pool', venue: 'The Restaurant' },
+        { id: 'ts7', img: tr('lobster'), title: 'Lobster thermidor', line: 'Baked with cheese, garlic rice', venue: 'The Restaurant' },
+        { id: 'ts8', img: tr('llcocktails'), title: 'Cocktails in the lobby', line: 'Shaken at the bar, served to you', venue: 'The Lobby Lounge' },
+        { id: 'ts5', img: tr('spa'), title: 'The spa', line: 'Balinese treatments, members 15% off', venue: '' },
         { id: 'ts6', img: tr('balcony'), title: 'Suites with a view', line: 'Your own bath on the balcony', venue: '', btn: 'book', url: TRANS_BOOK }
       ],
       deals: [

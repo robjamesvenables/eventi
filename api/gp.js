@@ -199,7 +199,8 @@ module.exports = async (req, res) => {
       const icon = pro && pro.logo ? pro.logo : '/api/gp?a=icon&c=' + code;   // a plain image file where we have one (phones are fussy about icons behind redirects)
       const icons = pro && pro.icon ? [{ src: pro.icon + '-192.png', sizes: '192x192', type: 'image/png', purpose: 'any' }, { src: pro.icon + '-512.png', sizes: '512x512', type: 'image/png', purpose: 'any' }] : null;
       res.setHeader('Content-Type', 'application/manifest+json'); res.setHeader('Cache-Control', 'public, max-age=300');
-      return res.status(200).send(JSON.stringify({ id: '/k/' + code, name: name + ' Membership', short_name: GP.shortName(name), start_url: '/k/' + code + '?home=1', scope: '/k/' + code, display: 'standalone',
+      return res.status(200).send(JSON.stringify({ id: '/k/' + code, name: name + ' Membership', short_name: 'Membership',   // under the icon: never clashes with the venue's own app; their logo says whose it is
+        start_url: '/k/' + code + '?home=1', scope: '/k/' + code, display: 'standalone',
         background_color: col, theme_color: col, icons: icons || [{ src: icon, sizes: '192x192', type: /\.png$/.test(icon) ? 'image/png' : undefined, purpose: 'any' }, { src: icon, sizes: '512x512', type: /\.png$/.test(icon) ? 'image/png' : undefined, purpose: 'any' }] }));
     }
     if (a === 'icon') {   // the venue's own logo as the app icon on the guest's home screen (Mavis icon if they have none)

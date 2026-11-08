@@ -68,18 +68,22 @@ async function feedback(req, res){
   list.unshift({ id: Date.now().toString(36), at: new Date().toISOString(), stars, text, venue, mid: m.id, name: String(m.name || '').slice(0, 60), done: stars >= 4 });
   list = list.slice(0, 300);
   await L.db('app_settings?on_conflict=company_id,key', { method: 'POST', body: { company_id: co, key: 'mk_feedback', value: JSON.stringify(list) }, headers: { Prefer: 'resolution=merge-duplicates,return=minimal' } });
-  if (stars <= 3) await fbPush(co, stars, text, venue, m).catch(() => {});
+  if (stars <= 3) await fbPush(co, stars, text, venue, m, list[0].id).catch(() => {});
   return L.send(res, 200, { ok: true });
 }
-async function fbPush(co, stars, text, venue, m){
+async function fbPush(co, stars, text, venue, m, fid){
   const KEY = process.env.VAPID_PRIVATE_KEY || ''; if (!KEY) return;
   const webpush = require('web-push');
   const people = await L.db('profiles?select=id,role,is_owner,active&company_id=eq.' + encodeURIComponent(co));
-  const ids = people.filter(p => p.active !== false && (p.is_owner || ['superadmin', 'director', 'manager'].includes(p.role))).map(p => encodeURIComponent(p.id));
+  // Who: the people picked in Mavis Club > Settings > Guest feedback alerts; nobody picked = all managers
+  const st = (await L.db('app_settings?select=value&key=eq.mk_settings&company_id=eq.' + encodeURIComponent(co)).catch(() => []))[0];
+  let pick = []; try { let x = st && st.value; while (typeof x === 'string') x = JSON.parse(x); pick = (x && Array.isArray(x.fbto) ? x.fbto : []).map(String); } catch (e) {}
+  const live = people.filter(p => p.active !== false);
+  const ids = (pick.length ? live.filter(p => pick.includes(String(p.id))) : live.filter(p => p.is_owner || ['superadmin', 'director', 'manager'].includes(p.role))).map(p => encodeURIComponent(p.id));
   if (!ids.length) return;
   const subs = await L.db('push_subs?select=*&profile_id=in.(' + ids.join(',') + ')');
   webpush.setVapidDetails('mailto:hello@getmavis.co', 'BGfKLEwZ6ZDqoozMUz2jqNJonJni6l-sA2FU8yHkUAm5FnnwHb44ZGBlEolJXr4QSZospqPa1_z-N2dMjTtKCJc', KEY);
-  const payload = JSON.stringify({ title: stars + '★ feedback' + (venue ? ' · ' + venue : ''), body: (String(m.name || 'A member').split(' ')[0]) + (text ? ': ' + text.slice(0, 120) : ' left ' + stars + ' star' + (stars === 1 ? '' : 's')), thread: 'mkfb', url: '/?membership=insights', who: 'Feedback' });
+  const payload = JSON.stringify({ title: stars + '★ feedback' + (venue ? ' · ' + venue : ''), body: (String(m.name || 'A member').split(' ')[0]) + (text ? ': ' + text.slice(0, 120) : ' left ' + stars + ' star' + (stars === 1 ? '' : 's')), thread: 'mkfb-' + fid, url: '/?feedback=' + encodeURIComponent(fid), who: 'Feedback' });
   await Promise.all(subs.map(sub => webpush.sendNotification({ endpoint: sub.endpoint, keys: { p256dh: sub.p256dh, auth: sub.auth } }, payload, { TTL: 86400 }).catch(() => {})));
 }
 

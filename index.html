@@ -22775,9 +22775,8 @@ function msVenueRow(v){
       <div class="ms-vsub">CONTACT <small>the Contact button on this place's page</small></div>
       <div class="ms-seg" role="radiogroup"><button type="button" data-own="0" class="${v.own ? '' : 'on'}" onclick="msOwn(this)">Same as main contact</button><button type="button" data-own="1" class="${v.own ? 'on' : ''}" onclick="msOwn(this)">This place's own</button></div>
       <div class="ms-ownf"${v.own ? '' : ' hidden'}>
-        <div class="ms-vhint" style="margin:8px 0 0">Uses this place's WhatsApp and phone from Booking above. Add an email or Instagram too if this place has its own. Empty boxes use the main contact.</div>
+        <div class="ms-vhint" style="margin:8px 0 0">Uses this place's WhatsApp and phone from Booking above, and its Instagram from Guest page &gt; Our places. Add an email if it has its own. Empty boxes use the main contact.</div>
         <div class="ms-vf"><i>${sv(ic.mail)}</i><input class="ms-ve" type="email" inputmode="email" autocapitalize="off" placeholder="This place's email (optional)" value="${msEsc(v.email || '')}"></div>
-        <div class="ms-vf"><i>${MS_SV(MS_IC.ig)}</i><input class="ms-vig" autocapitalize="off" placeholder="This place's Instagram (optional)" value="${msEsc(v.ig || '')}"></div>
       </div>
       <div class="ms-bkp" data-ctp></div>
       <div class="ms-vbtns"><button type="button" class="ms-vdel" onclick="this.closest('.ms-vbox').remove()">Remove venue</button><button type="button" class="ms-vok" onclick="this.closest('.ms-vbox').classList.remove('open')">Done</button></div>
@@ -22816,7 +22815,7 @@ window.msVenueSum = function(b){
     const own = b.querySelector('.ms-seg .on').dataset.own === '1', here = name || 'this place', rows = [];
     const pick = (label, mine, main) => { if(own && mine) rows.push([label, here]); else if(main) rows.push([label, 'main']); };
     pick('Call us', q('.ms-vp'), msMain('ms-c-phone')); pick('WhatsApp', q('.ms-vw'), msMain('ms-c-wa')); pick('Email', q('.ms-ve'), msMain('ms-c-email'));
-    pick('Directions', q('.ms-vm'), msMain('ms-c-map')); pick('Instagram', q('.ms-vig'), msMain('ms-c-ig'));
+    pick('Directions', q('.ms-vm'), msMain('ms-c-map')); pick('Instagram', (typeof GPE !== 'undefined' && GPE.c && GPE.c.places && (GPE.c.places[name.toLowerCase()] || {}).ig) || '', msMain('ms-c-ig'));
     cp.innerHTML = rows.length ? `<small>GUESTS ON ${msEsc(here.toUpperCase())}'S PAGE SEE (TAP CONTACT)</small><div class="r">${rows.map(x => `<span>${x[0]}<i>${x[1] === 'main' ? 'main contact' : msEsc(x[1])}</i></span>`).join('')}</div>` : `<small>GUESTS WILL SEE</small><em>Nothing yet - fill in the main Contact box at the top.</em>`;
   }
   const got = [q('.ms-vb') && 'Booking link', q('.ms-vm') && 'Map', q('.ms-vw') && 'WhatsApp', q('.ms-vp') && 'Phone', q('.ms-ve') && 'Email', q('.ms-vr') && 'Google reviews'].filter(Boolean);
@@ -22878,7 +22877,7 @@ window.msTiers = function(){
     const venues = [...document.querySelectorAll('#ms-vlist .ms-vbox')].map(b => ({
       name: b.querySelector('.ms-vn').value.trim(), opens: b.querySelector('.ms-vo').value, closes: b.querySelector('.ms-vc').value,
       map: b.querySelector('.ms-vm').value.trim(), book: b.querySelector('.ms-vb').value.trim(), wa: b.querySelector('.ms-vw').value.replace(/\D/g, ''), phone: b.querySelector('.ms-vp').value.trim(), email: b.querySelector('.ms-ve').value.trim(), review: b.querySelector('.ms-vr').value.trim(),
-      own: b.querySelector('.ms-seg .on').dataset.own === '1', ig: b.querySelector('.ms-vig').value.trim().replace(/^@/, '').replace(/^https?:\/\/(www\.)?instagram\.com\//i, '').replace(/[/?].*$/, '')
+      own: b.querySelector('.ms-seg .on').dataset.own === '1'
     })).filter(v => v.name);
     const badMail = venues.find(v => v.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.email));
     if(badMail){ toast('The email for ' + badMail.name + ' doesn\'t look right'); return; }
@@ -22888,7 +22887,7 @@ window.msTiers = function(){
     const bad = venues.find(v => v.map && !/^https?:\/\//i.test(v.map));
     if(bad){ toast('The map link for ' + bad.name + ' should start with https://'); return; }
     const fixUrl = u => u && !/^https?:\/\//i.test(u) ? 'https://' + u : u, okUrl = u => !u || /^https:\/\/[^\s]+\.[^\s]+/i.test(u);
-    venues.forEach(v => { v.book = fixUrl(v.book); if(!v.book) delete v.book; if(!v.own) delete v.own; if(!v.ig) delete v.ig; });
+    venues.forEach(v => { v.book = fixUrl(v.book); if(!v.book) delete v.book; if(!v.own) delete v.own; delete v.ig; });
     const badBk = venues.find(v => !okUrl(v.book)); if(badBk){ toast('The booking link for ' + badBk.name + ' should start with https://'); return; }
     const gv = id => document.getElementById(id).value.trim();
     const contact = { phone: gv('ms-c-phone'), wa: gv('ms-c-wa').replace(/\D/g, ''), email: gv('ms-c-email'), map: fixUrl(gv('ms-c-map')), ig: gv('ms-c-ig').replace(/^@/, '').replace(/^https?:\/\/(www\.)?instagram\.com\//i, '').replace(/[/?].*$/, '') };

@@ -22266,7 +22266,7 @@ function msRecent(){
 function msRecentWarn(ids){
   const r = msRecent(), hit = ids.filter(id => r[id]); if(!hit.length) return null;
   const last = hit.map(id => r[id]).sort((a, b) => b.t - a.t)[0], d = Math.floor((new Date().setHours(0, 0, 0, 0) - new Date(last.t).setHours(0, 0, 0, 0)) / 864e5);
-  const what = { email:'an email', wa:'a WhatsApp', alert:'a phone alert' }[last.kind] || 'a message', when = d <= 0 ? 'today' : d === 1 ? 'yesterday' : d + ' days ago';
+  const what = { email:'an email', wa:'a WhatsApp', alert:'a notification' }[last.kind] || 'a message', when = d <= 0 ? 'today' : d === 1 ? 'yesterday' : d + ' days ago';
   return { n: hit.length, of: ids.length, text: (hit.length === ids.length ? (ids.length === 1 ? 'They' : 'All ' + ids.length) : hit.length + ' of these ' + ids.length) + ' got ' + what + ' ' + when + '.', ids: hit };
 }
 function msAudList(){
@@ -22344,7 +22344,7 @@ async function msMessagesRender(){
   el.innerHTML = `<div class="mkm-new${can ? ' three' : ''}">
       <button onclick="msCompose('email')"><i><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-10 6L2 7"/></svg></i><b>${can ? 'New email' : 'Ask to send an email'}</b><small>From your own email, free</small></button>
       <button onclick="msCompose('wa')"><i class="wa">${vdSvg('wa', 20)}</i><b>${can ? 'New WhatsApp' : 'Ask to send a WhatsApp'}</b><small>One by one, from your phone</small></button>
-      ${can ? `<button onclick="msCompose('alert')"><i class="al"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.9 1.9 0 0 0 3.4 0"/></svg></i><b>New phone alert</b><small>Pops up on their phone, free</small></button>` : ''}</div>
+      ${can ? `<button onclick="msCompose('alert')"><i class="al"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.9 1.9 0 0 0 3.4 0"/></svg></i><b>New notification</b><small>Pops up on their phone, free</small></button>` : ''}</div>
     ${can ? msBatchDue().map(x => `<button class="mke-due" onclick="msEmailOpen('${x.c.id}')"><i><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-10 6L2 7"/></svg></i><span><b>Batch ${x.i + 1} of ${x.n} is ready to send today</b><small>${msEsc(x.c.subject || 'Email')}</small></span><em>Open</em></button>`).join('') : ''}
     ${waiting.length && can ? `<div class="mks-h">WAITING FOR YOUR OK</div><div class="mks-card">${waiting.map(row).join('')}</div>` : ''}
     <div class="mks-h">SENT</div>
@@ -22367,7 +22367,7 @@ window.msCompose = function(kind, aud, type){
   aud = aud || 'all'; type = type || '';
   const t = MK_TYPES[type];
   const AL = kind === 'alert', tk = gpKeyring() || '';
-  const o = msSheet(`<div class="vdf-h"><b>${AL ? 'New phone alert' : kind === 'email' ? 'New email' : 'New WhatsApp'}</b><div class="dpt-sub">${AL ? 'Pops up on their phone like a message - free. Only members who turned on alerts get it.' : kind === 'email' ? 'You send it from your own email - free. We split the list into batches for you.' : 'You send them one by one from this phone'}</div></div>
+  const o = msSheet(`<div class="vdf-h"><b>${AL ? 'New notification' : kind === 'email' ? 'New email' : 'New WhatsApp'}</b><div class="dpt-sub">${AL ? 'Pops up on their phone like a message - free. Only members who turned on notifications get it.' : kind === 'email' ? 'You send it from your own email - free. We split the list into batches for you.' : 'You send them one by one from this phone'}</div></div>
     <div class="vdf-body">
       <div class="vdf-f"><span>WHO GETS IT</span><div class="vdf-pills" id="mkc-aud">${msAudList().map(([k, n]) => { const c = msAud(k, kind).length; return `<button type="button" class="vdf-pill${k === aud ? ' on' : ''}" data-k="${msEsc(k)}"${c ? '' : ' disabled'}>${msEsc(n)} <em>${c}</em></button>`; }).join('')}</div></div>
       <div class="vdf-f"><span>WHAT'S IT ABOUT? <small>we write it for you</small></span><div class="vdf-pills" id="mkc-type">${Object.entries(MK_TYPES).map(([k, v]) => `<button type="button" class="vdf-pill${k === type ? ' on' : ''}" data-k="${k}">${msEsc(v[0])}</button>`).join('')}</div></div>
@@ -22376,11 +22376,11 @@ window.msCompose = function(kind, aud, type){
       <label class="vdf-f"><span>MESSAGE</span><textarea id="mkc-body" rows="${AL ? 3 : 6}" maxlength="${AL ? 180 : 900}" placeholder="Pick what it's about above, or write your own">${t ? msEsc(msAlertCut(s.emoji.on ? t[2] : msNoEmo(t[2]), AL)) : ''}</textarea></label>
       ${s.emoji.on ? `<div class="mkc-emo">${MK_EMO.map(e => `<button type="button" data-e="${e}">${e}</button>`).join('')}</div>` : ''}
       ${AL ? `<div class="vdf-f"><span>WHAT THEY SEE</span><div class="mka-prev"><div class="mka-n"><img src="${msEsc((myCompany && myCompany.logo) || '/icon-192-v6.png')}" alt=""><div><small>${msEsc((myCompany && myCompany.name) || 'Members Club')} · now</small><b id="mka-t"></b><p id="mka-b"></p></div></div></div></div>
-        <div class="mkc-tip">Short is best - phones cut long alerts. Tapping it opens their member page. ${tk ? '' : ''}</div>
+        <div class="mkc-tip">Short is best - phones cut long notifications. Tapping it opens their member page. ${tk ? '' : ''}</div>
         <div class="mka-test"><span class="mkc-tip" style="margin:0">Try it first on keyring</span><input id="mka-code" maxlength="16" value="${msEsc(tk)}" placeholder="CODE"><button type="button" id="mka-testgo">Send me a test</button></div>`
       : `<div class="mkc-tip"><b>{name}</b> = their first name · <b>{venue}</b> = their favourite place · change anything in [brackets]. Only members who said yes to offers get it.</div>`}
     </div>
-    <div class="vdf-foot"><button class="mns-cancel" onclick="msSheetClose()">Cancel</button><button class="mns-go" id="mkc-go">${can ? (AL ? 'Send alert' : kind === 'email' ? 'Next' : 'Start sending') : 'Ask a manager'}</button></div>`);
+    <div class="vdf-foot"><button class="mns-cancel" onclick="msSheetClose()">Cancel</button><button class="mns-go" id="mkc-go">${can ? (AL ? 'Send notification' : kind === 'email' ? 'Next' : 'Start sending') : 'Ask a manager'}</button></div>`);
   const body = o.querySelector('#mkc-body'), sub = o.querySelector('#mkc-sub');
   // Heard from you lately? Say so, and leave them out unless the manager says otherwise
   const warn = () => { const a = o.querySelector('#mkc-aud .vdf-pill.on'), el = o.querySelector('#mkc-warn'); if(!el) return;
@@ -22396,7 +22396,7 @@ window.msCompose = function(kind, aud, type){
     tb.disabled = true; tb.textContent = 'Sending…';
     const r = await msAlertSend({ mk_alert: { title, body: text }, test: code });
     tb.disabled = false; tb.textContent = 'Send me a test';
-    toast(r.ok ? 'Test sent ✓ - check your phone' : r.why === 'no-phone' ? 'That keyring hasn\'t turned on alerts yet - open its page and tap Turn on' : r.why === 'off' ? 'Phone alerts aren\'t switched on for Mavis yet' : 'Not sent - try again');
+    toast(r.ok ? 'Test sent ✓ - check your phone' : r.why === 'no-phone' ? 'That keyring hasn\'t turned on notifications yet - open its page and tap Turn on' : r.why === 'off' ? 'Notifications aren\'t switched on for Mavis yet' : 'Not sent - try again');
   };
   o.querySelectorAll('.mkc-emo button').forEach(b => b.onclick = () => { const p = body.selectionStart != null ? body.selectionStart : body.value.length; body.value = body.value.slice(0, p) + b.dataset.e + body.value.slice(p); body.focus(); body.selectionStart = body.selectionEnd = p + b.dataset.e.length; });
   o.querySelector('#mkc-go').onclick = async () => {
@@ -22407,15 +22407,15 @@ window.msCompose = function(kind, aud, type){
     if(sub && !subject){ toast(AL ? 'Add a title' : 'Add a subject'); return; }
     if(/\[[^\]]+\]/.test(text + subject)){ toast('Change the words in [brackets] first'); body.focus(); return; }
     let ids = msAud(a.dataset.k, kind).map(m => m.id);
-    if(!ids.length){ toast(AL ? 'Nobody in that group has alerts on yet' : 'Nobody in that group yet'); return; }
+    if(!ids.length){ toast(AL ? 'Nobody in that group has notifications on yet' : 'Nobody in that group yet'); return; }
     const sk = o.querySelector('#mkc-skip'); if(sk && sk.checked){ const r = msRecent(); ids = ids.filter(id => !r[id]); }
     if(!ids.length){ toast('Everyone in that group heard from you recently - try again in a few days'); return; }
     const now = new Date().toISOString();
     if(AL){
       const go = o.querySelector('#mkc-go'); go.disabled = true; go.textContent = 'Sending…';
       const r = await msAlertSend({ mk_alert: { title: subject, body: msAlertText(text) }, mids: msDemo() ? undefined : ids.map(String) });
-      go.disabled = false; go.textContent = 'Send alert';
-      if(!r.ok && !(r.demo && msDemo())){ toast(r.why === 'nobody' ? 'Nobody has turned on alerts yet' : r.why === 'off' ? 'Phone alerts aren\'t switched on for Mavis yet' : 'Not sent - try again'); return; }
+      go.disabled = false; go.textContent = 'Send notification';
+      if(!r.ok && !(r.demo && msDemo())){ toast(r.why === 'nobody' ? 'Nobody has turned on notifications yet' : r.why === 'off' ? 'Notifications aren\'t switched on for Mavis yet' : 'Not sent - try again'); return; }
       const c = { id: 'c' + Date.now().toString(36), kind: 'alert', aud: a.dataset.k, type: ty ? ty.dataset.k : 'own', subject, body: msAlertText(text), ids, by: myProfile ? myProfile.id : null, at: now, go: now, ok_by: myProfile ? myProfile.id : null, status: 'sent', sent: Object.fromEntries(ids.map(id => [id, 1])), phones: r.ok ? r.sent : ids.length };
       const l = msMsgs(); l.unshift(c); await msMsgsSave(l);
       msSheetClose(); msRender(); setTimeout(() => toast('Sent to ' + c.phones + ' phone' + (c.phones === 1 ? '' : 's') + ' ✓'), 80); return;

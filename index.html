@@ -2275,6 +2275,9 @@ body:not(.mv-demo) #ms-demoqr-btn{display:none!important}
 .ms-seg button{border:0;background:none;border-radius:8px;padding:9px 6px;font:700 13px Inter,sans-serif;color:#64748B;cursor:pointer;min-width:0}
 .ms-seg button.on{background:white;color:#0F1E2E;box-shadow:0 1px 3px rgba(15,30,46,.12)}
 .ms-bkp .r span i{margin-left:auto;font-style:normal;font-size:11px;font-weight:700;opacity:.65;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding-left:8px}
+.mv-lap{display:flex;align-items:center;gap:8px;background:#F0FDFA;color:#0F766E;border:1px solid #CCFBF1;border-radius:10px;padding:6px 6px 6px 10px;font-size:12.5px;font-weight:700;min-width:0}
+.mv-lap span{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.mv-lap svg{flex:none}
+.mv-lap button{flex:none;width:26px;height:26px;border:0;background:none;color:#0F766E;border-radius:7px;display:flex;align-items:center;justify-content:center;cursor:pointer;padding:0}
 .ms-ibox{background:white;border:1.5px solid #E2E8F0;border-radius:14px;padding:4px 12px 12px;margin-bottom:8px}
 .ms-vhint{font-size:11.5px;color:#94A3B8;font-weight:600;margin:4px 0 0 32px;line-height:1.4}
 .ms-vbtns{display:flex;justify-content:space-between;align-items:center;margin-top:12px}
@@ -22810,12 +22813,19 @@ window.msVenueSum = function(b){
   b.querySelector('.ms-vi').textContent = (name || '+').charAt(0).toUpperCase();
   b.querySelector('.ms-vt').innerHTML = `<b>${msEsc(name || 'New venue')}</b><small>${o && c ? 'Open ' + o + ' – ' + c : 'No opening hours yet'}</small><small>${got.length ? msEsc(got.join(' · ')) : 'No map or WhatsApp yet'}</small>`;
 };
+// Guest page settings on a phone: one slim line saying a laptop is easier; × hides it for good on that phone
+function mvLapTip(m){
+  let off = false; try{ off = localStorage.getItem('mv-laptip') === '1'; }catch(e){}
+  if(off || !window.matchMedia('(max-width: 700px)').matches) return '';
+  return `<div class="mv-lap" style="${m || ''}"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="12" rx="2"/><path d="M2 20h20"/></svg><span>Tip: easier on a laptop</span><button aria-label="Hide this tip" onclick="try{localStorage.setItem('mv-laptip','1')}catch(e){};document.querySelectorAll('.mv-lap').forEach(x=>x.remove())"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg></button></div>`;
+}
 window.msTiers = function(){
   if(!msIsMgr()) return;
   const p = msPerks(), pg = msPage(), rw = pg.reward || {}, ct = pg.contact || {};
   const anyCode = Object.values(MS.keyrings || {})[0];
   msSheet(`<div class="vdf-h"><b>Perks, reward and venues</b><div class="dpt-sub">Shown on the guest page when members scan their keyring</div></div>
     <div class="vdf-body">
+      ${mvLapTip('margin:0 0 12px')}
       ${anyCode ? `<button type="button" class="ms-prev" onclick="window.open('/k/${encodeURIComponent(anyCode)}?guest=1','_blank')"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>See it as a guest</button>` : ''}
       <div class="ms-gh">PERKS <small>the extras members get</small></div>
       <div class="ms-pl">MEMBERS - everyone with a keyring</div>
@@ -23049,6 +23059,7 @@ function gpRender(){
       <div class="t"><b>Guest page</b><small>What members see when they scan their keyring</small></div>
       <button class="gp-tb l" onclick="gpNumbers()">${gpIc(GPI.chart)}<span>Numbers</span></button>
       ${code ? `<button class="gp-tb t2" onclick="window.open('/k/${encodeURIComponent(code)}?guest=1','_blank')">${gpIc(GPI.eye)}<span>See it as a guest</span></button>` : ''}</div>
+    ${mvLapTip('margin:12px 16px 0')}
     ${GPE.missing ? `<div style="max-width:1160px;margin:16px auto 0;padding:0 20px"><div class="gp-auto" style="background:#FFF7ED;color:#9A3412">The guest page needs a one-time setup before changes can be saved. Ask Mavis support.</div></div>` : ''}
     <div class="gp-wrap"><div class="gp-col">
       <div class="gp-sec${c.off.slides ? ' off' : ''}"><div class="gp-sh"><div class="n"><b>Highlights</b><small>Big photos at the top of a place's page - offers, new menu, big nights. Guests swipe through them</small></div>${tog('slides')}</div>

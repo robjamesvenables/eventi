@@ -181,7 +181,17 @@ svg{display:block}
 .rv .ph{width:64px;height:64px;border-radius:16px;object-fit:cover;display:block;margin:0 auto}
 .rv h3{display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;font-size:19px;font-weight:900;letter-spacing:-.3px;margin:12px 24px 0;line-height:1.25}
 .rv p{font-size:13.5px;color:#64748B;margin-top:4px;line-height:1.45}
-.rv .stars{display:flex;justify-content:center;gap:6px;margin-top:12px;color:#F5B301}
+.rv .stars{display:flex;justify-content:center;gap:4px;margin-top:12px}
+.rv .stars button{border:0;background:none;padding:3px;color:#E2E8F0;cursor:pointer;transition:transform .15s,color .15s;line-height:0}
+.rv .stars button svg{width:36px;height:36px}
+.rv .stars button.on{color:#F5B301}.rv .stars button.pop{transform:scale(1.25)}
+.rv .rvt{font-size:15px;color:#0F1E2E;font-weight:700;margin-top:14px}
+.rv textarea{display:block;width:100%;margin-top:10px;border:1.5px solid #E2E8F0;border-radius:14px;padding:12px;font:500 15px Inter,sans-serif;color:#0F1E2E;background:#fff;resize:none;min-height:90px;color-scheme:light}
+.rv textarea:focus{outline:none;border-color:var(--acc,#0D9488)}
+.rv .rvsend{display:flex;width:100%;align-items:center;justify-content:center;margin-top:10px;background:var(--top,#0F1E2E);color:var(--top-ink,#fff);border:0;border-radius:14px;padding:14px;font:800 15px Inter,sans-serif;cursor:pointer}
+.rv .rvsend:disabled{opacity:.6}
+.rv a.rvg2{display:inline-block;background:none;color:#64748B;margin-top:10px;padding:4px;font-size:13px;font-weight:700;text-decoration:underline}
+@media (prefers-reduced-motion:reduce){.rv .stars button{transition:none}}
 .rv a{display:flex;align-items:center;justify-content:center;gap:8px;margin-top:14px;background:var(--top,#0F1E2E);color:var(--top-ink,#fff);text-decoration:none;border-radius:14px;padding:14px;font-size:15px;font-weight:800}
 .rv .g{width:20px;height:20px;border-radius:50%;background:white;color:#0F1E2E;font-weight:900;font-size:13px;display:flex;align-items:center;justify-content:center}
 .rv .nn{display:block;margin:6px auto 0;padding:8px 14px;border:0;background:none;font:700 13px Inter,sans-serif;color:#94A3B8;cursor:pointer}
@@ -434,8 +444,9 @@ svg{display:block}
       var p = placeOf(lc(a.venue)) || {};
       var q = a.when === 'today' ? 'Enjoying ' + a.venue + '?' : a.when === 'yesterday' ? 'How was ' + a.venue + ' last night?' : 'How was your visit to ' + a.venue + '?';
       return '<div class="rv" id="rvbig"><button class="x" id="rvx" aria-label="Close">' + svg(I.x, 16) + '</button>' + (p.img ? '<img class="ph" src="' + esc(p.img) + '" alt="">' : '') +
-        '<h3 translate="no">' + esc(q) + '</h3><p>Thanks for coming, ' + esc(String(d.first || '').split(' ')[0]) + '. A quick Google review really helps us.</p><div class="stars">' + STAR + STAR + STAR + STAR + STAR + '</div>' +
-        '<a href="' + esc(v.review) + '" target="_blank" rel="noopener" id="rvgo"' + hit('review') + '><span class="g">G</span>Leave a Google review</a><button class="nn" id="rvno">Not now</button></div>';
+        '<h3 translate="no">' + esc(q) + '</h3><p>Thanks for coming, ' + esc(String(d.first || '').split(' ')[0]) + '. Tap the stars to rate your visit.</p><div class="stars" id="rvst">' +
+        [1, 2, 3, 4, 5].map(function(n){ return '<button data-s="' + n + '" aria-label="' + n + ' star' + (n > 1 ? 's' : '') + '">' + STAR + '</button>'; }).join('') + '</div>' +
+        '<div id="rvstep"></div><button class="nn" id="rvno">Not now</button></div>';   // empty stars: they rate here first, then 4-5 go to Google, 1-3 tell the manager
     };
     var reviewLine = function(list){
       list = (list || []).filter(function(v){ return v.review; }); if (!list.length) return '';
@@ -622,7 +633,33 @@ svg{display:block}
       // Google review card: tapping the button or closing it hides it until their next visit
       var rvDone = function(){ try { if (d.reviewAsk) localStorage.setItem(rvKey(d.reviewAsk), '1'); } catch (e) {} var c = document.getElementById('rvbig'); if (c) c.remove(); };
       ['rvx', 'rvno'].forEach(function(id){ var b = document.getElementById(id); if (b) b.onclick = rvDone; });
-      var rg = document.getElementById('rvgo'); if (rg) rg.addEventListener('click', function(){ setTimeout(rvDone, 300); });
+      var rvSt = document.getElementById('rvst'), rvStep = document.getElementById('rvstep');
+      if (rvSt && rvStep && d.reviewAsk) {
+        var ra = d.reviewAsk, rv = revOf(ra.venue) || {}, given = 0;
+        var gBtn = '<a href="' + esc(rv.review || '#') + '" target="_blank" rel="noopener" id="rvgo"' + hit('review') + '><span class="g">G</span>Leave a Google review</a>';
+        var post = function(text){ return fetch('/api/gp?a=fb&code=' + encodeURIComponent(d.code), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ stars: given, text: text || '', venue: ra.venue }) }).catch(function(){}); };
+        Array.prototype.forEach.call(rvSt.querySelectorAll('button'), function(b){ b.onclick = function(){
+          given = +b.getAttribute('data-s');
+          Array.prototype.forEach.call(rvSt.children, function(x, i){ x.classList.toggle('on', i < given); x.classList.remove('pop'); });
+          b.classList.add('pop'); setTimeout(function(){ b.classList.remove('pop'); }, 180);
+          if (given >= 4) {
+            rvStep.innerHTML = '<p class="rvt">Thank you! Would you share that on Google? It really helps us.</p>' + gBtn;
+            if (!preview) post('');
+            var g = document.getElementById('rvgo'); if (g) g.addEventListener('click', function(){ setTimeout(rvDone, 300); });
+          } else {
+            rvStep.innerHTML = '<p class="rvt">Sorry it wasn\'t perfect. What happened?</p><textarea id="rvtx" maxlength="500" placeholder="Only the manager will read this"></textarea>' +
+              '<button class="rvsend" id="rvsend">Send to the manager</button><a class="rvg2" href="' + esc(rv.review || '#') + '" target="_blank" rel="noopener">or leave a Google review</a>';
+            document.getElementById('rvsend').onclick = function(){
+              var s = this; s.disabled = true; s.textContent = 'Sending…';
+              (preview ? Promise.resolve() : post(document.getElementById('rvtx').value)).then(function(){
+                var c = document.getElementById('rvbig'); if (!c) return;
+                c.innerHTML = '<h3>Thank you</h3><p>The manager reads every message personally and will be in touch.</p>';
+                try { localStorage.setItem(rvKey(ra), '1'); } catch (e) {}
+              });
+            };
+          }
+        }; });
+      }
       var rp = document.getElementById('rvpick');
       if (rp) rp.onclick = function(){ chooser('Review which place?', (d.venues || []).filter(function(v){ return v.review; }), function(v){ return v.review; }, PI.star); };
       // "Send me offers": the member's own yes / no (saved straight away; staff preview doesn't save)

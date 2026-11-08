@@ -5,6 +5,8 @@
 //       the Numbers screen. Nothing personal is stored: just the company, which card and when.
 //   GET  /api/gp?a=roster&t=<token>                  a department's roster for its live share link (no login).
 //   POST /api/gp?a=offers&code=<keyring>&on=1|0       the member turns "Send me offers" on or off on their own page.
+//   POST /api/gp?a=fb&code=<keyring>  { stars, text, venue }   the member's own star rating after a visit. Saved for the
+//       managers (Membership > Insights > Guest feedback); 1-3 stars also buzzes the managers' phones.
 const L = require('./_lib');
 const GP = require('./_gp');
 const BUCKET = 'shared-files';
@@ -44,6 +46,41 @@ async function offers(req, res){
   if (!k || !k.member_id) return L.send(res, 404, { ok: false });
   await L.db('members?id=eq.' + encodeURIComponent(k.member_id), { method: 'PATCH', body: { consent: on }, headers: { Prefer: 'return=minimal' } });
   return L.send(res, 200, { ok: true, on });
+}
+
+// ── Guest feedback: the stars a member taps on their own page (1-3 stars go privately to the managers) ──
+async function feedback(req, res){
+  const code = String((req.query && req.query.code) || '').toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 16);
+  if (req.method !== 'POST' || !code) return L.send(res, 400, { ok: false });
+  let b = req.body || {}; if (typeof b === 'string') { try { b = JSON.parse(b); } catch (e) { b = {}; } }
+  const stars = Math.round(+b.stars);
+  if (!(stars >= 1 && stars <= 5)) return L.send(res, 400, { ok: false });
+  const text = String(b.text || '').replace(/\s+/g, ' ').trim().slice(0, 500), venue = String(b.venue || '').trim().slice(0, 60);
+  if (require('./_prospects').get(code)) return L.send(res, 200, { ok: true });   // sales demo keyring: nothing to save
+  const k = (await L.db('member_keyrings?select=company_id,member_id&code=eq.' + encodeURIComponent(code)))[0];
+  if (!k || !k.member_id) return L.send(res, 404, { ok: false });
+  const co = k.company_id, q = encodeURIComponent;
+  const m = (await L.db('members?select=id,name,phone&id=eq.' + q(k.member_id)))[0] || {};
+  const row = (await L.db('app_settings?select=value&company_id=eq.' + q(co) + '&key=eq.mk_feedback'))[0];
+  let list = []; try { let x = row && row.value; while (typeof x === 'string') x = JSON.parse(x); if (Array.isArray(x)) list = x; } catch (e) {}
+  const today = new Date().toISOString().slice(0, 10);
+  if (list.some(f => f.mid === m.id && String(f.at).slice(0, 10) === today && f.venue === venue)) return L.send(res, 200, { ok: true, dup: true });   // once a day per place
+  list.unshift({ id: Date.now().toString(36), at: new Date().toISOString(), stars, text, venue, mid: m.id, name: String(m.name || '').slice(0, 60), done: stars >= 4 });
+  list = list.slice(0, 300);
+  await L.db('app_settings?on_conflict=company_id,key', { method: 'POST', body: { company_id: co, key: 'mk_feedback', value: JSON.stringify(list) }, headers: { Prefer: 'resolution=merge-duplicates,return=minimal' } });
+  if (stars <= 3) await fbPush(co, stars, text, venue, m).catch(() => {});
+  return L.send(res, 200, { ok: true });
+}
+async function fbPush(co, stars, text, venue, m){
+  const KEY = process.env.VAPID_PRIVATE_KEY || ''; if (!KEY) return;
+  const webpush = require('web-push');
+  const people = await L.db('profiles?select=id,role,is_owner,active&company_id=eq.' + encodeURIComponent(co));
+  const ids = people.filter(p => p.active !== false && (p.is_owner || ['superadmin', 'director', 'manager'].includes(p.role))).map(p => encodeURIComponent(p.id));
+  if (!ids.length) return;
+  const subs = await L.db('push_subs?select=*&profile_id=in.(' + ids.join(',') + ')');
+  webpush.setVapidDetails('mailto:hello@getmavis.co', 'BGfKLEwZ6ZDqoozMUz2jqNJonJni6l-sA2FU8yHkUAm5FnnwHb44ZGBlEolJXr4QSZospqPa1_z-N2dMjTtKCJc', KEY);
+  const payload = JSON.stringify({ title: stars + '★ feedback' + (venue ? ' · ' + venue : ''), body: (String(m.name || 'A member').split(' ')[0]) + (text ? ': ' + text.slice(0, 120) : ' left ' + stars + ' star' + (stars === 1 ? '' : 's')), thread: 'mkfb', url: '/?membership=insights', who: 'Feedback' });
+  await Promise.all(subs.map(sub => webpush.sendNotification({ endpoint: sub.endpoint, keys: { p256dh: sub.p256dh, auth: sub.auth } }, payload, { TTL: 86400 }).catch(() => {})));
 }
 
 // ── Roster live link: /r/<token> shows one department's roster (this week and next), no login ──
@@ -120,6 +157,7 @@ module.exports = async (req, res) => {
     if (a === 'img') return await photo(req, res);
     if (a === 'hit') return await hit(req, res);
     if (a === 'offers') return await offers(req, res);
+    if (a === 'fb') return await feedback(req, res);
     if (a === 'roster') return await roster(req, res);
     res.status(404).end();
   } catch (e) { try { res.status(404).end(); } catch (x) {} }

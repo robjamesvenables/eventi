@@ -79,10 +79,16 @@ function liveMenus(rows, kind){
   }).filter(m => m.sections.length);
 }
 
+// Bottom bar (Book + Contact): a room booking link, one booking link per place, and the venue's contact rows.
+// Only clean values get through - https links, digits for WhatsApp, a real-looking email, an Instagram name.
+const https = u => /^https:\/\/[^\s"'<>]+$/i.test(String(u || '').trim()) ? String(u).trim().slice(0, 400) : '';
+const cleanContact = c => { c = c || {}; return { phone: String(c.phone || '').replace(/[^\d+ ]/g, '').trim().slice(0, 24), wa: String(c.wa || '').replace(/\D/g, '').slice(0, 16),
+  email: /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(c.email || '').trim()) ? String(c.email).trim().slice(0, 120) : '', map: https(c.map), ig: String(c.ig || '').replace(/[^\w.]/g, '').slice(0, 40) }; };
+
 // Sales demo keyring (see _prospects.js): the same page a member gets, filled with that venue's own content
 function prospectCard(pro, code){
   const now = localNow('Asia/Makassar');
-  const venues = pro.venues.map(v => Object.assign({ name: v.name, area: v.area || '', email: v.email || '', map: v.map || '', review: v.review || '', wa: v.wa || '', phone: v.phone || '' }, openState(v, now.hm)));
+  const venues = pro.venues.map(v => Object.assign({ name: v.name, area: v.area || '', email: v.email || '', map: v.map || '', review: v.review || '', wa: v.wa || '', phone: v.phone || '', book: https(v.book) }, openState(v, now.hm)));
   const events = [];
   for (let i = 0; i <= 6; i++) {
     const day = addDays(now.date, i), wd = new Date(day + 'T12:00:00Z').getUTCDay();
@@ -95,7 +101,7 @@ function prospectCard(pro, code){
   const rv = venues.find(v => v.review);
   return { ok: true, brand: pro.brand, logo: pro.logo, code, first: pro.first, tier: pro.tier, visits: pro.visits, favourite: pro.favourite, gp,
     since: pro.since, perks: pro.perks, perkIcons: pro.perkIcons, offers: true, reviewAsk: rv ? { venue: rv.name, date: addDays(now.date, -1), when: 'yesterday', demo: true } : null,
-    birthdayWeek: false, tonight, week, menus: { food: [], drinks: [] }, venues,
+    birthdayWeek: false, tonight, week, menus: { food: [], drinks: [] }, venues, stay: https(pro.stay), contact: cleanContact(pro.contact),
     reward: pro.reward ? { target: pro.reward.target, text: pro.reward.text, left: Math.max(0, pro.reward.target - pro.visits) } : null };
 }
 
@@ -181,7 +187,7 @@ module.exports = async (req, res) => {
     let venues = Array.isArray(page.venues) && page.venues.length ? page.venues : (demo ? demo.venues : []);
     if (demo && GP.isOldDemo(venues)) venues = GP.renameDemo(venues);
     if (demo) venues = venues.map(v => { const dv = v && GP.DEMO_VENUES.find(x => x.name === v.name); return dv && (!v.email || !v.review) ? Object.assign({}, v, { email: v.email || dv.email, review: v.review || dv.review }) : v; });   // demo: sample emails + review links
-    venues = venues.filter(v => v && v.name).slice(0, 12).map(v => Object.assign({ name: v.name, area: String(v.area || '').slice(0, 30), email: /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(v.email || '').trim()) ? String(v.email).trim().slice(0, 120) : '', map: v.map || '', review: /^https:\/\/[^\s"'<>]+$/i.test(String(v.review || '').trim()) ? String(v.review).trim().slice(0, 400) : '', wa: String(v.wa || '').replace(/\D/g, ''), phone: v.phone || '' }, openState(v, now.hm)));
+    venues = venues.filter(v => v && v.name).slice(0, 12).map(v => Object.assign({ name: v.name, area: String(v.area || '').slice(0, 30), email: /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(v.email || '').trim()) ? String(v.email).trim().slice(0, 120) : '', map: v.map || '', review: /^https:\/\/[^\s"'<>]+$/i.test(String(v.review || '').trim()) ? String(v.review).trim().slice(0, 400) : '', wa: String(v.wa || '').replace(/\D/g, ''), phone: v.phone || '', book: https(v.book) }, openState(v, now.hm)));
     // Google review ask: they were checked in at a place in the last 2 days (demo: always, so it can be shown)
     let reviewAsk = null;
     const lastV = visits.filter(v => v.visit_date && v.visit_date >= addDays(now.date, -2) && v.visit_date <= now.date).sort((a, b) => String(b.visit_date).localeCompare(String(a.visit_date)))[0];
@@ -208,7 +214,7 @@ module.exports = async (req, res) => {
       ok: true, brand, logo, code, first, tier, visits: visits.length, favourite, gp,
       since: new Date(m.created_at).getFullYear(), perks, perkIcons, offers: m.consent === true, reviewAsk,
       birthdayWeek: birthdayWeek(m.birthday, now.date),
-      tonight: tonight.slice(0, 12), week: week.slice(0, 40), menus, venues, reward
+      tonight: tonight.slice(0, 12), week: week.slice(0, 40), menus, venues, reward, stay: https(page.stay), contact: cleanContact(page.contact)
     });
   } catch (e) {
     console.error(e);

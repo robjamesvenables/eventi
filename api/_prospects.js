@@ -64,7 +64,10 @@ P.trans = {
   perks: ['Welcome drink at The 18th Rooftop', 'Late check-out until 2pm, when available', '15% off at the spa', 'Free kids club afternoons'],
   perkIcons: ['cocktail', 'key', 'leaf', 'smile'],
   reward: { target: 10, text: 'One night in a pool villa' },
-  venues: ['The 18th Rooftop Bar', 'The Restaurant', 'The Lobby Lounge'].map(name => ({ name, area: 'Seminyak', map: 'https://maps.google.com/?q=The+Trans+Resort+Bali', phone: '+62 361 898 1234', review: 'https://maps.google.com/?q=The+Trans+Resort+Bali' })),
+  venues: ['The 18th Rooftop Bar', 'The Restaurant', 'The Lobby Lounge'].map(name => ({ name, area: 'Seminyak', map: 'https://maps.google.com/?q=The+Trans+Resort+Bali', review: 'https://maps.google.com/?q=The+Trans+Resort+Bali' })),
+  // Bottom bar: Book = rooms + each outlet (no outlet booking details yet, so they all call reception); Contact = the hotel
+  stay: TRANS_BOOK,
+  contact: { phone: '+62 361 898 1234', email: 'reservation@transresortbali.com', map: 'https://maps.google.com/?q=The+Trans+Resort+Bali', ig: 'thetransresortbali' },
   acts: [
     { title: 'Sunset at The 18th', line: 'Live acoustic on the rooftop', every: [4, 5, 6], start: '17:30', end: '20:30', venue: 'The 18th Rooftop Bar' },
     { title: 'Afternoon tea', line: 'Cakes, scones and Balinese treats', every: [5, 6, 0], start: '15:00', end: '17:00', venue: 'The Lobby Lounge' },

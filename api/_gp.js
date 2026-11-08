@@ -127,7 +127,7 @@ function build(c, ctx){
       return { id: str(e.id, 40), img: img(e), title: str(e.title, 60), line: str(e.line, 90), venue: str(e.venue, 40),
         when: [dateLabel(e.date), t1 && t2 ? t1 + ' – ' + t2 : t1].filter(Boolean).join(' · '), btn: button(e, e.title + (e.date ? ' (' + dateLabel(e.date) + ')' : '')),
         // The details pop-up: what's on, ages, dress code, price, anything else
-        details: str(e.details, 300), age: AGES[e.age] || '', dress: str(e.dress, 60), price: str(e.price, 60), notes: str(e.notes, 200), hl: !!e.hl,
+        blast: str(e.blast, 1500).replace(/\r/g, '').replace(/\n{3,}/g, '\n\n').trim(), details: str(e.details, 300), age: AGES[e.age] || '', dress: str(e.dress, 60), price: str(e.price, 60), notes: str(e.notes, 200), hl: !!e.hl,
         // the icons staff chose for each detail, and their own extra details
         ic: ['details', 'age', 'dress', 'price', 'notes'].reduce((o, k) => { const v = String(((e.ic || {})[k]) || ''); if (/^[a-z]{2,10}$/.test(v)) o[k] = v; return o; }, {}),
         more: (Array.isArray(e.more) ? e.more : []).filter(m => m && m.text).slice(0, 6).map(m => ({ ic: /^[a-z]{2,10}$/.test(String(m.ic || '')) ? m.ic : '', label: str(m.label, 30), text: str(m.text, 120) })) }; });

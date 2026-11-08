@@ -23711,6 +23711,7 @@ window.gpForm = function(k, i){
     <label>Date</label><input id="gpf-date" type="date" value="${gpEsc(it.date || '')}">
     <div class="gp-2"><div><label>Starts (optional)</label><input id="gpf-time" type="time" value="${gpEsc(it.time || '')}"></div><div><label>Finishes (optional)</label><input id="gpf-time2" type="time" value="${gpEsc(it.time2 || '')}"></div></div>${venueSel}
     <div class="gp-sub">The details <small>guests tap the event to see these - fill in what you want</small></div>
+    <label>Paste your WhatsApp or email message (optional)</label><textarea id="gpf-blast" maxlength="1500" rows="6" placeholder="Copy the message you sent to guests and paste it here - emojis and lines stay as they are">${gpEsc(it.blast || '')}</textarea><div class="gp-hint">Guests see it exactly like this when they tap the event. You can still change it here.</div>
     <label>What's happening / line-up</label><div class="gp-dr" data-icrow data-k="details" data-ic="${gpEsc((it.ic || {}).details || 'music')}">${msIcBtn((it.ic || {}).details || 'music')}<textarea id="gpf-details" maxlength="300" rows="3" placeholder="e.g. DJ Ayu and DJ Kai, live sax, fireworks at midnight">${gpEsc(it.details || '')}</textarea></div>
     <label>Ages</label><div class="gp-dr" data-icrow data-k="age" data-ic="${gpEsc((it.ic || {}).age || 'who')}">${msIcBtn((it.ic || {}).age || 'who')}<div class="gp-btns gp-3" id="gpf-ages"><button type="button" data-a="all">All ages</button><button type="button" data-a="18">18+</button><button type="button" data-a="21">21+</button></div></div>
     <label>Dress code</label><div class="gp-dr" data-icrow data-k="dress" data-ic="${gpEsc((it.ic || {}).dress || 'shirt')}">${msIcBtn((it.ic || {}).dress || 'shirt')}<input id="gpf-dress" maxlength="60" value="${gpEsc(it.dress || '')}" placeholder="e.g. Smart - all white"></div>
@@ -23764,13 +23765,13 @@ window.gpForm = function(k, i){
     if(k === 'slides'){ rec.line = val('gpf-line'); rec.venue = val('gpf-venue'); if(!file && !gpSrc(it)){ toast('Choose a photo first'); return; } }
     if(k === 'deals'){ rec.when = val('gpf-when'); rec.venue = val('gpf-venue'); if(!rec.title){ toast("Type what the deal is"); return; } }
     if(k === 'events'){ Object.assign(rec, { line: val('gpf-line'), date: val('gpf-date'), time: val('gpf-time'), time2: val('gpf-time2'), venue: val('gpf-venue'), from: val('gpf-from'),
-        details: val('gpf-details'), age, dress: val('gpf-dress'), price: val('gpf-price'), notes: val('gpf-notes'), hl: !!($('gpf-hl') && $('gpf-hl').checked) });
+        blast: ($('gpf-blast') ? $('gpf-blast').value.replace(/\s+$/, '') : ''), details: val('gpf-details'), age, dress: val('gpf-dress'), price: val('gpf-price'), notes: val('gpf-notes'), hl: !!($('gpf-hl') && $('gpf-hl').checked) });
       rec.ic = {}; s.querySelectorAll('.gp-dr[data-k]').forEach(r => { if(r.dataset.ic) rec.ic[r.dataset.k] = r.dataset.ic; });
       const more = [...s.querySelectorAll('.gp-mr')].map(r => ({ ic: r.dataset.ic || '', label: r.querySelector('.gp-ml').value.trim(), text: r.querySelector('.gp-mt').value.trim(), r })).filter(x => x.label || x.text);
       const noIc = more.find(x => !x.ic); if(noIc){ toast('Choose an icon for "' + (noIc.label || noIc.text) + '"'); noIc.r.scrollIntoView({ block:'center' }); if(!noIc.r.nextElementSibling || !noIc.r.nextElementSibling.classList.contains('ms-pgrid')) mvIconPick(noIc.r.querySelector('.ms-pib')); return; }
       const noTx = more.find(x => !x.text); if(noTx){ toast('Type the words for "' + noTx.label + '"'); return; }
       rec.more = more.map(x => ({ ic: x.ic, label: x.label, text: x.text })); if(!rec.more.length) delete rec.more;
-      ['time2', 'details', 'age', 'dress', 'price', 'notes'].forEach(x => { if(!rec[x]) delete rec[x]; }); if(!rec.hl) delete rec.hl;
+      ['time2', 'blast', 'details', 'age', 'dress', 'price', 'notes'].forEach(x => { if(!rec[x]) delete rec[x]; }); if(!rec.hl) delete rec.hl;
       if(rec.hl && !file && !gpSrc(it)){ toast('Add a photo to show it in Highlights'); return; }
       if(!rec.title){ toast('Type the event name'); return; } if(!rec.date){ toast('Pick the date - it hides itself after that day'); return; } if(rec.date < gpToday()){ toast('That date has already passed'); return; } }
     if(k !== 'deals'){

@@ -103,7 +103,12 @@ function build(c, ctx){
   const waOf = name => { const v = (venues || []).find(x => x.wa && name && x.name.toLowerCase() === String(name).toLowerCase()) || (venues || []).find(x => x.wa); return v ? v.wa : ''; };
   const button = (it, what) => {
     const t = it.btn;
-    if (t === 'wa') { const n = waOf(it.venue); if (!n) return null; return { href: 'https://wa.me/' + n + '?text=' + encodeURIComponent(who + " I'd love to book " + what + ' - could you help? Thank you!'), label: 'Book on WhatsApp', kind: 'wa' }; }
+    // WhatsApp / Call / Email: the number or address typed on this item, else its place's, else the main contact
+    const vOf = name => (venues || []).find(x => name && x.name.toLowerCase() === String(name).toLowerCase()) || {}, main = ctx.contact || {}, own = String(it.to || '').trim();
+    if (t === 'wa') { const n = own.replace(/\D/g, '').slice(0, 16) || String(vOf(it.venue).wa || '') || String(main.wa || '') || waOf(it.venue); if (!n) return null; return { href: 'https://wa.me/' + n + '?text=' + encodeURIComponent(who + " I'd love to book " + what + ' - could you help? Thank you!'), label: 'Book on WhatsApp', kind: 'wa', wa: n }; }
+    if (t === 'call') { const p = own.replace(/[^\d+]/g, '').slice(0, 20) || String(vOf(it.venue).phone || main.phone || '').replace(/[^\d+]/g, ''); if (!p) return null; return { href: 'tel:' + p, label: 'Call to book', kind: 'call' }; }
+    if (t === 'email') { const ok = e => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e) ? e : ''; const e = ok(own) || ok(String(vOf(it.venue).email || '')) || ok(String(main.email || '')); if (!e) return null;
+      return { href: 'mailto:' + e + '?subject=' + encodeURIComponent('Booking: ' + what) + '&body=' + encodeURIComponent(who + "\n\nI'd love to book " + what + '.\n\nThank you!'), label: 'Email to book', kind: 'email', email: e }; }
     if ((t === 'book' || t === 'tickets') && httpsOk(it.url)) return { href: String(it.url).trim(), label: t === 'tickets' ? 'Get tickets' : 'Book now', kind: t };
     return null;
   };

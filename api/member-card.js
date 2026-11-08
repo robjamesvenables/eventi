@@ -99,7 +99,7 @@ function prospectCard(pro, code){
   const fmtEv = e => ({ day: dow(e.date), date: e.date, title: e.title, sub: e.sub, venue: e.venue, time: e.start ? niceTime(e.start) + (e.end ? ' - ' + niceTime(e.end) : '') : '' });
   const tonight = events.filter(e => e.date === now.date && !(e.end && toMin(e.end) > toMin(e.start || '00:00') && toMin(e.end) <= toMin(now.hm))).map(fmtEv);
   const week = events.filter(e => e.date > now.date).map(fmtEv);
-  const gp = GP.build(pro.content(now.date), { company: 'demo', code, venues, today: now.date, who: pro.first, vip: pro.tier === 'vip' });
+  const gp = GP.build(pro.content(now.date), { company: 'demo', code, venues, today: now.date, who: pro.first, vip: pro.tier === 'vip', contact: cleanContact(pro.contact) });
   const rv = venues.find(v => v.review);
   return { ok: true, brand: pro.brand, logo: pro.logo, code, first: pro.first, tier: pro.tier, visits: pro.visits, favourite: pro.favourite, gp,
     since: pro.since, perks: pro.perks, perkIcons: pro.perkIcons, offers: true, reviewAsk: rv ? { venue: rv.name, date: addDays(now.date, -1), when: 'yesterday', demo: true } : null,
@@ -206,7 +206,7 @@ module.exports = async (req, res) => {
     let gpc = gpRows[0] && gpRows[0].content;
     if (!GP.hasContent(gpc) && demo) gpc = Object.assign(GP.demo(now.date), gpc && gpc.order ? { order: gpc.order, off: gpc.off || {} } : {});
     else if (demo && gpc) gpc = GP.topUpDemo(gpc, now.date);   // a saved demo page still gets newer demo extras (Instagram names, new photos)
-    const gp = GP.build(gpc || {}, { company: co, code, venues, today: now.date, who: first, vip: tier === 'vip' });
+    const gp = GP.build(gpc || {}, { company: co, code, venues, today: now.date, who: first, vip: tier === 'vip', contact: cleanContact(page.contact) });
 
     // The numbers: one page open, and a view for every card shown (not when staff preview it)
     if (!(req.query && req.query.pv)) {

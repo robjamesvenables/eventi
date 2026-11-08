@@ -395,7 +395,8 @@ svg{display:block}
     if (th.pg) rs.setProperty('--pg', th.pg);
 
     var hit = function(id){ return id ? ' data-hit="' + esc(id) + '"' : ''; };
-    var btnHtml = function(b, id, cls){ return b ? '<a href="' + esc(b.href) + '" target="_blank" rel="noopener" class="' + (cls || '') + (b.kind === 'wa' ? ' wa' : '') + '"' + hit(id) + '>' + (b.kind === 'wa' ? svg(I.wa, 16) : '') + esc(b.label) + '</a>' : ''; };
+    var btnHtml = function(b, id, cls){ if (!b) return ''; var ic = { wa: I.wa, call: I.phone, email: I.mail }[b.kind];
+      return '<a href="' + esc(b.href) + '"' + (/^https/.test(b.href) ? ' target="_blank" rel="noopener"' : '') + ' class="' + (cls || '') + (b.kind === 'wa' ? ' wa' : '') + '"' + hit(id) + '>' + (ic ? svg(ic, 16) : '') + esc(b.label) + '</a>'; };
     var pic = function(src, alt){ return src ? '<img src="' + esc(src) + '" alt="' + esc(alt || '') + '" loading="lazy">' : '<div class="noimg"></div>'; };
     var venueOf = function(key){ return (d.venues || []).find(function(v){ return lc(v.name) === key; }); };
     var placeOf = function(key){ return places.find(function(p){ return lc(p.name) === key; }); };
@@ -680,7 +681,7 @@ svg{display:block}
       // Ask about it: WhatsApp or the guest's own email app, with the message already written, to that place
       var askHtml = function(x){
         var list = d.venues || [], v = list.find(function(y){ return lc(y.name) === lc(x.venue); }) || {};
-        var wa = v.wa || (list.find(function(y){ return y.wa; }) || {}).wa || '', em = v.email || (list.find(function(y){ return y.email; }) || {}).email || '';
+        var b = x.btn || {}, wa = b.wa || v.wa || ct.wa || '', em = b.email || v.email || ct.email || '';   // the event's own WhatsApp / email first, then its place's, then the main contact
         if (!wa && !em) return '';
         var what = x.title + (x.when ? ' (' + x.when + ')' : '') + (v.name ? ' at ' + v.name : '');
         var msg = me + ' I have a quick question about ' + what + ':\n\n';

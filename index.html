@@ -2367,6 +2367,7 @@ body:not(.mv-demo) #ms-demoqr-btn{display:none!important}
 @media(max-width:600px){.gp-wrap{padding:14px}.gp-top{padding:12px 14px}.gp-top .gp-tb span{display:none}.gp-it .th{width:62px;height:50px}}
 /* card form */
 .gp-btns{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px}
+.gp-btns.gp-3b{grid-template-columns:repeat(3,minmax(0,1fr))}
 .gp-btns button{border:2px solid #E2E8F0;background:white;border-radius:11px;padding:10px 4px;font:800 12.5px Inter,sans-serif;color:#0F1E2E;cursor:pointer}
 .gp-btns button.on{border-color:#0D9488;background:#F0FDFA;color:#0F766E}
 .gp-pf{display:flex;align-items:center;gap:10px;margin-top:8px}.gp-pf i{width:22px;flex:none;color:#64748B;display:flex;justify-content:center}
@@ -22992,7 +22993,7 @@ function gpForgetFile(it){ if(it && it.path) sb.storage.from(GP_BUCKET).remove([
 function gpKeyring(){ try{ return Object.values(MS.keyrings || {})[0] || ''; }catch(e){ return ''; } }
 function gpPreviewReload(){ const f = document.getElementById('gp-frame'); if(f) f.src = '/k/' + encodeURIComponent(gpKeyring()) + '?guest=1&embed=1&t=' + Date.now(); }
 function gpDate(ymd){ if(!/^\d{4}-\d{2}-\d{2}$/.test(ymd || '')) return ''; const d = new Date(ymd + 'T12:00:00'); return d.toLocaleDateString('en-GB', { weekday:'short', day:'numeric', month:'short' }).replace(',', ''); }
-const GP_BTN = { wa:['WhatsApp','wa'], book:['Booking site','book'], tickets:['Tickets','tickets'] };
+const GP_BTN = { wa:['WhatsApp','wa'], call:['Call','num'], email:['Email','num'], book:['Booking site','book'], tickets:['Tickets','tickets'] };
 
 window.gpOpen = async function(){
   if(!gpCanEdit()){ toast('Only Marketing and the people picked in Admin Console can change the guest page'); return; }
@@ -23675,8 +23676,9 @@ window.gpForm = function(k, i){
     <label>Anything else</label><div class="gp-dr" data-icrow data-k="notes" data-ic="${gpEsc((it.ic || {}).notes || 'info')}">${msIcBtn((it.ic || {}).notes || 'info')}<textarea id="gpf-notes" maxlength="200" rows="2" placeholder="e.g. Tables for 6+ by WhatsApp">${gpEsc(it.notes || '')}</textarea></div>
     <label>Your own details <span class="gp-opt">tap the icon to choose it</span></label><div id="gpf-more">${(it.more || []).map(gpMoreRow).join('')}</div><button type="button" class="gp-add gp-add-s" id="gpf-moreadd" onclick="gpMoreAdd()">+ Add a detail</button>
     <label class="gp-tg"><input type="checkbox" id="gpf-hl"${it.hl ? ' checked' : ''}><span><b>Show in Highlights</b><small>Also a big photo at the top of that place's page (needs a photo)</small></span></label>`;
-  if(k !== 'deals') f += `<label>Button goes to</label><div class="gp-btns" id="gpf-btns"><button type="button" data-b="">No button</button><button type="button" data-b="wa">WhatsApp</button><button type="button" data-b="book">Booking site</button><button type="button" data-b="tickets">Tickets</button></div>
-    <div id="gpf-urlw"><label id="gpf-urll">Link</label><input id="gpf-url" inputmode="url" value="${gpEsc(it.url || '')}" placeholder="https://..."></div><div class="gp-hint" id="gpf-wah">Opens WhatsApp to the venue's number, with a message already written.</div>`;
+  if(k !== 'deals') f += `<label>Button goes to</label><div class="gp-btns gp-3b" id="gpf-btns"><button type="button" data-b="">No button</button><button type="button" data-b="wa">WhatsApp</button><button type="button" data-b="call">Call</button><button type="button" data-b="email">Email</button><button type="button" data-b="book">Booking site</button><button type="button" data-b="tickets">Tickets</button></div>
+    <div id="gpf-urlw"><label id="gpf-urll">Link</label><input id="gpf-url" inputmode="url" value="${gpEsc(it.url || '')}" placeholder="https://..."></div>
+    <div id="gpf-tow"><label id="gpf-tol">Number</label><input id="gpf-to" value="${gpEsc(it.to || '')}"></div><div class="gp-hint gp-goes" id="gpf-wah"></div>`;
   if(k === 'events') f += `<label>Show it from (optional)</label><input id="gpf-from" type="date" value="${gpEsc(it.from || '')}"><div class="gp-hint">Leave empty to show it straight away. It disappears by itself after the event.</div>`;
   const s = document.createElement('div'); s.className = 'eb-sheet';
   s.innerHTML = `<div class="eb-form"><h3>${edit ? 'Change' : 'Add a'} ${title}</h3><p class="sub">Shows on the guest page as soon as you save</p>${f}<input type="file" id="gpf-file" accept="image/*" style="display:none"><div class="eb-fbtns"><button class="eb-no">Cancel</button><button class="eb-go">Save</button></div></div>`;
@@ -23691,8 +23693,21 @@ window.gpForm = function(k, i){
     s.querySelectorAll('#gpf-btns button').forEach(b => b.classList.toggle('on', b.dataset.b === btn));
     $('gpf-urlw').style.display = btn === 'book' || btn === 'tickets' ? '' : 'none';
     $('gpf-urll').textContent = btn === 'tickets' ? 'Ticket link (e.g. Megatix)' : 'Booking link (e.g. SevenRooms, TableCheck or your website)';
-    $('gpf-wah').style.display = btn === 'wa' ? '' : 'none';
+    const talk = btn === 'wa' || btn === 'call' || btn === 'email', to = $('gpf-to');
+    $('gpf-tow').style.display = talk ? '' : 'none'; $('gpf-wah').style.display = talk ? '' : 'none';
+    if(talk){
+      const pg = msPage(), c = pg.contact || {}, vn = $('gpf-venue') ? $('gpf-venue').value : '', v = (pg.venues || []).find(x => x.name === vn) || {};
+      const anyWa = (pg.venues || []).find(x => x.wa), fall = btn === 'wa' ? (v.wa ? ['+' + v.wa, vn] : c.wa ? ['+' + c.wa, 'main contact'] : anyWa ? ['+' + anyWa.wa, anyWa.name] : null)
+        : btn === 'call' ? (v.phone ? [v.phone, vn] : c.phone ? [c.phone, 'main contact'] : null) : (v.email ? [v.email, vn] : c.email ? [c.email, 'main contact'] : null);
+      $('gpf-tol').textContent = btn === 'wa' ? 'WhatsApp number for this (optional)' : btn === 'call' ? 'Phone number for this (optional)' : 'Email for this (optional)';
+      to.type = btn === 'email' ? 'email' : 'tel'; to.placeholder = btn === 'email' ? 'e.g. weddings@yourhotel.com' : 'e.g. +62 812 3456 7890';
+      const typed = to.value.trim(), label = btn === 'wa' ? 'Book on WhatsApp' : btn === 'call' ? 'Call to book' : 'Email to book';
+      $('gpf-wah').innerHTML = typed ? `Guests see the <b>${label}</b> button. It goes to <b>${gpEsc(typed)}</b>.`
+        : fall ? `Guests see the <b>${label}</b> button. It goes to <b>${gpEsc(fall[0])}</b> (${gpEsc(fall[1])}). Type a different one above if this should go to someone else, like your wedding team.`
+        : `<span style="color:#B91C1C">Type a ${btn === 'email' ? 'email' : 'number'} above - there isn't one saved yet.</span>`;
+    }
   };
+  if($('gpf-to')) $('gpf-to').oninput = showBtn; if($('gpf-venue')) $('gpf-venue').addEventListener('change', showBtn);
   s.querySelectorAll('#gpf-btns button').forEach(b => b.onclick = () => { btn = b.dataset.b; showBtn(); });
   let age = it.age || '';
   const showAge = () => s.querySelectorAll('#gpf-ages button').forEach(b => b.classList.toggle('on', b.dataset.a === age));
@@ -23720,8 +23735,12 @@ window.gpForm = function(k, i){
       rec.btn = btn; rec.url = btn === 'book' || btn === 'tickets' ? val('gpf-url') : '';
       if(rec.url && !/^https?:\/\//i.test(rec.url)) rec.url = 'https://' + rec.url;
       if((btn === 'book' || btn === 'tickets') && !/^https:\/\/[^\s]+\.[^\s]+/i.test(rec.url)){ toast('Paste the full link, e.g. https://megatix.co.id/...'); return; }
-      if(btn === 'wa' && !(msPage().venues || []).some(v => v.wa)){ toast('Add a WhatsApp number to a venue first (Change venues)'); return; }
-      if(!btn){ delete rec.btn; delete rec.url; }
+      rec.to = btn === 'wa' || btn === 'call' || btn === 'email' ? val('gpf-to') : '';
+      if(btn === 'email' && rec.to && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(rec.to)){ toast("That email doesn't look right"); return; }
+      if((btn === 'wa' || btn === 'call') && rec.to && rec.to.replace(/\D/g, '').length < 6){ toast("That number looks too short"); return; }
+      if(/^(wa|call|email)$/.test(btn) && !rec.to && /color:#B91C1C/.test($('gpf-wah').innerHTML)){ toast(btn === 'email' ? 'Type the email for this button' : 'Type the number for this button'); return; }
+      if(!rec.to) delete rec.to;
+      if(!btn){ delete rec.btn; delete rec.url; delete rec.to; }
     }
     go.disabled = true; go.textContent = 'Saving…';
     try{

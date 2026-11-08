@@ -352,7 +352,7 @@ async function memberAlert(me, b, res){
   const co2 = (await L.db('companies?select=name&id=eq.' + q(co)).catch(() => []))[0] || {};
   let sent = 0; const gone = [];
   await Promise.all(subs.map(async x => {
-    const url = '/k/' + x.code + '?home=1' + (a.ev ? '&ev=' + encodeURIComponent(String(a.ev).slice(0, 40)) : '');
+    const url = '/k/' + x.code + (a.ev ? '?ev=' + encodeURIComponent(String(a.ev).slice(0, 40)) : '');   // not ?home=1 - that would hide 'Save to your phone' for guests who haven't saved it
     try { await webpush.sendNotification({ endpoint: x.endpoint, keys: { p256dh: x.p256dh, auth: x.auth } }, JSON.stringify({ title, body: text, url, brand: co2.name || '' }), { TTL: 86400, urgency: 'normal' }); sent++; }
     catch (e) { if (e.statusCode === 404 || e.statusCode === 410) gone.push(x.endpoint); }
   }));

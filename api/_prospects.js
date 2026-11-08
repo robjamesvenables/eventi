@@ -61,7 +61,7 @@ const TRANS_BOOK = 'https://reservations.transresortbali.com/book/dates-of-stay'
 const tr = n => '/demo-guest/p-trans-' + n + '.jpg';
 P.trans = {
   club: [{ key: 'shelter', since: 'Mar 2025', visits: 3 }],   // Mavis Club network demo: the other venues this guest belongs to (shown only when switched on)
-  brand: 'The Trans Resort Bali', logo: '/demo-guest/p-trans-logo.png', first: 'Alexander', tier: 'vip', visits: 6, since: 2025, favourite: 'The 18th',
+  brand: 'The Trans Resort Bali', logo: '/demo-guest/p-trans-logo.png', icon: '/demo-guest/p-trans-icon',   // icon: home-screen app icon, -192.png and -512.png first: 'Alexander', tier: 'vip', visits: 6, since: 2025, favourite: 'The 18th',
   perks: ['Welcome drink at The 18th Rooftop', 'Late check-out until 2pm, when available', '15% off at the spa', 'Free kids club afternoons'],
   perkIcons: ['cocktail', 'key', 'leaf', 'smile'],
   reward: { target: 10, text: 'One night in a pool villa' },

@@ -110,7 +110,7 @@ function prospectCard(pro, code, ov){
   const week = events.filter(e => e.date > now.date).map(fmtEv);
   const gp = GP.build(pro.content(now.date), { company: (ov && ov.co) || 'demo', code, venues, today: now.date, who: pro.first, vip: pro.tier === 'vip', contact: cleanContact(pro.contact) });
   const rv = venues.find(v => v.review);
-  return { ok: true, brand: pro.brand, logo: pro.logo, code, first: pro.first, tier: pro.tier, visits: pro.visits, favourite: pro.favourite, gp,
+  return { ok: true, brand: pro.brand, logo: pro.logo, icon: pro.icon || '', code, first: pro.first, tier: pro.tier, visits: pro.visits, favourite: pro.favourite, gp,
     since: pro.since, perks: pro.perks, perkIcons: pro.perkIcons, offers: true, reviewAsk: rv ? { venue: rv.name, date: addDays(now.date, -1), when: 'yesterday', demo: true } : null,
     birthdayWeek: false, tonight, week, menus: { food: [], drinks: [] }, venues, stay: https(pro.stay), stayWa: waOf(pro.stayWa), stayPhone: phoneOf(pro.stayPhone), contact: cleanContact(pro.contact),
     reward: pro.reward ? { target: pro.reward.target, text: pro.reward.text, done: Math.min(pro.visits, pro.reward.target), left: Math.max(0, pro.reward.target - pro.visits), round: 0 } : null };

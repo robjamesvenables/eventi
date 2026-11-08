@@ -140,7 +140,7 @@ function build(c, ctx){
   // Colours (Guest page > Colours)
   const hex = v => /^#[0-9a-f]{6}$/i.test(v || '') ? v : '';
   const th = c.theme || {}, theme = { top: hex(th.top), acc: hex(th.acc), pg: hex(th.pg) };
-  return { order, slides, deals, events, gallery, places, theme, motion: c.motion === true, film: /^[\w-]{11}$/.test(c.film || '') ? c.film : '', video: /^\/[\w\/.-]+\.mp4$/.test(c.video || '') ? c.video : '' };
+  return { order, slides, deals, events, gallery, places, theme, motion: c.motion === true, film: /^[\w-]{11}$/.test(c.film || '') ? c.film : '', video: /^\/[\w\/.-]+\.mp4$/.test(c.video || '') ? c.video : '', videoTall: c.videoTall === true };
 }
 
 module.exports = { igName, topUpDemo, SECTIONS, paths, demo, hasContent, build, DEMO_VENUES, DEMO_RENAME, isOldDemo, renameDemo };

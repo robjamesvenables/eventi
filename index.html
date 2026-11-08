@@ -7508,6 +7508,17 @@ function authShowLogin(){
 }
 // Demo content (sample events, SOPs, vendors, contacts, vacancies) is only ever added for
 // the Mavis Demo company. A real client's venue starts clean.
+// The Mavis demo company can be dressed as a sales prospect (its name, logo, places and guest page) for a pitch.
+// Change DEMO_AS to '' for the plain Mavis demo again. Nothing in the database is renamed.
+const DEMO_AS = 'trans', DEMO_KEYRING = { trans:'5NKGZJ' };
+let DEMO_SEED = null;
+async function demoDress(){
+  DEMO_SEED = null;
+  if(!DEMO_AS || !myProfile || !myCompany || myCompany.code !== 'MAVIS') return;
+  try{ const r = await fetch('/api/gp?a=demo&as=' + DEMO_AS + '&d=' + new Date(Date.now() + 8 * 3600e3).toISOString().slice(0, 10)); const d = await r.json(); if(d && d.ok) DEMO_SEED = d; }catch(e){ console.warn('[demo dress]', e); }
+  if(DEMO_SEED) myCompany = Object.assign({}, myCompany, { name: DEMO_SEED.brand, logo: DEMO_SEED.logo });
+}
+const demoAs = () => !!(DEMO_SEED && myCompany && myCompany.code === 'MAVIS');
 function appIsDemoCompany(){
   if(!myProfile) return true;                         // old demo mode, no real logins
   return !!(myCompany && myCompany.code === 'MAVIS');
@@ -7644,6 +7655,7 @@ async function authApplyProfile(profile, company){
   }
   try { mvClean(profile, 'profiles', ''); if(company) mvClean(company, 'companies', ''); } catch(e){}
   myProfile = profile; myCompany = company || myCompany;
+  await demoDress();
   await appLoadPlan();
   setCurrentUserName(profile.first_name);
   try{ accountApplyAvatar(); }catch(e){}
@@ -21693,6 +21705,7 @@ const msToday = () => { const d = new Date(); return d.getFullYear() + '-' + Str
 function msUnlocked(){ return (typeof appPlan !== 'undefined' && appPlan === 'membership') || (!!myProfile && typeof appIsDemoCompany === 'function' && appIsDemoCompany()); }
 const msCode = s => String(s || '').toUpperCase().replace(/.*\/K\//, '').replace(/[^A-Z0-9]/g, '').slice(0, 16);
 function msPerks(){
+  if(demoAs() && !msPageIsDemo()) return JSON.parse(JSON.stringify(DEMO_SEED.perks));
   try{ const v = appSettings && appSettings.member_perks; const p = v ? (typeof v === 'string' ? JSON.parse(v) : v) : null; if(p && (p.member || p.vip)) return { member: p.member || [], vip: p.vip || [], icons: p.icons || {} }; }catch(e){}
   return { member: ['Welcome drink on your first visit', 'Birthday dessert on us'], vip: ['10% off food at all our venues', 'Birthday dessert on us', 'Skip the queue on busy nights'], icons: { member: ['glass', 'cake'], vip: ['pct', 'cake', 'star'] } };
 }
@@ -21961,10 +21974,11 @@ async function msInsights(){
 // a manager WhatsApps them and ticks it sorted. Nothing to set up.
 const MS_FB_DEMO = () => { const d = n => new Date(Date.now() - n * 36e5).toISOString(), ms = MS.members || [];
   const nm = i => (ms[i] && ms[i].name) || ['Sarah K.', 'Tom B.', 'Ayu P.'][i], id = i => ms[i] && ms[i].id;
-  return [{ id:'d1', at:d(3), stars:2, text:'Waited 40 minutes for our drinks at the bar, and nobody came to check on us.', venue:'Sunset Bar', name:nm(1), mid:id(1), done:false },
-    { id:'d2', at:d(26), stars:3, text:'Food was lovely but the music was far too loud to talk.', venue:'Garden Restaurant', name:nm(2), mid:id(2), done:false },
-    { id:'d3', at:d(30), stars:5, text:'', venue:'Beach Club', name:nm(0), mid:id(0), done:true },
-    { id:'d4', at:d(50), stars:4, text:'', venue:'Sunset Bar', name:nm(3) || 'Made W.', mid:id(3), done:true }]; };
+  const pv = (msPage().venues || []).map(v => v && v.name).filter(Boolean), V = (n, i) => pv.length ? pv[i % pv.length] : n;   // the demo's own places
+  return [{ id:'d1', at:d(3), stars:2, text:'Waited 40 minutes for our drinks at the bar, and nobody came to check on us.', venue:V('Sunset Bar', 0), name:nm(1), mid:id(1), done:false },
+    { id:'d2', at:d(26), stars:3, text:'Food was lovely but the music was far too loud to talk.', venue:V('Garden Restaurant', 1), name:nm(2), mid:id(2), done:false },
+    { id:'d3', at:d(30), stars:5, text:'', venue:V('Beach Club', 2), name:nm(0), mid:id(0), done:true },
+    { id:'d4', at:d(50), stars:4, text:'', venue:V('Sunset Bar', 0), name:nm(3) || 'Made W.', mid:id(3), done:true }]; };
 function msFbList(){ const l = msJson('mk_feedback'); return Array.isArray(l) && l.length ? l : (msDemo() ? (MS.fbDemo = MS.fbDemo || MS_FB_DEMO()) : []); }
 function msFeedbackCard(){
   const all = msFbList(), open = all.filter(f => f.stars <= 3 && !f.done);
@@ -22840,7 +22854,9 @@ window.msEdit = function(id){
 // Tonight / This week come from the Entertainment Schedule, menus from Kitchen & Bar live menus.
 const GP_DEMO_VENUES = [['Senja Rooftop','Uluwatu','16:00','01:00'], ['Ombak Beach Club','Sanur','10:00','00:00'], ['Saffron & Salt','Seminyak','17:00','23:00'], ['Kopi Pagi','Canggu','07:00','17:00']]
   .map(([name, area, opens, closes]) => ({ name, area, opens, closes, map:'https://maps.google.com', wa:'6281234567890', phone:'+62 812 3456 7890' }));
+function msPageIsDemo(){ try{ const v = appSettings && appSettings.member_page; const p = v ? (typeof v === 'string' ? JSON.parse(v) : v) : null; return !!(p && DEMO_AS && p.as === DEMO_AS); }catch(e){ return false; } }
 function msPage(){
+  if(demoAs() && !msPageIsDemo()) return JSON.parse(JSON.stringify(DEMO_SEED.page));   // dressed demo: starts from the prospect's places until saved
   try{ const v = appSettings && appSettings.member_page; const p = v ? (typeof v === 'string' ? JSON.parse(v) : v) : null;
     // Demo: older demo venues (Rooftop / Harbour / Garden / Beach Club) become the four made-up places around Bali
     if(p && typeof appIsDemoCompany === 'function' && appIsDemoCompany() && Array.isArray(p.venues)){
@@ -23094,7 +23110,8 @@ async function gpLoad(){
   else GPE.missing = false;
   let c = data && data[0] && data[0].content;
   const empty = !c || !['slides','deals','events','gallery'].some(k => Array.isArray(c[k]) && c[k].length);
-  if(empty && typeof appIsDemoCompany === 'function' && appIsDemoCompany()) c = Object.assign(gpDemo(gpToday()), c && c.order ? { order:c.order, off:c.off || {} } : {});
+  if(demoAs() && !(c && c.as === DEMO_AS)) c = JSON.parse(JSON.stringify(DEMO_SEED.content));   // dressed demo: the prospect's page until the team saves their own
+  else if(empty && typeof appIsDemoCompany === 'function' && appIsDemoCompany()) c = Object.assign(gpDemo(gpToday()), c && c.order ? { order:c.order, off:c.off || {} } : {});
   GPE.c = gpNorm(c); GPE.loaded = true;
 }
 async function gpSave(msg){
@@ -23127,7 +23144,7 @@ async function gpUpload(file){
   return path;
 }
 function gpForgetFile(it){ if(it && it.path) sb.storage.from(GP_BUCKET).remove([it.path]).catch(() => {}); }
-function gpKeyring(){ try{ return Object.values(MS.keyrings || {})[0] || ''; }catch(e){ return ''; } }
+function gpKeyring(){ if(demoAs() && DEMO_KEYRING[DEMO_AS]) return DEMO_KEYRING[DEMO_AS]; try{ return Object.values(MS.keyrings || {})[0] || ''; }catch(e){ return ''; } }
 // Laptop: the phone preview follows what you're working on (that place's page, that section, a soft glow); after a save it comes back to the same spot
 function gpGo(sec, place, id){ GPE.go = { mv:'go', sec: sec || '', place: place || '', id: id || '' }; gpGoSend(0); }
 function gpGoSend(wait){ const f = document.getElementById('gp-frame'); if(!f || !GPE.go || !f.offsetParent) return; setTimeout(() => { try{ f.contentWindow.postMessage(GPE.go, location.origin); }catch(e){} }, wait || 0); }

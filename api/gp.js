@@ -158,6 +158,10 @@ async function roster(req, res){
 module.exports = async (req, res) => {
   try {
     const a = String((req.query && req.query.a) || '');
+    if (a === 'demo') {   // the Mavis demo company dressed as a sales prospect (only demo content that is already public on its sample keyring)
+      const sd = require('./_prospects').seed(String((req.query && req.query.as) || '').replace(/[^a-z]/g, ''), String((req.query && req.query.d) || '').replace(/[^0-9-]/g, '').slice(0, 10) || new Date().toISOString().slice(0, 10));
+      return sd ? L.send(res, 200, Object.assign({ ok: true }, sd)) : L.send(res, 404, { ok: false });
+    }
     if (a === 'img') return await photo(req, res);
     if (a === 'hit') return await hit(req, res);
     if (a === 'offers') return await offers(req, res);

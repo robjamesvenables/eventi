@@ -88,8 +88,17 @@ const cleanContact = c => { c = c || {}; return { phone: String(c.phone || '').r
   email: /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(c.email || '').trim()) ? String(c.email).trim().slice(0, 120) : '', map: https(c.map), ig: String(c.ig || '').replace(/[^\w.]/g, '').slice(0, 40) }; };
 
 // Sales demo keyring (see _prospects.js): the same page a member gets, filled with that venue's own content
-function prospectCard(pro, code){
+function prospectCard(pro, code, ov){
   const now = localNow('Asia/Makassar');
+  // Linked to the back office (the demo company saved this prospect's page there): what the team saved, else the built-in demo
+  if (ov) { const pg = ov.page || {};
+    pro = Object.assign({}, pro, { content: ov.content ? () => ov.content : pro.content, acts: ov.content && Array.isArray(ov.content.acts) ? ov.content.acts.filter(a => a && a.title && Array.isArray(a.every)) : pro.acts,
+      venues: Array.isArray(pg.venues) && pg.venues.length ? pg.venues.filter(v => v && v.name).slice(0, 12) : pro.venues,
+      contact: pg.contact || pro.contact, stay: pg.stay != null ? pg.stay : pro.stay, stayWa: pg.stayWa != null ? pg.stayWa : pro.stayWa, stayPhone: pg.stayPhone != null ? pg.stayPhone : pro.stayPhone,
+      reward: pg.reward && pg.reward.visits ? { target: +pg.reward.visits, text: String(pg.reward.text || '') } : pg.reward === null ? null : pro.reward });
+    const pk = ov.perks && ov.perks[pro.tier === 'vip' ? 'vip' : 'member'];
+    if (Array.isArray(pk)) pro.perks = pk.slice(0, 8).map(x => String(x || '').slice(0, 60)), pro.perkIcons = pro.perks.map((x, i) => { const v = String((((ov.perks.icons || {})[pro.tier === 'vip' ? 'vip' : 'member']) || [])[i] || ''); return /^[a-z]{2,10}$/.test(v) ? v : ''; });
+  }
   const venues = pro.venues.map(v => Object.assign({ name: v.name, area: v.area || '', email: v.email || '', map: v.map || '', review: v.review || '', wa: v.wa || '', phone: v.phone || '', book: https(v.book), own: !!v.own, ig: String(v.ig || '').replace(/[^\w.]/g, '').slice(0, 40) }, openState(v, now.hm)));
   const events = [];
   for (let i = 0; i <= 6; i++) {
@@ -99,7 +108,7 @@ function prospectCard(pro, code){
   const fmtEv = e => ({ day: dow(e.date), date: e.date, title: e.title, sub: e.sub, venue: e.venue, time: e.start ? niceTime(e.start) + (e.end ? ' - ' + niceTime(e.end) : '') : '' });
   const tonight = events.filter(e => e.date === now.date && !(e.end && toMin(e.end) > toMin(e.start || '00:00') && toMin(e.end) <= toMin(now.hm))).map(fmtEv);
   const week = events.filter(e => e.date > now.date).map(fmtEv);
-  const gp = GP.build(pro.content(now.date), { company: 'demo', code, venues, today: now.date, who: pro.first, vip: pro.tier === 'vip', contact: cleanContact(pro.contact) });
+  const gp = GP.build(pro.content(now.date), { company: (ov && ov.co) || 'demo', code, venues, today: now.date, who: pro.first, vip: pro.tier === 'vip', contact: cleanContact(pro.contact) });
   const rv = venues.find(v => v.review);
   return { ok: true, brand: pro.brand, logo: pro.logo, code, first: pro.first, tier: pro.tier, visits: pro.visits, favourite: pro.favourite, gp,
     since: pro.since, perks: pro.perks, perkIcons: pro.perkIcons, offers: true, reviewAsk: rv ? { venue: rv.name, date: addDays(now.date, -1), when: 'yesterday', demo: true } : null,
@@ -113,14 +122,23 @@ module.exports = async (req, res) => {
     if (!code) return L.send(res, 400, { ok: false, reason: 'no code' });
     const pro = PR.get(code);
     if (pro) {   // sales demo keyring: that venue's own page, no database
-      const card = prospectCard(pro, code);
-      // Mavis Club network: only when the demo company switched it on (Members Club > Settings). Off = nothing shows.
+      // The demo company may have this prospect's page saved in its back office (Design your page): then the page is what they saved
+      let ms = null, ov = null;
       try {
         const kk = (await L.db('member_keyrings?select=company_id&code=eq.' + q(code)))[0];
-        const st = kk ? (await L.db('app_settings?select=value&company_id=eq.' + q(kk.company_id) + '&key=eq.mk_settings'))[0] : null;
-        const ms = st ? parse(st.value) : null;
-        if (ms && ms.club && ms.club.on && Array.isArray(pro.club)) card.club = PR.club(pro.club, card.first);
+        if (kk) {
+          const [sts, gps] = await Promise.all([
+            safe(L.db('app_settings?select=key,value&company_id=eq.' + q(kk.company_id) + '&key=in.(mk_settings,member_page,member_perks)')),
+            safe(L.db('guest_page?select=content&company_id=eq.' + q(kk.company_id)))]);
+          const set = {}; sts.forEach(r => { set[r.key] = parse(r.value); });
+          ms = set.mk_settings;
+          const key = PR.keyOf(code), gc = gps[0] && gps[0].content;
+          if (key && gc && gc.as === key) ov = { co: kk.company_id, content: gc, page: set.member_page && set.member_page.as === key ? set.member_page : null, perks: set.member_page && set.member_page.as === key ? set.member_perks : null };
+        }
       } catch (e) {}
+      const card = prospectCard(pro, code, ov);
+      // Mavis Club network: only when the demo company switched it on (Members Club > Settings). Off = nothing shows.
+      if (ms && ms.club && ms.club.on && Array.isArray(pro.club)) card.club = PR.club(pro.club, card.first);
       return L.send(res, 200, card);
     }
     const k = (await L.db('member_keyrings?select=code,company_id,member_id&code=eq.' + q(code)))[0];

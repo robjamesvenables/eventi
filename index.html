@@ -2491,6 +2491,7 @@ body:not(.mv-demo) #ms-demoqr-btn{display:none!important}
 .gp-mn small{font:600 12px Inter,sans-serif;color:#64748B;line-height:1.4}.gp-mn small.old{color:#B45309}
 .gp-mn small button{border:0;background:none;padding:0;font:800 12px Inter,sans-serif;color:#0F766E;cursor:pointer;text-decoration:underline}
 .gp-mnx{border:0;background:#FEF2F2;color:#B91C1C;width:34px;height:34px;border-radius:9px;display:flex;align-items:center;justify-content:center;cursor:pointer;flex:none}
+.gp-mntip{margin:8px 0 0;padding:10px 12px;border-radius:10px;background:#FEF6E4;border:1px solid #F3D9A4;color:#7A5413;font:600 12.5px/1.45 Inter,sans-serif}.gp-mntip b{color:#5C3D0A;font-weight:800}
 .gp-mnadd{display:flex;gap:8px;flex-wrap:wrap}.gp-mnadd label.gp-add{color:#0F766E;font:800 13.5px Inter,sans-serif}.gp-mnadd .gp-add{flex:1 1 40%;text-align:center;cursor:pointer;margin:0}
 @media(max-width:360px){#p-membership > .ph .ms-hbtns > button svg{display:none}}
 .dc-sheet .vdf-foot{flex-wrap:wrap}.dc-sheet .vdf-foot button{flex:1 1 30%;justify-content:center}.dc-sheet #dc-send{display:inline-flex;align-items:center;gap:6px;justify-content:center}
@@ -23759,8 +23760,8 @@ window.gpPlaceForm = function(name){
       return `<div class="gp-mn"><i>${sv(m.path ? MNI : LKI)}</i><div class="x"><input class="gp-mnn" data-i="${i}" maxlength="30" value="${gpEsc(m.name || '')}" placeholder="Name, e.g. Food">
         ${m.path ? `<small class="${old ? 'old' : ''}">${m.type === 'pdf' ? 'PDF' : 'Picture'} · uploaded ${agoTxt(m.at)}${old ? ' - still up to date?' : ''} · <button type="button" data-view="${i}">View</button></small>` : `<input class="gp-mnu" data-i="${i}" inputmode="url" autocapitalize="off" placeholder="Paste the link, e.g. https://..." value="${gpEsc(m.url || '')}">`}</div>
         <button type="button" class="gp-mnx" data-rm="${i}" aria-label="Remove menu">${gpIc(GPI.x, 15)}</button></div>`; }).join('') +
-      (menus.length < 4 ? `<div class="gp-mnadd"><label class="gp-add">+ Add a menu file<input type="file" accept="application/pdf,image/*" hidden id="gpp-mf"></label><button type="button" class="gp-add" id="gpp-ml">+ Add a link</button></div>` : '') +
-      `<div class="gp-hint" style="margin:6px 0 0 2px">A PDF or a picture, up to 15 MB. Each menu gets its own button on this place's page.</div>`;
+      (menus.length < 4 ? `<div class="gp-mnadd"><label class="gp-add">+ Add a menu (PDF)<input type="file" accept="application/pdf,.pdf" hidden id="gpp-mf"></label></div>` : '') +
+      `<div class="gp-mntip"><b>Menus must be a PDF</b> (up to 15 MB). Links don't work here. Menu only online? Open the link in Chrome, tap Download, then add the PDF here.</div>`;
     box.querySelectorAll('.gp-mnn').forEach(x => x.oninput = () => { menus[+x.dataset.i].name = x.value; });
     box.querySelectorAll('.gp-mnu').forEach(x => x.oninput = () => { menus[+x.dataset.i].url = x.value.trim(); });
     box.querySelectorAll('[data-rm]').forEach(b => b.onclick = () => { const m = menus.splice(+b.dataset.rm, 1)[0]; if(m && m.path){ if(added.includes(m.path)) gpForgetFile(m); else dropped.push(m); } drawMenus(); });
@@ -23769,7 +23770,7 @@ window.gpPlaceForm = function(name){
     const mf = $('gpp-mf'); if(mf) mf.onchange = async () => {
       const f = mf.files && mf.files[0]; mf.value = ''; if(!f) return;
       const pdf = /pdf/i.test(f.type || '') || /\.pdf$/i.test(f.name || '');
-      if(!pdf && !/^image\//.test(f.type || '')){ toast('Please pick a PDF or a picture'); return; }
+      if(!pdf){ toast('Menus must be a PDF - open the menu in Chrome, tap Download, then add it here'); return; }
       if(f.size > 15 * 1048576){ toast('That file is ' + Math.round(f.size / 1048576) + ' MB - please use one under 15 MB (ask your designer for a smaller PDF)'); return; }
       const lab = mf.closest('label'); if(lab) lab.firstChild.textContent = 'Uploading…';
       try{

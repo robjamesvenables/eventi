@@ -422,7 +422,7 @@ svg{display:block}
     var homeHtml = function(){
       // Their film plays on its own at the very top (muted, on a loop); 'Sound on' opens it full with sound
       var filmHtml = function(){
-        if (gp.video) return '<div class="hv"><video id="hvv" autoplay muted loop playsinline preload="auto" poster="' + esc(gp.video.replace(/\.mp4$/, '.jpg')) + '" src="' + esc(gp.video) + '"></video></div>';
+        if (gp.video) return '<div class="hv"><video id="hvv" autoplay muted loop playsinline preload="auto" poster="' + esc(gp.video.replace(/\.mp4$/, '.jpg')) + '" src="' + esc(gp.video) + '"></video><button id="hvs">' + svg('<path d="M11 5 6 9H2v6h4l5 4V5z"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/><path d="M19 5a10 10 0 0 1 0 14"/>', 16) + '<span>Sound on</span></button></div>';
         return gp.film ? '<div class="hv" id="hv"><iframe src="https://www.youtube-nocookie.com/embed/' + esc(gp.film) + '?autoplay=1&mute=1&loop=1&playlist=' + esc(gp.film) + '&controls=0&playsinline=1&rel=0&modestbranding=1&iv_load_policy=3&disablekb=1" allow="autoplay; encrypted-media" title="Film" tabindex="-1"></iframe><button id="film">' + svg('<path d="M11 5 6 9H2v6h4l5 4V5z"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/><path d="M19 5a10 10 0 0 1 0 14"/>', 16) + 'Sound on</button></div>' : ''; };
     var h = '<div class="w">' + topHtml(filmHtml() + (gp.motion ? slidesHtml(gp.slides || [], true) : '')) + memberHtml();
       h += '<div class="sec"><div class="lab">WHERE ARE YOU HEADING?</div><div class="pgrid">' + places.map(function(p){
@@ -480,8 +480,8 @@ svg{display:block}
       var open = function(title, html){ document.getElementById('sht').textContent = title; document.getElementById('shc').innerHTML = html; document.getElementById('shc').scrollTop = 0; if (!sh.classList.contains('on')) { try { history.pushState({ place: key, sh: 1 }, '', location.pathname + location.search); } catch (e) {} } sh.classList.add('on'); document.body.style.overflow = 'hidden'; };
       var close = function(){ if (history.state && history.state.sh) history.back(); else { sh.classList.remove('on'); document.body.style.overflow = ''; var sc = document.getElementById('shc'); if (sc.querySelector('iframe')) sc.innerHTML = ''; } };
       document.getElementById('shx').onclick = close;
-      var hvv = document.getElementById('hvv');
-      if (hvv) { var pl = hvv.play(); if (pl && pl.catch) pl.catch(function(){}); }
+      var hvv = document.getElementById('hvv'), hvs = document.getElementById('hvs');
+      if (hvv) { var pl = hvv.play(); if (pl && pl.catch) pl.catch(function(){}); if (hvs) hvs.onclick = function(){ hvv.muted = !hvv.muted; if (!hvv.muted) { hvv.currentTime = 0; hvv.play(); } hvs.querySelector('span').textContent = hvv.muted ? 'Sound on' : 'Sound off'; }; }
       var hv = document.getElementById('hv');
       if (hv) { var fit = function(){ hv.style.setProperty('--hk', (hv.clientWidth / 1280 * 1.3).toFixed(4)); }; fit(); window.addEventListener('resize', fit); }
       var fb = document.getElementById('film'); if (fb) fb.onclick = function(){ open(d.brand, '<div class="vid"><iframe src="https://www.youtube-nocookie.com/embed/' + encodeURIComponent(gp.film) + '?autoplay=1&playsinline=1&rel=0" allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowfullscreen title="Film"></iframe></div>'); };

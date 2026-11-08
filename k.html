@@ -108,9 +108,15 @@ svg{display:block}
 .ven a{width:38px;height:38px;border-radius:11px;background:#F1F5F9;color:#0F1E2E;display:flex;align-items:center;justify-content:center;flex:none}
 .addhome{display:flex;align-items:center;gap:12px;width:calc(100% - 32px);margin:22px 16px 0;padding:12px 14px;border:1.5px dashed rgba(15,30,46,.14);border-radius:16px;background:none;text-align:left;font-family:inherit;color:#0F1E2E;cursor:pointer}
 .addhome i{width:38px;height:38px;border-radius:11px;background:#fff;color:var(--top,#0F1E2E);display:flex;align-items:center;justify-content:center;flex:none;box-shadow:0 1px 3px rgba(15,30,46,.08)}
-.addhome span{flex:1;min-width:0}.addhome b{display:block;font-size:14.5px;font-weight:800}.addhome small{display:block;font-size:12.5px;color:#64748B;font-weight:600;margin-top:1px;line-height:1.35}.addhome>svg{flex:none;color:#94A3B8}
-.ahs{display:grid;gap:10px}.ahs div{display:flex;gap:12px;align-items:center;background:#fff;border-radius:14px;padding:12px 14px;font-size:15px;font-weight:600;line-height:1.4}.ahs em{font-style:normal;width:28px;height:28px;border-radius:50%;background:var(--top,#0F1E2E);color:var(--top-ink,#fff);display:flex;align-items:center;justify-content:center;font-weight:900;flex:none}.ahdone{margin:6px auto 0;border:0;background:none;color:#64748B;font:700 13px Inter,sans-serif;text-decoration:underline;padding:8px;cursor:pointer}
-.ahs p{font-size:13px;color:#64748B;text-align:center;margin-top:4px}
+.ahtip{position:fixed;z-index:60;background:#0F1E2E;color:#fff;border-radius:14px;padding:12px 16px;font-size:14.5px;font-weight:600;line-height:1.45;text-align:center;box-shadow:0 8px 24px rgba(0,0,0,.3);animation:ahb 1.2s ease-in-out infinite}
+.ahtip b{font-weight:900;color:#fff}
+.ahtip.down{left:50%;bottom:calc(14px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);width:max-content;max-width:calc(100% - 32px)}
+.ahtip.down::after{content:'';position:absolute;bottom:-9px;left:50%;margin-left:-9px;border:9px solid transparent;border-top-color:#0F1E2E;border-bottom:0}
+.ahtip.up{right:10px;top:calc(10px + env(safe-area-inset-top,0px));max-width:calc(100% - 20px)}
+.ahtip.up::after{content:'';position:absolute;top:-9px;right:14px;border:9px solid transparent;border-bottom-color:#0F1E2E;border-top:0}
+@keyframes ahb{50%{margin-bottom:6px;margin-top:6px}}
+@media (prefers-reduced-motion:reduce){.ahtip{animation:none}}
+.addhome small b{display:inline;font-size:inherit;font-weight:800;color:#0F1E2E}.addhome span{flex:1;min-width:0}.addhome .ahb{flex:none;font-style:normal;background:var(--top,#0F1E2E);color:var(--top-ink,#fff);font-size:13px;font-weight:800;border-radius:10px;padding:8px 14px}.addhome b{display:block;font-size:14.5px;font-weight:800}.addhome small{display:block;font-size:12.5px;color:#64748B;font-weight:600;margin-top:1px;line-height:1.35}.addhome>svg{flex:none;color:#94A3B8}
 .foot{text-align:center;font-size:12px;color:#94A3B8;margin:18px 16px 0;line-height:1.5}.foot a{display:inline-block;margin-top:4px}
 .foot a{color:#94A3B8;font-weight:700;text-decoration:none}
 .book{position:fixed;left:0;right:0;bottom:0;padding:12px 16px calc(12px + env(safe-area-inset-bottom,0px));background:var(--pg,#F5F4F0);border-top:1px solid rgba(15,30,46,.08);z-index:5}
@@ -372,7 +378,7 @@ svg{display:block}
 
   // Staff preview: a small quiet label in the corner (none inside the editor's live preview)
   window.addEventListener('beforeinstallprompt', function(e){ e.preventDefault(); window.__mvInstall = e; });
-  window.addEventListener('appinstalled', function(){ try { localStorage.setItem('mv-home:' + code, '1'); } catch (e) {} var r = document.getElementById('addhome'); if (r) r.remove(); });
+  window.addEventListener('appinstalled', function(){ var r = document.getElementById('addhome'); if (r) r.remove(); });
   document.addEventListener('click', function(e){ var b = e.target.closest && e.target.closest('[data-copy]'); if (!b) return; e.stopPropagation(); e.preventDefault(); var c = b.getAttribute('data-copy');
     var done = function(){ b.textContent = 'Copied'; setTimeout(function(){ b.textContent = 'Copy'; }, 1800); };
     try { navigator.clipboard.writeText(c).then(done, function(){ prompt('Your member code', c); }); } catch (x) { done(); } }, true);
@@ -435,8 +441,7 @@ svg{display:block}
     var sheet = '<div class="sh" id="sh"><div class="shb"><div class="shh"><b id="sht"></b><button id="shx" aria-label="Close">' + svg(I.x, 18) + '</button></div><div class="shc" id="shc"></div></div></div>';
     // "Keep this on your phone": one quiet line at the bottom (never a pop-up) - hidden once it's opened from the home screen, and in the back office preview
     var standalone = (window.matchMedia && matchMedia('(display-mode: standalone)').matches) || window.navigator.standalone === true || /[?&]home=1/.test(location.search);
-    var homeDone = false; try { homeDone = localStorage.getItem('mv-home:' + code) === '1'; } catch (e) {}
-    var homeRow = standalone || homeDone || /[?&]embed=1/.test(location.search) ? '' : '<button class="addhome" id="addhome" type="button"><i>' + svg('<rect x="6" y="2" width="12" height="20" rx="3"/><path d="M12 7v7M9 11l3 3 3-3"/>', 18) + '</i><span><b>Keep this on your phone</b><small>Add it to your home screen - no keyring needed to open it</small></span>' + svg('<path d="m9 18 6-6-6-6"/>', 16) + '</button>';
+    var homeRow = standalone || /[?&]embed=1/.test(location.search) ? '' : '<button class="addhome" id="addhome" type="button"><i>' + svg('<rect x="6" y="2" width="12" height="20" rx="3"/><path d="M12 7v7M9 11l3 3 3-3"/>', 18) + '</i><span><b>Save to your phone</b><small id="ahtx">No keyring needed to open it</small></span><em class="ahb">Add</em></button>';
     var foot = homeRow + '<div class="foot">Show your keyring when you arrive<br>and we\'ll look after the rest.<br><a href="https://getmavis.co">Powered by Mavis</a></div>';
 
     // ── Slides (photos at the top) ──
@@ -699,14 +704,16 @@ svg{display:block}
       var close = function(){ if (history.state && history.state.sh) history.back(); else { sh.classList.remove('on'); document.body.style.overflow = ''; var sc = document.getElementById('shc'); if (sc.querySelector('iframe')) sc.innerHTML = ''; } };
       document.getElementById('shx').onclick = close;
       var ah = document.getElementById('addhome');
-      if (ah) ah.onclick = function(){
-        if (window.__mvInstall) { var ev = window.__mvInstall; window.__mvInstall = null; ev.prompt(); return; }   // Android Chrome: one tap
+      if (ah) ah.onclick = function(){   // same as Mavis: Android installs with a tap; iPhone can't (Apple), so one short line says where to tap
+        if (window.__mvInstall) { var ev = window.__mvInstall; window.__mvInstall = null; ev.prompt(); return; }
         var ios = /iphone|ipad|ipod/i.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
-        var share = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-3px;margin:0 2px"><path d="M12 3v12M8 7l4-4 4 4"/><path d="M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7"/></svg>';
-        var steps = ios ? ['Tap the Share button ' + share + ' at the bottom of Safari', 'Scroll down and tap <b>Add to Home Screen</b>', 'Tap <b>Add</b> - it\'s on your phone like an app']
-          : ['Tap the <b>⋮</b> menu at the top right of your browser', 'Tap <b>Add to Home screen</b> (or <b>Install app</b>)', 'Tap <b>Add</b> - it\'s on your phone like an app'];
-        open('Keep this on your phone', '<div class="ahs">' + steps.map(function(t, i){ return '<div><em>' + (i + 1) + '</em><span>' + t + '</span></div>'; }).join('') + '<p>Lost your keyring? Just open it from your home screen.</p><button type="button" class="ahdone" id="ahdone">It\'s already on my phone - hide this</button></div>');
-        var dn = document.getElementById('ahdone'); if (dn) dn.onclick = function(){ try { localStorage.setItem('mv-home:' + code, '1'); } catch (e) {} var r = document.getElementById('addhome'); if (r) r.remove(); close(); };
+        // a small dark tip that points at the exact button: Safari's Share (bottom) on iPhone, the ⋮ menu (top right) on Android
+        var old = document.getElementById('ahtip'); if (old) old.remove();
+        var share = '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-3px;margin:0 2px"><path d="M12 3v12M8 7l4-4 4 4"/><path d="M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7"/></svg>';
+        var tip = document.createElement('div'); tip.id = 'ahtip'; tip.className = 'ahtip ' + (ios ? 'down' : 'up');
+        tip.innerHTML = ios ? 'Tap the Share button ' + share + ' below,<br>then <b>Add to Home Screen</b>' : 'Tap the <b>⋮</b> menu up here,<br>then <b>Add to Home screen</b>';
+        tip.onclick = function(){ tip.remove(); }; document.body.appendChild(tip);
+        setTimeout(function(){ if (tip.parentNode) tip.remove(); }, 12000);
       };
       var hvv = document.getElementById('hvv'), hvs = document.getElementById('hvs');
       if (hvv) { var shape = function(){ if (hvv.videoWidth) hvv.parentNode.classList.toggle('tall', hvv.videoHeight > hvv.videoWidth); }; hvv.addEventListener('loadedmetadata', shape); shape();

@@ -14,12 +14,13 @@ svg{display:block}
 .load{padding:120px 20px;text-align:center;color:#94A3B8;font-size:14px;font-weight:600;background:#0F1E2E;min-height:100vh}
 /* top */
 .top{background:var(--top,#0F1E2E);color:var(--top-ink,#fff);padding:calc(20px + env(safe-area-inset-top,0px)) 20px 96px}
-.brand{display:flex;align-items:center;gap:11px}
+.brand{display:flex;align-items:center;gap:12px}
+.brand .mk{width:52px;height:52px;border-radius:14px}
 .mk{width:40px;height:40px;border-radius:12px;background:#C4973B;color:#2B1D07;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:17px;overflow:hidden;flex:none}
 .mk img{width:100%;height:100%;object-fit:cover;background:white}
 .mk.lg{background:white}
-.brand b{display:block;font-size:13.5px;font-weight:900;letter-spacing:2px;text-transform:uppercase}
-.brand small{display:block;font-size:9.5px;font-weight:800;letter-spacing:2.6px;color:#C4973B;margin-top:2px}
+.brand b{display:block;font-size:16px;font-weight:900;letter-spacing:1.6px;text-transform:uppercase;line-height:1.15}
+.brand small{display:block;font-size:15px;font-weight:900;letter-spacing:3px;color:#D9B46A;margin-top:4px}
 .hi{margin-top:26px;font-size:30px;font-weight:900;letter-spacing:-.8px;line-height:1.1}
 .hi-s{margin-top:7px;font-size:14px;color:var(--top-sub,#CBD5E1);line-height:1.45}
 /* card */
@@ -443,7 +444,7 @@ svg{display:block}
       h += '<div class="sec"><div class="lab">OUR OTHER PLACES</div><div class="pgrid">' + places.map(function(p){
         var v = venueOf(lc(p.name)), st = v ? (v.open === true ? 'Open now' : v.open === false ? v.label : '') : '';
         return '<button class="pbig" data-go="' + esc(lc(p.name)) + '">' + (p.img ? '<img src="' + esc(p.img) + '" alt="" loading="lazy">' : '<div class="ini">' + esc(String(p.name).charAt(0).toUpperCase()) + '</div>') +
-          '<span><b translate="no">' + esc(p.name) + '</b><small>' + esc([p.area, st].filter(Boolean).join(' · ')) + '</small></span></button>';
+          '<span><b translate="no">' + esc(p.name) + '</b>' + (st ? '<small>' + esc(st) + '</small>' : '') + '</span></button>';   // just the name (+ open / closed when they set hours)
       }).join('') + '</div></div>';
       if (on.gallery && (gp.gallery || []).length) h += galHtml(gp.gallery, '');
       h += reviewLine(d.venues) + igHtml(places);
@@ -459,8 +460,7 @@ svg{display:block}
       var p = placeOf(key) || { name: key }, v = venueOf(key) || {};
       var st = v.open === true ? '<span class="open">Open now</span> · ' + esc(v.label) : v.open === false ? esc(v.label) : '';
       var h = '<div class="w"><div class="vtop">' + (p.img ? '<img src="' + esc(p.img) + '" alt="">' : '') + '<div class="vin"><button class="back" data-home aria-label="All places">' + svg('<path d="m15 18-6-6 6-6"/>', 18) + 'All places</button>' +
-        '<div class="vname"><b translate="no">' + esc(p.name) + '</b><small>' + [esc(p.area || ''), st].filter(Boolean).join(' · ') + '</small></div></div></div>';
-      h += '<div class="vacts">' + (v.map ? '<a class="mp" href="' + esc(v.map) + '" target="_blank" rel="noopener">' + svg(I.pin, 17) + 'Map</a>' : '') + '' + '</div>';
+        '<div class="vname"><b translate="no">' + esc(p.name) + '</b>' + (st ? '<small>' + st + '</small>' : '') + '</div></div></div>';
       h += menuHtml(p);
       var sl = (gp.slides || []).filter(function(x){ return gp.motion ? lc(x.venue || '') === key : at(x, key); });
       if (sl.length) h += '<div class="vsl">' + slidesHtml(sl, false) + '</div>';
@@ -495,7 +495,9 @@ svg{display:block}
       if (ct.phone) r.push({ label: 'Call us', icon: I.phone, href: telOf(ct.phone) });
       if (ct.wa) r.push({ label: 'WhatsApp', icon: I.wa, href: 'https://wa.me/' + ct.wa + '?text=' + encodeURIComponent(me) });
       if (ct.email) r.push({ label: 'Email', icon: I.mail, href: 'mailto:' + ct.email + '?subject=' + encodeURIComponent('Enquiry from a ' + (d.brand || '') + ' member') });
-      if (ct.map) r.push({ label: 'Directions', icon: I.pin, href: ct.map });
+      var maps = (d.venues || []).filter(function(v){ return v.map; }), many = maps.map(function(v){ return v.map; }).filter(function(m, i, a){ return a.indexOf(m) === i; }).length > 1;
+      if (many) r.push({ label: 'Directions', icon: I.pin, href: '#dir' });   // places in different spots: pick which one
+      else if (ct.map) r.push({ label: 'Directions', icon: I.pin, href: ct.map });
       if (ct.ig) r.push({ label: 'Instagram', icon: I.ig, href: 'https://instagram.com/' + encodeURIComponent(ct.ig) });
       return r;
     };
@@ -615,7 +617,10 @@ svg{display:block}
       };
       var bk = document.getElementById('bk'), cl = document.getElementById('cl');
       if (bk) bk.onclick = function(){ var rows = bookRows(key); if (rows.length === 1) { var r = rows[0]; if (/^https/.test(r.href)) window.open(r.href, '_blank', 'noopener'); else location.href = r.href; return; } open('Book', '<div class="rws">' + rowsHtml(rows) + '</div>'); };   // only one choice: straight there
-      if (cl) cl.onclick = function(){ open('Contact', '<div class="rws">' + rowsHtml(contactRows()) + '</div>'); };
+      if (cl) cl.onclick = function(){ open('Contact', '<div class="rws">' + rowsHtml(contactRows()) + '</div>');
+        var dr = document.querySelector('#shc a[href="#dir"]');
+        if (dr) dr.onclick = function(e){ e.preventDefault(); open('Directions', '<div class="rws">' + rowsHtml((d.venues || []).filter(function(v){ return v.map; }).map(function(v){ return { label: v.name, icon: I.pin, href: v.map }; })) + '</div>'); };
+      };
       // Computers: left / right arrows on every sideways row (photos, events, gallery, this week)
       if (window.matchMedia && matchMedia('(hover:hover) and (pointer:fine)').matches) Array.prototype.forEach.call(document.querySelectorAll('.sl,.evs,.gal,.days'), function(row){
         if (row.scrollWidth <= row.clientWidth + 4) return;

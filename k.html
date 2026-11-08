@@ -395,7 +395,10 @@ svg{display:block}
 
     // ── Follow us on Instagram (each place's own account) ──
     var igHtml = function(list){
-      list = (list || []).filter(function(p){ return p.ig; });
+      var seen = {}, cnt = {};
+      (list || []).forEach(function(p){ if (p.ig) cnt[p.ig] = (cnt[p.ig] || 0) + 1; });
+      list = (list || []).filter(function(p){ if (!p.ig || seen[p.ig]) return false; seen[p.ig] = 1; return true; })
+        .map(function(p){ return cnt[p.ig] > 1 ? { ig: p.ig, name: d.brand || p.name } : p; });   // one shared account: show it once, under the brand
       if (!list.length) return '';
       return '<div class="sec"><div class="lab">FOLLOW US</div><div class="box">' + list.map(function(p){
         return '<a class="ig" href="https://instagram.com/' + encodeURIComponent(p.ig) + '" target="_blank" rel="noopener"><i>' + svg(I.ig, 20) + '</i><span class="n"><b translate="no">' + esc(many ? p.name : '@' + p.ig) + '</b><small>' + (many ? '@' + esc(p.ig) : 'on Instagram') + '</small></span><span class="f">Follow</span></a>';
@@ -404,7 +407,7 @@ svg{display:block}
 
     // ── Screens ──
     var homeHtml = function(){
-      var h = '<div class="w">' + topHtml('') + memberHtml();
+      var h = '<div class="w">' + topHtml(gp.motion ? slidesHtml(gp.slides || [], true) : '') + memberHtml();
       h += '<div class="sec"><div class="lab">WHERE ARE YOU HEADING?</div><div class="pgrid">' + places.map(function(p){
         var v = venueOf(lc(p.name)), st = v ? (v.open === true ? 'Open now' : v.open === false ? v.label : '') : '';
         return '<button class="pbig" data-go="' + esc(lc(p.name)) + '">' + (p.img ? '<img src="' + esc(p.img) + '" alt="" loading="lazy">' : '<div class="ini">' + esc(String(p.name).charAt(0).toUpperCase()) + '</div>') +
@@ -427,7 +430,7 @@ svg{display:block}
         '<div class="vname"><b translate="no">' + esc(p.name) + '</b><small>' + [esc(p.area || ''), st].filter(Boolean).join(' · ') + '</small></div></div></div>';
       h += '<div class="vacts">' + (v.map ? '<a class="mp" href="' + esc(v.map) + '" target="_blank" rel="noopener">' + svg(I.pin, 17) + 'Map</a>' : '') + (v.wa ? '<a class="bk" href="https://wa.me/' + esc(v.wa) + '?text=' + encodeURIComponent(greetAt(p.name)) + '" target="_blank" rel="noopener">' + svg(I.wa, 17) + 'Book a table</a>' : '') + '</div>';
       h += menuHtml(p);
-      var sl = (gp.slides || []).filter(function(x){ return at(x, key); });
+      var sl = (gp.slides || []).filter(function(x){ return gp.motion ? lc(x.venue || '') === key : at(x, key); });
       if (sl.length) h += '<div class="vsl">' + slidesHtml(sl, false) + '</div>';
       var body = placeSections(key);
       h += body || '<div class="sec"><div class="box" style="padding:18px;text-align:center;color:#64748B;font-size:14px;font-weight:600">Nothing special on here right now - come and see us!</div></div>';
@@ -557,13 +560,14 @@ svg{display:block}
         sl.addEventListener('scroll', function(){ var i = Math.round(sl.scrollLeft / step()); if (i !== idx) { idx = i; Array.prototype.forEach.call(dots.children, function(t, k){ t.className = k === idx ? 'on' : ''; }); } }, { passive: true });
         Array.prototype.forEach.call(dots.children, function(t, k){ t.onclick = function(){ sl.scrollTo({ left: k * step(), behavior: 'smooth' }); }; });
       }
+      clearInterval(window.__slT);
       if (sl && gp.motion && sl.children.length > 1) {
         var calm = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches, held = 0, cur = -1;
         sl.parentNode.classList.add('mo');
         var live = function(){ var i = Math.round(sl.scrollLeft / (sl.children[1].offsetLeft - sl.children[0].offsetLeft)); if (i !== cur) { cur = i; Array.prototype.forEach.call(sl.children, function(c, k){ c.classList.toggle('live', k === i); }); } };
         sl.addEventListener('scroll', live, { passive: true }); setTimeout(live, 60);
         ['touchstart', 'pointerdown', 'wheel'].forEach(function(ev){ sl.addEventListener(ev, function(){ held = Date.now(); }, { passive: true }); });
-        if (!calm) setInterval(function(){
+        if (!calm) window.__slT = setInterval(function(){
           if (document.hidden || Date.now() - held < 9000) return;
           var r = sl.getBoundingClientRect(); if (r.bottom < 0 || r.top > innerHeight) return;
           var w = sl.children[1].offsetLeft - sl.children[0].offsetLeft, n = sl.children.length, nx = (Math.round(sl.scrollLeft / w) + 1) % n;

@@ -126,7 +126,7 @@ svg{display:block}
 .hv button{position:absolute;right:10px;bottom:10px;display:inline-flex;align-items:center;gap:6px;background:rgba(15,30,46,.72);color:#fff;border:0;border-radius:999px;padding:7px 12px;font:inherit;font-size:13px;font-weight:800;cursor:pointer}
 .vid{position:relative;padding-top:56.25%;border-radius:14px;overflow:hidden;background:#000}.vid iframe{position:absolute;inset:0;width:100%;height:100%;border:0}
 /* slow photo slideshow (gentle zoom on the photo in view, moves on by itself) */
-.mo .sd img{transform:scale(1.02);transition:transform 3s ease-out}
+.mo .sd img{transform:scale(1.02);transition:transform 3s ease-out;will-change:transform;backface-visibility:hidden}
 .mo .sd.live img{transform:scale(1.12)}
 @media (prefers-reduced-motion:reduce){.mo .sd img,.mo .sd.live img{transform:none;transition:none}}
 .dots i{width:6px;height:6px;border-radius:3px;background:var(--top-ink,#fff);opacity:.3;transition:width .2s,opacity .2s}
@@ -589,18 +589,17 @@ svg{display:block}
       clearTimeout(window.__slT);
       if (sl && gp.motion && sl.children.length > 1) {
         // Slideshow that moves on by itself - our own steady timing (same speed on every phone):
-        // 2.5s on each photo, then a 0.6s glide to the next. Pauses 3s only after the guest really swipes it.
+        // 2.5s on each photo, then a smooth glide to the next. Pauses 3s only after the guest really swipes it.
         var calm = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches, held = 0, cur = -1, gliding = false;
         sl.parentNode.classList.add('mo');
         var gap = function(){ return sl.children[1].offsetLeft - sl.children[0].offsetLeft; };
         var live = function(){ var i = Math.round(sl.scrollLeft / gap()); if (i !== cur) { cur = i; Array.prototype.forEach.call(sl.children, function(c, k){ c.classList.toggle('live', k === i); }); } };
         sl.addEventListener('scroll', function(){ if (!gliding) held = Date.now(); live(); }, { passive: true }); setTimeout(live, 60);
+        // The glide itself is the phone's own smooth scroll (runs on the graphics chip - smoothest); we only control the timing
         var glide = function(to, done){
-          var from = sl.scrollLeft, t0 = 0, ms = 600; gliding = true; sl.style.scrollSnapType = 'none';
-          var ease = function(x){ return x < .5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2; };
-          var stepF = function(ts){ if (!t0) t0 = ts; var k = Math.min(1, (ts - t0) / ms); sl.scrollLeft = from + (to - from) * ease(k);
-            if (k < 1) requestAnimationFrame(stepF); else { sl.style.scrollSnapType = ''; setTimeout(function(){ gliding = false; }, 50); done(); } };
-          requestAnimationFrame(stepF);
+          gliding = true; var t0 = Date.now(); sl.scrollTo({ left: to, behavior: 'smooth' });
+          var wait = function(){ if (Math.abs(sl.scrollLeft - to) > 2 && Date.now() - t0 < 1500) return requestAnimationFrame(wait); setTimeout(function(){ gliding = false; }, 80); done(); };
+          requestAnimationFrame(wait);
         };
         var tick = function(){
           var r = sl.getBoundingClientRect();

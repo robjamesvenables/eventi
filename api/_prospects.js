@@ -73,7 +73,7 @@ P.trans = {
   content: today => {
     const y = year(today);
     return {
-      theme: { top: '#7A1F1F', acc: '#B8923A', pg: '#F7F3EC' }, motion: true, film: 'SuGopiivnG4',
+      theme: { top: '#7A1F1F', acc: '#B8923A', pg: '#F7F3EC' }, motion: true, video: '/demo-guest/p-trans-film.mp4',
       slides: [
         { id: 'ts1', img: tr('pool'), title: 'The lagoon pool', line: 'Swim up to the bar as the sun goes down', venue: '', btn: 'book', url: TRANS_BOOK },
         { id: 'ts2', img: tr('rooftop'), title: 'Sunsets at The 18th', line: 'Rooftop cocktails over Seminyak', venue: 'The 18th Rooftop Bar' },

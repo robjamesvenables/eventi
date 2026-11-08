@@ -67,7 +67,8 @@ P.trans = {
   venues: ['The 18th Rooftop Bar', 'The Restaurant', 'The Lobby Lounge'].map(name => ({ name, area: 'Seminyak', map: 'https://maps.google.com/?q=The+Trans+Resort+Bali', phone: '+62 361 898 1234', review: 'https://maps.google.com/?q=The+Trans+Resort+Bali' })),
   acts: [
     { title: 'Sunset at The 18th', line: 'Live acoustic on the rooftop', every: [4, 5, 6], start: '17:30', end: '20:30', venue: 'The 18th Rooftop Bar' },
-    { title: 'Afternoon tea', line: 'Cakes, scones and Balinese treats', every: [0, 1, 2, 3, 4, 5, 6], start: '15:00', end: '17:00', venue: 'The Lobby Lounge' }
+    { title: 'Afternoon tea', line: 'Cakes, scones and Balinese treats', every: [5, 6, 0], start: '15:00', end: '17:00', venue: 'The Lobby Lounge' },
+    { title: 'Live piano in the lobby', line: 'Easy evening music with a nightcap', every: [1, 2, 3, 4], start: '19:00', end: '21:00', venue: 'The Lobby Lounge' }
   ],
   content: today => {
     const y = year(today);
@@ -79,13 +80,15 @@ P.trans = {
         { id: 'ts3', img: tr('villa'), title: 'Private pool villas', line: 'Wake up steps from your own pool', venue: '', btn: 'book', url: TRANS_BOOK },
         { id: 'ts4', img: tr('restoroom'), title: 'The Restaurant', line: 'Breakfast to dinner, right by the pool', venue: 'The Restaurant' },
         { id: 'ts7', img: tr('lobster'), title: 'Lobster thermidor', line: 'Baked with cheese, served with garlic rice', venue: 'The Restaurant' },
+        { id: 'ts8', img: tr('llcocktails'), title: 'Cocktails in the lobby', line: 'Shaken at the bar, served to your sofa', venue: 'The Lobby Lounge' },
         { id: 'ts5', img: tr('spa'), title: 'The spa', line: 'Balinese treatments, members save 15%', venue: '' },
         { id: 'ts6', img: tr('balcony'), title: 'Suites with a view', line: 'Your own bath on the balcony', venue: '', btn: 'book', url: TRANS_BOOK }
       ],
       deals: [
         { id: 'td1', img: tr('rooftop'), title: 'Sunset hour · 2 for 1 cocktails', when: 'Daily · 5–7pm', venue: 'The 18th Rooftop Bar' },
-        { id: 'td2', img: tr('lounge'), title: 'Afternoon tea for two', when: 'Daily · 3–5pm', venue: 'The Lobby Lounge' },
+        { id: 'td2', img: tr('llcoffee'), title: 'Afternoon tea for two', when: 'Daily · 3–5pm', venue: 'The Lobby Lounge' },
         { id: 'td3', img: tr('benedict'), title: 'Sunday brunch · kids eat free', when: 'Sundays · 11am–3pm', venue: 'The Restaurant' },
+        { id: 'td6', img: tr('llmartini'), title: 'Lychee martini · cocktail of the month', when: 'Daily · from 4pm', venue: 'The Lobby Lounge' },
         { id: 'td4', img: tr('surfturf'), title: 'Surf & turf for two · Rp 650k', when: 'Every night · 6–10pm', venue: 'The Restaurant' },
         { id: 'td5', img: tr('oxtail'), title: 'Sop buntut · Thursday special', when: 'Thursdays · lunch', venue: 'The Restaurant' }
       ],
@@ -96,11 +99,11 @@ P.trans = {
           details: 'Count down on the rooftop with a DJ, free-flow packages and fireworks across the skyline.' },
         { id: 'te3', img: tr('wedding'), title: 'Wedding showcase', line: 'Meet our wedding team', date: addDays(today, 10), time: '10:00', time2: '15:00', venue: 'The Lobby Lounge', btn: 'book', url: TRANS_BOOK }
       ],
-      gallery: ['pool', 'beach', 'rooftop', '18day', '18sunset', 'restoroom', 'lobster', 'steak', 'salmon', 'surfturf', 'chicken', 'oxtail', 'benedict', 'villapool', 'villa', 'room', 'balcony', 'spa', 'lobby', 'lounge', 'dining', 'kids', 'ballroom', 'entrance'].map((n, i) => ({ id: 'tg' + i, img: tr(n), venue: n === 'rooftop' || n === '18day' || n === '18sunset' ? 'The 18th Rooftop Bar' : ['dining', 'restoroom', 'lobster', 'steak', 'salmon', 'surfturf', 'chicken', 'oxtail', 'benedict'].includes(n) ? 'The Restaurant' : n === 'lobby' || n === 'lounge' ? 'The Lobby Lounge' : '' })),
+      gallery: ['pool', 'beach', 'rooftop', '18day', '18sunset', 'llroom', 'llcocktails', 'llwelcome', 'llcoffee', 'llmartini', 'llmojito', 'courtyard', 'restoroom', 'lobster', 'steak', 'salmon', 'surfturf', 'chicken', 'oxtail', 'benedict', 'villapool', 'villa', 'room', 'balcony', 'spa', 'lobby', 'lounge', 'dining', 'kids', 'ballroom', 'entrance'].map((n, i) => ({ id: 'tg' + i, img: tr(n), venue: n === 'rooftop' || n === '18day' || n === '18sunset' ? 'The 18th Rooftop Bar' : ['dining', 'restoroom', 'lobster', 'steak', 'salmon', 'surfturf', 'chicken', 'oxtail', 'benedict'].includes(n) ? 'The Restaurant' : ['lobby', 'lounge', 'llroom', 'llcocktails', 'llwelcome', 'llcoffee', 'llmartini', 'llmojito'].includes(n) ? 'The Lobby Lounge' : '' })),
       places: {
         'the 18th rooftop bar': { img: tr('rooftop'), area: 'Rooftop · sunset views', ig: 'thetransresortbali' },
         'the restaurant': { img: tr('restoroom'), area: 'All-day dining by the pool', ig: 'thetransresortbali' },
-        'the lobby lounge': { img: tr('lobby'), area: 'Coffee, tea and cocktails', ig: 'thetransresortbali' }
+        'the lobby lounge': { img: tr('llroom'), area: 'Coffee, tea and cocktails', ig: 'thetransresortbali' }
       }
     };
   }

@@ -121,6 +121,16 @@ svg{display:block}
 .bkr em{font-style:normal;font-size:11.5px;font-weight:700;opacity:.75;flex:none}
 .bkr svg:last-child{opacity:.7;flex:none}.bkr svg:first-child{flex:none}
 .bkr.gold{background:var(--acc,#0D9488);color:var(--acc-ink,#fff)}
+.bkc{background:#fff;border-radius:16px;padding:12px;box-shadow:0 1px 3px rgba(15,30,46,.07)}
+.bkt{display:flex;align-items:center;gap:8px;min-width:0;color:#0F1E2E;padding:0 2px 10px}
+.bkt svg{flex:none;color:var(--top,#0F1E2E)}.bkc.gold .bkt svg{color:var(--acc,#0D9488)}
+.bkt b{flex:1;min-width:0;font-size:16px;font-weight:900;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bkt em{flex:none;font-style:normal;font-size:11px;font-weight:800;color:#0F766E;background:#E0F5F2;border-radius:8px;padding:3px 7px}
+.bkw{display:grid;gap:8px}
+.bkw a{height:48px;min-width:0;border-radius:12px;background:var(--top,#0F1E2E);color:var(--top-ink,#fff);display:flex;align-items:center;justify-content:center;gap:7px;padding:0 8px;font-size:14.5px;font-weight:800;text-decoration:none}
+.bkw a span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.bkw a svg{flex:none}
+.bkw.w3 a{height:60px;flex-direction:column;gap:4px;font-size:13.5px;padding:0 4px}
+.bkc.gold .bkw a{background:var(--acc,#0D9488);color:var(--acc-ink,#fff)}
 /* sheet */
 .sh{position:fixed;inset:0;background:rgba(15,30,46,.55);z-index:20;display:none;align-items:flex-end;justify-content:center}
 .sh.on{display:flex}
@@ -559,17 +569,29 @@ svg{display:block}
     var C = d.contact || {}, firstOf = function(f){ var v = (d.venues || []).find(function(x){ return x[f]; }); return v ? v[f] : ''; };
     var ct = { phone: C.phone || firstOf('phone'), wa: C.wa || firstOf('wa'), email: C.email || firstOf('email'), map: C.map || firstOf('map'), ig: C.ig || ((places || []).find(function(p){ return p.ig; }) || {}).ig || '' };
     var telOf = function(n){ return 'tel:' + String(n).replace(/[^\d+]/g, ''); };
-    // Book: 0-1 "Rooms & villas" (hotels), then one row per place (its booking link, else WhatsApp, else its phone, else reception), the place you're on first, max 6
+    // Book: one card per thing you can book - "Rooms & villas" first (hotels), then each place (the one you're on first), max 7 cards.
+    // Each card has 1-3 equal buttons, always in this order: Online (booking link), WhatsApp, Call - whichever staff filled in.
+    // A card with no WhatsApp or phone of its own gets a Call button to the main number, so there's always a person to talk to.
+    var waysOf = function(link, wa, phone, msg){
+      var w = [];
+      if (link) w.push({ how: 'Online', icon: I.ext, href: link });
+      if (wa) w.push({ how: 'WhatsApp', icon: I.wa, href: 'https://wa.me/' + wa + '?text=' + encodeURIComponent(msg) });
+      if (phone) w.push({ how: 'Call', icon: I.phone, href: telOf(phone) });
+      if (!wa && !phone && ct.phone) w.push({ how: 'Call', icon: I.phone, href: telOf(ct.phone) });
+      return w;
+    };
     var bookRows = function(key){
       var rows = [];
-      if (d.stay) rows.push({ grp: 'STAY', label: 'Rooms & villas', how: 'Online', icon: I.bed, href: d.stay, gold: true });
+      if (d.stay || d.stayWa || d.stayPhone) rows.push({ grp: 'STAY', label: 'Rooms & villas', icon: I.bed, gold: true, ways: waysOf(d.stay, d.stayWa, d.stayPhone, me + ' I\'d love to book a room - could you let me know what you have? Thank you!') });
       var vs = (d.venues || []).slice().sort(function(a, b){ return (lc(b.name) === key) - (lc(a.name) === key); });
-      vs.forEach(function(v){
-        var r = v.book ? { how: 'Online', icon: I.ext, href: v.book } : v.wa ? { how: 'WhatsApp', icon: I.wa, href: 'https://wa.me/' + v.wa + '?text=' + encodeURIComponent(greetAt(v.name)) } :
-          v.phone ? { how: 'Call', icon: I.phone, href: telOf(v.phone) } : C.phone ? { how: 'Call', icon: I.phone, href: telOf(C.phone) } : null;
-        if (r) rows.push(Object.assign(r, { grp: 'BOOK A TABLE', label: v.name, here: !!key && lc(v.name) === key }));
-      });
-      return rows.slice(0, 7);
+      vs.forEach(function(v){ rows.push({ grp: 'BOOK A TABLE', label: v.name, icon: I.food, here: !!key && lc(v.name) === key, ways: waysOf(v.book, v.wa, v.phone, greetAt(v.name)) }); });
+      return rows.filter(function(r){ return r.ways.length; }).slice(0, 7);
+    };
+    var bookHtml = function(rows){
+      return rows.map(function(r){
+        return '<div class="bkc' + (r.gold ? ' gold' : '') + '"><div class="bkt">' + svg(r.icon, 18) + '<b translate="no">' + esc(r.label) + '</b>' + (r.here ? '<em>You\'re here</em>' : '') + '</div><div class="bkw' + (r.ways.length > 2 ? ' w3' : '') + '" style="grid-template-columns:repeat(' + r.ways.length + ',minmax(0,1fr))">' +
+          r.ways.map(function(w){ return '<a href="' + esc(w.href) + '"' + (/^https/.test(w.href) ? ' target="_blank" rel="noopener"' : '') + '>' + svg(w.icon, 17) + '<span>' + w.how + '</span></a>'; }).join('') + '</div></div>';
+      }).join('');
     };
     // Contact: max 5 rows, always this order; anything not filled in isn't shown
     var contactRows = function(){
@@ -736,7 +758,7 @@ svg{display:block}
         pop.querySelector('[data-claim]').addEventListener('click', function(){ setTimeout(rwDone, 300); });
       }
       var bk = document.getElementById('bk'), cl = document.getElementById('cl');
-      if (bk) bk.onclick = function(){ var rows = bookRows(key); if (rows.length === 1) { var r = rows[0]; if (/^https/.test(r.href)) window.open(r.href, '_blank', 'noopener'); else location.href = r.href; return; } open('Book', '<div class="rws">' + rowsHtml(rows) + '</div>'); };   // only one choice: straight there
+      if (bk) bk.onclick = function(){ var rows = bookRows(key); if (!rows.length && cl) return cl.onclick(); if (rows.length === 1 && rows[0].ways.length === 1) { var r = rows[0].ways[0]; if (/^https/.test(r.href)) window.open(r.href, '_blank', 'noopener'); else location.href = r.href; return; } open('Book', '<div class="rws">' + bookHtml(rows) + '</div>'); };   // only one choice: straight there
       if (cl) cl.onclick = function(){ open('Contact', '<div class="rws">' + rowsHtml(contactRows()) + '</div>');
         var dr = document.querySelector('#shc a[href="#dir"]');
         if (dr) dr.onclick = function(e){ e.preventDefault(); open('Directions', '<div class="rws">' + rowsHtml((d.venues || []).filter(function(v){ return v.map; }).map(function(v){ return { label: v.name, icon: I.pin, href: v.map }; })) + '</div>'); };

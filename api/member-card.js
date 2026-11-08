@@ -82,6 +82,8 @@ function liveMenus(rows, kind){
 // Bottom bar (Book + Contact): a room booking link, one booking link per place, and the venue's contact rows.
 // Only clean values get through - https links, digits for WhatsApp, a real-looking email, an Instagram name.
 const https = u => /^https:\/\/[^\s"'<>]+$/i.test(String(u || '').trim()) ? String(u).trim().slice(0, 400) : '';
+const waOf = w => String(w || '').replace(/\D/g, '').slice(0, 16);
+const phoneOf = p => String(p || '').replace(/[^\d+ ]/g, '').trim().slice(0, 24);
 const cleanContact = c => { c = c || {}; return { phone: String(c.phone || '').replace(/[^\d+ ]/g, '').trim().slice(0, 24), wa: String(c.wa || '').replace(/\D/g, '').slice(0, 16),
   email: /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(c.email || '').trim()) ? String(c.email).trim().slice(0, 120) : '', map: https(c.map), ig: String(c.ig || '').replace(/[^\w.]/g, '').slice(0, 40) }; };
 
@@ -101,7 +103,7 @@ function prospectCard(pro, code){
   const rv = venues.find(v => v.review);
   return { ok: true, brand: pro.brand, logo: pro.logo, code, first: pro.first, tier: pro.tier, visits: pro.visits, favourite: pro.favourite, gp,
     since: pro.since, perks: pro.perks, perkIcons: pro.perkIcons, offers: true, reviewAsk: rv ? { venue: rv.name, date: addDays(now.date, -1), when: 'yesterday', demo: true } : null,
-    birthdayWeek: false, tonight, week, menus: { food: [], drinks: [] }, venues, stay: https(pro.stay), contact: cleanContact(pro.contact),
+    birthdayWeek: false, tonight, week, menus: { food: [], drinks: [] }, venues, stay: https(pro.stay), stayWa: waOf(pro.stayWa), stayPhone: phoneOf(pro.stayPhone), contact: cleanContact(pro.contact),
     reward: pro.reward ? { target: pro.reward.target, text: pro.reward.text, done: Math.min(pro.visits, pro.reward.target), left: Math.max(0, pro.reward.target - pro.visits), round: 0 } : null };
 }
 
@@ -217,7 +219,7 @@ module.exports = async (req, res) => {
       ok: true, brand, logo, code, first, tier, visits: visits.length, favourite, gp,
       since: new Date(m.created_at).getFullYear(), perks, perkIcons, offers: m.consent === true, reviewAsk,
       birthdayWeek: birthdayWeek(m.birthday, now.date),
-      tonight: tonight.slice(0, 12), week: week.slice(0, 40), menus, venues, reward, stay: https(page.stay), contact: cleanContact(page.contact)
+      tonight: tonight.slice(0, 12), week: week.slice(0, 40), menus, venues, reward, stay: https(page.stay), stayWa: waOf(page.stayWa), stayPhone: phoneOf(page.stayPhone), contact: cleanContact(page.contact)
     });
   } catch (e) {
     console.error(e);

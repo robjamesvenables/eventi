@@ -116,6 +116,9 @@ svg{display:block}
 .film .th img{width:100%;height:100%;object-fit:cover;display:block;opacity:.85}
 .film .th i{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#fff}
 .film b{display:block;font-size:15px;font-weight:800}.film small{display:block;font-size:12px;opacity:.8;margin-top:2px}
+.hv{position:relative;margin-top:20px;padding-top:56.25%;border-radius:20px;overflow:hidden;background:#000}
+.hv iframe{position:absolute;top:50%;left:50%;width:100%;height:100%;transform:translate(-50%,-50%) scale(1.02);border:0;pointer-events:none}
+.hv button{position:absolute;right:10px;bottom:10px;display:inline-flex;align-items:center;gap:6px;background:rgba(15,30,46,.72);color:#fff;border:0;border-radius:999px;padding:7px 12px;font:inherit;font-size:13px;font-weight:800;cursor:pointer}
 .vid{position:relative;padding-top:56.25%;border-radius:14px;overflow:hidden;background:#000}.vid iframe{position:absolute;inset:0;width:100%;height:100%;border:0}
 /* slow photo slideshow (gentle zoom on the photo in view, moves on by itself) */
 .mo .sd img{transform:scale(1.02);transition:transform 7s ease-out}
@@ -414,8 +417,9 @@ svg{display:block}
 
     // ── Screens ──
     var homeHtml = function(){
-      var filmHtml = function(){ return gp.film ? '<button class="film" id="film"><span class="th"><img src="https://i.ytimg.com/vi/' + esc(gp.film) + '/mqdefault.jpg" alt="" loading="lazy" onerror="this.remove()"><i>' + svg('<path d="M8 5v14l11-7z" fill="currentColor"/>', 22) + '</i></span><span><b>Watch the film</b><small translate="no">' + esc(d.brand) + '</small></span></button>' : ''; };
-    var h = '<div class="w">' + topHtml((gp.motion ? slidesHtml(gp.slides || [], true) : '') + filmHtml()) + memberHtml();
+      // Their film plays on its own at the very top (muted, on a loop); 'Sound on' opens it full with sound
+      var filmHtml = function(){ return gp.film ? '<div class="hv"' + ((gp.slides || [])[0] ? ' style="background:#000 url(' + esc(gp.slides[0].img) + ') center/cover"' : '') + '><iframe src="https://www.youtube-nocookie.com/embed/' + esc(gp.film) + '?autoplay=1&mute=1&loop=1&playlist=' + esc(gp.film) + '&controls=0&playsinline=1&rel=0&modestbranding=1&iv_load_policy=3&disablekb=1" allow="autoplay; encrypted-media" title="Film" tabindex="-1"></iframe><button id="film">' + svg('<path d="M11 5 6 9H2v6h4l5 4V5z"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/><path d="M19 5a10 10 0 0 1 0 14"/>', 16) + 'Sound on</button></div>' : ''; };
+    var h = '<div class="w">' + topHtml(filmHtml() + (gp.motion ? slidesHtml(gp.slides || [], true) : '')) + memberHtml();
       h += '<div class="sec"><div class="lab">WHERE ARE YOU HEADING?</div><div class="pgrid">' + places.map(function(p){
         var v = venueOf(lc(p.name)), st = v ? (v.open === true ? 'Open now' : v.open === false ? v.label : '') : '';
         return '<button class="pbig" data-go="' + esc(lc(p.name)) + '">' + (p.img ? '<img src="' + esc(p.img) + '" alt="" loading="lazy">' : '<div class="ini">' + esc(String(p.name).charAt(0).toUpperCase()) + '</div>') +

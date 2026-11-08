@@ -120,6 +120,8 @@ svg{display:block}
 .bkr span{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .bkr em{font-style:normal;font-size:11.5px;font-weight:700;opacity:.75;flex:none}
 .bkr svg:last-child{opacity:.7;flex:none}.bkr svg:first-child{flex:none}
+.mvglow{outline:3px solid var(--acc,#0D9488);outline-offset:4px;border-radius:18px;animation:mvg 2.6s ease}
+@keyframes mvg{0%,70%{outline-color:var(--acc,#0D9488)}100%{outline-color:transparent}}
 .bkr.gold{background:var(--acc,#0D9488);color:var(--acc-ink,#fff)}
 .bkc{background:#fff;border-radius:16px;padding:12px;box-shadow:0 1px 3px rgba(15,30,46,.07)}
 .bkt{display:flex;align-items:center;gap:8px;min-width:0;color:#0F1E2E;padding:0 2px 10px}
@@ -358,6 +360,7 @@ svg{display:block}
     '<div class="hi">' + hi + '</div><div class="hi-s">' + sub + '</div></div>'; };
 
   // Staff preview: a small quiet label in the corner (none inside the editor's live preview)
+  if (/[?&]embed=1/.test(location.search)) window.addEventListener('message', function(e){ if (e.origin !== location.origin || !e.data || e.data.mv !== 'go') return; window.__mvGoQ = e.data; if (window.__mvGoApply && document.querySelector('.book,.sec,.card')) window.__mvGoApply(); });
   if (preview && SAMPLES.indexOf(code) < 0 && !/[?&]embed=1/.test(location.search)) { var pv = document.createElement('div'); pv.className = 'pv'; pv.textContent = 'Preview'; document.body.appendChild(pv); }
   if (!code) { root.innerHTML = '<div class="w">' + head({ brand:'Members Club' }, 'Members Club', 'This link is missing its keyring code.') + '</div>'; return; }
 
@@ -539,7 +542,7 @@ svg{display:block}
       if (sl.length) h += '<div class="vsl">' + slidesHtml(sl, false) + '</div>';
       var body = placeSections(key);
       h += body || '<div class="sec"><div class="box" style="padding:18px;text-align:center;color:#64748B;font-size:14px;font-weight:600">Nothing special on here right now - come and see us!</div></div>';
-      h += reviewLine([v]) + igHtml([p]);
+      h += igHtml([p]);   // reviews are asked on the main page only - never twice
       return h + foot + '</div>';
     };
     var singleHtml = function(){
@@ -626,12 +629,38 @@ svg{display:block}
     };
 
     var GAL = {}, galN = 0;
+    var curKey = '';
     var show = function(key, push){
-      GAL = {}; galN = 0; bigRv = false;
+      GAL = {}; galN = 0; bigRv = false; curKey = key || '';
       root.innerHTML = (!many ? singleHtml() : key ? placeHtml(key) : homeHtml()) + bookBar(many ? key : '') + sheet + '<div class="lb" id="lb"></div>';
       document.body.classList.toggle('inplace', !!key);
       if (push) { try { history.pushState({ place: key }, '', location.pathname + location.search); } catch (e) {} window.scrollTo(0, 0); }
       wire(key);
+      if (window.__mvGoQ) setTimeout(window.__mvGoApply, 30);
+    };
+    // Back office preview (laptop): the editor tells this page what you're working on - go to that place, scroll to that section, glow
+    var GO_SEL = { video: '#hv,.hv', card: '.card', reward: '.box.rw', perks: '.pass', slides: '.slsec,.sl', deals: '.deal', events: '.ev', gallery: '.gal', tonight: '.tn,.days', venues: '.ven', places: '.pbig', ig: '.ig' };
+    window.__mvGoApply = function(){
+      var m = window.__mvGoQ; if (!m) return; window.__mvGoQ = null;
+      var sh = document.getElementById('sh'); if (sh && sh.classList.contains('on')) { sh.classList.remove('on'); document.body.style.overflow = ''; }
+      var key = many && m.place ? lc(m.place) : '';
+      if (key && !places.some(function(p){ return lc(p.name) === key; })) key = '';
+      var find = function(){
+        if (m.sec === 'contact' || m.sec === 'book') return null;
+        var el = m.id && m.sec === 'events' ? document.querySelector('[data-ev="' + (window.CSS && CSS.escape ? CSS.escape(m.id) : m.id) + '"]') : null;
+        if (!el && GO_SEL[m.sec]) el = document.querySelector(GO_SEL[m.sec]);
+        if (!el) return null;
+        return m.id && m.sec === 'events' && el.matches('[data-ev]') ? el : (el.closest('.sec') || el);
+      };
+      if (key !== curKey) show(key, false);
+      var el = find();
+      if (!m.sec) { window.scrollTo(0, 0); return; }   // just the place: its page, from the top
+      if (!el && curKey && m.sec !== 'contact' && m.sec !== 'book') { show('', false); el = find(); }   // not on that place's page: try the main page
+      if (m.sec === 'contact' || m.sec === 'book') { var b = document.getElementById(m.sec === 'book' ? 'bk' : 'cl'); if (b) b.click(); return; }
+      if (!el) { window.scrollTo(0, 0); return; }
+      el.scrollIntoView({ block: 'center' });
+      document.querySelectorAll('.mvglow').forEach(function(x){ x.classList.remove('mvglow'); });
+      el.classList.add('mvglow'); setTimeout(function(){ el.classList.remove('mvglow'); }, 2600);
     };
     window.addEventListener('popstate', function(e){ var shx = document.getElementById('sh'); if (shx && shx.classList.contains('on')) { shx.classList.remove('on'); var sc = document.getElementById('shc'); if (sc && sc.querySelector('iframe')) sc.innerHTML = ''; document.body.style.overflow = ''; return; } var lb = document.getElementById('lb'); if (lb && lb.classList.contains('on')) { lb.classList.remove('on'); lb.innerHTML = ''; document.body.style.overflow = ''; return; } if (many) show(e.state && e.state.place ? e.state.place : '', false); window.scrollTo(0, 0); });
 

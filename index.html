@@ -2582,6 +2582,11 @@ body:not(.mv-demo) #ms-demoqr-btn{display:none!important}
 /* the same clean emoji look on every computer and phone (Windows' own emojis look very different) */
 #mkc-body,#mkc-sub{font-family:Inter,'Noto Color Emoji',sans-serif}
 .mkc-tip{font-size:12.5px;color:#64748B;line-height:1.5;margin:2px 2px 0}.mkc-tip b{color:#0F1E2E;font-weight:700}
+.mke-step{display:flex;gap:10px;align-items:flex-start;font-size:13.5px;color:#334155;line-height:1.45;margin:12px 0 6px}.mke-step>b{width:24px;height:24px;border-radius:50%;background:#0D9488;color:#fff;font-size:12.5px;display:flex;align-items:center;justify-content:center;flex:none}
+.mke-groups{display:grid;gap:8px;margin:8px 0 4px 34px}.mke-g{display:flex;align-items:center;gap:8px;background:#fff;border:1.5px solid #E2E8F0;border-radius:12px;padding:10px}.mke-g>div{flex:1;min-width:0}.mke-g b{display:block;font-size:14px}.mke-g small{font-size:12px;color:#64748B;font-weight:600}
+.mke-g.done{background:#F0FDFA;border-color:#B9DDD6}.mke-g.later{opacity:.6}.mke-g .mki-btn{padding:8px 10px;font-size:12.5px;white-space:nowrap}.mke-wait{font-size:12px;font-weight:800;color:#64748B;white-space:nowrap}
+.mke-cp{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:4px 0 0 34px}
+.mke-due{display:flex;align-items:center;gap:12px;width:100%;margin-bottom:12px;background:#FFFBEB;border:1.5px solid #FCD34D;border-radius:14px;padding:12px 14px;text-align:left;font-family:inherit;color:#0F1E2E;cursor:pointer}.mke-due i{width:36px;height:36px;border-radius:10px;background:#F59E0B;color:#fff;display:flex;align-items:center;justify-content:center;flex:none}.mke-due span{flex:1;min-width:0}.mke-due b{display:block;font-size:14px}.mke-due small{font-size:12.5px;color:#64748B}.mke-due em{font-style:normal;font-weight:800;color:#B45309;font-size:13px}
 .mkg{text-align:center;padding:26px 22px 10px}.mkg i{width:64px;height:64px;border-radius:50%;background:#0D9488;color:white;display:inline-flex;align-items:center;justify-content:center;animation:msPop .5s cubic-bezier(.2,1.4,.4,1)}
 .mkg h2{font-size:22px;color:#0F1E2E;margin:14px 0 8px}.mkg p{font-size:14.5px;color:#475569;line-height:1.5;margin:0 0 6px}
 .mkq-bar{height:6px;background:#EEF1F4;border-radius:4px;margin-top:10px;overflow:hidden}.mkq-bar i{display:block;height:100%;background:#16A34A}
@@ -22045,7 +22050,7 @@ window.msBill = async function(id){
 // ── Mavis Club settings (managers): every switch for the club in one place, saved as you tap ──
 const MK_EMO = ['🍸','🥂','🍹','🍰','🎉','🎂','🌅','🎶','📍','⭐'];
 const MKS_DEF = () => ({ bonus:{ on:false, limit:30 }, stamp:{ on:false, visits:10, reward:'Free cocktail' }, bday:{ treat:false, gift:'Dessert' }, friend:{ on:false, offer:'Welcome cocktail' },
-  levels:{ on:false, gold:10, black:25 }, club:{ on:false }, emoji:{ on:true }, vip:{ on: msDemo() }, welcome:{ on:true }, imp:{ on: msDemo() }, senders:[], fbto:[] });
+  levels:{ on:false, gold:10, black:25 }, club:{ on:false }, emoji:{ on:true }, vip:{ on: msDemo() }, welcome:{ on:true }, imp:{ on: msDemo() }, senders:[], fbto:[], eg:'gmail' });
 function mkS(){ const d = MKS_DEF(), s = msJson('mk_settings') || {}; Object.keys(d).forEach(k => { if(s[k] != null) d[k] = Array.isArray(d[k]) ? s[k] : Object.assign(d[k], s[k]); }); return d; }
 const msCanSend = () => msIsMgr() || (!!myProfile && mkS().senders.map(String).includes(String(myProfile.id)));
 const msCanMsg = () => msCanSend() || (typeof gpCanEdit === 'function' && gpCanEdit());
@@ -22148,7 +22153,18 @@ function msAud(key, kind){
   else if(key === 'lapsed') list = list.filter(m => { const s = msStats(m); return s.last && s.last.visit_date < cutS; });
   else if(key === 'bday') list = list.filter(m => /^\d{2}-\d{2}$/.test(m.birthday || '') && m.birthday.slice(0, 2) === mm);
   else if(key && key.startsWith('v:')) list = list.filter(m => msStats(m).fav === key.slice(2));
-  return list.filter(ok);
+  list = list.filter(ok);
+  if(kind === 'email' && msDemo() && key === 'all') list = list.concat(msDemoEmails());   // demo: 620 practice members so batching can be tried (never saved, @example.com never reaches anyone)
+  return list;
+}
+let MS_FAKE = null;
+function msDemoEmails(){
+  if(MS_FAKE) return MS_FAKE;
+  const F = ['Sarah','James','Ayu','Tom','Nadia','Luca','Mia','Oliver','Dewi','Ella','Kenji','Sophie','Ravi','Hannah','Max','Isla','Noah','Putri','Leo','Grace','Jack','Zoe','Ben','Lily','Sam','Ruby','Finn','Chloe','Adam','Made','Komang','Wayan','Ketut','Nyoman','Emma','Liam','Ava','Ethan','Maya','Arjun'];
+  const L = ['Smith','Jones','Brown','Wilson','Taylor','Davies','Evans','Thomas','Roberts','Walker','Wright','Green','Hall','Wood','Lee','Chen','Wang','Kim','Sato','Rossi','Martin','Weber','Patel','Santoso','Wijaya','Pratama','Kusuma','Hughes','Price','Ward'];
+  MS_FAKE = Array.from({ length: 620 }, (_, i) => { const f = F[(i * 7) % F.length], l = L[(i * 11 + Math.floor(i / 40)) % L.length];
+    return { id: 'demo-e' + i, name: f + ' ' + l, email: (f + '.' + l + (i + 1)).toLowerCase() + '@example.com', consent: true, demo: true }; });
+  return MS_FAKE;
 }
 function msAudList(){
   const v = [...new Set(MS.members.map(m => msStats(m).fav).filter(Boolean))];
@@ -22170,9 +22186,43 @@ function msMsgs(){
 }
 async function msMsgsSave(l){ appSettings.mk_msgs = JSON.stringify(l.slice(0, 40)); return msSetting('mk_msgs', l.slice(0, 40)); }
 function msMsgProgress(c){
-  if(c.kind === 'email'){ const waves = c.go ? Math.floor((Date.now() - new Date(c.go).getTime()) / (15 * 60000)) + 1 : 0; const n = Math.min(c.ids.length, waves * 50); return { n, total: c.ids.length, done: n >= c.ids.length }; }
+  if(c.kind === 'email'){ const g = msBatches(c), done = c.gdone || {}; const n = g.reduce((t, x, i) => t + (done[i] ? x.length : 0), 0); return { n, total: c.ids.length, done: n >= c.ids.length }; }
   const n = c.ids.filter(id => c.sent && c.sent[id]).length; return { n, total: c.ids.length, done: n >= c.ids.length };
 }
+// ── Email blasts: the venue sends them from its own email (free, their own address). Mavis only prepares the list in batches. ──
+// Every batch is 450 people max (one email can only go to about 500). Normal Gmail: one batch a day. Business email: every batch today.
+const MS_EG = { gmail: ['Gmail', 'one batch a day'], biz: ['Business email', 'all today'] };
+function msBatches(c){ const n = Math.max(1, Math.ceil(c.ids.length / 450)), size = Math.ceil(c.ids.length / n), out = []; for(let i = 0; i < c.ids.length; i += size) out.push(c.ids.slice(i, i + size)); return out; }
+function msBatchDay(c, i){ if((c.eg || 'gmail') === 'biz') return msToday(); const d = new Date((c.go || c.at || new Date().toISOString()).slice(0, 10) + 'T12:00:00'); d.setDate(d.getDate() + i); return d.toISOString().slice(0, 10); }
+function msOneMsg(t){ return String(t || '').replace(/\{name\}/g, 'there').replace(/\{venue\}/g, (myCompany && myCompany.name) || 'us'); }
+async function msCopyText(t, ok){ try{ await navigator.clipboard.writeText(t); toast(ok); }catch(e){ const a = document.createElement('textarea'); a.value = t; a.style.cssText = 'position:fixed;opacity:0'; document.body.appendChild(a); a.select(); try{ document.execCommand('copy'); toast(ok); }catch(x){ toast('Could not copy - try again'); } a.remove(); } }
+function msEmailOf(id){ const m = MS.members.find(x => String(x.id) === String(id)) || (MS_FAKE || msDemoEmails()).find(x => x.id === id); return (m && m.email) || ''; }
+window.msEmailOpen = function(id){
+  const l = msMsgs(), c = l.find(x => x.id === id); if(!c) return;
+  c.eg = c.eg || mkS().eg || 'gmail';
+  const g = msBatches(c), done = c.gdone || {}, today = msToday();
+  const dayName = d => d === today ? 'Today' : (() => { const x = new Date(d + 'T12:00:00'); const t = new Date(today + 'T12:00:00'); const n = Math.round((x - t) / 864e5); return n === 1 ? 'Tomorrow' : n < 0 ? 'Ready' : x.toLocaleDateString('en-GB', { weekday:'short', day:'numeric', month:'short' }); })();
+  const o = msSheet(`<div class="vdf-h"><b>Send from your email</b><div class="dpt-sub">${msEsc(c.subject || 'Email')} · ${c.ids.length} people · free, from your own address</div></div>
+    <div class="vdf-body">
+      <div class="vdf-f"><span>WHICH EMAIL DO YOU USE?</span><div class="vdf-pills" id="mke-eg">${Object.entries(MS_EG).map(([k, v]) => `<button type="button" class="vdf-pill${k === c.eg ? ' on' : ''}" data-k="${k}">${v[0]} <em>${v[1]}</em></button>`).join('')}</div></div>
+      <div class="mke-step"><b>1</b><span>Open your email (Gmail, Outlook...) and start a <b>new email</b>. Put your own address in <b>To</b>.</span></div>
+      <div class="mke-step"><b>2</b><span>Tap <b>Copy emails</b> on today's batch and paste into <b>Bcc</b>, so guests can't see each other.</span></div>
+      <div class="mke-groups">${g.map((x, i) => { const day = msBatchDay(c, i), later = day > today && !done[i];
+        return `<div class="mke-g${done[i] ? ' done' : ''}${later ? ' later' : ''}"><div><b>Batch ${i + 1} of ${g.length}</b><small>${dayName(day)} · ${x.length} people</small></div>${done[i] ? `<button type="button" class="mki-btn ghost" data-done="${i}">✓ Sent</button>` : later ? `<span class="mke-wait">Ready ${dayName(day).toLowerCase() === 'tomorrow' ? 'tomorrow' : dayName(day)}</span>` : `<button type="button" class="mki-btn" data-copy="${i}">Copy emails</button><button type="button" class="mki-btn ghost" data-done="${i}">Mark sent</button>`}</div>`; }).join('')}</div>
+      <div class="mke-step"><b>3</b><span>Tap <b>Copy subject</b> and <b>Copy message</b>, paste them in, then press <b>Send</b> in your email.</span></div>
+      <div class="mke-cp"><button type="button" class="mki-btn ghost" id="mke-sub">Copy subject</button><button type="button" class="mki-btn ghost" id="mke-msg">Copy message</button></div>
+      <div class="mke-step"><b>4</b><span>Tap <b>Mark sent</b>. ${g.length > 1 ? (c.eg === 'biz' ? 'Then do the next batch the same way.' : 'Come back tomorrow for the next batch - Messages will remind you.') : 'Done!'}</span></div>
+      ${/\{name\}/.test(c.body + (c.subject || '')) ? '<div class="mkc-tip">One email goes to everyone, so {name} becomes "there" (Hi there!).</div>' : ''}
+    </div>
+    <div class="vdf-foot"><button class="mns-go" style="flex:1" onclick="msSheetClose()">Close</button></div>`);
+  o.querySelectorAll('#mke-eg .vdf-pill').forEach(b => b.onclick = async () => { if(b.dataset.k === c.eg) return; await mksSet('eg', b.dataset.k); c.eg = b.dataset.k; await msMsgsSave(l); msEmailOpen(id); });
+  o.querySelectorAll('[data-copy]').forEach(b => b.onclick = () => { const list = g[+b.dataset.copy].map(msEmailOf).filter(Boolean); msCopyText(list.join(', '), '✓ ' + list.length + ' emails copied - paste them into Bcc'); });
+  o.querySelectorAll('[data-done]').forEach(b => b.onclick = async () => { const i = +b.dataset.done; c.gdone = Object.assign({}, c.gdone); if(c.gdone[i]) delete c.gdone[i]; else c.gdone[i] = new Date().toISOString(); await msMsgsSave(l); msRender(); msEmailOpen(id); });
+  o.querySelector('#mke-sub').onclick = () => msCopyText(msOneMsg(c.subject), '✓ Subject copied');
+  o.querySelector('#mke-msg').onclick = () => msCopyText(msOneMsg(c.body), '✓ Message copied');
+};
+// Messages: a reminder at the top when an email batch is ready today
+function msBatchDue(){ const today = msToday(); return msMsgs().filter(c => c.kind === 'email' && c.status === 'sending').map(c => { const g = msBatches(c), i = g.findIndex((x, j) => !(c.gdone || {})[j] && msBatchDay(c, j) <= today); return i >= 0 ? { c, i, n: g.length } : null; }).filter(Boolean); }
 const msWho = id => id ? (String(id).startsWith('demo:') ? id.slice(5) : msStaffName(id)) : 'Someone';
 const msWhen = iso => { const d = new Date(iso), days = Math.round((new Date().setHours(0,0,0,0) - new Date(d).setHours(0,0,0,0)) / 864e5); return days <= 0 ? 'Today ' + d.toLocaleTimeString('en-GB', { hour:'2-digit', minute:'2-digit' }) : days === 1 ? 'Yesterday' : d.toLocaleDateString('en-GB', { weekday:'short', day:'numeric', month:'short' }); };
 async function msMessagesRender(){
@@ -22182,15 +22232,16 @@ async function msMessagesRender(){
   const audName = k => (msAudList().find(a => a[0] === k) || [k, k])[1];
   const waiting = l.filter(c => c.status === 'requested');
   const row = c => { const p = msMsgProgress(c), t = (MK_TYPES[c.type] || ['Message'])[0];
-    const st = c.status === 'requested' ? '<span class="mkm-st wait">WAITING FOR OK</span>' : c.status === 'declined' ? '<span class="mkm-st no">NOT SENT</span>' : p.done ? `<span class="mkm-st ok">${c.kind === 'email' ? 'DELIVERED' : 'ALL SENT'}</span>` : `<span class="mkm-st go">${c.kind === 'email' ? 'SENDING IN WAVES' : 'IN PROGRESS'}</span>`;
+    const st = c.status === 'requested' ? '<span class="mkm-st wait">WAITING FOR OK</span>' : c.status === 'declined' ? '<span class="mkm-st no">NOT SENT</span>' : p.done ? `<span class="mkm-st ok">ALL SENT</span>` : `<span class="mkm-st go">${c.kind === 'email' ? 'IN BATCHES' : 'IN PROGRESS'}</span>`;
     return `<div class="mkm-row"><i class="${c.kind}">${c.kind === 'email' ? '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-10 6L2 7"/></svg>' : vdSvg('wa', 17)}</i>
-      <div class="mkm-t"><b>${msEsc(c.kind === 'email' ? (c.subject || t) : t)}</b><small>${msEsc(audName(c.aud))} · ${c.status === 'requested' || c.status === 'declined' ? c.ids.length + ' people' : p.n + ' of ' + p.total + ' ' + (c.kind === 'email' ? 'delivered' : 'sent')} · ${msEsc(msWho(c.by))} · ${msEsc(msWhen(c.at))}</small>${st}</div>
+      <div class="mkm-t"><b>${msEsc(c.kind === 'email' ? (c.subject || t) : t)}</b><small>${msEsc(audName(c.aud))} · ${c.status === 'requested' || c.status === 'declined' ? c.ids.length + ' people' : p.n + ' of ' + p.total + ' sent'} · ${msEsc(msWho(c.by))} · ${msEsc(msWhen(c.at))}</small>${st}</div>
       ${c.status === 'requested' && can ? `<div class="mkm-btns"><button class="mki-btn ghost" onclick="msMsgDecide('${c.id}', false)">No</button><button class="mki-btn" onclick="msMsgDecide('${c.id}', true)">OK, send</button></div>`
-        : c.kind === 'wa' && c.status === 'sending' && !p.done && can ? `<div class="mkm-btns"><button class="mki-btn" onclick="msQueueOpen('${c.id}')">Carry on</button></div>` : ''}
+        : c.status === 'sending' && !p.done && can ? `<div class="mkm-btns"><button class="mki-btn" onclick="${c.kind === 'email' ? 'msEmailOpen' : 'msQueueOpen'}('${c.id}')">${c.kind === 'email' ? 'Open batches' : 'Carry on'}</button></div>` : ''}
     </div>`; };
   el.innerHTML = `<div class="mkm-new">
-      <button onclick="msCompose('email')"><i><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-10 6L2 7"/></svg></i><b>${can ? 'New email' : 'Ask to send an email'}</b><small>To everyone at once, in waves</small></button>
+      <button onclick="msCompose('email')"><i><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-10 6L2 7"/></svg></i><b>${can ? 'New email' : 'Ask to send an email'}</b><small>From your own email, free</small></button>
       <button onclick="msCompose('wa')"><i class="wa">${vdSvg('wa', 20)}</i><b>${can ? 'New WhatsApp' : 'Ask to send a WhatsApp'}</b><small>One by one, from your phone</small></button></div>
+    ${can ? msBatchDue().map(x => `<button class="mke-due" onclick="msEmailOpen('${x.c.id}')"><i><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-10 6L2 7"/></svg></i><span><b>Batch ${x.i + 1} of ${x.n} is ready to send today</b><small>${msEsc(x.c.subject || 'Email')}</small></span><em>Open</em></button>`).join('') : ''}
     ${waiting.length && can ? `<div class="mks-h">WAITING FOR YOUR OK</div><div class="mks-card">${waiting.map(row).join('')}</div>` : ''}
     <div class="mks-h">SENT</div>
     <div class="mks-card">${l.filter(c => !(can && c.status === 'requested')).map(row).join('') || '<div class="mki-empty">Nothing sent yet</div>'}</div>`;
@@ -22200,7 +22251,7 @@ window.msCompose = function(kind, aud, type){
   const s = mkS(), can = msCanSend();
   aud = aud || 'all'; type = type || '';
   const t = MK_TYPES[type];
-  const o = msSheet(`<div class="vdf-h"><b>${kind === 'email' ? 'New email' : 'New WhatsApp'}</b><div class="dpt-sub">${kind === 'email' ? 'Goes to everyone at once - we send it in waves so it lands in the inbox' : 'You send them one by one from this phone'}</div></div>
+  const o = msSheet(`<div class="vdf-h"><b>${kind === 'email' ? 'New email' : 'New WhatsApp'}</b><div class="dpt-sub">${kind === 'email' ? 'You send it from your own email - free. We split the list into batches for you.' : 'You send them one by one from this phone'}</div></div>
     <div class="vdf-body">
       <div class="vdf-f"><span>WHO GETS IT</span><div class="vdf-pills" id="mkc-aud">${msAudList().map(([k, n]) => { const c = msAud(k, kind).length; return `<button type="button" class="vdf-pill${k === aud ? ' on' : ''}" data-k="${msEsc(k)}"${c ? '' : ' disabled'}>${msEsc(n)} <em>${c}</em></button>`; }).join('')}</div></div>
       <div class="vdf-f"><span>WHAT'S IT ABOUT? <small>we write it for you</small></span><div class="vdf-pills" id="mkc-type">${Object.entries(MK_TYPES).map(([k, v]) => `<button type="button" class="vdf-pill${k === type ? ' on' : ''}" data-k="${k}">${msEsc(v[0])}</button>`).join('')}</div></div>
@@ -22209,7 +22260,7 @@ window.msCompose = function(kind, aud, type){
       ${s.emoji.on ? `<div class="mkc-emo">${MK_EMO.map(e => `<button type="button" data-e="${e}">${e}</button>`).join('')}</div>` : ''}
       <div class="mkc-tip"><b>{name}</b> = their first name · <b>{venue}</b> = their favourite place · change anything in [brackets]. Only members who said yes to offers get it.</div>
     </div>
-    <div class="vdf-foot"><button class="mns-cancel" onclick="msSheetClose()">Cancel</button><button class="mns-go" id="mkc-go">${can ? (kind === 'email' ? 'Send email' : 'Start sending') : 'Ask a manager'}</button></div>`);
+    <div class="vdf-foot"><button class="mns-cancel" onclick="msSheetClose()">Cancel</button><button class="mns-go" id="mkc-go">${can ? (kind === 'email' ? 'Next' : 'Start sending') : 'Ask a manager'}</button></div>`);
   const body = o.querySelector('#mkc-body'), sub = o.querySelector('#mkc-sub');
   o.querySelectorAll('#mkc-aud .vdf-pill').forEach(b => b.onclick = () => { o.querySelectorAll('#mkc-aud .vdf-pill').forEach(x => x.classList.toggle('on', x === b)); });
   o.querySelectorAll('#mkc-type .vdf-pill').forEach(b => b.onclick = () => { o.querySelectorAll('#mkc-type .vdf-pill').forEach(x => x.classList.toggle('on', x === b)); const v = MK_TYPES[b.dataset.k]; body.value = s.emoji.on ? v[2] : msNoEmo(v[2]); if(sub) sub.value = v[1]; });
@@ -22231,7 +22282,7 @@ window.msCompose = function(kind, aud, type){
     if(!saved && !msDemo()){ toast('Not saved - please try again'); return; }
     msSheetClose(); msRender();
     if(!can){ setTimeout(() => toast('Sent to your manager for an OK ✓'), 80); return; }
-    if(kind === 'email') setTimeout(() => msGotThis(), 80); else setTimeout(() => msQueueOpen(c.id), 80);
+    if(kind === 'email') setTimeout(() => msEmailOpen(c.id), 80); else setTimeout(() => msQueueOpen(c.id), 80);
   };
 };
 function msGotThis(){
@@ -22244,7 +22295,7 @@ window.msMsgDecide = async function(id, yes){
   c.status = yes ? 'sending' : 'declined'; c.ok_by = myProfile ? myProfile.id : null; if(yes) c.go = new Date().toISOString();
   if(!(await msMsgsSave(l)) && !msDemo()){ toast('Not saved - please try again'); return; }
   msRender();
-  if(yes){ if(c.kind === 'email') setTimeout(msGotThis, 80); else setTimeout(() => msQueueOpen(c.id), 80); } else toast('Not sent');
+  if(yes){ if(c.kind === 'email') setTimeout(() => msEmailOpen(c.id), 80); else setTimeout(() => msQueueOpen(c.id), 80); } else toast('Not sent');
 };
 // WhatsApp one by one: big Send button, the next person comes up by itself. Nobody gets it twice.
 window.msQueueOpen = function(id){

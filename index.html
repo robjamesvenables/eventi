@@ -2270,6 +2270,11 @@ body:not(.mv-demo) #ms-demoqr-btn{display:none!important}
 .ms-bkp.gold .w span{background:#C4973B}
 .ms-bkp .r{display:grid;gap:6px}.ms-bkp .r span{height:34px;border-radius:9px;background:#0F1E2E;color:white;display:flex;align-items:center;padding:0 12px;font-size:12.5px;font-weight:800}
 .ms-bkp em{display:block;font-style:normal;font-size:11.5px;color:#64748B;font-weight:600;margin-top:7px;line-height:1.4}
+.ms-vsub{font-size:10.5px;font-weight:900;letter-spacing:1.2px;color:#0F1E2E;margin:16px 0 0;padding-top:12px;border-top:1px dashed #E2E8F0}.ms-vsub small{font-weight:600;letter-spacing:0;color:#94A3B8;margin-left:6px;font-size:11px}
+.ms-seg{display:grid;grid-template-columns:1fr 1fr;gap:4px;background:#F1F5F9;border-radius:11px;padding:4px;margin-top:8px}
+.ms-seg button{border:0;background:none;border-radius:8px;padding:9px 6px;font:700 13px Inter,sans-serif;color:#64748B;cursor:pointer;min-width:0}
+.ms-seg button.on{background:white;color:#0F1E2E;box-shadow:0 1px 3px rgba(15,30,46,.12)}
+.ms-bkp .r span i{margin-left:auto;font-style:normal;font-size:11px;font-weight:700;opacity:.65;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding-left:8px}
 .ms-ibox{background:white;border:1.5px solid #E2E8F0;border-radius:14px;padding:4px 12px 12px;margin-bottom:8px}
 .ms-vhint{font-size:11.5px;color:#94A3B8;font-weight:600;margin:4px 0 0 32px;line-height:1.4}
 .ms-vbtns{display:flex;justify-content:space-between;align-items:center;margin-top:12px}
@@ -22746,13 +22751,21 @@ function msVenueRow(v){
       <div class="ms-vf"><i>${sv(ic.clock)}</i><em>Opens</em><input type="time" class="ms-vo" aria-label="Opens" value="${msEsc(v.opens || '')}"></div>
       <div class="ms-vf"><i></i><em>Closes</em><input type="time" class="ms-vc" aria-label="Closes" value="${msEsc(v.closes || '')}"></div>
       <div class="ms-vf"><i>${sv(ic.pin)}</i><input class="ms-vm" inputmode="url" placeholder="Google Maps link" value="${msEsc(v.map || '')}"></div>
-      <div class="ms-vf"><i>${sv(ic.ext)}</i><input class="ms-vb" inputmode="url" autocapitalize="off" placeholder="Online booking link (optional)" value="${msEsc(v.book || '')}"></div>
-      <div class="ms-vf"><i>${sv(ic.wa)}</i><input class="ms-vw" type="tel" placeholder="WhatsApp for bookings" value="${msEsc(v.wa ? '+' + String(v.wa).replace(/\D/g, '') : '')}"></div>
-      <div class="ms-vf"><i>${sv(ic.phone)}</i><input class="ms-vp" type="tel" placeholder="Phone" value="${msEsc(v.phone || '')}"></div>
-      <div class="ms-vf"><i>${sv(ic.mail)}</i><input class="ms-ve" type="email" inputmode="email" autocapitalize="off" placeholder="Email for questions" value="${msEsc(v.email || '')}"></div>
       <div class="ms-vf"><i>${sv(ic.star)}</i><input class="ms-vr" inputmode="url" autocapitalize="off" placeholder="Google review link" value="${msEsc(v.review || '')}"></div>
       <div class="ms-vhint">Google review link: in your Google Business Profile tap "Ask for reviews" and copy the link.</div>
+      <div class="ms-vsub">BOOKING <small>the Book button</small></div>
+      <div class="ms-vf"><i>${sv(ic.ext)}</i><input class="ms-vb" inputmode="url" autocapitalize="off" placeholder="Online booking link (optional)" value="${msEsc(v.book || '')}"></div>
+      <div class="ms-vf"><i>${sv(ic.wa)}</i><input class="ms-vw" type="tel" placeholder="This place's WhatsApp (optional)" value="${msEsc(v.wa ? '+' + String(v.wa).replace(/\D/g, '') : '')}"></div>
+      <div class="ms-vf"><i>${sv(ic.phone)}</i><input class="ms-vp" type="tel" placeholder="This place's phone (optional)" value="${msEsc(v.phone || '')}"></div>
       <div class="ms-bkp" data-bkp></div>
+      <div class="ms-vsub">CONTACT <small>the Contact button on this place's page</small></div>
+      <div class="ms-seg" role="radiogroup"><button type="button" data-own="0" class="${v.own ? '' : 'on'}" onclick="msOwn(this)">Same as main contact</button><button type="button" data-own="1" class="${v.own ? 'on' : ''}" onclick="msOwn(this)">This place's own</button></div>
+      <div class="ms-ownf"${v.own ? '' : ' hidden'}>
+        <div class="ms-vhint" style="margin:8px 0 0">Uses this place's WhatsApp and phone from Booking above. Add an email or Instagram too if this place has its own. Empty boxes use the main contact.</div>
+        <div class="ms-vf"><i>${sv(ic.mail)}</i><input class="ms-ve" type="email" inputmode="email" autocapitalize="off" placeholder="This place's email (optional)" value="${msEsc(v.email || '')}"></div>
+        <div class="ms-vf"><i>${MS_SV(MS_IC.ig)}</i><input class="ms-vig" autocapitalize="off" placeholder="This place's Instagram (optional)" value="${msEsc(v.ig || '')}"></div>
+      </div>
+      <div class="ms-bkp" data-ctp></div>
       <div class="ms-vbtns"><button type="button" class="ms-vdel" onclick="this.closest('.ms-vbox').remove()">Remove venue</button><button type="button" class="ms-vok" onclick="this.closest('.ms-vbox').classList.remove('open')">Done</button></div>
     </div></div>`;
 }
@@ -22779,9 +22792,19 @@ window.msContactPrev = function(){
   document.getElementById('ms-c-prev').innerHTML = r.length ? `<small>GUESTS WILL SEE (TAP CONTACT)</small><div class="r">${r.map(x => `<span>${x}</span>`).join('')}</div><em>Empty boxes are simply not shown.</em>` : `<small>GUESTS WILL SEE</small><em>Nothing yet - a phone number is needed before the page can go live.</em>`;
   document.querySelectorAll('#ms-vlist .ms-vbox').forEach(msVenueSum);
 };
+window.msOwn = function(btn){ const b = btn.closest('.ms-vbox'), own = btn.dataset.own === '1'; b.querySelectorAll('.ms-seg button').forEach(x => x.classList.toggle('on', x === btn)); b.querySelector('.ms-ownf').hidden = !own; msVenueSum(b); };
+function msMain(id){ const e = document.getElementById(id); return e ? e.value.trim() : ''; }
 window.msVenueSum = function(b){
   const q = c => b.querySelector(c).value.trim(), name = q('.ms-vn'), o = msHm(q('.ms-vo')), c = msHm(q('.ms-vc'));
   const pv = b.querySelector('[data-bkp]'); if(pv) pv.innerHTML = msBookPrev(name || 'New venue', q('.ms-vb'), q('.ms-vw'), q('.ms-vp'));
+  const cp = b.querySelector('[data-ctp]');
+  if(cp){
+    const own = b.querySelector('.ms-seg .on').dataset.own === '1', here = name || 'this place', rows = [];
+    const pick = (label, mine, main) => { if(own && mine) rows.push([label, here]); else if(main) rows.push([label, 'main']); };
+    pick('Call us', q('.ms-vp'), msMain('ms-c-phone')); pick('WhatsApp', q('.ms-vw'), msMain('ms-c-wa')); pick('Email', q('.ms-ve'), msMain('ms-c-email'));
+    pick('Directions', q('.ms-vm'), msMain('ms-c-map')); pick('Instagram', q('.ms-vig'), msMain('ms-c-ig'));
+    cp.innerHTML = rows.length ? `<small>GUESTS ON ${msEsc(here.toUpperCase())}'S PAGE SEE (TAP CONTACT)</small><div class="r">${rows.map(x => `<span>${x[0]}<i>${x[1] === 'main' ? 'main contact' : msEsc(x[1])}</i></span>`).join('')}</div>` : `<small>GUESTS WILL SEE</small><em>Nothing yet - fill in the main Contact box at the top.</em>`;
+  }
   const got = [q('.ms-vb') && 'Booking link', q('.ms-vm') && 'Map', q('.ms-vw') && 'WhatsApp', q('.ms-vp') && 'Phone', q('.ms-ve') && 'Email', q('.ms-vr') && 'Google reviews'].filter(Boolean);
   b.querySelector('.ms-vi').textContent = (name || '+').charAt(0).toUpperCase();
   b.querySelector('.ms-vt').innerHTML = `<b>${msEsc(name || 'New venue')}</b><small>${o && c ? 'Open ' + o + ' – ' + c : 'No opening hours yet'}</small><small>${got.length ? msEsc(got.join(' · ')) : 'No map or WhatsApp yet'}</small>`;
@@ -22833,7 +22856,8 @@ window.msTiers = function(){
     const n = parseInt(document.getElementById('ms-rw-n').value, 10), t = document.getElementById('ms-rw-t').value.trim();
     const venues = [...document.querySelectorAll('#ms-vlist .ms-vbox')].map(b => ({
       name: b.querySelector('.ms-vn').value.trim(), opens: b.querySelector('.ms-vo').value, closes: b.querySelector('.ms-vc').value,
-      map: b.querySelector('.ms-vm').value.trim(), book: b.querySelector('.ms-vb').value.trim(), wa: b.querySelector('.ms-vw').value.replace(/\D/g, ''), phone: b.querySelector('.ms-vp').value.trim(), email: b.querySelector('.ms-ve').value.trim(), review: b.querySelector('.ms-vr').value.trim()
+      map: b.querySelector('.ms-vm').value.trim(), book: b.querySelector('.ms-vb').value.trim(), wa: b.querySelector('.ms-vw').value.replace(/\D/g, ''), phone: b.querySelector('.ms-vp').value.trim(), email: b.querySelector('.ms-ve').value.trim(), review: b.querySelector('.ms-vr').value.trim(),
+      own: b.querySelector('.ms-seg .on').dataset.own === '1', ig: b.querySelector('.ms-vig').value.trim().replace(/^@/, '').replace(/^https?:\/\/(www\.)?instagram\.com\//i, '').replace(/[/?].*$/, '')
     })).filter(v => v.name);
     const badMail = venues.find(v => v.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.email));
     if(badMail){ toast('The email for ' + badMail.name + ' doesn\'t look right'); return; }
@@ -22843,7 +22867,7 @@ window.msTiers = function(){
     const bad = venues.find(v => v.map && !/^https?:\/\//i.test(v.map));
     if(bad){ toast('The map link for ' + bad.name + ' should start with https://'); return; }
     const fixUrl = u => u && !/^https?:\/\//i.test(u) ? 'https://' + u : u, okUrl = u => !u || /^https:\/\/[^\s]+\.[^\s]+/i.test(u);
-    venues.forEach(v => { v.book = fixUrl(v.book); if(!v.book) delete v.book; });
+    venues.forEach(v => { v.book = fixUrl(v.book); if(!v.book) delete v.book; if(!v.own) delete v.own; if(!v.ig) delete v.ig; });
     const badBk = venues.find(v => !okUrl(v.book)); if(badBk){ toast('The booking link for ' + badBk.name + ' should start with https://'); return; }
     const gv = id => document.getElementById(id).value.trim();
     const contact = { phone: gv('ms-c-phone'), wa: gv('ms-c-wa').replace(/\D/g, ''), email: gv('ms-c-email'), map: fixUrl(gv('ms-c-map')), ig: gv('ms-c-ig').replace(/^@/, '').replace(/^https?:\/\/(www\.)?instagram\.com\//i, '').replace(/[/?].*$/, '') };

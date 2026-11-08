@@ -593,20 +593,24 @@ svg{display:block}
           r.ways.map(function(w){ return '<a href="' + esc(w.href) + '"' + (/^https/.test(w.href) ? ' target="_blank" rel="noopener"' : '') + '>' + svg(w.icon, 17) + '<span>' + w.how + '</span></a>'; }).join('') + '</div></div>';
       }).join('');
     };
-    // Contact: max 5 rows, always this order; anything not filled in isn't shown
-    var contactRows = function(){
-      var r = [];
-      if (ct.phone) r.push({ label: 'Call us', icon: I.phone, href: telOf(ct.phone) });
-      if (ct.wa) r.push({ label: 'WhatsApp', icon: I.wa, href: 'https://wa.me/' + ct.wa + '?text=' + encodeURIComponent(me) });
-      if (ct.email) r.push({ label: 'Email', icon: I.mail, href: 'mailto:' + ct.email + '?subject=' + encodeURIComponent('Enquiry from a ' + (d.brand || '') + ' member') });
-      var maps = (d.venues || []).filter(function(v){ return v.map; }), many = maps.map(function(v){ return v.map; }).filter(function(m, i, a){ return a.indexOf(m) === i; }).length > 1;
-      if (many) r.push({ label: 'Directions', icon: I.pin, href: '#dir' });   // places in different spots: pick which one
-      else if (ct.map) r.push({ label: 'Directions', icon: I.pin, href: ct.map });
-      if (ct.ig) r.push({ label: 'Instagram', icon: I.ig, href: 'https://instagram.com/' + encodeURIComponent(ct.ig) });
+    // On a place's own page, if staff chose "use this place's details", each box that place filled in wins; empty ones use the main contact
+    // Contact: max 5 rows, always this order (Call, WhatsApp, Email, Directions, Instagram); anything not filled in isn't shown.
+    // On a place's own page, if staff chose "use this place's details", each box that place filled in wins; empty ones use the main contact.
+    var contactRows = function(key){
+      var r = [], v = key && (d.venues || []).find(function(x){ return x.own && lc(x.name) === key; });
+      var c = v ? { phone: v.phone || ct.phone, wa: v.wa || ct.wa, email: v.email || ct.email, map: v.map || ct.map, ig: v.ig || ct.ig } : ct;
+      if (c.phone) r.push({ label: 'Call us', icon: I.phone, href: telOf(c.phone) });
+      if (c.wa) r.push({ label: 'WhatsApp', icon: I.wa, href: 'https://wa.me/' + c.wa + '?text=' + encodeURIComponent(me) });
+      if (c.email) r.push({ label: 'Email', icon: I.mail, href: 'mailto:' + c.email + '?subject=' + encodeURIComponent('Enquiry from a ' + (d.brand || '') + ' member') });
+      var maps = (d.venues || []).filter(function(x){ return x.map; }), many = maps.map(function(x){ return x.map; }).filter(function(m, i, a){ return a.indexOf(m) === i; }).length > 1;
+      if (v && v.map) r.push({ label: 'Directions', icon: I.pin, href: v.map });
+      else if (many) r.push({ label: 'Directions', icon: I.pin, href: '#dir' });   // places in different spots: pick which one
+      else if (c.map) r.push({ label: 'Directions', icon: I.pin, href: c.map });
+      if (c.ig) r.push({ label: 'Instagram', icon: I.ig, href: 'https://instagram.com/' + encodeURIComponent(c.ig) });
       return r;
     };
     var bookBar = function(key){
-      if (!bookRows(key).length && !contactRows().length) return '';
+      if (!bookRows(key).length && !contactRows(key).length) return '';
       return '<div class="book"><div class="in">' +
         '<button id="bk" class="b1">' + svg('<path d="M8 2v4M16 2v4"/><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M3 10h18"/>', 20) + 'Book</button>' +
         '<button id="cl" class="b2">' + svg('<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>', 20) + 'Contact</button></div></div>';
@@ -759,7 +763,7 @@ svg{display:block}
       }
       var bk = document.getElementById('bk'), cl = document.getElementById('cl');
       if (bk) bk.onclick = function(){ var rows = bookRows(key); if (!rows.length && cl) return cl.onclick(); if (rows.length === 1 && rows[0].ways.length === 1) { var r = rows[0].ways[0]; if (/^https/.test(r.href)) window.open(r.href, '_blank', 'noopener'); else location.href = r.href; return; } open('Book', '<div class="rws">' + bookHtml(rows) + '</div>'); };   // only one choice: straight there
-      if (cl) cl.onclick = function(){ open('Contact', '<div class="rws">' + rowsHtml(contactRows()) + '</div>');
+      if (cl) cl.onclick = function(){ open('Contact', '<div class="rws">' + rowsHtml(contactRows(key)) + '</div>');
         var dr = document.querySelector('#shc a[href="#dir"]');
         if (dr) dr.onclick = function(e){ e.preventDefault(); open('Directions', '<div class="rws">' + rowsHtml((d.venues || []).filter(function(v){ return v.map; }).map(function(v){ return { label: v.name, icon: I.pin, href: v.map }; })) + '</div>'); };
       };

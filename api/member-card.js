@@ -90,7 +90,7 @@ const cleanContact = c => { c = c || {}; return { phone: String(c.phone || '').r
 // Sales demo keyring (see _prospects.js): the same page a member gets, filled with that venue's own content
 function prospectCard(pro, code){
   const now = localNow('Asia/Makassar');
-  const venues = pro.venues.map(v => Object.assign({ name: v.name, area: v.area || '', email: v.email || '', map: v.map || '', review: v.review || '', wa: v.wa || '', phone: v.phone || '', book: https(v.book) }, openState(v, now.hm)));
+  const venues = pro.venues.map(v => Object.assign({ name: v.name, area: v.area || '', email: v.email || '', map: v.map || '', review: v.review || '', wa: v.wa || '', phone: v.phone || '', book: https(v.book), own: !!v.own, ig: String(v.ig || '').replace(/[^\w.]/g, '').slice(0, 40) }, openState(v, now.hm)));
   const events = [];
   for (let i = 0; i <= 6; i++) {
     const day = addDays(now.date, i), wd = new Date(day + 'T12:00:00Z').getUTCDay();
@@ -189,7 +189,7 @@ module.exports = async (req, res) => {
     let venues = Array.isArray(page.venues) && page.venues.length ? page.venues : (demo ? demo.venues : []);
     if (demo && GP.isOldDemo(venues)) venues = GP.renameDemo(venues);
     if (demo) venues = venues.map(v => { const dv = v && GP.DEMO_VENUES.find(x => x.name === v.name); return dv && (!v.email || !v.review) ? Object.assign({}, v, { email: v.email || dv.email, review: v.review || dv.review }) : v; });   // demo: sample emails + review links
-    venues = venues.filter(v => v && v.name).slice(0, 12).map(v => Object.assign({ name: v.name, area: String(v.area || '').slice(0, 30), email: /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(v.email || '').trim()) ? String(v.email).trim().slice(0, 120) : '', map: v.map || '', review: /^https:\/\/[^\s"'<>]+$/i.test(String(v.review || '').trim()) ? String(v.review).trim().slice(0, 400) : '', wa: String(v.wa || '').replace(/\D/g, ''), phone: v.phone || '', book: https(v.book) }, openState(v, now.hm)));
+    venues = venues.filter(v => v && v.name).slice(0, 12).map(v => Object.assign({ name: v.name, area: String(v.area || '').slice(0, 30), email: /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(v.email || '').trim()) ? String(v.email).trim().slice(0, 120) : '', map: v.map || '', review: /^https:\/\/[^\s"'<>]+$/i.test(String(v.review || '').trim()) ? String(v.review).trim().slice(0, 400) : '', wa: String(v.wa || '').replace(/\D/g, ''), phone: v.phone || '', book: https(v.book), own: !!v.own, ig: String(v.ig || '').replace(/[^\w.]/g, '').slice(0, 40) }, openState(v, now.hm)));
     // Google review ask: they were checked in at a place in the last 2 days (demo: always, so it can be shown)
     let reviewAsk = null;
     const lastV = visits.filter(v => v.visit_date && v.visit_date >= addDays(now.date, -2) && v.visit_date <= now.date).sort((a, b) => String(b.visit_date).localeCompare(String(a.visit_date)))[0];

@@ -57,7 +57,7 @@ const P = {
   }
 };
 
-const TRANS_BOOK = 'https://www.transresortbali.com/';
+const TRANS_BOOK = 'https://reservations.transresortbali.com/book/dates-of-stay';
 const tr = n => '/demo-guest/p-trans-' + n + '.jpg';
 P.trans = {
   brand: 'The Trans Resort Bali', logo: '/demo-guest/p-trans-logo.png', first: 'Alexander', tier: 'vip', visits: 6, since: 2025, favourite: 'The 18th',

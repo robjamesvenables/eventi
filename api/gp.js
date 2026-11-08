@@ -191,13 +191,27 @@ module.exports = async (req, res) => {
     if (a === 'offers') return await offers(req, res);
     if (a === 'fb') return await feedback(req, res);
     if (a === 'roster') return await roster(req, res);
-    if (a === 'mf') {   // the guest page saved to a phone's home screen opens straight on this member's page
-      const q = req.query || {}, code = String(q.c || '').toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 16), name = String(q.n || 'Members Club').replace(/[<>"]/g, '').slice(0, 40);
+    if (a === 'mf') {   // the guest page saved to a phone's home screen: its own app per venue - their logo, their name, opens on this member's page
+      const q = req.query || {}, code = String(q.c || '').toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 16), name = String(q.n || 'Members Club').replace(/[<>"]/g, '').trim().slice(0, 40);
       const col = /^#[0-9a-f]{6}$/i.test(String(q.t || '')) ? q.t : '#0F1E2E';
       if (!code) return res.status(404).end();
+      const icon = '/api/gp?a=icon&c=' + code;
       res.setHeader('Content-Type', 'application/manifest+json'); res.setHeader('Cache-Control', 'public, max-age=3600');
-      return res.status(200).send(JSON.stringify({ name: name + ' Members', short_name: name.length > 14 ? 'Members' : name, start_url: '/k/' + code + '?home=1', scope: '/k/', display: 'standalone',
-        background_color: '#F5F4F0', theme_color: col, icons: [{ src: '/icon-192-v6.png', sizes: '192x192', type: 'image/png' }, { src: '/icon-512-v6.png', sizes: '512x512', type: 'image/png' }] }));
+      return res.status(200).send(JSON.stringify({ id: '/k/' + code, name: name + ' Membership', short_name: GP.shortName(name), start_url: '/k/' + code + '?home=1', scope: '/k/' + code, display: 'standalone',
+        background_color: col, theme_color: col, icons: [{ src: icon, sizes: '192x192', purpose: 'any' }, { src: icon, sizes: '512x512', purpose: 'any' }] }));
+    }
+    if (a === 'icon') {   // the venue's own logo as the app icon on the guest's home screen (Mavis icon if they have none)
+      const code = String((req.query && req.query.c) || '').toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 16);
+      const back = () => { res.setHeader('Cache-Control', 'public, max-age=3600'); res.writeHead(302, { Location: '/icon-512-v6.png' }); res.end(); };
+      const pro = require('./_prospects').get(code);
+      if (pro && pro.logo) { res.setHeader('Cache-Control', 'public, max-age=86400'); res.writeHead(302, { Location: pro.logo }); return res.end(); }
+      const kr = code ? (await L.db('member_keyrings?select=company_id&code=eq.' + encodeURIComponent(code)).catch(() => []))[0] : null;
+      const co = kr ? (await L.db('companies?select=logo&id=eq.' + encodeURIComponent(kr.company_id)).catch(() => []))[0] : null;
+      const lg = String((co && co.logo) || '');
+      const m = /^data:(image\/(?:png|jpeg|webp));base64,([A-Za-z0-9+/=]+)$/.exec(lg);
+      if (m) { res.setHeader('Content-Type', m[1]); res.setHeader('Cache-Control', 'public, max-age=86400'); return res.status(200).send(Buffer.from(m[2], 'base64')); }
+      if (/^https:\/\/[^\s"'<>]+$/.test(lg)) { res.setHeader('Cache-Control', 'public, max-age=86400'); res.writeHead(302, { Location: lg }); return res.end(); }
+      return back();
     }
     res.status(404).end();
   } catch (e) { try { res.status(404).end(); } catch (x) {} }

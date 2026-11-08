@@ -422,8 +422,9 @@ svg{display:block}
     document.title = d.brand + ' - Members Club';
     try {   // saved to the home screen: opens straight on this member's page, named after the venue
       var mf = document.createElement('link'); mf.rel = 'manifest'; mf.href = '/api/gp?a=mf&c=' + encodeURIComponent(code) + '&n=' + encodeURIComponent(d.brand || '') + '&t=' + encodeURIComponent(((d.gp || {}).theme || {}).top || ''); document.head.appendChild(mf);
-      var ai = document.createElement('link'); ai.rel = 'apple-touch-icon'; ai.href = '/icon-192-v6.png'; document.head.appendChild(ai);
-      var am = document.createElement('meta'); am.name = 'apple-mobile-web-app-title'; am.content = String(d.brand || 'Members').slice(0, 20); document.head.appendChild(am);
+      var ai = document.createElement('link'); ai.rel = 'apple-touch-icon'; ai.href = '/api/gp?a=icon&c=' + encodeURIComponent(code); document.head.appendChild(ai);   // their own logo on the home screen
+      var sn = (function(n){ var t = String(n || '').replace(/^the\s+/i, '').trim(); if (t.length <= 12) return t || 'Members'; var out = ''; t.split(/\s+/).some(function(w){ if ((out + ' ' + w).trim().length > 12) return true; out = (out + ' ' + w).trim(); }); return out || t.slice(0, 12); })(d.brand);
+      var am = document.createElement('meta'); am.name = 'apple-mobile-web-app-title'; am.content = sn; document.head.appendChild(am);
       var ac = document.createElement('meta'); ac.name = 'apple-mobile-web-app-capable'; ac.content = 'yes'; document.head.appendChild(ac);
     } catch (e) {}
     if (d.blank) {

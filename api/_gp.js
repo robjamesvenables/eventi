@@ -154,4 +154,7 @@ function build(c, ctx){
   return { order, slides, deals, events, gallery, places, theme, motion: c.motion === true, film: /^[\w-]{11}$/.test(c.film || '') ? c.film : '', video: /^\/[\w\/.-]+\.mp4$/.test(c.video || '') ? c.video : '', videoTall: c.videoTall === true };
 }
 
-module.exports = { igName, topUpDemo, SECTIONS, paths, demo, hasContent, build, DEMO_VENUES, DEMO_RENAME, isOldDemo, renameDemo };
+// The name under the app icon on a guest's phone: phones cut it after about 12 letters ("The Trans Resort Bali" -> "Trans Resort")
+const shortName = n => { const t = String(n || '').replace(/^the\s+/i, '').trim(); if (t.length <= 12) return t || 'Members';
+  let out = ''; for (const w of t.split(/\s+/)) { if ((out + ' ' + w).trim().length > 12) break; out = (out + ' ' + w).trim(); } return out || t.slice(0, 12); };
+module.exports = { shortName, igName, topUpDemo, SECTIONS, paths, demo, hasContent, build, DEMO_VENUES, DEMO_RENAME, isOldDemo, renameDemo };

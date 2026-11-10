@@ -313,6 +313,11 @@ svg{display:block}
 .vtop .vname{background:rgba(15,30,46,.78);color:white;border-radius:16px;padding:12px 14px}
 .vtop .vname{min-width:0}.vtop .vname b{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;overflow-wrap:anywhere;font-size:24px;font-weight:900;letter-spacing:-.5px}.vtop .vname small{display:block;font-size:13px;color:#E2E8F0;font-weight:600;margin-top:2px}
 .vtop .vname .open{color:#86EFAC;font-weight:800}
+.vtop.hasm{height:292px}
+.vtop .vin .vend{display:flex;flex-direction:column;gap:10px}
+.vmenu.on{margin:10px 0 0;gap:8px}
+.vmenu.on a{flex:1 1 auto;height:50px;border-radius:999px;background:var(--acc,#0D9488);color:var(--acc-ink,#fff);font-size:16.5px;font-weight:900;box-shadow:0 6px 18px rgba(0,0,0,.28);justify-content:flex-start;padding:0 20px}
+.vmenu.on a svg{color:inherit}
 .vacts{display:flex;gap:8px;margin:12px 16px 0}
 .vacts a{flex:1;height:48px;border-radius:14px;display:flex;align-items:center;justify-content:center;gap:8px;text-decoration:none;font-size:14.5px;font-weight:800}
 .vmenu{display:flex;gap:8px;margin:8px 16px 0;flex-wrap:wrap}
@@ -613,18 +618,19 @@ svg{display:block}
       return h + foot + '</div>';
     };
     // Menus for one place: one button each (Food, Drinks...) - opens the venue's own file
-    var menuHtml = function(p){
+    // on = the gold button(s) sitting on the place photo; one menu reads "See the menu", several show each menu's name
+    var menuHtml = function(p, on){
       var ms = (p && p.menus) || []; if (!ms.length) return '';
-      return '<div class="vmenu">' + ms.map(function(m, i){ var food = /food|lunch|dinner|brunch|break|kitchen|eat/i.test(m.name), drink = /drink|bar|cocktail|wine|bev/i.test(m.name);
-        var ic = svg(drink && !food ? PI.cocktail : PI.food, 18) + '<span>' + esc(m.name) + '</span>';
+      return '<div class="vmenu' + (on ? ' on' : '') + '">' + ms.map(function(m, i){ var food = /food|lunch|dinner|brunch|break|kitchen|eat/i.test(m.name), drink = /drink|bar|cocktail|wine|bev/i.test(m.name);
+        var ic = svg(drink && !food ? PI.cocktail : PI.food, 18) + '<span>' + esc(on && ms.length === 1 ? 'See the menu' : m.name) + '</span>';
         return (m.pages && m.pages.length) ? '<a href="#" role="button" data-menu="' + i + '">' + ic + '</a>' : '<a href="' + esc(m.url) + '" target="_blank" rel="noopener">' + ic + '</a>'; }).join('') + '</div>';
     };
     var placeHtml = function(key){
       var p = placeOf(key) || { name: key }, v = venueOf(key) || {};
       var st = v.open === true ? '<span class="open">Open now</span> · ' + esc(v.label) : v.open === false ? esc(v.label) : '';
-      var h = '<div class="w"><div class="vtop">' + (p.img ? '<img src="' + esc(p.img) + '" alt="">' : '') + '<div class="vin"><button class="back" data-home aria-label="All places">' + svg('<path d="m15 18-6-6 6-6"/>', 18) + 'All places</button>' +
-        '<div class="vname"><b translate="no">' + esc(p.name) + '</b>' + (st ? '<small>' + st + '</small>' : '') + '</div></div></div>';
-      h += menuHtml(p);
+      var hasM = !!(p.menus && p.menus.length);
+      var h = '<div class="w"><div class="vtop' + (hasM ? ' hasm' : '') + '">' + (p.img ? '<img src="' + esc(p.img) + '" alt="">' : '') + '<div class="vin"><button class="back" data-home aria-label="All places">' + svg('<path d="m15 18-6-6 6-6"/>', 18) + 'All places</button>' +
+        '<div class="vname"><b translate="no">' + esc(p.name) + '</b>' + (st ? '<small>' + st + '</small>' : '') + '</div>' + menuHtml(p, true) + '</div></div>';
       var sl = (gp.slides || []).filter(function(x){ return gp.motion ? lc(x.venue || '') === key : at(x, key); });
       if (sl.length) h += '<div class="vsl">' + slidesHtml(sl, false) + '</div>';
       var body = placeSections(key);

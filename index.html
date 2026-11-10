@@ -2651,6 +2651,7 @@ body:not(.mv-demo) #ms-demoqr-btn{display:none!important}
 .mki-h{display:flex;align-items:center;gap:10px;margin-bottom:12px}
 .mki-h > i{width:34px;height:34px;border-radius:10px;background:#E0F5F2;color:#0D9488;display:flex;align-items:center;justify-content:center;flex:none}
 .mki-h > div{flex:1;min-width:0}.mki-h b{display:block;font-size:15.5px;color:#0F1E2E}.mki-h small{display:block;font-size:12px;color:#64748B;font-weight:600;margin-top:1px}
+.mki-seg{display:flex;background:#F1F5F9;border-radius:12px;padding:4px;gap:4px;margin:0 0 10px}.mki-seg button{flex:1;border:0;background:none;border-radius:9px;padding:9px 8px;font:800 13px Inter,sans-serif;color:#64748B;cursor:pointer}.mki-seg button.on{background:#fff;color:#0F1E2E;box-shadow:0 1px 4px rgba(15,30,46,.12)}.mki-v b.sp{font-size:13.5px;white-space:nowrap}
 .mki-act{display:inline-flex;align-items:center;gap:6px;border:1.5px solid #E2E8F0;background:white;border-radius:10px;padding:7px 11px;font:700 12.5px Inter,sans-serif;color:#0F1E2E;cursor:pointer;flex:none}
 .mki-list{display:flex;flex-direction:column}
 .mki-row{display:flex;align-items:center;gap:10px;width:100%;border:0;background:none;padding:8px 2px;border-top:1px solid #EEF1F4;text-align:left;font-family:Inter,sans-serif;cursor:pointer;min-width:0}
@@ -21982,9 +21983,13 @@ async function msInsights(){
     `<button class="mki-act" onclick="msWinBackMsg()">${mkiSvg('edit', 14)}Message</button>`);
 
   // Top members (all time)
-  const top = MS.members.map(m => ({ m, s: msStats(m), sp: sum(MS.visits[m.id] || []) })).filter(r => r.s.total).sort((a, b) => b.s.total - a.s.total || b.sp - a.sp).slice(0, 20);
+  // "Most visits | Most spent": spend comes from the bills staff type at check-in, so it only counts the bills we have
+  const bySpend = spendOn && MS.topBy === 'spend';
+  const top = MS.members.map(m => ({ m, s: msStats(m), sp: sum(MS.visits[m.id] || []) })).filter(r => bySpend ? r.sp > 0 : r.s.total)
+    .sort((a, b) => bySpend ? (b.sp - a.sp || b.s.total - a.s.total) : (b.s.total - a.s.total || b.sp - a.sp)).slice(0, 20);
   const topShow = MS.topAll ? top : top.slice(0, 10);
-  const cTop = mkiCard('crown', 'Top 20 members', 'Most visits, all time', top.length ? `<div class="mki-list">${topShow.map(({ m, s, sp }, i) => `<button class="mki-row" onclick="msOpenMember('${m.id}')"><span class="mki-rk${i < 3 ? ' g' : ''}">${i + 1}</span>${msFace(m.name, 32)}<span class="mki-nm"><b>${msEsc(m.name)}${m.tier === 'vip' ? '<span class="ms-tag vip">VIP</span>' : ''}</b><small>${msEsc(s.fav || '')}${s.month ? ' · ' + s.month + ' this month' : ''}</small></span><span class="mki-v"><b>${s.total}</b>${spendOn && sp ? `<small>${msRp(sp)}</small>` : ''}</span></button>`).join('')}</div>${top.length > 10 ? `<button class="mki-more" onclick="MS.topAll=!MS.topAll;msInsights()">${MS.topAll ? 'Show top 10' : 'Show all 20'}</button>` : ''}` : '<div class="mki-empty">No visits yet</div>');
+  const topSeg = spendOn ? `<div class="mki-seg"><button class="${bySpend ? '' : 'on'}" onclick="MS.topBy='visits';msInsights()">Most visits</button><button class="${bySpend ? 'on' : ''}" onclick="MS.topBy='spend';msInsights()">Most spent</button></div>` : '';
+  const cTop = mkiCard('crown', 'Top 20 members', bySpend ? 'Most spent, all time · from the bills typed in' : 'Most visits, all time', topSeg + (top.length ? `<div class="mki-list">${topShow.map(({ m, s, sp }, i) => `<button class="mki-row" onclick="msOpenMember('${m.id}')"><span class="mki-rk${i < 3 ? ' g' : ''}">${i + 1}</span>${msFace(m.name, 32)}<span class="mki-nm"><b>${msEsc(m.name)}${m.tier === 'vip' ? '<span class="ms-tag vip">VIP</span>' : ''}</b><small>${msEsc(s.fav || '')}${s.month ? ' · ' + s.month + ' this month' : ''}</small></span><span class="mki-v">${bySpend ? `<b class="sp">${msRp(sp)}</b><small>${s.total} visit${s.total === 1 ? '' : 's'}</small>` : `<b>${s.total}</b>${spendOn && sp ? `<small>${msRp(sp)}</small>` : ''}`}</span></button>`).join('')}</div>${top.length > 10 ? `<button class="mki-more" onclick="MS.topAll=!MS.topAll;msInsights()">${MS.topAll ? 'Show top 10' : 'Show all 20'}</button>` : ''}` : `<div class="mki-empty">${bySpend ? 'No bills typed in yet' : 'No visits yet'}</div>`));
 
   // Staff this month: sign-ups and check-ins
   const st = {};

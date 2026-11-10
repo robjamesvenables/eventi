@@ -140,11 +140,11 @@ P.bpa = {
       bio: 'Javi coaches the advanced groups and tournament players: tactics, positioning and fitness. Best for: levels 3.5 and up.' }
   ],
   wall: [
-    { club: true, when: '2h ago', text: '🏆 Saturday Bronze Ladies Americana: congrats Sarah & Mia, unbeaten all afternoon!', img: bp('courts'), clap: 24, fire: 9 },
-    { club: true, when: 'Yesterday', text: '👋 Welcome to our 12 new members this week: Kadek, Jonas, Priya, Lucas and 8 more. See you on court!', clap: 41, fire: 6 },
-    { club: true, when: '2 days ago', text: '🌅 Sunset session, then straight into the pool. This is what Tuesdays are for.', img: bp('pool'), clap: 18, fire: 3 },
+    { club: true, when: '2h ago', text: '👋 Welcome to our 12 new members this week: Kadek, Jonas, Priya, Lucas and 8 more. Your keyring is your key to everything here. See you on court!', clap: 41, fire: 6 },
+    { club: true, when: 'Yesterday', text: '🛍️ Reminder: members get 15% off in the pro shop. New NOX rackets just landed. Show your keyring at the counter.', img: bp('nox'), clap: 33, fire: 12 },
+    { club: true, when: '2 days ago', text: '🏆 Members Americana winners: congrats Sarah & Mia, unbeaten all evening! Next members night is Friday, sign up early.', img: bp('courts'), clap: 24, fire: 9 },
     { club: true, when: '3 days ago', text: '⭐ Member of the month: Wayan K. 23 games, 4 Americanas, always first to help the beginners. Your free NOX grip is at reception!', clap: 57, fire: 22 },
-    { club: true, when: 'Last week', text: '📸 NOX Cup qualifiers: what a night under the lights. Finals on 12 December!', img: bp('events'), clap: 63, fire: 31 }
+    { club: true, when: 'Last week', text: '🎟️ Members first: NOX Cup sign-ups open to members 48 hours before everyone else. Finals 12 December under the lights.', img: bp('events'), clap: 63, fire: 31 }
   ],
   newbie: { title: 'New to padel?', cta: "We'll find you a game", url: 'https://ig.me/m/balipadelacademy', rows: [
     { icon: '👟', title: 'What to wear', text: 'Sports clothes and flat court shoes. No running shoes on the courts, please.' },
@@ -153,7 +153,7 @@ P.bpa = {
     { icon: '🔁', title: 'How an Americana works', text: 'Sign up alone, we mix the teams. Play short games with different partners. Great for meeting people.' }
   ] },
   brand: 'Bali Padel Academy', logo: '/demo-guest/p-bpa-logo.png', icon: '/demo-guest/p-bpa-icon', first: 'Eric', tier: 'vip', visits: 7, since: 2024, favourite: 'Padel Courts',
-  perks: ['Member prices at the restaurant', '10% off NOX rackets in the pro shop', 'Free pool access after your game', 'Kids play free in the play park'],
+  perks: ['Member prices at the restaurant', '15% off in the pro shop', 'Free pool access after your game', 'Kids play free in the play park'],
   perkIcons: ['food', 'tag', 'sun', 'smile'],
   reward: { target: 10, text: 'A free NOX ball tube and smoothie' },
   venues: [
@@ -198,7 +198,7 @@ P.bpa = {
       ],
       deals: [
         { id: 'bd1', img: bp('lounge'), title: 'Smoothie hour · 2 for 1', when: 'Mon - Fri · 5 - 7pm', venue: 'Restaurant' },
-        { id: 'bd2', img: bp('nox'), title: 'NOX rackets · members 10% off', when: 'This week', venue: 'Pro Shop' },
+        { id: 'bd2', img: bp('nox'), title: 'NOX rackets · members 15% off', when: 'This week', venue: 'Pro Shop' },
         { id: 'bd3', img: bp('pool'), title: 'Kids play free while you play', when: 'Every day', venue: 'Kids Area' }
       ],
       events: [

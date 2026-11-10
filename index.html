@@ -2338,6 +2338,7 @@ body:not(.mv-demo) #ms-demoqr-btn{display:none!important}
 .gp-mv{display:flex;flex-direction:column;gap:2px}
 .gp-mv button{width:30px;height:22px;border:0;border-radius:7px;background:#F1F5F9;color:#475569;display:flex;align-items:center;justify-content:center;cursor:pointer;padding:0}
 .gp-mv button:disabled{opacity:.3;cursor:default}
+.gp-imv{flex:none;margin-right:2px}
 .gp-tog{width:46px;height:28px;border-radius:14px;border:0;background:#CBD5E1;position:relative;cursor:pointer;flex:none;padding:0}
 .gp-tog i{position:absolute;top:3px;left:3px;width:22px;height:22px;border-radius:50%;background:white;transition:left .15s}
 .gp-tog.on{background:#0D9488}.gp-tog.on i{left:21px}
@@ -23275,7 +23276,10 @@ function gpItemHtml(k, it, i){
   const hide = k === 'events' && it.date ? `<span class="gp-chip">Hides after ${gpEsc(gpDate(it.date))}</span>` : '';
   const from = k === 'events' && it.from && it.from > gpToday() ? `<span class="gp-chip">Shows from ${gpEsc(gpDate(it.from))}</span>` : '';
   const hl = k === 'events' && it.hl ? '<span class="gp-chip">In Highlights</span>' : '';
-  return `<div class="gp-it">${gpSrc(it) ? `<img class="th" src="${gpEsc(gpSrc(it))}" alt="">` : '<div class="th"></div>'}
+  // Highlights: the team picks the order (first one shows first in the slideshow)
+  const n = ((GPE.c && GPE.c[k]) || []).length;
+  const mv = k === 'slides' && n > 1 ? `<div class="gp-mv gp-imv"><button aria-label="Move earlier" ${i ? '' : 'disabled'} onclick="gpMoveIt('${k}',${i},-1)">${gpIc(GPI.up, 14)}</button><button aria-label="Move later" ${i < n - 1 ? '' : 'disabled'} onclick="gpMoveIt('${k}',${i},1)">${gpIc(GPI.down, 14)}</button></div>` : '';
+  return `<div class="gp-it">${mv}${gpSrc(it) ? `<img class="th" src="${gpEsc(gpSrc(it))}" alt="">` : '<div class="th"></div>'}
     <div class="x"><b>${gpEsc(it.title || (k === 'slides' ? 'Photo only' : 'Untitled'))}</b>${sub ? `<small>${gpEsc(sub)}</small>` : ''}<div>${btn}${hl}${from}${hide}</div></div>
     <button class="gp-ib" title="Change" aria-label="Change" onclick="gpForm('${k}',${i})">${gpIc(GPI.edit)}</button>
     <button class="gp-ib del" title="Remove" aria-label="Remove" onclick="gpRemove('${k}',${i})">${gpIc(GPI.x)}</button></div>`;
@@ -23844,6 +23848,7 @@ window.gpPlaceForm = function(name){
   };
 };
 window.gpToggle = async function(k){ GPE.c.off[k] = !GPE.c.off[k]; if(!GPE.c.off[k]) delete GPE.c.off[k]; gpRender(); await gpSave(GPE.c.off[k] ? 'Hidden from guests' : 'Showing to guests'); };
+window.gpMoveIt = async function(k, i, d){ const a = GPE.c && GPE.c[k], j = i + d; if(!a || j < 0 || j >= a.length) return; [a[i], a[j]] = [a[j], a[i]]; gpRender(); await gpSave('Moved'); };
 window.gpMove = async function(k, d){ const o = GPE.c.order, i = o.indexOf(k), j = i + d; if(j < 0 || j >= o.length) return; [o[i], o[j]] = [o[j], o[i]]; gpRender(); await gpSave('Moved'); };
 window.gpRemove = function(k, i){
   const it = GPE.c[k][i]; if(!it) return;

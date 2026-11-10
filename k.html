@@ -623,9 +623,11 @@ svg{display:block}
 
     // ── The member's own things (same at every place) ──
     // Their film plays on its own at the very top (muted, on a loop); 'Sound on' opens it full with sound
+    // The picture shown while YouTube starts: the venue's own first photo (YouTube's thumbnail is often the worst frame); YouTube's only if they have no photos
+    var filmStill = function(){ var x = (gp.slides || []).concat(gp.places || []).filter(function(v){ return v && v.img; })[0]; return x ? x.img : 'https://i.ytimg.com/vi/' + gp.film + '/hqdefault.jpg'; };
     var filmHtml = function(){
       if (gp.video) return '<div class="hv' + (gp.videoTall ? ' tall' : '') + '"><video id="hvv" autoplay muted loop playsinline disableremoteplayback disablepictureinpicture x-webkit-airplay="deny" controlslist="nodownload nofullscreen noremoteplayback" preload="auto" poster="' + esc(gp.video.replace(/\.mp4$/, '.jpg')) + '" src="' + esc(gp.video) + '"></video><button id="hvs">' + svg('<path d="M11 5 6 9H2v6h4l5 4V5z"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/><path d="M19 5a10 10 0 0 1 0 14"/>', 16) + '<span>Sound on</span></button></div>';
-      return gp.film ? '<div class="hv" id="hv"><iframe src="https://www.youtube-nocookie.com/embed/' + esc(gp.film) + '?autoplay=1&mute=1&loop=1&playlist=' + esc(gp.film) + '&controls=0&playsinline=1&rel=0&modestbranding=1&iv_load_policy=3&disablekb=1&enablejsapi=1" allow="autoplay; encrypted-media" title="Film" tabindex="-1" id="hvf"></iframe><img class="hvp" id="hvp" alt="" onerror="this.remove()" src="https://i.ytimg.com/vi/' + esc(gp.film) + '/hqdefault.jpg"><button id="film">' + svg('<path d="M11 5 6 9H2v6h4l5 4V5z"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/><path d="M19 5a10 10 0 0 1 0 14"/>', 16) + 'Sound on</button></div>' : ''; };
+      return gp.film ? '<div class="hv" id="hv"><iframe src="https://www.youtube-nocookie.com/embed/' + esc(gp.film) + '?autoplay=1&mute=1&loop=1&playlist=' + esc(gp.film) + (gp.filmStart ? '&start=' + (+gp.filmStart) : '') + '&controls=0&playsinline=1&rel=0&modestbranding=1&iv_load_policy=3&disablekb=1&enablejsapi=1" allow="autoplay; encrypted-media" title="Film" tabindex="-1" id="hvf"></iframe><img class="hvp" id="hvp" alt="" onerror="this.remove()" src="' + esc(filmStill()) + '"><button id="film">' + svg('<path d="M11 5 6 9H2v6h4l5 4V5z"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/><path d="M19 5a10 10 0 0 1 0 14"/>', 16) + 'Sound on</button></div>' : ''; };
     // With a video at the top, the photo slideshow moves to just under the member card - the video and the photos never sit on top of each other
     var topAndCard = function(slides){
       var film = filmHtml(), sw = slides ? '<div class="sec slsec">' + slides + '</div>' : '';
@@ -967,6 +969,9 @@ svg{display:block}
           var m; try { m = typeof e.data === 'string' ? JSON.parse(e.data) : e.data; } catch (x) { return; }
           if (!m) return;
           if ((m.event === 'onStateChange' && m.info === 1) || (m.event === 'infoDelivery' && m.info && m.info.playerState === 1)) gone();
+          // A start time (e.g. skip the first 7 seconds): YouTube only honours it once, so when the loop comes round again jump past the opening again
+          var st = +(gp.filmStart || 0), ct = m.event === 'infoDelivery' && m.info ? m.info.currentTime : null;
+          if (st && typeof ct === 'number' && ct < st - 1) { try { hvf.contentWindow.postMessage(JSON.stringify({ event: 'command', func: 'seekTo', args: [st, true], id: 'hvf', channel: 'widget' }), '*'); } catch (x) {} }
         });
         hvf.addEventListener('load', function(){ try { hvf.contentWindow.postMessage(JSON.stringify({ event: 'listening', id: 'hvf', channel: 'widget' }), '*'); } catch (x) {} });
         setTimeout(gone, 6000);   // never leave the still picture up if YouTube stays quiet
@@ -993,7 +998,7 @@ svg{display:block}
       };
       cwBind();
       var cwo = document.getElementById('cwall'); if (cwo) cwo.onclick = function(e){ e.preventDefault(); open('Club wall', wallHtml(true)); cwBind(); };
-      var fb = document.getElementById('film'); if (fb) fb.onclick = function(){ open(d.brand, '<div class="vid"><iframe src="https://www.youtube-nocookie.com/embed/' + encodeURIComponent(gp.film) + '?autoplay=1&playsinline=1&rel=0" allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowfullscreen title="Film"></iframe></div>'); };
+      var fb = document.getElementById('film'); if (fb) fb.onclick = function(){ open(d.brand, '<div class="vid"><iframe src="https://www.youtube-nocookie.com/embed/' + encodeURIComponent(gp.film) + '?autoplay=1&playsinline=1&rel=0' + (gp.filmStart ? '&start=' + (+gp.filmStart) : '') + '" allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowfullscreen title="Film"></iframe></div>'); };
       sh.addEventListener('click', function(e){ if (e.target === sh) close(); });
       // See more: to that place's page - or, if staff chose an event, straight to that event (its card on the place's page, details open)
       var goTo = function(b){ var ev = b.getAttribute('data-goev'); show(b.getAttribute('data-go'), true);

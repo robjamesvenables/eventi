@@ -129,6 +129,22 @@ const bp = n => '/demo-guest/p-bpa-' + n + '.jpg';
 const BPA_MAP = 'https://www.google.com/maps/search/?api=1&query=Bali+Padel+Academy+Canggu';
 P.bpa = {
   kind: 'padel', bookTop: { url: PT, label: 'Book a court', via: 'on Playtomic' },
+  coaches: [
+    { name: 'Marc Cantos', ini: 'MC', tags: ['NOX certified', 'Head coach', 'EN · ES'], line: 'Ex-pro from Barcelona. 15 years coaching, all levels.', book: PT,
+      bio: 'Marc played the Spanish circuit for eight years before moving to Bali to lead the NOX Future Academy. Patient with beginners, tough on the details with advanced players. Best for: technique, the bandeja and the vibora.' },
+    { name: 'Albina R.', ini: 'AR', tags: ['NOX certified', 'Ladies & beginners', 'EN · RU'], line: 'Makes your first lesson fun. Runs the ladies clinics.', book: PT,
+      bio: 'Albina started playing padel at 30 and knows what it feels like to be new. She runs the ladies clinics and the beginners Americanas. Best for: first-timers and ladies groups.' },
+    { name: 'Made Wirawan', ini: 'MW', tags: ['Kids academy', 'Level 0 - 3', 'EN · ID'], line: 'Leads the kids academy every weekend.', book: PT,
+      bio: 'Made grew up playing tennis in Sanur and switched to padel when BPA opened. He leads the kids academy on Saturdays and Sundays. Best for: kids 5 to 14 and families.' },
+    { name: 'Javi Torres', ini: 'JT', tags: ['Advanced', 'Tournament prep', 'EN · ES'], line: 'Gets you ready for the NOX Cup.', book: PT,
+      bio: 'Javi coaches the advanced groups and tournament players: tactics, positioning and fitness. Best for: levels 3.5 and up.' }
+  ],
+  newbie: { title: 'New to padel?', cta: "We'll find you a game", url: 'https://ig.me/m/balipadelacademy', rows: [
+    { icon: '👟', title: 'What to wear', text: 'Sports clothes and flat court shoes. No running shoes on the courts, please.' },
+    { icon: '🎾', title: 'No racket? No problem', text: 'NOX rackets to rent at reception, Rp 50k. Members free.' },
+    { icon: '📊', title: 'What does 2.5 mean?', text: 'Levels go from 0 (first time) to 7 (pro). Most beginners start around 1. Not sure? Ask a coach.' },
+    { icon: '🔁', title: 'How an Americana works', text: 'Sign up alone, we mix the teams. Play short games with different partners. Great for meeting people.' }
+  ] },
   brand: 'Bali Padel Academy', logo: '/demo-guest/p-bpa-logo.png', icon: '/demo-guest/p-bpa-icon', first: 'Eric', tier: 'vip', visits: 7, since: 2024, favourite: 'Padel Courts',
   perks: ['Member prices at the restaurant', '10% off NOX rackets in the pro shop', 'Free pool access after your game', 'Kids play free in the play park'],
   perkIcons: ['food', 'tag', 'sun', 'smile'],
@@ -185,11 +201,11 @@ P.bpa = {
       ],
       gallery: ['building', 'courts', 'lounge', 'events', 'pool', 'nox'].map((n, i) => ({ id: 'bg' + i, img: bp(n), venue: '' })),
       places: {
-        'padel courts': { img: bp('courts'), area: '7 panoramic courts · NOX Stadium', ig: 'balipadelacademy' },
+        'padel courts': { img: bp('courts'), area: '7 panoramic courts · NOX Stadium', ig: 'balipadelacademy', menus: [{ name: 'Lessons & prices', pages: [{ img: '/demo-guest/p-bpa-lessons.jpg' }] }] },
         'restaurant': { img: bp('events'), area: 'All-day food, coffee and smoothies', ig: 'balipadelacademy' },
         'pro shop': { img: bp('nox'), area: 'NOX rackets, balls and gear' },
         'infinity pool': { img: bp('pool'), area: 'Swim after your game' },
-        'kids area': { img: bp('building'), area: 'Play park for the little ones' }
+        'kids area': { img: bp('building'), area: 'Kids academy · ages 5 - 14', menus: [{ name: 'Kids academy', pages: [{ img: '/demo-guest/p-bpa-lessons.jpg' }] }] }
       }
     };
   }

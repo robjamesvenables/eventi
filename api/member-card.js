@@ -117,7 +117,11 @@ function prospectCard(pro, code, ov){
     places: (h.places || []).slice(0, 8).map(x => Object.assign({ name: String(x.name || '').slice(0, 40), img: dimg(x.img), line: String(x.line || '').slice(0, 60) }, openState(x, now.hm))),
     rooms: (h.rooms || []).slice(0, 8).map(x => ({ name: String(x.name || '').slice(0, 40), img: dimg(x.img) })) })).filter(h => h.key && h.name);
   const bt = pro.bookTop && https(pro.bookTop.url) ? { url: https(pro.bookTop.url), label: String(pro.bookTop.label || 'Book').slice(0, 30), via: String(pro.bookTop.via || '').slice(0, 30) } : null;
-  return { ok: true, kind: pro.kind === 'padel' ? 'padel' : '', bookTop: bt, soloWa: waOf(pro.soloWa), brand: pro.brand, logo: pro.logo, icon: pro.icon || '', hotels, code, first: pro.first, tier: pro.tier, visits: pro.visits, favourite: pro.favourite, gp,
+  const coaches = (Array.isArray(pro.coaches) ? pro.coaches : []).slice(0, 12).map(c => ({ name: String(c.name || '').slice(0, 40), ini: String(c.ini || c.name || '?').slice(0, 3), img: dimg(c.img),
+    tags: (c.tags || []).slice(0, 4).map(t => String(t).slice(0, 30)), line: String(c.line || '').slice(0, 90), bio: String(c.bio || '').slice(0, 600), book: https(c.book) })).filter(c => c.name);
+  const nb = pro.newbie && Array.isArray(pro.newbie.rows) ? { title: String(pro.newbie.title || '').slice(0, 30), cta: String(pro.newbie.cta || '').slice(0, 40), url: https(pro.newbie.url),
+    rows: pro.newbie.rows.slice(0, 6).map(r => ({ icon: String(r.icon || '').slice(0, 4), title: String(r.title || '').slice(0, 40), text: String(r.text || '').slice(0, 160) })) } : null;
+  return { ok: true, kind: pro.kind === 'padel' ? 'padel' : '', bookTop: bt, coaches, newbie: nb, soloWa: waOf(pro.soloWa), brand: pro.brand, logo: pro.logo, icon: pro.icon || '', hotels, code, first: pro.first, tier: pro.tier, visits: pro.visits, favourite: pro.favourite, gp,
     since: pro.since, perks: pro.perks, perkIcons: pro.perkIcons, offers: true, reviewAsk: rv ? { venue: rv.name, date: addDays(now.date, -1), when: 'yesterday', demo: true } : null,
     birthdayWeek: false, tonight, week, menus: { food: [], drinks: [] }, venues, stay: https(pro.stay), stayWa: waOf(pro.stayWa), stayPhone: phoneOf(pro.stayPhone), contact: cleanContact(pro.contact),
     reward: pro.reward ? { target: pro.reward.target, text: pro.reward.text, done: Math.min(pro.visits, pro.reward.target), left: Math.max(0, pro.reward.target - pro.visits), round: 0 } : null };

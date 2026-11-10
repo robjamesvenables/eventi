@@ -370,6 +370,18 @@ svg{display:block}
 .ar.l{left:6px}.ar.r{right:6px}.ar:hover{background:#F1F5F9}
 .dots i{cursor:pointer}
 @media(min-width:700px){.top{padding-top:34px}}
+.cch{display:flex;gap:12px;overflow-x:auto;scroll-snap-type:x mandatory;margin:0 -16px;padding:2px 16px 8px;scrollbar-width:none}.cch::-webkit-scrollbar{display:none}
+.cc{flex:none;width:72%;max-width:280px;scroll-snap-align:start;background:#fff;border-radius:20px;padding:16px;box-shadow:0 1px 3px rgba(15,30,46,.08);border:0;text-align:left;font:inherit;color:inherit;cursor:pointer;min-width:0}
+.cc .av,.cbio .av{width:64px;height:64px;border-radius:50%;background:var(--top,#0F1E2E);color:var(--top-ink,#fff);display:grid;place-items:center;font-weight:900;font-size:22px;margin-bottom:12px;object-fit:cover}
+.cc b{display:block;font-size:18px;font-weight:900;letter-spacing:-.3px}.cc .tg{display:inline-block;margin-top:6px;font-size:12px;font-weight:800;background:#F1F5F9;border-radius:99px;padding:4px 10px;color:#334155;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cc p{font-size:13.5px;color:#475569;margin-top:8px;line-height:1.4}.cc .go{margin-top:12px;font-size:14px;font-weight:900;color:#0F1E2E}
+.np{background:#fff;border-radius:20px;padding:6px 16px 16px;box-shadow:0 1px 3px rgba(15,30,46,.08)}
+.np .r{display:flex;gap:12px;align-items:flex-start;padding:12px 0;border-bottom:1px solid #EEF1EC}.np .r:last-of-type{border-bottom:0}.np .r>div{min-width:0}
+.np .r i{flex:none;width:38px;height:38px;border-radius:12px;background:#F1F5F9;display:grid;place-items:center;font-style:normal;font-size:19px}
+.np .r b{display:block;font-size:15px;font-weight:800}.np .r span{display:block;font-size:13.5px;color:#475569;line-height:1.4;margin-top:2px}
+.np a{display:flex;align-items:center;justify-content:center;min-height:52px;margin-top:6px;border-radius:16px;background:var(--acc,#0D9488);color:var(--acc-ink,#fff);text-decoration:none;font-weight:900;font-size:16px;text-align:center;padding:0 12px}
+.cbio .av{width:84px;height:84px;font-size:28px}.cbio .tgs{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 12px}.cbio .tgs span{font-size:12.5px;font-weight:800;background:#fff;border-radius:99px;padding:5px 11px}
+.cbio p{font-size:15px;line-height:1.5;color:#334155}.cbio .cbk{display:flex;align-items:center;justify-content:center;min-height:56px;margin-top:16px;border-radius:16px;background:var(--acc,#0D9488);color:var(--acc-ink,#fff);text-decoration:none;font-weight:900;font-size:17px;text-align:center;padding:0 12px}
 .pbk{margin:14px 16px 0}.pbk-go{display:flex;align-items:center;justify-content:center;gap:10px;min-height:62px;padding:0 16px;border-radius:18px;background:var(--acc,#0D9488);color:var(--acc-ink,#fff);text-decoration:none;font-weight:900;font-size:18px;box-shadow:0 8px 22px rgba(15,30,46,.18)}.pbk-go svg{flex:none}.pbk-go small{font-weight:700;font-size:13px;opacity:.75}.pbk-wa{display:block;text-align:center;margin-top:10px;font-size:14px;color:#475569;text-decoration:none}.pbk-wa b{color:#0F1E2E}
 .mvc{display:flex;align-items:center;gap:12px;width:100%;padding:14px;border:0;border-radius:18px;background:#fff;box-shadow:0 1px 3px rgba(15,30,46,.07);font-family:inherit;text-align:left;color:#0F1E2E;cursor:pointer}
 .mvc i{width:42px;height:42px;border-radius:50%;background:var(--top,#0F1E2E);color:var(--top-ink,#fff);display:flex;align-items:center;justify-content:center;flex:none;font-style:normal;font-weight:900;font-size:18px}
@@ -661,6 +673,19 @@ svg{display:block}
       }).join('') + '</div></div>';
     };
 
+    // Padel extras (only when the venue has them): "Our coaches" (tap for their bio + Book a lesson) and a "New to padel?" card
+    var extrasHtml = function(){
+      var h = '';
+      if ((d.coaches || []).length) h += '<div class="sec"><div class="lab">Our coaches</div><div class="cch">' + d.coaches.map(function(c, k){
+        return '<button class="cc" data-coach="' + k + '">' + (c.img ? '<img class="av" src="' + esc(c.img) + '" alt="">' : '<div class="av">' + esc(c.ini) + '</div>') + '<b translate="no">' + esc(c.name) + '</b>' +
+          (c.tags && c.tags.length ? '<span class="tg">' + esc([c.tags[0], c.tags[c.tags.length - 1]].filter(function(x, i, a){ return a.indexOf(x) === i; }).join(' · ')) + '</span>' : '') +
+          (c.line ? '<p>' + esc(c.line) + '</p>' : '') + '<div class="go">See more →</div></button>'; }).join('') + '</div></div>';
+      var nb = d.newbie;
+      if (nb && (nb.rows || []).length) h += '<div class="sec"><div class="lab">' + esc(nb.title || 'New here?') + '</div><div class="np">' + nb.rows.map(function(r){
+        return '<div class="r"><i>' + esc(r.icon) + '</i><div><b>' + esc(r.title) + '</b><span>' + esc(r.text) + '</span></div></div>'; }).join('') +
+        (nb.url ? '<a href="' + esc(nb.url) + '" target="_blank" rel="noopener">' + esc(nb.cta || 'Talk to us') + ' →</a>' : '') + '</div></div>';
+      return h;
+    };
     // ── Screens ──
     var homeHtml = function(){
     var h = '<div class="w">' + topAndCard(gp.motion ? slidesHtml(gp.slides || [], true) : '');
@@ -669,6 +694,7 @@ svg{display:block}
         return '<button class="pbig" data-go="' + esc(lc(p.name)) + '">' + (p.img ? '<img src="' + esc(p.img) + '" alt="" loading="lazy">' : '<div class="ini">' + esc(String(p.name).charAt(0).toUpperCase()) + '</div>') +
           '<span><b translate="no">' + esc(p.name) + '</b>' + (st ? '<small>' + esc(st) + '</small>' : '') + '</span></button>';   // just the name (+ open / closed when they set hours)
       }).join('') + '</div></div>';
+      h += extrasHtml();
       h += hotelsRow;
       if (on.gallery && (gp.gallery || []).length) h += galHtml(gp.gallery, '');
       h += reviewLine(d.venues) + igHtml(places) + clubRow;
@@ -678,7 +704,7 @@ svg{display:block}
     var menuHtml = function(p){
       var ms = (p && p.menus) || []; if (!ms.length) return '';
       return '<div class="vmenu">' + ms.map(function(m, i){ var food = /food|lunch|dinner|brunch|break|kitchen|eat/i.test(m.name), drink = /drink|bar|cocktail|wine|bev/i.test(m.name);
-        var ic = svg(drink && !food ? PI.cocktail : PI.food, 18) + '<span>' + esc(m.name) + '</span>';
+        var ic = svg(/lesson|price|academy|class|course/i.test(m.name) ? EI.cal : (drink && !food ? PI.cocktail : PI.food), 18) + '<span>' + esc(m.name) + '</span>';
         return (m.pages && m.pages.length) ? '<a href="#" role="button" data-menu="' + i + '">' + ic + '</a>' : '<a href="' + esc(m.url) + '" target="_blank" rel="noopener">' + ic + '</a>'; }).join('') + '</div>';
     };
     var placeHtml = function(key){
@@ -876,6 +902,10 @@ svg{display:block}
         if (window.qrcode) draw();
         else { var sc = document.createElement('script'); sc.src = '/lib/qrcode-generator-1.4.4.js'; sc.onload = draw; sc.onerror = function(){ var q = document.getElementById('mcq'); if (q) q.innerHTML = '<span style="font-weight:800;color:#64748B;padding:20px">Show the code below to your waiter</span>'; }; document.head.appendChild(sc); }
       };
+      Array.prototype.forEach.call(document.querySelectorAll('[data-coach]'), function(el){ el.onclick = function(){
+        var c = (d.coaches || [])[+el.getAttribute('data-coach')]; if (!c) return;
+        open(c.name, '<div class="cbio">' + (c.img ? '<img class="av" src="' + esc(c.img) + '" alt="">' : '<div class="av">' + esc(c.ini) + '</div>') + '<div class="tgs">' + (c.tags || []).map(function(t){ return '<span>' + esc(t) + '</span>'; }).join('') + '</div><p>' + esc(c.bio || c.line || '') + '</p>' +
+          (c.book ? '<a class="cbk" href="' + esc(c.book) + '" target="_blank" rel="noopener">Book a lesson with ' + esc(String(c.name).split(' ')[0]) + '</a>' : '') + '</div>'); }; });
       var fb = document.getElementById('film'); if (fb) fb.onclick = function(){ open(d.brand, '<div class="vid"><iframe src="https://www.youtube-nocookie.com/embed/' + encodeURIComponent(gp.film) + '?autoplay=1&playsinline=1&rel=0" allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowfullscreen title="Film"></iframe></div>'); };
       sh.addEventListener('click', function(e){ if (e.target === sh) close(); });
       // See more: to that place's page - or, if staff chose an event, straight to that event (its card on the place's page, details open)

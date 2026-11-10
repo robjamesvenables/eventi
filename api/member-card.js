@@ -116,7 +116,8 @@ function prospectCard(pro, code, ov){
     img: dimg(h.img), line: String(h.line || '').slice(0, 90), book: https(h.book),
     places: (h.places || []).slice(0, 8).map(x => Object.assign({ name: String(x.name || '').slice(0, 40), img: dimg(x.img), line: String(x.line || '').slice(0, 60) }, openState(x, now.hm))),
     rooms: (h.rooms || []).slice(0, 8).map(x => ({ name: String(x.name || '').slice(0, 40), img: dimg(x.img) })) })).filter(h => h.key && h.name);
-  return { ok: true, brand: pro.brand, logo: pro.logo, icon: pro.icon || '', hotels, code, first: pro.first, tier: pro.tier, visits: pro.visits, favourite: pro.favourite, gp,
+  const bt = pro.bookTop && https(pro.bookTop.url) ? { url: https(pro.bookTop.url), label: String(pro.bookTop.label || 'Book').slice(0, 30), via: String(pro.bookTop.via || '').slice(0, 30) } : null;
+  return { ok: true, kind: pro.kind === 'padel' ? 'padel' : '', bookTop: bt, soloWa: waOf(pro.soloWa), brand: pro.brand, logo: pro.logo, icon: pro.icon || '', hotels, code, first: pro.first, tier: pro.tier, visits: pro.visits, favourite: pro.favourite, gp,
     since: pro.since, perks: pro.perks, perkIcons: pro.perkIcons, offers: true, reviewAsk: rv ? { venue: rv.name, date: addDays(now.date, -1), when: 'yesterday', demo: true } : null,
     birthdayWeek: false, tonight, week, menus: { food: [], drinks: [] }, venues, stay: https(pro.stay), stayWa: waOf(pro.stayWa), stayPhone: phoneOf(pro.stayPhone), contact: cleanContact(pro.contact),
     reward: pro.reward ? { target: pro.reward.target, text: pro.reward.text, done: Math.min(pro.visits, pro.reward.target), left: Math.max(0, pro.reward.target - pro.visits), round: 0 } : null };

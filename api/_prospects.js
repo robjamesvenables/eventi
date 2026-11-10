@@ -123,9 +123,81 @@ P.trans = {
   }
 };
 
-const CODES = { S8HLTR: 'shelter', T7RNSB: 'trans', '5NKGZJ': 'trans' };   // 5NKGZJ = the printed sample card, shown as Trans for the GM demo
+// Bali Padel Academy (Eric) - padel demo: same template, padel wording, big "Book a court" button to their Playtomic
+const PT = 'https://playtomic.com/clubs/bali-padel-academy';
+const bp = n => '/demo-guest/p-bpa-' + n + '.jpg';
+const BPA_MAP = 'https://www.google.com/maps/search/?api=1&query=Bali+Padel+Academy+Canggu';
+P.bpa = {
+  kind: 'padel', bookTop: { url: PT, label: 'Book a court', via: 'on Playtomic' },
+  brand: 'Bali Padel Academy', logo: '/demo-guest/p-bpa-logo.png', icon: '/demo-guest/p-bpa-icon', first: 'Eric', tier: 'vip', visits: 7, since: 2024, favourite: 'Padel Courts',
+  perks: ['Member prices at the restaurant', '10% off NOX rackets in the pro shop', 'Free pool access after your game', 'Kids play free in the play park'],
+  perkIcons: ['food', 'tag', 'sun', 'smile'],
+  reward: { target: 10, text: 'A free NOX ball tube and smoothie' },
+  venues: [
+    { name: 'Padel Courts', opens: '06:30', closes: '23:00', book: PT },
+    { name: 'Restaurant', opens: '07:00', closes: '22:00' },
+    { name: 'Pro Shop', opens: '08:00', closes: '21:00' },
+    { name: 'Infinity Pool', opens: '07:00', closes: '20:00' },
+    { name: 'Kids Area', opens: '08:00', closes: '19:00' }
+  ].map(v => Object.assign({ area: 'Canggu', map: BPA_MAP }, v)),
+  contact: { map: BPA_MAP, ig: 'balipadelacademy' },
+  acts: [
+    { title: 'Silver Men Americana', line: '', every: [1], start: '13:00', end: '15:00', venue: 'Padel Courts' },
+    { title: 'Ladies Silver Americana', line: 'Fixed teams', every: [1], start: '15:00', end: '17:00', venue: 'Padel Courts' },
+    { title: 'Beginners Americana', line: '', every: [1], start: '17:00', end: '19:00', venue: 'Padel Courts' },
+    { title: 'Bronze Ladies Americana', line: 'Fixed teams', every: [2], start: '12:00', end: '14:00', venue: 'Padel Courts' },
+    { title: 'Bronze Men Americana', line: '', every: [2], start: '18:30', end: '21:00', venue: 'Padel Courts' },
+    { title: 'Best Kebab Beginners Ladies Americana', line: '', every: [3], start: '13:00', end: '15:00', venue: 'Padel Courts' },
+    { title: 'Silver Ladies Americana', line: 'Fixed teams', every: [3], start: '18:00', end: '20:00', venue: 'Padel Courts' },
+    { title: 'Bronze Men Americana', line: '', every: [4], start: '12:00', end: '14:00', venue: 'Padel Courts' },
+    { title: 'High Bronze Ladies Americana', line: 'Fixed teams', every: [4], start: '17:00', end: '19:00', venue: 'Padel Courts' },
+    { title: 'CARE Beginners Ladies Americana', line: '', every: [5], start: '15:30', end: '17:30', venue: 'Padel Courts' },
+    { title: 'Bronze Men Americana', line: 'Fixed teams', every: [5], start: '17:30', end: '20:00', venue: 'Padel Courts' },
+    { title: 'High Bronze Ladies Americana', line: 'Fixed teams', every: [6], start: '12:00', end: '14:00', venue: 'Padel Courts' },
+    { title: 'Silver Men Americana', line: 'Fixed teams', every: [6], start: '14:00', end: '16:00', venue: 'Padel Courts' },
+    { title: 'Beginners Americana', line: '', every: [6], start: '16:00', end: '18:00', venue: 'Padel Courts' },
+    { title: 'Best Kebab Bronze Ladies Americana', line: '', every: [6], start: '18:00', end: '20:00', venue: 'Padel Courts' },
+    { title: 'Best Kebab Bronze Men Americana', line: '', every: [0], start: '13:30', end: '15:30', venue: 'Padel Courts' },
+    { title: 'Beginners Ladies Americana', line: '', every: [0], start: '15:30', end: '17:30', venue: 'Padel Courts' },
+    { title: 'Bronze Ladies Americana', line: '', every: [0], start: '17:30', end: '19:30', venue: 'Padel Courts' }
+  ],
+  content: today => {
+    const y = year(today);
+    return {
+      theme: { top: '#B7CBB0', acc: '#111111', pg: '#F4F6F2' }, motion: true, film: '9U1XjJJN0ks',
+      slides: [
+        { id: 'bs0', img: bp('events'), title: 'NOX Cup · tournament night', line: 'Finals under the lights', venue: 'Padel Courts', ev: 'be1' },
+        { id: 'bs1', img: bp('courts'), title: '7 panoramic courts', line: 'Book in one tap', venue: 'Padel Courts', btn: 'book', url: PT },
+        { id: 'bs5', img: bp('lounge'), title: 'New or playing solo?', line: 'Our front desk will find you a game', venue: 'Padel Courts' },
+        { id: 'bs2', img: bp('pool'), title: 'Cool down in the infinity pool', line: 'Free for members after your game', venue: 'Infinity Pool' },
+        { id: 'bs3', img: bp('nox'), title: 'Powered by NOX', line: 'Try the new rackets in our pro shop', venue: 'Pro Shop' },
+        { id: 'bs4', img: bp('building'), title: 'Sauna & ice bath', line: 'Coming soon · members first', venue: '' }
+      ],
+      deals: [
+        { id: 'bd1', img: bp('lounge'), title: 'Smoothie hour · 2 for 1', when: 'Mon - Fri · 5 - 7pm', venue: 'Restaurant' },
+        { id: 'bd2', img: bp('nox'), title: 'NOX rackets · members 10% off', when: 'This week', venue: 'Pro Shop' },
+        { id: 'bd3', img: bp('pool'), title: 'Kids play free while you play', when: 'Every day', venue: 'Kids Area' }
+      ],
+      events: [
+        { id: 'be1', img: bp('events'), title: 'NOX Cup · December', line: 'Bali\'s biggest padel weekend', date: y + '-12-12', time: '09:00', time2: '22:00', venue: 'Padel Courts', btn: 'book', url: PT, hl: true,
+          details: 'Two days of padel on all 7 courts, finals on the NOX Stadium court, DJ and food all weekend.' },
+        { id: 'be2', img: bp('courts'), title: 'Members Americana night', line: 'Mixed levels · drinks after', date: addDays(today, 5), time: '18:00', time2: '21:00', venue: 'Padel Courts', btn: 'book', url: PT }
+      ],
+      gallery: ['building', 'courts', 'lounge', 'events', 'pool', 'nox'].map((n, i) => ({ id: 'bg' + i, img: bp(n), venue: '' })),
+      places: {
+        'padel courts': { img: bp('courts'), area: '7 panoramic courts · NOX Stadium', ig: 'balipadelacademy' },
+        'restaurant': { img: bp('events'), area: 'All-day food, coffee and smoothies', ig: 'balipadelacademy' },
+        'pro shop': { img: bp('nox'), area: 'NOX rackets, balls and gear' },
+        'infinity pool': { img: bp('pool'), area: 'Swim after your game' },
+        'kids area': { img: bp('building'), area: 'Play park for the little ones' }
+      }
+    };
+  }
+};
+
+const CODES = { B6PADL: 'bpa', S8HLTR: 'shelter', T7RNSB: 'trans', '5NKGZJ': 'trans' };   // 5NKGZJ = the printed sample card, shown as Trans for the GM demo
 // Mavis Club network: each of the guest's other venues as a logo tile (their colour, logo, how long they've been a member there)
-const KEY_CODE = { shelter: 'S8HLTR', trans: 'T7RNSB' };
+const KEY_CODE = { bpa: 'B6PADL', shelter: 'S8HLTR', trans: 'T7RNSB' };
 const club = (list, who) => list.map(c => { const v = P[c.key]; if (!v) return null; const t = (v.content('2026-01-01').theme) || {};
   return { name: v.brand, logo: v.logo, top: t.top || '#0F1E2E', area: (v.venues[0] || {}).area || '', since: c.since || '', visits: c.visits || 0,
     href: '/k/' + KEY_CODE[c.key] + '?n=' + encodeURIComponent(String(who || '').split(' ')[0]) }; }).filter(Boolean);

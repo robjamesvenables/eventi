@@ -40,6 +40,16 @@ svg{display:block}
 .card .row>div{flex:none;white-space:nowrap}.card .row>div:nth-child(2):not(:last-child){flex:0 1 auto;min-width:0}   /* the favourite place shrinks with "…", the numbers never break */
 .card .row>div:nth-child(2):not(:last-child) b{overflow:hidden;text-overflow:ellipsis}
 .card .row b{display:block;font-size:20px;letter-spacing:-.3px}
+.mcb{position:absolute;right:14px;top:14px;z-index:1;display:inline-flex;align-items:center;gap:7px;background:#2B1D07;color:#fff;border:0;border-radius:99px;padding:9px 14px;font:800 13.5px Inter,system-ui,sans-serif;box-shadow:0 4px 12px rgba(0,0,0,.2);cursor:pointer;-webkit-tap-highlight-color:transparent}
+.mcb svg{flex:none}
+.mcp{text-align:center;padding:4px 4px 2px}
+.mcp .mcq{width:min(270px,74vw);aspect-ratio:1;margin:4px auto 6px;border-radius:20px;border:3px solid #D4AC5E;padding:12px;background:#fff;display:flex;align-items:center;justify-content:center}
+.mcp .mcq svg{width:100%;height:auto;display:block}
+.mcp .mcc{font-weight:900;font-size:26px;letter-spacing:6px;margin:10px 0 2px;color:#0F1E2E}
+.mcp .mct{font-size:17px;font-weight:800;margin:4px 0 2px;color:#0F1E2E}
+.mcp .mcs{font-size:13.5px;color:#64748B}
+.mcp .mcd{margin-top:18px;width:100%;height:56px;border:0;border-radius:16px;background:var(--acc,#0D9488);color:var(--acc-ink,#fff);font:900 17px Inter,system-ui,sans-serif;cursor:pointer}
+@media(max-width:350px){.mcb{padding:8px 11px;font-size:12.5px;right:10px;top:10px}}
 .card .code{position:absolute;right:18px;top:18px;font-size:11px;font-weight:800;background:rgba(43,29,7,.12);border-radius:7px;padding:3px 7px;z-index:1}
 /* sections */
 .sec{margin:24px 16px 0}
@@ -559,7 +569,7 @@ svg{display:block}
       return film ? topHtml(film) + memberHtml(sw) : topHtml(slides) + memberHtml();
     };
     var memberHtml = function(after){
-      var h = '<div class="card' + (vip ? '' : ' member') + '"><span class="code">' + esc(d.code) + '</span><div class="k">' + (vip ? 'VIP MEMBER' : 'MEMBER') + '</div><h2 translate="no">' + esc(d.first) + '</h2>' +
+      var h = '<div class="card' + (vip ? '' : ' member') + '">' + (d.code ? '<button class="mcb" id="mycard" type="button"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><path d="M14 14h3v3M21 14v7h-7"/></svg>Show my card</button>' : '') + '<div class="k">' + (vip ? 'VIP MEMBER' : 'MEMBER') + '</div><h2 translate="no">' + esc(d.first) + '</h2>' +
         '<div class="row"><div><b>' + esc(d.visits) + '</b>visit' + (d.visits === 1 ? '' : 's') + '</div>' + '<div><b>' + esc(d.since) + '</b>member since</div></div></div>' + (after || '') + reviewBig();
       if (d.birthdayWeek) h += '<div class="bday"><i>' + svg(I.cake, 24) + '</i><div><b>Happy birthday week!</b><p>' + ((d.perks || []).some(function(p){ return /birthday/i.test(p); }) ? 'Your birthday treat is waiting - just show this screen at any of our venues.' : 'From all of us - have a wonderful one. We hope to see you this week!') + '</p></div></div>';
       if (d.reward) h += rewardHtml();
@@ -844,6 +854,16 @@ svg{display:block}
         var pl = hvv.play(); if (pl && pl.catch) pl.catch(function(){}); if (hvs) hvs.onclick = function(){ hvv.muted = !hvv.muted; if (!hvv.muted) { hvv.currentTime = 0; hvv.play(); } hvs.querySelector('span').textContent = hvv.muted ? 'Sound on' : 'Sound off'; }; }
       var hv = document.getElementById('hv');
       if (hv) { var fit = function(){ hv.style.setProperty('--hk', (hv.clientWidth / 1280 * 1.3).toFixed(4)); }; fit(); window.addEventListener('resize', fit); }
+      // Show my card: their keyring QR big on screen, so staff can scan it when the keyring is at home (same code, same scan)
+      var mcb = document.getElementById('mycard');
+      if (mcb) mcb.onclick = function(){
+        var url = 'https://app.getmavis.co/k/' + encodeURIComponent(d.code);
+        open('My card', '<div class="mcp"><div class="mcq" id="mcq"></div><div class="mcc">' + esc(d.code) + '</div><div class="mct">Show this to your waiter</div><div class="mcs">Works just like your keyring</div><button class="mcd" type="button" id="mcd">Done</button></div>');
+        var dn = document.getElementById('mcd'); if (dn) dn.onclick = close;
+        var draw = function(){ var q = document.getElementById('mcq'); if (!q || !window.qrcode) return; try { var g = qrcode(0, 'M'); g.addData(url); g.make(); q.innerHTML = g.createSvgTag({ cellSize: 8, margin: 0, scalable: true }); var sv = q.querySelector('svg'); if (sv) { sv.style.width = '100%'; sv.style.height = 'auto'; sv.style.display = 'block'; Array.prototype.forEach.call(sv.querySelectorAll('path'), function(x){ if (x.getAttribute('fill') === 'black') x.setAttribute('fill', '#0F1E2E'); }); } } catch (e) {} };
+        if (window.qrcode) draw();
+        else { var sc = document.createElement('script'); sc.src = '/lib/qrcode-generator-1.4.4.js'; sc.onload = draw; sc.onerror = function(){ var q = document.getElementById('mcq'); if (q) q.innerHTML = '<span style="font-weight:800;color:#64748B;padding:20px">Show the code below to your waiter</span>'; }; document.head.appendChild(sc); }
+      };
       var fb = document.getElementById('film'); if (fb) fb.onclick = function(){ open(d.brand, '<div class="vid"><iframe src="https://www.youtube-nocookie.com/embed/' + encodeURIComponent(gp.film) + '?autoplay=1&playsinline=1&rel=0" allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowfullscreen title="Film"></iframe></div>'); };
       sh.addEventListener('click', function(e){ if (e.target === sh) close(); });
       // See more: to that place's page - or, if staff chose an event, straight to that event (its card on the place's page, details open)

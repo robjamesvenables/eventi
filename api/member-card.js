@@ -32,8 +32,9 @@ function openState(v, hm){
   const o = toMin(v.opens), c = toMin(v.closes), n = toMin(hm);
   if (o == null || c == null) return { open: null, label: v.hours || '' };
   const isOpen = c > o ? (n >= o && n < c) : (n >= o || n < c);   // closes after midnight
-  return isOpen ? { open: true, label: 'until ' + (c === 0 ? 'midnight' : niceTime(v.closes)) }
-                : { open: false, label: 'Opens ' + niceTime(v.opens) };
+  const hrs = 'Daily · ' + niceTime(v.opens) + ' – ' + (c === 0 ? 'midnight' : niceTime(v.closes));   // the full times, shown on the place's own page
+  return isOpen ? { open: true, label: 'until ' + (c === 0 ? 'midnight' : niceTime(v.closes)), hrs }
+                : { open: false, label: 'Opens ' + niceTime(v.opens), hrs };
 }
 // Birthday ('MM-DD') falls in the 7 days around today?
 function birthdayWeek(bd, today){

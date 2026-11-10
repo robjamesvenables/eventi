@@ -4,6 +4,7 @@
 <meta name="robots" content="noindex">
 <meta name="theme-color" content="#0F1E2E">
 <link rel="icon" type="image/png" href="/favicon-v6.png">
+<link rel="preconnect" href="https://www.youtube-nocookie.com"><link rel="preconnect" href="https://i.ytimg.com"><link rel="preconnect" href="https://www.google.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap" rel="stylesheet">
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
@@ -200,6 +201,7 @@ svg{display:block}
 /* the player is drawn big (1280x720) then shrunk and zoomed 30%, so YouTube's title bar and logo sit outside the box */
 .hv iframe{position:absolute;top:50%;left:50%;width:1280px;height:720px;transform:translate(-50%,-50%) scale(var(--hk,.3));transform-origin:center;border:0;pointer-events:none}
 .hv button{z-index:2}
+.hvp{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:1;pointer-events:none;transition:opacity .6s}.hvp.gone{opacity:0}
 .hv video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block}
 .hv.tall{padding-top:125%}
 .hv video::-internal-media-controls-overlay-cast-button{display:none}   /* a reel (tall video) gets Instagram's 4:5 box - trims a little off top and bottom, keeps the middle */
@@ -585,7 +587,7 @@ svg{display:block}
     // Their film plays on its own at the very top (muted, on a loop); 'Sound on' opens it full with sound
     var filmHtml = function(){
       if (gp.video) return '<div class="hv' + (gp.videoTall ? ' tall' : '') + '"><video id="hvv" autoplay muted loop playsinline disableremoteplayback disablepictureinpicture x-webkit-airplay="deny" controlslist="nodownload nofullscreen noremoteplayback" preload="auto" poster="' + esc(gp.video.replace(/\.mp4$/, '.jpg')) + '" src="' + esc(gp.video) + '"></video><button id="hvs">' + svg('<path d="M11 5 6 9H2v6h4l5 4V5z"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/><path d="M19 5a10 10 0 0 1 0 14"/>', 16) + '<span>Sound on</span></button></div>';
-      return gp.film ? '<div class="hv" id="hv"><iframe src="https://www.youtube-nocookie.com/embed/' + esc(gp.film) + '?autoplay=1&mute=1&loop=1&playlist=' + esc(gp.film) + '&controls=0&playsinline=1&rel=0&modestbranding=1&iv_load_policy=3&disablekb=1" allow="autoplay; encrypted-media" title="Film" tabindex="-1"></iframe><button id="film">' + svg('<path d="M11 5 6 9H2v6h4l5 4V5z"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/><path d="M19 5a10 10 0 0 1 0 14"/>', 16) + 'Sound on</button></div>' : ''; };
+      return gp.film ? '<div class="hv" id="hv"><iframe src="https://www.youtube-nocookie.com/embed/' + esc(gp.film) + '?autoplay=1&mute=1&loop=1&playlist=' + esc(gp.film) + '&controls=0&playsinline=1&rel=0&modestbranding=1&iv_load_policy=3&disablekb=1" allow="autoplay; encrypted-media" title="Film" tabindex="-1" id="hvf"></iframe><img class="hvp" id="hvp" alt="" onerror="this.remove()" src="https://i.ytimg.com/vi/' + esc(gp.film) + '/hqdefault.jpg"><button id="film">' + svg('<path d="M11 5 6 9H2v6h4l5 4V5z"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/><path d="M19 5a10 10 0 0 1 0 14"/>', 16) + 'Sound on</button></div>' : ''; };
     // With a video at the top, the photo slideshow moves to just under the member card - the video and the photos never sit on top of each other
     var topAndCard = function(slides){
       var film = filmHtml(), sw = slides ? '<div class="sec slsec">' + slides + '</div>' : '';
@@ -917,6 +919,9 @@ svg{display:block}
       var hvv = document.getElementById('hvv'), hvs = document.getElementById('hvs');
       if (hvv) { var shape = function(){ if (hvv.videoWidth) hvv.parentNode.classList.toggle('tall', hvv.videoHeight > hvv.videoWidth); }; hvv.addEventListener('loadedmetadata', shape); shape();
         var pl = hvv.play(); if (pl && pl.catch) pl.catch(function(){}); if (hvs) hvs.onclick = function(){ hvv.muted = !hvv.muted; if (!hvv.muted) { hvv.currentTime = 0; hvv.play(); } hvs.querySelector('span').textContent = hvv.muted ? 'Sound on' : 'Sound off'; }; }
+      // YouTube takes a moment to start: show the video's own still picture on top, then fade it once the player has loaded
+      var hvf = document.getElementById('hvf'), hvp = document.getElementById('hvp');
+      if (hvf && hvp) { var gone = function(){ hvp.classList.add('gone'); }; hvf.addEventListener('load', function(){ setTimeout(gone, 1600); }); setTimeout(gone, 7000); }
       var hv = document.getElementById('hv');
       if (hv) { var fit = function(){ hv.style.setProperty('--hk', (hv.clientWidth / 1280 * 1.3).toFixed(4)); }; fit(); window.addEventListener('resize', fit); }
       // Show my card: their keyring QR big on screen, so staff can scan it when the keyring is at home (same code, same scan)

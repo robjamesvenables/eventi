@@ -142,7 +142,7 @@ P.bpa = {
   wall: [
     { club: true, when: '2h ago', text: '🏆 Saturday Bronze Ladies Americana: congrats Sarah & Mia, unbeaten all afternoon!', img: bp('courts'), clap: 24, fire: 9 },
     { club: true, when: 'Yesterday', text: '👋 Welcome to our 12 new members this week: Kadek, Jonas, Priya, Lucas and 8 more. See you on court!', clap: 41, fire: 6 },
-    { by: 'Tom B.', ini: 'TB', when: '2 days ago', text: 'Sunset game with the crew, then straight into the pool 🌅', img: bp('pool'), clap: 18, fire: 3 },
+    { club: true, when: '2 days ago', text: '🌅 Sunset session, then straight into the pool. This is what Tuesdays are for.', img: bp('pool'), clap: 18, fire: 3 },
     { club: true, when: '3 days ago', text: '⭐ Member of the month: Wayan K. 23 games, 4 Americanas, always first to help the beginners. Your free NOX grip is at reception!', clap: 57, fire: 22 },
     { club: true, when: 'Last week', text: '📸 NOX Cup qualifiers: what a night under the lights. Finals on 12 December!', img: bp('events'), clap: 63, fire: 31 }
   ],

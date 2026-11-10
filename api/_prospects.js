@@ -147,10 +147,10 @@ P.bpa = {
     { club: true, when: 'Last week', text: '🎟️ Members first: NOX Cup sign-ups open to members 48 hours before everyone else. Finals 12 December under the lights.', img: bp('events'), clap: 63, fire: 31 }
   ],
   newbie: { title: 'New to padel?', cta: "We'll find you a game", url: 'https://ig.me/m/balipadelacademy', rows: [
-    { icon: '👟', title: 'What to wear', text: 'Sports clothes and flat court shoes. No running shoes on the courts, please.' },
-    { icon: '🎾', title: 'No racket? No problem', text: 'NOX rackets to rent at reception, Rp 50k. Members free.' },
-    { icon: '📊', title: 'What does 2.5 mean?', text: 'Levels go from 0 (first time) to 7 (pro). Most beginners start around 1. Not sure? Ask a coach.' },
-    { icon: '🔁', title: 'How an Americana works', text: 'Sign up alone, we mix the teams. Play short games with different partners. Great for meeting people.' }
+    { icon: 'shoe', title: 'What to wear', text: 'Sports clothes and flat court shoes. No running shoes on the courts, please.' },
+    { icon: 'racket', title: 'No racket? No problem', text: 'NOX rackets to rent at reception, Rp 50k. Members free.' },
+    { icon: 'levels', title: 'What does 2.5 mean?', text: 'Levels go from 0 (first time) to 7 (pro). Most beginners start around 1. Not sure? Ask a coach.' },
+    { icon: 'swap', title: 'How an Americana works', text: 'Sign up alone, we mix the teams. Play short games with different partners. Great for meeting people.' }
   ] },
   brand: 'Bali Padel Academy', logo: '/demo-guest/p-bpa-logo.png', icon: '/demo-guest/p-bpa-icon', first: 'Eric', tier: 'vip', visits: 7, since: 2024, favourite: 'Padel Courts',
   perks: ['Member prices at the restaurant', '15% off in the pro shop', 'Free pool access after your game', 'Kids play free in the play park'],

@@ -120,7 +120,7 @@ function prospectCard(pro, code, ov){
   const coaches = (Array.isArray(pro.coaches) ? pro.coaches : []).slice(0, 12).map(c => ({ name: String(c.name || '').slice(0, 40), ini: String(c.ini || c.name || '?').slice(0, 3), img: dimg(c.img),
     tags: (c.tags || []).slice(0, 4).map(t => String(t).slice(0, 30)), line: String(c.line || '').slice(0, 90), bio: String(c.bio || '').slice(0, 600), book: https(c.book) })).filter(c => c.name);
   const nb = pro.newbie && Array.isArray(pro.newbie.rows) ? { title: String(pro.newbie.title || '').slice(0, 30), cta: String(pro.newbie.cta || '').slice(0, 40), url: https(pro.newbie.url),
-    rows: pro.newbie.rows.slice(0, 6).map(r => ({ icon: String(r.icon || '').slice(0, 4), title: String(r.title || '').slice(0, 40), text: String(r.text || '').slice(0, 160) })) } : null;
+    rows: pro.newbie.rows.slice(0, 6).map(r => ({ icon: String(r.icon || '').slice(0, 10), title: String(r.title || '').slice(0, 40), text: String(r.text || '').slice(0, 160) })) } : null;
   const wall = (Array.isArray(pro.wall) ? pro.wall : []).slice(0, 20).map(p => ({ club: !!p.club, by: String(p.by || '').slice(0, 40), ini: String(p.ini || '').slice(0, 3), when: String(p.when || '').slice(0, 30),
     text: String(p.text || '').slice(0, 300), img: dimg(p.img), clap: Math.max(0, +p.clap || 0), fire: Math.max(0, +p.fire || 0) })).filter(p => p.text);
   return { ok: true, kind: pro.kind === 'padel' ? 'padel' : '', bookTop: bt, coaches, newbie: nb, wall, soloWa: waOf(pro.soloWa), brand: pro.brand, logo: pro.logo, icon: pro.icon || '', hotels, code, first: pro.first, tier: pro.tier, visits: pro.visits, favourite: pro.favourite, gp,

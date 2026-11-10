@@ -573,9 +573,11 @@ svg{display:block}
     // Big "Book a court" button under the card (padel clubs etc.): the venue sets the link and the label, e.g. "on Playtomic";
     // plus an optional "New or playing solo?" WhatsApp line for the front desk to find them a game
     var bookTopHtml = function(){
-      var b = d.bookTop; if (!b || !(b.url || d.soloWa)) return '';
+      var b = d.bookTop; if (!b) return '';
       var go = b.url ? '<a class="pbk-go" href="' + esc(b.url) + '" target="_blank" rel="noopener">' + svg(EI.cal, 22) + esc(b.label || 'Book') + (b.via ? '<small>' + esc(b.via) + '</small>' : '') + '</a>' : '';
-      var solo = d.soloWa ? '<a class="pbk-wa" href="https://wa.me/' + esc(d.soloWa) + '?text=' + encodeURIComponent('Hi! It\'s ' + (d.first || '') + ' (member). I\'d love a game - could you find me players? Day and time: ') + '" target="_blank" rel="noopener">New or playing solo? <b>We\'ll find you a game →</b></a>' : '';
+      // New or solo players: WhatsApp the front desk (message written for them); no WhatsApp yet -> their Instagram DMs
+      var ig = d.contact && d.contact.ig, soloHref = d.soloWa ? 'https://wa.me/' + d.soloWa + '?text=' + encodeURIComponent('Hi! It\'s ' + (d.first || '') + ' (member). I\'m new / playing solo and would love a game - could you find me players? Day and time: ') : (ig ? 'https://ig.me/m/' + ig : '');
+      var solo = soloHref ? '<a class="pbk-wa" href="' + esc(soloHref) + '" target="_blank" rel="noopener">New or playing solo? <b>We\'ll find you a&nbsp;game&nbsp;→</b></a>' : '';
       return '<div class="pbk">' + go + solo + '</div>';
     };
     var memberHtml = function(after){

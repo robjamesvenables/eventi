@@ -139,6 +139,13 @@ P.bpa = {
     { name: 'Javi Torres', ini: 'JT', tags: ['Advanced', 'Tournament prep', 'EN · ES'], line: 'Gets you ready for the NOX Cup.', book: PT,
       bio: 'Javi coaches the advanced groups and tournament players: tactics, positioning and fitness. Best for: levels 3.5 and up.' }
   ],
+  wall: [
+    { club: true, when: '2h ago', text: '🏆 Saturday Bronze Ladies Americana: congrats Sarah & Mia, unbeaten all afternoon!', img: bp('courts'), clap: 24, fire: 9 },
+    { club: true, when: 'Yesterday', text: '👋 Welcome to our 12 new members this week: Kadek, Jonas, Priya, Lucas and 8 more. See you on court!', clap: 41, fire: 6 },
+    { by: 'Tom B.', ini: 'TB', when: '2 days ago', text: 'Sunset game with the crew, then straight into the pool 🌅', img: bp('pool'), clap: 18, fire: 3 },
+    { club: true, when: '3 days ago', text: '⭐ Member of the month: Wayan K. 23 games, 4 Americanas, always first to help the beginners. Your free NOX grip is at reception!', clap: 57, fire: 22 },
+    { club: true, when: 'Last week', text: '📸 NOX Cup qualifiers: what a night under the lights. Finals on 12 December!', img: bp('events'), clap: 63, fire: 31 }
+  ],
   newbie: { title: 'New to padel?', cta: "We'll find you a game", url: 'https://ig.me/m/balipadelacademy', rows: [
     { icon: '👟', title: 'What to wear', text: 'Sports clothes and flat court shoes. No running shoes on the courts, please.' },
     { icon: '🎾', title: 'No racket? No problem', text: 'NOX rackets to rent at reception, Rp 50k. Members free.' },

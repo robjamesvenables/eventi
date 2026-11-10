@@ -370,6 +370,15 @@ svg{display:block}
 .ar.l{left:6px}.ar.r{right:6px}.ar:hover{background:#F1F5F9}
 .dots i{cursor:pointer}
 @media(min-width:700px){.top{padding-top:34px}}
+.cwh{display:flex;align-items:baseline;justify-content:space-between;gap:10px}.cwh a{flex:none;font-size:14px;font-weight:900;color:#0F1E2E;text-decoration:none}
+.cwp{background:#fff;border-radius:20px;box-shadow:0 1px 3px rgba(15,30,46,.08);margin-bottom:10px;overflow:hidden}
+.cwhd{display:flex;align-items:center;gap:10px;padding:12px 14px 0}.cwhd>div{min-width:0}.cwhd img{width:36px;height:36px;border-radius:10px;object-fit:cover;flex:none}.cwhd .ini{width:36px;height:36px;flex:none;border-radius:50%;background:var(--top,#0F1E2E);color:var(--top-ink,#fff);display:grid;place-items:center;font-weight:900;font-size:13px}
+.cwhd b{display:block;font-size:14px;font-weight:800;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.cwhd small{display:block;font-size:12px;color:#64748B}
+.cwtx{padding:10px 14px 0;font-size:15px;line-height:1.4;font-weight:600}
+.cwph{display:block;width:calc(100% - 28px);margin:10px 14px 0;border-radius:14px;aspect-ratio:16/10;object-fit:cover}
+.cwre{display:flex;gap:8px;padding:10px 14px 12px}.cwre button{border:0;background:#F1F5F9;border-radius:99px;padding:6px 12px;font:inherit;font-size:13.5px;font-weight:800;color:#0F1E2E;cursor:pointer}.cwre button.on{background:var(--top,#0F1E2E);color:var(--top-ink,#fff)}
+.cwshare{display:flex;align-items:center;justify-content:center;gap:8px;min-height:52px;border-radius:16px;background:var(--acc,#0D9488);color:var(--acc-ink,#fff);font-weight:900;font-size:16px;margin-bottom:6px;cursor:pointer}.cwshare.sent{background:#DCFCE7;color:#15803D}
+.cwnote{text-align:center;font-size:12.5px;color:#64748B;margin-bottom:14px}
 .cch{display:flex;gap:12px;overflow-x:auto;scroll-snap-type:x mandatory;margin:0 -16px;padding:2px 16px 8px;scrollbar-width:none}.cch::-webkit-scrollbar{display:none}
 .cc{flex:none;width:72%;max-width:280px;scroll-snap-align:start;background:#fff;border-radius:20px;padding:16px;box-shadow:0 1px 3px rgba(15,30,46,.08);border:0;text-align:left;font:inherit;color:inherit;cursor:pointer;min-width:0}
 .cc .av,.cbio .av{width:64px;height:64px;border-radius:50%;background:var(--top,#0F1E2E);color:var(--top-ink,#fff);display:grid;place-items:center;font-weight:900;font-size:22px;margin-bottom:12px;object-fit:cover}
@@ -592,9 +601,21 @@ svg{display:block}
       var solo = soloHref ? '<a class="pbk-wa" href="' + esc(soloHref) + '" target="_blank" rel="noopener">New or playing solo? <b>We\'ll find you a&nbsp;game&nbsp;→</b></a>' : '';
       return '<div class="pbk">' + go + solo + '</div>';
     };
+    // Club wall: the club's own posts (results, new members, photos) + 👏 🔥; member photos only after staff say OK. Newest 2 on home, "See all" for the rest
+    var wallPost = function(p, i){
+      return '<div class="cwp">' + '<div class="cwhd">' + (p.club ? (d.logo ? '<img src="' + esc(d.logo) + '" alt="">' : '<div class="ini">' + esc(String(d.brand || 'M').charAt(0)) + '</div>') : '<div class="ini">' + esc(p.ini || '?') + '</div>') +
+        '<div><b translate="no">' + esc(p.club ? d.brand : p.by) + '</b><small>' + esc(p.when || '') + (p.club ? '' : ' · shared by a member') + '</small></div></div>' +
+        '<div class="cwtx">' + esc(p.text) + '</div>' + (p.img ? '<img class="cwph" src="' + esc(p.img) + '" alt="" loading="lazy">' : '') +
+        '<div class="cwre"><button type="button" data-re="' + i + '-c">👏 <span>' + (+p.clap || 0) + '</span></button><button type="button" data-re="' + i + '-f">🔥 <span>' + (+p.fire || 0) + '</span></button></div></div>';
+    };
+    var wallHtml = function(all){
+      var w = d.wall || []; if (!w.length) return '';
+      if (all) return '<div class="cw"><label class="cwshare">📷 Share a photo<input type="file" accept="image/*" hidden id="cwfile"></label><div class="cwnote">Your photo shows up once the club says OK</div>' + w.map(wallPost).join('') + '</div>';
+      return '<div class="sec cw"><div class="cwh"><div class="lab">Club wall</div>' + (w.length > 2 ? '<a href="#" id="cwall">See all →</a>' : '') + '</div>' + w.slice(0, 2).map(wallPost).join('') + '</div>';
+    };
     var memberHtml = function(after){
       var h = '<div class="card' + (vip ? '' : ' member') + '">' + (d.code ? '<button class="mcb" id="mycard" type="button"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><path d="M14 14h3v3M21 14v7h-7"/></svg>Show my card</button>' : '') + '<div class="k">' + (vip ? 'VIP MEMBER' : 'MEMBER') + '</div><h2 translate="no">' + esc(d.first) + '</h2>' +
-        '<div class="row"><div><b>' + esc(d.visits) + '</b>visit' + (d.visits === 1 ? '' : 's') + '</div>' + '<div><b>' + esc(d.since) + '</b>member since</div></div></div>' + bookTopHtml() + (after || '') + reviewBig();
+        '<div class="row"><div><b>' + esc(d.visits) + '</b>visit' + (d.visits === 1 ? '' : 's') + '</div>' + '<div><b>' + esc(d.since) + '</b>member since</div></div></div>' + bookTopHtml() + (after || '') + wallHtml(false) + reviewBig();
       if (d.birthdayWeek) h += '<div class="bday"><i>' + svg(I.cake, 24) + '</i><div><b>Happy birthday week!</b><p>' + ((d.perks || []).some(function(p){ return /birthday/i.test(p); }) ? 'Your birthday treat is waiting - just show this screen at any of our venues.' : 'From all of us - have a wonderful one. We hope to see you this week!') + '</p></div></div>';
       if (d.reward) h += rewardHtml();
       var offersHtml = '<div class="sec"><div class="box offr"><i>' + svg(BELL, 19) + '</i><div class="n"><b>Send me offers</b><small>Turn off any time.</small></div><button class="tgl' + (d.offers ? ' on' : '') + '" id="offr" role="switch" aria-checked="' + (d.offers ? 'true' : 'false') + '" aria-label="Send me offers"><i></i></button></div></div>';
@@ -906,6 +927,12 @@ svg{display:block}
         var c = (d.coaches || [])[+el.getAttribute('data-coach')]; if (!c) return;
         open(c.name, '<div class="cbio">' + (c.img ? '<img class="av" src="' + esc(c.img) + '" alt="">' : '<div class="av">' + esc(c.ini) + '</div>') + '<div class="tgs">' + (c.tags || []).map(function(t){ return '<span>' + esc(t) + '</span>'; }).join('') + '</div><p>' + esc(c.bio || c.line || '') + '</p>' +
           (c.book ? '<a class="cbk" href="' + esc(c.book) + '" target="_blank" rel="noopener">Book a lesson with ' + esc(String(c.name).split(' ')[0]) + '</a>' : '') + '</div>'); }; });
+      var cwBind = function(){
+        Array.prototype.forEach.call(document.querySelectorAll('[data-re]'), function(el){ el.onclick = function(){ var n = el.querySelector('span'), on = el.classList.toggle('on'); n.textContent = (+n.textContent || 0) + (on ? 1 : -1); }; });
+        var f = document.getElementById('cwfile'); if (f) f.onchange = function(){ if (!f.files || !f.files[0]) return; var l = f.closest('label'); if (l) { l.firstChild.textContent = 'Thanks! Sent to the club ✓'; l.classList.add('sent'); } };   // demo: nothing is uploaded yet
+      };
+      cwBind();
+      var cwo = document.getElementById('cwall'); if (cwo) cwo.onclick = function(e){ e.preventDefault(); open('Club wall', wallHtml(true)); cwBind(); };
       var fb = document.getElementById('film'); if (fb) fb.onclick = function(){ open(d.brand, '<div class="vid"><iframe src="https://www.youtube-nocookie.com/embed/' + encodeURIComponent(gp.film) + '?autoplay=1&playsinline=1&rel=0" allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowfullscreen title="Film"></iframe></div>'); };
       sh.addEventListener('click', function(e){ if (e.target === sh) close(); });
       // See more: to that place's page - or, if staff chose an event, straight to that event (its card on the place's page, details open)

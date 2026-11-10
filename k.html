@@ -297,6 +297,16 @@ svg{display:block}
 .gal img{width:100%;height:100%;object-fit:cover;display:block}
 .big{width:100%;border-radius:14px;display:block}
 .pgrid{display:grid;grid-template-columns:1fr;gap:10px}
+.ohp{border-radius:24px;padding:16px 14px 14px;background:color-mix(in srgb,var(--acc,#C4973B) 16%,#fff);border:2px solid color-mix(in srgb,var(--acc,#C4973B) 70%,#fff)}
+.ohp .lab{margin-bottom:2px}.ohs{display:block;font-size:13.5px;font-weight:700;color:color-mix(in srgb,var(--acc,#C4973B) 60%,#0F1E2E);margin:0 2px 12px}
+.ohc{height:170px}.ohpill{position:absolute;top:12px;left:12px;z-index:2;background:rgba(255,255,255,.94);color:#0F1E2E;font:800 12.5px Inter,sans-serif;font-style:normal;padding:6px 11px;border-radius:999px}
+.ohpg{padding-bottom:30px}.ohpg .vtop{height:260px}
+.ohrow{display:flex;gap:10px;overflow-x:auto;scroll-snap-type:x mandatory;margin:0;padding:0 0 4px;scroll-padding-left:0;scrollbar-width:none}.ohrow::-webkit-scrollbar{display:none}
+.ohcard{position:relative;flex:none;width:72%;max-width:300px;height:170px;border-radius:20px;overflow:hidden;background:var(--top,#0F1E2E);scroll-snap-align:start}
+.ohcard img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.ohcard span{position:absolute;left:0;right:0;bottom:0;padding:30px 14px 12px;background:linear-gradient(transparent,rgba(0,0,0,.72));color:#fff}
+.ohcard b{display:block;font-size:17px;font-weight:900}.ohcard small{display:block;font-size:12.5px;font-weight:600;opacity:.92;margin-top:2px}.ohcard .op{font-style:normal;color:#86EFAC;font-weight:800}
+.ohbk{display:flex;align-items:center;justify-content:center;gap:10px;height:58px;border-radius:16px;background:var(--acc,#C4973B);color:var(--acc-ink,#fff);font:900 17px Inter,sans-serif;text-decoration:none;box-shadow:0 8px 22px rgba(15,30,46,.18)}
 .pbig{position:relative;height:150px;border:0;border-radius:20px;overflow:hidden;padding:0;cursor:pointer;background:var(--top,#0F1E2E);text-align:left;font-family:inherit;display:block;width:100%}
 .pbig img{width:100%;height:100%;object-fit:cover;display:block}
 .pbig .ini{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:var(--top-ink,#fff);font-size:44px;font-weight:900}
@@ -475,6 +485,29 @@ svg{display:block}
     // "Keep this on your phone": one quiet line at the bottom (never a pop-up) - hidden once it's opened from the home screen, and in the back office preview
     var standalone = (window.matchMedia && matchMedia('(display-mode: standalone)').matches) || window.navigator.standalone === true || /[?&]home=1/.test(location.search);
     var homeRow = standalone || /[?&]embed=1/.test(location.search) ? '' : '<button class="addhome" id="addhome" type="button"><i>' + svg('<rect x="6" y="2" width="12" height="20" rx="3"/><path d="M12 7v7M9 11l3 3 3-3"/>', 18) + '</i><span><b>Save to your phone</b><small id="ahtx">No keyring needed to open it</small></span><em class="ahb">Add</em></button>';
+    // The group's other hotels (same app, same keyring): a soft panel in the venue's own colour on the main page, each opens its own page
+    var hotels = Array.isArray(d.hotels) ? d.hotels.filter(function(x){ return x && x.key && x.name; }) : [];
+    var hotelsRow = hotels.length ? '<div class="sec"><div class="ohp"><div class="lab">Our other hotels</div><small class="ohs">Your membership works here too</small>' + hotels.map(function(x){
+        return '<button class="pbig ohc" type="button" data-hotel="' + esc(x.key) + '">' + (x.img ? '<img src="' + esc(x.img) + '" alt="" loading="lazy">' : '') + (x.city ? '<em class="ohpill" translate="no">' + esc(x.city) + '</em>' : '') +
+          '<span><b translate="no">' + esc(x.name) + '</b>' + (x.line ? '<small>' + esc(x.line) + '</small>' : '') + '</span></button>';
+      }).join('') + '</div></div>' : '';
+    var hotelHtml = function(x){
+      var cards = function(list, sub){ return '<div class="ohrow">' + list.map(function(p){ var st = p.open === true ? '<i class="op">Open now</i>' : p.open === false ? esc(p.label) : esc(p.line || '');
+          return '<div class="ohcard">' + (p.img ? '<img src="' + esc(p.img) + '" alt="" loading="lazy">' : '') + '<span><b translate="no">' + esc(p.name) + '</b>' + (sub && st ? '<small>' + st + '</small>' : '') + '</span></div>'; }).join('') + '</div>'; };
+      return '<div class="ohpg" id="ohpg"><div class="vtop">' + (x.img ? '<img src="' + esc(x.img) + '" alt="">' : '') + '<div class="vin"><button class="back" id="ohb" type="button">' + svg('<path d="m15 18-6-6 6-6"/>', 18) + '<span translate="no">' + esc(d.brand) + '</span></button>' +
+        '<div class="vname"><b translate="no">' + esc(x.name + (x.city ? ' ' + x.city : '')) + '</b><small>Your visits here count too</small></div></div></div>' +
+        (x.places.length ? '<div class="sec"><div class="lab">Eat &amp; drink</div>' + cards(x.places, true) + '</div>' : '') +
+        (x.rooms.length ? '<div class="sec"><div class="lab">Stay</div>' + cards(x.rooms, false) + '</div>' : '') +
+        (x.book ? '<div class="sec"><a class="ohbk" href="' + esc(x.book) + '" target="_blank" rel="noopener">' + svg('<rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/>', 20) + 'Book a room' + (x.city ? ' in ' + esc(x.city) : '') + '</a></div>' : '') +
+        '<div class="mvcn">Just show your keyring when you arrive.</div></div>';
+    };
+    var showHotel = function(k, push){
+      var x = hotels.filter(function(h){ return h.key === k; })[0]; if (!x) return show('', false);
+      root.innerHTML = '<div class="w">' + hotelHtml(x) + '</div>'; document.body.classList.add('inplace');
+      if (push) { try { history.pushState({ hotel: k }, '', location.pathname + location.search); } catch (e) {} }
+      window.scrollTo(0, 0);
+      document.getElementById('ohb').onclick = function(){ if (history.state && history.state.hotel) history.back(); else show('', false); };
+    };
     // Mavis Club network (only when the venue switched it on): one card on the main page that opens the guest's other venues
     var club = Array.isArray(d.club) ? d.club.filter(function(c){ return c && c.name && c.href; }) : [];
     var clubRow = club.length ? '<div class="sec"><button class="mvc" id="mvc" type="button"><i>M</i><span><b>My Mavis Club</b><small>Your other Mavis venues</small></span><em>' + club.length + '</em>' + svg('<path d="m9 18 6-6-6-6"/>', 18) + '</button></div>' : '';
@@ -607,11 +640,12 @@ svg{display:block}
     // ── Screens ──
     var homeHtml = function(){
     var h = '<div class="w">' + topAndCard(gp.motion ? slidesHtml(gp.slides || [], true) : '');
-      h += '<div class="sec"><div class="lab">Our other places</div><div class="pgrid">' + places.map(function(p){
+      h += '<div class="sec"><div class="lab">Our places</div><div class="pgrid">' + places.map(function(p){
         var v = venueOf(lc(p.name)), st = v ? (v.open === true ? 'Open now' : v.open === false ? v.label : '') : '';
         return '<button class="pbig" data-go="' + esc(lc(p.name)) + '">' + (p.img ? '<img src="' + esc(p.img) + '" alt="" loading="lazy">' : '<div class="ini">' + esc(String(p.name).charAt(0).toUpperCase()) + '</div>') +
           '<span><b translate="no">' + esc(p.name) + '</b>' + (st ? '<small>' + esc(st) + '</small>' : '') + '</span></button>';   // just the name (+ open / closed when they set hours)
       }).join('') + '</div></div>';
+      h += hotelsRow;
       if (on.gallery && (gp.gallery || []).length) h += galHtml(gp.gallery, '');
       h += reviewLine(d.venues) + igHtml(places) + clubRow;
       return h + foot + '</div>';
@@ -754,7 +788,7 @@ svg{display:block}
       document.querySelectorAll('.mvglow').forEach(function(x){ x.classList.remove('mvglow'); });
       el.classList.add('mvglow'); setTimeout(function(){ el.classList.remove('mvglow'); }, 2600);
     };
-    window.addEventListener('popstate', function(e){ var shx = document.getElementById('sh'); if (shx && shx.classList.contains('on')) { shx.classList.remove('on'); var sc = document.getElementById('shc'); if (sc && sc.querySelector('iframe')) sc.innerHTML = ''; document.body.style.overflow = ''; return; } var lb = document.getElementById('lb'); if (lb && lb.classList.contains('on')) { lb.classList.remove('on'); lb.innerHTML = ''; document.body.style.overflow = ''; return; } if (e.state && e.state.club) { showClub(false); return; } if (many || document.getElementById('mvcp')) show(e.state && e.state.place ? e.state.place : '', false); window.scrollTo(0, 0); });
+    window.addEventListener('popstate', function(e){ var shx = document.getElementById('sh'); if (shx && shx.classList.contains('on')) { shx.classList.remove('on'); var sc = document.getElementById('shc'); if (sc && sc.querySelector('iframe')) sc.innerHTML = ''; document.body.style.overflow = ''; return; } var lb = document.getElementById('lb'); if (lb && lb.classList.contains('on')) { lb.classList.remove('on'); lb.innerHTML = ''; document.body.style.overflow = ''; return; } if (e.state && e.state.club) { showClub(false); return; } if (e.state && e.state.hotel) { showHotel(e.state.hotel, false); return; } if (many || document.getElementById('mvcp') || document.getElementById('ohpg')) show(e.state && e.state.place ? e.state.place : '', false); window.scrollTo(0, 0); });
 
     var wire = function(key){
       var sh = document.getElementById('sh');
@@ -762,6 +796,7 @@ svg{display:block}
       var close = function(){ if (history.state && history.state.sh) history.back(); else { sh.classList.remove('on'); document.body.style.overflow = ''; var sc = document.getElementById('shc'); if (sc.querySelector('iframe')) sc.innerHTML = ''; } };
       document.getElementById('shx').onclick = close;
       var mvc = document.getElementById('mvc'); if (mvc) mvc.onclick = function(){ showClub(true); };
+      Array.prototype.forEach.call(document.querySelectorAll('[data-hotel]'), function(b){ b.onclick = function(){ showHotel(b.getAttribute('data-hotel'), true); }; });
       var al = document.getElementById('mvalert');
       if (al) al.onclick = function(){
         if (al.classList.contains('done') || al.dataset.busy) return;

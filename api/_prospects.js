@@ -60,7 +60,15 @@ const P = {
 const TRANS_BOOK = 'https://reservations.transresortbali.com/book/dates-of-stay';
 const tr = n => '/demo-guest/p-trans-' + n + '.jpg';
 P.trans = {
-  club: [{ key: 'shelter', since: 'Mar 2025', visits: 3 }],   // Mavis Club network demo: the other venues this guest belongs to (shown only when switched on)
+  club: [{ key: 'shelter', since: 'Mar 2025', visits: 3 }],
+  // The group's other hotels: same app, same keyring, same membership - visits there count too
+  hotels: [{ key: 'sby', name: 'The Trans Luxury Hotel', city: 'Surabaya', img: '/demo-guest/p-sby-beachclub.jpg', line: '28th Sky Beach Club · 27th Sky Lounge · Rooms',
+    places: [{ name: '28th Sky Beach Club', img: '/demo-guest/p-sby-beachclub.jpg', line: 'A Bali beach club, 28 floors up', opens: '10:00', closes: '23:00' },
+      { name: '27th Sky Lounge', img: '/demo-guest/p-sby-skylounge.jpg', line: 'Cocktails over the city' },
+      { name: 'The Lounge', img: '/demo-guest/p-sby-lounge.jpg', line: 'Coffee, tea and light bites' }],
+    rooms: [{ name: 'Premier Room', img: '/demo-guest/p-sby-room-premier.jpg' }, { name: 'Executive Club', img: '/demo-guest/p-sby-room-execclub.jpg' },
+      { name: 'Celebrity Suite', img: '/demo-guest/p-sby-room-celebrity.jpg' }, { name: 'Presidential Suite', img: '/demo-guest/p-sby-room-presidential.jpg' }],
+    book: 'https://www.transhotelgroup.com/hotel_overview/45' }],   // Mavis Club network demo: the other venues this guest belongs to (shown only when switched on)
   brand: 'The Trans Resort Bali', logo: '/demo-guest/p-trans-logo.png', icon: '/demo-guest/p-trans-icon', first: 'Alexander', tier: 'vip', visits: 6, since: 2025, favourite: 'The 18th',   // icon: home-screen app icon (-192.png and -512.png)
   perks: ['Welcome drink at The 18th Rooftop', 'Late check-out until 2pm, when available', '15% off at the spa', 'Free kids club afternoons'],
   perkIcons: ['cocktail', 'key', 'leaf', 'smile'],

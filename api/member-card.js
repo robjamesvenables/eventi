@@ -89,6 +89,9 @@ const cleanContact = c => { c = c || {}; return { phone: String(c.phone || '').r
   email: /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(c.email || '').trim()) ? String(c.email).trim().slice(0, 120) : '', map: https(c.map), ig: String(c.ig || '').replace(/[^\w.]/g, '').slice(0, 40) }; };
 
 // Sales demo keyring (see _prospects.js): the same page a member gets, filled with that venue's own content
+// Sales sample keyrings sent to venues whose demo page isn't made yet: a friendly "being set up" page with their name, never an error
+const PENDING = { S4DK7R: 'Sundari Wellness', K8SNGA: 'Sangsaka', M3SNRY: 'Masonry', S5PCJX: 'Spice Islands', L7LASQ: "Lola's", B7RNCH: 'Brunch Club', M8ZAIC: 'Mozaic',
+  S6PBLK: 'Spice by Blake', K2DETA: 'Ku De Ta', S9LTLK: 'Saltlick', L5UMAB: 'Luma', M6MSAN: 'Mama San', F4VELA: 'La Favela', S3EAST: 'South + East', U4LUCH: 'Ulu Cliffhouse', S2NSET: 'Sunset Beach' };
 function prospectCard(pro, code, ov){
   const now = localNow('Asia/Makassar');
   // Linked to the back office (the demo company saved this prospect's page there): what the team saved, else the built-in demo
@@ -156,7 +159,7 @@ module.exports = async (req, res) => {
       return L.send(res, 200, card);
     }
     const k = (await L.db('member_keyrings?select=code,company_id,member_id&code=eq.' + q(code)))[0];
-    if (!k) return L.send(res, 200, { ok: false, reason: 'unknown' });
+    if (!k) return L.send(res, 200, PENDING[code] ? { ok: false, reason: 'pending', brand: PENDING[code] } : { ok: false, reason: 'unknown' });
     const co = k.company_id;
     const [cos, settings, gpRows] = await Promise.all([
       safe(L.db('companies?select=name,code,logo&id=eq.' + q(co))),

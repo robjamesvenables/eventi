@@ -23342,11 +23342,18 @@ const GP_TOP_MAX = 25 * 1048576, GP_TOP_SECS = 60;
 function gpYtId(u){ u = String(u || '').trim(); let m = /(?:youtu\.be\/|youtube\.com\/(?:watch\?(?:.*&)?v=|embed\/|shorts\/|live\/))([\w-]{11})/.exec(u); if(m) return m[1]; return /^[\w-]{11}$/.test(u) ? u : ''; }
 function gpYtStart(u){ const m = /[?&#]t=(?:(\d+)m)?(\d+)s?/.exec(String(u || '')); return m ? (+(m[1] || 0)) * 60 + (+m[2]) : 0; }
 const gpMmss = n => { n = Math.max(0, Math.round(+n || 0)); return Math.floor(n / 60) + ':' + String(n % 60).padStart(2, '0'); };
+function gpTopNow(){   // what's at the top right now: set in this box, or an older demo page's video / YouTube film
+  const c = GPE.c, t = c.top || {};
+  if(t.kind) return t;
+  if(/^\/[\w\/.-]+\.mp4$/.test(c.video || '')) return { kind:'video', path:'demo', still: c.video.replace(/\.mp4$/, '.jpg') };
+  if(/^[\w-]{11}$/.test(c.film || '')) return { kind:'yt', yt: c.film, start: +c.filmStart || 0 };
+  return {};
+}
 function gpTopHtml(){
-  const c = GPE.c, t = c.top || {}, off = !!c.off.topvideo;
+  const c = GPE.c, t = gpTopNow(), off = !!c.off.topvideo;
   let body;
   if(GPE.topBusy) body = `<div class="gp-auto">${gpEsc(GPE.topBusy)} Please keep this page open.</div>`;
-  else if(t.kind === 'video' && t.path) body = `<div class="gp-it">${GPE.urls[t.poster] ? `<img class="th" src="${gpEsc(GPE.urls[t.poster])}" alt="">` : '<div class="th"></div>'}
+  else if(t.kind === 'video' && t.path) body = `<div class="gp-it">${(t.still || GPE.urls[t.poster]) ? `<img class="th" src="${gpEsc(t.still || GPE.urls[t.poster])}" alt="">` : '<div class="th"></div>'}
       <div class="x"><b>Your video</b><small>Starts straight away · sound off</small></div>
       <button class="gp-ib" title="Change" aria-label="Change video" onclick="gpTopPick()">${gpIc(GPI.edit)}</button>
       <button class="gp-ib del" title="Remove" aria-label="Remove video" onclick="gpTopRemove()">${gpIc(GPI.x)}</button></div>`;
@@ -23406,14 +23413,14 @@ async function gpTopUpload(file){
     if(up2.error){ sb.storage.from(GP_BUCKET).remove([vPath]).catch(() => {}); throw up2.error; }
   }catch(e){ console.warn('[top video]', e); GPE.topBusy = ''; gpRender(); toast('Upload failed - please check your connection and try again'); return; }
   const old = GPE.c.top || {};
-  GPE.c.top = { kind:'video', path: vPath, poster: pPath, tall: probe.tall };
+  GPE.c.top = { kind:'video', path: vPath, poster: pPath, tall: probe.tall }; delete GPE.c.video; delete GPE.c.film; delete GPE.c.filmStart;
   delete GPE.c.off.topvideo;
   try{ const s2 = await sb.storage.from(GP_BUCKET).createSignedUrl(pPath, 43200); if(s2.data && s2.data.signedUrl) GPE.urls[pPath] = s2.data.signedUrl; }catch(e){}
   GPE.topBusy = ''; gpRender();
   if(await gpSave('Video saved - guests see it now')){ [old.path, old.poster].filter(Boolean).forEach(x => gpForgetFile({ path:x })); }
 }
 window.gpTopYt = function(){
-  const t = GPE.c.top || {};
+  const t = gpTopNow();
   appModalShow({ title: 'YouTube video', sub: 'Paste the link from YouTube. Plays with the sound off, on a loop.',
     fields: [ { label:'YouTube link', placeholder:'https://youtu.be/...', value: t.kind === 'yt' && t.yt ? 'https://youtu.be/' + t.yt : '' },
               { label:'Start at (seconds) - optional', placeholder:'e.g. 7 to skip the first 7 seconds', value: t.kind === 'yt' && t.start ? String(t.start) : '' } ],
@@ -23421,14 +23428,14 @@ window.gpTopYt = function(){
       const id = gpYtId(link); if(!id){ toast("That doesn't look like a YouTube link"); return; }
       const st = Math.max(0, Math.min(600, Math.round(+String(start || '').replace(/[^\d.]/g, '') || gpYtStart(link) || 0)));
       const old = GPE.c.top || {};
-      GPE.c.top = { kind:'yt', yt: id, start: st }; delete GPE.c.off.topvideo;
+      GPE.c.top = { kind:'yt', yt: id, start: st }; delete GPE.c.off.topvideo; delete GPE.c.video; delete GPE.c.film; delete GPE.c.filmStart;
       gpRender();
       if(await gpSave('Video saved - guests see it now')) [old.path, old.poster].filter(Boolean).forEach(x => gpForgetFile({ path:x }));
     } });
 };
 window.gpTopRemove = function(){
   appConfirmShow({ title:'Remove the top video?', msg:'Your photos will show at the top instead.', label:'Remove', async onOk(){
-    const old = GPE.c.top || {}; delete GPE.c.top; gpRender();
+    const old = GPE.c.top || {}; delete GPE.c.top; delete GPE.c.video; delete GPE.c.film; delete GPE.c.filmStart; gpRender();
     if(await gpSave('Video removed')) [old.path, old.poster].filter(Boolean).forEach(x => gpForgetFile({ path:x }));
   } });
 };
@@ -23516,9 +23523,9 @@ function gpRender(){
     ${mvLapTip('margin:12px 16px 0')}
     ${GPE.missing ? `<div style="max-width:1160px;margin:16px auto 0;padding:0 20px"><div class="gp-auto" style="background:#FFF7ED;color:#9A3412">The guest page needs a one-time setup before changes can be saved. Ask Mavis support.</div></div>` : ''}
     <div class="gp-wrap"><div class="gp-col">
+      ${gpTopHtml()}
       <div class="gp-sec${c.off.slides ? ' off' : ''}" data-go="slides"><div class="gp-sh"><div class="n"><b>Highlights</b><small>Big photos at the top of a place's page - offers, new menu, big nights. Guests swipe through them</small></div>${tog('slides')}</div>
         ${c.off.slides ? '' : `<div class="gp-body">${c.slides.map((it, j) => gpItemHtml('slides', it, j)).join('')}${c.slides.length < 12 ? `<button class="gp-add" onclick="gpForm('slides')">+ Add a highlight</button>` : ''}</div>`}</div>
-      ${gpTopHtml()}
       ${gpColoursHtml()}
       ${gpCardHtml()}
       <div class="gp-sec" data-go="perks"><div class="gp-sh"><div class="n"><b>Perks and reward</b><small>On every member's card - always shown</small></div></div>

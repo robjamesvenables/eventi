@@ -23306,13 +23306,13 @@ async function gpLoad(){
   else if(empty && typeof appIsDemoCompany === 'function' && appIsDemoCompany()) c = Object.assign(gpDemo(gpToday()), c && c.order ? { order:c.order, off:c.off || {} } : {});
   GPE.c = gpNorm(c); GPE.loaded = true;
 }
-async function gpSave(msg){
+async function gpSave(msg, noPreview){   // noPreview: the change isn't on the guest page (e.g. digital member card) - don't reload the preview
   if(GPE.missing){ toast('The guest page needs a one-time setup first - ask Mavis support'); return false; }
   const row = { company_id: myProfile.company_id, content: GPE.c, updated_at: new Date().toISOString(), updated_by: myProfile.id };
   const { error } = await sb.from('guest_page').upsert(row, { onConflict:'company_id' });
   if(error){ console.warn('[guest page save]', error); toast(/row-level|permission|policy/i.test(error.message || '') ? 'Only Marketing and the people picked in Admin Console can change this' : 'Not saved - please try again'); return false; }
   if(msg !== false) toast(msg || 'Saved - guests see it now');
-  gpPreviewReload();
+  if(!noPreview) gpPreviewReload();
   return true;
 }
 async function gpSign(){
@@ -23442,7 +23442,12 @@ window.gpTopRemove = function(){
 function gpForgetFile(it){ if(it && it.path) sb.storage.from(GP_BUCKET).remove([it.path]).catch(() => {}); }
 function gpKeyring(){ if(demoAs() && DEMO_KEYRING[DEMO_AS]) return DEMO_KEYRING[DEMO_AS]; try{ return Object.values(MS.keyrings || {})[0] || ''; }catch(e){ return ''; } }
 // Laptop: the phone preview follows what you're working on (that place's page, that section, a soft glow); after a save it comes back to the same spot
-function gpGo(sec, place, id){ GPE.go = { mv:'go', sec: sec || '', place: place || '', id: id || '' }; gpGoSend(0); }
+function gpGo(sec, place, id){
+  const g = { mv:'go', sec: sec || '', place: place || '', id: id || '' }, k = g.sec + '|' + g.place + '|' + g.id, now = Date.now();
+  GPE.go = g;
+  if(GPE.goLast === k && now - (GPE.goAt || 0) < 4000) return;   // already showing that spot: don't flash it again on every tap inside the same box
+  GPE.goLast = k; GPE.goAt = now; gpGoSend(0);
+}
 function gpGoSend(wait){ const f = document.getElementById('gp-frame'); if(!f || !GPE.go || !f.offsetParent) return; setTimeout(() => { try{ f.contentWindow.postMessage(GPE.go, location.origin); }catch(e){} }, wait || 0); }
 // Live view: the real guest page in a phone-sized window (look and tap around - nothing can be changed), plus a QR code to check it on your own phone
 window.gpLive = function(){
@@ -23788,7 +23793,7 @@ function gpCardHtml(){
     <div class="tx">${label}${msg}<div class="dc-ub"><label>${has ? 'Change' : 'Upload'}<input type="file" accept="image/*" hidden onchange="dcUpload('${kind}',this)"></label>${has ? `<button onclick="dcRemove('${kind}')">Remove</button>` : ''}</div></div></div>`;
   const tog = (key, on, label, sub) => `<div class="dc-tg"><span>${label}${sub ? `<small>${sub}</small>` : ''}</span><button class="gp-tog${on ? ' on' : ''}" aria-label="${gpEsc(label)}" onclick="dcSet('${key}',${!on})"><i></i></button></div>`;
   const custom = !DC_SW.includes(cfg.color);
-  return `<div class="gp-sec" id="gp-card-sec" data-go="card"><div class="gp-sh"><div class="n"><b>Digital member card</b><small>For guests with no keyring - staff make it on the Members page and send it on WhatsApp</small></div></div>
+  return `<div class="gp-sec" id="gp-card-sec"><div class="gp-sh"><div class="n"><b>Digital member card</b><small>For guests with no keyring - staff make it on the Members page and send it on WhatsApp</small></div></div>
     <div class="gp-body"><div class="dc-grid"><div class="dc-set">
       <div class="dc-lab">1. Pick a style</div>
       <div class="dc-styles">${DC_STYLES.map(([id, lab]) => `<button class="dc-st${cfg.style === id ? ' on' : ''}" onclick="dcSet('style','${id}')"><canvas id="dc-th-${id}" width="88" height="156"></canvas>${lab}</button>`).join('')}</div>
@@ -23823,11 +23828,11 @@ window.dcSet = async function(key, val){
   const k = Object.assign({}, GPE.c.card || {});
   if(key === 'name'){ val = String(val || '').trim().replace(/\s+/g, ' '); if(!val || val === ((myCompany && myCompany.name) || '').trim()) delete k.name; else k.name = val; }
   else k[key] = val;
-  GPE.c.card = k; dcRefresh(); await gpSave('Card saved');
+  GPE.c.card = k; dcRefresh(); await gpSave('Card saved', true);
 };
-window.dcSaveBtn = async function(){ const n = document.getElementById('dc-name'); if(n && n.value.trim() !== dcBrandName()) return dcSet('name', n.value); await gpSave('Card saved'); };
+window.dcSaveBtn = async function(){ const n = document.getElementById('dc-name'); if(n && n.value.trim() !== dcBrandName()) return dcSet('name', n.value); await gpSave('Card saved', true); };
 window.dcWheel = function(){ mvWheel(dcCfg().color, hex => dcSet('color', hex), 'Card colour'); };
-window.dcRemove = async function(kind){ const k = Object.assign({}, GPE.c.card || {}); if(k[kind]) gpForgetFile(k[kind]); delete k[kind]; GPE.c.card = k; dcRefresh(); await gpSave('Removed'); };
+window.dcRemove = async function(kind){ const k = Object.assign({}, GPE.c.card || {}); if(k[kind]) gpForgetFile(k[kind]); delete k[kind]; GPE.c.card = k; dcRefresh(); await gpSave('Removed', true); };
 function dcFileImg(f){ return new Promise((ok, bad) => { const u = URL.createObjectURL(f), i = new Image(); i.onload = () => ok({ img:i, url:u }); i.onerror = () => { URL.revokeObjectURL(u); bad(new Error('not an image')); }; i.src = u; }); }
 window.dcUpload = async function(kind, inp){
   const f = inp.files && inp.files[0]; inp.value = ''; if(!f) return;

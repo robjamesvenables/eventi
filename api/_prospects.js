@@ -227,7 +227,7 @@ P.bpa = {
 const su = n => '/demo-guest/p-sun-' + n + '.jpg';
 const SUN_WA = '62811365563';
 P.sundari = {
-  brand: 'Sundari Wellness', logo: '/demo-guest/p-sundari-logo.png', icon: '/demo-guest/p-sundari-icon', first: 'Ayu', tier: 'member', visits: 4, since: 2025, favourite: 'Sundari Wellness',
+  brand: 'Sundari Wellness', logo: '/demo-guest/p-sundari-logo.png', icon: '/demo-guest/p-sundari-icon', first: 'Ayu', tier: 'vip', visits: 4, since: 2025, favourite: 'Sundari Wellness',
   perks: ['10% off every treatment', 'A birthday ritual on us', "Members-only treatment of the month", 'First pick of your favourite therapist'],
   perkIcons: ['leaf', 'cake', 'star', 'heart'],
   reward: { target: 10, text: 'A 60-minute Balinese massage' },

@@ -129,15 +129,20 @@ const bp = n => '/demo-guest/p-bpa-' + n + '.jpg';
 const BPA_MAP = 'https://www.google.com/maps/search/?api=1&query=Bali+Padel+Academy+Canggu';
 P.bpa = {
   kind: 'padel', bookTop: { url: PT, label: 'Book a court', via: 'on Playtomic' },
+  // Real BPA coaches, from BPA's own "Meet our coaches" Instagram post (2024) - check with Eric who's still on the team
   coaches: [
-    { name: 'Marc Cantos', ini: 'MC', tags: ['NOX certified', 'Head coach', 'EN · ES'], line: 'Ex-pro from Barcelona. 15 years coaching, all levels.', book: PT,
-      bio: 'Marc played the Spanish circuit for eight years before moving to Bali to lead the NOX Future Academy. Patient with beginners, tough on the details with advanced players. Best for: technique, the bandeja and the vibora.' },
-    { name: 'Albina R.', ini: 'AR', tags: ['NOX certified', 'Ladies & beginners', 'EN · RU'], line: 'Makes your first lesson fun. Runs the ladies clinics.', book: PT,
-      bio: 'Albina started playing padel at 30 and knows what it feels like to be new. She runs the ladies clinics and the beginners Americanas. Best for: first-timers and ladies groups.' },
-    { name: 'Made Wirawan', ini: 'MW', tags: ['Kids academy', 'Level 0 - 3', 'EN · ID'], line: 'Leads the kids academy every weekend.', book: PT,
-      bio: 'Made grew up playing tennis in Sanur and switched to padel when BPA opened. He leads the kids academy on Saturdays and Sundays. Best for: kids 5 to 14 and families.' },
-    { name: 'Javi Torres', ini: 'JT', tags: ['Advanced', 'Tournament prep', 'EN · ES'], line: 'Gets you ready for the NOX Cup.', book: PT,
-      bio: 'Javi coaches the advanced groups and tournament players: tactics, positioning and fitness. Best for: levels 3.5 and up.' }
+    { name: 'Jesus Olmo', ini: 'JO', img: bp('coach-jesus'), tags: ['Head coach', 'All levels'], line: 'All levels, beginners to competitive. Loves video analysis.', book: PT,
+      bio: 'Head Coach of the BPA coaching team and NOX Method ambassador, with a degree in Sciences and Technologies applied in Sports. Jesus coaches every level, from beginners to high-performance and competitive players, and loves using video analysis to help players improve.' },
+    { name: 'Aleix Puchol', ini: 'AP', img: bp('coach-aleix'), tags: ['Head coach', '15 years'], line: '15 years coaching padel. Catch him competing too!', book: PT,
+      bio: 'NOX Method ambassador and Head Coach of the BPA coaching team. With a degree in Sports Management and Sports Education, Aleix has been coaching padel for 15 years and has helped many players raise their game. Don\'t miss watching him compete!' },
+    { name: 'Albina', ini: 'AL', img: bp('coach-albina'), tags: ['Ex-WTA pro', 'EN · RU'], line: 'Former WTA doubles player with 31 ITF titles.', book: PT,
+      bio: 'A former elite tennis player, ranked WTA top 208 in doubles, with 31 ITF titles and a bronze medal from the 15th Asian Games in Doha. Fluent in Russian and English, Albina coaches the NOX method, mentored by BPA head coaches Jesus and Aleix.' },
+    { name: 'Ajo', ini: 'AJ', img: bp('coach-ajo'), tags: ['Ex-badminton coach'], line: 'Makes every lesson fun. Infectious positive energy.', book: PT,
+      bio: 'Once a well-known badminton coach in Indonesia, Ajo switched his focus to padel and in just two years became an accomplished player and coach. With a big smile and infectious positive energy, he makes your padel enjoyable.' },
+    { name: 'Skar', ini: 'SK', img: bp('coach-skar'), tags: ['NOX advanced coach'], line: 'Former national tennis player, half Spanish.', book: PT,
+      bio: 'Once a national tennis player, Skar is half Spanish and lived and played padel in Spain for some years. He is certified as an Advanced Level Padel Coach under the NOX Method and loves sharing his passion for the game.' },
+    { name: 'Eduard Hernandez', ini: 'EH', img: bp('coach-eduard'), tags: ['Senior coach', 'Events'], line: 'Senior coach. Runs the academy and events.', book: PT,
+      bio: 'Academy & events coordinator and senior padel coach. Eduard has over 6 years of coaching in Spain and Denmark and a track record in club management.' }
   ],
   wall: [
     { club: true, when: '2h ago', text: '👋 Welcome to our 12 new members this week: Kadek, Jonas, Priya, Lucas and 8 more. Your keyring is your key to everything here. See you on court!', clap: 41, fire: 6 },

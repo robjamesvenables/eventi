@@ -2746,6 +2746,19 @@ div.mki-row{cursor:default}.mki-row.done{opacity:.6}
 #ms-flow.o{background:#C69A3B;color:#1d1405}#ms-flow.o .mf-go{background:#1d1405;color:#fff}#ms-flow.o .mf-x{background:rgba(0,0,0,.12)}
 #ms-flow.y{background:#FEF3C7;color:#3b2a05}#ms-flow.y .mf-go{background:#3b2a05;color:#fff}#ms-flow.y .mf-x{background:rgba(0,0,0,.08)}
 #ms-flow.r{background:#7C2D12;color:#fff}#ms-flow.r .mf-go{background:#C69A3B;color:#1d1405}
+#ms-flow.tl{background:#0D9488;color:#fff}#ms-flow.tl .mf-go{background:#fff;color:#0F766E}
+#ms-flow.n{background:#0F1E2E;color:#fff}#ms-flow.n .mf-go{background:#fff;color:#0F1E2E}#ms-flow.n .mf-x,#ms-flow.tl .mf-x{background:rgba(255,255,255,.16)}
+#ms-flow .mf-k{font-size:13px;font-weight:900;letter-spacing:1.6px;opacity:.8}
+#ms-flow .mf-form{justify-content:flex-start;padding-top:min(9vh,70px)}
+#ms-flow .mf-in{width:100%;height:68px;border-radius:20px;border:3px solid transparent;padding:0 18px;font-family:inherit;font-weight:800;font-size:22px;color:#0F1E2E;background:#fff;outline:none;margin-top:8px}
+#ms-flow .mf-in:focus{border-color:#5EEAD4}
+#ms-flow .mf-bd{display:grid;grid-template-columns:1fr 1.5fr;gap:10px;width:100%;margin-top:8px}
+#ms-flow .mf-bd select{height:64px;border-radius:18px;border:2px solid #E2E8F0;background:#F8FAFC;font-family:inherit;font-weight:800;font-size:19px;color:#0F1E2E;padding:0 14px}
+#ms-flow .mf-yn{display:grid;grid-template-columns:1fr 1fr;gap:12px;width:100%;margin-top:14px}
+#ms-flow .mf-yn button{height:76px;border-radius:22px;border:0;font-family:inherit;font-weight:900;font-size:21px;cursor:pointer;background:rgba(255,255,255,.28);color:inherit}
+#ms-flow .mf-yn button:first-child{background:#1d1405;color:#fff}
+#ms-flow .mf-alt{display:block;width:calc(100% - 32px);max-width:428px;margin:-6px auto calc(18px + env(safe-area-inset-bottom));height:58px;border-radius:20px;border:2px solid rgba(255,255,255,.55);background:transparent;color:inherit;font-family:inherit;font-weight:800;font-size:17px;cursor:pointer}
+#ms-flow .mf-bk{display:flex;align-items:center;gap:4px;background:none;border:0;color:inherit;font-family:inherit;font-weight:800;font-size:15px;cursor:pointer;padding:8px 4px;opacity:.9;flex:none}
 #ms-flow.w{background:#fff;color:#0F1E2E}#ms-flow.w .mf-go{background:#0D9488;color:#fff}#ms-flow.w .mf-x{background:#F1F5F9}
 @media(max-height:700px){#ms-flow .mf-keys button{height:46px}#ms-flow .mf-amt{height:64px;font-size:28px}#ms-flow .mf-go{height:62px}#ms-flow .mf-mid{gap:10px}}
 @keyframes msPop{0%{transform:scale(.85);opacity:0}100%{transform:scale(1);opacity:1}}
@@ -22975,44 +22988,58 @@ async function msHandleCode(code){
 }
 
 // ── Sign-up for a blank (or brand new) keyring ──
+// New member: one question per screen, the same feel as checking a member in (msFlow) - made for a busy floor.
+// Name and WhatsApp are the only must-haves; offers is one tap; birthday can be skipped.
+// Joined at = the venue they're at, tier = Member (a manager can make someone VIP on their profile), email can be added on the profile.
 function msSignUp(code, known, digital){
-  const venues = msVenues(), here = msVenue();
-  const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-  const o = msSheet(`
-    <div class="vdf-h"><b>${digital ? 'New member - digital card' : 'New member'}</b><div class="dpt-sub">${digital ? 'A member card on their phone - no keyring needed' : 'This keyring isn\'t linked to anyone yet'}</div></div>
-    <div class="vdf-body">
-      ${!digital && MS.members.some(x => !MS.keyrings[x.id]) ? `<button type="button" class="ms-linkb" onclick="msSheetClose(); setTimeout(() => msLinkFind('${msEsc(code)}', ${!!known}), 60)"><span><b>Already a member?</b><small>On your list but no keyring yet - find them</small></span><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg></button>` : ''}
-      <div class="ms-kc"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#8A6420" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><path d="M14 14h3v3M21 21h-4M21 14v.01"/></svg><div><b>${msEsc(code)}</b><small>${digital ? 'Their card code' : msEsc((myCompany && myCompany.name) || '') + ' Members Club'}</small></div></div>
-      <label class="vdf-f"><span>FULL NAME</span><input id="ms-name" placeholder="e.g. Pierre Laurent" autocomplete="off"></label>
-      <label class="vdf-f"><span>WHATSAPP NUMBER</span><input id="ms-phone" type="tel" inputmode="tel" placeholder="e.g. +62 812 3456 7890"></label>
-      <div class="vdf-two"><div class="vdf-f"><span>BIRTHDAY (OPTIONAL)</span><div class="ms-bdpick"><select id="ms-bd-d"><option value="">Day</option>${Array.from({ length:31 }, (_, i) => `<option>${i + 1}</option>`).join('')}</select><select id="ms-bd-m"><option value="">Month</option>${months.map((x, i) => `<option value="${i + 1}">${x}</option>`).join('')}</select></div></div>
-        <label class="vdf-f"><span>EMAIL (OPTIONAL)</span><input id="ms-email" type="email" inputmode="email" autocapitalize="off" placeholder="name@email.com"></label></div>
-      ${digital && msIsMgr() ? `<div class="vdf-f"><span>TIER</span><div class="vdf-pills"><button type="button" class="vdf-pill ms-tr on" data-t="member">Member</button><button type="button" class="vdf-pill ms-tr" data-t="vip">VIP</button></div></div>` : ''}
-      ${venues.length > 1 ? `<div class="vdf-f"><span>JOINED AT</span><div class="vdf-pills">${venues.map(v => `<button type="button" class="vdf-pill ms-ven${v === here ? ' on' : ''}" data-v="${msEsc(v)}">${msEsc(v)}</button>`).join('')}</div></div>` : ''}
-      <div class="ms-ask" id="ms-ask"><b>Ask them: "Happy for us to send you offers?"</b><small>They can change it any time on their keyring page</small>
-        <div class="ms-yn"><button type="button" data-v="1">Yes please</button><button type="button" data-v="0">No thanks</button></div></div>
-    </div>
-    <div class="vdf-foot"><button class="mns-cancel" onclick="msSheetClose()">Cancel</button><button class="mns-go" id="ms-save">${digital ? 'Sign up &amp; make card' : 'Sign up &amp; check in'}</button></div>`);
-  o.querySelectorAll('.ms-tr').forEach(b => b.addEventListener('click', () => { o.querySelectorAll('.ms-tr').forEach(x => x.classList.remove('on')); b.classList.add('on'); }));
-  o.querySelectorAll('.ms-ven').forEach(b => b.addEventListener('click', () => { o.querySelectorAll('.ms-ven').forEach(x => x.classList.remove('on')); b.classList.add('on'); }));
-  // Offers: staff must ask and pick Yes or No - can't sign up without it
-  let offersYes = null;
-  o.querySelectorAll('.ms-yn button').forEach(b => b.addEventListener('click', () => { offersYes = b.dataset.v === '1'; o.querySelectorAll('.ms-yn button').forEach(x => x.classList.toggle('on', x === b)); document.getElementById('ms-ask').classList.remove('need'); }));
-  setTimeout(() => { const n = document.getElementById('ms-name'); if(n && innerWidth > 760) n.focus(); }, 60);
-  document.getElementById('ms-save').addEventListener('click', async () => {
-    const name = document.getElementById('ms-name').value.trim().replace(/\s+/g, ' ');
-    const phone = document.getElementById('ms-phone').value.trim();
-    if(!name){ toast('Please type their name'); return; }
-    if(offersYes === null){ const a = document.getElementById('ms-ask'); a.classList.add('need'); a.scrollIntoView({ block:'center', behavior:'smooth' }); toast('Ask if they want offers - tap Yes or No'); return; }
-    if(phone.replace(/\D/g, '').length < 7){ toast('Please add their WhatsApp number'); return; }
-    const d = document.getElementById('ms-bd-d').value, mo = document.getElementById('ms-bd-m').value;
-    const email = document.getElementById('ms-email').value.trim();
-    if(email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){ toast('That email doesn\'t look right'); return; }
-    const venEl = o.querySelector('.ms-ven.on');
-    const row = { name, phone, email, birthday: d && mo ? String(mo).padStart(2,'0') + '-' + String(d).padStart(2,'0') : '', joined_venue: venEl ? venEl.dataset.v : here, tier: digital && o.querySelector('.ms-tr.on') ? o.querySelector('.ms-tr.on').dataset.t : 'member', consent: offersYes, created_by: myProfile ? myProfile.id : null };
-    const btn = document.getElementById('ms-save'); btn.disabled = true; btn.textContent = 'Saving…';
+  const here = msVenue();
+  const months = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+  const steps = [];
+  if(!digital && MS.members.some(x => !MS.keyrings[x.id])) steps.push('new');
+  steps.push('name', 'phone', 'offers', 'bday');
+  let o = document.getElementById('ms-flow');
+  if(!o){ o = document.createElement('div'); o.id = 'ms-flow'; document.body.appendChild(o); }
+  const X = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>';
+  const BACK = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>';
+  const v = { name:'', phone:'', offers:null, d:'', m:'' };
+  let at = 0, busy = false;
+  const close = () => { o.style.display = 'none'; mvBackDone('msflow'); };
+  const top = () => `<div class="mf-top">${at > 0 ? `<button class="mf-bk" data-a="back">${BACK}<span>Back</span></button>` : `<span class="mf-pl">${digital ? 'Digital card' : 'New keyring'}</span>`}<div class="mf-dots">${steps.map((_, i) => `<b class="${i <= at ? 'on' : ''}"></b>`).join('')}</div><button class="mf-x" data-a="x" title="Close">${X}</button></div>`;
+  const draw = () => {
+    const k = steps[at]; let cls = 'n', h = '', go = 'Next', alt = '';
+    if(k === 'new'){
+      cls = 'tl';
+      h = `<div class="mf-mid"><div class="mf-pill">NEW KEYRING · ${msEsc(code)}</div><div class="mf-big">Is this guest new?</div><div class="mf-sub">This keyring isn't linked to anyone yet.</div></div>`;
+      go = 'Yes - new member'; alt = '<button class="mf-alt" data-a="link">Already a member? Find them</button>';
+    } else if(k === 'name'){
+      h = `<div class="mf-mid mf-form"><div class="mf-k">${digital ? 'DIGITAL CARD · NEW MEMBER' : 'NEW MEMBER'}</div><div class="mf-big">What's their name?</div><div class="mf-sub">First name is fine.</div>
+        <input class="mf-in" id="mf-name" autocomplete="off" autocapitalize="words" enterkeyhint="next" maxlength="60" placeholder="e.g. Sarah" value="${msEsc(v.name)}"></div>`;
+    } else if(k === 'phone'){
+      h = `<div class="mf-mid mf-form"><div class="mf-k">NEW MEMBER</div><div class="mf-big">Their WhatsApp number?</div><div class="mf-sub">${digital ? 'Their card goes to this number.' : 'So you can reach them.'}</div>
+        <input class="mf-in" id="mf-phone" type="tel" inputmode="tel" enterkeyhint="next" maxlength="24" placeholder="+62 812 3456 7890" value="${msEsc(v.phone)}"></div>`;
+    } else if(k === 'offers'){
+      cls = 'o';
+      h = `<div class="mf-mid"><div class="mf-k">ASK THEM</div><div class="mf-big" style="font-size:clamp(28px,8.5vw,40px)">"Would you like our member offers?"</div><div class="mf-sub">They can change it any time on their keyring page.</div>
+        <div class="mf-yn"><button data-a="yes" class="${v.offers === true ? 'on' : ''}">Yes please</button><button data-a="no" class="${v.offers === false ? 'on' : ''}">No thanks</button></div></div>`;
+      go = '';
+    } else if(k === 'bday'){
+      cls = 'w';
+      h = `<div class="mf-mid mf-form"><div class="mf-k" style="color:#64748B">NICE TO HAVE</div><div class="mf-big">Birthday?</div><div class="mf-sub">For their birthday treat. Day and month only.</div>
+        <div class="mf-bd"><select id="mf-d"><option value="">Day</option>${Array.from({ length:31 }, (_, i) => `<option${String(i + 1) === v.d ? ' selected' : ''}>${i + 1}</option>`).join('')}</select><select id="mf-m"><option value="">Month</option>${months.map((x, i) => `<option value="${i + 1}"${String(i + 1) === v.m ? ' selected' : ''}>${x}</option>`).join('')}</select></div></div>`;
+      go = digital ? 'Make their card' : 'Sign up & check in'; alt = '<button class="mf-skip" data-a="skipbd">Skip - no birthday</button>';
+    }
+    o.className = cls;
+    o.innerHTML = top() + h + (go ? `<button class="mf-go" data-a="go">${go}</button>` : '') + alt;
+    const inp = o.querySelector('.mf-in'); if(inp){ setTimeout(() => { try{ inp.focus(); }catch(e){} }, 120); inp.onkeydown = e => { if(e.key === 'Enter'){ e.preventDefault(); o.querySelector('.mf-go').click(); } }; }
+  };
+  const keep = () => { const n = document.getElementById('mf-name'), p = document.getElementById('mf-phone'), d = document.getElementById('mf-d'), m = document.getElementById('mf-m');
+    if(n) v.name = n.value.trim().replace(/\s+/g, ' '); if(p) v.phone = p.value.trim(); if(d) v.d = d.value; if(m) v.m = m.value; };
+  const save = async (withBd) => {
+    if(busy) return; busy = true;
+    const go = o.querySelector('.mf-go'); if(go){ go.disabled = true; go.textContent = 'Saving…'; }
+    const row = { name: v.name, phone: v.phone, email: '', birthday: withBd && v.d && v.m ? String(v.m).padStart(2,'0') + '-' + String(v.d).padStart(2,'0') : '', joined_venue: here, tier: 'member', consent: v.offers, created_by: myProfile ? myProfile.id : null };
     const ins = await sb.from('members').insert(row).select('*').single();
-    if(ins.error || !ins.data){ console.warn(ins.error); btn.disabled = false; btn.textContent = digital ? 'Sign up & make card' : 'Sign up & check in'; toast('Not saved - please try again'); return; }
+    if(ins.error || !ins.data){ console.warn(ins.error); busy = false; if(go){ go.disabled = false; go.textContent = digital ? 'Make their card' : 'Sign up & check in'; } toast('Not saved - please try again'); return; }
     const m = ins.data;
     const k = known ? await sb.from('member_keyrings').update({ member_id: m.id }).eq('code', code).select() : await sb.from('member_keyrings').insert({ code, member_id: m.id }).select();
     if(k.error || !k.data || !k.data.length){ console.warn(k.error); toast('Member saved, but this keyring belongs to another venue'); }
@@ -23020,11 +23047,29 @@ function msSignUp(code, known, digital){
     MS.members.push(m);
     if(!digital) msStockTake();
     const r = await msVisit(m.id);
-    msSheetClose(); msRender();
+    close(); msRender();
     if(digital && MS.keyrings[m.id] === code) setTimeout(() => dcShow({ name:m.name, tier:m.tier, code, since:m.created_at, phone:m.phone, id:m.id }), 60);
     else setTimeout(() => msFlow(m.id, r || undefined), 60);
-    toast('Welcome to the club, ' + name.split(' ')[0] + '!');
-  });
+    toast('Welcome to the club, ' + v.name.split(' ')[0] + '!');
+  };
+  o.onclick = async e => {
+    const b = e.target.closest('button'); if(!b) return;
+    const a = b.dataset.a, k = steps[at];
+    keep();
+    if(a === 'x') return close();
+    if(a === 'back'){ at = Math.max(0, at - 1); return draw(); }
+    if(a === 'link'){ close(); return setTimeout(() => msLinkFind(code, !!known), 60); }
+    if(a === 'yes' || a === 'no'){ v.offers = a === 'yes'; at++; return draw(); }
+    if(a === 'skipbd') return save(false);
+    if(a === 'go'){
+      if(k === 'name' && !v.name){ toast('Type their name'); return; }
+      if(k === 'phone' && v.phone.replace(/\D/g, '').length < 7){ toast('Type their WhatsApp number'); return; }
+      if(k === 'bday'){ if((v.d && !v.m) || (!v.d && v.m)){ toast('Pick the day and the month - or tap Skip'); return; } return save(true); }
+      at++; draw();
+    }
+  };
+  draw(); o.style.display = 'flex';
+  mvBackOpen('msflow', () => { o.style.display = 'none'; });
 }
 
 // ── Edit a member (managers can also change the tier and delete) ──

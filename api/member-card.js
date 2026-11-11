@@ -105,9 +105,9 @@ function prospectCard(pro, code, ov){
   const events = [];
   for (let i = 0; i <= 6; i++) {
     const day = addDays(now.date, i), wd = new Date(day + 'T12:00:00Z').getUTCDay();
-    (pro.acts || []).forEach(a => { if (a.every.includes(wd)) events.push({ date: day, start: a.start, end: a.end, title: a.title, sub: a.line, venue: a.venue }); });
+    (pro.acts || []).forEach(a => { if (a.every.includes(wd)) events.push({ date: day, start: a.start, end: a.end, title: a.title, sub: a.line, venue: a.venue, ic: /^(music|kids|market|food|drinks|sport|yoga|party|art|film|star|time|none)$/.test(a.ic || '') ? a.ic : '' }); });
   }
-  const fmtEv = e => ({ day: dow(e.date), date: e.date, title: e.title, sub: e.sub, venue: e.venue, time: e.start ? niceTime(e.start) + (e.end ? ' - ' + niceTime(e.end) : '') : '' });
+  const fmtEv = e => ({ day: dow(e.date), date: e.date, title: e.title, sub: e.sub, venue: e.venue, ic: e.ic || '', time: e.start ? niceTime(e.start) + (e.end ? ' - ' + niceTime(e.end) : '') : '' });
   const tonight = events.filter(e => e.date === now.date && !(e.end && toMin(e.end) > toMin(e.start || '00:00') && toMin(e.end) <= toMin(now.hm))).map(fmtEv);
   const week = events.filter(e => e.date > now.date).map(fmtEv);
   const gp = GP.build(pro.content(now.date), { company: (ov && ov.co) || 'demo', code, venues, today: now.date, who: pro.first, vip: pro.tier === 'vip', contact: cleanContact(pro.contact) });
@@ -212,12 +212,12 @@ module.exports = async (req, res) => {
       const day = addDays(now.date, i), wd = new Date(day + 'T12:00:00Z').getUTCDay();
       acts.forEach(a => { if (!a || !a.title) return;
         const on = a.date ? a.date === day : Array.isArray(a.every) && a.every.map(Number).includes(wd);
-        if (on) events.push({ date: day, start: tm(a.start), end: tm(a.end), title: String(a.title).slice(0, 60), sub: String(a.line || '').slice(0, 60), venue: String(a.venue || '').slice(0, 40) });
+        if (on) events.push({ date: day, start: tm(a.start), end: tm(a.end), title: String(a.title).slice(0, 60), sub: String(a.line || '').slice(0, 60), venue: String(a.venue || '').slice(0, 40), ic: /^(music|kids|market|food|drinks|sport|yoga|party|art|film|star|time|none)$/.test(a.ic || '') ? a.ic : '' });
       });
     }
     events.sort((a, b) => (a.date + (a.start || '')).localeCompare(b.date + (b.start || '')));
     if (!events.length && demo) events = demo.events;
-    const fmtEv = e => ({ day: dow(e.date), date: e.date, title: e.title, sub: e.sub, venue: e.venue,
+    const fmtEv = e => ({ day: dow(e.date), date: e.date, title: e.title, sub: e.sub, venue: e.venue, ic: e.ic || '',
       time: e.start ? niceTime(e.start) + (e.end ? ' - ' + niceTime(e.end) : '') : '' });
     const tonight = events.filter(e => e.date === now.date && !(e.end && toMin(e.end) > toMin(e.start || '00:00') && toMin(e.end) <= toMin(now.hm))).map(fmtEv);
     const week = [];

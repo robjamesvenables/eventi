@@ -668,12 +668,14 @@ svg{display:block}
     };
 
     // ── One place's things (or everything, for a business with one place) ──
+    // The icon the venue picked for each act (Tonight). Nothing picked = music note (ball for padel), as before.
+    var ACT_IC = {music:"<path d=\"M9 18V5l12-2v13\"/><circle cx=\"6\" cy=\"18\" r=\"3\"/><circle cx=\"18\" cy=\"16\" r=\"3\"/>",kids:"<circle cx=\"12\" cy=\"6\" r=\"3\"/><path d=\"M12 9v6M8 21l4-6 4 6M7 12h10\"/>",market:"<path d=\"M3 11h18M5 11v9h14v-9M4 11l2-6h12l2 6\"/>",food:"<path d=\"M4 3v7a3 3 0 0 0 3 3v8M7 3v7M10 3v7M17 3c-2 2-2 6 0 9v9\"/>",drinks:"<path d=\"M5 3h14l-7 9zM12 12v9M8 21h8\"/>",sport:"<circle cx=\"12\" cy=\"12\" r=\"9\"/><path d=\"M4 9c4 2 12 2 16 0M4 15c4-2 12-2 16 0\"/>",yoga:"<circle cx=\"12\" cy=\"5\" r=\"2\"/><path d=\"M12 7v6M5 10l7 3 7-3M8 21l4-8 4 8\"/>",party:"<path d=\"M4 20 9 7l8 8zM14 4l1 2M19 5l-2 1M20 10h-2\"/>",art:"<circle cx=\"13.5\" cy=\"6.5\" r=\"1.5\"/><circle cx=\"8\" cy=\"10\" r=\"1.5\"/><path d=\"M12 22a10 10 0 1 1 10-10c0 3-2 4-4 4h-2a2 2 0 0 0-1 4c0 1-1 2-3 2z\"/>",film:"<rect x=\"3\" y=\"5\" width=\"18\" height=\"14\" rx=\"2\"/><path d=\"m10 9 5 3-5 3z\"/>",star:"<path d=\"m12 3 2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1-4.4-4.3 6.1-.9z\"/>",time:"<circle cx=\"12\" cy=\"12\" r=\"9\"/><path d=\"M12 6v6l4 2\"/>"};
     var placeSections = function(key){
       var S = {}, f = function(list){ return (list || []).filter(function(x){ return !key || at(x, key); }); };
       var tn = f(d.tonight), wk = f(d.week), dl = f(gp.deals), ev = f(gp.events), gl = f(gp.gallery);
       if (tn.length || wk.length) S.tonight = (tn.length ? '<div class="sec"><div class="lab">' + (d.kind === 'padel' ? 'Today' : 'Tonight') + '</div>' + tn.map(function(e){
           return '<div class="tn"><span class="tag">' + (e.time ? 'FROM ' + esc(e.time.split(' - ')[0]).toUpperCase() : 'TONIGHT') + '</span><h3 translate="no">' + esc(e.title) + '</h3><div class="meta">' + esc(key ? e.time : [e.venue, e.time].filter(Boolean).join(' · ')) + '</div>' +
-            (e.sub ? '<div class="sub"><i>' + svg(d.kind === 'padel' ? I.ball : I.music, 16) + '</i>' + esc(e.sub) + '</div>' : '') + '</div>';
+            (e.sub ? '<div class="sub">' + (e.ic === 'none' ? '' : '<i>' + svg(ACT_IC[e.ic] || (d.kind === 'padel' ? I.ball : I.music), 16) + '</i>') + esc(e.sub) + '</div>' : '') + '</div>';
         }).join('') + '</div>' : '') +
         (wk.length ? '<div class="sec"><div class="lab">This week</div><div class="days">' + wk.map(function(e){
           return '<div class="day"><div class="d">' + esc(e.day) + '</div><b translate="no">' + esc(e.title) + '</b><small>' + esc(e.sub) + (e.time ? ' · ' + esc(e.time.split(' - ')[0]) : '') + '</small></div>';

@@ -2178,6 +2178,10 @@ body.ms-waiter #ms-stats{display:none!important}
 #ms-tiers-btn.ms-design{background:#fff;color:#0F1E2E;border:1.5px dashed #CBD5E1;box-shadow:none;max-width:760px}
 #ms-tiers-btn.ms-design:hover{background:#F8FAFC;border-color:#0D9488}
 #ms-tiers-btn.ms-design .ic{background:#F0FDFA;color:#0D9488}#ms-tiers-btn.ms-design small{color:#64748B;opacity:1}
+.gp-aic{display:grid;grid-template-columns:repeat(auto-fill,minmax(64px,1fr));gap:6px}
+.gp-aic button{border:1.5px solid #E2E8F0;background:#fff;border-radius:12px;padding:8px 2px 6px;display:flex;flex-direction:column;align-items:center;gap:4px;font:700 10.5px Inter,sans-serif;color:#475569;cursor:pointer}
+.gp-aic button span{width:32px;height:32px;border-radius:50%;background:#F1F5F9;display:flex;align-items:center;justify-content:center;color:#0F1E2E}
+.gp-aic button.on{border-color:#0D9488;background:#F0FDFA;color:#0D9488}.gp-aic button.on span{background:#0D9488;color:#fff}
 .ms-glab{grid-column:1/-1;font-size:11.5px;font-weight:900;letter-spacing:1.4px;color:#64748B;margin:6px 2px 2px}
 #ms-scan-btn,.ms-tiers{white-space:nowrap}
 .ms-design{display:flex;align-items:center;gap:14px;width:100%;max-width:520px;margin:4px 0 18px;background:#0D9488;color:#fff;border:0;border-radius:16px;padding:14px 16px;text-align:left;font-family:inherit;cursor:pointer;box-shadow:0 4px 14px rgba(13,148,136,.28)}
@@ -24133,9 +24137,13 @@ function gpActWhen(a){ const t = [a.start, a.end].filter(Boolean).map(gpHm).join
   const d = a.date ? gpDate(a.date) : (a.every || []).length === 7 ? 'Every day' : 'Every ' + [1,2,3,4,5,6,0].filter(x => (a.every || []).map(Number).includes(x)).map(x => GP_WD[x]).join(', ');
   return [d, t, a.venue].filter(Boolean).join(' · '); }
 function gpHm(t){ const m = /^(\d{1,2}):(\d{2})/.exec(t || ''); if(!m) return ''; let h = +m[1]; const ap = h >= 12 ? 'pm' : 'am'; h = h % 12 || 12; return h + (m[2] !== '00' ? ':' + m[2] : '') + ap; }
+// Icon for each act (Tonight & this week): the venue picks it - nothing is guessed. Nothing picked = music note (ball for padel), as before.
+const GP_ACT_IC = [['music','Music'],['kids','Kids'],['market','Market'],['food','Food'],['drinks','Drinks'],['sport','Sport'],['yoga','Yoga'],['party','Party'],['art','Art'],['film','Film'],['star','Star'],['time','Time'],['none','None']];
+const GP_ACT_P = Object.assign({music:"<path d=\"M9 18V5l12-2v13\"/><circle cx=\"6\" cy=\"18\" r=\"3\"/><circle cx=\"18\" cy=\"16\" r=\"3\"/>",kids:"<circle cx=\"12\" cy=\"6\" r=\"3\"/><path d=\"M12 9v6M8 21l4-6 4 6M7 12h10\"/>",market:"<path d=\"M3 11h18M5 11v9h14v-9M4 11l2-6h12l2 6\"/>",food:"<path d=\"M4 3v7a3 3 0 0 0 3 3v8M7 3v7M10 3v7M17 3c-2 2-2 6 0 9v9\"/>",drinks:"<path d=\"M5 3h14l-7 9zM12 12v9M8 21h8\"/>",sport:"<circle cx=\"12\" cy=\"12\" r=\"9\"/><path d=\"M4 9c4 2 12 2 16 0M4 15c4-2 12-2 16 0\"/>",yoga:"<circle cx=\"12\" cy=\"5\" r=\"2\"/><path d=\"M12 7v6M5 10l7 3 7-3M8 21l4-8 4 8\"/>",party:"<path d=\"M4 20 9 7l8 8zM14 4l1 2M19 5l-2 1M20 10h-2\"/>",art:"<circle cx=\"13.5\" cy=\"6.5\" r=\"1.5\"/><circle cx=\"8\" cy=\"10\" r=\"1.5\"/><path d=\"M12 22a10 10 0 1 1 10-10c0 3-2 4-4 4h-2a2 2 0 0 0-1 4c0 1-1 2-3 2z\"/>",film:"<rect x=\"3\" y=\"5\" width=\"18\" height=\"14\" rx=\"2\"/><path d=\"m10 9 5 3-5 3z\"/>",star:"<path d=\"m12 3 2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1-4.4-4.3 6.1-.9z\"/>",time:"<circle cx=\"12\" cy=\"12\" r=\"9\"/><path d=\"M12 6v6l4 2\"/>"}, { none:'<path d="M6 6l12 12M18 6 6 18"/>' });
+const gpActSvg = (k, n) => `<svg width="${n || 18}" height="${n || 18}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">${GP_ACT_P[k] || GP_ACT_P.music}</svg>`;
 function gpActHtml(a, j){
   const past = a.date && a.date < gpToday();
-  return `<div class="gp-it"><div class="th" style="display:flex;align-items:center;justify-content:center;color:#0D9488;background:#E6F4F1">${msIcSvg('music', 20)}</div>
+  return `<div class="gp-it"><div class="th" style="display:flex;align-items:center;justify-content:center;color:#0D9488;background:#E6F4F1">${a.ic === 'none' ? '' : a.ic && GP_ACT_P[a.ic] ? gpActSvg(a.ic, 20) : msIcSvg('music', 20)}</div>
     <div class="x"><b>${gpEsc(a.title)}</b><small>${gpEsc(gpActWhen(a))}</small>${past ? '<div><span class="gp-chip">Finished - hidden</span></div>' : ''}</div>
     <button class="gp-ib" title="Change" aria-label="Change" onclick="gpActForm(${j})">${gpIc(GPI.edit)}</button>
     <button class="gp-ib del" title="Remove" aria-label="Remove" onclick="gpActRemove(${j})">${gpIc(GPI.x)}</button></div>`;
@@ -24152,6 +24160,7 @@ window.gpActForm = function(i){
     <label>Who or what (max 30 letters)</label><input id="gpa-t" maxlength="30" value="${gpEsc(it.title || '')}" placeholder="e.g. DJ Kai, Live jazz trio">
     <label>One line about it (optional, max 45 letters)</label><input id="gpa-l" maxlength="45" value="${gpEsc(it.line || '')}" placeholder="e.g. Deep house into disco">
     ${venues.length > 1 ? `<label>Place</label><select id="gpa-v"><option value="">All places</option>${venues.map(v => `<option${v === it.venue ? ' selected' : ''}>${gpEsc(v)}</option>`).join('')}</select>` : ''}
+    <label>Icon</label><div class="gp-aic" id="gpa-ic">${GP_ACT_IC.map(([k, l]) => `<button type="button" data-ic="${k}" class="${(it.ic || 'music') === k ? 'on' : ''}"><span>${gpActSvg(k, 17)}</span>${l}</button>`).join('')}</div>
     <label>When</label><div class="gp-btns gp-2b" id="gpa-m"><button type="button" data-m="date">One date</button><button type="button" data-m="week">Every week</button></div>
     <div id="gpa-dw"><label>Date</label><input id="gpa-d" type="date" value="${gpEsc(it.date || '')}"></div>
     <div id="gpa-ww"><label>Which days</label><div class="gp-wd" id="gpa-wd">${[1,2,3,4,5,6,0].map(x => `<button type="button" data-d="${x}">${GP_WD[x]}</button>`).join('')}</div></div>
@@ -24162,6 +24171,8 @@ window.gpActForm = function(i){
   const $ = id => s.querySelector('#' + id);
   const show = () => { s.querySelectorAll('#gpa-m button').forEach(b => b.classList.toggle('on', b.dataset.m === mode)); $('gpa-dw').style.display = mode === 'date' ? '' : 'none'; $('gpa-ww').style.display = mode === 'week' ? '' : 'none';
     s.querySelectorAll('#gpa-wd button').forEach(b => b.classList.toggle('on', every.includes(+b.dataset.d))); };
+  let ic = it.ic || 'music';
+  s.querySelectorAll('#gpa-ic button').forEach(b => b.onclick = () => { ic = b.dataset.ic; s.querySelectorAll('#gpa-ic button').forEach(x => x.classList.toggle('on', x === b)); });
   s.querySelectorAll('#gpa-m button').forEach(b => b.onclick = () => { mode = b.dataset.m; show(); });
   s.querySelectorAll('#gpa-wd button').forEach(b => b.onclick = () => { const d = +b.dataset.d; every = every.includes(d) ? every.filter(x => x !== d) : every.concat(d); show(); });
   show();
@@ -24172,6 +24183,7 @@ window.gpActForm = function(i){
     if(mode === 'date'){ rec.date = $('gpa-d').value; if(!rec.date){ toast('Pick the date'); return; } if(rec.date < gpToday()){ toast('That date has already passed'); return; } }
     else { if(!every.length){ toast('Tap the days it happens'); return; } rec.every = every.slice().sort(); }
     if(!rec.start){ toast('Add the start time'); return; }
+    if(ic && ic !== 'music') rec.ic = ic;   // music is the default - only store a different pick
     ['line', 'end', 'venue'].forEach(k => { if(!rec[k]) delete rec[k]; });
     if(!Array.isArray(GPE.c.acts)) GPE.c.acts = [];
     if(edit) GPE.c.acts[i] = rec; else GPE.c.acts.push(rec);

@@ -223,9 +223,47 @@ P.bpa = {
   }
 };
 
-const CODES = { B6PADL: 'bpa', S8HLTR: 'shelter', T7RNSB: 'trans', '5NKGZJ': 'trans' };   // 5NKGZJ = the printed sample card, shown as Trans for the GM demo
+// Sundari Wellness (Seminyak day spa) - photos and logo from their own website
+const su = n => '/demo-guest/p-sun-' + n + '.jpg';
+const SUN_WA = '62811365563';
+P.sundari = {
+  brand: 'Sundari Wellness', logo: '/demo-guest/p-sundari-logo.png', icon: '/demo-guest/p-sundari-icon', first: 'Ayu', tier: 'member', visits: 4, since: 2025, favourite: 'Sundari Wellness',
+  perks: ['10% off every treatment', 'A birthday ritual on us', "Members-only treatment of the month", 'First pick of your favourite therapist'],
+  perkIcons: ['leaf', 'cake', 'star', 'heart'],
+  reward: { target: 10, text: 'A 60-minute Balinese massage' },
+  venues: [{ name: 'Sundari Wellness', area: 'Seminyak', opens: '09:00', closes: '22:00', wa: SUN_WA, phone: '+62 811 365 563', map: 'https://maps.google.com/?q=SUNDARI%20Wellness%2C%20Jalan%20Petitenget%207%2C%20Seminyak%2C%20Bali' }],
+  contact: { wa: SUN_WA, phone: '+62 811 365 563' },
+  acts: [],
+  content: today => {
+    const y = year(today);
+    return {
+      theme: { top: '#5E2A17', acc: '#7D3A20', pg: '#F7F2EC' }, motion: true,
+      slides: [
+        { id: 'us1', img: su('hero'), title: 'Hot stone ritual', line: 'Warm stones, slow hands', btn: 'wa' },
+        { id: 'us2', img: su('lounge'), title: 'Your quiet place in Seminyak', line: 'Open every day, 9am to 10pm' },
+        { id: 'us3', img: su('balinese'), title: 'Balinese massage', line: 'The one everyone comes back for', btn: 'wa' },
+        { id: 'us4', img: su('facial'), title: 'Hydration facial', line: 'Glow after a day in the sun', btn: 'wa' }
+      ],
+      deals: [
+        { id: 'ud1', img: su('reflex'), title: 'Reflexology add-on for members', when: 'Every day · 9am–5pm', btn: 'wa' },
+        { id: 'ud2', img: su('travel'), title: 'Travel recovery after your flight', when: 'Every day', btn: 'wa' },
+        { id: 'ud3', img: su('hands'), title: 'Signature polish with any massage', when: 'Mon–Thu', btn: 'wa' }
+      ],
+      events: [
+        { id: 'ue1', img: su('kaya'), title: 'Couples ritual week', line: 'Two therapists, one room, together', date: addDays(today, 6), time: '10:00', time2: '20:00', btn: 'wa', hl: true,
+          details: 'Book a room for two and enjoy the same ritual side by side. Members book first.' },
+        { id: 'ue2', img: su('bamboo'), title: 'Christmas gift vouchers', line: 'The gift that always fits', date: y + '-12-24', btn: 'wa',
+          details: 'Treatment vouchers for friends and family, ready to send on WhatsApp.' }
+      ],
+      gallery: ['hero', 'lounge', 'balinese', 'bamboo', 'kaya', 'reflex', 'facial', 'hands'].map((n, i) => ({ id: 'ug' + i, img: su(n) })),
+      places: { 'sundari wellness': { img: su('lounge'), area: 'Seminyak', ig: 'sundari.wellness' } }
+    };
+  }
+};
+
+const CODES = { B6PADL: 'bpa', S8HLTR: 'shelter', T7RNSB: 'trans', '5NKGZJ': 'trans', S4DK7R: 'sundari' };   // 5NKGZJ = the printed sample card, shown as Trans for the GM demo
 // Mavis Club network: each of the guest's other venues as a logo tile (their colour, logo, how long they've been a member there)
-const KEY_CODE = { bpa: 'B6PADL', shelter: 'S8HLTR', trans: 'T7RNSB' };
+const KEY_CODE = { bpa: 'B6PADL', shelter: 'S8HLTR', trans: 'T7RNSB', sundari: 'S4DK7R' };
 const club = (list, who) => list.map(c => { const v = P[c.key]; if (!v) return null; const t = (v.content('2026-01-01').theme) || {};
   return { name: v.brand, logo: v.logo, top: t.top || '#0F1E2E', area: (v.venues[0] || {}).area || '', since: c.since || '', visits: c.visits || 0,
     href: '/k/' + KEY_CODE[c.key] + '?n=' + encodeURIComponent(String(who || '').split(' ')[0]) }; }).filter(Boolean);

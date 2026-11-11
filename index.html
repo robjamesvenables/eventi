@@ -23001,7 +23001,7 @@ function msSignUp(code, known, digital){
   if(!o){ o = document.createElement('div'); o.id = 'ms-flow'; document.body.appendChild(o); }
   const X = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>';
   const BACK = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>';
-  const v = { name:'', phone:'', offers:null, d:'', m:'' };
+  const v = { name:'', first:'', last:'', phone:'', offers:null, d:'', m:'' };
   let at = 0, busy = false;
   const close = () => { o.style.display = 'none'; mvBackDone('msflow'); };
   const top = () => `<div class="mf-top">${at > 0 ? `<button class="mf-bk" data-a="back">${BACK}<span>Back</span></button>` : `<span class="mf-pl">${digital ? 'Digital card' : 'New keyring'}</span>`}<div class="mf-dots">${steps.map((_, i) => `<b class="${i <= at ? 'on' : ''}"></b>`).join('')}</div><button class="mf-x" data-a="x" title="Close">${X}</button></div>`;
@@ -23012,8 +23012,9 @@ function msSignUp(code, known, digital){
       h = `<div class="mf-mid"><div class="mf-pill">NEW KEYRING · ${msEsc(code)}</div><div class="mf-big">Is this guest new?</div><div class="mf-sub">This keyring isn't linked to anyone yet.</div></div>`;
       go = 'Yes - new member'; alt = '<button class="mf-alt" data-a="link">Already a member? Find them</button>';
     } else if(k === 'name'){
-      h = `<div class="mf-mid mf-form"><div class="mf-k">${digital ? 'DIGITAL CARD · NEW MEMBER' : 'NEW MEMBER'}</div><div class="mf-big">What's their name?</div><div class="mf-sub">First and last name if they're happy to.</div>
-        <input class="mf-in" id="mf-name" autocomplete="off" autocapitalize="words" enterkeyhint="next" maxlength="60" placeholder="e.g. Sarah Anders" value="${msEsc(v.name)}"></div>`;
+      h = `<div class="mf-mid mf-form"><div class="mf-k">${digital ? 'DIGITAL CARD · NEW MEMBER' : 'NEW MEMBER'}</div><div class="mf-big">What's their name?</div><div class="mf-sub">Surname if they're happy to.</div>
+        <input class="mf-in" id="mf-name" autocomplete="off" autocapitalize="words" enterkeyhint="next" maxlength="40" placeholder="First name" value="${msEsc(v.first)}">
+        <input class="mf-in" id="mf-last" autocomplete="off" autocapitalize="words" enterkeyhint="next" maxlength="40" placeholder="Surname (optional)" value="${msEsc(v.last)}"></div>`;
     } else if(k === 'phone'){
       h = `<div class="mf-mid mf-form"><div class="mf-k">NEW MEMBER</div><div class="mf-big">Their WhatsApp number?</div><div class="mf-sub">${digital ? 'Their card goes to this number.' : 'So you can reach them.'}</div>
         <input class="mf-in" id="mf-phone" type="tel" inputmode="tel" enterkeyhint="next" maxlength="24" placeholder="+62 812 3456 7890" value="${msEsc(v.phone)}"></div>`;
@@ -23030,10 +23031,11 @@ function msSignUp(code, known, digital){
     }
     o.className = cls;
     o.innerHTML = top() + h + (go ? `<button class="mf-go" data-a="go">${go}</button>` : '') + alt;
-    const inp = o.querySelector('.mf-in'); if(inp){ setTimeout(() => { try{ inp.focus(); }catch(e){} }, 120); inp.onkeydown = e => { if(e.key === 'Enter'){ e.preventDefault(); o.querySelector('.mf-go').click(); } }; }
+    const ins = o.querySelectorAll('.mf-in'); if(ins.length){ setTimeout(() => { try{ ins[0].focus(); }catch(e){} }, 120); ins.forEach((inp, i) => { inp.onkeydown = e => { if(e.key === 'Enter'){ e.preventDefault(); if(ins[i + 1]) ins[i + 1].focus(); else o.querySelector('.mf-go').click(); } }; }); }
   };
   const keep = () => { const n = document.getElementById('mf-name'), p = document.getElementById('mf-phone'), d = document.getElementById('mf-d'), m = document.getElementById('mf-m');
-    if(n) v.name = n.value.trim().replace(/\s+/g, ' '); if(p) v.phone = p.value.trim(); if(d) v.d = d.value; if(m) v.m = m.value; };
+    const ln = document.getElementById('mf-last');
+    if(n){ v.first = n.value.trim().replace(/\s+/g, ' '); v.last = ln ? ln.value.trim().replace(/\s+/g, ' ') : v.last; v.name = (v.first + ' ' + v.last).trim(); } if(p) v.phone = p.value.trim(); if(d) v.d = d.value; if(m) v.m = m.value; };
   const save = async (withBd) => {
     if(busy) return; busy = true;
     const go = o.querySelector('.mf-go'); if(go){ go.disabled = true; go.textContent = 'Saving…'; }
@@ -23061,7 +23063,7 @@ function msSignUp(code, known, digital){
     if(a === 'yes' || a === 'no'){ v.offers = a === 'yes'; at++; return draw(); }
     if(a === 'skipbd') return save(false);
     if(a === 'go'){
-      if(k === 'name' && !v.name){ toast('Type their name'); return; }
+      if(k === 'name' && !v.first){ toast('Type their first name'); return; }
       if(k === 'phone' && v.phone.replace(/\D/g, '').length < 7){ toast('Type their WhatsApp number'); return; }
       if(k === 'bday'){ if((v.d && !v.m) || (!v.d && v.m)){ toast('Pick the day and the month - or tap Skip'); return; } return save(true); }
       at++; draw();

@@ -12,6 +12,7 @@ const igName = v => { const m = /^(?:https?:\/\/)?(?:www\.)?(?:instagram\.com\/)
 function paths(c){
   const out = [];
   ['slides', 'deals', 'events', 'gallery'].forEach(k => (Array.isArray(c && c[k]) ? c[k] : []).forEach(it => { if (it && it.path) out.push(String(it.path)); }));
+  const tp = (c && c.top) || {}; [tp.path, tp.poster].forEach(x => { if (x) out.push(String(x)); });   // top video + its still picture
   Object.values((c && c.places) || {}).forEach(p => { if (p && p.path) out.push(String(p.path)); (Array.isArray(p && p.menus) ? p.menus : []).forEach(m => { if (m && m.path) out.push(String(m.path)); (Array.isArray(m && m.pages) ? m.pages : []).forEach(pg => { if (pg && pg.path) out.push(String(pg.path)); }); }); });
   return out;
 }
@@ -156,7 +157,14 @@ function build(c, ctx){
   // Colours (Guest page > Colours)
   const hex = v => /^#[0-9a-f]{6}$/i.test(v || '') ? v : '';
   const th = c.theme || {}, theme = { top: hex(th.top), acc: hex(th.acc), pg: hex(th.pg) };
-  return { order, slides, deals, events, gallery, places, theme, motion: c.motion === true, film: /^[\w-]{11}$/.test(c.film || '') ? c.film : '', filmStart: Math.max(0, Math.min(600, Math.round(+c.filmStart || 0))), video: /^\/[\w\/.-]+\.mp4$/.test(c.video || '') ? c.video : '', videoTall: c.videoTall === true };
+  // Top video: set in the editor (an uploaded MP4, or a YouTube link with a start time); older demo pages set film / video directly
+  let film = /^[\w-]{11}$/.test(c.film || '') ? c.film : '', filmStart = Math.max(0, Math.min(600, Math.round(+c.filmStart || 0))),
+    video = /^\/[\w\/.-]+\.mp4$/.test(c.video || '') ? c.video : '', videoPoster = '', videoTall = c.videoTall === true;
+  const tp = c.top || {}, pathOk = x => typeof x === 'string' && x.startsWith(String(company) + '/guestpage/') && !/\.\./.test(x);
+  if (tp.kind === 'video' && pathOk(tp.path)) { video = img({ path: tp.path }); videoPoster = pathOk(tp.poster) ? img({ path: tp.poster }) : ''; videoTall = tp.tall === true; film = ''; }
+  else if (tp.kind === 'yt' && /^[\w-]{11}$/.test(tp.yt || '')) { film = tp.yt; filmStart = Math.max(0, Math.min(600, Math.round(+tp.start || 0))); video = ''; }
+  if (c.off && c.off.topvideo) { film = ''; video = ''; }
+  return { order, slides, deals, events, gallery, places, theme, motion: c.motion === true, film, filmStart, video, videoPoster, videoTall };
 }
 
 // The name under the app icon on a guest's phone: phones cut it after about 12 letters ("The Trans Resort Bali" -> "Trans Resort")

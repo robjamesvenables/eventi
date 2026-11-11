@@ -23319,6 +23319,7 @@ async function gpSign(){
   const need = [];
   ['slides','deals','events','gallery'].forEach(k => GPE.c[k].forEach(it => { if(it.path && !GPE.urls[it.path]) need.push(it.path); }));
   Object.values(GPE.c.places || {}).forEach(p => { if(p && p.path && !GPE.urls[p.path]) need.push(p.path); });
+  const tp = GPE.c.top || {}; if(tp.poster && !GPE.urls[tp.poster]) need.push(tp.poster);
   if(!need.length) return;
   const { data } = await sb.storage.from(GP_BUCKET).createSignedUrls(need, 43200);
   (data || []).forEach(d => { if(d.signedUrl) GPE.urls[d.path] = d.signedUrl; });
@@ -23335,6 +23336,102 @@ async function gpUpload(file){
   if(s.data && s.data.signedUrl) GPE.urls[path] = s.data.signedUrl;
   return path;
 }
+// ── Top video: one short video at the very top of the guest page (sound off, on a loop). An uploaded MP4 starts straight away;
+//    a YouTube link works too but takes a second or two. Off / empty = the photos stay at the top, as before.
+const GP_TOP_MAX = 25 * 1048576, GP_TOP_SECS = 60;
+function gpYtId(u){ u = String(u || '').trim(); let m = /(?:youtu\.be\/|youtube\.com\/(?:watch\?(?:.*&)?v=|embed\/|shorts\/|live\/))([\w-]{11})/.exec(u); if(m) return m[1]; return /^[\w-]{11}$/.test(u) ? u : ''; }
+function gpYtStart(u){ const m = /[?&#]t=(?:(\d+)m)?(\d+)s?/.exec(String(u || '')); return m ? (+(m[1] || 0)) * 60 + (+m[2]) : 0; }
+const gpMmss = n => { n = Math.max(0, Math.round(+n || 0)); return Math.floor(n / 60) + ':' + String(n % 60).padStart(2, '0'); };
+function gpTopHtml(){
+  const c = GPE.c, t = c.top || {}, off = !!c.off.topvideo;
+  let body;
+  if(GPE.topBusy) body = `<div class="gp-auto">${gpEsc(GPE.topBusy)} Please keep this page open.</div>`;
+  else if(t.kind === 'video' && t.path) body = `<div class="gp-it">${GPE.urls[t.poster] ? `<img class="th" src="${gpEsc(GPE.urls[t.poster])}" alt="">` : '<div class="th"></div>'}
+      <div class="x"><b>Your video</b><small>Starts straight away · sound off</small></div>
+      <button class="gp-ib" title="Change" aria-label="Change video" onclick="gpTopPick()">${gpIc(GPI.edit)}</button>
+      <button class="gp-ib del" title="Remove" aria-label="Remove video" onclick="gpTopRemove()">${gpIc(GPI.x)}</button></div>`;
+  else if(t.kind === 'yt' && t.yt) body = `<div class="gp-it"><img class="th" src="https://i.ytimg.com/vi/${gpEsc(t.yt)}/mqdefault.jpg" alt="">
+      <div class="x"><b>YouTube video</b><small>${t.start ? 'Starts at ' + gpMmss(t.start) + ' · ' : ''}sound off</small></div>
+      <button class="gp-ib" title="Change" aria-label="Change YouTube link" onclick="gpTopYt()">${gpIc(GPI.edit)}</button>
+      <button class="gp-ib del" title="Remove" aria-label="Remove video" onclick="gpTopRemove()">${gpIc(GPI.x)}</button></div>`;
+  else body = `<div style="display:flex;gap:8px;flex-wrap:wrap"><button class="gp-add" style="flex:1;min-width:150px" onclick="gpTopPick()">+ Upload a video</button><button class="gp-add" style="flex:1;min-width:150px" onclick="gpTopYt()">+ Use a YouTube link</button></div>
+      <div class="gp-hint" style="margin-top:8px">Best: a short MP4, under 30 seconds (e.g. exported from CapCut). It starts straight away. YouTube links take a second or two to start.</div>`;
+  return `<div class="gp-sec${off ? ' off' : ''}" data-go="slides"><div class="gp-sh"><div class="n"><b>Top video</b><small>A short video at the very top of your page. Off: your photos show there</small></div>
+    <button class="gp-tog${off ? '' : ' on'}" aria-label="Show top video" onclick="gpToggle('topvideo')"><i></i></button></div>${off ? '' : `<div class="gp-body">${body}</div>`}</div>`;
+}
+window.gpTopPick = function(){
+  if(GPE.topBusy) return;
+  const inp = document.createElement('input'); inp.type = 'file'; inp.accept = 'video/mp4,video/quicktime,video/webm,video/*';
+  inp.onchange = () => { if(inp.files && inp.files[0]) gpTopUpload(inp.files[0]); };
+  inp.click();
+};
+// Check the video plays here, is short enough, and grab a still picture from it (shown while it loads)
+function gpTopProbe(file){
+  return new Promise((ok, no) => {
+    const v = document.createElement('video'), url = URL.createObjectURL(file); let done = false;
+    const fin = (err, res) => { if(done) return; done = true; clearTimeout(tm); URL.revokeObjectURL(url); err ? no(err) : ok(res); };
+    const tm = setTimeout(() => fin(new Error('cant-play')), 15000);
+    v.muted = true; v.playsInline = true; v.preload = 'auto';
+    v.onerror = () => fin(new Error('cant-play'));
+    v.onloadedmetadata = () => {
+      if(!v.videoWidth || !isFinite(v.duration)) return fin(new Error('cant-play'));
+      if(v.duration > GP_TOP_SECS + 1) return fin(new Error('too-long'));
+      v.currentTime = Math.min(1, v.duration / 3);
+    };
+    v.onseeked = () => {
+      try{
+        const sc = Math.min(1, 1280 / v.videoWidth), cv = document.createElement('canvas');
+        cv.width = Math.round(v.videoWidth * sc); cv.height = Math.round(v.videoHeight * sc);
+        cv.getContext('2d').drawImage(v, 0, 0, cv.width, cv.height);
+        cv.toBlob(b => b ? fin(null, { poster: b, tall: v.videoHeight > v.videoWidth }) : fin(new Error('cant-play')), 'image/jpeg', 0.82);
+      }catch(e){ fin(new Error('cant-play')); }
+    };
+    v.src = url;
+  });
+}
+async function gpTopUpload(file){
+  if(GPE.missing){ toast('The guest page needs a one-time setup first - ask Mavis support'); return; }
+  if(file.size > GP_TOP_MAX){ toast('That video is too big (max 25 MB). Keep it under 30 seconds and export it as MP4 at 720p, e.g. from CapCut'); return; }
+  GPE.topBusy = 'Checking your video...'; gpRender();
+  let probe;
+  try{ probe = await gpTopProbe(file); }
+  catch(e){ GPE.topBusy = ''; gpRender(); toast(e.message === 'too-long' ? 'Please keep the video under 60 seconds - short is best' : "This video can't play on every phone. Please export it as MP4, e.g. from CapCut, and try again"); return; }
+  GPE.topBusy = 'Uploading your video...'; gpRender();
+  const base = myProfile.company_id + '/guestpage/' + Date.now() + '-' + Math.random().toString(36).slice(2, 7);
+  const vPath = base + (/webm/.test(file.type) ? '.webm' : '.mp4'), pPath = base + '-still.jpg';
+  try{
+    const up = await sb.storage.from(GP_BUCKET).upload(vPath, file, { contentType: /webm/.test(file.type) ? 'video/webm' : 'video/mp4', upsert:false });
+    if(up.error) throw up.error;
+    const up2 = await sb.storage.from(GP_BUCKET).upload(pPath, probe.poster, { contentType:'image/jpeg', upsert:false });
+    if(up2.error){ sb.storage.from(GP_BUCKET).remove([vPath]).catch(() => {}); throw up2.error; }
+  }catch(e){ console.warn('[top video]', e); GPE.topBusy = ''; gpRender(); toast('Upload failed - please check your connection and try again'); return; }
+  const old = GPE.c.top || {};
+  GPE.c.top = { kind:'video', path: vPath, poster: pPath, tall: probe.tall };
+  delete GPE.c.off.topvideo;
+  try{ const s2 = await sb.storage.from(GP_BUCKET).createSignedUrl(pPath, 43200); if(s2.data && s2.data.signedUrl) GPE.urls[pPath] = s2.data.signedUrl; }catch(e){}
+  GPE.topBusy = ''; gpRender();
+  if(await gpSave('Video saved - guests see it now')){ [old.path, old.poster].filter(Boolean).forEach(x => gpForgetFile({ path:x })); }
+}
+window.gpTopYt = function(){
+  const t = GPE.c.top || {};
+  appModalShow({ title: 'YouTube video', sub: 'Paste the link from YouTube. Plays with the sound off, on a loop.',
+    fields: [ { label:'YouTube link', placeholder:'https://youtu.be/...', value: t.kind === 'yt' && t.yt ? 'https://youtu.be/' + t.yt : '' },
+              { label:'Start at (seconds) - optional', placeholder:'e.g. 7 to skip the first 7 seconds', value: t.kind === 'yt' && t.start ? String(t.start) : '' } ],
+    async onOk([link, start]){
+      const id = gpYtId(link); if(!id){ toast("That doesn't look like a YouTube link"); return; }
+      const st = Math.max(0, Math.min(600, Math.round(+String(start || '').replace(/[^\d.]/g, '') || gpYtStart(link) || 0)));
+      const old = GPE.c.top || {};
+      GPE.c.top = { kind:'yt', yt: id, start: st }; delete GPE.c.off.topvideo;
+      gpRender();
+      if(await gpSave('Video saved - guests see it now')) [old.path, old.poster].filter(Boolean).forEach(x => gpForgetFile({ path:x }));
+    } });
+};
+window.gpTopRemove = function(){
+  appConfirmShow({ title:'Remove the top video?', msg:'Your photos will show at the top instead.', label:'Remove', async onOk(){
+    const old = GPE.c.top || {}; delete GPE.c.top; gpRender();
+    if(await gpSave('Video removed')) [old.path, old.poster].filter(Boolean).forEach(x => gpForgetFile({ path:x }));
+  } });
+};
 function gpForgetFile(it){ if(it && it.path) sb.storage.from(GP_BUCKET).remove([it.path]).catch(() => {}); }
 function gpKeyring(){ if(demoAs() && DEMO_KEYRING[DEMO_AS]) return DEMO_KEYRING[DEMO_AS]; try{ return Object.values(MS.keyrings || {})[0] || ''; }catch(e){ return ''; } }
 // Laptop: the phone preview follows what you're working on (that place's page, that section, a soft glow); after a save it comes back to the same spot
@@ -23421,6 +23518,7 @@ function gpRender(){
     <div class="gp-wrap"><div class="gp-col">
       <div class="gp-sec${c.off.slides ? ' off' : ''}" data-go="slides"><div class="gp-sh"><div class="n"><b>Highlights</b><small>Big photos at the top of a place's page - offers, new menu, big nights. Guests swipe through them</small></div>${tog('slides')}</div>
         ${c.off.slides ? '' : `<div class="gp-body">${c.slides.map((it, j) => gpItemHtml('slides', it, j)).join('')}${c.slides.length < 12 ? `<button class="gp-add" onclick="gpForm('slides')">+ Add a highlight</button>` : ''}</div>`}</div>
+      ${gpTopHtml()}
       ${gpColoursHtml()}
       ${gpCardHtml()}
       <div class="gp-sec" data-go="perks"><div class="gp-sh"><div class="n"><b>Perks and reward</b><small>On every member's card - always shown</small></div></div>

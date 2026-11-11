@@ -176,9 +176,16 @@ module.exports = async (req, res) => {
     const now = localNow(tz);
     const demo = isDemo ? demoContent(now.date) : null;
 
-    if (!k.member_id) return L.send(res, 200, { ok: true, blank: true, brand, logo });
+    // A keyring nobody has set up yet: the "you've been given something" page, built from what this venue already has switched on
+    const teaser = () => { const gc = (gpRows[0] && gpRows[0].content) || {}, off = gc.off || {}, th = gc.theme || {}, hx = v => /^#[0-9a-f]{6}$/i.test(String(v || '')) ? String(v) : '';
+      const mp = set.member_perks && Array.isArray(set.member_perks.member) ? set.member_perks.member.filter(Boolean) : ['Welcome drink on your first visit', 'Birthday dessert on us'];
+      const vs = Array.isArray(page.venues) ? page.venues.filter(v => v && v.name) : [];
+      return { theme: { top: hx(th.top), acc: hx(th.acc), pg: hx(th.pg) }, perks: mp.length, birthday: mp.some(x => /birthday/i.test(String(x))),
+        reward: page.reward && +page.reward.visits > 0 ? Math.min(30, +page.reward.visits) : 0,
+        events: (!off.events && Array.isArray(gc.events) && gc.events.length > 0) || (!off.tonight && Array.isArray(gc.acts) && gc.acts.length > 0), places: vs.length }; };
+    if (!k.member_id) return L.send(res, 200, { ok: true, blank: true, brand, logo, teaser: teaser() });
     const m = (await L.db('members?select=id,name,tier,birthday,created_at,consent&id=eq.' + q(k.member_id)))[0];
-    if (!m) return L.send(res, 200, { ok: true, blank: true, brand, logo });
+    if (!m) return L.send(res, 200, { ok: true, blank: true, brand, logo, teaser: teaser() });
 
     const weekEnd = addDays(now.date, 6);
     const [visits, stages, bookings] = await Promise.all([

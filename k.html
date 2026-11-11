@@ -93,6 +93,8 @@ svg{display:block}
 .day b{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;font-size:16px;font-weight:900;margin-top:6px;line-height:1.25;letter-spacing:-.2px}
 .day small{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;font-size:13px;color:#64748B;margin-top:4px;line-height:1.35}
 .day .v{display:inline-block;margin-top:8px;font-size:10px;font-weight:800;color:#0F766E;background:#E0F5F2;border-radius:6px;padding:2px 6px}
+:root{--rwacc:var(--acc,#2DD4BF);--rwink:var(--acc-ink,#fff)}
+.rw{--acc:var(--rwacc);--acc-ink:var(--rwink)}   /* reward card sits on the top colour: if the accent is too close to it, the card uses gold so the dots and words still show */
 .rw{padding:18px;background:var(--top,#0F1E2E);color:var(--top-ink,#fff);box-shadow:none}
 .rwk{font-size:12px;font-weight:900;letter-spacing:1.6px;color:var(--acc,#2DD4BF);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .rwbig{display:flex;align-items:baseline;gap:6px;margin-top:4px;white-space:nowrap;min-width:0}
@@ -544,6 +546,9 @@ svg{display:block}
     if (th.top) { rs.setProperty('--top', th.top); rs.setProperty('--top-ink', light(th.top) ? '#0F1E2E' : '#FFFFFF'); document.documentElement.classList.toggle('top-light', !!light(th.top)); rs.setProperty('--top-sub', light(th.top) ? 'rgba(15,30,46,.7)' : 'rgba(255,255,255,.78)'); var mt = document.querySelector('meta[name=theme-color]'); if (mt) mt.setAttribute('content', th.top); }
     if (th.acc) { rs.setProperty('--acc', th.acc); rs.setProperty('--acc-ink', light(th.acc) ? '#0F1E2E' : '#FFFFFF'); }
     if (th.pg) rs.setProperty('--pg', th.pg);
+    (function(){ var t = th.top || '#0F1E2E', ac = th.acc || '#0D9488', lum = function(hx){ var n = parseInt(hx.slice(1), 16); return [n >> 16, (n >> 8) & 255, n & 255].map(function(c){ c /= 255; return c <= .03928 ? c / 12.92 : Math.pow((c + .055) / 1.055, 2.4); }).reduce(function(a, c, i){ return a + c * [.2126, .7152, .0722][i]; }, 0); };
+      var A = lum(ac), B = lum(t), ratio = (Math.max(A, B) + .05) / (Math.min(A, B) + .05), rgb = function(hx){ var n = parseInt(hx.slice(1), 16); return [n >> 16, (n >> 8) & 255, n & 255]; }, x = rgb(ac), y = rgb(t), dist = Math.sqrt(x.reduce(function(a, c, i){ return a + (c - y[i]) * (c - y[i]); }, 0));   // same family of colour (e.g. brown on brown) - a different colour like orange on green still shows fine
+      if (/^#[0-9a-f]{6}$/i.test(t) && /^#[0-9a-f]{6}$/i.test(ac) && ratio < 2.2 && dist < 80) { var gold = light(t) ? '#8A6418' : '#D9B46A'; rs.setProperty('--rwacc', gold); rs.setProperty('--rwink', light(gold) ? '#2B1D07' : '#FFFFFF'); } })();
 
     var hit = function(id){ return id ? ' data-hit="' + esc(id) + '"' : ''; };
     var btnHtml = function(b, id, cls){ if (!b) return ''; var ic = { wa: I.wa, call: I.phone, email: I.mail }[b.kind];

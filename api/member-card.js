@@ -93,7 +93,8 @@ function prospectCard(pro, code, ov){
   const now = localNow('Asia/Makassar');
   // Linked to the back office (the demo company saved this prospect's page there): what the team saved, else the built-in demo
   if (ov) { const pg = ov.page || {};
-    pro = Object.assign({}, pro, { content: ov.content ? () => ov.content : pro.content, acts: ov.content && Array.isArray(ov.content.acts) ? ov.content.acts.filter(a => a && a.title && Array.isArray(a.every)) : pro.acts,
+    const baseContent = pro.content;   // the demo's own colours always win, so a slip in the editor can't change a prospect's page
+    pro = Object.assign({}, pro, { content: ov.content ? (t => { const b = (baseContent && baseContent(t)) || {}; return b.theme ? Object.assign({}, ov.content, { theme: b.theme }) : ov.content; }) : pro.content, acts: ov.content && Array.isArray(ov.content.acts) ? ov.content.acts.filter(a => a && a.title && Array.isArray(a.every)) : pro.acts,
       venues: Array.isArray(pg.venues) && pg.venues.length ? pg.venues.filter(v => v && v.name).slice(0, 12) : pro.venues,
       contact: pg.contact || pro.contact, stay: pg.stay != null ? pg.stay : pro.stay, stayWa: pg.stayWa != null ? pg.stayWa : pro.stayWa, stayPhone: pg.stayPhone != null ? pg.stayPhone : pro.stayPhone,
       reward: pg.reward && pg.reward.visits ? { target: +pg.reward.visits, text: String(pg.reward.text || '') } : pg.reward === null ? null : pro.reward });

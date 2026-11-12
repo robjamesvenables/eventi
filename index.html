@@ -21789,7 +21789,7 @@ const msVenues = () => { if(typeof demoAs === 'function' && demoAs()) return (ms
 const msToday = () => { const d = new Date(); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); };
 // Mavis Club opens for companies on the Mavis Club plan, and in the Mavis Demo company (where it still shows as a Mavis Plus add-on)
 function msUnlocked(){ return (typeof appPlan !== 'undefined' && appPlan === 'membership') || (!!myProfile && typeof appIsDemoCompany === 'function' && appIsDemoCompany()); }
-const msCode = s => String(s || '').toUpperCase().replace(/.*\/K\//, '').replace(/[^A-Z0-9]/g, '').slice(0, 16);
+const msCode = s => String(s || '').toUpperCase().replace(/.*[?&]MEMBER=/, '').replace(/.*\/K\//, '').replace(/[^A-Z0-9]/g, '').slice(0, 16);
 function msPerks(){
   if(demoAs() && !msPageIsDemo()) return JSON.parse(JSON.stringify(DEMO_SEED.perks));
   try{ const v = appSettings && appSettings.member_perks; const p = v ? (typeof v === 'string' ? JSON.parse(v) : v) : null; if(p && (p.member || p.vip)) return { member: p.member || [], vip: p.vip || [], icons: p.icons || {} }; }catch(e){}
@@ -22936,10 +22936,10 @@ window.msDemoQr = function(){
   const o = msSheet(`
     <div class="vdf-h"><b>Demo QR codes</b><div class="dpt-sub">Point a phone at the screen, just like a keyring</div></div>
     <div class="vdf-body"><div class="ms-qrs">${list.map(k => `<div class="ms-qrc"><div class="q" id="ms-dq-${k.code}"></div><b>${k.code}</b><div class="t">${k.title}</div><p>${k.sub}</p></div>`).join('')}</div>
-      <div class="vd-note" style="margin-top:12px">${vdSvg('note', 15)}<span>Phone logged in to Mavis: opens the member in Mavis (staff view). Any other phone's camera: shows the guest's member card.</span></div></div>
+      <div class="vd-note" style="margin-top:12px">${vdSvg('note', 15)}<span>Scan with your phone logged in to Mavis - the phone camera or Scan a member both open the staff check-in.</span></div></div>
     <div class="vdf-foot"><button class="mns-go" onclick="msSheetClose()">Done</button></div>`);
   const box = o.querySelector('.ms-box'); if(box) box.style.maxWidth = '640px';
-  list.forEach(k => { try{ new QRCode(document.getElementById('ms-dq-' + k.code), { text:'https://app.getmavis.co/k/' + k.code, width:440, height:440, colorDark:'#0F1E2E', colorLight:'#FFFFFF', correctLevel: QRCode.CorrectLevel.M }); }catch(e){ console.warn(e); } });
+  list.forEach(k => { try{ new QRCode(document.getElementById('ms-dq-' + k.code), { text:'https://app.getmavis.co/?member=' + k.code, width:440, height:440, colorDark:'#0F1E2E', colorLight:'#FFFFFF', correctLevel: QRCode.CorrectLevel.M }); }catch(e){ console.warn(e); } });
 };
 window.msOpenMember = function(id, checked){
   const m = MS.members.find(x => String(x.id) === String(id)); if(!m) return;

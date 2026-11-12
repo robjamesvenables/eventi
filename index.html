@@ -22686,7 +22686,7 @@ async function msVipAlert(m){
   try{ const { data } = await sb.auth.getSession(); const token = data && data.session && data.session.access_token; if(token) authApi('push', { body:{ mk_vip: m.id, venue: msVenue() }, token }).catch(() => {}); }catch(e){}
 }
 
-// ── Reports: last week (Monday report) and last month (members report) ──
+// ── Reports: last 7 days (weekly report) and last month (members report) ──
 function msReportData(from, to){
   const inR = d => d >= from && d <= to;
   const all = Object.entries(MS.visits).flatMap(([id, a]) => a.map(x => Object.assign({ mid:id }, x))).filter(x => inR(String(x.visit_date)));
@@ -22702,9 +22702,9 @@ window.msReport = function(kind){
   const ymd = d => d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
   const t = new Date(); t.setHours(12, 0, 0, 0);
   let from, to, title, prev;
-  if(kind === 'week'){ const mon = new Date(t); mon.setDate(t.getDate() - ((t.getDay() + 6) % 7) - 7); const sun = new Date(mon); sun.setDate(mon.getDate() + 6); from = ymd(mon); to = ymd(sun);
-    const pm = new Date(mon); pm.setDate(mon.getDate() - 7); const ps = new Date(pm); ps.setDate(pm.getDate() + 6); prev = msReportData(ymd(pm), ymd(ps));
-    title = 'Monday report · ' + mon.toLocaleDateString('en-GB', { day:'numeric', month:'short' }) + ' – ' + sun.toLocaleDateString('en-GB', { day:'numeric', month:'short' }); }
+  if(kind === 'week'){ const a = new Date(t); a.setDate(t.getDate() - 6); from = ymd(a); to = ymd(t);   // the last 7 days, up to today
+    const pa = new Date(a); pa.setDate(a.getDate() - 7); const pb = new Date(a); pb.setDate(a.getDate() - 1); prev = msReportData(ymd(pa), ymd(pb));
+    title = 'Weekly report · ' + a.toLocaleDateString('en-GB', { day:'numeric', month:'short' }) + ' – ' + t.toLocaleDateString('en-GB', { day:'numeric', month:'short' }); }
   else { const a = new Date(t.getFullYear(), t.getMonth() - 1, 1), b = new Date(t.getFullYear(), t.getMonth(), 0); from = ymd(a); to = ymd(b);
     const pa = new Date(t.getFullYear(), t.getMonth() - 2, 1), pb = new Date(t.getFullYear(), t.getMonth() - 1, 0); prev = msReportData(ymd(pa), ymd(pb));
     title = 'Members report · ' + a.toLocaleDateString('en-GB', { month:'long', year:'numeric' }); }
@@ -22776,7 +22776,7 @@ function msTop5Card(){
   return mkiCard('star', 'Top 5 of ' + nm, 'Say thank you with a reward', all.length ? `<div class="mki-list">${all.map(({ m, n }, i) => `<button class="mki-row" onclick="msOpenMember('${m.id}')"><span class="mki-rk g">${i + 1}</span>${msFace(m.name, 30)}<span class="mki-nm"><b>${msEsc(m.name)}</b></span><span class="mki-v">${n} visits</span></button>`).join('')}</div>${msCanSend() && top.length ? `<button class="mki-btn" onclick="msCompose('wa', 'top5', 'top5')">${vdSvg('wa', 15)} Send them a reward</button>` : ''}` : '<div class="mki-empty">No visits last month</div>');
 }
 function msReportsCard(){
-  return mkiCard('chart', 'Reports', 'Emailed to managers automatically once email is switched on', `<div class="mkr-btns"><button onclick="msReport('week')"><b>Monday report</b><small>Last week</small></button><button onclick="msReport('month')"><b>Members report</b><small>Last month</small></button></div>`);
+  return mkiCard('chart', 'Reports', 'Emailed to managers automatically once email is switched on', `<div class="mkr-btns"><button onclick="msReport('week')"><b>Weekly report</b><small>Last 7 days</small></button><button onclick="msReport('month')"><b>Members report</b><small>Last month</small></button></div>`);
 }
 
 // ── Download members as a spreadsheet (CSV) for bulk emails - Mailchimp, Brevo, Gmail etc. Managers only ──

@@ -1,5 +1,5 @@
 // POST { username, secret } -> { session, profile }   (username can also be the boss's email)
-// 5 wrong tries locks that username for 15 minutes.
+// 5 wrong tries locks that username for LOCK_MIN minutes (normally 15).
 const L = require('./_lib');
 module.exports = async (req, res) => {
   // GET = "are real logins switched on yet?" (the app keeps the old demo login until they are)
@@ -18,7 +18,9 @@ module.exports = async (req, res) => {
     const p = rows && rows[0];
     const key = p ? p.username : raw.toUpperCase();
     const att = (await L.db('login_attempts?select=*&username=eq.' + encodeURIComponent(key)))[0];
-    if (att && att.locked_until && new Date(att.locked_until) > new Date()) {
+    // DEMO DAY (12 Nov 2026): a lock now lasts 1 minute instead of 15. Put LOCK_MIN back to 15 after the demo.
+    const LOCK_MIN = 1;
+    if (att && att.locked_until && new Date(att.locked_until).getTime() - 15 * 60000 + LOCK_MIN * 60000 > Date.now()) {
       return L.send(res, 429, { ok: false, reason: 'locked', until: att.locked_until });
     }
     const fail = async () => {

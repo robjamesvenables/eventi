@@ -1015,9 +1015,63 @@
   }
   function slotsForDuration(dur){ return dur / 15; }
 
+  // Demo bookings: fills the first page about half full, so the demo looks real on any device.
+  // Only on a browser that has never had bookings (never touches bookings someone typed in),
+  // or when the page is opened with ?demo (starts the grid again with the demo bookings).
+  const DEMO_SEEDED_KEY = 'mavis_spa_demo_seeded_v1';
   function fillGridForDemo(){
-    // Deliberately empty for now - starting with a completely blank calendar, no demo
-    // bookings, while the flow and UI get sorted out first.
+    let force = false, seeded = false;
+    try{ force = /[?&]demo\b/.test(location.search); seeded = !!localStorage.getItem(DEMO_SEEDED_KEY); }catch(e){}
+    if(!force && (seeded || Object.keys(bookings).length)) return;
+    bookings = {};
+    // Day plan per therapist (15-min slot numbers from 9:00): [start slot, service, status]
+    // status: 'in' = arrived (green), 'booked' = booked not arrived yet (orange), 'hold' = on hold (yellow)
+    // Nothing touches the 1pm-2pm lunch hour (slots 16-19) or its room clean-up time.
+    const PLANS = [
+      [[2,'TBM90','in'],[22,'DMHM90','booked'],[34,'HLSM90','hold']],
+      [[0,'SBM90','in'],[24,'TRT90','booked']],
+      [[4,'DRM60','in'],[21,'HLSM120','booked'],[38,'FR60','hold']],
+      [[1,'HLSM90','in'],[26,'TBM90','hold']],
+      [[6,'DFM90','in'],[20,'SBM90','booked'],[33,'TBM90','booked']],
+      [[0,'TBM120','in'],[28,'DRM90','booked']],
+      [[3,'FR90','in'],[22,'TRT90','hold'],[36,'DMHM90','booked']],
+      [[2,'DMHM90','in'],[25,'HLSM90','booked']],
+      [[5,'TRT90','in'],[20,'FR60','booked'],[32,'SBM90','hold']],
+      [[0,'DRM90','in'],[24,'TBM90','booked']],
+      [[4,'HLSM90','in'],[22,'DFM90','hold'],[37,'TBM90','booked']],
+      [[1,'SBM90','in'],[27,'HLSM120','booked']],
+      [[6,'TBM90','in'],[21,'TRT90','booked'],[34,'FR90','hold']],
+      [[0,'DFM90','in'],[25,'DMHM90','hold']],
+      [[3,'DRM60','in'],[20,'TBM120','booked'],[38,'DRM60','booked']],
+      [[2,'HLSM120','in'],[26,'SBM90','booked']],
+      [[5,'FR60','in'],[23,'HLSM90','booked'],[36,'TRT90','hold']],
+      [[0,'TRT90','in'],[28,'TBM90','booked']],
+      [[4,'TBM90','in'],[22,'DRM90','hold']],
+      [[1,'DMHM90','in'],[24,'DFM90','booked'],[37,'HLSM90','booked']]
+    ];
+    const onPage = [];
+    // Same order as the grid's first page: working today (the seeded shifts leave every 7th off), A to Z
+    THERAPISTS.forEach(function(t, ti){ if(ti % 7 !== 6) onPage.push(ti); });
+    onPage.sort(function(a, b){ return THERAPISTS[a].name.localeCompare(THERAPISTS[b].name); });
+    onPage.length = Math.min(onPage.length, PLANS.length);
+    const bedRooms = ROOMS.filter(function(r){ return /^(SGL|DBL)/.test(r.name); });
+    const chairs = ROOMS.filter(function(r){ return /^RFLX/.test(r.name); });
+    let nameIdx = 0, chairIdx = 0;
+    onPage.forEach(function(ti, i){
+      PLANS[i].forEach(function(p){
+        const isChair = /^FR/.test(p[1]);
+        const room = isChair ? chairs[(chairIdx++) % chairs.length] : bedRooms[i % bedRooms.length];
+        bookings[slotKey(ti, p[0])] = {
+          serviceCode: p[1], client: DEMO_CLIENT_NAMES[(nameIdx++) % DEMO_CLIENT_NAMES.length], phone: randomPhone(), notes: '',
+          roomId: room ? room.id : null, status: p[2] === 'hold' ? 'hold' : 'booked',
+          holdStartedAt: p[2] === 'hold' ? Date.now() : null, holdPrompted: true, people: 1,
+          arrived: p[2] === 'in', arrivedAt: p[2] === 'in' ? Date.now() : null,
+          bookingType: null, paymentStatus: p[2] === 'in' ? 'paid' : 'unpaid', promoCode: null, discountPct: 0
+        };
+      });
+    });
+    saveBookings();
+    try{ localStorage.setItem(DEMO_SEEDED_KEY, '1'); if(force) history.replaceState(null, '', location.pathname + location.hash); }catch(e){}
   }
 
   // ── Waiting To Be Allocated queue ──

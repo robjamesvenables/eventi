@@ -624,7 +624,7 @@ svg{display:block}
     var embed = /[?&]embed=1/.test(location.search);
     var canPush = 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window;
     var pushOn = false; try { pushOn = localStorage.getItem('mvpush:' + code) === '1' && canPush && Notification.permission === 'granted'; } catch (e) {}
-    var alertRow = embed || (canPush && Notification.permission === 'denied') ? '' : '<button class="addhome ntf' + (pushOn ? ' done' : '') + '" id="mvalert" type="button"><i>' + svg('<path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.9 1.9 0 0 0 3.4 0"/>', 18) + '</i><span><b>' + 'Phone notifications' + '</b><small>' + (pushOn ? 'On. Events and news buzz your phone' : 'Events and news, straight to your phone') + '</small></span><em class="ahb">' + (pushOn ? 'Turn off' : 'Turn on') + '</em></button>';
+    var alertRow = embed || (canPush && Notification.permission === 'denied') ? '' : '<button class="addhome ntf' + (pushOn ? ' done' : '') + '" id="mvalert" type="button"><i>' + svg('<path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.9 1.9 0 0 0 3.4 0"/>', 18) + '</i><span><b>' + 'Phone alerts' + '</b><small>' + (pushOn ? 'On. Your phone buzzes when something\'s on' : 'Your phone buzzes when something\'s on') + '</small></span><em class="ahb">' + (pushOn ? 'Turn off' : 'Turn on') + '</em></button>';
     var foot = alertRow + homeRow + '<div class="foot">Show your keyring when you arrive<br>and we\'ll look after the rest.<br><a href="https://getmavis.co">Powered by Mavis</a></div>';
 
     // ── Slides (photos at the top) ──
@@ -944,7 +944,7 @@ svg{display:block}
         if (al.classList.contains('done')) {   // on - one tap turns them off again (no phone settings needed)
           var lb = al.querySelector('.ahb'); al.dataset.busy = '1'; lb.textContent = '…';
           var offDone = function(){ delete al.dataset.busy; try { localStorage.setItem('mvpush:' + code, '0'); } catch (e) {}
-            al.classList.remove('done'); al.querySelector('small').textContent = 'Events and news, straight to your phone'; lb.textContent = 'Turn on'; };
+            al.classList.remove('done'); al.querySelector('small').textContent = 'Your phone buzzes when something\'s on'; lb.textContent = 'Turn on'; };
           (navigator.serviceWorker ? navigator.serviceWorker.getRegistration('/k/') : Promise.resolve(null)).then(function(reg){ return reg ? reg.pushManager.getSubscription() : null; }).then(function(sub){
             if (!sub) return;
             return fetch('/api/gp?a=sub&on=0&code=' + encodeURIComponent(code), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(sub) }).catch(function(){}).then(function(){ return sub.unsubscribe(); });
@@ -971,7 +971,7 @@ svg{display:block}
             delete al.dataset.busy;
             if (!r || !r.ok) { set('Try again'); return; }
             try { localStorage.setItem('mvpush:' + code, '1'); } catch (e) {}
-            al.classList.add('done'); al.querySelector('small').textContent = 'On. Events and news buzz your phone'; set('Turn off');
+            al.classList.add('done'); al.querySelector('small').textContent = 'On. Your phone buzzes when something\'s on'; set('Turn off');
           });
         }).catch(function(){ delete al.dataset.busy; set('Try again'); });
       };
@@ -985,8 +985,8 @@ svg{display:block}
         var save = function(n){ try { localStorage.setItem(key, JSON.stringify({ n: n, t: Date.now() })); } catch (e) {} };
         setTimeout(function(){
           if (document.getElementById('npop') || al.classList.contains('done')) return;
-          var o = document.createElement('div'); o.id = 'npop'; o.setAttribute('role', 'dialog'); o.setAttribute('aria-label', 'Turn on phone notifications');
-          o.innerHTML = '<div class="np-sh"><div class="np-row"><div class="np-bell">' + svg('<path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9M13.7 21a2 2 0 0 1-3.4 0"/>', 22) + '</div><div><b>Turn on phone notifications?</b><span>Events and news, straight to your phone. Never spam.</span></div></div>' +
+          var o = document.createElement('div'); o.id = 'npop'; o.setAttribute('role', 'dialog'); o.setAttribute('aria-label', 'Turn on phone alerts');
+          o.innerHTML = '<div class="np-sh"><div class="np-row"><div class="np-bell">' + svg('<path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9M13.7 21a2 2 0 0 1-3.4 0"/>', 22) + '</div><div><b>Turn on phone alerts?</b><span>Your phone buzzes when something\'s on. Never spam.</span></div></div>' +
             '<div class="np-btns"><button type="button" class="np-not">Not now</button><button type="button" class="np-yes">Turn on</button></div></div>';
           document.body.appendChild(o);
           var shut = function(){ o.classList.add('out'); setTimeout(function(){ o.remove(); }, 220); };

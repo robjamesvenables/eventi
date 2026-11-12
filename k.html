@@ -179,6 +179,18 @@ svg{display:block}
 .bkw.w3 a{height:60px;flex-direction:column;gap:4px;font-size:13.5px;padding:0 4px}
 .bkc.gold .bkw a{background:var(--acc,#0D9488);color:var(--acc-ink,#fff)}
 /* sheet */
+#npop{position:fixed;inset:0;background:rgba(10,16,24,.35);z-index:2147483000;display:flex;align-items:flex-end;justify-content:center;animation:npf .2s ease}
+#npop.out{opacity:0;transition:opacity .2s}
+#npop .np-sh{width:100%;max-width:520px;background:#fff;border-radius:22px 22px 0 0;padding:18px 18px calc(20px + env(safe-area-inset-bottom));color:#0F1E2E;box-shadow:0 -10px 40px rgba(0,0,0,.18);animation:npu .28s cubic-bezier(.2,.8,.2,1)}
+#npop .np-row{display:flex;gap:12px;align-items:center}
+#npop .np-bell{flex:none;width:44px;height:44px;border-radius:14px;display:grid;place-items:center;background:var(--top,#0F1E2E);color:var(--top-ink,#fff)}
+#npop b{display:block;font-size:18px;font-weight:800}
+#npop span{display:block;font-size:13.5px;line-height:1.35;color:#55606E;margin-top:2px}
+#npop .np-btns{display:flex;gap:10px;margin-top:14px}
+#npop .np-yes{flex:1;border:0;border-radius:13px;padding:13px;background:var(--top,#0F1E2E);color:var(--top-ink,#fff);font-weight:800;font-size:15px;font-family:inherit;cursor:pointer}
+#npop .np-not{flex:none;border:0;border-radius:13px;padding:13px 16px;background:#F1F3F5;color:#55606E;font-weight:700;font-size:15px;font-family:inherit;cursor:pointer}
+@keyframes npf{from{opacity:0}}@keyframes npu{from{transform:translateY(100%)}}
+@media (prefers-reduced-motion:reduce){#npop,#npop .np-sh{animation:none}}
 .sh{position:fixed;inset:0;background:rgba(15,30,46,.55);z-index:20;display:none;align-items:flex-end;justify-content:center}
 .sh.on{display:flex}
 .shb{background:#F5F4F0;width:100%;max-width:460px;max-height:88vh;border-radius:22px 22px 0 0;display:flex;flex-direction:column;overflow:hidden}
@@ -953,6 +965,26 @@ svg{display:block}
           });
         }).catch(function(){ delete al.dataset.busy; set('Try again'); });
       };
+      // Ask once, nicely: a small panel the first time they open their page (and once more a week after "Not now", then never).
+      // Only on phones that can get notifications and haven't said yes or no to the phone's own question yet.
+      (function(){
+        if (!al || embed || !canPush || pushOn || Notification.permission !== 'default' || innerWidth >= 1000) return;   // phones only - not on a laptop
+        var key = 'mvnp:' + code, st = { n: 0, t: 0 };
+        try { st = JSON.parse(localStorage.getItem(key) || '{"n":0,"t":0}') || st; } catch (e) {}
+        if (!(st.n === 0 || (st.n === 1 && Date.now() - (st.t || 0) >= 7 * 864e5))) return;
+        var save = function(n){ try { localStorage.setItem(key, JSON.stringify({ n: n, t: Date.now() })); } catch (e) {} };
+        setTimeout(function(){
+          if (document.getElementById('npop') || al.classList.contains('done')) return;
+          var o = document.createElement('div'); o.id = 'npop'; o.setAttribute('role', 'dialog'); o.setAttribute('aria-label', 'Turn on news');
+          o.innerHTML = '<div class="np-sh"><div class="np-row"><div class="np-bell">' + svg('<path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9M13.7 21a2 2 0 0 1-3.4 0"/>', 22) + '</div><div><b>Don\'t miss out</b><span>Members-only offers and events, straight to your phone. Never spam.</span></div></div>' +
+            '<div class="np-btns"><button type="button" class="np-not">Not now</button><button type="button" class="np-yes">Turn on news</button></div></div>';
+          document.body.appendChild(o);
+          var shut = function(){ o.classList.add('out'); setTimeout(function(){ o.remove(); }, 220); };
+          o.querySelector('.np-not').onclick = function(){ save(st.n + 1); shut(); };
+          o.onclick = function(e){ if (e.target === o) { save(st.n + 1); shut(); } };
+          o.querySelector('.np-yes').onclick = function(){ save(2); shut(); al.onclick(); };   // the phone's own question comes up now
+        }, 3500);
+      })();
       var ah = document.getElementById('addhome');
       if (ah) ah.onclick = function(){   // same as Mavis: Android installs with a tap; iPhone can't (Apple), so one short line says where to tap
         if (window.__mvInstall) { var ev = window.__mvInstall; window.__mvInstall = null; ev.prompt(); return; }

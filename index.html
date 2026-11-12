@@ -7665,6 +7665,13 @@ function authEnterApp(){
   try{
     const qp = new URLSearchParams(location.search);
     if(myProfile && qp.get('next') === 'chat'){ location.replace('/chat/'); return; }
+    // Direct links for demos: /?go=members opens Members Club, /?go=design opens the guest page editor
+    if(myProfile && /^(members|design)$/.test(qp.get('go') || '')){
+      const want = qp.get('go');
+      history.replaceState(history.state, '', location.pathname + location.hash);
+      const go2 = (n) => { const ok = typeof nav === 'function' && typeof msUnlocked === 'function' && msUnlocked(); if(ok){ nav('membership'); if(want === 'design' && typeof gpOpen === 'function') setTimeout(() => gpOpen(), 120); } else if(n < 40) setTimeout(() => go2(n + 1), 250); };
+      setTimeout(() => go2(0), 300);
+    }
     if(myProfile && qp.get('newgroup')){
       history.replaceState(history.state, '', location.pathname + location.hash);
       const go = (n) => { if(CH.ready){ nav('chat'); chat2GroupEditor(); } else if(n < 40) setTimeout(() => go(n + 1), 250); };

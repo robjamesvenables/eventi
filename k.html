@@ -624,7 +624,7 @@ svg{display:block}
     var embed = /[?&]embed=1/.test(location.search);
     var canPush = 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window;
     var pushOn = false; try { pushOn = localStorage.getItem('mvpush:' + code) === '1' && canPush && Notification.permission === 'granted'; } catch (e) {}
-    var alertRow = embed || (canPush && Notification.permission === 'denied') ? '' : '<button class="addhome ntf' + (pushOn ? ' done' : '') + '" id="mvalert" type="button"><i>' + svg('<path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.9 1.9 0 0 0 3.4 0"/>', 18) + '</i><span><b>' + (pushOn ? 'Notifications are on' : 'Get our news') + '</b><small>' + (pushOn ? 'Events and offers come straight to your phone' : 'Events and offers, straight to your phone') + '</small></span><em class="ahb">' + (pushOn ? 'Turn off' : 'Turn on') + '</em></button>';
+    var alertRow = embed || (canPush && Notification.permission === 'denied') ? '' : '<button class="addhome ntf' + (pushOn ? ' done' : '') + '" id="mvalert" type="button"><i>' + svg('<path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.9 1.9 0 0 0 3.4 0"/>', 18) + '</i><span><b>' + 'Phone notifications' + '</b><small>' + (pushOn ? 'On. Events and news buzz your phone' : 'Events and news, straight to your phone') + '</small></span><em class="ahb">' + (pushOn ? 'Turn off' : 'Turn on') + '</em></button>';
     var foot = alertRow + homeRow + '<div class="foot">Show your keyring when you arrive<br>and we\'ll look after the rest.<br><a href="https://getmavis.co">Powered by Mavis</a></div>';
 
     // ── Slides (photos at the top) ──
@@ -679,7 +679,7 @@ svg{display:block}
         '<div class="row"><div><b>' + esc(d.visits) + '</b>visit' + (d.visits === 1 ? '' : 's') + '</div>' + '<div><b>' + esc(d.since) + '</b>member since</div></div></div>' + bookTopHtml() + (after || '') + wallHtml(false) + reviewBig();
       if (d.birthdayWeek) h += '<div class="bday"><i>' + svg(I.cake, 24) + '</i><div><b>Happy birthday week!</b><p>' + ((d.perks || []).some(function(p){ return /birthday/i.test(p); }) ? 'Your birthday treat is waiting - just show this screen at any of our venues.' : 'From all of us - have a wonderful one. We hope to see you this week!') + '</p></div></div>';
       if (d.reward) h += rewardHtml();
-      var offersHtml = '<div class="sec"><div class="box offr"><i>' + svg('<path d="M20.6 13.4l-7.2 7.2a2 2 0 0 1-2.8 0L3 13V3h10l7.6 7.6a2 2 0 0 1 0 2.8z"/><circle cx="7.5" cy="7.5" r="1.5"/>', 19) + '</i><div class="n"><b>Send me offers</b><small>By WhatsApp and email. Turn off any time.</small></div><button class="tgl' + (d.offers ? ' on' : '') + '" id="offr" role="switch" aria-checked="' + (d.offers ? 'true' : 'false') + '" aria-label="Send me offers"><i></i></button></div></div>';
+      var offersHtml = '<div class="sec"><div class="box offr"><i>' + svg('<path d="M20.6 13.4l-7.2 7.2a2 2 0 0 1-2.8 0L3 13V3h10l7.6 7.6a2 2 0 0 1 0 2.8z"/><circle cx="7.5" cy="7.5" r="1.5"/>', 19) + '</i><div class="n"><b>Members\' offers</b><small>By WhatsApp and email. Turn off any time.</small></div><button class="tgl' + (d.offers ? ' on' : '') + '" id="offr" role="switch" aria-checked="' + (d.offers ? 'true' : 'false') + '" aria-label="Members\' offers"><i></i></button></div></div>';
       if (d.perks && d.perks.length) h += '<div class="sec"><div class="hd"><b>Your ' + (vip ? 'VIP ' : '') + 'perks</b></div><div class="pass">' + d.perks.map(function(p, i){ var ic = (d.perkIcons || [])[i]; return '<div class="perk"><i>' + svg(PI[ic] || PI.gift, 20) + '</i><span>' + esc(p) + '</span></div>'; }).join('') + '</div></div>';
       h += offersHtml;
       return h;
@@ -944,7 +944,7 @@ svg{display:block}
         if (al.classList.contains('done')) {   // on - one tap turns them off again (no phone settings needed)
           var lb = al.querySelector('.ahb'); al.dataset.busy = '1'; lb.textContent = '…';
           var offDone = function(){ delete al.dataset.busy; try { localStorage.setItem('mvpush:' + code, '0'); } catch (e) {}
-            al.classList.remove('done'); al.querySelector('b').textContent = 'Get our news'; al.querySelector('small').textContent = 'Events and offers, straight to your phone'; lb.textContent = 'Turn on'; };
+            al.classList.remove('done'); al.querySelector('small').textContent = 'Events and news, straight to your phone'; lb.textContent = 'Turn on'; };
           (navigator.serviceWorker ? navigator.serviceWorker.getRegistration('/k/') : Promise.resolve(null)).then(function(reg){ return reg ? reg.pushManager.getSubscription() : null; }).then(function(sub){
             if (!sub) return;
             return fetch('/api/gp?a=sub&on=0&code=' + encodeURIComponent(code), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(sub) }).catch(function(){}).then(function(){ return sub.unsubscribe(); });
@@ -971,7 +971,7 @@ svg{display:block}
             delete al.dataset.busy;
             if (!r || !r.ok) { set('Try again'); return; }
             try { localStorage.setItem('mvpush:' + code, '1'); } catch (e) {}
-            al.classList.add('done'); al.querySelector('b').textContent = 'Notifications are on'; al.querySelector('small').textContent = 'Events and offers come straight to your phone'; set('Turn off');
+            al.classList.add('done'); al.querySelector('small').textContent = 'On. Events and news buzz your phone'; set('Turn off');
           });
         }).catch(function(){ delete al.dataset.busy; set('Try again'); });
       };
@@ -985,9 +985,9 @@ svg{display:block}
         var save = function(n){ try { localStorage.setItem(key, JSON.stringify({ n: n, t: Date.now() })); } catch (e) {} };
         setTimeout(function(){
           if (document.getElementById('npop') || al.classList.contains('done')) return;
-          var o = document.createElement('div'); o.id = 'npop'; o.setAttribute('role', 'dialog'); o.setAttribute('aria-label', 'Turn on news');
-          o.innerHTML = '<div class="np-sh"><div class="np-row"><div class="np-bell">' + svg('<path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9M13.7 21a2 2 0 0 1-3.4 0"/>', 22) + '</div><div><b>Don\'t miss out</b><span>Members-only offers and events, straight to your phone. Never spam.</span></div></div>' +
-            '<div class="np-btns"><button type="button" class="np-not">Not now</button><button type="button" class="np-yes">Turn on news</button></div></div>';
+          var o = document.createElement('div'); o.id = 'npop'; o.setAttribute('role', 'dialog'); o.setAttribute('aria-label', 'Turn on phone notifications');
+          o.innerHTML = '<div class="np-sh"><div class="np-row"><div class="np-bell">' + svg('<path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9M13.7 21a2 2 0 0 1-3.4 0"/>', 22) + '</div><div><b>Turn on phone notifications?</b><span>Events and news, straight to your phone. Never spam.</span></div></div>' +
+            '<div class="np-btns"><button type="button" class="np-not">Not now</button><button type="button" class="np-yes">Turn on</button></div></div>';
           document.body.appendChild(o);
           var shut = function(){ o.classList.add('out'); setTimeout(function(){ o.remove(); }, 220); };
           o.querySelector('.np-not').onclick = function(){ save(st.n + 1); shut(); };

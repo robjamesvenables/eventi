@@ -69,6 +69,7 @@ P.trans = {
     rooms: [{ name: 'Premier Room', img: '/demo-guest/p-sby-room-premier.jpg' }, { name: 'Executive Club', img: '/demo-guest/p-sby-room-execclub.jpg' },
       { name: 'Celebrity Suite', img: '/demo-guest/p-sby-room-celebrity.jpg' }, { name: 'Presidential Suite', img: '/demo-guest/p-sby-room-presidential.jpg' }],
     book: 'https://www.transhotelgroup.com/hotel_overview/45' }],   // Mavis Club network demo: the other venues this guest belongs to (shown only when switched on)
+  guide: 'trans',   // its guest guide (/g/trans): Hotel guide button on the member page
   brand: 'The Trans Resort Bali', logo: '/demo-guest/p-trans-logo.png', icon: '/demo-guest/p-trans-icon', first: 'Alexander', tier: 'vip', visits: 6, since: 2025, favourite: 'The 18th',   // icon: home-screen app icon (-192.png and -512.png)
   perks: ['Welcome drink at The 18th Rooftop', 'Late check-out until 2pm, when available', '15% off at the spa', 'Free kids club afternoons'],
   perkIcons: ['cocktail', 'key', 'leaf', 'smile'],

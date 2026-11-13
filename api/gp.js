@@ -181,7 +181,15 @@ async function roster(req, res){
 module.exports = async (req, res) => {
   try {
     const a = String((req.query && req.query.a) || '');
-    if (a === 'kpage') return require('./_kpage')(req, res);   // demo keyrings: guest page with the venue's own link preview
+    if (a === 'kpage') return require('./_kpage')(req, res);
+    if (a === 'guide') {   // guest guide (/g/<slug>): the guide's content + today's activities from the venue's member page
+      const g = require('./_guides').get(String((req.query && req.query.g) || '').replace(/[^a-z0-9-]/gi, '').slice(0, 30));
+      if (!g) return L.send(res, 404, { ok: false });
+      const pro = g.member ? require('./_prospects').get(g.member) : null;
+      const acts = ((pro && pro.acts) || []).map(x => ({ title: x.title, line: x.line || '', every: x.every, start: x.start || '', end: x.end || '', venue: x.venue || '' }));
+      res.setHeader('Cache-Control', 'public, max-age=0, s-maxage=300');
+      return L.send(res, 200, Object.assign({ ok: true, acts }, g, { member: undefined }));
+    }   // demo keyrings: guest page with the venue's own link preview
     if (a === 'demo') {   // the Mavis demo company dressed as a sales prospect (only demo content that is already public on its sample keyring)
       const sd = require('./_prospects').seed(String((req.query && req.query.as) || '').replace(/[^a-z]/g, ''), String((req.query && req.query.d) || '').replace(/[^0-9-]/g, '').slice(0, 10) || new Date().toISOString().slice(0, 10));
       return sd ? L.send(res, 200, Object.assign({ ok: true }, sd)) : L.send(res, 404, { ok: false });

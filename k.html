@@ -50,6 +50,9 @@ svg{display:block}
 .brand small{display:block;font-size:15px;font-weight:900;letter-spacing:3px;color:#D9B46A;margin-top:4px}
 .top-light .brand small{color:color-mix(in srgb,var(--top,#0F1E2E) 35%,#0F1E2E)}
 .hi{margin-top:26px;font-size:30px;font-weight:900;letter-spacing:-.8px;line-height:1.1}
+.hg{display:inline-flex;align-items:center;gap:8px;margin-top:14px;background:rgba(255,255,255,.14);border:1.5px solid rgba(255,255,255,.35);color:var(--top-ink,#fff);border-radius:99px;padding:9px 15px;font-weight:800;font-size:14px;text-decoration:none}.hg svg{color:var(--acc,#C9A24A)}
+.top-light .hg{background:rgba(15,30,46,.06);border-color:rgba(15,30,46,.2)}
+.mvtoast{position:fixed;left:16px;right:16px;bottom:calc(96px + env(safe-area-inset-bottom));z-index:99;max-width:488px;margin:0 auto;background:#16A34A;color:#fff;border-radius:16px;padding:13px 15px;font-weight:700;font-size:14px;display:flex;gap:10px;align-items:center;box-shadow:0 10px 26px rgba(0,0,0,.25);transition:opacity .4s}
 .hi-s{margin-top:7px;font-size:14px;color:var(--top-sub,#CBD5E1);line-height:1.45}
 /* card */
 .card{margin:-76px 16px 0;position:relative;background:#D4AC5E;color:#2B1D07;border-radius:22px;padding:18px 20px;box-shadow:0 14px 30px rgba(15,30,46,.22);overflow:hidden}
@@ -514,6 +517,10 @@ svg{display:block}
   if (/[?&]embed=1/.test(location.search)) window.addEventListener('message', function(e){ if (e.origin !== location.origin || !e.data || e.data.mv !== 'go') return; window.__mvGoQ = e.data; if (window.__mvGoApply && document.querySelector('.book,.sec,.card')) window.__mvGoApply(); });
   if (preview && SAMPLES.indexOf(code) < 0 && !/[?&]embed=1/.test(location.search)) { var pv = document.createElement('div'); pv.className = 'pv'; pv.textContent = 'Preview'; document.body.appendChild(pv); }
   if (!code) { root.innerHTML = '<div class="w">' + head({ brand:'Members Club' }, 'Members Club', 'This link is missing its keyring code.') + '</div>'; return; }
+  // Just scanned in from the guest guide: say this phone will now open their card from the hotel QR
+  if (/[?&]saved=1/.test(location.search)) { try { history.replaceState(null, '', location.pathname); } catch (e) {}
+    var tst = document.createElement('div'); tst.className = 'mvtoast'; tst.setAttribute('role', 'status'); tst.innerHTML = svg('<path d="M20 6 9 17l-5-5"/>', 20) + '<span>Keyring saved on this phone</span>'; document.body.appendChild(tst);
+    setTimeout(function(){ tst.style.opacity = '0'; setTimeout(function(){ tst.remove(); }, 500); }, 4000); }
 
   // Fast open: show the copy saved on this phone straight away, fetch the fresh one behind it.
   // If something changed (a new visit, new offers), quietly reopen with the fresh copy - only if they haven't started scrolling.
@@ -638,7 +645,9 @@ svg{display:block}
         return '<div class="sd' + (goKey ? ' tap' : '') + '"' + (goKey ? ' data-go="' + esc(goKey) + '"' + (x.ev ? ' data-goev="' + esc(x.ev) + '"' : '') + hit(x.id) + ' role="link" tabindex="0"' : '') + '>' + pic(x.img, x.title) + '<div class="ov">' + (x.title ? '<b>' + esc(x.title) + '</b>' : '') + (x.line || where ? '<small>' + esc([x.line, where].filter(Boolean).join(' · ')) + '</small>' : '') + go + '</div></div>';
       }).join('') + '</div>' + (list.length > 1 ? '<div class="dots" id="dots">' + list.map(function(x, i){ return '<i' + (i ? '' : ' class="on"') + '></i>'; }).join('') + '</div>' : '') + '</div>';
     };
-    var topHtml = function(inner){ return head(d, 'Welcome back,<br><span translate="no">' + esc(String(d.first).split(' ')[0]) + '</span>', 'Good to see you again. Here\'s what\'s on.').replace(/<\/div>$/, inner + '</div>'); };
+    // Hotel guide: back to the venue's free guest guide (the room / menu QR), without it jumping straight back here
+    var guideBtn = d.guide ? '<a class="hg" href="/g/' + esc(d.guide) + '?stay=1">' + svg('<path d="M3 21h18M5 21V7l7-4 7 4v14M9 9h1M14 9h1M9 13h1M14 13h1M10 21v-4h4v4"/>', 17) + 'Hotel guide</a>' : '';
+    var topHtml = function(inner){ return head(d, 'Welcome back,<br><span translate="no">' + esc(String(d.first).split(' ')[0]) + '</span>', 'Good to see you again. Here\'s what\'s on.').replace(/<\/div>$/, guideBtn + inner + '</div>'); };
 
     // ── The member's own things (same at every place) ──
     // Their film plays on its own at the very top (muted, on a loop); 'Sound on' opens it full with sound

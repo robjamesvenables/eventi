@@ -4,7 +4,8 @@
 const tr = n => '/demo-guest/p-trans-' + n + '.jpg';
 const G = {};
 G.trans = {
-  brand: 'The Trans Resort Bali', logo: '/demo-guest/p-trans-logo.png', member: 'T7RNSB',   // member: whose activities show under "Today" (same as the member page)
+  brand: 'The Trans Resort Bali', logo: '/demo-guest/p-trans-logo.png', icon: '/demo-guest/p-trans-icon',   // icon: the hotel's own tab / home-screen / link-preview icon (-192.png and -512.png)
+  member: 'T7RNSB',   // member: whose activities show under "Today" (same as the member page)
   theme: { top: '#7A1F1F', acc: '#C9A24A', pg: '#F7F3EC' },
   title: 'Welcome to<br>The Trans Resort', sub: 'Everything for your stay, in one place.',
   geo: { lat: -8.6905, lon: 115.1652 },   // live weather and sunset

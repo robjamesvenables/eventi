@@ -182,6 +182,7 @@ module.exports = async (req, res) => {
   try {
     const a = String((req.query && req.query.a) || '');
     if (a === 'kpage') return require('./_kpage')(req, res);
+    if (a === 'gpage') return require('./_gpage')(req, res);
     if (a === 'guide') {   // guest guide (/g/<slug>): the guide's content + today's activities from the venue's member page
       const g = require('./_guides').get(String((req.query && req.query.g) || '').replace(/[^a-z0-9-]/gi, '').slice(0, 30));
       if (!g) return L.send(res, 404, { ok: false });

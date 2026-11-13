@@ -18,6 +18,18 @@ G.trans = {
     { img: tr('braids'), title: 'Hair braiding for kids', line: 'Colourful braids at The Kids\' Club', price: 'From IDR 450,000',
       book: 'Book ahead at The Kids\' Club or Front Office, or press the star key on your room phone' }
   ],
+  // Plan an event: the sales section. Each one asks the date + guest count, then opens WhatsApp to the events team (wa; empty = the hotel's main WhatsApp)
+  plan: { label: 'Plan an event with us', wa: '',
+    hero: { img: tr('wedding'), tag: 'Weddings', title: 'Your wedding at The Trans', line: 'Ballroom, rooftop and garden weddings, planned with you by our wedding team', btn: 'Talk to our wedding team', what: 'a wedding', sheet: 'Plan your wedding' },
+    kinds: [
+      { img: tr('ballroom'), title: 'Corporate & meetings', line: 'Ballroom, meeting rooms, team dinners', what: 'a corporate event', sheet: 'Plan your corporate event' },
+      { img: tr('18lounge'), title: 'Birthday party', line: 'Rooftop or private dining', what: 'a birthday party', sheet: 'Plan your birthday party' },
+      { img: tr('kids'), title: "Kids' party", line: "Games, cake and The Kids' Club", what: "a kids' party", sheet: "Plan your kids' party" },
+      { img: tr('18couple'), title: 'Anniversary', line: 'A private table for two', what: 'an anniversary', sheet: 'Plan your anniversary' },
+      { img: tr('courtyard'), title: 'Family gathering', line: 'Reunions and get-togethers', what: 'a family gathering', sheet: 'Plan your family gathering' },
+      { title: 'Something else', line: 'Tell us what you have in mind', what: 'an event', sheet: 'Plan your event' }
+    ],
+    guests: ['Under 20', '20 – 50', '50 – 100', '100 – 300', '300+'] },
   // Open today: the tiles. Tap one for its own page (photo, hours, what's there, offers, ask button).
   open: [
     { name: 'Beach Pool', img: tr('pool'), opens: '07:00', closes: '19:00', title: 'White Sandy Beach Pool', line: 'Family beach pool',

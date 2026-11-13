@@ -563,6 +563,10 @@ svg{display:block}
     // Colours chosen in Guest page > Colours (text turns dark on light colours so it stays readable)
     var th = gp.theme || {}, light = function(hx){ var n = parseInt(hx.slice(1), 16), r = n >> 16, g = (n >> 8) & 255, b = n & 255; return (0.299 * r + 0.587 * g + 0.114 * b) > 165; }, rs = document.documentElement.style;
     if (th.top) { rs.setProperty('--top', th.top); rs.setProperty('--top-ink', light(th.top) ? '#0F1E2E' : '#FFFFFF'); document.documentElement.classList.toggle('top-light', !!light(th.top)); rs.setProperty('--top-sub', light(th.top) ? 'rgba(15,30,46,.7)' : 'rgba(255,255,255,.78)'); var mt = document.querySelector('meta[name=theme-color]'); if (mt) mt.setAttribute('content', th.top); }
+    else { ['--top', '--top-ink', '--top-sub'].forEach(function(v){ rs.removeProperty(v); }); document.documentElement.classList.remove('top-light'); }   // back to Mavis colours: nothing left over from before
+    (function(){ var mt = document.querySelector('meta[name=theme-color]'); if (mt) mt.setAttribute('content', th.top || '#0F1E2E'); })();   // phone's top / bottom bar matches the banner
+    if (!th.acc) ['--acc', '--acc-ink'].forEach(function(v){ rs.removeProperty(v); });
+    if (!th.pg) rs.removeProperty('--pg');
     if (th.acc) { rs.setProperty('--acc', th.acc); rs.setProperty('--acc-ink', light(th.acc) ? '#0F1E2E' : '#FFFFFF'); }
     if (th.pg) rs.setProperty('--pg', th.pg);
     (function(){ var t = th.top || '#0F1E2E', ac = th.acc || '#0D9488', lum = function(hx){ var n = parseInt(hx.slice(1), 16); return [n >> 16, (n >> 8) & 255, n & 255].map(function(c){ c /= 255; return c <= .03928 ? c / 12.92 : Math.pow((c + .055) / 1.055, 2.4); }).reduce(function(a, c, i){ return a + c * [.2126, .7152, .0722][i]; }, 0); };

@@ -10,12 +10,19 @@ G.trans = {
   geo: { lat: -8.6905, lon: 115.1652 },   // live weather and sunset
   phone: '+62 361 898 1234', wa: '6281138201212',
   // Featured at the top: what the hotel is pushing (every: days of the week, 0 = Sunday; on those days it says Tonight)
-  feature: { img: tr('rooftop'), title: 'Rooftop BBQ', where: 'The 18th Rooftop Bar', every: [5], price: 'IDR 400,000', ask: 'Book on WhatsApp' },
+  feature: { img: tr('bbq'), title: 'Rooftop BBQ', where: 'The 18th Rooftop Bar', every: [5], price: 'IDR 400,000', ask: 'Book on WhatsApp' },
+  // What's on: events and activities (date: hidden once it's passed; noteUntil: the note goes after that day)
+  events: [
+    { img: tr('xmas'), title: 'Christmas Across Asia', line: 'Festive buffet, live choir, Santa and a kids\' corner', date: '2026-12-25', time: '12:30 – 3:30pm', where: 'The Grand Ballroom',
+      price: 'IDR 1,000,000++ per person\nIDR 350,000++ per child', note: '20% off when you book by 15 December', noteUntil: '2026-12-15', ask: 'Book on WhatsApp' },
+    { img: tr('braids'), title: 'Hair braiding for kids', line: 'Colourful braids at The Kids\' Club', price: 'From IDR 450,000',
+      book: 'Book ahead at The Kids\' Club or Front Office, or press the star key on your room phone' }
+  ],
   // Open today: the tiles. Tap one for its own page (photo, hours, what's there, offers, ask button).
   open: [
     { name: 'Beach Pool', img: tr('pool'), opens: '07:00', closes: '19:00', title: 'White Sandy Beach Pool', line: 'Family beach pool',
       chips: ['Imported Australian sand', "Kids' pool", 'Waterslide', 'Poolside loungers'] },
-    { name: "Kids' Club", img: tr('kids'), opens: '09:00', closes: '17:00', title: "The Kids' Club",
+    { name: "Kids' Club", img: tr('kids'), opens: '09:00', closes: '17:00', title: "The Kids' Club", ev: 1,
       chips: ['Arts & crafts', 'Indoor playground', "Children's library", 'Multimedia games', 'Air hockey'] },
     { name: 'Fitness Center', img: tr('gym'), opens: '06:00', closes: '19:00', title: 'The Fitness Center',
       chips: ['Life Fitness equipment', 'Personal training', 'Yoga rooms', 'Sauna', 'Steam room', 'Whirlpool'],

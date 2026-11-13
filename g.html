@@ -56,6 +56,16 @@ button.t:active{transform:scale(.97)}
 .ofx{display:block;margin-top:14px;border-radius:16px;overflow:hidden;background:#fff;box-shadow:0 6px 18px rgba(60,20,10,.08);text-decoration:none}
 .ofx img{display:block;width:100%;height:180px;object-fit:cover}.ofx div{padding:12px 14px 14px}.ofx small{display:block;font-size:10.5px;font-weight:900;letter-spacing:.16em;color:var(--acc)}.ofx b{display:block;font-size:16px;font-weight:800;margin-top:2px}.ofx span{display:block;font-size:13px;color:var(--mute);margin-top:2px}.ofx i{display:inline-block;font-style:normal;margin-top:8px;font-size:12.5px;font-weight:900;color:var(--top);background:#FBEDEA;border-radius:8px;padding:4px 8px}
 @media (prefers-reduced-motion:reduce){.dt{transition:none}}
+.evs{display:flex;flex-direction:column;gap:12px;padding:0 16px}
+.ev{background:#fff;border-radius:18px;overflow:hidden;box-shadow:0 6px 18px rgba(60,20,10,.07)}
+.evi{position:relative;height:170px;background:#333 center/cover}
+.evi em{position:absolute;top:10px;left:10px;font-style:normal;font-size:11.5px;font-weight:900;background:#fff;color:var(--top);border-radius:99px;padding:5px 10px;box-shadow:0 2px 8px rgba(0,0,0,.15)}
+.evb{padding:12px 14px 14px}.evb>b{display:block;font-size:16.5px;font-weight:900}.evb>span{display:block;font-size:13px;color:var(--mute);margin-top:2px;line-height:1.4}
+.evm{font-size:13px;font-weight:800;color:var(--top);margin-top:6px}
+.evb>i{white-space:pre-line;display:inline-block;font-style:normal;margin-top:8px;font-size:12.5px;font-weight:900;color:var(--top);background:#FBEDEA;border-radius:8px;padding:5px 9px;line-height:1.35}
+.evn{margin-top:8px;font-size:12.5px;font-weight:800;color:#8A6A1F;background:#FFF4D6;border-radius:8px;padding:6px 9px;display:inline-block}
+.evk{display:flex;gap:8px;align-items:flex-start;margin-top:10px;font-size:12.5px;color:var(--mute);line-height:1.4}.evk svg{flex:none;margin-top:2px;color:var(--top)}
+.evin{margin-top:14px}
 .sched{margin:0 16px;background:#fff;border-radius:18px;box-shadow:0 6px 18px rgba(60,20,10,.07);overflow:hidden}
 .r{display:flex;gap:12px;align-items:center;padding:12px 14px;border-bottom:1px solid #F1ECE3}.r:last-child{border:0}
 .r time{flex:none;width:58px;font-weight:900;font-size:13.5px;color:var(--top)}
@@ -167,6 +177,16 @@ button.t:active{transform:scale(.97)}
     var h = '<div class="w"><div class="top"><div class="brand">' + (d.logo ? '<img src="' + esc(d.logo) + '" alt="">' : '') + '<div><b translate="no">' + esc(d.brand) + '</b><small>GUEST GUIDE</small></div></div>' +
       '<h1>' + d.title + '</h1>' + (d.sub ? '<p class="sub">' + esc(d.sub) + '</p>' : '') + '<div class="wx" id="wx"></div></div>';
     if (live) h += '<div class="now"><i class="dot"></i><div><small>HAPPENING NOW</small><b>' + esc(live.title) + '</b><span>' + esc([live.venue, live.end ? 'until ' + nice(live.end) : ''].filter(Boolean).join(' · ')) + '</span></div></div>';
+    // An event / activity card (What's on, and inside a place's page)
+    var todayIso = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Makassar' }).format(new Date());
+    var evDate = function(iso){ var t = new Date(iso + 'T12:00:00Z'); return ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][t.getUTCDay()] + ' ' + t.getUTCDate() + ' ' + ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][t.getUTCMonth()]; };
+    var evHtml = function(e){ var meta = [e.time, e.where].filter(Boolean).join(' · ');
+      return '<div class="ev">' + (e.img ? '<div class="evi" style="background-image:url(\'' + esc(e.img) + '\')">' + (e.date ? '<em>' + esc(e.date === todayIso ? 'Today' : evDate(e.date)) + '</em>' : '') + '</div>' : '') +
+        '<div class="evb"><b>' + esc(e.title) + '</b>' + (e.line ? '<span>' + esc(e.line) + '</span>' : '') + (meta ? '<p class="evm">' + esc(meta) + '</p>' : '') +
+        (e.price ? '<i>' + esc(e.price) + '</i>' : '') + (e.note && !(e.noteUntil && todayIso > e.noteUntil) ? '<p class="evn">' + esc(e.note) + '</p>' : '') +
+        (e.ask && d.wa ? '<a class="btn wa" href="' + esc(waLink(d.wa, 'Hi! I\'d like to book ' + e.title + (e.date ? ' on ' + evDate(e.date) : '') + ' at ' + d.brand + '.')) + '" target="_blank" rel="noopener">' + svg(IC.wa, 16) + esc(e.ask) + '</a>' : '') +
+        (e.book ? '<p class="evk">' + svg(IC.phone, 14) + '<span>' + esc(e.book) + '</span></p>' : '') + '</div></div>'; };
+    var evs = (d.events || []).map(function(e, i){ return { e: e, i: i }; }).filter(function(x){ return !x.e.date || x.e.date >= todayIso; });
     // The hotel's featured night, right at the top
     var f = d.feature;
     if (f) { var dn = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'], tonight = (f.every || []).indexOf(now.wd) >= 0,
@@ -176,6 +196,7 @@ button.t:active{transform:scale(.97)}
         (f.ask && d.wa ? '<i>' + svg(IC.wa, 15) + esc(f.ask) + '</i>' : '') + '</div></a>'; }
     h += '<div class="key"><span class="ic">' + svg(IC.key, 20) + '</span><div><b>Got a member keyring?</b><span>Scan it to open your card and perks</span></div><button id="scan">Scan</button></div>';
 
+    if (evs.length) h += '<div class="lab">What\'s on</div><div class="evs">' + evs.map(function(x){ return evHtml(x.e); }).join('') + '</div>';
     if ((d.open || []).length) h += '<div class="lab">Open today</div><div class="grid">' + d.open.map(function(x, i){ var o = openNow(x, now.hm);
       return '<button class="t" data-i="' + i + '" style="background-image:url(\'' + esc(x.img) + '\')">' + (o === true ? '<em>Open</em>' : o === false ? '<em class="off">Closed now</em>' : '') + '<u>' + svg(IC.chev, 15) + '</u><div><b>' + esc(x.name) + '</b><span>' + esc(hours(x)) + '</span></div></button>'; }).join('') + '</div>';
 
@@ -192,6 +213,7 @@ button.t:active{transform:scale(.97)}
         (m ? '<div class="mem"><small>' + esc(m.label) + '</small><b>' + esc(m.price) + (m.unit ? ' <i>' + esc(m.unit) + '</i>' : '') + '</b><ul>' + (m.items || []).map(function(it){
             return '<li><span>' + svg(IC[it.ic] || IC.chev, 15) + '</span>' + (it.hl ? '<b>' + esc(it.hl) + '</b>&nbsp;' : '') + esc(it.text) + '</li>'; }).join('') + '</ul>' +
           (m.wa ? '<a class="btn wa" href="' + esc(waLink(m.wa, 'Hi! I\'d like to ask about the gym membership at ' + d.brand + '.')) + '" target="_blank" rel="noopener">' + svg(IC.wa, 16) + 'Ask about membership</a>' : '') + '</div>' : '') +
+        (c.ev != null && evs.some(function(x){ return x.i === c.ev; }) ? '<div class="evin">' + evHtml(d.events[c.ev]) + '</div>' : '') +
         (of ? '<a class="ofx"' + (d.wa ? ' href="' + esc(ask(of.title)) + '" target="_blank" rel="noopener"' : '') + '><img src="' + esc(of.img) + '" alt="" loading="lazy"><div><small>OFFER</small><b>' + esc(of.title) + '</b>' + (of.line ? '<span>' + esc(of.line) + '</span>' : '') + (of.price ? '<i>' + esc(of.price) + '</i>' : '') + '</div></a>' : '') +
         (c.ask && d.wa ? '<a class="btn wa" href="' + esc(ask(c.title.replace(/^The /, 'the '))) + '" target="_blank" rel="noopener">' + svg(IC.wa, 16) + esc(c.ask) + '</a>' : ''); };
     (d.cards || []).forEach(function(c){

@@ -23782,7 +23782,7 @@ function gpColoursHtml(){
   const opt = (on, label, sub, click) => `<button onclick="${click}" style="flex:1;min-width:150px;text-align:left;border:2px solid ${on ? '#0D9488' : '#E2E8F0'};background:${on ? '#F0FDFA' : 'white'};border-radius:12px;padding:12px 14px;cursor:pointer;font-family:Inter,sans-serif"><div style="font-size:14px;font-weight:800;color:${on ? '#0F766E' : '#0F1E2E'}">${label}</div><div style="font-size:12px;color:#64748B;font-weight:600;margin-top:2px">${sub}</div></button>`;
   const now = gpThemeNow();
   return `<div class="gp-sec gp-colbox" id="gp-colours" data-go="card"><div class="gp-sh"><span class="gp-cw">${CW_IC.replace(/width="22" height="22"/, 'width="34" height="34"')}</span><div class="n"><b>Colours</b><small>Match your venue's brand</small></div><span class="gp-cnow">${now.map(c => `<i style="background:${c}"></i>`).join('')}</span></div>
-    <div class="gp-body" style="gap:8px"><div style="display:flex;gap:8px;flex-wrap:wrap">${opt(dflt && !GPE.custom, 'Mavis colours', 'Navy and teal - nothing to set', "gpColour('reset')")}${opt(!dflt || GPE.custom, 'Our own colours', 'Pick colours to match your venue', 'GPE.custom = true; gpRender()')}</div>
+    <div class="gp-body" style="gap:8px"><div style="display:flex;gap:8px;flex-wrap:wrap">${opt(dflt && !GPE.custom, 'Mavis colours', 'Navy and teal - nothing to set', "gpColour('reset')")}${opt(!dflt || GPE.custom, 'Our own colours', 'Pick colours to match your venue', 'gpOwnColours()')}</div>
     ${!dflt || GPE.custom ? `<div style="display:flex;flex-direction:column;gap:4px">${row('top')}${row('acc')}${row('pg')}<div class="gp-hint">Text changes colour by itself so it stays easy to read.</div></div>` : ''}</div></div>`;
 }
 // The three colours in use now (banner, buttons & headings, page background) - shown on the Colours box and the Design your page button
@@ -23792,10 +23792,19 @@ async function gpDesignDots(){
   if(!GPE.loaded){ try{ await gpLoad(); }catch(e){ return; } }
   el.innerHTML = gpThemeNow().map(c => `<i style="background:${c}"></i>`).join('') + '<span>Your colours</span>';
 }
+// "Our own colours": back to the colours they had before (or the demo venue's), else open the pickers
+window.gpOwnColours = async function(){
+  const prev = (GPE.c && GPE.c.themeOwn) || (typeof demoAs === 'function' && demoAs() && DEMO_SEED && DEMO_SEED.content && DEMO_SEED.content.theme) || null;
+  GPE.custom = true;
+  if(prev && ['top', 'acc', 'pg'].some(x => prev[x])){ GPE.c.theme = Object.assign({}, prev); gpRender(); await gpSave('Colours saved'); try{ gpDesignDots(); }catch(e){} }
+  else gpRender();
+};
 window.gpColour = async function(k, v){
   // Dressed demo: colours are always saved in full, so an empty one never falls back to the prospect's own
   const keep = typeof demoAs === 'function' && demoAs();
-  if(k === 'reset'){ GPE.c.theme = keep ? { top: GP_COL.top[2], acc: GP_COL.acc[2], pg: GP_COL.pg[2] } : {}; GPE.custom = false; }
+  if(k === 'reset'){   // keep their own colours, so "Our own colours" brings them straight back
+    const cur = GPE.c.theme || {}; if(['top', 'acc', 'pg'].some(x => cur[x] && String(cur[x]).toUpperCase() !== GP_COL[x][2])) GPE.c.themeOwn = Object.assign({}, cur);
+    GPE.c.theme = keep ? { top: GP_COL.top[2], acc: GP_COL.acc[2], pg: GP_COL.pg[2] } : {}; GPE.custom = false; }
   else { if(!/^#[0-9a-f]{6}$/i.test(v || '')) return; GPE.c.theme[k] = !keep && v.toUpperCase() === GP_COL[k][2] ? '' : v; if(!GPE.c.theme[k]) delete GPE.c.theme[k]; }
   gpRender(); await gpSave('Colours saved'); try{ gpDesignDots(); }catch(e){}
 };

@@ -26,5 +26,5 @@ module.exports = (req, res) => {
     res.setHeader('Content-Type', 'text/html; charset=utf-8');
     res.setHeader('Cache-Control', 'public, max-age=0, s-maxage=300');
     res.statusCode = 200; res.end(out);
-  } catch (e) { res.statusCode = 302; res.setHeader('Location', '/g.html'); res.end(); }
+  } catch (e) { res.statusCode = 302; res.setHeader('Location', '/g.html?g=' + encodeURIComponent(String((req.query && req.query.g) || '').replace(/[^a-z0-9-]/gi, ''))); res.end(); }   // fallback keeps the guide working
 };

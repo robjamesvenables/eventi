@@ -23525,6 +23525,8 @@ async function gpLoad(){
   const empty = !c || !['slides','deals','events','gallery'].some(k => Array.isArray(c[k]) && c[k].length);
   if(demoAs() && !(c && c.as === DEMO_AS)) c = JSON.parse(JSON.stringify(DEMO_SEED.content));   // dressed demo: the prospect's page until the team saves their own
   else if(empty && typeof appIsDemoCompany === 'function' && appIsDemoCompany()) c = Object.assign(gpDemo(gpToday()), c && c.order ? { order:c.order, off:c.off || {} } : {});
+  // Dressed demo: the prospect's own colours show in Colours until the team picks others (their page already uses them)
+  if(demoAs() && DEMO_SEED && DEMO_SEED.content && DEMO_SEED.content.theme && c && !(c.theme && Object.keys(c.theme).some(k => c.theme[k]))) c = Object.assign({}, c, { theme: Object.assign({}, DEMO_SEED.content.theme) });
   GPE.c = gpNorm(c); GPE.loaded = true;
 }
 async function gpSave(msg, noPreview){   // noPreview: the change isn't on the guest page (e.g. digital member card) - don't reload the preview
@@ -23776,11 +23778,11 @@ function gpColoursHtml(){
     return `<div style="margin-top:10px"><div style="font-size:13px;font-weight:800">${name} <span style="font-weight:600;color:#64748B;font-size:12px">· ${sub}</span></div>
       <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:8px;align-items:center">${opts.map(o => `<button aria-label="${o}" title="${o}" onclick="gpColour('${k}','${o}')" style="width:34px;height:34px;border-radius:50%;background:${o};cursor:pointer;border:${o.toUpperCase() === cur ? '3px solid #0D9488;box-shadow:inset 0 0 0 2px #fff' : '1.5px solid #CBD5E1'}"></button>`).join('')}
       <button class="cw-own${opts.map(o => o.toUpperCase()).includes(cur) ? '' : ' on'}" onclick="gpWheel('${k}')">${opts.map(o => o.toUpperCase()).includes(cur) ? CW_IC + 'Your own' : '<i style="background:' + cur + '"></i>' + cur}</button></div></div>`; };
-  const dflt = !Object.keys(t).some(k => t[k]);
+  const dflt = ['top', 'acc', 'pg'].every(k => !t[k] || String(t[k]).toUpperCase() === GP_COL[k][2]);
   const opt = (on, label, sub, click) => `<button onclick="${click}" style="flex:1;min-width:150px;text-align:left;border:2px solid ${on ? '#0D9488' : '#E2E8F0'};background:${on ? '#F0FDFA' : 'white'};border-radius:12px;padding:12px 14px;cursor:pointer;font-family:Inter,sans-serif"><div style="font-size:14px;font-weight:800;color:${on ? '#0F766E' : '#0F1E2E'}">${label}</div><div style="font-size:12px;color:#64748B;font-weight:600;margin-top:2px">${sub}</div></button>`;
   const now = gpThemeNow();
   return `<div class="gp-sec gp-colbox" id="gp-colours" data-go="card"><div class="gp-sh"><span class="gp-cw">${CW_IC.replace(/width="22" height="22"/, 'width="34" height="34"')}</span><div class="n"><b>Colours</b><small>Match your venue's brand</small></div><span class="gp-cnow">${now.map(c => `<i style="background:${c}"></i>`).join('')}</span></div>
-    <div class="gp-body" style="gap:8px"><div style="display:flex;gap:8px;flex-wrap:wrap">${opt(dflt, 'Mavis colours', 'Navy and teal - nothing to set', "gpColour('reset')")}${opt(!dflt || GPE.custom, 'Our own colours', 'Pick colours to match your venue', 'GPE.custom = true; gpRender()')}</div>
+    <div class="gp-body" style="gap:8px"><div style="display:flex;gap:8px;flex-wrap:wrap">${opt(dflt && !GPE.custom, 'Mavis colours', 'Navy and teal - nothing to set', "gpColour('reset')")}${opt(!dflt || GPE.custom, 'Our own colours', 'Pick colours to match your venue', 'GPE.custom = true; gpRender()')}</div>
     ${!dflt || GPE.custom ? `<div style="display:flex;flex-direction:column;gap:4px">${row('top')}${row('acc')}${row('pg')}<div class="gp-hint">Text changes colour by itself so it stays easy to read.</div></div>` : ''}</div></div>`;
 }
 // The three colours in use now (banner, buttons & headings, page background) - shown on the Colours box and the Design your page button
@@ -23791,8 +23793,10 @@ async function gpDesignDots(){
   el.innerHTML = gpThemeNow().map(c => `<i style="background:${c}"></i>`).join('') + '<span>Your colours</span>';
 }
 window.gpColour = async function(k, v){
-  if(k === 'reset'){ GPE.c.theme = {}; GPE.custom = false; }
-  else { if(!/^#[0-9a-f]{6}$/i.test(v || '')) return; GPE.c.theme[k] = v.toUpperCase() === GP_COL[k][2] ? '' : v; if(!GPE.c.theme[k]) delete GPE.c.theme[k]; }
+  // Dressed demo: colours are always saved in full, so an empty one never falls back to the prospect's own
+  const keep = typeof demoAs === 'function' && demoAs();
+  if(k === 'reset'){ GPE.c.theme = keep ? { top: GP_COL.top[2], acc: GP_COL.acc[2], pg: GP_COL.pg[2] } : {}; GPE.custom = false; }
+  else { if(!/^#[0-9a-f]{6}$/i.test(v || '')) return; GPE.c.theme[k] = !keep && v.toUpperCase() === GP_COL[k][2] ? '' : v; if(!GPE.c.theme[k]) delete GPE.c.theme[k]; }
   gpRender(); await gpSave('Colours saved'); try{ gpDesignDots(); }catch(e){}
 };
 // ── Colour wheel: our own colour picker, the same on every phone (the phone's built-in one is basic and different on each phone) ──

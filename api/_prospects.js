@@ -270,8 +270,8 @@ const SNG_MAP = 'https://goo.gl/maps/i8R5KS3zYotp2UVZ8';
 const SNG_MENU = n => ({ img: '/demo-guest/p-sangsaka-menu-' + n + '.jpg' });   // their menu from the website, made into pictures (black and gold)
 P.sangsaka = {
   brand: 'Sangsaka', logo: '/demo-guest/p-sangsaka-logo.png', icon: '/demo-guest/p-sangsaka-icon', first: 'Olivia', tier: 'vip', visits: 7, since: 2025, favourite: 'Sangsaka',
-  perks: ['Welcome cocktail upstairs at DI ATAS', "A chef's snack from the kitchen, on the house", 'Birthday dessert from the wood oven', 'First pick of the private dining room'],
-  perkIcons: ['cocktail', 'food', 'cake', 'star'],
+  perks: ['15% off your bill, every visit', 'Welcome cocktail upstairs at DI ATAS', "A chef's snack from the kitchen, on the house", 'Birthday dessert from the wood oven', 'First pick of the private dining room'],
+  perkIcons: ['pct', 'cocktail', 'food', 'cake', 'star'],
   reward: { target: 10, text: "Chef's sharing menu for two" },
   venues: [
     { name: 'Sangsaka', area: 'Kerobokan', opens: '17:30', closes: '23:00', wa: SNG_WA, phone: '+62 812 3695 9895', email: 'info@sangsakabali.com', map: SNG_MAP, review: SNG_MAP, book: SNG_BOOK },

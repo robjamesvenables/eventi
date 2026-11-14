@@ -285,7 +285,7 @@ P.sangsaka = {
     const y = year(today);
     return {
       theme: { top: '#141210', acc: '#B08D57', pg: '#F5F1EA' }, motion: true, film: 'qCGlNvdXNsc', filmTall: true,
-      gift: { on: true, title: "A dinner they'll remember", line: 'A thoughtful present for someone you love. Tell us the amount and who it is for.', to: 'info@sangsakabali.com' },
+      gift: { on: true, title: "A dinner they'll remember", line: 'A thoughtful present for someone you love. Tell us the amount and who it is for.', to: SNG_WA },
       slides: [
         { id: 'ss1', img: sg('diners'), title: 'Modern Indonesian, with a twist', line: 'Down a back street in Seminyak', venue: 'Sangsaka', btn: 'book', url: SNG_BOOK },
         { id: 'ss2', img: sg('crab'), title: 'Mud crab glass noodles', line: 'From the clay pot to the table', venue: 'Sangsaka', btn: 'book', url: SNG_BOOK },

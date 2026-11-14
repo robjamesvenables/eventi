@@ -1145,11 +1145,12 @@ body.vqopen .vq-dim{opacity:1;pointer-events:auto}body.vqopen .vq-sheet{transfor
       // Add this app to the phone: they're in first (the wow), then a card slides down from the top. "Not now" and it slides
       // away - back after 3 days, 3 times at most. Never on the same visit as the phone-alerts question. Not on sales demos.
       (function(){
-        if (embed || standalone || preview || !('vq' in d) || innerWidth >= 1000) return;   // 'vq' only comes with real members, never the sales demos
+        var tryIt = code === 'K8SNGA';   // Sangsaka demo: shows every visit so Robbie can try it
+        if (embed || standalone || (preview && !tryIt) || (!('vq' in d) && !tryIt) || innerWidth >= 1000) return;   // 'vq' only comes with real members, never the other sales demos
         var ios = /iphone|ipad|ipod/i.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
         var key = 'mvin:' + code, st = { n: 0, t: 0 };
         try { st = JSON.parse(localStorage.getItem(key) || '{"n":0,"t":0}') || st; } catch (e) {}
-        if (st.n >= 3 || (st.n > 0 && Date.now() - (st.t || 0) < 3 * 864e5)) return;
+        if (!tryIt && (st.n >= 3 || (st.n > 0 && Date.now() - (st.t || 0) < 3 * 864e5))) return;
         var save = function(n){ try { localStorage.setItem(key, JSON.stringify({ n: n, t: Date.now() })); } catch (e) {} };
         setTimeout(function(){
           if (!ios && !window.__mvInstall) return;   // Android without the offer = already on this phone

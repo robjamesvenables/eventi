@@ -1231,7 +1231,12 @@ body.vqopen .vq-dim{opacity:1;pointer-events:auto}body.vqopen .vq-sheet{transfor
       };
       cwBind();
       var cwo = document.getElementById('cwall'); if (cwo) cwo.onclick = function(e){ e.preventDefault(); open('Club wall', wallHtml(true)); cwBind(); };
-      var fb = document.getElementById('film'); if (fb) fb.onclick = function(){ open(d.brand, '<div class="vid"><iframe src="https://www.youtube-nocookie.com/embed/' + encodeURIComponent(gp.film) + '?autoplay=1&playsinline=1&rel=0' + (gp.filmStart ? '&start=' + (+gp.filmStart) : '') + '" allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowfullscreen title="Film"></iframe></div>'); };
+      var fb = document.getElementById('film');
+      // A YouTube Short (tall): sound on/off right where it plays, no pop-up
+      if (fb && gp.filmTall) { var muted = true; fb.onclick = function(){ var fr = document.querySelector('#hv iframe'); if (!fr) return; muted = !muted;
+        try { fr.contentWindow.postMessage(JSON.stringify({ event: 'command', func: muted ? 'mute' : 'unMute', args: [] }), '*'); if (!muted) { fr.contentWindow.postMessage(JSON.stringify({ event: 'command', func: 'setVolume', args: [100] }), '*'); fr.contentWindow.postMessage(JSON.stringify({ event: 'command', func: 'playVideo', args: [] }), '*'); } } catch (e) {}
+        fb.lastChild.textContent = muted ? 'Sound on' : 'Sound off'; }; fb = null; }
+      if (fb) fb.onclick = function(){ open(d.brand, '<div class="vid"><iframe src="https://www.youtube-nocookie.com/embed/' + encodeURIComponent(gp.film) + '?autoplay=1&playsinline=1&rel=0' + (gp.filmStart ? '&start=' + (+gp.filmStart) : '') + '" allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowfullscreen title="Film"></iframe></div>'); };
       sh.addEventListener('click', function(e){ if (e.target === sh) close(); });
       // See more: to that place's page - or, if staff chose an event, straight to that event (its card on the place's page, details open)
       var goTo = function(b){ var ev = b.getAttribute('data-goev'); show(b.getAttribute('data-go'), true);

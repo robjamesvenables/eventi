@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex">
+<meta name="theme-color" content="#ffffff">
+<title>The Trans Members Club</title>
+<link rel="icon" type="image/png" href="/demo-guest/p-trans-logo.png">
+<style>
+/* Guest demo: the hotel's one keyring QR opens this. Last 4 digits of their phone -> straight into their membership. */
+:root{--ink:#0F1E2E;--mute:#64748B;--teal:#0D9488;--red:#DC2626;--wa:#25D366;--key:#F1F5F9;--f:Inter,system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;color-scheme:light}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;margin:0}
+body{background:#fff;color:var(--ink);font-family:var(--f);overflow:hidden}
+.app{height:100%;max-width:460px;margin:0 auto;display:flex;flex-direction:column;align-items:center;text-align:center;padding:max(28px,env(safe-area-inset-top)) 0 calc(18px + env(safe-area-inset-bottom))}
+.tile{width:min(120px,30vw);height:min(120px,30vw);border-radius:24px;box-shadow:0 8px 22px rgba(122,28,30,.25);display:block}
+.big{font-size:26px;font-weight:900;margin-top:20px}
+.sm{font-size:14.5px;color:var(--mute);margin-top:6px;line-height:1.45;padding:0 24px}.sm b{color:var(--ink)}
+.dots{display:flex;gap:18px;margin-top:22px}.dots b{width:18px;height:18px;border-radius:50%;border:2px solid var(--teal);transition:background .12s}.dots b.on{background:var(--teal)}
+.dots.bad b{border-color:var(--red);background:var(--red)}
+@media (prefers-reduced-motion:no-preference){.dots.bad{animation:shake .35s}@keyframes shake{25%{transform:translateX(-8px)}50%{transform:translateX(8px)}75%{transform:translateX(-4px)}}}
+.help{margin-top:18px;border:0;background:none;font:500 14px var(--f);color:var(--mute);cursor:pointer;padding:8px}.help u{color:var(--teal);font-weight:800;text-decoration:none;border-bottom:2px solid #99F6E4}
+.kp{margin-top:auto;display:grid;grid-template-columns:repeat(3,1fr);gap:12px 14px;width:100%;padding:0 22px}
+.kp button{height:62px;border:0;border-radius:16px;background:var(--key);color:var(--ink);font:700 25px var(--f);cursor:pointer;touch-action:manipulation;user-select:none;-webkit-user-select:none;display:grid;place-items:center}
+.kp button:active{background:#E2E8F0}.kp button.e{background:none;pointer-events:none}.kp button *{pointer-events:none}
+.dim{position:fixed;inset:0;background:rgba(15,30,46,.45);opacity:0;pointer-events:none;transition:opacity .2s}
+.sheet{position:fixed;left:0;right:0;bottom:0;max-width:460px;margin:0 auto;background:#fff;border-radius:24px 24px 0 0;padding:12px 22px calc(20px + env(safe-area-inset-bottom));display:flex;flex-direction:column;align-items:center;text-align:center;transform:translateY(105%);transition:transform .25s ease-out}
+body.open .dim{opacity:1;pointer-events:auto}body.open .sheet{transform:none}
+.grab{width:40px;height:4px;border-radius:4px;background:#E2E8F0;margin-bottom:16px}
+.sic{width:60px;height:60px;border-radius:50%;background:#E8F8EE;color:#16A34A;display:grid;place-items:center;margin-bottom:10px}
+.sheet .big{margin-top:2px;font-size:22px}
+.wa{margin-top:18px;width:100%;background:var(--wa);color:#fff;border-radius:16px;padding:16px;font:900 16px var(--f);display:flex;gap:9px;justify-content:center;align-items:center;text-decoration:none}
+.cl{margin-top:8px;border:0;background:none;font:800 15px var(--f);color:var(--mute);padding:10px 20px;cursor:pointer}
+.go{position:fixed;inset:0;background:#fff;display:none;flex-direction:column;align-items:center;justify-content:center;gap:16px}
+.go.on{display:flex}.go b{font-size:22px;font-weight:900}
+.spin{width:38px;height:38px;border-radius:50%;border:4px solid #CCFBF1;border-top-color:var(--teal);animation:sp .8s linear infinite}@keyframes sp{to{transform:rotate(360deg)}}
+@media (max-height:640px){.big{font-size:23px;margin-top:14px}.kp button{height:52px}.kp{gap:9px 12px}.tile{width:96px;height:96px}.dots{margin-top:16px}.help{margin-top:10px}}
+</style></head><body>
+<div class="app">
+  <img class="tile" src="/demo-guest/p-trans-logo.png" alt="The Trans Resort Bali">
+  <div class="big" id="t">Welcome back</div>
+  <div class="sm" id="s">Enter the last 4 digits<br>of your phone number</div>
+  <div class="dots" id="d"><b></b><b></b><b></b><b></b></div>
+  <button class="help" id="help" type="button">Changed your number? <u>Message us</u></button>
+  <div class="kp" id="kp"></div>
+</div>
+<div class="dim" id="dim"></div>
+<div class="sheet" id="sheet" role="dialog" aria-label="Get help">
+  <div class="grab"></div>
+  <div class="sic"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21l1.6-4.7A8.5 8.5 0 1 1 7.7 19.4z"/></svg></div>
+  <div class="big">We'll sort it out</div>
+  <div class="sm" style="padding:0">New phone, new number, or just can't remember? Message us and we'll send your membership to you.</div>
+  <a class="wa" id="wa" target="_blank" rel="noopener"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21l1.6-4.7A8.5 8.5 0 1 1 7.7 19.4z"/></svg>Message us on WhatsApp</a>
+  <button class="cl" id="cl" type="button">Close</button>
+</div>
+<div class="go" id="go"><div class="spin"></div><b id="gn">Hi Robbie!</b><div class="sm">Opening your membership…</div></div>
+<script>
+(function(){
+  // Demo members: last 4 digits -> who they are. Robbie's own number (8784) and the sample guest Sarah (8821).
+  var MEMBERS = { '8784': 'Robbie', '8821': 'Sarah' };
+  var APP = '/k/T7RNSB';                 // the Trans demo membership app
+  var HOTEL_WA = '6282145328784';        // demo: goes to Robbie's own WhatsApp so it can be tested
+  var code = '', busy = false;
+  var d = document.getElementById('d'), dots = d.children, t = document.getElementById('t'), s = document.getElementById('s');
+  var keys = ['1','2','3','4','5','6','7','8','9','','0','<'], kp = document.getElementById('kp');
+  kp.innerHTML = keys.map(function(k){ return k === '' ? '<button class="e" tabindex="-1" aria-hidden="true"></button>' :
+    '<button type="button" data-k="' + k + '" aria-label="' + (k === '<' ? 'Delete' : k) + '">' + (k === '<' ? '<svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 5H9l-6 7 6 7h12a1 1 0 0 0 1-1V6a1 1 0 0 0-1-1z"/><path d="m16 9-5 6M11 9l5 6"/></svg>' : k) + '</button>'; }).join('');
+  document.getElementById('wa').href = 'https://wa.me/' + HOTEL_WA + '?text=' + encodeURIComponent("Hi! I'm a member but I've changed my phone number. Can you send my membership to this number please?");
+  function paint(){ d.className = 'dots'; for (var i = 0; i < 4; i++) dots[i].className = i < code.length ? 'on' : ''; }
+  function reset(){ t.textContent = 'Welcome back'; s.innerHTML = 'Enter the last 4 digits<br>of your phone number'; }
+  kp.addEventListener('click', function(e){
+    var b = e.target.closest('[data-k]'); if (!b || busy) return;
+    var k = b.dataset.k;
+    if (d.classList.contains('bad')) { code = ''; reset(); }
+    if (k === '<') code = code.slice(0, -1); else if (code.length < 4) code += k;
+    paint();
+    if (code.length === 4) check();
+  });
+  function check(){
+    busy = true;
+    setTimeout(function(){
+      var who = MEMBERS[code];
+      if (who) {
+        document.getElementById('gn').textContent = 'Hi ' + who + '!';
+        document.getElementById('go').classList.add('on');
+        setTimeout(function(){ location.href = APP; }, 900);
+        return;
+      }
+      t.textContent = 'Hmm, not quite';
+      s.innerHTML = 'We couldn\'t find a membership<br>ending in <b>' + code + '</b>. Try again.';
+      d.className = 'dots bad'; code = ''; busy = false;
+    }, 250);
+  }
+  // Help sheet; the phone's back button closes it
+  function openSheet(){ document.body.classList.add('open'); try { history.pushState({ sh: 1 }, ''); } catch (e) {} }
+  function closeSheet(fromPop){ if (!document.body.classList.contains('open')) return; document.body.classList.remove('open'); if (!fromPop) try { history.back(); } catch (e) {} }
+  document.getElementById('help').addEventListener('click', openSheet);
+  document.getElementById('cl').addEventListener('click', function(){ closeSheet(false); });
+  document.getElementById('dim').addEventListener('click', function(){ closeSheet(false); });
+  window.addEventListener('popstate', function(){ closeSheet(true); });
+  // Coming back from the membership app with the back button: start fresh
+  window.addEventListener('pageshow', function(){ code = ''; busy = false; paint(); reset(); document.getElementById('go').classList.remove('on'); });
+  document.addEventListener('keydown', function(e){ if (/^\d$/.test(e.key) || e.key === 'Backspace') { var b = kp.querySelector('[data-k="' + (e.key === 'Backspace' ? '<' : e.key) + '"]'); if (b) b.click(); } });
+})();
+</script>
+</body></html>

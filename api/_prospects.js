@@ -322,7 +322,62 @@ P.sangsaka = {
   }
 };
 
-const CODES = { K8SNGA: 'sangsaka', B6PADL: 'bpa', S8HLTR: 'shelter', T7RNSB: 'trans', '5NKGZJ': 'trans', S4DK7R: 'sundari' };   // 5NKGZJ = the printed sample card, shown as Trans for the GM demo
+const MS_BOOK = 'https://www.sevenrooms.com/explore/masonryrestaurantcanggu/reservations/create/search/';
+const MS_WA = '6285792505028';
+const ms = n => '/demo-guest/p-masonry-' + n + '.jpg';
+P.masonry = {
+  brand: 'Masonry', logo: '/demo-guest/p-masonry-logo.png', icon: '/demo-guest/p-masonry-icon', first: 'James', tier: 'vip', visits: 9, since: 2024, favourite: 'Masonry Canggu',
+  perks: ['10% off your bill at every Masonry', 'A Masonry Old Fashioned on arrival', 'House charcuterie for the table, on us', 'Birthday dessert from the wood oven', 'Priority bookings at all three venues'],
+  perkIcons: ['pct', 'cocktail', 'food', 'cake', 'star'],
+  reward: { target: 10, text: '48-hour short rib dinner for two' },
+  venues: [
+    { name: 'Masonry Canggu', area: 'Batu Bolong, Canggu', opens: '12:00', closes: '00:00', wa: MS_WA, phone: '+62 857 9250 5028', book: MS_BOOK },
+    { name: 'Masonry Uluwatu', area: 'Uluwatu', phone: '+62 821 4676 5177' },
+    { name: 'Bar Vera', area: 'Pererenan · Further Hotel', phone: '+62 823 4271 3110' }
+  ],
+  contact: { wa: MS_WA, phone: '+62 857 9250 5028' },
+  acts: [
+    { title: 'Fire on the grill', line: 'Everything cooked over wood and coals', every: [0, 1, 2, 3, 4, 5, 6], start: '12:00', end: '00:00', venue: 'Masonry Canggu', ic: 'food' }
+  ],
+  content: today => {
+    const y = year(today);
+    return {
+      theme: { top: '#1C1B19', acc: '#C8823F', pg: '#F3EFE8' },
+      gift: { on: true, title: 'Dinner by the fire', line: 'Give someone a night at Masonry. Tell us the amount and who it is for.', to: MS_WA, amounts: [500000, 1000000, 2000000], max: 5000000, bonus: 10 },
+      slides: [
+        { id: 'ms1', img: ms('window'), title: 'Good food cooked over fire', line: 'Stiff drinks, open windows, Batu Bolong', venue: 'Masonry Canggu', btn: 'book', url: MS_BOOK },
+        { id: 'ms2', img: ms('beef'), title: '48-hour slow roasted short rib', line: 'Chimichurri, roasted shallots', venue: 'Masonry Canggu', btn: 'book', url: MS_BOOK },
+        { id: 'ms3', img: ms('fire'), title: 'Everything over wood and coals', line: 'Made from scratch, every day', venue: 'Masonry Canggu', btn: 'book', url: MS_BOOK },
+        { id: 'ms4', img: ms('backroom'), title: 'The Backroom', line: 'Leather booths, a pool table and a late bar', venue: 'Masonry Canggu', btn: 'wa' },
+        { id: 'ms5', img: ms('u-scallop'), title: 'Masonry Uluwatu', line: 'The same fire, down south', venue: 'Masonry Uluwatu', btn: 'wa' },
+        { id: 'ms6', img: ms('v-room'), title: 'Bar Vera', line: 'Bistro and wine bar in Pererenan', venue: 'Bar Vera', btn: 'wa' }
+      ],
+      deals: [
+        { id: 'md1', img: ms('negroni'), title: 'Members: 2 for 1 Old Fashioned', when: 'Daily · 5–7pm', venue: 'Masonry Canggu' },
+        { id: 'md2', img: ms('c-charcuterie'), title: 'House charcuterie board · Rp 195k', when: 'Mon–Fri · 12–4pm', venue: 'Masonry Canggu', btn: 'book', url: MS_BOOK },
+        { id: 'md3', img: ms('v-martini'), title: 'Martini hour at Bar Vera', when: 'Daily · 5–7pm', venue: 'Bar Vera' },
+        { id: 'md4', img: ms('j-wine'), title: 'Members: 15% off any bottle', when: 'Every night', venue: 'Masonry Canggu' }
+      ],
+      events: [
+        { id: 'me1', img: ms('c-spread'), title: 'Chef’s table by the fire', line: 'Five courses, one night only', date: addDays(today, 8), time: '18:30', time2: '23:00', venue: 'Masonry Canggu', btn: 'book', url: MS_BOOK, hl: true,
+          details: 'A five-course menu cooked over wood and coals, with paired wines.', price: 'Set menu, paired wines available', notes: 'Members get first pick of tables.' },
+        { id: 'me2', img: ms('backroom'), title: 'Backroom sessions', line: 'DJ, cocktails and the pool table', date: addDays(today, 3), time: '21:00', time2: '01:00', venue: 'Masonry Canggu', btn: 'wa',
+          details: 'A DJ in the Backroom, the bar open late.' },
+        { id: 'me3', img: ms('c-yorkshire'), title: 'Christmas long lunch', line: 'Roasts from the fire, all the trimmings', date: y + '-12-25', time: '12:00', time2: '17:00', venue: 'Masonry Canggu', btn: 'book', url: MS_BOOK },
+        { id: 'me4', img: ms('v-room'), title: "New Year's Eve", line: 'Dinner, then the party', date: y + '-12-31', time: '18:00', time2: '01:00', venue: 'Bar Vera', btn: 'wa' }
+      ],
+      gallery: ['window', 'beef', 'fire', 'backroom', 'c-spread', 'negroni', 'oven', 'lobster', 'terrace', 'c-cocktails', 'tartare', 'room', 'c-flatbread', 'drinks', 'c-charcuterie', 'u-scallop', 'u-cabbage', 'u-rolls', 'u-chablis', 'v-room', 'v-martini', 'v-bouillabaisse', 'v-grouper', 'v-cognac']
+        .map((n, i) => ({ id: 'mg' + i, img: ms(n), venue: n.startsWith('u-') ? 'Masonry Uluwatu' : n.startsWith('v-') ? 'Bar Vera' : 'Masonry Canggu' })),
+      places: {
+        'masonry canggu': { img: ms('window'), area: 'Batu Bolong, Canggu' },
+        'masonry uluwatu': { img: ms('u-scallop'), area: 'Uluwatu' },
+        'bar vera': { img: ms('v-room'), area: 'Pererenan · Further Hotel' }
+      }
+    };
+  }
+};
+
+const CODES = { K8SNGA: 'sangsaka', B6PADL: 'bpa', S8HLTR: 'shelter', T7RNSB: 'trans', '5NKGZJ': 'trans', S4DK7R: 'sundari', M3SNRY: 'masonry' };   // 5NKGZJ = the printed sample card, shown as Trans for the GM demo
 // Mavis Club network: each of the guest's other venues as a logo tile (their colour, logo, how long they've been a member there)
 const KEY_CODE = { sangsaka: 'K8SNGA', bpa: 'B6PADL', shelter: 'S8HLTR', trans: 'T7RNSB', sundari: 'S4DK7R' };
 const club = (list, who) => list.map(c => { const v = P[c.key]; if (!v) return null; const t = (v.content('2026-01-01').theme) || {};

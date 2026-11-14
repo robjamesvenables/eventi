@@ -163,7 +163,7 @@ module.exports = async (req, res) => {
     const co = k.company_id;
     const [cos, settings, gpRows] = await Promise.all([
       safe(L.db('companies?select=name,code,logo&id=eq.' + q(co))),
-      safe(L.db('app_settings?select=key,value&company_id=eq.' + q(co) + '&key=in.(member_perks,member_page,mk_rewards)')),
+      safe(L.db('app_settings?select=key,value&company_id=eq.' + q(co) + '&key=in.(member_perks,member_page,mk_rewards,mk_venue_qr)')),
       safe(L.db('guest_page?select=content&company_id=eq.' + q(co)))
     ]);
     const company = cos[0] || {};
@@ -176,6 +176,12 @@ module.exports = async (req, res) => {
     const now = localNow(tz);
     const demo = isDemo ? demoContent(now.date) : null;
 
+    // The venue's one keyring QR (every keyring at this venue has it): the guest types the last 4 digits of their phone once
+    const vq = set.mk_venue_qr && typeof set.mk_venue_qr.code === 'string' ? set.mk_venue_qr.code : '';
+    if (!k.member_id && vq && vq === code) {
+      const ct = cleanContact(page.contact), v0 = (Array.isArray(page.venues) ? page.venues : []).find(v => v && (v.wa || v.phone)) || {};
+      return L.send(res, 200, { ok: true, venue: true, brand, logo, code, wa: ct.wa || waOf(page.stayWa) || waOf(v0.wa), phone: ct.phone || phoneOf(page.stayPhone) || phoneOf(v0.phone) });
+    }
     if (!k.member_id) return L.send(res, 200, { ok: true, blank: true, brand, logo });
     const m = (await L.db('members?select=id,name,tier,birthday,created_at,consent&id=eq.' + q(k.member_id)))[0];
     if (!m) return L.send(res, 200, { ok: true, blank: true, brand, logo });
@@ -261,7 +267,7 @@ module.exports = async (req, res) => {
     }
 
     return L.send(res, 200, {
-      ok: true, brand, logo, code, first, tier, visits: visits.length, favourite, gp,
+      ok: true, brand, logo, code, vq, first, tier, visits: visits.length, favourite, gp,
       since: new Date(m.created_at).getFullYear(), perks, perkIcons, offers: m.consent === true, reviewAsk,
       birthdayWeek: birthdayWeek(m.birthday, now.date),
       tonight: tonight.slice(0, 12), week: week.slice(0, 40), menus, venues, reward, stay: https(page.stay), stayWa: waOf(page.stayWa), stayPhone: phoneOf(page.stayPhone), contact: cleanContact(page.contact)

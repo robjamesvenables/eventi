@@ -178,6 +178,40 @@ async function roster(req, res){
   return L.send(res, 200, { ok: true, company: (cos[0] || {}).name || '', dept: link.dept, areas: splitAreas, area: link.area || '', today, weeks: [week(w1), week(w2)] });
 }
 
+
+// ── The venue's one keyring QR: a guest at home types the last 4 digits of their phone (or the full number when
+//    two members share those 4). Answers with that member's own app link code - never a name or a number.
+//    POST /api/gp?a=find  { c: <venue keyring code>, d: '8821' }  or  { c, p: '6281234568821' }
+const fclean = s => String(s || '').toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 16);
+const fdig = p => { let d = String(p || '').replace(/\D/g, ''); if (d.charAt(0) === '0') d = '62' + d.slice(1); return d; };
+async function find(req, res){
+  if (req.method !== 'POST') return L.send(res, 405, { ok: false });
+  let b = req.body || {}; if (typeof b === 'string') { try { b = JSON.parse(b); } catch (e) { b = {}; } }
+  const code = fclean(b.c), d4 = String(b.d || '').replace(/\D/g, ''), full = fdig(b.p);
+  if (!code || (d4.length !== 4 && full.length < 8)) return L.send(res, 400, { ok: false });
+  const k = (await L.db('member_keyrings?select=company_id,member_id&code=eq.' + encodeURIComponent(code)))[0];
+  if (!k || k.member_id) return L.send(res, 404, { ok: false });
+  const st = (await L.db('app_settings?select=value&key=eq.mk_venue_qr&company_id=eq.' + encodeURIComponent(k.company_id)).catch(() => []))[0];
+  let vq = st && st.value; try { while (typeof vq === 'string') vq = JSON.parse(vq); } catch (e) { vq = null; }
+  if (!vq || vq.code !== code) return L.send(res, 404, { ok: false });
+  await new Promise(r => setTimeout(r, 350));   // a little slower to guess
+  const tail = d4.length === 4 && !full ? d4 : full.slice(-4);   // only members whose number ends the same way
+  const ms = await L.db('members?select=id,phone&company_id=eq.' + encodeURIComponent(k.company_id) + '&phone=like.' + encodeURIComponent('*' + tail) + '&limit=1000');
+  const hit = d4.length === 4 && !full ? ms.filter(m => String(m.phone || '').replace(/\D/g, '').slice(-4) === d4) : ms.filter(m => fdig(m.phone) === full);
+  if (hit.length !== 1) return L.send(res, 200, { ok: true, n: hit.length });
+  const mid = hit[0].id;
+  let own = (await L.db('member_keyrings?select=code&member_id=eq.' + encodeURIComponent(mid) + '&limit=1'))[0];
+  if (!own) {   // an older member with no app link yet: make one
+    const A = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
+    for (let i = 0; i < 5 && !own; i++) {
+      let c = ''; const r = require('crypto').randomBytes(6); for (let j = 0; j < 6; j++) c += A[r[j] % A.length];
+      try { const x = await L.db('member_keyrings', { method: 'POST', body: [{ code: c, member_id: mid, company_id: k.company_id }], headers: { Prefer: 'return=representation' } }); if (x && x[0]) own = x[0]; } catch (e) {}
+    }
+  }
+  if (!own) return L.send(res, 500, { ok: false });
+  return L.send(res, 200, { ok: true, n: 1, code: own.code });
+}
+
 module.exports = async (req, res) => {
   try {
     const a = String((req.query && req.query.a) || '');
@@ -200,6 +234,7 @@ module.exports = async (req, res) => {
     if (a === 'hit') return await hit(req, res);
     if (a === 'offers') return await offers(req, res);
     if (a === 'fb') return await feedback(req, res);
+    if (a === 'find') return await find(req, res);
     if (a === 'roster') return await roster(req, res);
     if (a === 'mf') {   // the guest page saved to a phone's home screen: its own app per venue - their logo, their name, opens on this member's page
       const q = req.query || {}, code = String(q.c || '').toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 16), name = String(q.n || 'Members Club').replace(/[<>"]/g, '').trim().slice(0, 40);

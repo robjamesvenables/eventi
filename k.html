@@ -1219,19 +1219,22 @@ body.vqopen .vq-dim{opacity:1;pointer-events:auto}body.vqopen .vq-sheet{transfor
       // YouTube takes a moment to start: show the video's own still picture on top, then fade it once the player has loaded
       var hvf = document.getElementById('hvf'), hvp = document.getElementById('hvp');
       if (hvf && hvp) {
-        var gone = function(){ hvp.classList.add('gone'); };
+        // YouTube flashes its own buttons (pause, skip) for a few seconds when it starts: keep the still picture on top until they've faded
+        var gt = 0, gone = function(){ hvp.classList.add('gone'); }, goneSoon = function(){ if (!gt) gt = setTimeout(gone, 3200); };
         // Ask the YouTube player to tell us when it's actually playing, and swap the picture for the video at that exact moment
         window.addEventListener('message', function(e){
           if (!/youtube/.test(e.origin || '')) return;
           var m; try { m = typeof e.data === 'string' ? JSON.parse(e.data) : e.data; } catch (x) { return; }
           if (!m) return;
-          if ((m.event === 'onStateChange' && m.info === 1) || (m.event === 'infoDelivery' && m.info && m.info.playerState === 1)) gone();
+          var ps = m.event === 'onStateChange' ? m.info : (m.event === 'infoDelivery' && m.info ? m.info.playerState : null);
+          if (ps === 1) goneSoon();
+          else if (ps === 2 && hvp.classList.contains('gone')) { hvp.classList.remove('gone'); gt = 0; try { hvf.contentWindow.postMessage(JSON.stringify({ event: 'command', func: 'playVideo', args: [], id: 'hvf', channel: 'widget' }), '*'); } catch (x) {} }   // paused: picture back on top, start again
           // A start time (e.g. skip the first 7 seconds): YouTube only honours it once, so when the loop comes round again jump past the opening again
           var st = +(gp.filmStart || 0), ct = m.event === 'infoDelivery' && m.info ? m.info.currentTime : null;
           if (st && typeof ct === 'number' && ct < st - 1) { try { hvf.contentWindow.postMessage(JSON.stringify({ event: 'command', func: 'seekTo', args: [st, true], id: 'hvf', channel: 'widget' }), '*'); } catch (x) {} }
         });
         hvf.addEventListener('load', function(){ try { hvf.contentWindow.postMessage(JSON.stringify({ event: 'listening', id: 'hvf', channel: 'widget' }), '*'); } catch (x) {} });
-        setTimeout(gone, 6000);   // never leave the still picture up if YouTube stays quiet
+        setTimeout(gone, 8000);   // never leave the still picture up if YouTube stays quiet
       }
       var hv = document.getElementById('hv');
       if (hv) { var fit = function(){ hv.style.setProperty('--hk', (hv.classList.contains('yt') ? hv.clientWidth / 720 * 1.04 : hv.clientWidth / 1280 * 1.3).toFixed(4)); }; fit(); window.addEventListener('resize', fit); }

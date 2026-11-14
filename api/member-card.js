@@ -91,7 +91,7 @@ const cleanContact = c => { c = c || {}; return { phone: String(c.phone || '').r
 // Sales demo keyring (see _prospects.js): the same page a member gets, filled with that venue's own content
 // Sales sample keyrings sent to venues whose demo page isn't made yet: a friendly "being set up" page with their name, never an error
 const PENDING = { S5PCJX: 'Spice Islands', L7LASQ: "Lola's", B7RNCH: 'Brunch Club', M8ZAIC: 'Mozaic',
-  S6PBLK: 'Spice by Blake', K2DETA: 'Ku De Ta', S9LTLK: 'Saltlick', L5UMAB: 'Luma', M6MSAN: 'Mama San', F4VELA: 'La Favela', S3EAST: 'South + East', U4LUCH: 'Ulu Cliffhouse', S2NSET: 'Sunset Beach' };
+  S6PBLK: 'Spice by Blake', K2DETA: 'Ku De Ta', S9LTLK: 'Saltlick', M6MSAN: 'Mama San', F4VELA: 'La Favela', S3EAST: 'South + East', U4LUCH: 'Ulu Cliffhouse', S2NSET: 'Sunset Beach' };
 function prospectCard(pro, code, ov){
   const now = localNow('Asia/Makassar');
   // Linked to the back office (the demo company saved this prospect's page there): what the team saved, else the built-in demo

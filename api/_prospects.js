@@ -283,7 +283,8 @@ P.sangsaka = {
   reward: { target: 10, text: "Chef's sharing menu for two" },
   venues: [
     { name: 'Sangsaka', area: 'Kerobokan', opens: '17:30', closes: '23:00', wa: SNG_WA, phone: '+62 812 3695 9895', email: 'info@sangsakabali.com', map: SNG_MAP, review: SNG_MAP, book: SNG_BOOK },
-    { name: 'DI ATAS', area: 'Rooftop bar upstairs', opens: '19:00', closes: '01:00', wa: SNG_WA, phone: '+62 812 3695 9895', map: SNG_MAP }
+    { name: 'DI ATAS', area: 'Rooftop bar upstairs', opens: '19:00', closes: '01:00', wa: SNG_WA, phone: '+62 812 3695 9895', map: SNG_MAP },
+    { name: 'Luma', area: 'Batu Bolong, Canggu', map: 'https://maps.google.com/?q=Luma%20Bali%2C%20Jl.%20Pantai%20Batu%20Bolong%2091%2C%20Canggu' }
   ],
   contact: { wa: SNG_WA, phone: '+62 812 3695 9895', email: 'info@sangsakabali.com', map: SNG_MAP, ig: 'sangsakabali' },
   acts: [
@@ -300,13 +301,15 @@ P.sangsaka = {
         { id: 'ss3', img: sg('mural'), title: 'Dinner under the Barong', line: 'Wood-fired plates to share', venue: 'Sangsaka', btn: 'book', url: SNG_BOOK },
         { id: 'ss4', img: sg('chef'), title: 'From our kitchen to your table', line: 'Indonesian flavours, cooked our way', venue: 'Sangsaka', btn: 'book', url: SNG_BOOK },
         { id: 'ss5', img: sg('terrace'), title: 'Dinner on the terrace', line: 'Under the lanterns, from 5:30pm', venue: 'Sangsaka', btn: 'book', url: SNG_BOOK },
-        { id: 'ss6', img: sg('room'), title: 'Tables for 2 to 50', line: 'Private dining room for up to 18', venue: 'Sangsaka', btn: 'wa' }
+        { id: 'ss6', img: sg('room'), title: 'Tables for 2 to 50', line: 'Private dining room for up to 18', venue: 'Sangsaka', btn: 'wa' },
+        { id: 'ss7', img: '/demo-guest/p-luma-room.jpg', title: 'Our sister restaurant, Luma', line: 'Mediterranean, with island flavours', venue: 'Luma', btn: 'wa' }
       ],
       deals: [
         { id: 'sd1', img: sg('bordeaux'), title: 'Members: 2 for 1 Jaffa Negroni at DI ATAS', when: 'Daily · 7–9pm', venue: 'DI ATAS' },
         { id: 'sd2', img: sg('dumpling'), title: 'Dumpling night · a free plate for the table', when: 'Tuesdays', venue: 'Sangsaka', btn: 'book', url: SNG_BOOK },
         { id: 'sd3', img: sg('beef'), title: 'Wood-fired sharing menu · Rp 650k', when: 'Sun–Thu · from 5:30pm', venue: 'Sangsaka', btn: 'book', url: SNG_BOOK },
-        { id: 'sd4', img: sg('wine'), title: 'Members: 15% off any bottle', when: 'Every night', venue: 'Sangsaka' }
+        { id: 'sd4', img: sg('wine'), title: 'Members: 15% off any bottle', when: 'Every night', venue: 'Sangsaka' },
+        { id: 'sd5', img: '/demo-guest/p-luma-wine.jpg', title: 'Happy hour at Luma · Aperol Spritz 70k', when: 'Daily · 4–7pm', venue: 'Luma' }
       ],
       events: [
         { id: 'se1', img: sg('anise'), title: 'Spice Route dinner', line: 'Six courses, one night only', date: addDays(today, 8), time: '18:30', time2: '23:00', venue: 'Sangsaka', btn: 'book', url: SNG_BOOK, hl: true,
@@ -317,9 +320,11 @@ P.sangsaka = {
         { id: 'se4', img: sg('diners'), title: "New Year's Eve", line: 'Dinner downstairs, party upstairs', date: y + '-12-31', time: '18:00', time2: '01:00', venue: 'Sangsaka', btn: 'book', url: SNG_BOOK }
       ],
       gallery: ['diners', 'crab', 'barong', 'beef', 'terrace', 'dumpling', 'chef', 'plates', 'mural', 'scallop', 'banquette', 'pork', 'team', 'egg', 'room', 'squid', 'fried', 'wine', 'table', 'bordeaux', 'anise']
-        .map((n, i) => ({ id: 'sg' + i, img: sg(n), venue: n === 'bordeaux' || n === 'table' ? 'DI ATAS' : 'Sangsaka' })),
+        .map((n, i) => ({ id: 'sg' + i, img: sg(n), venue: n === 'bordeaux' || n === 'table' ? 'DI ATAS' : 'Sangsaka' }))
+        .concat(['room', 'table', 'lamb', 'chefs', 'wine'].map((n, i) => ({ id: 'sl' + i, img: '/demo-guest/p-luma-' + n + '.jpg', venue: 'Luma' }))),
       places: {
         'sangsaka': { img: sg('room'), area: 'Kerobokan', ig: 'sangsakabali', menus: [{ name: 'Food', pages: ['food-1', 'food-2', 'food-3'].map(SNG_MENU) }, { name: 'Wine', pages: ['wine-1', 'wine-2', 'wine-3'].map(SNG_MENU) }] },
+        'luma': { img: '/demo-guest/p-luma-table.jpg', area: 'Batu Bolong, Canggu', ig: 'lumabali' },
         'di atas': { img: sg('bordeaux'), area: 'Rooftop bar upstairs', ig: 'sangsakabali', menus: [{ name: 'Cocktails', pages: ['cocktails'].map(SNG_MENU) }, { name: 'Wine', pages: ['wine-1', 'wine-2', 'wine-3'].map(SNG_MENU) }] }
       }
     };
@@ -381,9 +386,9 @@ P.masonry = {
   }
 };
 
-const CODES = { K8SNGA: 'sangsaka', B6PADL: 'bpa', S8HLTR: 'shelter', T7RNSB: 'trans', '5NKGZJ': 'trans', S4DK7R: 'sundari', M3SNRY: 'masonry' };   // 5NKGZJ = the printed sample card, shown as Trans for the GM demo
+const CODES = { K8SNGA: 'sangsaka', B6PADL: 'bpa', S8HLTR: 'shelter', T7RNSB: 'trans', '5NKGZJ': 'trans', S4DK7R: 'sundari', M3SNRY: 'masonry', L5UMAB: 'sangsaka' };   // L5UMAB = Luma keyring: same owners, opens the Sangsaka app   // 5NKGZJ = the printed sample card, shown as Trans for the GM demo
 // Mavis Club network: each of the guest's other venues as a logo tile (their colour, logo, how long they've been a member there)
-const KEY_CODE = { sangsaka: 'K8SNGA', bpa: 'B6PADL', shelter: 'S8HLTR', trans: 'T7RNSB', sundari: 'S4DK7R' };
+const KEY_CODE = { sangsaka: 'K8SNGA', bpa: 'B6PADL', shelter: 'S8HLTR', trans: 'T7RNSB', sundari: 'S4DK7R', masonry: 'M3SNRY' };
 const club = (list, who) => list.map(c => { const v = P[c.key]; if (!v) return null; const t = (v.content('2026-01-01').theme) || {};
   return { name: v.brand, logo: v.logo, top: t.top || '#0F1E2E', area: (v.venues[0] || {}).area || '', since: c.since || '', visits: c.visits || 0,
     href: '/k/' + KEY_CODE[c.key] + '?n=' + encodeURIComponent(String(who || '').split(' ')[0]) }; }).filter(Boolean);

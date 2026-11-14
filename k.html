@@ -350,6 +350,12 @@ svg{display:block}
 .pgrid{display:grid;grid-template-columns:1fr;gap:10px}
 .ohp{border-radius:24px;padding:16px 14px 14px;background:color-mix(in srgb,var(--acc,#C4973B) 16%,#fff);border:2px solid color-mix(in srgb,var(--acc,#C4973B) 70%,#fff)}
 .ohp .lab{margin-bottom:2px}.ohs{display:block;font-size:13.5px;font-weight:700;color:color-mix(in srgb,var(--acc,#C4973B) 60%,#0F1E2E);margin:0 2px 12px}
+.ohp.bold{border:0;border-radius:26px;padding:18px 14px 14px;background:var(--top,#0F1E2E);box-shadow:0 14px 34px rgba(15,30,46,.28);position:relative;overflow:hidden}
+.ohp.bold:before{content:'';position:absolute;inset:0;background:radial-gradient(120% 70% at 100% 0,color-mix(in srgb,var(--acc,#C4973B) 30%,transparent),transparent 60%);pointer-events:none}
+.ohp.bold>*{position:relative}.ohey{display:block;font-size:11px;font-weight:900;letter-spacing:.18em;color:var(--acc,#C4973B);margin:0 2px 4px}
+.ohp.bold .lab{color:#fff}.ohp.bold .ohs{font-weight:600;color:rgba(255,255,255,.75);margin-bottom:14px}.ohp.bold .ohc{height:210px}
+.ohgo{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;margin-top:10px;border:0;border-radius:15px;padding:14px;background:var(--acc,#C4973B);color:var(--acc-ink,#fff);font:900 15.5px Inter,sans-serif;cursor:pointer}
+.ohp .ohc+.ohgo+.ohc{margin-top:12px}
 .ohc{height:170px}.ohpill{position:absolute;top:12px;left:12px;z-index:2;background:rgba(255,255,255,.94);color:#0F1E2E;font:800 12.5px Inter,sans-serif;font-style:normal;padding:6px 11px;border-radius:999px}
 .ohpg{padding-bottom:30px}.ohpg .vtop{height:260px}
 .ohrow{display:grid;grid-template-columns:1fr 1fr;gap:10px}
@@ -741,10 +747,12 @@ body.vqopen .vq-dim{opacity:1;pointer-events:auto}body.vqopen .vq-sheet{transfor
     var homeRow = standalone || /[?&]embed=1/.test(location.search) ? '' : '<button class="addhome" id="addhome" type="button"><i>' + svg('<rect x="6" y="2" width="12" height="20" rx="3"/><path d="M12 7v7M9 11l3 3 3-3"/>', 18) + '</i><span><b>Save to your phone</b><small id="ahtx">No keyring needed to open it</small></span><em class="ahb">Add</em></button>';
     // The group's other hotels (same app, same keyring): a soft panel in the venue's own colour on the main page, each opens its own page
     var hotels = Array.isArray(d.hotels) ? d.hotels.filter(function(x){ return x && x.key && x.name; }) : [];
+    var bold = d.hotelsBold === true;   // venue's choice: the bold dark panel with a Visit button, shown higher up
     var stays = hotels.some(function(x){ return x.rooms && x.rooms.length; });   // hotels say "hotels", restaurants and bars say "venues"
-    var hotelsRow = hotels.length ? '<div class="sec"><div class="ohp"><div class="lab">' + (stays ? 'Our other hotels' : 'Our other venues') + '</div><small class="ohs">Your membership works here too</small>' + hotels.map(function(x){
+    var hotelsRow = hotels.length ? '<div class="sec"><div class="ohp' + (bold ? ' bold' : '') + '">' + (bold ? '<em class="ohey">' + (stays ? 'SISTER HOTEL' : 'SISTER VENUE') + (hotels.length > 1 ? 'S' : '') + '</em>' : '') + '<div class="lab">' + (stays ? 'Our other hotels' : 'Our other venues') + '</div><small class="ohs">Your membership works here too</small>' + hotels.map(function(x){
         return '<button class="pbig ohc" type="button" data-hotel="' + esc(x.key) + '">' + (x.img ? '<img src="' + esc(x.img) + '" alt="" loading="lazy">' : '') + (x.city ? '<em class="ohpill" translate="no">' + esc(x.city) + '</em>' : '') +
-          '<span><b translate="no">' + esc(x.name) + '</b>' + (x.line ? '<small>' + esc(x.line) + '</small>' : '') + '</span></button>';
+          '<span><b translate="no">' + esc(x.name) + '</b>' + (x.line ? '<small>' + esc(x.line) + '</small>' : '') + '</span></button>' +
+          (bold ? '<button class="ohgo" type="button" data-hotel="' + esc(x.key) + '"><span translate="no">Visit ' + esc(x.name) + '</span>' + svg('<path d="m9 18 6-6-6-6"/>', 18) + '</button>' : '');
       }).join('') + '</div></div>' : '';
     var hotelHtml = function(x){
       var cards = function(list, sub){ return '<div class="ohrow">' + list.map(function(p){ var st = p.open === true ? '<i class="op">Open now</i>' + (p.hrs ? '<br>' + esc(p.hrs.replace('Daily · ', '')) : '') : p.open === false ? esc(p.label) + (p.hrs ? '<br>' + esc(p.hrs.replace('Daily · ', '')) : '') : esc(p.line || '');
@@ -952,8 +960,9 @@ body.vqopen .vq-dim{opacity:1;pointer-events:auto}body.vqopen .vq-sheet{transfor
         return '<button class="pbig" data-go="' + esc(lc(p.name)) + '">' + (p.img ? '<img src="' + esc(p.img) + '" alt="" loading="lazy">' : '<div class="ini">' + esc(String(p.name).charAt(0).toUpperCase()) + '</div>') +
           '<span><b translate="no">' + esc(p.name) + '</b>' + (st ? '<small>' + esc(st) + '</small>' : '') + '</span></button>';   // just the name (+ open / closed when they set hours)
       }).join('') + '</div></div>';
+      if (bold) h += hotelsRow;   // bold: straight after their own places, so it's seen
       h += extrasHtml();
-      h += hotelsRow;
+      if (!bold) h += hotelsRow;
       if (on.gallery && (gp.gallery || []).length) h += galHtml(gp.gallery, '');
       h += reviewLine(d.venues) + igHtml(places) + clubRow;
       return h + foot + '</div>';

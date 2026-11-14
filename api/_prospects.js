@@ -278,6 +278,7 @@ const SNG_MAP = 'https://goo.gl/maps/i8R5KS3zYotp2UVZ8';
 const SNG_MENU = n => ({ img: '/demo-guest/p-sangsaka-menu-' + n + '.jpg' });   // their menu from the website, made into pictures (black and gold)
 P.sangsaka = {
   // Same owners: Luma shows as "Our other venues" (like Trans Surabaya), Sangsaka stays the main app
+  hotelsBold: true,
   hotels: [{ key: 'luma', name: 'Luma', city: 'Canggu', img: '/demo-guest/p-luma-room.jpg', line: 'Mediterranean, with island flavours',
     places: [{ name: 'The restaurant', img: '/demo-guest/p-luma-table.jpg', line: 'Lunch and dinner, plates to share' },
       { name: 'Bar Luma', img: '/demo-guest/p-luma-wine.jpg', line: 'Happy hour daily, 4 to 7pm' },

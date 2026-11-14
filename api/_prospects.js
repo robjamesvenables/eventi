@@ -27,28 +27,32 @@ const P = {
       return {
         theme: { top: '#3F5A4F', acc: '#B5643C', pg: '#F4F1EA' },
         slides: [
-          { id: 'ps1', img: sh('fire'), title: 'Grilled over fire', line: 'Whole fish on the open pit', venue: 'Shelter Pererenan', btn: 'book', url: SHELTER_BOOK },
-          { id: 'ps2', img: sh('scallops'), title: 'Wood roasted moon scallops', line: 'Lemon butter, chilli salt', venue: 'Shelter Pererenan', btn: 'book', url: SHELTER_BOOK },
-          { id: 'ps3', img: sh('drink'), title: 'The Sinaloa', line: 'Mezcal, reposado, agave, cucumber', venue: 'Shelter Pererenan' },
-          { id: 'ps4', img: sh('coals'), title: 'Charred over coals, by hand', line: 'Wood-fired Middle Eastern', venue: 'Shelter Uluwatu' }
+          { id: 'ps0', img: sh('entrance'), title: 'Welcome back to Shelter', line: 'Your table under the trees', venue: 'Shelter Pererenan', btn: 'book', url: SHELTER_BOOK },
+          { id: 'ps1', img: sh('longtable'), title: 'Shelter Sessions', line: 'Long tables, one night, one fire', venue: 'Shelter Pererenan', btn: 'book', url: SHELTER_BOOK },
+          { id: 'ps2', img: sh('flame'), title: 'Wood roasted moon scallops', line: 'Lemon butter, chilli salt', venue: 'Shelter Pererenan', btn: 'book', url: SHELTER_BOOK },
+          { id: 'ps3', img: sh('cocktails'), title: 'Sundowners from 5pm', line: 'Mezcal, agave and fresh fruit', venue: 'Shelter Pererenan' },
+          { id: 'ps4', img: sh('party'), title: 'Celebrate with us', line: 'Birthdays, big nights, the whole crew', venue: 'Shelter Pererenan', btn: 'book', url: SHELTER_BOOK },
+          { id: 'ps5', img: sh('coals'), title: 'Charred over coals, by hand', line: 'Wood-fired Middle Eastern', venue: 'Shelter Uluwatu' }
         ],
         deals: [
-          { id: 'pd1', img: sh('drink'), title: 'Mezcal hour · 2 for 1 Sinaloa', when: 'Daily · 5–7pm', venue: 'Shelter Pererenan' },
-          { id: 'pd2', img: sh('barra'), title: 'Long lunch · 3 courses Rp 395k', when: 'Mon–Fri · 12–3pm', venue: 'Shelter Pererenan' },
-          { id: 'pd3', img: sh('fire'), title: 'Sunday BBQ · sharing feast', when: 'Sundays · from 12pm', venue: 'Shelter Pererenan' }
+          { id: 'pd1', img: sh('cocktails'), title: 'Mezcal hour · 2 for 1 Sinaloa', when: 'Daily · 5–7pm', venue: 'Shelter Pererenan' },
+          { id: 'pd2', img: sh('salmon'), title: 'Long lunch · 3 courses Rp 395k', when: 'Mon–Fri · 12–3pm', venue: 'Shelter Pererenan' },
+          { id: 'pd3', img: sh('pig'), title: 'Sunday BBQ · sharing feast', when: 'Sundays · from 12pm', venue: 'Shelter Pererenan' },
+          { id: 'pd4', img: sh('table'), title: 'Book the long table · 10+ guests', when: 'Any night · ask us', venue: 'Shelter Pererenan' }
         ],
         events: [
-          { id: 'pe1', img: sh('coals'), title: 'Shelter Sessions Vol. 12', line: 'Guest chef, one night only', date: addDays(today, 9), time: '18:00', time2: '23:00', venue: 'Shelter Pererenan', btn: 'tickets', url: SHELTER_BOOK, hl: true,
+          { id: 'pe1', img: sh('longtable'), title: 'Shelter Sessions Vol. 12', line: 'Guest chef, one night only', date: addDays(today, 9), time: '18:00', time2: '23:00', venue: 'Shelter Pererenan', btn: 'tickets', url: SHELTER_BOOK, hl: true,
             details: 'A guest chef joins the Shelter team at the fire for one night - a set menu cooked over wood, with paired drinks.', price: 'Set menu, paired drinks available', notes: 'Members get first pick of tables.' },
-          { id: 'pe2', img: sh('fire'), title: 'Bonfire Sessions', line: 'Fireside night with Charlie Pretet', date: addDays(today, 4), time: '19:00', time2: '23:00', venue: 'Shelter Pererenan', btn: 'book', url: SHELTER_BOOK,
+          { id: 'pe2', img: sh('grill'), title: 'Bonfire Sessions', line: 'Fireside night with Charlie Pretet', date: addDays(today, 4), time: '19:00', time2: '23:00', venue: 'Shelter Pererenan', btn: 'book', url: SHELTER_BOOK,
             details: 'Live music around the fire pit, wood-fired sharing plates and the bar open late.' },
           { id: 'pe3', img: sh('octopus'), title: 'Christmas by the fire', line: 'Long table lunch, cooked over wood', date: y + '-12-25', time: '12:00', time2: '17:00', venue: 'Shelter Pererenan', btn: 'book', url: SHELTER_BOOK,
             details: 'A Christmas long lunch from the fire - whole roasted fish, slow cooked meats and all the sides.' },
-          { id: 'pe4', img: sh('flatbread'), title: "New Year's Eve", line: 'Fire, feasting and a late bar', date: y + '-12-31', time: '19:00', time2: '01:00', venue: 'Shelter Pererenan', btn: 'tickets', url: SHELTER_BOOK }
+          { id: 'pe4', img: sh('party'), title: "New Year's Eve", line: 'Fire, feasting and a late bar', date: y + '-12-31', time: '19:00', time2: '01:00', venue: 'Shelter Pererenan', btn: 'tickets', url: SHELTER_BOOK }
         ],
-        gallery: ['fire', 'scallops', 'coals', 'barra', 'flatbread', 'octopus', 'pork', 'drink'].map((n, i) => ({ id: 'pg' + i, img: sh(n), venue: i === 2 ? 'Shelter Uluwatu' : 'Shelter Pererenan' })),
+        gallery: ['entrance', 'longtable', 'flame', 'room', 'bread', 'cocktails', 'grill', 'salmon', 'kitchen', 'octo', 'party', 'kofta', 'pig', 'table', 'chef', 'fire', 'scallops', 'barra', 'flatbread', 'octopus', 'pork', 'drink', 'coals'].map((n, i) => ({ id: 'pg' + i, img: sh(n), venue: n === 'coals' ? 'Shelter Uluwatu' : 'Shelter Pererenan' })),
+        gift: { on: true, title: 'A night at Shelter', line: 'Give someone a seat by the fire. Tell us the amount and who it is for.', to: '6282340040199', amounts: [500000, 1000000, 2000000], max: 5000000, bonus: 10 },
         places: {
-          'shelter pererenan': { img: sh('fire'), area: 'Pererenan', ig: 'shelter.pererenan', menus: [
+          'shelter pererenan': { img: sh('entrance'), area: 'Pererenan', ig: 'shelter.pererenan', menus: [
             { name: 'Lunch', url: 'https://www.shelterbali.com/lunch-menu' }, { name: 'Dinner', url: 'https://www.shelterbali.com/dinner-menu' }, { name: 'Drinks', url: 'https://www.shelterbali.com/drink-menu' }] },
           'shelter uluwatu': { img: sh('coals'), area: 'Coming soon' }
         }

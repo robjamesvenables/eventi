@@ -160,11 +160,12 @@ function build(c, ctx){
   // Top video: set in the editor (an uploaded MP4, or a YouTube link with a start time); older demo pages set film / video directly
   let film = /^[\w-]{11}$/.test(c.film || '') ? c.film : '', filmStart = Math.max(0, Math.min(600, Math.round(+c.filmStart || 0))),
     video = /^\/[\w\/.-]+\.mp4$/.test(c.video || '') ? c.video : '', videoPoster = '', videoTall = c.videoTall === true;
+  const filmTall = c.filmTall === true;   // a YouTube Short (tall): shown in the tall box
   const tp = c.top || {}, pathOk = x => typeof x === 'string' && x.startsWith(String(company) + '/guestpage/') && !/\.\./.test(x);
   if (tp.kind === 'video' && pathOk(tp.path)) { video = img({ path: tp.path }); videoPoster = pathOk(tp.poster) ? img({ path: tp.poster }) : ''; videoTall = tp.tall === true; film = ''; }
   else if (tp.kind === 'yt' && /^[\w-]{11}$/.test(tp.yt || '')) { film = tp.yt; filmStart = Math.max(0, Math.min(600, Math.round(+tp.start || 0))); video = ''; }
   if (c.off && c.off.topvideo) { film = ''; video = ''; }
-  return { order, slides, deals, events, gallery, places, theme, motion: c.motion === true, film, filmStart, video, videoPoster, videoTall };
+  return { order, slides, deals, events, gallery, places, theme, motion: c.motion === true, film, filmStart, filmTall: !!film && filmTall && !(tp.kind === 'yt'), video, videoPoster, videoTall };
 }
 
 // The name under the app icon on a guest's phone: phones cut it after about 12 letters ("The Trans Resort Bali" -> "Trans Resort")

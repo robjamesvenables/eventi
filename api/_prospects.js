@@ -262,9 +262,59 @@ P.sundari = {
   }
 };
 
-const CODES = { B6PADL: 'bpa', S8HLTR: 'shelter', T7RNSB: 'trans', '5NKGZJ': 'trans', S4DK7R: 'sundari' };   // 5NKGZJ = the printed sample card, shown as Trans for the GM demo
+// Sangsaka (modern Indonesian, Kerobokan/Seminyak) - photos from their own posts, logo from their keyring; perks, deals and dates made up for the demo
+const sg = n => '/demo-guest/p-sangsaka-' + n + '.jpg';
+const SNG_WA = '6281236959895';
+const SNG_BOOK = 'https://bookings.nowbookit.com/?accountid=79aa53dc-431a-4591-8682-0b6f56292e92&venueid=84&theme=light&colors=hex,666,000';
+const SNG_MAP = 'https://goo.gl/maps/i8R5KS3zYotp2UVZ8';
+P.sangsaka = {
+  brand: 'Sangsaka', logo: '/demo-guest/p-sangsaka-logo.png', icon: '/demo-guest/p-sangsaka-icon', first: 'Olivia', tier: 'vip', visits: 7, since: 2025, favourite: 'Sangsaka',
+  perks: ['Welcome cocktail upstairs at DI ATAS', "A chef's snack from the kitchen, on the house", 'Birthday dessert from the wood oven', 'First pick of the private dining room'],
+  perkIcons: ['cocktail', 'food', 'cake', 'star'],
+  reward: { target: 10, text: "Chef's sharing menu for two" },
+  venues: [
+    { name: 'Sangsaka', area: 'Kerobokan', opens: '17:30', closes: '23:00', wa: SNG_WA, phone: '+62 812 3695 9895', email: 'info@sangsakabali.com', map: SNG_MAP, review: SNG_MAP, book: SNG_BOOK },
+    { name: 'DI ATAS', area: 'Rooftop bar upstairs', opens: '19:00', closes: '01:00', wa: SNG_WA, phone: '+62 812 3695 9895', map: SNG_MAP }
+  ],
+  contact: { wa: SNG_WA, phone: '+62 812 3695 9895', email: 'info@sangsakabali.com', map: SNG_MAP, ig: 'sangsakabali' },
+  acts: [
+    { title: 'Late night at DI ATAS', line: 'Cocktails on the rooftop until 1am', every: [4, 5, 6], start: '21:00', end: '01:00', venue: 'DI ATAS', ic: 'drinks' }
+  ],
+  content: today => {
+    const y = year(today);
+    return {
+      theme: { top: '#141210', acc: '#B08D57', pg: '#F5F1EA' }, motion: true, film: 'qCGlNvdXNsc', filmTall: true,
+      slides: [
+        { id: 'ss1', img: sg('diners'), title: 'Modern Indonesian, with a twist', line: 'Down a back street in Seminyak', venue: 'Sangsaka', btn: 'book', url: SNG_BOOK },
+        { id: 'ss2', img: sg('crab'), title: 'Mud crab glass noodles', line: 'From the clay pot to the table', venue: 'Sangsaka', btn: 'book', url: SNG_BOOK },
+        { id: 'ss3', img: sg('mural'), title: 'Dinner under the Barong', line: 'Wood-fired plates to share', venue: 'Sangsaka', btn: 'book', url: SNG_BOOK },
+        { id: 'ss4', img: sg('room'), title: 'Tables for 2 to 50', line: 'Private dining room for up to 18', venue: 'Sangsaka', btn: 'wa' }
+      ],
+      deals: [
+        { id: 'sd1', img: sg('table'), title: 'Members: 2 cocktails for 1 at DI ATAS', when: 'Daily · 7–9pm', venue: 'DI ATAS' },
+        { id: 'sd2', img: sg('dumpling'), title: 'Dumpling night · a free plate for the table', when: 'Tuesdays', venue: 'Sangsaka', btn: 'book', url: SNG_BOOK },
+        { id: 'sd3', img: sg('fried'), title: 'Wood-fired sharing menu · Rp 650k', when: 'Sun–Thu · from 5:30pm', venue: 'Sangsaka', btn: 'book', url: SNG_BOOK }
+      ],
+      events: [
+        { id: 'se1', img: sg('anise'), title: 'Spice Route dinner', line: 'Six courses, one night only', date: addDays(today, 8), time: '18:30', time2: '23:00', venue: 'Sangsaka', btn: 'book', url: SNG_BOOK, hl: true,
+          details: 'Kieran and Yunika cook a six-course menu around the spices of the archipelago, with paired drinks.', price: 'Set menu, paired drinks available', notes: 'Members get first pick of tables.' },
+        { id: 'se2', img: sg('table'), title: 'Rooftop sessions', line: 'DJ upstairs at DI ATAS', date: addDays(today, 3), time: '21:00', time2: '01:00', venue: 'DI ATAS', btn: 'wa',
+          details: 'Cocktails and a DJ on the rooftop, late.' },
+        { id: 'se3', img: sg('crab'), title: 'Christmas sharing feast', line: 'Long tables, wood-fired', date: y + '-12-25', time: '17:30', time2: '23:00', venue: 'Sangsaka', btn: 'book', url: SNG_BOOK },
+        { id: 'se4', img: sg('diners'), title: "New Year's Eve", line: 'Dinner downstairs, party upstairs', date: y + '-12-31', time: '18:00', time2: '01:00', venue: 'Sangsaka', btn: 'book', url: SNG_BOOK }
+      ],
+      gallery: ['diners', 'crab', 'mural', 'dumpling', 'room', 'fried', 'table', 'anise'].map((n, i) => ({ id: 'sg' + i, img: sg(n), venue: n === 'table' ? 'DI ATAS' : 'Sangsaka' })),
+      places: {
+        'sangsaka': { img: sg('room'), area: 'Kerobokan', ig: 'sangsakabali', menus: [{ name: 'Food & drinks', url: 'https://www.sangsakabali.com/' }] },
+        'di atas': { img: sg('table'), area: 'Rooftop bar upstairs' }
+      }
+    };
+  }
+};
+
+const CODES = { K8SNGA: 'sangsaka', B6PADL: 'bpa', S8HLTR: 'shelter', T7RNSB: 'trans', '5NKGZJ': 'trans', S4DK7R: 'sundari' };   // 5NKGZJ = the printed sample card, shown as Trans for the GM demo
 // Mavis Club network: each of the guest's other venues as a logo tile (their colour, logo, how long they've been a member there)
-const KEY_CODE = { bpa: 'B6PADL', shelter: 'S8HLTR', trans: 'T7RNSB', sundari: 'S4DK7R' };
+const KEY_CODE = { sangsaka: 'K8SNGA', bpa: 'B6PADL', shelter: 'S8HLTR', trans: 'T7RNSB', sundari: 'S4DK7R' };
 const club = (list, who) => list.map(c => { const v = P[c.key]; if (!v) return null; const t = (v.content('2026-01-01').theme) || {};
   return { name: v.brand, logo: v.logo, top: t.top || '#0F1E2E', area: (v.venues[0] || {}).area || '', since: c.since || '', visits: c.visits || 0,
     href: '/k/' + KEY_CODE[c.key] + '?n=' + encodeURIComponent(String(who || '').split(' ')[0]) }; }).filter(Boolean);

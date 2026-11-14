@@ -23980,7 +23980,7 @@ function gpGiftHtml(){
   const to = String(g.to || '').trim(), where = /@/.test(to) ? 'Email ' + to : /\d{6,}/.test(to) ? 'WhatsApp +' + to.replace(/\D/g, '') : 'Your main contact details';
   return `<div class="gp-sec${on ? '' : ' off'}" data-go="deals"><div class="gp-sh"><div class="n"><b>Gift vouchers</b><small>A gift voucher card for members to buy for someone else</small></div>
     <button class="gp-tog${on ? ' on' : ''}" aria-label="Show gift vouchers" onclick="gpGiftToggle()"><i></i></button></div>
-    ${on ? `<div class="gp-body"><div class="gp-it"><div class="x"><b>${gpEsc(g.title || "A night they'll remember")}</b><small>${gpEsc(g.line || 'No extra line')} · Button: ${gpEsc(where)}</small></div>
+    ${on ? `<div class="gp-body"><div class="gp-it"><div class="x"><b>${gpEsc(g.title || "A night they'll remember")}</b><small>${gpEsc((g.amounts || [500000, 1000000, 2000000]).map(gpGiftShort).join(' · '))}${g.max ? ' · up to ' + gpGiftShort(g.max) : ''}${g.bonus ? ' · members +' + g.bonus + '%' : ''} · ${gpEsc(where)}</small></div>
       <button class="gp-ib" title="Change" aria-label="Change gift voucher card" onclick="gpGiftEdit()">${gpIc(GPI.edit)}</button></div></div>` : ''}</div>`;
 }
 window.gpGiftToggle = async function(){
@@ -23988,16 +23988,32 @@ window.gpGiftToggle = async function(){
   gpRender(); await gpSave(g.on ? 'Gift vouchers on - guests see them now' : 'Gift vouchers hidden');
   if(g.on && !g.title) gpGiftEdit();
 };
+// "500k" -> 500000, "1.5m" -> 1500000, "750,000" stays as typed
+function gpGiftNum(s){ s = String(s || '').trim().toLowerCase().replace(/^rp\.?\s*/, '').replace(/\s/g, ''); const m = s.match(/^([\d.,]+)(k|m|jt|rb)?$/); if(!m) return 0;
+  const mul = m[2] === 'k' || m[2] === 'rb' ? 1e3 : m[2] === 'm' || m[2] === 'jt' ? 1e6 : 1;
+  const n = mul > 1 ? parseFloat(m[1].replace(',', '.')) : +m[1].replace(/[.,]/g, ''); const v = Math.round(n * mul); return v >= 1000 && v <= 1e9 ? v : 0; }
+function gpGiftShort(n){ n = +n || 0; return n >= 1e6 && n % 1e5 === 0 ? (n / 1e6) + 'm' : n >= 1000 && n % 1000 === 0 ? (n / 1000) + 'k' : String(n); }
 window.gpGiftEdit = function(){
   const g = GPE.c.gift || {};
   appModalShow({ title:'Gift vouchers', sub:'Shown as a ticket-style card on your guest page.',
     fields:[ { label:'Title', placeholder:"e.g. A dinner they'll remember", value: g.title || '' },
-             { label:'One line - optional', placeholder:'e.g. A thoughtful present for someone you love', value: g.line || '' },
-             { label:'Button goes to - an email or a WhatsApp number (empty = your main contact)', placeholder:'e.g. info@yourvenue.com or 62812...', value: g.to || '' } ],
-    async onOk([title, line, to]){
+             { label:'One line - optional', placeholder:'e.g. A thoughtful present for someone you love', value: g.line || '' , optional:true },
+             { label:'Button goes to - an email or a WhatsApp number (empty = your main contact)', placeholder:'e.g. info@yourvenue.com or 62812...', value: g.to || '' , optional:true },
+             { label:'Amounts - up to 4, with commas', placeholder:'e.g. 500k, 1m, 2m', value: (g.amounts || [500000, 1000000, 2000000]).map(gpGiftShort).join(', ') },
+             { label:'Most someone can spend', placeholder:'e.g. 5m', value: g.max ? gpGiftShort(g.max) : '5m' },
+             { label:'Members get extra - % (0 = none)', placeholder:'e.g. 10', value: String(g.bonus || 0) , optional:true } ],
+    async onOk([title, line, to, amts, max, bonus]){
       to = String(to || '').trim();
       if(to && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(to) && String(to).replace(/\D/g, '').length < 8){ toast('Type an email address or a WhatsApp number with the country code'); return; }
-      GPE.c.gift = { on:true, title:String(title || '').trim().slice(0, 60), line:String(line || '').trim().slice(0, 200), to: /@/.test(to) ? to : to.replace(/\D/g, '') };
+      const list = String(amts || '').split(/[,;\/]+/).map(gpGiftNum).filter(Boolean);
+      const mx = gpGiftNum(max);
+      if(!list.length){ toast('Type at least one amount, e.g. 500k'); return; }
+      if(list.length > 4){ toast('Up to 4 amounts please'); return; }
+      if(!mx){ toast('Type the most someone can spend, e.g. 5m'); return; }
+      if(list.some(x => x > mx)){ toast('An amount is more than the most someone can spend'); return; }
+      const bn = Math.round(+String(bonus || '0').replace(/[^\d.]/g, '') || 0);
+      if(bn > 50){ toast('Members extra can be up to 50%'); return; }
+      GPE.c.gift = { on:true, title:String(title || '').trim().slice(0, 60), line:String(line || '').trim().slice(0, 200), to: /@/.test(to) ? to : to.replace(/\D/g, ''), amounts: list.sort((x, y) => x - y), max: mx, bonus: bn };
       gpRender(); await gpSave('Gift voucher card saved');
     } });
 };

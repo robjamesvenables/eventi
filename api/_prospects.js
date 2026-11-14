@@ -293,7 +293,7 @@ P.sangsaka = {
   content: today => {
     const y = year(today);
     return {
-      others: { on: true, bold: true, list: [{ id: 'luma', name: 'Luma', city: 'Canggu', img: '/demo-guest/p-luma-room.jpg', line: 'Mediterranean, with island flavours', book: 'https://wa.me/6281139414999',
+      others: { on: true, bold: true, list: [{ id: 'luma', name: 'Luma', img: '/demo-guest/p-luma-room.jpg', line: 'Mediterranean, with island flavours', book: 'https://wa.me/6281139414999',
     places: [{ name: 'The restaurant', img: '/demo-guest/p-luma-table.jpg', line: 'Mediterranean plates to share', opens: '12:00', closes: '23:00' },
       { name: 'Bar Luma', img: '/demo-guest/p-luma-wine.jpg', line: 'Terrace bar · Negroni on tap · vinyl DJs at weekends' },
       { name: 'From our kitchen', img: '/demo-guest/p-luma-lamb.jpg', line: 'Southern Europe, Balinese produce' },

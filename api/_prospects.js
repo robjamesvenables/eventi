@@ -279,9 +279,9 @@ const SNG_MENU = n => ({ img: '/demo-guest/p-sangsaka-menu-' + n + '.jpg' });   
 P.sangsaka = {
   // Same owners: Luma shows as "Our other venues" (like Trans Surabaya), Sangsaka stays the main app
   hotelsBold: true,
-  hotels: [{ key: 'luma', name: 'Luma', city: 'Canggu', img: '/demo-guest/p-luma-room.jpg', line: 'Mediterranean, with island flavours',
-    places: [{ name: 'The restaurant', img: '/demo-guest/p-luma-table.jpg', line: 'Lunch and dinner, plates to share' },
-      { name: 'Bar Luma', img: '/demo-guest/p-luma-wine.jpg', line: 'Happy hour daily, 4 to 7pm' },
+  hotels: [{ key: 'luma', name: 'Luma', city: 'Canggu', img: '/demo-guest/p-luma-room.jpg', line: 'Mediterranean, with island flavours', book: 'https://wa.me/6281139414999',
+    places: [{ name: 'The restaurant', img: '/demo-guest/p-luma-table.jpg', line: 'Mediterranean plates to share', opens: '12:00', closes: '23:00' },
+      { name: 'Bar Luma', img: '/demo-guest/p-luma-wine.jpg', line: 'Terrace bar · Negroni on tap · vinyl DJs at weekends' },
       { name: 'From our kitchen', img: '/demo-guest/p-luma-lamb.jpg', line: 'Southern Europe, Balinese produce' },
       { name: 'The chefs', img: '/demo-guest/p-luma-chefs.jpg', line: 'Cameron Emirali and Kieran Morland' }] }],
   brand: 'Sangsaka', logo: '/demo-guest/p-sangsaka-logo.png', icon: '/demo-guest/p-sangsaka-icon', first: 'Olivia', tier: 'vip', visits: 7, since: 2025, favourite: 'Sangsaka',

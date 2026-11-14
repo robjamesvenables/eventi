@@ -390,9 +390,58 @@ P.masonry = {
   }
 };
 
-const CODES = { K8SNGA: 'sangsaka', B6PADL: 'bpa', S8HLTR: 'shelter', T7RNSB: 'trans', '5NKGZJ': 'trans', S4DK7R: 'sundari', M3SNRY: 'masonry', L5UMAB: 'sangsaka' };   // L5UMAB = Luma keyring: same owners, opens the Sangsaka app   // 5NKGZJ = the printed sample card, shown as Trans for the GM demo
+const LO_WA = '6281573061887';   // Lola's Uluwatu (Time Out); Canggu number not found yet
+const lo = n => '/demo-guest/p-lolas-' + n + '.jpg';
+P.lolas = {
+  brand: "Lola's", logo: '/demo-guest/p-lolas-logo.png', icon: '/demo-guest/p-lolas-icon', first: 'Sam', tier: 'vip', visits: 6, since: 2025, favourite: "Lola's Canggu",
+  perks: ['10% off your bill, every visit', 'A free margarita on your birthday', 'Chips and guac on us with any taco plate', "Priority tables on Taco Tuesday"],
+  perkIcons: ['pct', 'cake', 'food', 'star'],
+  reward: { target: 10, text: 'Tacos and margaritas for two' },
+  venues: [
+    { name: "Lola's Canggu", area: 'Jl. Subak, Canggu', opens: '08:00', closes: '00:00', wa: LO_WA },
+    { name: "Lola's Uluwatu", area: 'Jl. Labuansait, Uluwatu', opens: '12:00', closes: '00:00', wa: LO_WA, phone: '+62 815 7306 1887' }
+  ],
+  contact: { wa: LO_WA, phone: '+62 815 7306 1887' },
+  acts: [
+    { title: 'DJs and margaritas', line: 'Weekend nights', every: [5, 6], start: '21:00', end: '00:00', venue: "Lola's Canggu", ic: 'party' }
+  ],
+  content: today => {
+    const y = year(today);
+    return {
+      theme: { top: '#141414', acc: '#F0BECD', pg: '#F7F2EF' },
+      gift: { on: true, title: 'Tacos on me', line: "A Lola's voucher for someone who loves a margarita. Tell us the amount and who it is for.", to: LO_WA, amounts: [300000, 500000, 1000000], max: 3000000, bonus: 10 },
+      slides: [
+        { id: 'ls1', img: lo('tacos'), title: 'Tacos, tequila, good times', line: 'Canggu and Uluwatu', venue: "Lola's Canggu", btn: 'wa' },
+        { id: 'ls2', img: lo('margaritas'), title: '2 for 1 margaritas', line: 'Happy hour, every day', venue: "Lola's Uluwatu", btn: 'wa' },
+        { id: 'ls3', img: lo('burrito'), title: 'Burritos the size of your arm', line: 'Made fresh, all day', venue: "Lola's Canggu", btn: 'wa' },
+        { id: 'ls4', img: lo('dj'), title: 'Weekend nights at Lola’s', line: 'DJs, tequila, dancing', venue: "Lola's Canggu", btn: 'wa' },
+        { id: 'ls5', img: lo('spread'), title: 'Bring the whole crew', line: 'Big tables, sharing plates', venue: "Lola's Canggu", btn: 'wa' }
+      ],
+      deals: [
+        { id: 'ld1', img: lo('margaritas'), title: '2 for 1 margaritas', when: 'Daily · happy hour', venue: "Lola's Uluwatu" },
+        { id: 'ld2', img: lo('tacos2'), title: 'Taco Tuesday · members get a free taco', when: 'Tuesdays', venue: "Lola's Canggu", btn: 'wa' },
+        { id: 'ld3', img: lo('plate'), title: 'Lunch plate + drink · Rp 150k', when: 'Mon–Fri · 12–3pm', venue: "Lola's Canggu" },
+        { id: 'ld4', img: lo('prawns'), title: 'Members: 15% off sharing plates', when: 'Sun–Thu', venue: "Lola's Uluwatu" }
+      ],
+      events: [
+        { id: 'le1', img: lo('party'), title: 'Lola’s Fiesta', line: 'DJs, tequila and tacos till late', date: addDays(today, 6), time: '20:00', time2: '01:00', venue: "Lola's Canggu", btn: 'wa', hl: true,
+          details: 'A big night at Lola’s with DJs, tequila specials and tacos till late.', notes: 'Members skip the queue.' },
+        { id: 'le2', img: lo('tacos'), title: 'Taco Tuesday', line: 'Every taco on the menu', date: addDays(today, 3), time: '17:00', time2: '23:00', venue: "Lola's Canggu", btn: 'wa' },
+        { id: 'le3', img: lo('spread'), title: "New Year's Eve", line: 'The biggest fiesta of the year', date: y + '-12-31', time: '20:00', time2: '02:00', venue: "Lola's Canggu", btn: 'wa' }
+      ],
+      gallery: ['tacos', 'burrito', 'margaritas', 'dj', 'taco', 'spread', 'party', 'chicken', 'tacos2', 'plate', 'prawns', 'quesadilla', 'ribs', 'taco3', 'tortillas', 'team']
+        .map((n, i) => ({ id: 'lg' + i, img: lo(n), venue: n === 'margaritas' || n === 'chicken' || n === 'prawns' ? "Lola's Uluwatu" : "Lola's Canggu" })),
+      places: {
+        "lola's canggu": { img: lo('taco'), area: 'Jl. Subak, Canggu', ig: 'lolasbali' },
+        "lola's uluwatu": { img: lo('chicken'), area: 'Jl. Labuansait, Uluwatu', ig: 'lolasbali' }
+      }
+    };
+  }
+};
+
+const CODES = { K8SNGA: 'sangsaka', B6PADL: 'bpa', S8HLTR: 'shelter', T7RNSB: 'trans', '5NKGZJ': 'trans', S4DK7R: 'sundari', M3SNRY: 'masonry', L5UMAB: 'sangsaka', L7LASQ: 'lolas' };   // L5UMAB = Luma keyring: same owners, opens the Sangsaka app   // 5NKGZJ = the printed sample card, shown as Trans for the GM demo
 // Mavis Club network: each of the guest's other venues as a logo tile (their colour, logo, how long they've been a member there)
-const KEY_CODE = { sangsaka: 'K8SNGA', bpa: 'B6PADL', shelter: 'S8HLTR', trans: 'T7RNSB', sundari: 'S4DK7R', masonry: 'M3SNRY' };
+const KEY_CODE = { sangsaka: 'K8SNGA', bpa: 'B6PADL', shelter: 'S8HLTR', trans: 'T7RNSB', sundari: 'S4DK7R', masonry: 'M3SNRY', lolas: 'L7LASQ' };
 const club = (list, who) => list.map(c => { const v = P[c.key]; if (!v) return null; const t = (v.content('2026-01-01').theme) || {};
   return { name: v.brand, logo: v.logo, top: t.top || '#0F1E2E', area: (v.venues[0] || {}).area || '', since: c.since || '', visits: c.visits || 0,
     href: '/k/' + KEY_CODE[c.key] + '?n=' + encodeURIComponent(String(who || '').split(' ')[0]) }; }).filter(Boolean);

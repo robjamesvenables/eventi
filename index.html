@@ -2420,6 +2420,8 @@ body:not(.mv-demo) #ms-demoqr-btn{display:none!important}
 .gp-mr{margin-bottom:8px}.gp-mrx{display:flex;flex-direction:column;gap:6px}.eb-form .gp-mrx .gp-ml{font-weight:700}
 .gp-opt{font-weight:600;color:#94A3B8;margin-left:4px}.gp-add-s{margin-top:0}
 .gp-dr .ms-pib{margin-top:2px}
+.gp-ph.sm{height:86px;width:86px;flex:none}.gp-orow{display:flex;gap:10px;align-items:flex-start;margin-top:10px}.gp-ocol{flex:1;display:flex;flex-direction:column;gap:6px;min-width:0}.gp-ocol input{margin:0}
+.gp-otime{display:flex;align-items:center;gap:6px}.gp-otime em{font-style:normal;font-size:12px;font-weight:700;color:#64748B}.gp-otime input{flex:1;min-width:0;margin:0}
 .gp-sub{font-size:12px;font-weight:900;letter-spacing:1px;color:#0F1E2E;margin:18px 0 0;padding-top:14px;border-top:1px solid #EEF1F4;text-transform:uppercase}
 .gp-sub small{display:block;text-transform:none;letter-spacing:0;font-weight:600;color:#94A3B8;font-size:12px;margin-top:2px}
 .gp-tg{display:flex !important;align-items:flex-start;gap:10px;margin-top:14px;background:#F8FAFC;border-radius:12px;padding:12px;cursor:pointer}
@@ -23945,6 +23947,7 @@ async function gpSign(){
   ['slides','deals','events','gallery'].forEach(k => GPE.c[k].forEach(it => { if(it.path && !GPE.urls[it.path]) need.push(it.path); }));
   Object.values(GPE.c.places || {}).forEach(p => { if(p && p.path && !GPE.urls[p.path]) need.push(p.path); });
   const tp = GPE.c.top || {}; if(tp.poster && !GPE.urls[tp.poster]) need.push(tp.poster);
+  ((GPE.c.others || {}).list || []).forEach(o => [o].concat(o.places || [], o.rooms || []).forEach(x => { if(x && x.path && !GPE.urls[x.path]) need.push(x.path); }));
   if(!need.length) return;
   const { data } = await sb.storage.from(GP_BUCKET).createSignedUrls(need, 43200);
   (data || []).forEach(d => { if(d.signedUrl) GPE.urls[d.path] = d.signedUrl; });
@@ -23983,6 +23986,90 @@ function gpGiftHtml(){
     ${on ? `<div class="gp-body"><div class="gp-it"><div class="x"><b>${gpEsc(g.title || "A night they'll remember")}</b><small>${gpEsc((g.amounts || [500000, 1000000, 2000000]).map(gpGiftShort).join(' · '))}${g.max ? ' · up to ' + gpGiftShort(g.max) : ''}${g.bonus ? ' · members +' + g.bonus + '%' : ''} · ${gpEsc(where)}</small></div>
       <button class="gp-ib" title="Change" aria-label="Change gift voucher card" onclick="gpGiftEdit()">${gpIc(GPI.edit)}</button></div></div>` : ''}</div>`;
 }
+// ── Our other venues: sister venues or hotels inside this same app (visits there count too). Off unless switched on.
+//    Each one: photo, name, town, one line, a booking link or WhatsApp, its places (Eat & drink) and rooms (hotels).
+function gpOthersHtml(){
+  const o = (GPE.c && GPE.c.others) || {}, on = !!o.on, list = o.list || [];
+  return `<div class="gp-sec${on ? '' : ' off'}" data-go="venues"><div class="gp-sh"><div class="n"><b>Our other venues</b><small>Your sister venues or hotels - members can visit them from your app</small></div>
+    <button class="gp-tog${on ? ' on' : ''}" aria-label="Show our other venues" onclick="gpOthersToggle()"><i></i></button></div>
+    ${on ? `<div class="gp-body">${list.map((v, i) => `<div class="gp-it">${gpSrc(v) ? `<img class="th" src="${gpEsc(gpSrc(v))}" alt="">` : '<div class="th" style="display:flex;align-items:center;justify-content:center;color:#94A3B8">' + gpIc(GPI.cam, 20) + '</div>'}
+        <div class="x"><b>${gpEsc(v.name || 'No name yet')}</b><small>${gpEsc([v.city, (v.places || []).length + ' place' + ((v.places || []).length === 1 ? '' : 's'), (v.rooms || []).length ? v.rooms.length + ' room type' + (v.rooms.length === 1 ? '' : 's') : ''].filter(Boolean).join(' · '))}</small></div>
+        <button class="gp-ib" title="Change" aria-label="Change ${gpEsc(v.name || 'venue')}" onclick="gpOtherForm(${i})">${gpIc(GPI.edit)}</button></div>`).join('')}
+      ${list.length < 4 ? '<button class="gp-add" onclick="gpOtherForm(-1)">+ Add a venue</button>' : ''}
+      ${list.length ? `<div class="gp-it"><div class="x"><b>Make it stand out</b><small>A box in your button colour, with a Visit button, straight after your places</small></div>
+        <button class="gp-tog${o.bold ? ' on' : ''}" aria-label="Make it stand out" onclick="gpOthersBold()"><i></i></button></div>` : ''}</div>` : ''}</div>`;
+}
+window.gpOthersToggle = async function(){
+  const o = GPE.c.others = Object.assign({ list: [] }, GPE.c.others || {}); o.on = !o.on;
+  gpRender(); await gpSave(o.on ? (o.list.length ? 'Our other venues on - guests see them now' : 'Now add your first venue') : 'Our other venues hidden');
+  if(o.on && !o.list.length) gpOtherForm(-1);
+};
+window.gpOthersBold = async function(){
+  const o = GPE.c.others; o.bold = !o.bold; gpRender(); await gpSave(o.bold ? 'It stands out now' : 'Back to the quiet box');
+};
+window.gpOtherForm = function(idx){
+  try{ ebEnsureUi(); }catch(e){}
+  document.querySelectorAll('.eb-sheet').forEach(x => x.remove());
+  const O = GPE.c.others = Object.assign({ on: true, list: [] }, GPE.c.others || {});
+  const it = idx >= 0 ? JSON.parse(JSON.stringify(O.list[idx])) : { id: gpId(), places: [], rooms: [] };
+  it.places = it.places || []; it.rooms = it.rooms || [];
+  const files = new Map();   // object -> chosen file (uploaded on Save)
+  const s = document.createElement('div'); s.className = 'eb-sheet';
+  const pic = (x, key) => { const f = files.get(x), src = f ? URL.createObjectURL(f) : gpSrc(x);
+    return `<div class="gp-ph sm${src ? ' has' : ''}" data-pic="${key}" role="button" tabindex="0">${src ? `<img src="${gpEsc(src)}" alt=""><span>Change</span>` : gpIc(GPI.cam, 20)}</div>`; };
+  const draw = () => {
+    s.innerHTML = `<div class="eb-form"><h3>${idx >= 0 ? gpEsc(it.name || 'Venue') : 'Add a venue'}</h3><p class="sub">A sister venue or hotel - members open it from your app</p>
+      <label>Main photo</label>${pic(it, 'main')}
+      <label>Name</label><input id="go-n" maxlength="60" value="${gpEsc(it.name || '')}" placeholder="e.g. Luma">
+      <label>Town <span class="gp-opt">optional - shown as a tag</span></label><input id="go-c" maxlength="40" value="${gpEsc(it.city || '')}" placeholder="e.g. Canggu">
+      <label>One line <span class="gp-opt">optional</span></label><input id="go-l" maxlength="90" value="${gpEsc(it.line || '')}" placeholder="e.g. Mediterranean, with island flavours">
+      <label>Booking <span class="gp-opt">optional - a link or a WhatsApp number</span></label><input id="go-b" maxlength="300" value="${gpEsc(it.book || '')}" placeholder="e.g. https://... or +62812..." autocapitalize="off">
+      <div class="gp-sub">Eat &amp; drink <small>Restaurants, bars, the terrace...</small></div>
+      ${it.places.map((p, i) => `<div class="gp-orow">${pic(p, 'p' + i)}<div class="gp-ocol">
+        <input data-f="p${i}.name" maxlength="40" value="${gpEsc(p.name || '')}" placeholder="Name, e.g. Bar Luma">
+        <input data-f="p${i}.line" maxlength="60" value="${gpEsc(p.line || '')}" placeholder="One line - optional">
+        <div class="gp-otime"><em>Opens</em><input type="time" data-f="p${i}.opens" value="${gpEsc(p.opens || '')}"><em>Closes</em><input type="time" data-f="p${i}.closes" value="${gpEsc(p.closes || '')}"></div></div>
+        <button class="gp-ib" title="Remove" aria-label="Remove" data-del="p${i}">${gpIc(GPI.x)}</button></div>`).join('')}
+      ${it.places.length < 8 ? '<button class="gp-add" data-addp>+ Add a place</button>' : ''}
+      <div class="gp-sub">Rooms <small>Hotels only - leave empty for restaurants and bars</small></div>
+      ${it.rooms.map((r, i) => `<div class="gp-orow">${pic(r, 'r' + i)}<div class="gp-ocol"><input data-f="r${i}.name" maxlength="40" value="${gpEsc(r.name || '')}" placeholder="e.g. Deluxe Room"></div>
+        <button class="gp-ib" title="Remove" aria-label="Remove" data-del="r${i}">${gpIc(GPI.x)}</button></div>`).join('')}
+      ${it.rooms.length < 8 ? '<button class="gp-add" data-addr>+ Add a room type</button>' : ''}
+      <input type="file" id="go-file" accept="image/*" style="display:none">
+      <div class="eb-fbtns">${idx >= 0 ? '<button class="eb-del" style="margin-right:auto">Remove venue</button>' : ''}<button class="eb-no">Cancel</button><button class="eb-go">Save</button></div></div>`;
+    wire();
+  };
+  const read = () => {   // keep what's typed before a redraw
+    const q = id => s.querySelector('#' + id); if(!q('go-n')) return;
+    it.name = q('go-n').value.trim(); it.city = q('go-c').value.trim(); it.line = q('go-l').value.trim(); it.book = q('go-b').value.trim();
+    s.querySelectorAll('[data-f]').forEach(inp => { const [a, f] = inp.dataset.f.split('.'), arr = a[0] === 'p' ? it.places : it.rooms; arr[+a.slice(1)][f] = inp.value.trim(); });
+  };
+  const target = key => key === 'main' ? it : (key[0] === 'p' ? it.places : it.rooms)[+key.slice(1)];
+  let picking = null;
+  const wire = () => {
+    const fin = s.querySelector('#go-file');
+    s.querySelectorAll('[data-pic]').forEach(el => { el.onclick = () => { picking = el.dataset.pic; fin.value = ''; fin.click(); }; });
+    fin.onchange = () => { const f = fin.files && fin.files[0]; if(!f || !picking) return; read(); files.set(target(picking), f); draw(); };
+    const ap = s.querySelector('[data-addp]'); if(ap) ap.onclick = () => { read(); it.places.push({}); draw(); };
+    const ar = s.querySelector('[data-addr]'); if(ar) ar.onclick = () => { read(); it.rooms.push({}); draw(); };
+    s.querySelectorAll('[data-del]').forEach(b => b.onclick = () => { read(); const k2 = b.dataset.del; (k2[0] === 'p' ? it.places : it.rooms).splice(+k2.slice(1), 1); draw(); });
+    s.querySelector('.eb-no').onclick = () => s.remove();
+    const del = s.querySelector('.eb-del'); if(del) del.onclick = async () => { O.list.splice(idx, 1); s.remove(); gpRender(); await gpSave('Venue removed'); };
+    s.querySelector('.eb-go').onclick = async () => {
+      read();
+      if(!it.name){ toast('Type the venue name'); return; }
+      const b = it.book; if(b && !/^https:\/\//i.test(b) && b.replace(/\D/g, '').length < 8){ toast('Booking: a link starting https:// or a WhatsApp number with the country code'); return; }
+      if(it.places.some(p => !p.name) || it.rooms.some(r => !r.name)){ toast('Give every place and room a name, or remove it'); return; }
+      const go = s.querySelector('.eb-go'); go.disabled = true; go.textContent = 'Saving...';
+      try{ for(const [x, f] of files){ const old = x.path; x.path = await gpUpload(f); delete x.img; if(old) gpForgetFile({ path: old }); } }
+      catch(e){ go.disabled = false; go.textContent = 'Save'; toast('That photo could not be uploaded - try a JPG or PNG'); return; }
+      if(idx >= 0) O.list[idx] = it; else O.list.push(it);
+      s.remove(); gpRender(); await gpSave(idx >= 0 ? 'Saved - guests see it now' : it.name + ' added - guests see it now');
+    };
+  };
+  s.addEventListener('mousedown', e => { if(e.target === s) s.remove(); });
+  document.body.appendChild(s); draw();
+};
 window.gpGiftToggle = async function(){
   const g = GPE.c.gift = Object.assign({}, GPE.c.gift || {}); g.on = !g.on;
   gpRender(); await gpSave(g.on ? 'Gift vouchers on - guests see them now' : 'Gift vouchers hidden');
@@ -24205,6 +24292,7 @@ function gpRender(){
         <div class="gp-body">${gpPerksHtml(mgr)}</div></div>
       ${gpPlacesHtml()}
       ${gpGiftHtml()}
+      ${gpOthersHtml()}
       ${c.order.map(sec).join('')}
     </div>
     <div class="gp-prev"><div class="l">LIVE PREVIEW</div>${code ? `<iframe id="gp-frame" title="Guest page preview" onload="gpGoSend(400)" src="/k/${encodeURIComponent(code)}?guest=1&embed=1"></iframe>` : '<div class="none">Give a member a keyring to see the preview here.</div>'}</div></div>`;

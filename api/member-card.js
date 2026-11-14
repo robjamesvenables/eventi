@@ -28,6 +28,9 @@ function niceTime(hm){
   let h = Math.floor(m / 60) % 24; const mi = m % 60; const ap = h >= 12 ? 'pm' : 'am'; h = h % 12 || 12;
   return h + (mi ? ':' + String(mi).padStart(2, '0') : '') + ap;
 }
+// Our other venues from the guest page (gp.others) -> the app's sister venue panel, with "Open now" on each place
+function othersOf(gp, hm){ const o = gp && gp.others; if (!o || !Array.isArray(o.list)) return null;
+  return { bold: o.bold === true, list: o.list.map(x => Object.assign({}, x, { places: x.places.map(p => Object.assign({ name: p.name, img: p.img, line: p.line }, openState(p, hm))) })) }; }
 function openState(v, hm){
   const o = toMin(v.opens), c = toMin(v.closes), n = toMin(hm);
   if (o == null || c == null) return { open: null, label: v.hours || '' };
@@ -114,6 +117,7 @@ function prospectCard(pro, code, ov){
   const tonight = events.filter(e => e.date === now.date && !(e.end && toMin(e.end) > toMin(e.start || '00:00') && toMin(e.end) <= toMin(now.hm))).map(fmtEv);
   const week = events.filter(e => e.date > now.date).map(fmtEv);
   const gp = GP.build(pro.content(now.date), { company: (ov && ov.co) || 'demo', code, venues, today: now.date, who: pro.first, vip: pro.tier === 'vip', contact: cleanContact(pro.contact) });
+  const oth = othersOf(gp, now.hm);
   const rv = venues.find(v => v.review);
   const dimg = v => /^\/demo-guest\/[a-z0-9._-]+$/i.test(String(v || '')) ? String(v) : '';
   const hotels = (Array.isArray(pro.hotels) ? pro.hotels : []).slice(0, 6).map(h => ({ key: String(h.key || '').replace(/[^a-z0-9]/gi, '').slice(0, 20), name: String(h.name || '').slice(0, 60), city: String(h.city || '').slice(0, 40),
@@ -127,7 +131,7 @@ function prospectCard(pro, code, ov){
     rows: pro.newbie.rows.slice(0, 6).map(r => ({ icon: String(r.icon || '').slice(0, 10), title: String(r.title || '').slice(0, 40), text: String(r.text || '').slice(0, 160) })) } : null;
   const wall = (Array.isArray(pro.wall) ? pro.wall : []).slice(0, 20).map(p => ({ club: !!p.club, by: String(p.by || '').slice(0, 40), ini: String(p.ini || '').slice(0, 3), when: String(p.when || '').slice(0, 30),
     text: String(p.text || '').slice(0, 300), img: dimg(p.img), clap: Math.max(0, +p.clap || 0), fire: Math.max(0, +p.fire || 0) })).filter(p => p.text);
-  return { ok: true, kind: pro.kind === 'padel' ? 'padel' : '', bookTop: bt, coaches, newbie: nb, wall, soloWa: waOf(pro.soloWa), guide: /^[a-z0-9-]{2,30}$/.test(pro.guide || '') ? pro.guide : '', brand: pro.brand, logo: pro.logo, icon: pro.icon || '', hotels, hotelsBold: pro.hotelsBold === true, code, first: pro.first, tier: pro.tier, visits: pro.visits, favourite: pro.favourite, gp,
+  return { ok: true, kind: pro.kind === 'padel' ? 'padel' : '', bookTop: bt, coaches, newbie: nb, wall, soloWa: waOf(pro.soloWa), guide: /^[a-z0-9-]{2,30}$/.test(pro.guide || '') ? pro.guide : '', brand: pro.brand, logo: pro.logo, icon: pro.icon || '', hotels: oth ? oth.list : hotels, hotelsBold: oth ? oth.bold : false, code, first: pro.first, tier: pro.tier, visits: pro.visits, favourite: pro.favourite, gp,
     since: pro.since, perks: pro.perks, perkIcons: pro.perkIcons, offers: true, reviewAsk: rv ? { venue: rv.name, date: addDays(now.date, -1), when: 'yesterday', demo: true } : null,
     birthdayWeek: false, tonight, week, menus: { food: [], drinks: [] }, venues, stay: https(pro.stay), stayWa: waOf(pro.stayWa), stayPhone: phoneOf(pro.stayPhone), contact: cleanContact(pro.contact),
     reward: pro.reward ? { target: pro.reward.target, text: pro.reward.text, done: Math.min(pro.visits, pro.reward.target), left: Math.max(0, pro.reward.target - pro.visits), round: 0 } : null };
@@ -258,6 +262,7 @@ module.exports = async (req, res) => {
     if (!GP.hasContent(gpc) && demo) gpc = Object.assign(GP.demo(now.date), gpc && gpc.order ? { order: gpc.order, off: gpc.off || {} } : {});
     else if (demo && gpc) gpc = GP.topUpDemo(gpc, now.date);   // a saved demo page still gets newer demo extras (Instagram names, new photos)
     const gp = GP.build(gpc || {}, { company: co, code, venues, today: now.date, who: first, vip: tier === 'vip', contact: cleanContact(page.contact) });
+    const oth = othersOf(gp, now.hm);
 
     // The numbers: one page open, and a view for every card shown (not when staff preview it)
     if (!(req.query && req.query.pv)) {
@@ -267,7 +272,7 @@ module.exports = async (req, res) => {
     }
 
     return L.send(res, 200, {
-      ok: true, brand, logo, code, vq, first, tier, visits: visits.length, favourite, gp,
+      ok: true, brand, logo, code, vq, first, tier, visits: visits.length, favourite, gp, hotels: oth ? oth.list : [], hotelsBold: oth ? oth.bold : false,
       since: new Date(m.created_at).getFullYear(), perks, perkIcons, offers: m.consent === true, reviewAsk,
       birthdayWeek: birthdayWeek(m.birthday, now.date),
       tonight: tonight.slice(0, 12), week: week.slice(0, 40), menus, venues, reward, stay: https(page.stay), stayWa: waOf(page.stayWa), stayPhone: phoneOf(page.stayPhone), contact: cleanContact(page.contact)

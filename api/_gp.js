@@ -176,7 +176,20 @@ function build(c, ctx){
       // the voucher page: amounts to pick, a maximum for "Other", a members' bonus, a photo; the message is written on the phone
       amounts: amts.length ? amts : [500000, 1000000, 2000000].filter(x => !mx || x <= mx), max: mx, bonus: Math.max(0, Math.min(50, Math.round(+gv.bonus || 0))), img: ph.img || '',
       kind: b.kind, to: b.kind === 'wa' ? b.href.replace(/^https:\/\/wa\.me\/(\d+).*$/, '$1') : (b.email || ''), who }; }
-  return { order, slides, deals, events, gallery, places, theme, gift, motion: c.motion === true, film, filmStart, filmTall: !!film && filmTall && !(tp.kind === 'yt'), video, videoPoster, videoTall };
+  // Our other venues (Guest page > Our other venues, off unless switched on): sister venues or hotels in the same app - visits there count too.
+  // Each one opens its own page: its places (Eat & drink), rooms if it's a hotel, and a booking button (a link or a WhatsApp number).
+  let others = null; const ov = c.others && typeof c.others === 'object' ? c.others : null;
+  if (ov && ov.on) {
+    const hm = x => /^([01]\d|2[0-3]):[0-5]\d$/.test(x || '') ? x : '';
+    const list = (Array.isArray(ov.list) ? ov.list : []).slice(0, 4).map((o, i) => { o = o || {};
+      const n = String(o.book || '').trim(), dg = n.replace(/\D/g, '');
+      const book = httpsOk(n) ? n : (!/@/.test(n) && dg.length >= 8 && dg.length <= 16 ? 'https://wa.me/' + dg + '?text=' + encodeURIComponent(who + " I'd love to book a table at " + str(o.name, 60) + ' - could you let me know what you have? Thank you!') : '');
+      return { key: (String(o.id || '').replace(/[^a-z0-9]/gi, '') || 'v' + i).slice(0, 20), name: str(o.name, 60).trim(), city: str(o.city, 40).trim(), img: img(o), line: str(o.line, 90).trim(), book,
+        places: (Array.isArray(o.places) ? o.places : []).slice(0, 8).map(p => ({ name: str((p || {}).name, 40).trim(), img: img(p), line: str((p || {}).line, 60).trim(), opens: hm((p || {}).opens), closes: hm((p || {}).closes) })).filter(p => p.name),
+        rooms: (Array.isArray(o.rooms) ? o.rooms : []).slice(0, 8).map(r => ({ name: str((r || {}).name, 40).trim(), img: img(r) })).filter(r => r.name) }; }).filter(o => o.name);
+    if (list.length) others = { bold: ov.bold === true, list };
+  }
+  return { order, slides, deals, events, gallery, places, theme, gift, others, motion: c.motion === true, film, filmStart, filmTall: !!film && filmTall && !(tp.kind === 'yt'), video, videoPoster, videoTall };
 }
 
 // The name under the app icon on a guest's phone: phones cut it after about 12 letters ("The Trans Resort Bali" -> "Trans Resort")

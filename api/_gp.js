@@ -169,7 +169,13 @@ function build(c, ctx){
   let gift = null; const gv = c.gift && typeof c.gift === 'object' ? c.gift : null;
   if (gv && gv.on) { const to = String(gv.to || '').trim(), kind = /@/.test(to) ? 'email' : /\d{6,}/.test(to) ? 'wa' : ((ctx.contact || {}).email ? 'email' : 'wa');
     const b = button({ btn: kind, to, venue: '' }, 'a gift voucher');
-    if (b) gift = { title: str(gv.title, 60).trim() || "A night they'll remember", line: str(gv.line, 200).trim(), btn: Object.assign(b, { label: 'Ask about vouchers' }) }; }
+    const mx = Math.max(0, Math.min(1e9, Math.round(+gv.max || 0)));
+    const amts = (Array.isArray(gv.amounts) ? gv.amounts : []).map(x => Math.round(+x)).filter(x => x >= 1000 && (!mx || x <= mx)).slice(0, 4);
+    const ph = slides.find(x => x.img) || (places || []).find(x => x.img) || {};
+    if (b) gift = { title: str(gv.title, 60).trim() || "A night they'll remember", line: str(gv.line, 200).trim(), btn: Object.assign(b, { label: 'Ask about vouchers' }),
+      // the voucher page: amounts to pick, a maximum for "Other", a members' bonus, a photo; the message is written on the phone
+      amounts: amts.length ? amts : [500000, 1000000, 2000000].filter(x => !mx || x <= mx), max: mx, bonus: Math.max(0, Math.min(50, Math.round(+gv.bonus || 0))), img: ph.img || '',
+      kind: b.kind, to: b.kind === 'wa' ? b.href.replace(/^https:\/\/wa\.me\/(\d+).*$/, '$1') : (b.email || ''), who }; }
   return { order, slides, deals, events, gallery, places, theme, gift, motion: c.motion === true, film, filmStart, filmTall: !!film && filmTall && !(tp.kind === 'yt'), video, videoPoster, videoTall };
 }
 

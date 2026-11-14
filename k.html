@@ -651,7 +651,10 @@ svg{display:block}
     };
     // Hotel guide: back to the venue's free guest guide (the room / menu QR), without it jumping straight back here
     var guideBtn = d.guide ? '<a class="hg" href="/g/' + esc(d.guide) + '?stay=1">' + svg('<path d="M3 21h18M5 21V7l7-4 7 4v14M9 9h1M14 9h1M9 13h1M14 13h1M10 21v-4h4v4"/>', 17) + 'Hotel guide</a>' : '';
-    var topHtml = function(inner){ return head(d, 'Welcome back,<br><span translate="no">' + esc(String(d.first).split(' ')[0]) + '</span>', 'Good to see you again. Here\'s what\'s on.').replace(/<\/div>$/, guideBtn + inner + '</div>'); };
+    // Good morning / afternoon / evening by Bali time (the venue's clock), so it's never wrong on a first visit
+    var hi = (function(){ var h = 12; try { h = +new Intl.DateTimeFormat('en-GB', { timeZone: 'Asia/Makassar', hour: '2-digit', hour12: false }).format(new Date()) % 24; } catch (e) { h = new Date().getHours(); }
+      return h >= 5 && h < 12 ? 'Good morning' : h >= 12 && h < 18 ? 'Good afternoon' : 'Good evening'; })();
+    var topHtml = function(inner){ return head(d, hi + ',<br><span translate="no">' + esc(String(d.first).split(' ')[0]) + '</span>', 'Good to see you. Here\'s what\'s on.').replace(/<\/div>$/, guideBtn + inner + '</div>'); };
 
     // ── The member's own things (same at every place) ──
     // Their film plays on its own at the very top (muted, on a loop); 'Sound on' opens it full with sound

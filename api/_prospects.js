@@ -243,25 +243,29 @@ P.sundari = {
     const y = year(today);
     return {
       theme: { top: '#5E2A17', acc: '#7D3A20', pg: '#F7F2EC' }, motion: true,
+      gift: { on: true, title: 'The gift of a slow afternoon', line: 'A spa voucher for someone who needs it. Tell us the amount and who it is for.', to: SUN_WA, amounts: [500000, 1000000, 2000000], max: 5000000, bonus: 10 },
       slides: [
-        { id: 'us1', img: su('hero'), title: 'Hot stone ritual', line: 'Warm stones, slow hands', btn: 'wa' },
-        { id: 'us2', img: su('lounge'), title: 'Your quiet place in Seminyak', line: 'Open every day, 9am to 10pm' },
-        { id: 'us3', img: su('balinese'), title: 'Balinese massage', line: 'The one everyone comes back for', btn: 'wa' },
-        { id: 'us4', img: su('facial'), title: 'Hydration facial', line: 'Glow after a day in the sun', btn: 'wa' }
+        { id: 'us0', img: su('bath'), title: 'Flower bath ritual', line: 'Warm water, petals, nowhere to be', btn: 'wa' },
+        { id: 'us1', img: su('cave'), title: 'Your quiet place in Seminyak', line: 'Open every day, 9am to 10pm', btn: 'wa' },
+        { id: 'us2', img: su('massage'), title: 'Balinese massage', line: 'The one everyone comes back for', btn: 'wa' },
+        { id: 'us3', img: su('couples'), title: 'Side by side', line: 'Couples rooms, two therapists', btn: 'wa' },
+        { id: 'us4', img: su('pods'), title: 'Start with your feet', line: 'Foot ritual in our woven pods', btn: 'wa' },
+        { id: 'us5', img: su('shop'), title: 'Take Sundari home', line: 'Oils, robes and singing bowls in our shop' }
       ],
       deals: [
-        { id: 'ud1', img: su('reflex'), title: 'Reflexology add-on for members', when: 'Every day · 9am–5pm', btn: 'wa' },
-        { id: 'ud2', img: su('travel'), title: 'Travel recovery after your flight', when: 'Every day', btn: 'wa' },
-        { id: 'ud3', img: su('hands'), title: 'Signature polish with any massage', when: 'Mon–Thu', btn: 'wa' }
+        { id: 'ud1', img: su('pedi'), title: 'Reflexology add-on for members', when: 'Every day · 9am–5pm', btn: 'wa' },
+        { id: 'ud2', img: su('daybed'), title: 'Travel recovery after your flight', when: 'Every day', btn: 'wa' },
+        { id: 'ud3', img: su('room'), title: 'Members: 90 minutes for the price of 60', when: 'Mon–Thu · before 2pm', btn: 'wa' },
+        { id: 'ud4', img: su('hands'), title: 'Signature polish with any massage', when: 'Mon–Thu', btn: 'wa' }
       ],
       events: [
-        { id: 'ue1', img: su('kaya'), title: 'Couples ritual week', line: 'Two therapists, one room, together', date: addDays(today, 6), time: '10:00', time2: '20:00', btn: 'wa', hl: true,
+        { id: 'ue1', img: su('couples'), title: 'Couples ritual week', line: 'Two therapists, one room, together', date: addDays(today, 6), time: '10:00', time2: '20:00', btn: 'wa', hl: true,
           details: 'Book a room for two and enjoy the same ritual side by side. Members book first.' },
         { id: 'ue2', img: su('bamboo'), title: 'Christmas gift vouchers', line: 'The gift that always fits', date: y + '-12-24', btn: 'wa',
           details: 'Treatment vouchers for friends and family, ready to send on WhatsApp.' }
       ],
-      gallery: ['hero', 'lounge', 'balinese', 'bamboo', 'kaya', 'reflex', 'facial', 'hands'].map((n, i) => ({ id: 'ug' + i, img: su(n) })),
-      places: { 'sundari wellness': { img: su('lounge'), area: 'Seminyak', ig: 'sundari.wellness' } }
+      gallery: ['bath', 'cave', 'corridor', 'massage', 'pods', 'couples', 'reception', 'shop', 'room', 'daybed', 'lounge2', 'pedi', 'basins', 'couple', 'jade', 'feet', 'hands2', 'scrub', 'hero', 'lounge', 'balinese', 'bamboo', 'kaya', 'reflex', 'facial', 'hands'].map((n, i) => ({ id: 'ug' + i, img: su(n) })),
+      places: { 'sundari wellness': { img: su('reception'), area: 'Seminyak', ig: 'sundari.wellness' } }
     };
   }
 };

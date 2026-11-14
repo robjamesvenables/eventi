@@ -288,25 +288,29 @@ P.sangsaka = {
         { id: 'ss1', img: sg('diners'), title: 'Modern Indonesian, with a twist', line: 'Down a back street in Seminyak', venue: 'Sangsaka', btn: 'book', url: SNG_BOOK },
         { id: 'ss2', img: sg('crab'), title: 'Mud crab glass noodles', line: 'From the clay pot to the table', venue: 'Sangsaka', btn: 'book', url: SNG_BOOK },
         { id: 'ss3', img: sg('mural'), title: 'Dinner under the Barong', line: 'Wood-fired plates to share', venue: 'Sangsaka', btn: 'book', url: SNG_BOOK },
-        { id: 'ss4', img: sg('room'), title: 'Tables for 2 to 50', line: 'Private dining room for up to 18', venue: 'Sangsaka', btn: 'wa' }
+        { id: 'ss4', img: sg('chef'), title: 'From our kitchen to your table', line: 'Indonesian flavours, cooked our way', venue: 'Sangsaka', btn: 'book', url: SNG_BOOK },
+        { id: 'ss5', img: sg('terrace'), title: 'Dinner on the terrace', line: 'Under the lanterns, from 5:30pm', venue: 'Sangsaka', btn: 'book', url: SNG_BOOK },
+        { id: 'ss6', img: sg('room'), title: 'Tables for 2 to 50', line: 'Private dining room for up to 18', venue: 'Sangsaka', btn: 'wa' }
       ],
       deals: [
-        { id: 'sd1', img: sg('table'), title: 'Members: 2 cocktails for 1 at DI ATAS', when: 'Daily · 7–9pm', venue: 'DI ATAS' },
+        { id: 'sd1', img: sg('bordeaux'), title: 'Members: 2 cocktails for 1 at DI ATAS', when: 'Daily · 7–9pm', venue: 'DI ATAS' },
         { id: 'sd2', img: sg('dumpling'), title: 'Dumpling night · a free plate for the table', when: 'Tuesdays', venue: 'Sangsaka', btn: 'book', url: SNG_BOOK },
-        { id: 'sd3', img: sg('fried'), title: 'Wood-fired sharing menu · Rp 650k', when: 'Sun–Thu · from 5:30pm', venue: 'Sangsaka', btn: 'book', url: SNG_BOOK }
+        { id: 'sd3', img: sg('beef'), title: 'Wood-fired sharing menu · Rp 650k', when: 'Sun–Thu · from 5:30pm', venue: 'Sangsaka', btn: 'book', url: SNG_BOOK },
+        { id: 'sd4', img: sg('wine'), title: 'Members: 15% off any bottle', when: 'Every night', venue: 'Sangsaka' }
       ],
       events: [
         { id: 'se1', img: sg('anise'), title: 'Spice Route dinner', line: 'Six courses, one night only', date: addDays(today, 8), time: '18:30', time2: '23:00', venue: 'Sangsaka', btn: 'book', url: SNG_BOOK, hl: true,
           details: 'Kieran and Yunika cook a six-course menu around the spices of the archipelago, with paired drinks.', price: 'Set menu, paired drinks available', notes: 'Members get first pick of tables.' },
-        { id: 'se2', img: sg('table'), title: 'Rooftop sessions', line: 'DJ upstairs at DI ATAS', date: addDays(today, 3), time: '21:00', time2: '01:00', venue: 'DI ATAS', btn: 'wa',
+        { id: 'se2', img: sg('bordeaux'), title: 'Rooftop sessions', line: 'DJ upstairs at DI ATAS', date: addDays(today, 3), time: '21:00', time2: '01:00', venue: 'DI ATAS', btn: 'wa',
           details: 'Cocktails and a DJ on the rooftop, late.' },
         { id: 'se3', img: sg('crab'), title: 'Christmas sharing feast', line: 'Long tables, wood-fired', date: y + '-12-25', time: '17:30', time2: '23:00', venue: 'Sangsaka', btn: 'book', url: SNG_BOOK },
         { id: 'se4', img: sg('diners'), title: "New Year's Eve", line: 'Dinner downstairs, party upstairs', date: y + '-12-31', time: '18:00', time2: '01:00', venue: 'Sangsaka', btn: 'book', url: SNG_BOOK }
       ],
-      gallery: ['diners', 'crab', 'mural', 'dumpling', 'room', 'fried', 'table', 'anise'].map((n, i) => ({ id: 'sg' + i, img: sg(n), venue: n === 'table' ? 'DI ATAS' : 'Sangsaka' })),
+      gallery: ['diners', 'crab', 'barong', 'beef', 'terrace', 'dumpling', 'chef', 'plates', 'mural', 'scallop', 'banquette', 'pork', 'team', 'egg', 'room', 'squid', 'fried', 'wine', 'table', 'bordeaux', 'anise']
+        .map((n, i) => ({ id: 'sg' + i, img: sg(n), venue: n === 'bordeaux' || n === 'table' ? 'DI ATAS' : 'Sangsaka' })),
       places: {
         'sangsaka': { img: sg('room'), area: 'Kerobokan', ig: 'sangsakabali', menus: [{ name: 'Food & drinks', url: 'https://www.sangsakabali.com/' }] },
-        'di atas': { img: sg('table'), area: 'Rooftop bar upstairs' }
+        'di atas': { img: sg('bordeaux'), area: 'Rooftop bar upstairs' }
       }
     };
   }

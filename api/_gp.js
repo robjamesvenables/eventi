@@ -165,7 +165,12 @@ function build(c, ctx){
   if (tp.kind === 'video' && pathOk(tp.path)) { video = img({ path: tp.path }); videoPoster = pathOk(tp.poster) ? img({ path: tp.poster }) : ''; videoTall = tp.tall === true; film = ''; }
   else if (tp.kind === 'yt' && /^[\w-]{11}$/.test(tp.yt || '')) { film = tp.yt; filmStart = Math.max(0, Math.min(600, Math.round(+tp.start || 0))); video = ''; }
   if (c.off && c.off.topvideo) { film = ''; video = ''; }
-  return { order, slides, deals, events, gallery, places, theme, motion: c.motion === true, film, filmStart, filmTall: !!film && filmTall && !(tp.kind === 'yt'), video, videoPoster, videoTall };
+  // Gift vouchers (Guest page > Gift vouchers, off unless switched on): one card, its button emails or WhatsApps the venue
+  let gift = null; const gv = c.gift && typeof c.gift === 'object' ? c.gift : null;
+  if (gv && gv.on) { const to = String(gv.to || '').trim(), kind = /@/.test(to) ? 'email' : /\d{6,}/.test(to) ? 'wa' : ((ctx.contact || {}).email ? 'email' : 'wa');
+    const b = button({ btn: kind, to, venue: '' }, 'a gift voucher');
+    if (b) gift = { title: str(gv.title, 60).trim() || "A night they'll remember", line: str(gv.line, 200).trim(), btn: Object.assign(b, { label: 'Ask about vouchers' }) }; }
+  return { order, slides, deals, events, gallery, places, theme, gift, motion: c.motion === true, film, filmStart, filmTall: !!film && filmTall && !(tp.kind === 'yt'), video, videoPoster, videoTall };
 }
 
 // The name under the app icon on a guest's phone: phones cut it after about 12 letters ("The Trans Resort Bali" -> "Trans Resort")

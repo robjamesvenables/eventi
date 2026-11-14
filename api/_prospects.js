@@ -267,6 +267,7 @@ const sg = n => '/demo-guest/p-sangsaka-' + n + '.jpg';
 const SNG_WA = '6281236959895';
 const SNG_BOOK = 'https://bookings.nowbookit.com/?accountid=79aa53dc-431a-4591-8682-0b6f56292e92&venueid=84&theme=light&colors=hex,666,000';
 const SNG_MAP = 'https://goo.gl/maps/i8R5KS3zYotp2UVZ8';
+const SNG_MENU = n => ({ img: '/demo-guest/p-sangsaka-menu-' + n + '.jpg' });   // their menu from the website, made into pictures (black and gold)
 P.sangsaka = {
   brand: 'Sangsaka', logo: '/demo-guest/p-sangsaka-logo.png', icon: '/demo-guest/p-sangsaka-icon', first: 'Olivia', tier: 'vip', visits: 7, since: 2025, favourite: 'Sangsaka',
   perks: ['Welcome cocktail upstairs at DI ATAS', "A chef's snack from the kitchen, on the house", 'Birthday dessert from the wood oven', 'First pick of the private dining room'],
@@ -284,6 +285,7 @@ P.sangsaka = {
     const y = year(today);
     return {
       theme: { top: '#141210', acc: '#B08D57', pg: '#F5F1EA' }, motion: true, film: 'qCGlNvdXNsc', filmTall: true,
+      gift: { on: true, title: "A dinner they'll remember", line: 'A thoughtful present for someone you love. Tell us the amount and who it is for.', to: 'info@sangsakabali.com' },
       slides: [
         { id: 'ss1', img: sg('diners'), title: 'Modern Indonesian, with a twist', line: 'Down a back street in Seminyak', venue: 'Sangsaka', btn: 'book', url: SNG_BOOK },
         { id: 'ss2', img: sg('crab'), title: 'Mud crab glass noodles', line: 'From the clay pot to the table', venue: 'Sangsaka', btn: 'book', url: SNG_BOOK },
@@ -293,7 +295,7 @@ P.sangsaka = {
         { id: 'ss6', img: sg('room'), title: 'Tables for 2 to 50', line: 'Private dining room for up to 18', venue: 'Sangsaka', btn: 'wa' }
       ],
       deals: [
-        { id: 'sd1', img: sg('bordeaux'), title: 'Members: 2 cocktails for 1 at DI ATAS', when: 'Daily · 7–9pm', venue: 'DI ATAS' },
+        { id: 'sd1', img: sg('bordeaux'), title: 'Members: 2 for 1 Jaffa Negroni at DI ATAS', when: 'Daily · 7–9pm', venue: 'DI ATAS' },
         { id: 'sd2', img: sg('dumpling'), title: 'Dumpling night · a free plate for the table', when: 'Tuesdays', venue: 'Sangsaka', btn: 'book', url: SNG_BOOK },
         { id: 'sd3', img: sg('beef'), title: 'Wood-fired sharing menu · Rp 650k', when: 'Sun–Thu · from 5:30pm', venue: 'Sangsaka', btn: 'book', url: SNG_BOOK },
         { id: 'sd4', img: sg('wine'), title: 'Members: 15% off any bottle', when: 'Every night', venue: 'Sangsaka' }
@@ -309,8 +311,8 @@ P.sangsaka = {
       gallery: ['diners', 'crab', 'barong', 'beef', 'terrace', 'dumpling', 'chef', 'plates', 'mural', 'scallop', 'banquette', 'pork', 'team', 'egg', 'room', 'squid', 'fried', 'wine', 'table', 'bordeaux', 'anise']
         .map((n, i) => ({ id: 'sg' + i, img: sg(n), venue: n === 'bordeaux' || n === 'table' ? 'DI ATAS' : 'Sangsaka' })),
       places: {
-        'sangsaka': { img: sg('room'), area: 'Kerobokan', ig: 'sangsakabali', menus: [{ name: 'Food & drinks', url: 'https://www.sangsakabali.com/' }] },
-        'di atas': { img: sg('bordeaux'), area: 'Rooftop bar upstairs' }
+        'sangsaka': { img: sg('room'), area: 'Kerobokan', ig: 'sangsakabali', menus: [{ name: 'Food', pages: ['food-1', 'food-2', 'food-3'].map(SNG_MENU) }, { name: 'Wine', pages: ['wine-1', 'wine-2', 'wine-3'].map(SNG_MENU) }] },
+        'di atas': { img: sg('bordeaux'), area: 'Rooftop bar upstairs', ig: 'sangsakabali', menus: [{ name: 'Cocktails', pages: ['cocktails'].map(SNG_MENU) }, { name: 'Wine', pages: ['wine-1', 'wine-2', 'wine-3'].map(SNG_MENU) }] }
       }
     };
   }

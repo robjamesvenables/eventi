@@ -23974,6 +23974,33 @@ function gpTopNow(){   // what's at the top right now: set in this box, or an ol
   if(/^[\w-]{11}$/.test(c.film || '')) return { kind:'yt', yt: c.film, start: +c.filmStart || 0 };
   return {};
 }
+// Gift vouchers: one card on the guest page (off unless switched on). The button emails or WhatsApps the venue.
+function gpGiftHtml(){
+  const g = (GPE.c && GPE.c.gift) || {}, on = !!g.on;
+  const to = String(g.to || '').trim(), where = /@/.test(to) ? 'Email ' + to : /\d{6,}/.test(to) ? 'WhatsApp +' + to.replace(/\D/g, '') : 'Your main contact details';
+  return `<div class="gp-sec${on ? '' : ' off'}" data-go="deals"><div class="gp-sh"><div class="n"><b>Gift vouchers</b><small>A gift voucher card for members to buy for someone else</small></div>
+    <button class="gp-tog${on ? ' on' : ''}" aria-label="Show gift vouchers" onclick="gpGiftToggle()"><i></i></button></div>
+    ${on ? `<div class="gp-body"><div class="gp-it"><div class="x"><b>${gpEsc(g.title || "A night they'll remember")}</b><small>${gpEsc(g.line || 'No extra line')} · Button: ${gpEsc(where)}</small></div>
+      <button class="gp-ib" title="Change" aria-label="Change gift voucher card" onclick="gpGiftEdit()">${gpIc(GPI.edit)}</button></div></div>` : ''}</div>`;
+}
+window.gpGiftToggle = async function(){
+  const g = GPE.c.gift = Object.assign({}, GPE.c.gift || {}); g.on = !g.on;
+  gpRender(); await gpSave(g.on ? 'Gift vouchers on - guests see them now' : 'Gift vouchers hidden');
+  if(g.on && !g.title) gpGiftEdit();
+};
+window.gpGiftEdit = function(){
+  const g = GPE.c.gift || {};
+  appModalShow({ title:'Gift vouchers', sub:'Shown as a ticket-style card on your guest page.',
+    fields:[ { label:'Title', placeholder:"e.g. A dinner they'll remember", value: g.title || '' },
+             { label:'One line - optional', placeholder:'e.g. A thoughtful present for someone you love', value: g.line || '' },
+             { label:'Button goes to - an email or a WhatsApp number (empty = your main contact)', placeholder:'e.g. info@yourvenue.com or 62812...', value: g.to || '' } ],
+    async onOk([title, line, to]){
+      to = String(to || '').trim();
+      if(to && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(to) && String(to).replace(/\D/g, '').length < 8){ toast('Type an email address or a WhatsApp number with the country code'); return; }
+      GPE.c.gift = { on:true, title:String(title || '').trim().slice(0, 60), line:String(line || '').trim().slice(0, 200), to: /@/.test(to) ? to : to.replace(/\D/g, '') };
+      gpRender(); await gpSave('Gift voucher card saved');
+    } });
+};
 function gpTopHtml(){
   const c = GPE.c, t = gpTopNow(), off = !!c.off.topvideo;
   let body;
@@ -24161,6 +24188,7 @@ function gpRender(){
       <div class="gp-sec" data-go="perks"><div class="gp-sh"><div class="n"><b>Perks and reward</b><small>On every member's card - always shown</small></div></div>
         <div class="gp-body">${gpPerksHtml(mgr)}</div></div>
       ${gpPlacesHtml()}
+      ${gpGiftHtml()}
       ${c.order.map(sec).join('')}
     </div>
     <div class="gp-prev"><div class="l">LIVE PREVIEW</div>${code ? `<iframe id="gp-frame" title="Guest page preview" onload="gpGoSend(400)" src="/k/${encodeURIComponent(code)}?guest=1&embed=1"></iframe>` : '<div class="none">Give a member a keyring to see the preview here.</div>'}</div></div>`;

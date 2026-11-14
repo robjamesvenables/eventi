@@ -741,7 +741,8 @@ body.vqopen .vq-dim{opacity:1;pointer-events:auto}body.vqopen .vq-sheet{transfor
     var homeRow = standalone || /[?&]embed=1/.test(location.search) ? '' : '<button class="addhome" id="addhome" type="button"><i>' + svg('<rect x="6" y="2" width="12" height="20" rx="3"/><path d="M12 7v7M9 11l3 3 3-3"/>', 18) + '</i><span><b>Save to your phone</b><small id="ahtx">No keyring needed to open it</small></span><em class="ahb">Add</em></button>';
     // The group's other hotels (same app, same keyring): a soft panel in the venue's own colour on the main page, each opens its own page
     var hotels = Array.isArray(d.hotels) ? d.hotels.filter(function(x){ return x && x.key && x.name; }) : [];
-    var hotelsRow = hotels.length ? '<div class="sec"><div class="ohp"><div class="lab">Our other hotels</div><small class="ohs">Your membership works here too</small>' + hotels.map(function(x){
+    var stays = hotels.some(function(x){ return x.rooms && x.rooms.length; });   // hotels say "hotels", restaurants and bars say "venues"
+    var hotelsRow = hotels.length ? '<div class="sec"><div class="ohp"><div class="lab">' + (stays ? 'Our other hotels' : 'Our other venues') + '</div><small class="ohs">Your membership works here too</small>' + hotels.map(function(x){
         return '<button class="pbig ohc" type="button" data-hotel="' + esc(x.key) + '">' + (x.img ? '<img src="' + esc(x.img) + '" alt="" loading="lazy">' : '') + (x.city ? '<em class="ohpill" translate="no">' + esc(x.city) + '</em>' : '') +
           '<span><b translate="no">' + esc(x.name) + '</b>' + (x.line ? '<small>' + esc(x.line) + '</small>' : '') + '</span></button>';
       }).join('') + '</div></div>' : '';
@@ -752,7 +753,7 @@ body.vqopen .vq-dim{opacity:1;pointer-events:auto}body.vqopen .vq-sheet{transfor
         '<div class="vname"><b translate="no">' + esc(x.name + (x.city ? ' ' + x.city : '')) + '</b><small>Your visits here count too</small></div></div></div>' +
         (x.places.length ? '<div class="sec"><div class="lab">Eat &amp; drink</div>' + cards(x.places, true) + '</div>' : '') +
         (x.rooms.length ? '<div class="sec"><div class="lab">Stay</div>' + cards(x.rooms, false) + '</div>' : '') +
-        (x.book ? '<div class="sec"><a class="ohbk" href="' + esc(x.book) + '" target="_blank" rel="noopener">' + svg('<rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/>', 20) + 'Book a room' + (x.city ? ' in ' + esc(x.city) : '') + '</a></div>' : '') +
+        (x.book ? '<div class="sec"><a class="ohbk" href="' + esc(x.book) + '" target="_blank" rel="noopener">' + svg('<rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/>', 20) + (x.rooms.length ? 'Book a room' + (x.city ? ' in ' + esc(x.city) : '') : 'Book a table at ' + esc(x.name)) + '</a></div>' : '') +
         '<div class="mvcn">Just show your keyring when you arrive.</div></div>';
     };
     var showHotel = function(k, push){

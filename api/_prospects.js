@@ -277,14 +277,19 @@ const SNG_BOOK = 'https://bookings.nowbookit.com/?accountid=79aa53dc-431a-4591-8
 const SNG_MAP = 'https://goo.gl/maps/i8R5KS3zYotp2UVZ8';
 const SNG_MENU = n => ({ img: '/demo-guest/p-sangsaka-menu-' + n + '.jpg' });   // their menu from the website, made into pictures (black and gold)
 P.sangsaka = {
+  // Same owners: Luma shows as "Our other venues" (like Trans Surabaya), Sangsaka stays the main app
+  hotels: [{ key: 'luma', name: 'Luma', city: 'Canggu', img: '/demo-guest/p-luma-room.jpg', line: 'Mediterranean, with island flavours',
+    places: [{ name: 'The restaurant', img: '/demo-guest/p-luma-table.jpg', line: 'Lunch and dinner, plates to share' },
+      { name: 'Bar Luma', img: '/demo-guest/p-luma-wine.jpg', line: 'Happy hour daily, 4 to 7pm' },
+      { name: 'From our kitchen', img: '/demo-guest/p-luma-lamb.jpg', line: 'Southern Europe, Balinese produce' },
+      { name: 'The chefs', img: '/demo-guest/p-luma-chefs.jpg', line: 'Cameron Emirali and Kieran Morland' }] }],
   brand: 'Sangsaka', logo: '/demo-guest/p-sangsaka-logo.png', icon: '/demo-guest/p-sangsaka-icon', first: 'Olivia', tier: 'vip', visits: 7, since: 2025, favourite: 'Sangsaka',
   perks: ['15% off your bill, every visit', 'Welcome cocktail upstairs at DI ATAS', "A chef's snack from the kitchen, on the house", 'Birthday dessert from the wood oven', 'First pick of the private dining room'],
   perkIcons: ['pct', 'cocktail', 'food', 'cake', 'star'],
   reward: { target: 10, text: "Chef's sharing menu for two" },
   venues: [
     { name: 'Sangsaka', area: 'Kerobokan', opens: '17:30', closes: '23:00', wa: SNG_WA, phone: '+62 812 3695 9895', email: 'info@sangsakabali.com', map: SNG_MAP, review: SNG_MAP, book: SNG_BOOK },
-    { name: 'DI ATAS', area: 'Rooftop bar upstairs', opens: '19:00', closes: '01:00', wa: SNG_WA, phone: '+62 812 3695 9895', map: SNG_MAP },
-    { name: 'Luma', area: 'Batu Bolong, Canggu', map: 'https://maps.google.com/?q=Luma%20Bali%2C%20Jl.%20Pantai%20Batu%20Bolong%2091%2C%20Canggu' }
+    { name: 'DI ATAS', area: 'Rooftop bar upstairs', opens: '19:00', closes: '01:00', wa: SNG_WA, phone: '+62 812 3695 9895', map: SNG_MAP }
   ],
   contact: { wa: SNG_WA, phone: '+62 812 3695 9895', email: 'info@sangsakabali.com', map: SNG_MAP, ig: 'sangsakabali' },
   acts: [
@@ -324,7 +329,6 @@ P.sangsaka = {
         .concat(['room', 'table', 'lamb', 'chefs', 'wine'].map((n, i) => ({ id: 'sl' + i, img: '/demo-guest/p-luma-' + n + '.jpg', venue: 'Luma' }))),
       places: {
         'sangsaka': { img: sg('room'), area: 'Kerobokan', ig: 'sangsakabali', menus: [{ name: 'Food', pages: ['food-1', 'food-2', 'food-3'].map(SNG_MENU) }, { name: 'Wine', pages: ['wine-1', 'wine-2', 'wine-3'].map(SNG_MENU) }] },
-        'luma': { img: '/demo-guest/p-luma-table.jpg', area: 'Batu Bolong, Canggu', ig: 'lumabali' },
         'di atas': { img: sg('bordeaux'), area: 'Rooftop bar upstairs', ig: 'sangsakabali', menus: [{ name: 'Cocktails', pages: ['cocktails'].map(SNG_MENU) }, { name: 'Wine', pages: ['wine-1', 'wine-2', 'wine-3'].map(SNG_MENU) }] }
       }
     };

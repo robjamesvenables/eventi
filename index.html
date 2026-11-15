@@ -24313,15 +24313,16 @@ function gpColoursHtml(){
     return `<div style="margin-top:10px"><div style="font-size:13px;font-weight:800">${name} <span style="font-weight:600;color:#64748B;font-size:12px">· ${sub}</span></div>
       <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:8px;align-items:center">${opts.map(o => `<button aria-label="${o}" title="${o}" onclick="gpColour('${k}','${o}')" style="width:34px;height:34px;border-radius:50%;background:${o};cursor:pointer;border:${o.toUpperCase() === cur ? '3px solid #0D9488;box-shadow:inset 0 0 0 2px #fff' : '1.5px solid #CBD5E1'}"></button>`).join('')}
       <button class="cw-own${opts.map(o => o.toUpperCase()).includes(cur) ? '' : ' on'}" onclick="gpWheel('${k}')">${opts.map(o => o.toUpperCase()).includes(cur) ? CW_IC + 'Your own' : '<i style="background:' + cur + '"></i>' + cur}</button></div></div>`; };
-  const dflt = ['top', 'acc', 'pg'].every(k => !t[k] || String(t[k]).toUpperCase() === GP_COL[k][2]);
+  const dflt = !t.dark && ['top', 'acc', 'pg'].every(k => !t[k] || String(t[k]).toUpperCase() === GP_COL[k][2]);
   const opt = (on, label, sub, click) => `<button onclick="${click}" style="flex:1;min-width:150px;text-align:left;border:2px solid ${on ? '#0D9488' : '#E2E8F0'};background:${on ? '#F0FDFA' : 'white'};border-radius:12px;padding:12px 14px;cursor:pointer;font-family:Inter,sans-serif"><div style="font-size:14px;font-weight:800;color:${on ? '#0F766E' : '#0F1E2E'}">${label}</div><div style="font-size:12px;color:#64748B;font-weight:600;margin-top:2px">${sub}</div></button>`;
   const now = gpThemeNow();
   return `<div class="gp-sec gp-colbox" id="gp-colours" data-go="card"><div class="gp-sh"><span class="gp-cw">${CW_IC.replace(/width="22" height="22"/, 'width="34" height="34"')}</span><div class="n"><b>Colours</b><small>Match your venue's brand</small></div><span class="gp-cnow">${now.map(c => `<i style="background:${c}"></i>`).join('')}</span></div>
     <div class="gp-body" style="gap:8px"><div style="display:flex;gap:8px;flex-wrap:wrap">${opt(dflt && !GPE.custom, 'Mavis colours', 'Navy and teal - nothing to set', "gpColour('reset')")}${opt(!dflt || GPE.custom, 'Our own colours', 'Pick colours to match your venue', 'gpOwnColours()')}</div>
-    ${!dflt || GPE.custom ? `<div style="display:flex;flex-direction:column;gap:4px">${row('top')}${row('acc')}${row('pg')}<div class="gp-hint">Text changes colour by itself so it stays easy to read.</div></div>` : ''}</div></div>`;
+    <div style="display:flex;gap:8px;flex-wrap:wrap">${opt(!t.dark, 'Light page', 'Light background', 'gpDark(false)')}${opt(!!t.dark, 'Dark page', 'Black background', 'gpDark(true)')}</div>
+    ${!dflt || GPE.custom ? `<div style="display:flex;flex-direction:column;gap:4px">${row('top')}${row('acc')}${t.dark ? '' : row('pg')}<div class="gp-hint">Text changes colour by itself so it stays easy to read.</div></div>` : ''}</div></div>`;
 }
 // The three colours in use now (banner, buttons & headings, page background) - shown on the Colours box and the Design your page button
-function gpThemeNow(){ const t = (GPE.c && GPE.c.theme) || {}; return ['top', 'acc', 'pg'].map(k => /^#[0-9a-f]{6}$/i.test(t[k] || '') ? t[k] : GP_COL[k][2]); }
+function gpThemeNow(){ const t = (GPE.c && GPE.c.theme) || {}; return ['top', 'acc', 'pg'].map(k => k === 'pg' && t.dark ? '#0A0A0A' : /^#[0-9a-f]{6}$/i.test(t[k] || '') ? t[k] : GP_COL[k][2]); }
 async function gpDesignDots(){
   const el = document.getElementById('ms-dots'); if(!el) return;
   if(!GPE.loaded){ try{ await gpLoad(); }catch(e){ return; } }
@@ -24333,6 +24334,14 @@ window.gpOwnColours = async function(){
   GPE.custom = true;
   if(prev && ['top', 'acc', 'pg'].some(x => prev[x])){ GPE.c.theme = Object.assign({}, prev); gpRender(); await gpSave('Colours saved'); try{ gpDesignDots(); }catch(e){} }
   else gpRender();
+};
+// Light or dark page: dark = black page, black banner and gold buttons to start with (they can still pick their own banner and button colours)
+window.gpDark = async function(on){
+  const t = GPE.c.theme || (GPE.c.theme = {});
+  if(!!t.dark === !!on) return;
+  if(on){ GPE.c.themeLight = Object.assign({}, t); delete GPE.c.themeLight.dark; GPE.c.theme = { top: '#141414', acc: (t.acc && String(t.acc).toUpperCase() !== GP_COL.acc[2]) ? t.acc : '#CDA86B', dark: true }; GPE.custom = true; }
+  else { GPE.c.theme = Object.assign({}, GPE.c.themeLight || {}); delete GPE.c.theme.dark; }
+  gpRender(); await gpSave(on ? 'Dark page on' : 'Light page on'); try{ gpDesignDots(); }catch(e){}
 };
 window.gpColour = async function(k, v){
   // Dressed demo: colours are always saved in full, so an empty one never falls back to the prospect's own

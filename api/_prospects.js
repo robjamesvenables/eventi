@@ -298,7 +298,6 @@ P.sangsaka = {
   content: today => {
     const y = year(today);
     return {
-      others: { bold: true },
       theme: { top: '#141210', acc: '#CDA86B', pg: '#F5F1EA' }, motion: true, video: '/demo-guest/p-sng-film.mp4', videoTall: true,
       gift: { on: true, title: "A dinner they'll remember", line: 'A thoughtful present for someone you love. Tell us the amount and who it is for.', to: SNG_WA, amounts: [500000, 1000000, 2000000], max: 5000000 },
       slides: [

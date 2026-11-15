@@ -16,7 +16,7 @@ const P = {
     reward: { target: 15, text: "Chef's fire menu for two" },
     venues: [
       { name: 'Shelter Pererenan', area: 'Pererenan', opens: '12:00', closes: '00:00', map: 'https://maps.app.goo.gl/Z9h6Ns2VTGCUGSeH7', wa: '6282340040199', phone: '+62 823 4004 0199', email: 'info@shelterbali.com', review: 'https://maps.app.goo.gl/Z9h6Ns2VTGCUGSeH7' },
-      { name: 'Shelter Uluwatu', area: 'Coming soon', email: 'info@shelterbali.com' }
+      { name: 'Shelter Uluwatu', area: 'Uluwatu', email: 'info@shelterbali.com' }
     ],
     acts: [
       { title: 'Sunday BBQ', line: 'Whole fish and meats over the fire', every: [0], start: '12:00', end: '17:00', venue: 'Shelter Pererenan' },
@@ -32,7 +32,7 @@ const P = {
           { id: 'ps2', img: sh('flame'), title: 'Wood roasted moon scallops', line: 'Lemon butter, chilli salt', venue: 'Shelter Pererenan', btn: 'book', url: SHELTER_BOOK },
           { id: 'ps3', img: sh('cocktails'), title: 'Sundowners from 5pm', line: 'Mezcal, agave and fresh fruit', venue: 'Shelter Pererenan' },
           { id: 'ps4', img: sh('party'), title: 'Celebrate with us', line: 'Birthdays, big nights, the whole crew', venue: 'Shelter Pererenan', btn: 'book', url: SHELTER_BOOK },
-          { id: 'ps5', img: sh('coals'), title: 'Charred over coals, by hand', line: 'Wood-fired Middle Eastern', venue: 'Shelter Uluwatu' }
+          { id: 'ps5', img: sh('coals'), title: 'Charred over coals, by hand', line: 'Coming soon to Uluwatu', venue: 'Shelter Uluwatu' }
         ],
         deals: [
           { id: 'pd1', img: sh('cocktails'), title: 'Mezcal hour · 2 for 1 Sinaloa', when: 'Daily · 5–7pm', venue: 'Shelter Pererenan' },
@@ -54,7 +54,7 @@ const P = {
         places: {
           'shelter pererenan': { img: sh('entrance'), area: 'Pererenan', ig: 'shelter.pererenan', menus: [
             { name: 'Lunch', url: 'https://www.shelterbali.com/lunch-menu' }, { name: 'Dinner', url: 'https://www.shelterbali.com/dinner-menu' }, { name: 'Drinks', url: 'https://www.shelterbali.com/drink-menu' }] },
-          'shelter uluwatu': { img: sh('coals'), area: 'Coming soon' }
+          'shelter uluwatu': { img: sh('coals'), area: 'Uluwatu', soon: true }
         }
       };
     }

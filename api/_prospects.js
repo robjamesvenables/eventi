@@ -10,7 +10,7 @@ const sh = n => '/demo-guest/p-shelter-' + n + '.jpg';
 
 const P = {
   shelter: {
-    brand: 'Shelter', logo: '/demo-guest/p-shelter-logo.png', first: 'Stephen', tier: 'vip', visits: 12, since: 2024, favourite: 'Shelter Pererenan',
+    brand: 'Shelter', logo: '/demo-guest/p-shelter-logo.png', first: 'Stephen', tier: 'member', visits: 12, since: 2024, favourite: 'Shelter Pererenan',
     perks: ['Glass of house wine with every dinner', 'First pick of tables for Shelter Sessions', 'Birthday dessert from the fire', 'Skip the wait for Sunday BBQ'],
     perkIcons: ['glass', 'ticket', 'cake', 'star'],
     reward: { target: 15, text: "Chef's fire menu for two" },
@@ -67,7 +67,7 @@ P.trans = {
   club: [{ key: 'shelter', since: 'Mar 2025', visits: 3 }],
    // Mavis Club network demo: the other venues this guest belongs to (shown only when switched on)
   guide: 'trans',   // its guest guide (/g/trans): Hotel guide button on the member page
-  brand: 'The Trans Resort Bali', logo: '/demo-guest/p-trans-logo.png', icon: '/demo-guest/p-trans-icon', first: 'Alexander', tier: 'vip', visits: 6, since: 2025, favourite: 'The 18th',   // icon: home-screen app icon (-192.png and -512.png)
+  brand: 'The Trans Resort Bali', logo: '/demo-guest/p-trans-logo.png', icon: '/demo-guest/p-trans-icon', first: 'Alexander', tier: 'member', visits: 6, since: 2025, favourite: 'The 18th',   // icon: home-screen app icon (-192.png and -512.png)
   perks: ['Welcome drink at The 18th Rooftop', 'Late check-out until 2pm, when available', '15% off at the spa', 'Free kids club afternoons'],
   perkIcons: ['cocktail', 'key', 'leaf', 'smile'],
   reward: { target: 10, text: 'One night in a pool villa' },
@@ -162,7 +162,7 @@ P.bpa = {
     { icon: 'levels', title: 'What does 2.5 mean?', text: 'Levels go from 0 (first time) to 7 (pro). Most beginners start around 1. Not sure? Ask a coach.' },
     { icon: 'swap', title: 'How an Americana works', text: 'Sign up alone, we mix the teams. Play short games with different partners. Great for meeting people.' }
   ] },
-  brand: 'Bali Padel Academy', logo: '/demo-guest/p-bpa-logo.png', icon: '/demo-guest/p-bpa-icon', first: 'Eric', tier: 'vip', visits: 7, since: 2024, favourite: 'Padel Courts',
+  brand: 'Bali Padel Academy', logo: '/demo-guest/p-bpa-logo.png', icon: '/demo-guest/p-bpa-icon', first: 'Eric', tier: 'member', visits: 7, since: 2024, favourite: 'Padel Courts',
   perks: ['Member prices at the restaurant', '15% off in the pro shop', 'Free pool access after your game', 'Kids play free in the play park'],
   perkIcons: ['food', 'tag', 'sun', 'smile'],
   reward: { target: 10, text: 'A free NOX ball tube and smoothie' },
@@ -236,7 +236,7 @@ P.bpa = {
 const su = n => '/demo-guest/p-sun-' + n + '.jpg';
 const SUN_WA = '62811365563';
 P.sundari = {
-  brand: 'Sundari Wellness', logo: '/demo-guest/p-sundari-logo.png', icon: '/demo-guest/p-sundari-icon', first: 'Demian', tier: 'vip', visits: 4, since: 2025, favourite: 'Sundari Wellness',
+  brand: 'Sundari Wellness', logo: '/demo-guest/p-sundari-logo.png', icon: '/demo-guest/p-sundari-icon', first: 'Demian', tier: 'member', visits: 4, since: 2025, favourite: 'Sundari Wellness',
   perks: ['10% off every treatment', 'A birthday ritual on us', "Members-only treatment of the month", 'First pick of your favourite therapist'],
   perkIcons: ['leaf', 'cake', 'star', 'heart'],
   reward: { target: 10, text: 'A 60-minute Balinese massage' },
@@ -282,7 +282,7 @@ const SNG_MAP = 'https://goo.gl/maps/i8R5KS3zYotp2UVZ8';
 const SNG_MENU = n => ({ img: '/demo-guest/p-sangsaka-menu-' + n + '.jpg' });   // their menu from the website, made into pictures (black and gold)
 P.sangsaka = {
 
-  brand: 'Sangsaka', logo: '/demo-guest/p-sangsaka-logo.png', icon: '/demo-guest/p-sangsaka-icon', first: 'Kieran', tier: 'vip', visits: 7, since: 2025, favourite: 'Sangsaka',
+  brand: 'Sangsaka', logo: '/demo-guest/p-sangsaka-logo.png', icon: '/demo-guest/p-sangsaka-icon', first: 'Kieran', tier: 'member', visits: 7, since: 2025, favourite: 'Sangsaka',
   perks: ['15% off your bill, every visit', 'Welcome cocktail upstairs at DI ATAS', "A chef's snack from the kitchen, on the house", 'Birthday dessert from the wood oven', 'First pick of the private dining room'],
   perkIcons: ['pct', 'cocktail', 'food', 'cake', 'star'],
   reward: { target: 10, text: "Chef's sharing menu for two" },
@@ -340,7 +340,7 @@ const MS_BOOK = 'https://www.sevenrooms.com/explore/masonryrestaurantcanggu/rese
 const MS_WA = '6285792505028';
 const ms = n => '/demo-guest/p-masonry-' + n + '.jpg';
 P.masonry = {
-  brand: 'Masonry', logo: '/demo-guest/p-masonry-logo.png', icon: '/demo-guest/p-masonry-icon', first: 'Ben', tier: 'vip', visits: 9, since: 2024, favourite: 'Masonry Canggu',
+  brand: 'Masonry', logo: '/demo-guest/p-masonry-logo.png', icon: '/demo-guest/p-masonry-icon', first: 'Ben', tier: 'member', visits: 9, since: 2024, favourite: 'Masonry Canggu',
   perks: ['10% off your bill at every Masonry', 'A Masonry Old Fashioned on arrival', 'House charcuterie for the table, on us', 'Birthday dessert from the wood oven', 'Priority bookings at all three venues'],
   perkIcons: ['pct', 'cocktail', 'food', 'cake', 'star'],
   reward: { target: 10, text: '48-hour short rib dinner for two' },
@@ -412,7 +412,7 @@ const lm = n => '/demo-guest/p-luma-' + n + '.jpg';
 const LUMA_WA = '6281139414999';
 const LUMA_MAP = 'https://maps.google.com/?q=Luma+Jl.+Pantai+Batu+Bolong+91+Canggu';
 P.luma = {
-  brand: 'Luma', logo: '/demo-guest/p-luma-logo.png', icon: '/demo-guest/p-luma-icon', first: 'Olivia', tier: 'vip', visits: 6, since: 2025, favourite: 'Luma',
+  brand: 'Luma', logo: '/demo-guest/p-luma-logo.png', icon: '/demo-guest/p-luma-icon', first: 'Olivia', tier: 'member', visits: 6, since: 2025, favourite: 'Luma',
   perks: ['10% off your bill, every visit', 'A Negroni on tap at Bar Luma on arrival', 'Bread and olives for the table, on us', 'Birthday dessert from the kitchen', 'First pick of tables for guest chef nights'],
   perkIcons: ['pct', 'cocktail', 'food', 'cake', 'star'],
   reward: { target: 10, text: 'Long lunch for two, wine included' },
@@ -464,7 +464,7 @@ P.luma = {
 const bc = n => '/demo-guest/p-brunch-' + n + '.jpg';
 const BC_WA = '6281138312910';
 P.brunch = {
-  brand: 'Brunch Club', logo: '/demo-guest/p-brunch-logo.png', first: 'Helen', tier: 'vip', visits: 8, since: 2025, favourite: 'Brunch Club Berawa',
+  brand: 'Brunch Club', logo: '/demo-guest/p-brunch-logo.png', first: 'Helen', tier: 'member', visits: 8, since: 2025, favourite: 'Brunch Club Berawa',
   perks: ['10% off your bill, every visit', 'A free coffee with every brunch', 'Skip the queue at weekends', 'Birthday porncakes on us', 'First taste of new menu items'],
   perkIcons: ['pct', 'coffee', 'star', 'cake', 'sparkle'],
   reward: { target: 10, text: 'Brunch for two, porncakes included' },
@@ -514,7 +514,7 @@ P.brunch = {
 const LO_WA = '6281573061887';   // Lola's Uluwatu (Time Out); Canggu number not found yet
 const lo = n => '/demo-guest/p-lolas-' + n + '.jpg';
 P.lolas = {
-  brand: "Lola's", logo: '/demo-guest/p-lolas-logo.png', icon: '/demo-guest/p-lolas-icon', first: 'Jake', tier: 'vip', visits: 6, since: 2025, favourite: "Lola's Canggu",
+  brand: "Lola's", logo: '/demo-guest/p-lolas-logo.png', icon: '/demo-guest/p-lolas-icon', first: 'Jake', tier: 'member', visits: 6, since: 2025, favourite: "Lola's Canggu",
   perks: ['10% off your bill, every visit', 'A free margarita on your birthday', 'Chips and guac on us with any taco plate', "Priority tables on Taco Tuesday"],
   perkIcons: ['pct', 'cake', 'food', 'star'],
   reward: { target: 10, text: 'Tacos and margaritas for two' },

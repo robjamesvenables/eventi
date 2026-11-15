@@ -171,7 +171,8 @@ P.bpa = {
     { name: 'Restaurant', opens: '07:00', closes: '22:00' },
     { name: 'Pro Shop', opens: '08:00', closes: '21:00' },
     { name: 'Infinity Pool', opens: '07:00', closes: '20:00' },
-    { name: 'Kids Area', opens: '08:00', closes: '19:00' }
+    { name: 'Kids Area', opens: '08:00', closes: '19:00' },
+    { name: 'Recovery Area', opens: '07:00', closes: '21:00' }
   ].map(v => Object.assign({ area: 'Canggu', map: BPA_MAP }, v)),
   contact: { map: BPA_MAP, ig: 'balipadelacademy' },
   acts: [
@@ -204,25 +205,28 @@ P.bpa = {
         { id: 'bs5', img: bp('lounge'), title: 'New or playing solo?', line: 'Our front desk will find you a game', venue: 'Padel Courts' },
         { id: 'bs2', img: bp('pool'), title: 'Cool down in the infinity pool', line: 'Free for members after your game', venue: 'Infinity Pool' },
         { id: 'bs3', img: bp('nox'), title: 'Powered by NOX', line: 'Try the new rackets in our pro shop', venue: 'Pro Shop' },
-        { id: 'bs4', img: bp('building'), title: 'Sauna & ice bath', line: 'Coming soon · members first', venue: '' }
+        { id: 'bs4', img: bp('rec-icebath'), title: 'Sauna & ice bath', line: 'Recover after your game, over the rice fields', venue: 'Recovery Area' }
       ],
       deals: [
         { id: 'bd1', img: bp('lounge'), title: 'Smoothie hour · 2 for 1', when: 'Mon - Fri · 5 - 7pm', venue: 'Restaurant' },
         { id: 'bd2', img: bp('nox'), title: 'NOX rackets · members 15% off', when: 'This week', venue: 'Pro Shop' },
-        { id: 'bd3', img: bp('pool'), title: 'Kids play free while you play', when: 'Every day', venue: 'Kids Area' }
+        { id: 'bd3', img: bp('pool'), title: 'Kids play free while you play', when: 'Every day', venue: 'Kids Area' },
+        { id: 'bd4', img: bp('rec-sauna'), title: 'Members: free sauna after any lesson', when: 'Every day', venue: 'Recovery Area' }
       ],
       events: [
         { id: 'be1', img: bp('events'), title: 'NOX Cup · December', line: 'Bali\'s biggest padel weekend', date: y + '-12-12', time: '09:00', time2: '22:00', venue: 'Padel Courts', btn: 'book', url: PT, hl: true,
           details: 'Two days of padel on all 7 courts, finals on the NOX Stadium court, DJ and food all weekend.' },
         { id: 'be2', img: bp('courts'), title: 'Members Americana night', line: 'Mixed levels · drinks after', date: addDays(today, 5), time: '18:00', time2: '21:00', venue: 'Padel Courts', btn: 'book', url: PT }
       ],
-      gallery: ['building', 'courts', 'lounge', 'events', 'pool', 'nox'].map((n, i) => ({ id: 'bg' + i, img: bp(n), venue: '' })),
+      gallery: ['building', 'courts', 'lounge', 'events', 'pool', 'nox'].map((n, i) => ({ id: 'bg' + i, img: bp(n), venue: '' }))
+        .concat(['rec-view', 'rec-sauna', 'rec-icebath'].map((n, i) => ({ id: 'br' + i, img: bp(n), venue: 'Recovery Area' }))),
       places: {
         'padel courts': { img: bp('courts'), area: '7 panoramic courts · NOX Stadium', ig: 'balipadelacademy', menus: [{ name: 'Lessons & prices', pages: [{ img: '/demo-guest/p-bpa-lessons.jpg' }] }] },
         'restaurant': { img: bp('events'), area: 'All-day food, coffee and smoothies', ig: 'balipadelacademy' },
         'pro shop': { img: bp('nox'), area: 'NOX rackets, balls and gear' },
         'infinity pool': { img: bp('pool'), area: 'Swim after your game' },
-        'kids area': { img: bp('building'), area: 'Kids academy · ages 5 - 14', menus: [{ name: 'Kids academy', pages: [{ img: '/demo-guest/p-bpa-lessons.jpg' }] }] }
+        'kids area': { img: bp('building'), area: 'Kids academy · ages 5 - 14', menus: [{ name: 'Kids academy', pages: [{ img: '/demo-guest/p-bpa-lessons.jpg' }] }] },
+        'recovery area': { img: bp('rec-view'), area: 'Sauna and ice bath over the rice fields' }
       }
     };
   }

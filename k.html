@@ -1004,7 +1004,8 @@ body.vqopen .vq-dim{opacity:1;pointer-events:auto}body.vqopen .vq-sheet{transfor
     var menuHtml = function(p){
       var ms = (p && p.menus) || []; if (!ms.length) return '';
       return '<div class="vmenu">' + ms.map(function(m, i){ var food = /food|lunch|dinner|brunch|break|kitchen|eat/i.test(m.name), drink = /drink|bar|cocktail|wine|bev/i.test(m.name);
-        var ic = svg(/lesson|price|academy|class|course/i.test(m.name) ? EI.cal : (drink && !food ? PI.cocktail : PI.food), 18) + '<span>' + esc(m.name) + '</span>';
+        var spa = /treat|spa|massage|facial|ritual|wellness|beauty|nail|body/i.test(m.name);   // icon follows the name the venue gives the menu
+        var ic = svg(/lesson|price|academy|class|course/i.test(m.name) ? EI.cal : spa ? PI.leaf : drink && !food ? PI.cocktail : food ? PI.food : '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M8 13h8M8 17h5"/>', 18) + '<span>' + esc(m.name) + '</span>';
         return (m.pages && m.pages.length) ? '<a href="#" role="button" data-menu="' + i + '">' + ic + '</a>' : '<a href="' + esc(m.url) + '" target="_blank" rel="noopener">' + ic + '</a>'; }).join('') + '</div>';
     };
     var placeHtml = function(key){
@@ -1356,7 +1357,7 @@ body.vqopen .vq-dim{opacity:1;pointer-events:auto}body.vqopen .vq-sheet{transfor
       Array.prototype.forEach.call(document.querySelectorAll('[data-gal]'), function(b){ b.onclick = function(){ viewer(GAL[b.getAttribute('data-gal')], +b.getAttribute('data-i')); }; });
       // Menu: its pictures, one under the other, inside the page (scroll, pinch to zoom, X to close) - never a download
       Array.prototype.forEach.call(document.querySelectorAll('[data-menu]'), function(b){ b.onclick = function(e){ e.preventDefault();
-        var m = ((placeOf(key) || {}).menus || [])[+b.getAttribute('data-menu')]; if (!m || !m.pages || !m.pages.length) return;
+        var m = ((placeOf(key) || (!many ? places[0] : null) || {}).menus || [])[+b.getAttribute('data-menu')];   // one-place venues: the menu button sits on the main page if (!m || !m.pages || !m.pages.length) return;
         var lb = document.getElementById('lb'); lb.classList.add('mv');
         lb.innerHTML = '<div class="mvh"><b>' + esc(m.name) + '</b><button class="lbx" id="lbx" aria-label="Close">' + svg(I.x, 20) + '</button></div>' +
           '<div class="mvp">' + m.pages.map(function(u, j){ return '<img src="' + esc(u) + '" alt="' + esc(m.name) + ' page ' + (j + 1) + '"' + (j ? ' loading="lazy"' : '') + '>'; }).join('') + '</div>';

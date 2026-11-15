@@ -265,7 +265,7 @@ P.sundari = {
           details: 'Treatment vouchers for friends and family, ready to send on WhatsApp.' }
       ],
       gallery: ['bath', 'cave', 'corridor', 'massage', 'pods', 'couples', 'reception', 'shop', 'room', 'daybed', 'lounge2', 'pedi', 'basins', 'couple', 'jade', 'feet', 'hands2', 'scrub', 'hero', 'lounge', 'balinese', 'bamboo', 'kaya', 'reflex', 'facial', 'hands'].map((n, i) => ({ id: 'ug' + i, img: su(n) })),
-      places: { 'sundari wellness': { img: su('reception'), area: 'Seminyak', ig: 'sundari.wellness' } }
+      places: { 'sundari wellness': { img: su('reception'), area: 'Seminyak', ig: 'sundari.wellness', menus: [{ name: 'Treatments', pages: [1, 2, 3, 4, 5, 6].map(n => ({ img: '/demo-guest/p-sun-menu-' + n + '.jpg' })) }] } }
     };
   }
 };

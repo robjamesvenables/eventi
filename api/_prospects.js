@@ -355,7 +355,7 @@ P.masonry = {
   content: today => {
     const y = year(today);
     return {
-      theme: { top: '#1C1B19', acc: '#C8823F', pg: '#F3EFE8' },
+      theme: { top: '#141414', acc: '#CDA86B', dark: true },
       gift: { on: true, title: 'Dinner by the fire', line: 'Give someone a night at Masonry. Tell us the amount and who it is for.', to: MS_WA, amounts: [500000, 1000000, 2000000], max: 5000000, bonus: 10 },
       slides: [
         { id: 'ms1', img: ms('window'), title: 'Good food cooked over fire', line: 'Stiff drinks, open windows, Batu Bolong', venue: 'Masonry Canggu', btn: 'book', url: MS_BOOK },
@@ -386,7 +386,7 @@ P.masonry = {
         'masonry uluwatu': { img: ms('u-scallop'), area: 'Uluwatu' },
         'masonry japan': { img: ms('japan'), area: 'Niseko, Japan', soon: true }
       },
-      others: { on: true, list: [{ id: 'vera', name: 'Bar Vera', img: ms('v-room'), line: 'Bistro and wine bar in Pererenan', book: '+62 823 4271 3110',
+      others: { on: true, list: [{ id: 'vera', name: 'Bar Vera', img: ms('v-front'), line: 'Bistro and wine bar in Pererenan', book: '+62 823 4271 3110',
         places: [{ name: 'The bistro', img: ms('v-bouillabaisse'), line: 'French bistro classics' }, { name: 'The bar', img: ms('v-martini'), line: 'Martinis and a long wine list' },
           { name: 'From the kitchen', img: ms('v-grouper'), line: 'Seafood, done simply' }, { name: 'After dinner', img: ms('v-cognac'), line: 'Cognac and something sweet' }] }] }
     };

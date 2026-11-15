@@ -384,7 +384,7 @@ P.masonry = {
       places: {
         'masonry canggu': { img: ms('window'), area: 'Batu Bolong, Canggu' },
         'masonry uluwatu': { img: ms('u-scallop'), area: 'Uluwatu' },
-        'masonry japan': { img: ms('japan'), area: 'Niseko, Japan', soon: true }
+        'masonry japan': { img: ms('japan-wide'), area: 'Niseko, Japan', soon: true }
       },
       others: { on: true, list: [{ id: 'vera', name: 'Bar Vera', img: ms('v-front'), line: 'Bistro and wine bar in Pererenan', book: '+62 823 4271 3110',
         places: [{ name: 'The bistro', img: ms('v-bouillabaisse'), line: 'French bistro classics' }, { name: 'The bar', img: ms('v-martini'), line: 'Martinis and a long wine list' },

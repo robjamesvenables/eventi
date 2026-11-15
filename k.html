@@ -1248,7 +1248,10 @@ body.vqopen .vq-dim{opacity:1;pointer-events:auto}body.vqopen .vq-sheet{transfor
       };
       var hvv = document.getElementById('hvv'), hvs = document.getElementById('hvs');
       if (hvv) { var shape = function(){ if (hvv.videoWidth) hvv.parentNode.classList.toggle('tall', hvv.videoHeight > hvv.videoWidth); }; hvv.addEventListener('loadedmetadata', shape); shape();
-        var pl = hvv.play(); if (pl && pl.catch) pl.catch(function(){}); if (hvs) hvs.onclick = function(){ hvv.muted = !hvv.muted; if (!hvv.muted) { hvv.currentTime = 0; hvv.play(); } hvs.querySelector('span').textContent = hvv.muted ? 'Sound on' : 'Sound off'; }; }
+        var pl = hvv.play(); if (pl && pl.catch) pl.catch(function(){}); if (hvs) hvs.onclick = function(){ hvv.muted = !hvv.muted; if (!hvv.muted) { hvv.currentTime = 0; hvv.play(); } hvs.querySelector('span').textContent = hvv.muted ? 'Sound on' : 'Sound off'; }; 
+        // A clip with no sound (many reels): no 'Sound on' button. Checked after it has played a moment, by whatever the phone's browser offers
+        if (hvs) setTimeout(function(){ var has = hvv.audioTracks ? hvv.audioTracks.length > 0 : hvv.mozHasAudio !== undefined ? hvv.mozHasAudio : hvv.webkitAudioDecodedByteCount !== undefined ? hvv.webkitAudioDecodedByteCount > 0 : true;
+          if (!has && hvv.currentTime > 0.5) hvs.remove(); }, 2500); }
       // YouTube takes a moment to start: show the video's own still picture on top, then fade it once the player has loaded
       var hvf = document.getElementById('hvf'), hvp = document.getElementById('hvp');
       if (hvf && hvp) {

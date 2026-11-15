@@ -197,7 +197,7 @@ P.bpa = {
   content: today => {
     const y = year(today);
     return {
-      theme: { top: '#B7CBB0', acc: '#111111', pg: '#F4F6F2' }, motion: true, film: '9U1XjJJN0ks', filmStart: 7,
+      theme: { top: '#B7CBB0', acc: '#111111', pg: '#F4F6F2' }, motion: true, video: '/demo-guest/p-bpa-film.mp4', videoTall: true,
       slides: [
         { id: 'bs0', img: bp('events'), title: 'NOX Cup · tournament night', line: 'Finals under the lights', venue: 'Padel Courts', ev: 'be1' },
         { id: 'bs1', img: bp('courts'), title: '7 panoramic courts', line: 'Book in one tap', venue: 'Padel Courts', btn: 'book', url: PT },

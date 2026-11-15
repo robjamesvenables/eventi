@@ -156,7 +156,7 @@ function build(c, ctx){
     return { name: v.name, area: str(p.area || v.area || '', 30), img: img(p), ig: igName(p.ig), menus }; });
   // Colours (Guest page > Colours)
   const hex = v => /^#[0-9a-f]{6}$/i.test(v || '') ? v : '';
-  const th = c.theme || {}, theme = { top: hex(th.top), acc: hex(th.acc), pg: hex(th.pg) };
+  const th = c.theme || {}, theme = { top: hex(th.top), acc: hex(th.acc), pg: hex(th.pg), dark: th.dark === true };
   // Top video: set in the editor (an uploaded MP4, or a YouTube link with a start time); older demo pages set film / video directly
   let film = /^[\w-]{11}$/.test(c.film || '') ? c.film : '', filmStart = Math.max(0, Math.min(600, Math.round(+c.filmStart || 0))),
     video = /^\/[\w\/.-]+\.mp4$/.test(c.video || '') ? c.video : '', videoPoster = '', videoTall = c.videoTall === true;

@@ -346,7 +346,7 @@ P.masonry = {
   venues: [
     { name: 'Masonry Canggu', area: 'Batu Bolong, Canggu', opens: '12:00', closes: '00:00', wa: MS_WA, phone: '+62 857 9250 5028', book: MS_BOOK },
     { name: 'Masonry Uluwatu', area: 'Uluwatu', phone: '+62 821 4676 5177' },
-    { name: 'Bar Vera', area: 'Pererenan · Further Hotel', phone: '+62 823 4271 3110' }
+    { name: 'Masonry Japan', area: 'Niseko, Japan' }
   ],
   contact: { wa: MS_WA, phone: '+62 857 9250 5028' },
   acts: [
@@ -363,12 +363,12 @@ P.masonry = {
         { id: 'ms3', img: ms('fire'), title: 'Everything over wood and coals', line: 'Made from scratch, every day', venue: 'Masonry Canggu', btn: 'book', url: MS_BOOK },
         { id: 'ms4', img: ms('backroom'), title: 'The Backroom', line: 'Leather booths, a pool table and a late bar', venue: 'Masonry Canggu', btn: 'wa' },
         { id: 'ms5', img: ms('u-scallop'), title: 'Masonry Uluwatu', line: 'The same fire, down south', venue: 'Masonry Uluwatu', btn: 'wa' },
-        { id: 'ms6', img: ms('v-room'), title: 'Bar Vera', line: 'Bistro and wine bar in Pererenan', venue: 'Bar Vera', btn: 'wa' }
+        { id: 'ms6', img: ms('japan'), title: 'Masonry Japan', line: 'Coming to Niseko this ski season', venue: 'Masonry Canggu' }
       ],
       deals: [
         { id: 'md1', img: ms('negroni'), title: 'Members: 2 for 1 Old Fashioned', when: 'Daily · 5–7pm', venue: 'Masonry Canggu' },
         { id: 'md2', img: ms('c-charcuterie'), title: 'House charcuterie board · Rp 195k', when: 'Mon–Fri · 12–4pm', venue: 'Masonry Canggu', btn: 'book', url: MS_BOOK },
-        { id: 'md3', img: ms('v-martini'), title: 'Martini hour at Bar Vera', when: 'Daily · 5–7pm', venue: 'Bar Vera' },
+        { id: 'md3', img: ms('c-cocktails'), title: 'Martini hour in the Backroom', when: 'Daily · 5–7pm', venue: 'Masonry Canggu' },
         { id: 'md4', img: ms('j-wine'), title: 'Members: 15% off any bottle', when: 'Every night', venue: 'Masonry Canggu' }
       ],
       events: [
@@ -377,15 +377,18 @@ P.masonry = {
         { id: 'me2', img: ms('backroom'), title: 'Backroom sessions', line: 'DJ, cocktails and the pool table', date: addDays(today, 3), time: '21:00', time2: '01:00', venue: 'Masonry Canggu', btn: 'wa',
           details: 'A DJ in the Backroom, the bar open late.' },
         { id: 'me3', img: ms('c-yorkshire'), title: 'Christmas long lunch', line: 'Roasts from the fire, all the trimmings', date: y + '-12-25', time: '12:00', time2: '17:00', venue: 'Masonry Canggu', btn: 'book', url: MS_BOOK },
-        { id: 'me4', img: ms('v-room'), title: "New Year's Eve", line: 'Dinner, then the party', date: y + '-12-31', time: '18:00', time2: '01:00', venue: 'Bar Vera', btn: 'wa' }
+        { id: 'me4', img: ms('v-room'), title: "New Year's Eve", line: 'Dinner, then the party', date: y + '-12-31', time: '18:00', time2: '01:00', venue: 'Masonry Canggu', btn: 'wa' }
       ],
-      gallery: ['window', 'beef', 'fire', 'backroom', 'c-spread', 'negroni', 'oven', 'lobster', 'terrace', 'c-cocktails', 'tartare', 'room', 'c-flatbread', 'drinks', 'c-charcuterie', 'u-scallop', 'u-cabbage', 'u-rolls', 'u-chablis', 'v-room', 'v-martini', 'v-bouillabaisse', 'v-grouper', 'v-cognac']
-        .map((n, i) => ({ id: 'mg' + i, img: ms(n), venue: n.startsWith('u-') ? 'Masonry Uluwatu' : n.startsWith('v-') ? 'Bar Vera' : 'Masonry Canggu' })),
+      gallery: ['window', 'beef', 'fire', 'backroom', 'c-spread', 'negroni', 'oven', 'lobster', 'terrace', 'c-cocktails', 'tartare', 'room', 'c-flatbread', 'drinks', 'c-charcuterie', 'u-scallop', 'u-cabbage', 'u-rolls', 'u-chablis']
+        .map((n, i) => ({ id: 'mg' + i, img: ms(n), venue: n.startsWith('u-') ? 'Masonry Uluwatu' : 'Masonry Canggu' })),
       places: {
         'masonry canggu': { img: ms('window'), area: 'Batu Bolong, Canggu' },
         'masonry uluwatu': { img: ms('u-scallop'), area: 'Uluwatu' },
-        'bar vera': { img: ms('v-room'), area: 'Pererenan · Further Hotel' }
-      }
+        'masonry japan': { img: ms('japan'), area: 'Niseko, Japan', soon: true }
+      },
+      others: { on: true, list: [{ id: 'vera', name: 'Bar Vera', img: ms('v-room'), line: 'Bistro and wine bar in Pererenan', book: '+62 823 4271 3110',
+        places: [{ name: 'The bistro', img: ms('v-bouillabaisse'), line: 'French bistro classics' }, { name: 'The bar', img: ms('v-martini'), line: 'Martinis and a long wine list' },
+          { name: 'From the kitchen', img: ms('v-grouper'), line: 'Seafood, done simply' }, { name: 'After dinner', img: ms('v-cognac'), line: 'Cognac and something sweet' }] }] }
     };
   }
 };

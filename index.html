@@ -24735,6 +24735,7 @@ window.gpPlaceForm = function(name){
   s.innerHTML = `<div class="eb-form"><h3>${gpEsc(name)}</h3><p class="sub">Everything guests see for this place</p>
     <div${one ? ' style="display:none"' : ''}><label>Photo</label><div class="gp-ph${gpSrc(it) ? ' has' : ''}" id="gpp-ph" role="button" tabindex="0">${gpSrc(it) ? `<img src="${gpEsc(gpSrc(it))}" alt=""><span>Change photo</span>` : `${gpIc(GPI.cam, 22)}&nbsp; Choose a photo`}</div>
     <label>Area</label><input id="gpp-area" maxlength="30" value="${gpEsc(it.area || v.area || '')}" placeholder="e.g. Canggu"></div>
+    <label style="display:flex;align-items:center;gap:10px;margin-top:12px;font-weight:700;cursor:pointer"><input type="checkbox" id="gpp-soon" style="width:20px;height:20px;margin:0"${it.soon ? ' checked' : ''}> Coming soon <span class="gp-opt">guests see it but can't open it yet</span></label>
     <div class="gp-sub">Contact and links${mgr ? '' : ' <small>A manager can change these</small>'}</div>
     ${row(IC.clock, `<em>Opens</em><input id="gpp-o" type="time" value="${gpEsc(v.opens || '')}"${mgr ? '' : ' disabled'}>`)}
     ${row('', `<em>Closes</em><input id="gpp-c" type="time" value="${gpEsc(v.closes || '')}"${mgr ? '' : ' disabled'}>`)}
@@ -24819,7 +24820,7 @@ window.gpPlaceForm = function(name){
     const go = s.querySelector('.eb-go'); if(go.disabled) return;
     for(const m of menus){ if(!m.path && !Array.isArray(m.pages)){ const u = String(m.url || '').trim(); if(!u){ toast('Paste the menu link, or remove that menu'); return; } m.url = /^https?:\/\//i.test(u) ? u.replace(/^http:/i, 'https:') : 'https://' + u; if(!/^https:\/\/[^\s]+\.[^\s]+/i.test(m.url)){ toast('That menu link doesn\'t look right'); return; } } m.name = String(m.name || '').trim() || 'Menu'; }
     if(menus.length) it.menus = menus.map(m => { const o = { id:m.id, name:m.name, at:m.at }; if(Array.isArray(m.pages)) o.pages = m.pages.map(pg => pg.path ? { path: pg.path } : { img: pg.img }); else if(m.path){ o.path = m.path; o.type = m.type; } else o.url = m.url; return o; }); else delete it.menus;
-    it.area = val('gpp-area');
+    it.area = val('gpp-area'); if($('gpp-soon') && $('gpp-soon').checked) it.soon = true; else delete it.soon;
     const igv = val('gpp-ig'), igm = /^(?:https?:\/\/)?(?:www\.)?(?:instagram\.com\/)?@?([a-z0-9._]{1,30})\/?(?:\?.*)?$/i.exec(igv);
     if(igv && !igm){ toast('That Instagram name doesn\'t look right - e.g. @senjarooftop'); return; }
     it.ig = igm ? igm[1] : ''; if(!it.ig) delete it.ig;

@@ -153,7 +153,7 @@ function build(c, ctx){
       if (!pages.length && m.type !== 'pdf' && (m.path || /\.(jpe?g|png|webp)$/i.test(m.img || ''))) { const one = img(m); if (one) pages.push(one); }
       const url = pages.length ? '' : m.path ? img(m) : httpsOk(m.url) ? String(m.url).trim() : (/^\/demo-guest\/[a-z0-9._-]+$/i.test(m.img || '') ? m.img : '');
       return { name: str(m.name, 30) || 'Menu', pages, url }; }).filter(m => m.pages.length || m.url);
-    return { name: v.name, area: str(p.area || v.area || '', 30), img: img(p), ig: igName(p.ig), menus }; });
+    return { name: v.name, area: str(p.area || v.area || '', 30), img: img(p), ig: igName(p.ig), menus, soon: p.soon === true }; });
   // Colours (Guest page > Colours)
   const hex = v => /^#[0-9a-f]{6}$/i.test(v || '') ? v : '';
   const th = c.theme || {}, theme = { top: hex(th.top), acc: hex(th.acc), pg: hex(th.pg) };

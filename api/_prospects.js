@@ -246,7 +246,7 @@ P.sundari = {
   content: today => {
     const y = year(today);
     return {
-      theme: { top: '#5E2A17', acc: '#7D3A20', pg: '#F7F2EC' }, motion: true, video: '/demo-guest/p-sun-film.mp4', videoTall: true,
+      theme: { top: '#1A120D', acc: '#C9925A', dark: true }, motion: true, video: '/demo-guest/p-sun-film.mp4', videoTall: true,
       gift: { on: true, title: 'The gift of a slow afternoon', line: 'A spa voucher for someone who needs it. Tell us the amount and who it is for.', to: SUN_WA, amounts: [500000, 1000000, 2000000], max: 5000000 },
       slides: [
         { id: 'us0', img: su('bath'), title: 'Flower bath ritual', line: 'Warm water, petals, nowhere to be', btn: 'wa' },

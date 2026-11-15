@@ -447,9 +447,61 @@ P.luma = {
   }
 };
 
-const CODES = { K8SNGA: 'sangsaka', B6PADL: 'bpa', S8HLTR: 'shelter', T7RNSB: 'trans', '5NKGZJ': 'trans', S4DK7R: 'sundari', M3SNRY: 'masonry', L5UMAB: 'luma' };   // L5UMAB = Luma keyring: its own Luma demo (different owners from Sangsaka)   // 5NKGZJ = the printed sample card, shown as Trans for the GM demo
+// Brunch Club (all-day brunch, Berawa / Pererenan / Legian) - photos from their site, hours and phone from public listings;
+// perks, deals and dates made up for the demo. Logo is a stand-in until we get theirs.
+const bc = n => '/demo-guest/p-brunch-' + n + '.jpg';
+const BC_WA = '6281138312910';
+P.brunch = {
+  brand: 'Brunch Club', logo: '/demo-guest/p-brunch-logo.png', first: 'Helen', tier: 'vip', visits: 8, since: 2025, favourite: 'Brunch Club Berawa',
+  perks: ['10% off your bill, every visit', 'A free coffee with every brunch', 'Skip the queue at weekends', 'Birthday porncakes on us', 'First taste of new menu items'],
+  perkIcons: ['pct', 'coffee', 'star', 'cake', 'sparkle'],
+  reward: { target: 10, text: 'Brunch for two, porncakes included' },
+  venues: [
+    { name: 'Brunch Club Berawa', area: 'Berawa, Canggu', opens: '08:00', closes: '18:00', wa: BC_WA, phone: '+62 811 3831 2910' },
+    { name: 'Brunch Club Pererenan', area: 'Pererenan', opens: '08:00', closes: '18:00', wa: BC_WA },
+    { name: 'Brunch Club Legian', area: 'Legian', opens: '08:00', closes: '16:00', phone: '+62 819 5247 4063' }
+  ],
+  contact: { wa: BC_WA, phone: '+62 811 3831 2910' },
+  acts: [
+    { title: 'Bottomless brunch', line: 'Free-flow drinks with any brunch', every: [0, 6], start: '10:00', end: '14:00', venue: 'Brunch Club Berawa', ic: 'cocktail' }
+  ],
+  content: today => {
+    const y = year(today);
+    return {
+      theme: { top: '#F48AA8', acc: '#0E4D3C', pg: '#FFFFFF' }, motion: true, video: '/demo-guest/p-brunch-film.mp4', videoTall: true,
+      gift: { on: true, title: 'Brunch, on you', line: 'Treat someone to brunch. Tell us the amount and who it is for.', to: BC_WA, amounts: [300000, 500000, 1000000], max: 3000000, bonus: 10 },
+      slides: [
+        { id: 'bc1', img: bc('banner'), title: 'Porncakes', line: 'Three stacks, one fork', btn: 'wa' },
+        { id: 'bc2', img: bc('brekkie'), title: 'The Big Brekkie', line: 'All day, every day', btn: 'wa' },
+        { id: 'bc3', img: bc('lobster'), title: 'Lobster Benedict', line: 'Brioche, hollandaise, paprika', btn: 'wa' },
+        { id: 'bc4', img: bc('dubai'), title: 'Dubai chocolate French toast', line: 'Pistachio, caramel, crunch', btn: 'wa' },
+        { id: 'bc5', img: bc('espresso'), title: 'Brunch cocktails', line: 'Espresso martinis from 10am', btn: 'wa' }
+      ],
+      deals: [
+        { id: 'bcd1', img: bc('daiquiri'), title: 'Bottomless brunch · free-flow drinks', when: 'Sat–Sun · 10am–2pm', venue: 'Brunch Club Berawa', btn: 'wa' },
+        { id: 'bcd2', img: bc('shake'), title: 'Members: a free shake with any porncakes', when: 'Weekdays', btn: 'wa' },
+        { id: 'bcd3', img: bc('espresso'), title: 'Espresso martini 2 for 1', when: 'Daily · 2–4pm' }
+      ],
+      events: [
+        { id: 'bce1', img: bc('caramel'), title: 'New menu tasting', line: 'Try the new dishes first', date: nextDow(today, 6), time: '10:00', time2: '13:00', venue: 'Brunch Club Berawa', btn: 'wa', hl: true,
+          details: 'Members get first taste of the new menu, with a free coffee.', notes: 'Members only.' },
+        { id: 'bce2', img: bc('daiquiri'), title: 'Christmas Day brunch', line: 'Bottomless and festive', date: y + '-12-25', time: '09:00', time2: '15:00', btn: 'wa' },
+        { id: 'bce3', img: bc('brekkie'), title: "New Year's Day recovery brunch", line: 'Big brekkies, all day', date: (y + 1) + '-01-01', time: '09:00', time2: '16:00', btn: 'wa' }
+      ],
+      gallery: ['banner', 'brekkie', 'lobster', 'dubai', 'waffle', 'avo', 'caramel', 'salmon', 'halloumi', 'shake', 'daiquiri', 'espresso', 'buns', 'burger', 'allday']
+        .map((n, i) => ({ id: 'bcg' + i, img: bc(n) })),
+      places: {
+        'brunch club berawa': { img: bc('waffle'), area: 'Berawa, Canggu' },
+        'brunch club pererenan': { img: bc('avo'), area: 'Pererenan' },
+        'brunch club legian': { img: bc('halloumi'), area: 'Legian' }
+      }
+    };
+  }
+};
+
+const CODES = { K8SNGA: 'sangsaka', B6PADL: 'bpa', S8HLTR: 'shelter', T7RNSB: 'trans', '5NKGZJ': 'trans', S4DK7R: 'sundari', M3SNRY: 'masonry', L5UMAB: 'luma', B7RNCH: 'brunch' };   // L5UMAB = Luma keyring: its own Luma demo (different owners from Sangsaka)   // 5NKGZJ = the printed sample card, shown as Trans for the GM demo
 // Mavis Club network: each of the guest's other venues as a logo tile (their colour, logo, how long they've been a member there)
-const KEY_CODE = { sangsaka: 'K8SNGA', bpa: 'B6PADL', shelter: 'S8HLTR', trans: 'T7RNSB', sundari: 'S4DK7R', masonry: 'M3SNRY', luma: 'L5UMAB' };
+const KEY_CODE = { sangsaka: 'K8SNGA', bpa: 'B6PADL', shelter: 'S8HLTR', trans: 'T7RNSB', sundari: 'S4DK7R', masonry: 'M3SNRY', luma: 'L5UMAB', brunch: 'B7RNCH' };
 const club = (list, who) => list.map(c => { const v = P[c.key]; if (!v) return null; const t = (v.content('2026-01-01').theme) || {};
   return { name: v.brand, logo: v.logo, top: t.top || '#0F1E2E', area: (v.venues[0] || {}).area || '', since: c.since || '', visits: c.visits || 0,
     href: '/k/' + KEY_CODE[c.key] + '?n=' + encodeURIComponent(String(who || '').split(' ')[0]) }; }).filter(Boolean);

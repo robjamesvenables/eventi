@@ -514,7 +514,7 @@ P.brunch = {
 const LO_WA = '6281573061887';   // Lola's Uluwatu (Time Out); Canggu number not found yet
 const lo = n => '/demo-guest/p-lolas-' + n + '.jpg';
 P.lolas = {
-  brand: "Lola's", logo: '/demo-guest/p-lolas-logo.png', icon: '/demo-guest/p-lolas-icon', first: 'Sam', tier: 'vip', visits: 6, since: 2025, favourite: "Lola's Canggu",
+  brand: "Lola's", logo: '/demo-guest/p-lolas-logo.png', icon: '/demo-guest/p-lolas-icon', first: 'Jake', tier: 'vip', visits: 6, since: 2025, favourite: "Lola's Canggu",
   perks: ['10% off your bill, every visit', 'A free margarita on your birthday', 'Chips and guac on us with any taco plate', "Priority tables on Taco Tuesday"],
   perkIcons: ['pct', 'cake', 'food', 'star'],
   reward: { target: 10, text: 'Tacos and margaritas for two' },

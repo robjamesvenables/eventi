@@ -588,7 +588,7 @@ P.kudeta = {
   content: today => {
     const y = year(today);
     return {
-      theme: { top: '#111111', acc: '#D2402F', pg: '#F5F2EE' }, motion: true,
+      theme: { top: '#0B0B0B', acc: '#9E1B22', dark: true }, motion: true,
       gift: { on: true, title: 'A sunset, on you', line: 'Give someone a day at Ku De Ta. Tell us the amount and who it is for.', amounts: [500000, 1000000, 2000000], max: 5000000 },
       slides: [
         { id: 'kd1', img: kd('aerial'), title: 'Your place on Seminyak beach', line: 'Daybeds, lawn and ocean', venue: 'Ku De Ta', btn: 'book', url: KDT_BOOK },

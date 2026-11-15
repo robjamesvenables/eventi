@@ -25,7 +25,7 @@ const P = {
     content: today => {
       const y = year(today);
       return {
-        theme: { top: '#141414', acc: '#CDA86B', dark: true },
+        theme: { top: '#141414', acc: '#CDA86B', dark: true }, video: '/demo-guest/p-shelter-film.mp4', videoTall: true,
         slides: [
           { id: 'ps0', img: sh('entrance'), title: 'Welcome back to Shelter', line: 'Your table under the trees', venue: 'Shelter Pererenan', btn: 'book', url: SHELTER_BOOK },
           { id: 'ps1', img: sh('longtable'), title: 'Shelter Sessions', line: 'Long tables, one night, one fire', venue: 'Shelter Pererenan', btn: 'book', url: SHELTER_BOOK },

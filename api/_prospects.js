@@ -471,7 +471,8 @@ P.brunch = {
   venues: [
     { name: 'Brunch Club Berawa', area: 'Berawa, Canggu', opens: '08:00', closes: '18:00', wa: BC_WA, phone: '+62 811 3831 2910' },
     { name: 'Brunch Club Pererenan', area: 'Pererenan', opens: '08:00', closes: '18:00', wa: BC_WA },
-    { name: 'Brunch Club Legian', area: 'Legian', opens: '08:00', closes: '16:00', phone: '+62 819 5247 4063' }
+    { name: 'Brunch Club Legian', area: 'Legian', opens: '08:00', closes: '16:00', phone: '+62 819 5247 4063' },
+    { name: 'Lemongrass', area: 'Jalan Melasti, Legian', opens: '11:00', closes: '23:00', wa: '6281138312907', phone: '+62 811 3831 2907', email: 'info@wearelemongrass.com' }   // same group - Thai, from their website
   ],
   contact: { wa: BC_WA, phone: '+62 811 3831 2910' },
   acts: [
@@ -487,7 +488,9 @@ P.brunch = {
         { id: 'bc2', img: bc('brekkie'), title: 'The Big Brekkie', line: 'All day, every day', btn: 'wa' },
         { id: 'bc3', img: bc('lobster'), title: 'Lobster Benedict', line: 'Brioche, hollandaise, paprika', btn: 'wa' },
         { id: 'bc4', img: bc('dubai'), title: 'Dubai chocolate French toast', line: 'Pistachio, caramel, crunch', btn: 'wa' },
-        { id: 'bc5', img: bc('espresso'), title: 'Brunch cocktails', line: 'Espresso martinis from 10am', btn: 'wa' }
+        { id: 'bc5', img: bc('espresso'), title: 'Brunch cocktails', line: 'Espresso martinis from 10am', btn: 'wa' },
+        { id: 'bc6', img: '/demo-guest/p-lemongrass-prawns.jpg', title: 'Lemongrass · Thai since 2002', line: 'Our Thai kitchen on Jalan Melasti', venue: 'Lemongrass', btn: 'wa' },
+        { id: 'bc7', img: '/demo-guest/p-lemongrass-ribs.jpg', title: 'Sticky ribs at Lemongrass', line: 'Open until 11pm', venue: 'Lemongrass', btn: 'wa' }
       ],
       deals: [
         { id: 'bcd1', img: bc('daiquiri'), title: 'Bottomless brunch · free-flow drinks', when: 'Sat–Sun · 10am–2pm', venue: 'Brunch Club Berawa', btn: 'wa' },
@@ -505,7 +508,8 @@ P.brunch = {
       places: {
         'brunch club berawa': { img: bc('waffle'), area: 'Berawa, Canggu' },
         'brunch club pererenan': { img: bc('avo'), area: 'Pererenan' },
-        'brunch club legian': { img: bc('halloumi'), area: 'Legian' }
+        'brunch club legian': { img: bc('halloumi'), area: 'Legian' },
+        'lemongrass': { img: '/demo-guest/p-lemongrass-front.jpg', area: 'Thai · Legian', ig: 'lemongrass_bali', other: true, menus: [{ name: 'Menu', url: 'https://wearelemongrass.com/starters/' }] }
       }
     };
   }

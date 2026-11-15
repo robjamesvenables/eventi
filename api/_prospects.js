@@ -357,7 +357,7 @@ P.masonry = {
       theme: { top: '#141414', acc: '#CDA86B', dark: true }, video: '/demo-guest/p-masonry-film.mp4', videoTall: true,
       gift: { on: true, title: 'Dinner by the fire', line: 'Give someone a night at Masonry. Tell us the amount and who it is for.', to: MS_WA, amounts: [500000, 1000000, 2000000], max: 5000000, bonus: 10 },
       slides: [
-        { id: 'ms1', img: ms('window'), title: 'Good food cooked over fire', line: 'Stiff drinks, open windows, Batu Bolong', venue: 'Masonry Canggu', btn: 'book', url: MS_BOOK },
+        { id: 'ms1', img: ms('window'), title: 'Good food cooked over fire', line: 'Canggu · Uluwatu · Japan coming soon', btn: 'book', url: MS_BOOK },
         { id: 'ms2', img: ms('beef'), title: '48-hour slow roasted short rib', line: 'Chimichurri, roasted shallots', venue: 'Masonry Canggu', btn: 'book', url: MS_BOOK },
         { id: 'ms3', img: ms('fire'), title: 'Everything over wood and coals', line: 'Made from scratch, every day', venue: 'Masonry Canggu', btn: 'book', url: MS_BOOK },
         { id: 'ms4', img: ms('backroom'), title: 'The Backroom', line: 'Leather booths, a pool table and a late bar', venue: 'Masonry Canggu', btn: 'wa' },

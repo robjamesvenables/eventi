@@ -153,7 +153,7 @@ function build(c, ctx){
       if (!pages.length && m.type !== 'pdf' && (m.path || /\.(jpe?g|png|webp)$/i.test(m.img || ''))) { const one = img(m); if (one) pages.push(one); }
       const url = pages.length ? '' : m.path ? img(m) : httpsOk(m.url) ? String(m.url).trim() : (/^\/demo-guest\/[a-z0-9._-]+$/i.test(m.img || '') ? m.img : '');
       return { name: str(m.name, 30) || 'Menu', pages, url }; }).filter(m => m.pages.length || m.url);
-    return { name: v.name, area: str(p.area || v.area || '', 30), img: img(p), ig: igName(p.ig), menus, soon: p.soon === true }; });
+    return { name: v.name, area: str(p.area || v.area || '', 30), img: img(p), ig: igName(p.ig), menus, soon: p.soon === true, other: p.other === true }; });   // other: shown under Our other venues (a full place, a different brand)
   // Colours (Guest page > Colours)
   const hex = v => /^#[0-9a-f]{6}$/i.test(v || '') ? v : '';
   const th = c.theme || {}, theme = { top: hex(th.top), acc: hex(th.acc), pg: hex(th.pg), dark: th.dark === true };
@@ -189,8 +189,9 @@ function build(c, ctx){
         rooms: (Array.isArray(o.rooms) ? o.rooms : []).slice(0, 8).map(r => ({ name: str((r || {}).name, 40).trim(), img: img(r) })).filter(r => r.name) }; }).filter(o => o.name);
     if (list.length) others = { bold: ov.bold === true, title: str(ov.title, 40).trim(), list };
   }
-  const placesTitle = str(c.placesTitle, 40).trim();   // their own heading over Our places (empty = standard)
-  return { order, slides, deals, events, gallery, places, placesTitle, theme, gift, others, motion: c.motion === true, film, filmStart, filmTall: !!film && filmTall && !(tp.kind === 'yt'), video, videoPoster, videoTall };
+  const placesTitle = str(c.placesTitle, 40).trim();
+  const oh = c.others && typeof c.others === 'object' ? c.others : {}, othersTitle = str(oh.title, 40).trim(), othersBold = oh.bold === true;   // heading and stand-out box for Our other venues   // their own heading over Our places (empty = standard)
+  return { order, slides, deals, events, gallery, places, placesTitle, othersTitle, othersBold, theme, gift, others, motion: c.motion === true, film, filmStart, filmTall: !!film && filmTall && !(tp.kind === 'yt'), video, videoPoster, videoTall };
 }
 
 // The name under the app icon on a guest's phone: phones cut it after about 12 letters ("The Trans Resort Bali" -> "Trans Resort")

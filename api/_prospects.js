@@ -284,7 +284,8 @@ P.sangsaka = {
   reward: { target: 10, text: "Chef's sharing menu for two" },
   venues: [
     { name: 'Sangsaka', area: 'Kerobokan', opens: '17:30', closes: '23:00', wa: SNG_WA, phone: '+62 812 3695 9895', email: 'info@sangsakabali.com', map: SNG_MAP, review: SNG_MAP, book: SNG_BOOK },
-    { name: 'DI ATAS', area: 'Rooftop bar upstairs', opens: '19:00', closes: '01:00', wa: SNG_WA, phone: '+62 812 3695 9895', map: SNG_MAP }
+    { name: 'DI ATAS', area: 'Rooftop bar upstairs', opens: '19:00', closes: '01:00', wa: SNG_WA, phone: '+62 812 3695 9895', map: SNG_MAP },
+    { name: 'Luma', area: 'Batu Bolong, Canggu', opens: '12:00', closes: '23:00', wa: '6281139414999', phone: '+62 811 3941 4999' }
   ],
   contact: { wa: SNG_WA, phone: '+62 812 3695 9895', email: 'info@sangsakabali.com', map: SNG_MAP, ig: 'sangsakabali' },
   acts: [
@@ -293,11 +294,7 @@ P.sangsaka = {
   content: today => {
     const y = year(today);
     return {
-      others: { on: true, bold: true, list: [{ id: 'luma', name: 'Luma', img: '/demo-guest/p-luma-room.jpg', line: 'Mediterranean, with island flavours', book: 'https://wa.me/6281139414999',
-    places: [{ name: 'The restaurant', img: '/demo-guest/p-luma-table.jpg', line: 'Mediterranean plates to share', opens: '12:00', closes: '23:00' },
-      { name: 'Bar Luma', img: '/demo-guest/p-luma-wine.jpg', line: 'Terrace bar · Negroni on tap · vinyl DJs at weekends' },
-      { name: 'From our kitchen', img: '/demo-guest/p-luma-lamb.jpg', line: 'Southern Europe, Balinese produce' },
-      { name: 'The chefs', img: '/demo-guest/p-luma-chefs.jpg', line: 'Cameron Emirali and Kieran Morland' }] }] },
+      others: { bold: true },
       theme: { top: '#141210', acc: '#CDA86B', pg: '#F5F1EA' }, motion: true, video: '/demo-guest/p-sng-film.mp4', videoTall: true,
       gift: { on: true, title: "A dinner they'll remember", line: 'A thoughtful present for someone you love. Tell us the amount and who it is for.', to: SNG_WA, amounts: [500000, 1000000, 2000000], max: 5000000, bonus: 10 },
       slides: [
@@ -329,7 +326,8 @@ P.sangsaka = {
         .concat(['room', 'table', 'lamb', 'chefs', 'wine'].map((n, i) => ({ id: 'sl' + i, img: '/demo-guest/p-luma-' + n + '.jpg', venue: 'Luma' }))),
       places: {
         'sangsaka': { img: sg('room'), area: 'Kerobokan', ig: 'sangsakabali', menus: [{ name: 'Food', pages: ['food-1', 'food-2', 'food-3'].map(SNG_MENU) }, { name: 'Wine', pages: ['wine-1', 'wine-2', 'wine-3'].map(SNG_MENU) }] },
-        'di atas': { img: sg('bordeaux'), area: 'Rooftop bar upstairs', ig: 'sangsakabali', menus: [{ name: 'Cocktails', pages: ['cocktails'].map(SNG_MENU) }, { name: 'Wine', pages: ['wine-1', 'wine-2', 'wine-3'].map(SNG_MENU) }] }
+        'di atas': { img: sg('bordeaux'), area: 'Rooftop bar upstairs', ig: 'sangsakabali', menus: [{ name: 'Cocktails', pages: ['cocktails'].map(SNG_MENU) }, { name: 'Wine', pages: ['wine-1', 'wine-2', 'wine-3'].map(SNG_MENU) }] },
+        'luma': { img: '/demo-guest/p-luma-terrace.jpg', area: 'Batu Bolong, Canggu', ig: 'lumabali', other: true }
       }
     };
   }
@@ -346,7 +344,8 @@ P.masonry = {
   venues: [
     { name: 'Masonry Canggu', area: 'Batu Bolong, Canggu', opens: '12:00', closes: '00:00', wa: MS_WA, phone: '+62 857 9250 5028', book: MS_BOOK },
     { name: 'Masonry Uluwatu', area: 'Uluwatu', phone: '+62 821 4676 5177' },
-    { name: 'Masonry Japan', area: 'Niseko, Japan' }
+    { name: 'Masonry Japan', area: 'Niseko, Japan' },
+    { name: 'Bar Vera', area: 'Pererenan', opens: '12:00', closes: '00:00', wa: '6282342713110', phone: '+62 823 4271 3110' }
   ],
   contact: { wa: MS_WA, phone: '+62 857 9250 5028' },
   acts: [
@@ -363,13 +362,18 @@ P.masonry = {
         { id: 'ms3', img: ms('fire'), title: 'Everything over wood and coals', line: 'Made from scratch, every day', venue: 'Masonry Canggu', btn: 'book', url: MS_BOOK },
         { id: 'ms4', img: ms('backroom'), title: 'The Backroom', line: 'Leather booths, a pool table and a late bar', venue: 'Masonry Canggu', btn: 'wa' },
         { id: 'ms5', img: ms('u-scallop'), title: 'Masonry Uluwatu', line: 'The same fire, down south', venue: 'Masonry Uluwatu', btn: 'wa' },
-        { id: 'ms6', img: ms('japan'), title: 'Masonry Japan', line: 'Coming to Niseko this ski season', venue: 'Masonry Canggu' }
+        { id: 'ms6', img: ms('japan'), title: 'Masonry Japan', line: 'Coming to Niseko this ski season', venue: 'Masonry Canggu' },
+        { id: 'mv1', img: ms('v-room'), title: 'Bar Vera', line: 'Bistro and wine bar in Pererenan', venue: 'Bar Vera', btn: 'wa' },
+        { id: 'mv2', img: ms('v-grouper'), title: 'Whole grouper in the coals', line: 'Burnt butter beurre blanc, lemon', venue: 'Bar Vera', btn: 'wa' },
+        { id: 'mv3', img: ms('v-martini'), title: 'Martini all day, every day', line: 'And a long wine list', venue: 'Bar Vera', btn: 'wa' }
       ],
       deals: [
         { id: 'md1', img: ms('negroni'), title: 'Members: 2 for 1 Old Fashioned', when: 'Daily · 5–7pm', venue: 'Masonry Canggu' },
         { id: 'md2', img: ms('c-charcuterie'), title: 'House charcuterie board · Rp 195k', when: 'Mon–Fri · 12–4pm', venue: 'Masonry Canggu', btn: 'book', url: MS_BOOK },
         { id: 'md3', img: ms('c-cocktails'), title: 'Martini hour in the Backroom', when: 'Daily · 5–7pm', venue: 'Masonry Canggu' },
-        { id: 'md4', img: ms('j-wine'), title: 'Members: 15% off any bottle', when: 'Every night', venue: 'Masonry Canggu' }
+        { id: 'md4', img: ms('j-wine'), title: 'Members: 15% off any bottle', when: 'Every night', venue: 'Masonry Canggu' },
+        { id: 'mvd1', img: ms('v-aperitivo'), title: 'Aperitivo hour · snacks and a Negroni', when: 'Daily · 4–6pm', venue: 'Bar Vera' },
+        { id: 'mvd2', img: ms('v-croquettes'), title: 'Members: small plates 2 for 1', when: 'Tue–Thu', venue: 'Bar Vera', btn: 'wa' }
       ],
       events: [
         { id: 'me1', img: ms('c-spread'), title: 'Chef’s table by the fire', line: 'Five courses, one night only', date: addDays(today, 8), time: '18:30', time2: '23:00', venue: 'Masonry Canggu', btn: 'book', url: MS_BOOK, hl: true,
@@ -380,16 +384,14 @@ P.masonry = {
         { id: 'me4', img: ms('v-room'), title: "New Year's Eve", line: 'Dinner, then the party', date: y + '-12-31', time: '18:00', time2: '01:00', venue: 'Masonry Canggu', btn: 'wa' }
       ],
       gallery: ['window', 'beef', 'fire', 'backroom', 'c-spread', 'negroni', 'oven', 'lobster', 'terrace', 'c-cocktails', 'tartare', 'room', 'c-flatbread', 'drinks', 'c-charcuterie', 'u-scallop', 'u-cabbage', 'u-rolls', 'u-chablis']
-        .map((n, i) => ({ id: 'mg' + i, img: ms(n), venue: n.startsWith('u-') ? 'Masonry Uluwatu' : 'Masonry Canggu' })),
+        .map((n, i) => ({ id: 'mg' + i, img: ms(n), venue: n.startsWith('u-') ? 'Masonry Uluwatu' : 'Masonry Canggu' }))
+        .concat(['v-room', 'v-bouillabaisse', 'v-martini', 'v-grouper', 'v-croquettes', 'v-aperitivo', 'v-risotto', 'v-cigars', 'v-tartare', 'v-cognac', 'v-toast', 'v-redcocktail'].map((n, i) => ({ id: 'mvg' + i, img: ms(n), venue: 'Bar Vera' }))),
       places: {
         'masonry canggu': { img: ms('window'), area: 'Batu Bolong, Canggu' },
         'masonry uluwatu': { img: ms('u-scallop'), area: 'Uluwatu' },
-        'masonry japan': { img: ms('japan-wide'), area: 'Niseko, Japan', soon: true }
-      },
-      others: { on: true, list: [{ id: 'vera', name: 'Bar Vera', img: ms('v-front'), line: 'Bistro and wine bar in Pererenan', book: '+62 823 4271 3110',
-        places: [{ name: 'The bistro', img: ms('v-bouillabaisse'), line: 'French bistro classics' }, { name: 'The bar', img: ms('v-martini'), line: 'Martinis and a long wine list' },
-          { name: 'From the kitchen', img: ms('v-grouper'), line: 'Whole grouper in the coals' }, { name: 'Small plates', img: ms('v-croquettes'), line: 'Jamon croquettes, prawn cigars, tartlets' },
-          { name: 'Aperitivo hour', img: ms('v-aperitivo'), line: 'Snacks and a Negroni, late afternoon' }, { name: 'After dinner', img: ms('v-cognac'), line: 'Cognac and something sweet' }] }] }
+        'masonry japan': { img: ms('japan-wide'), area: 'Niseko, Japan', soon: true },
+        'bar vera': { img: ms('v-front'), area: 'Pererenan', ig: 'bar.vera.bali', other: true }
+      }
     };
   }
 };

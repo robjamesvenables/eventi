@@ -23989,16 +23989,22 @@ function gpGiftHtml(){
 // ── Our other venues: sister venues or hotels inside this same app (visits there count too). Off unless switched on.
 //    Each one: photo, name, town, one line, a booking link or WhatsApp, its places (Eat & drink) and rooms (hotels).
 function gpOthersHtml(){
-  const o = (GPE.c && GPE.c.others) || {}, on = !!o.on, list = o.list || [];
-  return `<div class="gp-sec${on ? '' : ' off'}" data-go="venues"><div class="gp-sh"><div class="n"><b>Our other venues</b><small>Your sister venues or hotels - members can visit them from your app</small></div>
-    <button class="gp-tog${on ? ' on' : ''}" aria-label="Show our other venues" onclick="gpOthersToggle()"><i></i></button></div>
-    ${on ? `<div class="gp-body">${list.map((v, i) => `<div class="gp-it">${gpSrc(v) ? `<img class="th" src="${gpEsc(gpSrc(v))}" alt="">` : '<div class="th" style="display:flex;align-items:center;justify-content:center;color:#94A3B8">' + gpIc(GPI.cam, 20) + '</div>'}
-        <div class="x"><b>${gpEsc(v.name || 'No name yet')}</b><small>${gpEsc([v.city, (v.places || []).length + ' place' + ((v.places || []).length === 1 ? '' : 's'), (v.rooms || []).length ? v.rooms.length + ' room type' + (v.rooms.length === 1 ? '' : 's') : ''].filter(Boolean).join(' · '))}</small></div>
+  // Every venue is a full place now: they add it in Change venues, then tick "Show under Our other venues" on it in Our places.
+  // Older sister-venue boxes (list) still show and can be changed, but no new ones are added that way.
+  const o = (GPE.c && GPE.c.others) || {}, list = (o.on && o.list) || [], pl = GPE.c.places || {};
+  const ticked = (msPage().venues || []).filter(v => v && v.name && (pl[v.name.toLowerCase()] || {}).other);
+  const any = ticked.length || list.length;
+  return `<div class="gp-sec" data-go="venues"><div class="gp-sh"><div class="n"><b>Our other venues</b><small>Your sister brands - each one is a full place, same as Our places</small></div></div>
+    <div class="gp-body">${ticked.map(v => { const p = pl[v.name.toLowerCase()] || {}, src = gpSrc(p);
+        return `<div class="gp-it">${src ? `<img class="th" src="${gpEsc(src)}" alt="">` : '<div class="th" style="display:flex;align-items:center;justify-content:center;color:#94A3B8">' + gpIc(GPI.cam, 20) + '</div>'}
+        <div class="x"><b>${gpEsc(v.name)}</b><small>${gpEsc(p.area || v.area || '')}</small></div>
+        <button class="gp-ib" title="Change" aria-label="Change ${gpEsc(v.name)}" onclick="gpPlaceForm('${gpEsc(v.name.replace(/'/g, "\\'"))}')">${gpIc(GPI.edit)}</button></div>`; }).join('')}
+      ${list.map((v, i) => `<div class="gp-it"><div class="x"><b>${gpEsc(v.name || 'No name yet')}</b><small>Older style box</small></div>
         <button class="gp-ib" title="Change" aria-label="Change ${gpEsc(v.name || 'venue')}" onclick="gpOtherForm(${i})">${gpIc(GPI.edit)}</button></div>`).join('')}
-      ${list.length < 4 ? '<button class="gp-add" onclick="gpOtherForm(-1)">+ Add a venue</button>' : ''}
-      ${list.length ? gpSecTitleRow('others') : ''}
-      ${list.length ? `<div class="gp-it"><div class="x"><b>Make it stand out</b><small>A box in your button colour, with a Visit button, straight after your places</small></div>
-        <button class="gp-tog${o.bold ? ' on' : ''}" aria-label="Make it stand out" onclick="gpOthersBold()"><i></i></button></div>` : ''}</div>` : ''}</div>`;
+      <div class="gp-auto">${any ? '' : 'None yet. '}To add one: add the venue in Change venues, then open it in Our places and tick <b>Show under Our other venues</b>.</div>
+      ${any ? gpSecTitleRow('others') : ''}
+      ${any ? `<div class="gp-it"><div class="x"><b>Make it stand out</b><small>A box in your button colour, with a Visit button, straight after your places</small></div>
+        <button class="gp-tog${o.bold ? ' on' : ''}" aria-label="Make it stand out" onclick="gpOthersBold()"><i></i></button></div>` : ''}</div></div>`;
 }
 window.gpOthersToggle = async function(){
   const o = GPE.c.others = Object.assign({ list: [] }, GPE.c.others || {}); o.on = !o.on;
@@ -24006,7 +24012,7 @@ window.gpOthersToggle = async function(){
   if(o.on && !o.list.length) gpOtherForm(-1);
 };
 window.gpOthersBold = async function(){
-  const o = GPE.c.others; o.bold = !o.bold; gpRender(); await gpSave(o.bold ? 'It stands out now' : 'Back to the quiet box');
+  const o = GPE.c.others || (GPE.c.others = {}); o.bold = !o.bold; gpRender(); await gpSave(o.bold ? 'It stands out now' : 'Back to the quiet box');
 };
 window.gpOtherForm = function(idx){
   try{ ebEnsureUi(); }catch(e){}
@@ -24765,6 +24771,7 @@ window.gpPlaceForm = function(name){
     <div${one ? ' style="display:none"' : ''}><label>Photo</label><div class="gp-ph${gpSrc(it) ? ' has' : ''}" id="gpp-ph" role="button" tabindex="0">${gpSrc(it) ? `<img src="${gpEsc(gpSrc(it))}" alt=""><span>Change photo</span>` : `${gpIc(GPI.cam, 22)}&nbsp; Choose a photo`}</div>
     <label>Area</label><input id="gpp-area" maxlength="30" value="${gpEsc(it.area || v.area || '')}" placeholder="e.g. Canggu"></div>
     <label style="display:flex;align-items:center;gap:10px;margin-top:12px;font-weight:700;cursor:pointer"><input type="checkbox" id="gpp-soon" style="width:20px;height:20px;margin:0"${it.soon ? ' checked' : ''}> Coming soon <span class="gp-opt">guests see it but can't open it yet</span></label>
+    <label style="display:flex;align-items:center;gap:10px;margin-top:10px;font-weight:700;cursor:pointer"><input type="checkbox" id="gpp-other" style="width:20px;height:20px;margin:0"${it.other ? ' checked' : ''}> Show under Our other venues <span class="gp-opt">a different brand, same owners</span></label>
     <div class="gp-sub">Contact and links${mgr ? '' : ' <small>A manager can change these</small>'}</div>
     ${row(IC.clock, `<em>Opens</em><input id="gpp-o" type="time" value="${gpEsc(v.opens || '')}"${mgr ? '' : ' disabled'}>`)}
     ${row('', `<em>Closes</em><input id="gpp-c" type="time" value="${gpEsc(v.closes || '')}"${mgr ? '' : ' disabled'}>`)}
@@ -24849,7 +24856,7 @@ window.gpPlaceForm = function(name){
     const go = s.querySelector('.eb-go'); if(go.disabled) return;
     for(const m of menus){ if(!m.path && !Array.isArray(m.pages)){ const u = String(m.url || '').trim(); if(!u){ toast('Paste the menu link, or remove that menu'); return; } m.url = /^https?:\/\//i.test(u) ? u.replace(/^http:/i, 'https:') : 'https://' + u; if(!/^https:\/\/[^\s]+\.[^\s]+/i.test(m.url)){ toast('That menu link doesn\'t look right'); return; } } m.name = String(m.name || '').trim() || 'Menu'; }
     if(menus.length) it.menus = menus.map(m => { const o = { id:m.id, name:m.name, at:m.at }; if(Array.isArray(m.pages)) o.pages = m.pages.map(pg => pg.path ? { path: pg.path } : { img: pg.img }); else if(m.path){ o.path = m.path; o.type = m.type; } else o.url = m.url; return o; }); else delete it.menus;
-    it.area = val('gpp-area'); if($('gpp-soon') && $('gpp-soon').checked) it.soon = true; else delete it.soon;
+    it.area = val('gpp-area'); if($('gpp-soon') && $('gpp-soon').checked) it.soon = true; else delete it.soon; if($('gpp-other') && $('gpp-other').checked) it.other = true; else delete it.other;
     const igv = val('gpp-ig'), igm = /^(?:https?:\/\/)?(?:www\.)?(?:instagram\.com\/)?@?([a-z0-9._]{1,30})\/?(?:\?.*)?$/i.exec(igv);
     if(igv && !igm){ toast('That Instagram name doesn\'t look right - e.g. @senjarooftop'); return; }
     it.ig = igm ? igm[1] : ''; if(!it.ig) delete it.ig;

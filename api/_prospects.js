@@ -414,7 +414,7 @@ P.luma = {
   content: today => {
     const y = year(today);
     return {
-      theme: { top: '#2A211C', acc: '#B5553A', pg: '#F6F1EA' }, motion: true,
+      theme: { top: '#2A211C', acc: '#B5553A', pg: '#F6F1EA' }, motion: true, video: '/demo-guest/p-luma-film.mp4', videoTall: true,
       gift: { on: true, title: 'A long lunch, on you', line: 'Give someone a table at Luma. Tell us the amount and who it is for.', to: LUMA_WA, amounts: [500000, 1000000, 2000000], max: 5000000, bonus: 10 },
       slides: [
         { id: 'lm1', img: lm('room'), title: 'Mediterranean, with island flavours', line: 'Under the arches on Batu Bolong', venue: 'Luma', btn: 'wa' },

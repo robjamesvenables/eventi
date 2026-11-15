@@ -10,7 +10,7 @@ const sh = n => '/demo-guest/p-shelter-' + n + '.jpg';
 
 const P = {
   shelter: {
-    brand: 'Shelter', logo: '/demo-guest/p-shelter-logo.png', first: 'Stephen M.', tier: 'vip', visits: 12, since: 2024, favourite: 'Shelter Pererenan',
+    brand: 'Shelter', logo: '/demo-guest/p-shelter-logo.png', first: 'Stephen', tier: 'vip', visits: 12, since: 2024, favourite: 'Shelter Pererenan',
     perks: ['Glass of house wine with every dinner', 'First pick of tables for Shelter Sessions', 'Birthday dessert from the fire', 'Skip the wait for Sunday BBQ'],
     perkIcons: ['glass', 'ticket', 'cake', 'star'],
     reward: { target: 15, text: "Chef's fire menu for two" },
@@ -232,7 +232,7 @@ P.bpa = {
 const su = n => '/demo-guest/p-sun-' + n + '.jpg';
 const SUN_WA = '62811365563';
 P.sundari = {
-  brand: 'Sundari Wellness', logo: '/demo-guest/p-sundari-logo.png', icon: '/demo-guest/p-sundari-icon', first: 'Ayu', tier: 'vip', visits: 4, since: 2025, favourite: 'Sundari Wellness',
+  brand: 'Sundari Wellness', logo: '/demo-guest/p-sundari-logo.png', icon: '/demo-guest/p-sundari-icon', first: 'Demian', tier: 'vip', visits: 4, since: 2025, favourite: 'Sundari Wellness',
   perks: ['10% off every treatment', 'A birthday ritual on us', "Members-only treatment of the month", 'First pick of your favourite therapist'],
   perkIcons: ['leaf', 'cake', 'star', 'heart'],
   reward: { target: 10, text: 'A 60-minute Balinese massage' },
@@ -278,7 +278,7 @@ const SNG_MAP = 'https://goo.gl/maps/i8R5KS3zYotp2UVZ8';
 const SNG_MENU = n => ({ img: '/demo-guest/p-sangsaka-menu-' + n + '.jpg' });   // their menu from the website, made into pictures (black and gold)
 P.sangsaka = {
 
-  brand: 'Sangsaka', logo: '/demo-guest/p-sangsaka-logo.png', icon: '/demo-guest/p-sangsaka-icon', first: 'Olivia', tier: 'vip', visits: 7, since: 2025, favourite: 'Sangsaka',
+  brand: 'Sangsaka', logo: '/demo-guest/p-sangsaka-logo.png', icon: '/demo-guest/p-sangsaka-icon', first: 'Kieran', tier: 'vip', visits: 7, since: 2025, favourite: 'Sangsaka',
   perks: ['15% off your bill, every visit', 'Welcome cocktail upstairs at DI ATAS', "A chef's snack from the kitchen, on the house", 'Birthday dessert from the wood oven', 'First pick of the private dining room'],
   perkIcons: ['pct', 'cocktail', 'food', 'cake', 'star'],
   reward: { target: 10, text: "Chef's sharing menu for two" },
@@ -339,7 +339,7 @@ const MS_BOOK = 'https://www.sevenrooms.com/explore/masonryrestaurantcanggu/rese
 const MS_WA = '6285792505028';
 const ms = n => '/demo-guest/p-masonry-' + n + '.jpg';
 P.masonry = {
-  brand: 'Masonry', logo: '/demo-guest/p-masonry-logo.png', icon: '/demo-guest/p-masonry-icon', first: 'James', tier: 'vip', visits: 9, since: 2024, favourite: 'Masonry Canggu',
+  brand: 'Masonry', logo: '/demo-guest/p-masonry-logo.png', icon: '/demo-guest/p-masonry-icon', first: 'Ben', tier: 'vip', visits: 9, since: 2024, favourite: 'Masonry Canggu',
   perks: ['10% off your bill at every Masonry', 'A Masonry Old Fashioned on arrival', 'House charcuterie for the table, on us', 'Birthday dessert from the wood oven', 'Priority bookings at all three venues'],
   perkIcons: ['pct', 'cocktail', 'food', 'cake', 'star'],
   reward: { target: 10, text: '48-hour short rib dinner for two' },

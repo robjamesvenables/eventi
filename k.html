@@ -99,8 +99,10 @@ svg{display:block}
 :root{--rwacc:var(--acc,#2DD4BF);--rwink:var(--acc-ink,#fff)}
 .rw{--acc:var(--rwacc);--acc-ink:var(--rwink)}   /* reward card sits on the top colour: if the accent is too close to it, the card uses gold so the dots and words still show */
 .rw{padding:18px;background:var(--top,#0F1E2E);color:var(--top-ink,#fff);box-shadow:none}
-/* top the same as the page (e.g. cream on cream): the Contact button, visits card and gift card go near-black so they still stand out */
-html.top-pg .rw,html.top-pg .book .b2{--top:#1C1A19;--top-ink:#FFFFFF;--top-sub:rgba(255,255,255,.78)}
+/* top the same as the page (e.g. cream on cream): buttons, cards and icons that use the top colour go near-black so they still stand out */
+html.top-pg .top,html.top-pg #dk-bg,html.top-pg .mvh{--top:var(--top-hd);--top-ink:#0F1E2E;--top-sub:rgba(15,30,46,.7)}   /* the header keeps the venue's own top colour; everything else that used it goes near-black */
+/* a pale button colour (e.g. light pink) is unreadable as text on white cards: words in that colour use a deeper shade of it */
+html.acc-light .deal .dw,html.acc-light .ev .wh,html.acc-light .ev .det,html.acc-light .evw,html.acc-light .ohey,html.acc-light .vmenu a svg,html.acc-light .allbtn{color:color-mix(in srgb,var(--acc) 35%,#000);color:hsl(from var(--acc) h calc(s * .6) 38%)}
 html.top-pg .gv{background:#1C1A19;color:#fff}html.top-pg .gv .gvi{background:var(--acc);color:#1C1A19}html.top-pg .gv .gvb{background:var(--acc);color:var(--acc-ink)}
 .rwk{font-size:12px;font-weight:900;letter-spacing:1.6px;color:var(--acc,#2DD4BF);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .rwbig{display:flex;align-items:baseline;gap:6px;margin-top:4px;white-space:nowrap;min-width:0}
@@ -755,11 +757,13 @@ body.vqopen .vq-dim{opacity:1;pointer-events:auto}body.vqopen .vq-sheet{transfor
     if (!th.acc) ['--acc', '--acc-ink'].forEach(function(v){ rs.removeProperty(v); });
     if (!th.pg) rs.removeProperty('--pg');
     if (th.acc) { rs.setProperty('--acc', th.acc); rs.setProperty('--acc-ink', light(th.acc) ? '#0F1E2E' : '#FFFFFF'); }
+    document.documentElement.classList.toggle('acc-light', !!(th.acc && !th.dark && /^#[0-9a-f]{6}$/i.test(th.acc) && (function(n){ return 0.299 * (n >> 16) + 0.587 * (n >> 8 & 255) + 0.114 * (n & 255) > 195; })(parseInt(th.acc.slice(1), 16))));   // only really pale colours (pastel pink) - gold etc. stay as they are
     if (th.pg) rs.setProperty('--pg', th.pg);
     if (th.dark) { rs.setProperty('--pg', '#0A0A0A'); if (th.acc) rs.setProperty('--acc-ink', light(th.acc) ? '#111111' : '#FFFFFF'); darkPage(); } else document.documentElement.classList.remove('dkm');
     (function(){ var t = th.top || '', pg = th.dark ? '#0A0A0A' : (th.pg || '#F5F4F0'), ok = /^#[0-9a-f]{6}$/i;
       var near = ok.test(t) && ok.test(pg) && light(t) && [16, 8, 0].reduce(function(a, sh){ var c = (parseInt(t.slice(1), 16) >> sh & 255) - (parseInt(pg.slice(1), 16) >> sh & 255); return a + c * c; }, 0) < 1600;
-      document.documentElement.classList.toggle('top-pg', !!near); })();
+      document.documentElement.classList.toggle('top-pg', !!near);
+      if (near) { rs.setProperty('--top-hd', t); rs.setProperty('--top', '#1C1A19'); rs.setProperty('--top-ink', '#FFFFFF'); rs.setProperty('--top-sub', 'rgba(255,255,255,.78)'); } })();
     (function(){ var t = document.documentElement.classList.contains('top-pg') ? '#1C1A19' : (th.top || '#0F1E2E'), ac = th.acc || '#0D9488', lum = function(hx){ var n = parseInt(hx.slice(1), 16); return [n >> 16, (n >> 8) & 255, n & 255].map(function(c){ c /= 255; return c <= .03928 ? c / 12.92 : Math.pow((c + .055) / 1.055, 2.4); }).reduce(function(a, c, i){ return a + c * [.2126, .7152, .0722][i]; }, 0); };
       var A = lum(ac), B = lum(t), ratio = (Math.max(A, B) + .05) / (Math.min(A, B) + .05), rgb = function(hx){ var n = parseInt(hx.slice(1), 16); return [n >> 16, (n >> 8) & 255, n & 255]; }, x = rgb(ac), y = rgb(t), dist = Math.sqrt(x.reduce(function(a, c, i){ return a + (c - y[i]) * (c - y[i]); }, 0));   // same family of colour (e.g. brown on brown) - a different colour like orange on green still shows fine
       if (/^#[0-9a-f]{6}$/i.test(t) && /^#[0-9a-f]{6}$/i.test(ac) && ratio < 2.2 && dist < 80) { var gold = light(t) ? '#8A6418' : '#D9B46A'; rs.setProperty('--rwacc', gold); rs.setProperty('--rwink', light(gold) ? '#2B1D07' : '#FFFFFF'); } })();

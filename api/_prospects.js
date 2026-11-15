@@ -52,7 +52,7 @@ const P = {
         gallery: ['entrance', 'longtable', 'flame', 'room', 'bread', 'cocktails', 'grill', 'salmon', 'kitchen', 'octo', 'party', 'kofta', 'pig', 'table', 'chef', 'fire', 'scallops', 'barra', 'flatbread', 'octopus', 'pork', 'drink', 'coals'].map((n, i) => ({ id: 'pg' + i, img: sh(n), venue: n === 'coals' ? 'Shelter Uluwatu' : 'Shelter Pererenan' })),
         gift: { on: true, title: 'A night at Shelter', line: 'Give someone a seat by the fire. Tell us the amount and who it is for.', to: '6282340040199', amounts: [500000, 1000000, 2000000], max: 5000000, bonus: 10 },
         places: {
-          'shelter pererenan': { img: sh('entrance'), area: 'Pererenan', ig: 'shelter.pererenan', menus: [
+          'shelter pererenan': { img: sh('room'), area: 'Pererenan', ig: 'shelter.pererenan', menus: [
             { name: 'Lunch', url: 'https://www.shelterbali.com/lunch-menu' }, { name: 'Dinner', url: 'https://www.shelterbali.com/dinner-menu' }, { name: 'Drinks', url: 'https://www.shelterbali.com/drink-menu' }] },
           'shelter uluwatu': { img: sh('coals'), area: 'Uluwatu', soon: true }
         }
@@ -394,8 +394,8 @@ P.masonry = {
         .map((n, i) => ({ id: 'mg' + i, img: ms(n), venue: n.startsWith('u-') ? 'Masonry Uluwatu' : 'Masonry Canggu' }))
         .concat(['v-room', 'v-bouillabaisse', 'v-martini', 'v-grouper', 'v-croquettes', 'v-aperitivo', 'v-risotto', 'v-cigars', 'v-tartare', 'v-cognac', 'v-toast', 'v-redcocktail'].map((n, i) => ({ id: 'mvg' + i, img: ms(n), venue: 'Bar Vera' }))),
       places: {
-        'masonry canggu': { img: ms('window'), area: 'Batu Bolong, Canggu' },
-        'masonry uluwatu': { img: ms('u-scallop'), area: 'Uluwatu' },
+        'masonry canggu': { img: ms('room'), area: 'Batu Bolong, Canggu' },
+        'masonry uluwatu': { img: ms('u-cabbage'), area: 'Uluwatu' },
         'masonry japan': { img: ms('japan-wide'), area: 'Niseko, Japan', soon: true },
         'bar vera': { img: ms('v-front'), area: 'Pererenan', ig: 'bar.vera.bali', other: true }
       }
@@ -450,7 +450,7 @@ P.luma = {
         .map((n, i) => ({ id: 'lg' + i, img: lm(n), venue: ['lounge', 'wine', 'g-bar', 'g-oysters', 'g-night'].indexOf(n) >= 0 ? 'Bar Luma' : 'Luma' })),
       places: {
         'luma': { img: lm('terrace'), area: 'Batu Bolong, Canggu', ig: 'lumabali' },
-        'bar luma': { img: lm('lounge'), area: 'Terrace bar', ig: 'lumabali' }
+        'bar luma': { img: lm('g-bar'), area: 'Terrace bar', ig: 'lumabali' }
       }
     };
   }

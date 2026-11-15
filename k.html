@@ -99,6 +99,9 @@ svg{display:block}
 :root{--rwacc:var(--acc,#2DD4BF);--rwink:var(--acc-ink,#fff)}
 .rw{--acc:var(--rwacc);--acc-ink:var(--rwink)}   /* reward card sits on the top colour: if the accent is too close to it, the card uses gold so the dots and words still show */
 .rw{padding:18px;background:var(--top,#0F1E2E);color:var(--top-ink,#fff);box-shadow:none}
+/* top the same as the page (e.g. cream on cream): the Contact button, visits card and gift card go near-black so they still stand out */
+html.top-pg .rw,html.top-pg .book .b2{--top:#1C1A19;--top-ink:#FFFFFF;--top-sub:rgba(255,255,255,.78)}
+html.top-pg .gv{background:#1C1A19;color:#fff}html.top-pg .gv .gvi{background:var(--acc);color:#1C1A19}html.top-pg .gv .gvb{background:var(--acc);color:var(--acc-ink)}
 .rwk{font-size:12px;font-weight:900;letter-spacing:1.6px;color:var(--acc,#2DD4BF);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .rwbig{display:flex;align-items:baseline;gap:6px;margin-top:4px;white-space:nowrap;min-width:0}
 .rwbig b{font-size:44px;font-weight:900;line-height:1;letter-spacing:-1.5px}
@@ -754,7 +757,10 @@ body.vqopen .vq-dim{opacity:1;pointer-events:auto}body.vqopen .vq-sheet{transfor
     if (th.acc) { rs.setProperty('--acc', th.acc); rs.setProperty('--acc-ink', light(th.acc) ? '#0F1E2E' : '#FFFFFF'); }
     if (th.pg) rs.setProperty('--pg', th.pg);
     if (th.dark) { rs.setProperty('--pg', '#0A0A0A'); if (th.acc) rs.setProperty('--acc-ink', light(th.acc) ? '#111111' : '#FFFFFF'); darkPage(); } else document.documentElement.classList.remove('dkm');
-    (function(){ var t = th.top || '#0F1E2E', ac = th.acc || '#0D9488', lum = function(hx){ var n = parseInt(hx.slice(1), 16); return [n >> 16, (n >> 8) & 255, n & 255].map(function(c){ c /= 255; return c <= .03928 ? c / 12.92 : Math.pow((c + .055) / 1.055, 2.4); }).reduce(function(a, c, i){ return a + c * [.2126, .7152, .0722][i]; }, 0); };
+    (function(){ var t = th.top || '', pg = th.dark ? '#0A0A0A' : (th.pg || '#F5F4F0'), ok = /^#[0-9a-f]{6}$/i;
+      var near = ok.test(t) && ok.test(pg) && light(t) && [16, 8, 0].reduce(function(a, sh){ var c = (parseInt(t.slice(1), 16) >> sh & 255) - (parseInt(pg.slice(1), 16) >> sh & 255); return a + c * c; }, 0) < 1600;
+      document.documentElement.classList.toggle('top-pg', !!near); })();
+    (function(){ var t = document.documentElement.classList.contains('top-pg') ? '#1C1A19' : (th.top || '#0F1E2E'), ac = th.acc || '#0D9488', lum = function(hx){ var n = parseInt(hx.slice(1), 16); return [n >> 16, (n >> 8) & 255, n & 255].map(function(c){ c /= 255; return c <= .03928 ? c / 12.92 : Math.pow((c + .055) / 1.055, 2.4); }).reduce(function(a, c, i){ return a + c * [.2126, .7152, .0722][i]; }, 0); };
       var A = lum(ac), B = lum(t), ratio = (Math.max(A, B) + .05) / (Math.min(A, B) + .05), rgb = function(hx){ var n = parseInt(hx.slice(1), 16); return [n >> 16, (n >> 8) & 255, n & 255]; }, x = rgb(ac), y = rgb(t), dist = Math.sqrt(x.reduce(function(a, c, i){ return a + (c - y[i]) * (c - y[i]); }, 0));   // same family of colour (e.g. brown on brown) - a different colour like orange on green still shows fine
       if (/^#[0-9a-f]{6}$/i.test(t) && /^#[0-9a-f]{6}$/i.test(ac) && ratio < 2.2 && dist < 80) { var gold = light(t) ? '#8A6418' : '#D9B46A'; rs.setProperty('--rwacc', gold); rs.setProperty('--rwink', light(gold) ? '#2B1D07' : '#FFFFFF'); } })();
 

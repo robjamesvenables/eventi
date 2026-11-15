@@ -388,7 +388,8 @@ P.masonry = {
       },
       others: { on: true, list: [{ id: 'vera', name: 'Bar Vera', img: ms('v-front'), line: 'Bistro and wine bar in Pererenan', book: '+62 823 4271 3110',
         places: [{ name: 'The bistro', img: ms('v-bouillabaisse'), line: 'French bistro classics' }, { name: 'The bar', img: ms('v-martini'), line: 'Martinis and a long wine list' },
-          { name: 'From the kitchen', img: ms('v-grouper'), line: 'Seafood, done simply' }, { name: 'After dinner', img: ms('v-cognac'), line: 'Cognac and something sweet' }] }] }
+          { name: 'From the kitchen', img: ms('v-grouper'), line: 'Whole grouper in the coals' }, { name: 'Small plates', img: ms('v-croquettes'), line: 'Jamon croquettes, prawn cigars, tartlets' },
+          { name: 'Aperitivo hour', img: ms('v-aperitivo'), line: 'Snacks and a Negroni, late afternoon' }, { name: 'After dinner', img: ms('v-cognac'), line: 'Cognac and something sweet' }] }] }
     };
   }
 };

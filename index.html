@@ -24095,9 +24095,8 @@ window.gpGiftEdit = function(){
              { label:'One line - optional', placeholder:'e.g. A thoughtful present for someone you love', value: g.line || '' , optional:true },
              { label:'Button goes to - an email or a WhatsApp number (empty = your main contact)', placeholder:'e.g. info@yourvenue.com or 62812...', value: g.to || '' , optional:true },
              { label:'Amounts - up to 4, with commas', placeholder:'e.g. 500k, 1m, 2m', value: (g.amounts || [500000, 1000000, 2000000]).map(gpGiftShort).join(', ') },
-             { label:'Most someone can spend', placeholder:'e.g. 5m', value: g.max ? gpGiftShort(g.max) : '5m' },
-             { label:'Members get extra - % (0 = none)', placeholder:'e.g. 10', value: String(g.bonus || 0) , optional:true } ],
-    async onOk([title, line, to, amts, max, bonus]){
+             { label:'Most someone can spend', placeholder:'e.g. 5m', value: g.max ? gpGiftShort(g.max) : '5m' } ],
+    async onOk([title, line, to, amts, max]){
       to = String(to || '').trim();
       if(to && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(to) && String(to).replace(/\D/g, '').length < 8){ toast('Type an email address or a WhatsApp number with the country code'); return; }
       const list = String(amts || '').split(/[,;\/]+/).map(gpGiftNum).filter(Boolean);
@@ -24106,9 +24105,7 @@ window.gpGiftEdit = function(){
       if(list.length > 4){ toast('Up to 4 amounts please'); return; }
       if(!mx){ toast('Type the most someone can spend, e.g. 5m'); return; }
       if(list.some(x => x > mx)){ toast('An amount is more than the most someone can spend'); return; }
-      const bn = Math.round(+String(bonus || '0').replace(/[^\d.]/g, '') || 0);
-      if(bn > 50){ toast('Members extra can be up to 50%'); return; }
-      GPE.c.gift = { on:true, title:String(title || '').trim().slice(0, 60), line:String(line || '').trim().slice(0, 200), to: /@/.test(to) ? to : to.replace(/\D/g, ''), amounts: list.sort((x, y) => x - y), max: mx, bonus: bn };
+      GPE.c.gift = { on:true, title:String(title || '').trim().slice(0, 60), line:String(line || '').trim().slice(0, 200), to: /@/.test(to) ? to : to.replace(/\D/g, ''), amounts: list.sort((x, y) => x - y), max: mx };
       gpRender(); await gpSave('Gift voucher card saved');
     } });
 };

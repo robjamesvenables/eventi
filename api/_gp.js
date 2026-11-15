@@ -173,8 +173,8 @@ function build(c, ctx){
     const amts = (Array.isArray(gv.amounts) ? gv.amounts : []).map(x => Math.round(+x)).filter(x => x >= 1000 && (!mx || x <= mx)).slice(0, 4);
     const ph = slides.find(x => x.img) || (places || []).find(x => x.img) || {};
     if (b) gift = { title: str(gv.title, 60).trim() || "A night they'll remember", line: str(gv.line, 200).trim(), btn: Object.assign(b, { label: 'Ask about vouchers' }),
-      // the voucher page: amounts to pick, a maximum for "Other", a members' bonus, a photo; the message is written on the phone
-      amounts: amts.length ? amts : [500000, 1000000, 2000000].filter(x => !mx || x <= mx), max: mx, bonus: Math.max(0, Math.min(50, Math.round(+gv.bonus || 0))), img: ph.img || '',
+      // the voucher page: amounts to pick, a maximum for "Other", a photo; the message is written on the phone
+      amounts: amts.length ? amts : [500000, 1000000, 2000000].filter(x => !mx || x <= mx), max: mx, img: ph.img || '',
       kind: b.kind, to: b.kind === 'wa' ? b.href.replace(/^https:\/\/wa\.me\/(\d+).*$/, '$1') : (b.email || ''), who }; }
   // Our other venues (Guest page > Our other venues, off unless switched on): sister venues or hotels in the same app - visits there count too.
   // Each one opens its own page: its places (Eat & drink), rooms if it's a hotel, and a booking button (a link or a WhatsApp number).

@@ -343,13 +343,14 @@ P.masonry = {
   reward: { target: 10, text: '48-hour short rib dinner for two' },
   venues: [
     { name: 'Masonry Canggu', area: 'Batu Bolong, Canggu', opens: '12:00', closes: '00:00', wa: MS_WA, phone: '+62 857 9250 5028', book: MS_BOOK },
-    { name: 'Masonry Uluwatu', area: 'Uluwatu', phone: '+62 821 4676 5177' },
+    { name: 'Masonry Uluwatu', area: 'Uluwatu', opens: '12:00', closes: '00:00', wa: MS_WA, phone: '+62 821 4676 5177', book: MS_BOOK },
     { name: 'Masonry Japan', area: 'Niseko, Japan' },
     { name: 'Bar Vera', area: 'Pererenan', opens: '12:00', closes: '00:00', wa: '6282342713110', phone: '+62 823 4271 3110' }
   ],
   contact: { wa: MS_WA, phone: '+62 857 9250 5028' },
   acts: [
-    { title: 'Fire on the grill', line: 'Everything cooked over wood and coals', every: [0, 1, 2, 3, 4, 5, 6], start: '12:00', end: '00:00', venue: 'Masonry Canggu', ic: 'food' }
+    { title: 'Fire on the grill', line: 'Everything cooked over wood and coals', every: [0, 1, 2, 3, 4, 5, 6], start: '12:00', end: '00:00', venue: 'Masonry Canggu', ic: 'food' },
+    { title: 'Sunset drinks on the terrace', line: 'Chablis and small plates as the sun goes down', every: [0, 1, 2, 3, 4, 5, 6], start: '17:00', end: '19:00', venue: 'Masonry Uluwatu', ic: 'drinks' }
   ],
   content: today => {
     const y = year(today);
@@ -357,11 +358,13 @@ P.masonry = {
       theme: { top: '#141414', acc: '#CDA86B', dark: true }, video: '/demo-guest/p-masonry-film.mp4', videoTall: true,
       gift: { on: true, title: 'Dinner by the fire', line: 'Give someone a night at Masonry. Tell us the amount and who it is for.', to: MS_WA, amounts: [500000, 1000000, 2000000], max: 5000000, bonus: 10 },
       slides: [
-        { id: 'ms1', img: ms('window'), title: 'Good food cooked over fire', line: 'Canggu · Uluwatu · Japan coming soon', btn: 'book', url: MS_BOOK },
+        { id: 'ms1', img: ms('window'), title: 'Good food cooked over fire', line: 'Stiff drinks, open windows, Batu Bolong', venue: 'Masonry Canggu', btn: 'book', url: MS_BOOK },
         { id: 'ms2', img: ms('beef'), title: '48-hour slow roasted short rib', line: 'Chimichurri, roasted shallots', venue: 'Masonry Canggu', btn: 'book', url: MS_BOOK },
         { id: 'ms3', img: ms('fire'), title: 'Everything over wood and coals', line: 'Made from scratch, every day', venue: 'Masonry Canggu', btn: 'book', url: MS_BOOK },
         { id: 'ms4', img: ms('backroom'), title: 'The Backroom', line: 'Leather booths, a pool table and a late bar', venue: 'Masonry Canggu', btn: 'wa' },
         { id: 'ms5', img: ms('u-scallop'), title: 'Masonry Uluwatu', line: 'The same fire, down south', venue: 'Masonry Uluwatu', btn: 'wa' },
+        { id: 'ms5b', img: ms('u-carpaccio'), title: 'Beef carpaccio, Uluwatu', line: 'Raw, bright, made for sharing', venue: 'Masonry Uluwatu', btn: 'book', url: MS_BOOK },
+        { id: 'ms5c', img: ms('u-chablis'), title: 'A long wine list, down south', line: 'Chablis by the glass from 5pm', venue: 'Masonry Uluwatu', btn: 'book', url: MS_BOOK },
         { id: 'ms6', img: ms('japan'), title: 'Masonry Japan', line: 'Coming to Niseko this ski season', venue: 'Masonry Canggu' },
         { id: 'mv1', img: ms('v-room'), title: 'Bar Vera', line: 'Bistro and wine bar in Pererenan', venue: 'Bar Vera', btn: 'wa' },
         { id: 'mv2', img: ms('v-grouper'), title: 'Whole grouper in the coals', line: 'Burnt butter beurre blanc, lemon', venue: 'Bar Vera', btn: 'wa' },
@@ -372,6 +375,8 @@ P.masonry = {
         { id: 'md2', img: ms('c-charcuterie'), title: 'House charcuterie board · Rp 195k', when: 'Mon–Fri · 12–4pm', venue: 'Masonry Canggu', btn: 'book', url: MS_BOOK },
         { id: 'md3', img: ms('c-cocktails'), title: 'Martini hour in the Backroom', when: 'Daily · 5–7pm', venue: 'Masonry Canggu' },
         { id: 'md4', img: ms('j-wine'), title: 'Members: 15% off any bottle', when: 'Every night', venue: 'Masonry Canggu' },
+        { id: 'mud1', img: ms('u-chablis'), title: 'Members: a glass of Chablis on arrival', when: 'Every night', venue: 'Masonry Uluwatu' },
+        { id: 'mud2', img: ms('u-rolls'), title: 'Sunset small plates · Rp 145k', when: 'Daily · 5–7pm', venue: 'Masonry Uluwatu', btn: 'book', url: MS_BOOK },
         { id: 'mvd1', img: ms('v-aperitivo'), title: 'Aperitivo hour · snacks and a Negroni', when: 'Daily · 4–6pm', venue: 'Bar Vera' },
         { id: 'mvd2', img: ms('v-croquettes'), title: 'Members: small plates 2 for 1', when: 'Tue–Thu', venue: 'Bar Vera', btn: 'wa' }
       ],
@@ -381,6 +386,8 @@ P.masonry = {
         { id: 'me2', img: ms('backroom'), title: 'Backroom sessions', line: 'DJ, cocktails and the pool table', date: addDays(today, 3), time: '21:00', time2: '01:00', venue: 'Masonry Canggu', btn: 'wa',
           details: 'A DJ in the Backroom, the bar open late.' },
         { id: 'me3', img: ms('c-yorkshire'), title: 'Christmas long lunch', line: 'Roasts from the fire, all the trimmings', date: y + '-12-25', time: '12:00', time2: '17:00', venue: 'Masonry Canggu', btn: 'book', url: MS_BOOK },
+        { id: 'me5', img: ms('u-cabbage'), title: 'Sunday long lunch, Uluwatu', line: 'Sharing plates from the fire', date: nextDow(addDays(today, 1), 0), time: '12:00', time2: '16:00', venue: 'Masonry Uluwatu', btn: 'book', url: MS_BOOK,
+          details: 'A long Sunday lunch of sharing plates from the grill, down south.', notes: 'Members get first pick of tables.' },
         { id: 'me4', img: ms('v-room'), title: "New Year's Eve", line: 'Dinner, then the party', date: y + '-12-31', time: '18:00', time2: '01:00', venue: 'Masonry Canggu', btn: 'wa' }
       ],
       gallery: ['window', 'beef', 'fire', 'backroom', 'c-spread', 'negroni', 'oven', 'lobster', 'terrace', 'c-cocktails', 'tartare', 'room', 'c-flatbread', 'drinks', 'c-charcuterie', 'u-scallop', 'u-cabbage', 'u-rolls', 'u-chablis']

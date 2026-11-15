@@ -393,9 +393,62 @@ P.masonry = {
   }
 };
 
-const CODES = { K8SNGA: 'sangsaka', B6PADL: 'bpa', S8HLTR: 'shelter', T7RNSB: 'trans', '5NKGZJ': 'trans', S4DK7R: 'sundari', M3SNRY: 'masonry', L5UMAB: 'sangsaka' };   // L5UMAB = Luma keyring: same owners, opens the Sangsaka app   // 5NKGZJ = the printed sample card, shown as Trans for the GM demo
+// Luma (Mediterranean, Batu Bolong, Canggu) - its own demo (several shareholders, separate from Sangsaka). Photos from their site and guest posts,
+// guest chef posters from Bar Luma; perks, deals and dates made up for the demo. Greeting name is a stand-in until we know who we pitch to.
+const lm = n => '/demo-guest/p-luma-' + n + '.jpg';
+const LUMA_WA = '6281139414999';
+const LUMA_MAP = 'https://maps.google.com/?q=Luma+Jl.+Pantai+Batu+Bolong+91+Canggu';
+P.luma = {
+  brand: 'Luma', logo: '/demo-guest/p-luma-logo.png', icon: '/demo-guest/p-luma-icon', first: 'Olivia', tier: 'vip', visits: 6, since: 2025, favourite: 'Luma',
+  perks: ['10% off your bill, every visit', 'A Negroni on tap at Bar Luma on arrival', 'Bread and olives for the table, on us', 'Birthday dessert from the kitchen', 'First pick of tables for guest chef nights'],
+  perkIcons: ['pct', 'cocktail', 'food', 'cake', 'star'],
+  reward: { target: 10, text: 'Long lunch for two, wine included' },
+  venues: [
+    { name: 'Luma', area: 'Batu Bolong, Canggu', opens: '12:00', closes: '23:00', wa: LUMA_WA, phone: '+62 811 3941 4999', map: LUMA_MAP, review: LUMA_MAP },
+    { name: 'Bar Luma', area: 'Terrace bar', opens: '16:00', closes: '00:00', wa: LUMA_WA, phone: '+62 811 3941 4999', map: LUMA_MAP }
+  ],
+  contact: { wa: LUMA_WA, phone: '+62 811 3941 4999', map: LUMA_MAP, ig: 'lumabali' },
+  acts: [
+    { title: 'Vinyl on the terrace', line: 'DJs spinning records at Bar Luma', every: [5, 6], start: '20:00', end: '00:00', venue: 'Bar Luma', ic: 'music' }
+  ],
+  content: today => {
+    const y = year(today);
+    return {
+      theme: { top: '#2A211C', acc: '#B5553A', pg: '#F6F1EA' }, motion: true,
+      gift: { on: true, title: 'A long lunch, on you', line: 'Give someone a table at Luma. Tell us the amount and who it is for.', to: LUMA_WA, amounts: [500000, 1000000, 2000000], max: 5000000, bonus: 10 },
+      slides: [
+        { id: 'lm1', img: lm('room'), title: 'Mediterranean, with island flavours', line: 'Under the arches on Batu Bolong', venue: 'Luma', btn: 'wa' },
+        { id: 'lm2', img: lm('table'), title: 'Plates to share', line: 'Southern Europe, Balinese produce', venue: 'Luma', btn: 'wa' },
+        { id: 'lm3', img: lm('lounge'), title: 'Bar Luma, on the terrace', line: 'Negroni on tap, vinyl at weekends', venue: 'Bar Luma', btn: 'wa' },
+        { id: 'lm4', img: lm('lamb'), title: 'From our kitchen', line: 'Cameron Emirali and Kieran Morland', venue: 'Luma', btn: 'wa' },
+        { id: 'lm5', img: lm('x-renatta'), title: 'Guest chef nights at Bar Luma', line: 'Barbecue on the terrace, vinyl DJ', venue: 'Bar Luma', btn: 'wa' }
+      ],
+      deals: [
+        { id: 'ld1', img: lm('wine'), title: 'Happy hour · Aperol Spritz 70k', when: 'Daily · 4–7pm', venue: 'Bar Luma' },
+        { id: 'ld2', img: lm('g-burrata'), title: 'Long lunch · 3 plates and a glass, Rp 395k', when: 'Mon–Fri · 12–3pm', venue: 'Luma', btn: 'wa' },
+        { id: 'ld3', img: lm('g-oysters'), title: 'Members: oysters and espresso martini, 2 for 1', when: 'Thursdays · from 6pm', venue: 'Bar Luma' }
+      ],
+      events: [
+        { id: 'le1', img: lm('x-locavore'), title: 'Bar Luma x guest chef', line: 'Barbecue on the terrace, vinyl DJ', date: nextDow(today, 6), time: '18:00', time2: '23:00', venue: 'Bar Luma', btn: 'wa', hl: true,
+          details: 'A guest chef takes over the grill on the terrace for one night, with a vinyl DJ until late.', notes: 'Members get first pick of tables.' },
+        { id: 'le2', img: lm('x-tinto'), title: 'Sunday long lunch', line: 'Four courses, free-flow option', date: nextDow(addDays(today, 3), 0), time: '12:00', time2: '16:00', venue: 'Luma', btn: 'wa',
+          details: 'Four courses to share, with a free-flow wine option for two and a half hours.' },
+        { id: 'le3', img: lm('room'), title: 'Christmas lunch', line: 'Long tables under the arches', date: y + '-12-25', time: '12:00', time2: '17:00', venue: 'Luma', btn: 'wa' },
+        { id: 'le4', img: lm('lounge'), title: "New Year's Eve on the terrace", line: 'Dinner inside, DJ outside', date: y + '-12-31', time: '18:00', time2: '01:00', venue: 'Bar Luma', btn: 'wa' }
+      ],
+      gallery: ['street', 'room', 'table', 'lamb', 'lounge', 'g-burrata', 'g-prawns', 'g-steak', 'chefs', 'g-arches', 'g-pasta', 'g-oysters', 'terrace', 'wine', 'g-chocolate', 'g-bar', 'g-entrance', 'g-night']
+        .map((n, i) => ({ id: 'lg' + i, img: lm(n), venue: ['lounge', 'wine', 'g-bar', 'g-oysters', 'g-night'].indexOf(n) >= 0 ? 'Bar Luma' : 'Luma' })),
+      places: {
+        'luma': { img: lm('terrace'), area: 'Batu Bolong, Canggu', ig: 'lumabali' },
+        'bar luma': { img: lm('lounge'), area: 'Terrace bar', ig: 'lumabali' }
+      }
+    };
+  }
+};
+
+const CODES = { K8SNGA: 'sangsaka', B6PADL: 'bpa', S8HLTR: 'shelter', T7RNSB: 'trans', '5NKGZJ': 'trans', S4DK7R: 'sundari', M3SNRY: 'masonry', L5UMAB: 'luma' };   // L5UMAB = Luma keyring: its own Luma demo (different owners from Sangsaka)   // 5NKGZJ = the printed sample card, shown as Trans for the GM demo
 // Mavis Club network: each of the guest's other venues as a logo tile (their colour, logo, how long they've been a member there)
-const KEY_CODE = { sangsaka: 'K8SNGA', bpa: 'B6PADL', shelter: 'S8HLTR', trans: 'T7RNSB', sundari: 'S4DK7R', masonry: 'M3SNRY' };
+const KEY_CODE = { sangsaka: 'K8SNGA', bpa: 'B6PADL', shelter: 'S8HLTR', trans: 'T7RNSB', sundari: 'S4DK7R', masonry: 'M3SNRY', luma: 'L5UMAB' };
 const club = (list, who) => list.map(c => { const v = P[c.key]; if (!v) return null; const t = (v.content('2026-01-01').theme) || {};
   return { name: v.brand, logo: v.logo, top: t.top || '#0F1E2E', area: (v.venues[0] || {}).area || '', since: c.since || '', visits: c.visits || 0,
     href: '/k/' + KEY_CODE[c.key] + '?n=' + encodeURIComponent(String(who || '').split(' ')[0]) }; }).filter(Boolean);

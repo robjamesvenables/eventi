@@ -567,9 +567,60 @@ P.lolas = {
   }
 };
 
-const CODES = { K8SNGA: 'sangsaka', B6PADL: 'bpa', S8HLTR: 'shelter', T7RNSB: 'trans', '5NKGZJ': 'trans', S4DK7R: 'sundari', M3SNRY: 'masonry', L5UMAB: 'luma', B7RNCH: 'brunch', L7LASQ: 'lolas' };   // L5UMAB = Luma keyring: its own Luma demo (different owners from Sangsaka)   // 5NKGZJ = the printed sample card, shown as Trans for the GM demo
+// Ku De Ta (Seminyak beach club) with Saltlick (its steakhouse, same group) under "Our other venues" - photos from Robbie's Drive;
+// logo is a stand-in, hours are a guess and there's no WhatsApp yet (buttons go to their website until we have one); perks, deals and dates made up.
+const kd = n => '/demo-guest/p-kdt-' + n + '.jpg', sl = n => '/demo-guest/p-saltlick-' + n + '.jpg';
+const KDT_BOOK = 'https://www.kudeta.com';
+P.kudeta = {
+  brand: 'Ku De Ta', logo: '/demo-guest/p-kdt-logo.png', first: 'Matt', tier: 'member', visits: 7, since: 2025, favourite: 'Ku De Ta',
+  perks: ['10% off your bill, every visit', 'A glass of bubbles on your birthday', 'Priority daybeds on weekends', 'First word on our big nights'],
+  perkIcons: ['pct', 'cake', 'star', 'sparkle'],
+  reward: { target: 10, text: 'A sunset daybed with a bottle of bubbles' },
+  venues: [
+    { name: 'Ku De Ta', area: 'Seminyak beach', opens: '08:00', closes: '00:00', book: KDT_BOOK },
+    { name: 'Saltlick', area: 'Upstairs at Ku De Ta', opens: '17:00', closes: '23:00', book: KDT_BOOK }
+  ],
+  contact: { ig: 'kudetabali' },
+  acts: [
+    { title: 'Sunset sessions', line: 'DJs on the lawn as the sun goes down', every: [0, 1, 2, 3, 4, 5, 6], start: '16:00', end: '20:00', venue: 'Ku De Ta', ic: 'music' },
+    { title: 'Weekend brunch', line: 'Long, lazy and by the ocean', every: [0, 6], start: '09:00', end: '13:00', venue: 'Ku De Ta', ic: 'food' }
+  ],
+  content: today => {
+    const y = year(today);
+    return {
+      theme: { top: '#111111', acc: '#D2402F', pg: '#F5F2EE' }, motion: true,
+      gift: { on: true, title: 'A sunset, on you', line: 'Give someone a day at Ku De Ta. Tell us the amount and who it is for.', amounts: [500000, 1000000, 2000000], max: 5000000 },
+      slides: [
+        { id: 'kd1', img: kd('aerial'), title: 'Your place on Seminyak beach', line: 'Daybeds, lawn and ocean', venue: 'Ku De Ta', btn: 'book', url: KDT_BOOK },
+        { id: 'kd2', img: kd('sunset'), title: 'Bali\'s best sunset', line: 'Every night, front row', venue: 'Ku De Ta', btn: 'book', url: KDT_BOOK },
+        { id: 'kd3', img: kd('cheers'), title: 'Bubbles by the pool', line: 'Under the red umbrellas', venue: 'Ku De Ta', btn: 'book', url: KDT_BOOK },
+        { id: 'kd4', img: kd('sushi'), title: 'Sushi with a sea view', line: 'Fresh from the kitchen', venue: 'Ku De Ta', btn: 'book', url: KDT_BOOK },
+        { id: 'kd5', img: sl('tbone'), title: 'Saltlick steakhouse', line: 'Dry-aged, cooked over fire', venue: 'Saltlick', btn: 'book', url: KDT_BOOK }
+      ],
+      deals: [
+        { id: 'kdd1', img: kd('pool'), title: 'Members: a free cocktail with any daybed', when: 'Weekdays', venue: 'Ku De Ta' },
+        { id: 'kdd2', img: kd('tray'), title: 'Golden hour · 2 for 1 cocktails', when: 'Daily · 4–6pm', venue: 'Ku De Ta' },
+        { id: 'kdd3', img: sl('wagyu'), title: 'Steak night · a free glass of red with any steak', when: 'Tuesdays', venue: 'Saltlick' }
+      ],
+      events: [
+        { id: 'kde1', img: kd('friends'), title: 'Sunset party', line: 'Guest DJ on the lawn', date: nextDow(today, 6), time: '15:00', time2: '23:00', venue: 'Ku De Ta', btn: 'book', url: KDT_BOOK, hl: true,
+          details: 'A guest DJ plays the lawn from the afternoon into the night.', notes: 'Members skip the queue at the door.' },
+        { id: 'kde2', img: sl('feast'), title: 'Christmas feast at Saltlick', line: 'A festive menu, cooked over fire', date: y + '-12-25', time: '17:00', time2: '23:00', venue: 'Saltlick', btn: 'book', url: KDT_BOOK },
+        { id: 'kde3', img: kd('sunset'), title: "New Year's Eve", line: 'The biggest night on the beach', date: y + '-12-31', time: '18:00', time2: '02:00', venue: 'Ku De Ta', btn: 'book', url: KDT_BOOK }
+      ],
+      gallery: [kd('aerial'), kd('cheers'), kd('sunset'), kd('pool'), kd('friends'), kd('sushi'), kd('tray'), kd('tacos'), kd('share'), kd('pizza'), kd('ceviche'), kd('brunch'), kd('salad'), kd('cake'), sl('tbone'), sl('wagyu'), sl('mule'), sl('cuts')]
+        .map((img, i) => ({ id: 'kdg' + i, img, venue: /saltlick/.test(img) ? 'Saltlick' : 'Ku De Ta' })),
+      places: {
+        'ku de ta': { img: kd('cheers'), area: 'Seminyak beach', ig: 'kudetabali' },
+        'saltlick': { img: sl('sign'), area: 'Upstairs at Ku De Ta', other: true }
+      }
+    };
+  }
+};
+
+const CODES = { K8SNGA: 'sangsaka', B6PADL: 'bpa', S8HLTR: 'shelter', T7RNSB: 'trans', '5NKGZJ': 'trans', S4DK7R: 'sundari', M3SNRY: 'masonry', L5UMAB: 'luma', B7RNCH: 'brunch', L7LASQ: 'lolas', K2DETA: 'kudeta', S9LTLK: 'kudeta' };   // L5UMAB = Luma keyring: its own Luma demo (different owners from Sangsaka)   // 5NKGZJ = the printed sample card, shown as Trans for the GM demo
 // Mavis Club network: each of the guest's other venues as a logo tile (their colour, logo, how long they've been a member there)
-const KEY_CODE = { sangsaka: 'K8SNGA', bpa: 'B6PADL', shelter: 'S8HLTR', trans: 'T7RNSB', sundari: 'S4DK7R', masonry: 'M3SNRY', luma: 'L5UMAB', brunch: 'B7RNCH', lolas: 'L7LASQ' };
+const KEY_CODE = { sangsaka: 'K8SNGA', bpa: 'B6PADL', shelter: 'S8HLTR', trans: 'T7RNSB', sundari: 'S4DK7R', masonry: 'M3SNRY', luma: 'L5UMAB', brunch: 'B7RNCH', lolas: 'L7LASQ', kudeta: 'K2DETA' };
 const club = (list, who) => list.map(c => { const v = P[c.key]; if (!v) return null; const t = (v.content('2026-01-01').theme) || {};
   return { name: v.brand, logo: v.logo, top: t.top || '#0F1E2E', area: (v.venues[0] || {}).area || '', since: c.since || '', visits: c.visits || 0,
     href: '/k/' + KEY_CODE[c.key] + '?n=' + encodeURIComponent(String(who || '').split(' ')[0]) }; }).filter(Boolean);

@@ -303,7 +303,7 @@ P.sangsaka = {
       slides: [
         { id: 'ss1', img: sg('diners'), title: 'Modern Indonesian, with a twist', line: 'Down a back street in Seminyak', venue: 'Sangsaka', btn: 'book', url: SNG_BOOK },
         { id: 'ss2', img: sg('crab'), title: 'Mud crab glass noodles', line: 'From the clay pot to the table', venue: 'Sangsaka', btn: 'book', url: SNG_BOOK },
-        { id: 'ss3', img: sg('mural'), title: 'Dinner under the Barong', line: 'Wood-fired plates to share', venue: 'Sangsaka', btn: 'book', url: SNG_BOOK },
+        { id: 'ss3', img: sg('mural2'), title: 'Dinner under the Barong', line: 'Wood-fired plates to share', venue: 'Sangsaka', btn: 'book', url: SNG_BOOK },
         { id: 'ss4', img: sg('chef'), title: 'From our kitchen to your table', line: 'Indonesian flavours, cooked our way', venue: 'Sangsaka', btn: 'book', url: SNG_BOOK },
         { id: 'ss5', img: sg('terrace'), title: 'Dinner on the terrace', line: 'Under the lanterns, from 5:30pm', venue: 'Sangsaka', btn: 'book', url: SNG_BOOK },
         { id: 'ss6', img: sg('room'), title: 'Tables for 2 to 50', line: 'Private dining room for up to 18', venue: 'Sangsaka', btn: 'wa' },
@@ -328,7 +328,7 @@ P.sangsaka = {
         .map((n, i) => ({ id: 'sg' + i, img: sg(n), venue: n === 'bordeaux' || n === 'table' ? 'DI ATAS' : 'Sangsaka' }))
         .concat(['room', 'table', 'lamb', 'chefs', 'wine'].map((n, i) => ({ id: 'sl' + i, img: '/demo-guest/p-luma-' + n + '.jpg', venue: 'Luma' }))),
       places: {
-        'sangsaka': { img: sg('front'), area: 'Kerobokan', ig: 'sangsakabali', menus: [{ name: 'Food', pages: ['food-1', 'food-2', 'food-3'].map(SNG_MENU) }, { name: 'Wine', pages: ['wine-1', 'wine-2', 'wine-3'].map(SNG_MENU) }] },
+        'sangsaka': { img: sg('mural2'), area: 'Kerobokan', ig: 'sangsakabali', menus: [{ name: 'Food', pages: ['food-1', 'food-2', 'food-3'].map(SNG_MENU) }, { name: 'Wine', pages: ['wine-1', 'wine-2', 'wine-3'].map(SNG_MENU) }] },
         'di atas': { img: sg('bordeaux'), area: 'Rooftop bar upstairs', ig: 'sangsakabali', menus: [{ name: 'Cocktails', pages: ['cocktails'].map(SNG_MENU) }, { name: 'Wine', pages: ['wine-1', 'wine-2', 'wine-3'].map(SNG_MENU) }] },
         'luma': { img: '/demo-guest/p-luma-terrace.jpg', area: 'Batu Bolong, Canggu', ig: 'lumabali', other: true }
       }

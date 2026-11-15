@@ -23996,6 +23996,7 @@ function gpOthersHtml(){
         <div class="x"><b>${gpEsc(v.name || 'No name yet')}</b><small>${gpEsc([v.city, (v.places || []).length + ' place' + ((v.places || []).length === 1 ? '' : 's'), (v.rooms || []).length ? v.rooms.length + ' room type' + (v.rooms.length === 1 ? '' : 's') : ''].filter(Boolean).join(' · '))}</small></div>
         <button class="gp-ib" title="Change" aria-label="Change ${gpEsc(v.name || 'venue')}" onclick="gpOtherForm(${i})">${gpIc(GPI.edit)}</button></div>`).join('')}
       ${list.length < 4 ? '<button class="gp-add" onclick="gpOtherForm(-1)">+ Add a venue</button>' : ''}
+      ${list.length ? gpSecTitleRow('others') : ''}
       ${list.length ? `<div class="gp-it"><div class="x"><b>Make it stand out</b><small>A box in your button colour, with a Visit button, straight after your places</small></div>
         <button class="gp-tog${o.bold ? ' on' : ''}" aria-label="Make it stand out" onclick="gpOthersBold()"><i></i></button></div>` : ''}</div>` : ''}</div>`;
 }
@@ -24725,8 +24726,27 @@ function gpPlacesHtml(){
       return `<div class="gp-it">${src ? `<img class="th" src="${gpEsc(src)}" alt="">` : '<div class="th" style="display:flex;align-items:center;justify-content:center;color:#94A3B8">' + gpIc(GPI.cam, 20) + '</div>'}
         <div class="x"><b>${gpEsc(v.name)}</b><small>${one ? (p.ig ? '@' + gpEsc(String(p.ig).replace(/^@/, '')) : 'No Instagram yet') : [area || 'No area yet - e.g. Canggu', p.ig ? '@' + String(p.ig).replace(/^@/, '') : ''].filter(Boolean).map(gpEsc).join(' · ')}${(p.menus || []).length ? ' · ' + p.menus.length + ' menu' + (p.menus.length === 1 ? '' : 's') : ''}</small></div>
         <button class="gp-ib" title="Change" aria-label="Change ${gpEsc(v.name)}" onclick="gpPlaceForm('${gpEsc(v.name.replace(/'/g, "\\'"))}')">${gpIc(GPI.edit)}</button></div>`; }).join('')}
+    ${one ? '' : gpSecTitleRow('places')}
     ${msIsMgr() ? '<div class="gp-auto">Add or rename venues in <button onclick="msTiers()">Change venues</button></div>' : ''}</div></div>`;
 }
+// The heading guests see over a section - their own words (empty = the standard heading)
+const GP_SECT = { places: ['Our places', 'e.g. Find us, Our locations, Masonry'], others: ['Our other venues', 'e.g. Also by us, Our sister bars'] };
+function gpSecTitleRow(k){
+  const cur = k === 'places' ? (GPE.c.placesTitle || '') : ((GPE.c.others || {}).title || '');
+  return `<div class="gp-it"><div class="x"><b>Heading guests see</b><small>${cur ? gpEsc(cur) : 'Standard: ' + GP_SECT[k][0]}</small></div>
+    <button class="gp-ib" title="Change" aria-label="Change the heading" onclick="gpSecTitle('${k}')">${gpIc(GPI.edit)}</button></div>`;
+}
+window.gpSecTitle = function(k){
+  const cur = k === 'places' ? (GPE.c.placesTitle || '') : ((GPE.c.others || {}).title || '');
+  appModalShow({ title: 'Heading guests see', sub: 'Leave it empty to show "' + GP_SECT[k][0] + '".',
+    fields: [ { label: 'Heading', placeholder: GP_SECT[k][1], value: cur, optional: true } ],
+    async onOk([t]){
+      t = String(t || '').replace(/\s+/g, ' ').trim().slice(0, 40);
+      if(k === 'places'){ if(t) GPE.c.placesTitle = t; else delete GPE.c.placesTitle; }
+      else { GPE.c.others = GPE.c.others || {}; if(t) GPE.c.others.title = t; else delete GPE.c.others.title; }
+      gpRender(); await gpSave('Heading saved');
+    } });
+};
 // One place, everything in one form: photo, area, Instagram, hours, map, WhatsApp, phone, email, Google review link
 window.gpPlaceForm = function(name){
   document.querySelectorAll('.eb-sheet').forEach(x => x.remove());

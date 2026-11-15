@@ -30,7 +30,7 @@ function niceTime(hm){
 }
 // Our other venues from the guest page (gp.others) -> the app's sister venue panel, with "Open now" on each place
 function othersOf(gp, hm){ const o = gp && gp.others; if (!o || !Array.isArray(o.list)) return null;
-  return { bold: o.bold === true, list: o.list.map(x => Object.assign({}, x, { places: x.places.map(p => Object.assign({ name: p.name, img: p.img, line: p.line }, openState(p, hm))) })) }; }
+  return { bold: o.bold === true, title: o.title || '', list: o.list.map(x => Object.assign({}, x, { places: x.places.map(p => Object.assign({ name: p.name, img: p.img, line: p.line }, openState(p, hm))) })) }; }
 function openState(v, hm){
   const o = toMin(v.opens), c = toMin(v.closes), n = toMin(hm);
   if (o == null || c == null) return { open: null, label: v.hours || '' };
@@ -131,7 +131,7 @@ function prospectCard(pro, code, ov){
     rows: pro.newbie.rows.slice(0, 6).map(r => ({ icon: String(r.icon || '').slice(0, 10), title: String(r.title || '').slice(0, 40), text: String(r.text || '').slice(0, 160) })) } : null;
   const wall = (Array.isArray(pro.wall) ? pro.wall : []).slice(0, 20).map(p => ({ club: !!p.club, by: String(p.by || '').slice(0, 40), ini: String(p.ini || '').slice(0, 3), when: String(p.when || '').slice(0, 30),
     text: String(p.text || '').slice(0, 300), img: dimg(p.img), clap: Math.max(0, +p.clap || 0), fire: Math.max(0, +p.fire || 0) })).filter(p => p.text);
-  return { ok: true, kind: pro.kind === 'padel' ? 'padel' : '', bookTop: bt, coaches, newbie: nb, wall, soloWa: waOf(pro.soloWa), guide: /^[a-z0-9-]{2,30}$/.test(pro.guide || '') ? pro.guide : '', brand: pro.brand, logo: pro.logo, icon: pro.icon || '', hotels: oth ? oth.list : hotels, hotelsBold: oth ? oth.bold : false, code, first: pro.first, tier: pro.tier, visits: pro.visits, favourite: pro.favourite, gp,
+  return { ok: true, kind: pro.kind === 'padel' ? 'padel' : '', bookTop: bt, coaches, newbie: nb, wall, soloWa: waOf(pro.soloWa), guide: /^[a-z0-9-]{2,30}$/.test(pro.guide || '') ? pro.guide : '', brand: pro.brand, logo: pro.logo, icon: pro.icon || '', hotels: oth ? oth.list : hotels, hotelsBold: oth ? oth.bold : false, hotelsTitle: oth ? oth.title : '', code, first: pro.first, tier: pro.tier, visits: pro.visits, favourite: pro.favourite, gp,
     since: pro.since, perks: pro.perks, perkIcons: pro.perkIcons, offers: true, reviewAsk: rv ? { venue: rv.name, date: addDays(now.date, -1), when: 'yesterday', demo: true } : null,
     birthdayWeek: false, tonight, week, menus: { food: [], drinks: [] }, venues, stay: https(pro.stay), stayWa: waOf(pro.stayWa), stayPhone: phoneOf(pro.stayPhone), contact: cleanContact(pro.contact),
     reward: pro.reward ? { target: pro.reward.target, text: pro.reward.text, done: Math.min(pro.visits, pro.reward.target), left: Math.max(0, pro.reward.target - pro.visits), round: 0 } : null };
@@ -272,7 +272,7 @@ module.exports = async (req, res) => {
     }
 
     return L.send(res, 200, {
-      ok: true, brand, logo, code, vq, first, tier, visits: visits.length, favourite, gp, hotels: oth ? oth.list : [], hotelsBold: oth ? oth.bold : false,
+      ok: true, brand, logo, code, vq, first, tier, visits: visits.length, favourite, gp, hotels: oth ? oth.list : [], hotelsBold: oth ? oth.bold : false, hotelsTitle: oth ? oth.title : '',
       since: new Date(m.created_at).getFullYear(), perks, perkIcons, offers: m.consent === true, reviewAsk,
       birthdayWeek: birthdayWeek(m.birthday, now.date),
       tonight: tonight.slice(0, 12), week: week.slice(0, 40), menus, venues, reward, stay: https(page.stay), stayWa: waOf(page.stayWa), stayPhone: phoneOf(page.stayPhone), contact: cleanContact(page.contact)

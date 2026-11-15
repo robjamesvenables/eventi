@@ -187,9 +187,10 @@ function build(c, ctx){
       return { key: (String(o.id || '').replace(/[^a-z0-9]/gi, '') || 'v' + i).slice(0, 20), name: str(o.name, 60).trim(), city: str(o.city, 40).trim(), img: img(o), line: str(o.line, 90).trim(), book,
         places: (Array.isArray(o.places) ? o.places : []).slice(0, 8).map(p => ({ name: str((p || {}).name, 40).trim(), img: img(p), line: str((p || {}).line, 60).trim(), opens: hm((p || {}).opens), closes: hm((p || {}).closes) })).filter(p => p.name),
         rooms: (Array.isArray(o.rooms) ? o.rooms : []).slice(0, 8).map(r => ({ name: str((r || {}).name, 40).trim(), img: img(r) })).filter(r => r.name) }; }).filter(o => o.name);
-    if (list.length) others = { bold: ov.bold === true, list };
+    if (list.length) others = { bold: ov.bold === true, title: str(ov.title, 40).trim(), list };
   }
-  return { order, slides, deals, events, gallery, places, theme, gift, others, motion: c.motion === true, film, filmStart, filmTall: !!film && filmTall && !(tp.kind === 'yt'), video, videoPoster, videoTall };
+  const placesTitle = str(c.placesTitle, 40).trim();   // their own heading over Our places (empty = standard)
+  return { order, slides, deals, events, gallery, places, placesTitle, theme, gift, others, motion: c.motion === true, film, filmStart, filmTall: !!film && filmTall && !(tp.kind === 'yt'), video, videoPoster, videoTall };
 }
 
 // The name under the app icon on a guest's phone: phones cut it after about 12 letters ("The Trans Resort Bali" -> "Trans Resort")

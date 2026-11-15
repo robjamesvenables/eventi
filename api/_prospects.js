@@ -521,7 +521,8 @@ P.lolas = {
   reward: { target: 10, text: 'Tacos and margaritas for two' },
   venues: [
     { name: "Lola's Canggu", area: 'Jl. Subak, Canggu', opens: '08:00', closes: '00:00', wa: LO_WA },
-    { name: "Lola's Uluwatu", area: 'Jl. Labuansait, Uluwatu', opens: '12:00', closes: '00:00', wa: LO_WA, phone: '+62 815 7306 1887' }
+    { name: "Lola's Uluwatu", area: 'Jl. Labuansait, Uluwatu', opens: '12:00', closes: '00:00', wa: LO_WA, phone: '+62 815 7306 1887' },
+    { name: "Lolita's Uluwatu", area: 'Above the Race Tracks wave, Uluwatu', opens: '11:00', closes: '22:00', wa: LO_WA }
   ],
   contact: { wa: LO_WA, phone: '+62 815 7306 1887' },
   acts: [
@@ -537,13 +538,17 @@ P.lolas = {
         { id: 'ls2', img: lo('margaritas'), title: '2 for 1 margaritas', line: 'Happy hour, every day', venue: "Lola's Uluwatu", btn: 'wa' },
         { id: 'ls3', img: lo('burrito'), title: 'Burritos the size of your arm', line: 'Made fresh, all day', venue: "Lola's Canggu", btn: 'wa' },
         { id: 'ls4', img: lo('dj'), title: 'Weekend nights at Lola’s', line: 'DJs, tequila, dancing', venue: "Lola's Canggu", btn: 'wa' },
-        { id: 'ls5', img: lo('spread'), title: 'Bring the whole crew', line: 'Big tables, sharing plates', venue: "Lola's Canggu", btn: 'wa' }
+        { id: 'ls5', img: lo('spread'), title: 'Bring the whole crew', line: 'Big tables, sharing plates', venue: "Lola's Canggu", btn: 'wa' },
+        { id: 'ls6', img: '/demo-guest/p-lolita-margarita.jpg', title: "Lolita's Uluwatu", line: 'Ocean-to-table tacos over the Race Tracks wave', venue: "Lolita's Uluwatu", btn: 'wa' },
+        { id: 'ls7', img: '/demo-guest/p-lolita-fish.jpg', title: 'Catch of the day, Veracruz style', line: "Chef Mauricio's November especiales", venue: "Lolita's Uluwatu", btn: 'wa' }
       ],
       deals: [
         { id: 'ld1', img: lo('margaritas'), title: '2 for 1 margaritas', when: 'Daily · happy hour', venue: "Lola's Uluwatu" },
         { id: 'ld2', img: lo('tacos2'), title: 'Taco Tuesday · members get a free taco', when: 'Tuesdays', venue: "Lola's Canggu", btn: 'wa' },
         { id: 'ld3', img: lo('plate'), title: 'Lunch plate + drink · Rp 150k', when: 'Mon–Fri · 12–3pm', venue: "Lola's Canggu" },
-        { id: 'ld4', img: lo('prawns'), title: 'Members: 15% off sharing plates', when: 'Sun–Thu', venue: "Lola's Uluwatu" }
+        { id: 'ld4', img: lo('prawns'), title: 'Members: 15% off sharing plates', when: 'Sun–Thu', venue: "Lola's Uluwatu" },
+        { id: 'ld5', img: '/demo-guest/p-lolita-tamarindo.jpg', title: 'Tamarindo Sour · special this month', when: 'Daily · sunset', venue: "Lolita's Uluwatu" },
+        { id: 'ld6', img: '/demo-guest/p-lolita-prawns.jpg', title: 'Members: coconut prawns 2 for 1', when: 'Tue–Thu', venue: "Lolita's Uluwatu", btn: 'wa' }
       ],
       events: [
         { id: 'le1', img: lo('party'), title: 'Lola’s Fiesta', line: 'DJs, tequila and tacos till late', date: addDays(today, 6), time: '20:00', time2: '01:00', venue: "Lola's Canggu", btn: 'wa', hl: true,
@@ -552,10 +557,12 @@ P.lolas = {
         { id: 'le3', img: lo('spread'), title: "New Year's Eve", line: 'The biggest fiesta of the year', date: y + '-12-31', time: '20:00', time2: '02:00', venue: "Lola's Canggu", btn: 'wa' }
       ],
       gallery: ['tacos', 'burrito', 'margaritas', 'dj', 'taco', 'spread', 'party', 'chicken', 'tacos2', 'plate', 'prawns', 'quesadilla', 'ribs', 'taco3', 'tortillas', 'team']
-        .map((n, i) => ({ id: 'lg' + i, img: lo(n), venue: n === 'margaritas' || n === 'chicken' || n === 'prawns' ? "Lola's Uluwatu" : "Lola's Canggu" })),
+        .map((n, i) => ({ id: 'lg' + i, img: lo(n), venue: n === 'margaritas' || n === 'chicken' || n === 'prawns' ? "Lola's Uluwatu" : "Lola's Canggu" }))
+        .concat(['margarita', 'tamale', 'salsa', 'fish', 'prawns', 'skewer', 'bartender', 'foam', 'mule', 'tamarindo'].map((n, i) => ({ id: 'lt' + i, img: '/demo-guest/p-lolita-' + n + '.jpg', venue: "Lolita's Uluwatu" }))),
       places: {
         "lola's canggu": { img: lo('taco'), area: 'Jl. Subak, Canggu', ig: 'lolasbali' },
-        "lola's uluwatu": { img: lo('chicken'), area: 'Jl. Labuansait, Uluwatu', ig: 'lolasbali' }
+        "lola's uluwatu": { img: lo('chicken'), area: 'Jl. Labuansait, Uluwatu', ig: 'lolasbali' },
+        "lolita's uluwatu": { img: '/demo-guest/p-lolita-tamale.jpg', area: 'Above the Race Tracks wave', ig: 'lolitasbali', other: true }
       }
     };
   }

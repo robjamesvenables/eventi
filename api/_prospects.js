@@ -298,7 +298,7 @@ P.sangsaka = {
       { name: 'Bar Luma', img: '/demo-guest/p-luma-wine.jpg', line: 'Terrace bar · Negroni on tap · vinyl DJs at weekends' },
       { name: 'From our kitchen', img: '/demo-guest/p-luma-lamb.jpg', line: 'Southern Europe, Balinese produce' },
       { name: 'The chefs', img: '/demo-guest/p-luma-chefs.jpg', line: 'Cameron Emirali and Kieran Morland' }] }] },
-      theme: { top: '#141210', acc: '#CDA86B', pg: '#F5F1EA' }, motion: true, film: 'qCGlNvdXNsc', filmTall: true,
+      theme: { top: '#141210', acc: '#CDA86B', pg: '#F5F1EA' }, motion: true, video: '/demo-guest/p-sng-film.mp4', videoTall: true,
       gift: { on: true, title: "A dinner they'll remember", line: 'A thoughtful present for someone you love. Tell us the amount and who it is for.', to: SNG_WA, amounts: [500000, 1000000, 2000000], max: 5000000, bonus: 10 },
       slides: [
         { id: 'ss1', img: sg('diners'), title: 'Modern Indonesian, with a twist', line: 'Down a back street in Seminyak', venue: 'Sangsaka', btn: 'book', url: SNG_BOOK },

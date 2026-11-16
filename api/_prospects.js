@@ -16,7 +16,8 @@ const P = {
     reward: { target: 15, text: "Chef's fire menu for two" },
     venues: [
       { name: 'Shelter Pererenan', area: 'Pererenan', opens: '12:00', closes: '00:00', map: 'https://maps.app.goo.gl/Z9h6Ns2VTGCUGSeH7', wa: '6282340040199', phone: '+62 823 4004 0199', email: 'info@shelterbali.com', review: 'https://maps.app.goo.gl/Z9h6Ns2VTGCUGSeH7' },
-      { name: 'Shelter Uluwatu', area: 'Uluwatu', email: 'info@shelterbali.com' }
+      { name: 'Shelter Uluwatu', area: 'Uluwatu', email: 'info@shelterbali.com' },
+      { name: 'NALU Gelato', area: 'Jl. Pantai Batu Bolong, Canggu', opens: '11:00', closes: '00:00', wa: '6281239333893' }   // NALU: from nalugelato.com
     ],
     acts: [
       { title: 'Sunday BBQ', line: 'Whole fish and meats over the fire', every: [0], start: '12:00', end: '17:00', venue: 'Shelter Pererenan' },
@@ -32,13 +33,15 @@ const P = {
           { id: 'ps2', img: sh('flame'), title: 'Wood roasted moon scallops', line: 'Lemon butter, chilli salt', venue: 'Shelter Pererenan', btn: 'book', url: SHELTER_BOOK },
           { id: 'ps3', img: sh('cocktails'), title: 'Sundowners from 5pm', line: 'Mezcal, agave and fresh fruit', venue: 'Shelter Pererenan' },
           { id: 'ps4', img: sh('party'), title: 'Celebrate with us', line: 'Birthdays, big nights, the whole crew', venue: 'Shelter Pererenan', btn: 'book', url: SHELTER_BOOK },
-          { id: 'ps5', img: sh('coals'), title: 'Charred over coals, by hand', line: 'Coming soon to Uluwatu', venue: 'Shelter Uluwatu' }
+          { id: 'ps5', img: sh('coals'), title: 'Charred over coals, by hand', line: 'Coming soon to Uluwatu', venue: 'Shelter Uluwatu' },
+          { id: 'ps6', img: '/demo-guest/p-nalu-cone.jpg', title: 'Dessert at NALU', line: 'Artisan gelato, made fresh daily in Canggu', venue: 'NALU Gelato', btn: 'wa' }
         ],
         deals: [
           { id: 'pd1', img: sh('cocktails'), title: 'Mezcal hour · 2 for 1 Sinaloa', when: 'Daily · 5–7pm', venue: 'Shelter Pererenan' },
           { id: 'pd2', img: sh('salmon'), title: 'Long lunch · 3 courses Rp 395k', when: 'Mon–Fri · 12–3pm', venue: 'Shelter Pererenan' },
           { id: 'pd3', img: sh('pig'), title: 'Sunday BBQ · sharing feast', when: 'Sundays · from 12pm', venue: 'Shelter Pererenan' },
-          { id: 'pd4', img: sh('table'), title: 'Book the long table · 10+ guests', when: 'Any night · ask us', venue: 'Shelter Pererenan' }
+          { id: 'pd4', img: sh('table'), title: 'Book the long table · 10+ guests', when: 'Any night · ask us', venue: 'Shelter Pererenan' },
+          { id: 'pd5', img: '/demo-guest/p-nalu-affogato.jpg', title: 'Members: a free scoop with any affogato', when: 'Daily · 2–5pm', venue: 'NALU Gelato' }
         ],
         events: [
           { id: 'pe1', img: sh('longtable'), title: 'Shelter Sessions Vol. 12', line: 'Guest chef, one night only', date: addDays(today, 9), time: '18:00', time2: '23:00', venue: 'Shelter Pererenan', btn: 'tickets', url: SHELTER_BOOK, hl: true,
@@ -49,12 +52,14 @@ const P = {
             details: 'A Christmas long lunch from the fire - whole roasted fish, slow cooked meats and all the sides.' },
           { id: 'pe4', img: sh('party'), title: "New Year's Eve", line: 'Fire, feasting and a late bar', date: y + '-12-31', time: '19:00', time2: '01:00', venue: 'Shelter Pererenan', btn: 'tickets', url: SHELTER_BOOK }
         ],
-        gallery: ['entrance', 'longtable', 'flame', 'room', 'bread', 'cocktails', 'grill', 'salmon', 'kitchen', 'octo', 'party', 'kofta', 'pig', 'table', 'chef', 'fire', 'scallops', 'barra', 'flatbread', 'octopus', 'pork', 'drink', 'coals'].map((n, i) => ({ id: 'pg' + i, img: sh(n), venue: n === 'coals' ? 'Shelter Uluwatu' : 'Shelter Pererenan' })),
+        gallery: ['entrance', 'longtable', 'flame', 'room', 'bread', 'cocktails', 'grill', 'salmon', 'kitchen', 'octo', 'party', 'kofta', 'pig', 'table', 'chef', 'fire', 'scallops', 'barra', 'flatbread', 'octopus', 'pork', 'drink', 'coals'].map((n, i) => ({ id: 'pg' + i, img: sh(n), venue: n === 'coals' ? 'Shelter Uluwatu' : 'Shelter Pererenan' }))
+          .concat(['cone', 'front', 'choc', 'cup', 'affogato', 'shop', 'caramel', 'bag', 'red'].map((n, i) => ({ id: 'png' + i, img: '/demo-guest/p-nalu-' + n + '.jpg', venue: 'NALU Gelato' }))),
         gift: { on: true, title: 'A night at Shelter', line: 'Give someone a seat by the fire. Tell us the amount and who it is for.', to: '6282340040199', amounts: [500000, 1000000, 2000000], max: 5000000 },
         places: {
           'shelter pererenan': { img: sh('room'), area: 'Pererenan', ig: 'shelter.pererenan', menus: [
             { name: 'Lunch', pages: [{ img: '/demo-guest/p-shelter-menu-lunch-1.jpg' }, { img: '/demo-guest/p-shelter-menu-lunch-mains.jpg' }, { img: '/demo-guest/p-shelter-menu-lunch-2.jpg' }] }, { name: 'Dinner', pages: [{ img: '/demo-guest/p-shelter-menu-dinner-1.jpg' }, { img: '/demo-guest/p-shelter-menu-dinner-2.jpg' }, { img: '/demo-guest/p-shelter-menu-dinner-dessert.jpg' }] }, { name: 'Drinks', url: 'https://www.shelterbali.com/drink-menu' }] },
-          'shelter uluwatu': { img: sh('coals'), area: 'Uluwatu', soon: true }
+          'shelter uluwatu': { img: sh('coals'), area: 'Uluwatu', soon: true },
+          'nalu gelato': { img: '/demo-guest/p-nalu-front.jpg', area: 'Gelato · Canggu', ig: 'nalu_gelato', other: true }
         }
       };
     }

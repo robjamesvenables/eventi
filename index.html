@@ -23945,7 +23945,7 @@ async function gpSave(msg, noPreview){   // noPreview: the change isn't on the g
 async function gpSign(){
   const need = [];
   ['slides','deals','events','gallery'].forEach(k => GPE.c[k].forEach(it => { if(it.path && !GPE.urls[it.path]) need.push(it.path); }));
-  Object.values(GPE.c.places || {}).forEach(p => { if(p && p.path && !GPE.urls[p.path]) need.push(p.path); });
+  Object.values(GPE.c.places || {}).forEach(p => { if(p && p.path && !GPE.urls[p.path]) need.push(p.path);  if(p && p.logoPath && !GPE.urls[p.logoPath]) need.push(p.logoPath); });
   const tp = GPE.c.top || {}; if(tp.poster && !GPE.urls[tp.poster]) need.push(tp.poster);
   ((GPE.c.others || {}).list || []).forEach(o => [o].concat(o.places || [], o.rooms || []).forEach(x => { if(x && x.path && !GPE.urls[x.path]) need.push(x.path); }));
   if(!need.length) return;
@@ -24768,6 +24768,7 @@ window.gpPlaceForm = function(name){
     <label>Area</label><input id="gpp-area" maxlength="30" value="${gpEsc(it.area || v.area || '')}" placeholder="e.g. Canggu"></div>
     <label style="display:flex;align-items:center;gap:10px;margin-top:12px;font-weight:700;cursor:pointer"><input type="checkbox" id="gpp-soon" style="width:20px;height:20px;margin:0"${it.soon ? ' checked' : ''}> Coming soon <span class="gp-opt">guests see it but can't open it yet</span></label>
     <label style="display:flex;align-items:center;gap:10px;margin-top:10px;font-weight:700;cursor:pointer"><input type="checkbox" id="gpp-other" style="width:20px;height:20px;margin:0"${it.other ? ' checked' : ''}> Show under Our other venues <span class="gp-opt">a different brand, same owners</span></label>
+    <div id="gpp-lgw"${it.other ? '' : ' style="display:none"'}><label>Logo <span class="gp-opt">optional, shows in a circle</span></label><div style="display:flex;align-items:center;gap:12px"><div id="gpp-lg" role="button" tabindex="0" style="width:64px;height:64px;border-radius:50%;flex:none;cursor:pointer;overflow:hidden;display:flex;align-items:center;justify-content:center;border:2px dashed #CBD5E1;background:#F8FAFC">${gpSrc({ path: it.logoPath, img: it.logo }) ? `<img src="${gpEsc(gpSrc({ path: it.logoPath, img: it.logo }))}" alt="" style="width:100%;height:100%;object-fit:cover">` : gpIc(GPI.cam, 20)}</div><div class="gp-hint" style="margin:0">Best: a square logo on its own colour. <a href="#" id="gpp-lgx"${gpSrc({ path: it.logoPath, img: it.logo }) ? '' : ' style="display:none"'}>Remove</a></div></div><input type="file" id="gpp-lgf" accept="image/*" style="display:none"></div>
     <div class="gp-sub">Contact and links${mgr ? '' : ' <small>A manager can change these</small>'}</div>
     ${row(IC.clock, `<em>Opens</em><input id="gpp-o" type="time" value="${gpEsc(v.opens || '')}"${mgr ? '' : ' disabled'}>`)}
     ${row('', `<em>Closes</em><input id="gpp-c" type="time" value="${gpEsc(v.closes || '')}"${mgr ? '' : ' disabled'}>`)}
@@ -24785,6 +24786,11 @@ window.gpPlaceForm = function(name){
   document.body.appendChild(s);
   const $ = id => s.querySelector('#' + id), val = id => ($(id) ? $(id).value.trim() : '');
   const ph = $('gpp-ph'), fin = $('gpp-file');
+  let lgFile = null, lgDrop = false; const lg = $('gpp-lg'), lgf = $('gpp-lgf'), lgx = $('gpp-lgx');
+  $('gpp-other').onchange = () => { $('gpp-lgw').style.display = $('gpp-other').checked ? '' : 'none'; };
+  lg.onclick = () => lgf.click(); lg.onkeydown = e => { if(e.key === 'Enter') lgf.click(); };
+  lgf.onchange = () => { lgFile = lgf.files && lgf.files[0]; if(!lgFile) return; lgDrop = false; lg.innerHTML = `<img src="${URL.createObjectURL(lgFile)}" alt="" style="width:100%;height:100%;object-fit:cover">`; lgx.style.display = ''; };
+  lgx.onclick = e => { e.preventDefault(); lgFile = null; lgDrop = true; lgf.value = ''; lg.innerHTML = gpIc(GPI.cam, 20); lgx.style.display = 'none'; };
   ph.onclick = () => fin.click(); ph.onkeydown = e => { if(e.key === 'Enter') fin.click(); };
   fin.onchange = () => { file = fin.files && fin.files[0]; if(!file) return; ph.classList.add('has'); ph.innerHTML = `<img src="${URL.createObjectURL(file)}" alt=""><span>Change photo</span>`; };
   // Menus: up to 4 per place, each one is pictures (one per page, JPG or PNG) - guests see them inside the page, never a download.
@@ -24869,6 +24875,8 @@ window.gpPlaceForm = function(name){
     go.disabled = true; go.textContent = 'Saving…';
     try{ if(file){ const old = { path: it.path }; it.path = await gpUpload(file); delete it.img; if(old.path) gpForgetFile(old); } }
     catch(e){ go.disabled = false; go.textContent = 'Save'; toast('Could not upload the photo - check your connection'); return; }
+    try{ if(lgFile || lgDrop){ const old = { path: it.logoPath }; if(lgFile) it.logoPath = await gpUpload(lgFile); else delete it.logoPath; delete it.logo; if(old.path) gpForgetFile(old); } }
+    catch(e){ go.disabled = false; go.textContent = 'Save'; toast('Could not upload the logo - check your connection'); return; }
     if(nv){
       const pg = msPage(), list = (pg.venues || []).slice(), ix = list.findIndex(x => x.name === name);
       if(ix >= 0) list[ix] = nv; else list.push(nv);

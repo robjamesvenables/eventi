@@ -389,6 +389,8 @@ html.top-pg .gv{background:#1C1A19;color:#fff}html.top-pg .gv .gvi{background:va
 .vtop .vname{min-width:0}.vtop .vname b{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;overflow-wrap:anywhere;font-size:24px;font-weight:900;letter-spacing:-.5px}.vtop .vname small{display:block;font-size:13px;color:#E2E8F0;font-weight:600;margin-top:2px}
 .vtop .vname .open{color:#86EFAC;font-weight:800}
 .vtop .vname .hrs{color:#CBD5E1;font-weight:600}
+.ohp .pbig{position:relative}.ohp .pbig img.lgb{position:absolute;inset:auto;top:12px;left:12px;width:58px;height:58px;border-radius:50%;object-fit:cover;box-shadow:0 4px 14px rgba(0,0,0,.45);z-index:3;transform:none;animation:none;margin:0}
+.vtop .vname.lg{display:flex;align-items:center;gap:12px}.vtop .vname img.lgv{position:static;inset:auto;width:58px;height:58px;border-radius:50%;object-fit:cover;flex:none;box-shadow:0 2px 8px rgba(0,0,0,.4)}.vtop .vname.lg>div{min-width:0}
 .vacts{display:flex;gap:8px;margin:12px 16px 0}
 .vacts a{flex:1;height:48px;border-radius:14px;display:flex;align-items:center;justify-content:center;gap:8px;text-decoration:none;font-size:14.5px;font-weight:800}
 .vmenu{display:flex;gap:8px;margin:8px 16px 0;flex-wrap:wrap}
@@ -798,7 +800,7 @@ body.vqopen .vq-dim{opacity:1;pointer-events:auto}body.vqopen .vq-sheet{transfor
     var othPl = (gp.places || []).filter(function(p){ return p.other; });
     var othCards = othPl.map(function(p){ var k = lc(p.name), v = (d.venues || []).find(function(x){ return lc(x.name) === k; }), st = v ? (v.open === true ? 'Open now' : v.open === false ? v.label : '') : '';
         if (p.soon) return '<div class="pbig ohc soon">' + (p.img ? '<img src="' + esc(p.img) + '" alt="" loading="lazy">' : '') + '<em>Coming soon</em><span><b translate="no">' + esc(p.name) + '</b>' + (p.area ? '<small>' + esc(p.area) + '</small>' : '') + '</span></div>';
-        return '<button class="pbig ohc" type="button" data-go="' + esc(k) + '">' + (p.img ? '<img src="' + esc(p.img) + '" alt="" loading="lazy">' : '') + '<span><b translate="no">' + esc(p.name) + '</b>' + (st ? '<small>' + esc(st) + '</small>' : '') + '</span></button>' +
+        return '<button class="pbig ohc" type="button" data-go="' + esc(k) + '">' + (p.img ? '<img src="' + esc(p.img) + '" alt="" loading="lazy">' : '') + (p.logo ? '<img class="lgb" src="' + esc(p.logo) + '" alt="" loading="lazy">' : '') + '<span><b translate="no">' + esc(p.name) + '</b>' + (st ? '<small>' + esc(st) + '</small>' : '') + '</span></button>' +
           (bold ? '<button class="ohgo" type="button" data-go="' + esc(k) + '"><span translate="no">Visit ' + esc(p.name) + '</span>' + svg('<path d="m9 18 6-6-6-6"/>', 18) + '</button>' : ''); }).join('');
     var hotelsRow = hotels.length || othCards ? '<div class="sec"><div class="ohp' + (bold ? ' bold' : '') + '">' + '<div class="lab">' + esc(gp.othersTitle || d.hotelsTitle || (stays ? 'Our other hotels' : 'Our other venues')) + '</div><small class="ohs">Your membership works here too</small>' + othCards + hotels.map(function(x){
         return '<button class="pbig ohc" type="button" data-hotel="' + esc(x.key) + '">' + (x.img ? '<img src="' + esc(x.img) + '" alt="" loading="lazy">' : '') + (x.city ? '<em class="ohpill" translate="no">' + esc(x.city) + '</em>' : '') +
@@ -1044,7 +1046,7 @@ body.vqopen .vq-dim{opacity:1;pointer-events:auto}body.vqopen .vq-sheet{transfor
       var pacc = /^#[0-9a-f]{6}$/i.test(p.acc || '') ? p.acc : '', pn = pacc ? parseInt(pacc.slice(1), 16) : 0;   // an other venue in its own brand colour
       var pst = pacc ? ' style="--acc:' + pacc + ';--acc-ink:' + ((0.299 * (pn >> 16) + 0.587 * ((pn >> 8) & 255) + 0.114 * (pn & 255)) > 165 ? '#111111' : '#FFFFFF') + '"' : '';
       var h = '<div class="w"' + pst + '><div class="vtop">' + (p.img ? '<img src="' + esc(p.img) + '" alt="">' : '') + '<div class="vin"><button class="back" data-home aria-label="All places">' + svg('<path d="m15 18-6-6 6-6"/>', 18) + 'All places</button>' +
-        '<div class="vname"><b translate="no">' + esc(p.name) + '</b>' + (st ? '<small>' + st + '</small>' : '') + '</div></div></div>';
+        (p.logo ? '<div class="vname lg"><img class="lgv" src="' + esc(p.logo) + '" alt=""><div>' : '<div class="vname">') + '<b translate="no">' + esc(p.name) + '</b>' + (st ? '<small>' + st + '</small>' : '') + (p.logo ? '</div>' : '') + '</div></div></div>';
       h += menuHtml(p);
       var sl = (gp.slides || []).filter(function(x){ return gp.motion ? lc(x.venue || '') === key : at(x, key); });
       if (sl.length) h += '<div class="vsl">' + slidesHtml(sl, false) + '</div>';

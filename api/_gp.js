@@ -13,7 +13,7 @@ function paths(c){
   const out = [];
   ['slides', 'deals', 'events', 'gallery'].forEach(k => (Array.isArray(c && c[k]) ? c[k] : []).forEach(it => { if (it && it.path) out.push(String(it.path)); }));
   const tp = (c && c.top) || {}; [tp.path, tp.poster].forEach(x => { if (x) out.push(String(x)); });   // top video + its still picture
-  Object.values((c && c.places) || {}).forEach(p => { if (p && p.path) out.push(String(p.path)); (Array.isArray(p && p.menus) ? p.menus : []).forEach(m => { if (m && m.path) out.push(String(m.path)); (Array.isArray(m && m.pages) ? m.pages : []).forEach(pg => { if (pg && pg.path) out.push(String(pg.path)); }); }); });
+  Object.values((c && c.places) || {}).forEach(p => { if (p && p.path) out.push(String(p.path)); if (p && p.logoPath) out.push(String(p.logoPath)); (Array.isArray(p && p.menus) ? p.menus : []).forEach(m => { if (m && m.path) out.push(String(m.path)); (Array.isArray(m && m.pages) ? m.pages : []).forEach(pg => { if (pg && pg.path) out.push(String(pg.path)); }); }); });
   return out;
 }
 
@@ -153,7 +153,7 @@ function build(c, ctx){
       if (!pages.length && m.type !== 'pdf' && (m.path || /\.(jpe?g|png|webp)$/i.test(m.img || ''))) { const one = img(m); if (one) pages.push(one); }
       const url = pages.length ? '' : m.path ? img(m) : httpsOk(m.url) ? String(m.url).trim() : (/^\/demo-guest\/[a-z0-9._-]+$/i.test(m.img || '') ? m.img : '');
       return { name: str(m.name, 30) || 'Menu', pages, url }; }).filter(m => m.pages.length || m.url);
-    return { name: v.name, area: str(p.area || v.area || '', 30), img: img(p), ig: igName(p.ig), menus, soon: p.soon === true, other: p.other === true, acc: /^#[0-9a-f]{6}$/i.test(p.acc || '') ? p.acc : '' }; });   // acc: an other venue's own brand colour on its page (buttons etc.)   // other: shown under Our other venues (a full place, a different brand)
+    return { name: v.name, area: str(p.area || v.area || '', 30), img: img(p), ig: igName(p.ig), menus, soon: p.soon === true, other: p.other === true, acc: /^#[0-9a-f]{6}$/i.test(p.acc || '') ? p.acc : '', logo: img({ path: p.logoPath, img: p.logo }) }; });   // acc: an other venue's own brand colour on its page (buttons etc.)   // other: shown under Our other venues (a full place, a different brand)
   // Colours (Guest page > Colours)
   const hex = v => /^#[0-9a-f]{6}$/i.test(v || '') ? v : '';
   const th = c.theme || {}, theme = { top: hex(th.top), acc: hex(th.acc), pg: hex(th.pg), dark: th.dark === true, dkbg: th.dark === true ? hex(th.dkbg) : '' };   // dkbg: dark mode in the brand's own dark (navy...) instead of black

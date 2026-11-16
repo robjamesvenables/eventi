@@ -26,7 +26,7 @@ const P = {
     content: today => {
       const y = year(today);
       return {
-        theme: { top: '#141414', acc: '#CDA86B', dark: true }, video: '/demo-guest/p-shelter-film.mp4', videoTall: true,
+        theme: { top: '#141414', acc: '#CDA86B', dark: true }, video: '/demo-guest/p-shelter-film-v2.mp4', videoTall: true,
         slides: [
           { id: 'ps0', img: sh('entrance'), title: 'Welcome back to Shelter', line: 'Your table under the trees', venue: 'Shelter Pererenan', btn: 'book', url: SHELTER_BOOK },
           { id: 'ps1', img: sh('longtable'), title: 'Shelter Sessions', line: 'Long tables, one night, one fire', venue: 'Shelter Pererenan', btn: 'book', url: SHELTER_BOOK },
@@ -203,7 +203,7 @@ P.bpa = {
   content: today => {
     const y = year(today);
     return {
-      theme: { top: '#B7CBB0', acc: '#111111', pg: '#F4F6F2' }, motion: true, video: '/demo-guest/p-bpa-film.mp4', videoTall: true,
+      theme: { top: '#B7CBB0', acc: '#111111', pg: '#F4F6F2' }, motion: true, video: '/demo-guest/p-bpa-film-v2.mp4', videoTall: true,
       slides: [
         { id: 'bs0', img: bp('events'), title: 'NOX Cup · tournament night', line: 'Finals under the lights', venue: 'Padel Courts', ev: 'be1' },
         { id: 'bs1', img: bp('courts'), title: '7 panoramic courts', line: 'Book in one tap', venue: 'Padel Courts', btn: 'book', url: PT },
@@ -254,7 +254,7 @@ P.sundari = {
   content: today => {
     const y = year(today);
     return {
-      theme: { top: '#1A120D', acc: '#C9925A', dark: true }, motion: true, oneHome: true, video: '/demo-guest/p-sun-film2.mp4',
+      theme: { top: '#1A120D', acc: '#C9925A', dark: true }, motion: true, oneHome: true, video: '/demo-guest/p-sun-film-v2.mp4',
       gift: { on: true, title: 'The gift of a slow afternoon', line: 'A spa voucher for someone who needs it. Tell us the amount and who it is for.', to: SUN_WA, amounts: [500000, 1000000, 2000000], max: 5000000 },
       slides: [
         { id: 'us0', venue: 'Sundari Wellness', img: su('bath'), title: 'Flower bath ritual', line: 'Warm water, petals, nowhere to be', btn: 'wa' },
@@ -383,7 +383,7 @@ P.masonry = {
   content: today => {
     const y = year(today);
     return {
-      theme: { top: '#141414', acc: '#CDA86B', dark: true }, video: '/demo-guest/p-masonry-film.mp4', videoTall: true,
+      theme: { top: '#141414', acc: '#CDA86B', dark: true }, video: '/demo-guest/p-masonry-film-v2.mp4', videoTall: true,
       gift: { on: true, title: 'Dinner by the fire', line: 'Give someone a night at Masonry. Tell us the amount and who it is for.', to: MS_WA, amounts: [500000, 1000000, 2000000], max: 5000000 },
       slides: [
         { id: 'ms1', img: ms('window'), title: 'Good food cooked over fire', line: 'Stiff drinks, open windows, Batu Bolong', venue: 'Masonry Canggu', btn: 'book', url: MS_BOOK },
@@ -452,7 +452,7 @@ P.luma = {
   content: today => {
     const y = year(today);
     return {
-      theme: { top: '#2A211C', acc: '#B5553A', pg: '#F6F1EA' }, motion: true, video: '/demo-guest/p-luma-film.mp4', videoTall: true,
+      theme: { top: '#2A211C', acc: '#B5553A', pg: '#F6F1EA' }, motion: true, video: '/demo-guest/p-luma-film-v2.mp4', videoTall: true,
       gift: { on: true, title: 'A long lunch, on you', line: 'Give someone a table at Luma. Tell us the amount and who it is for.', to: LUMA_WA, amounts: [500000, 1000000, 2000000], max: 5000000 },
       slides: [
         { id: 'lm1', img: lm('room'), title: 'Mediterranean, with island flavours', line: 'Under the arches on Batu Bolong', venue: 'Luma', btn: 'wa' },
@@ -506,7 +506,7 @@ P.brunch = {
   content: today => {
     const y = year(today);
     return {
-      theme: { top: '#F48AA8', acc: '#0E4D3C', pg: '#FFFFFF' }, motion: true, video: '/demo-guest/p-brunch-film.mp4', videoTall: true,
+      theme: { top: '#F48AA8', acc: '#0E4D3C', pg: '#FFFFFF' }, motion: true, video: '/demo-guest/p-brunch-film-v2.mp4', videoTall: true,
       gift: { on: true, title: 'Brunch, on you', line: 'Treat someone to brunch. Tell us the amount and who it is for.', to: BC_WA, amounts: [300000, 500000, 1000000], max: 3000000 },
       slides: [
         { id: 'bc1', img: bc('banner'), title: 'Porncakes', line: 'Three stacks, one fork', btn: 'wa' },
@@ -560,7 +560,7 @@ P.lolas = {
   content: today => {
     const y = year(today);
     return {
-      theme: { top: '#141414', acc: '#C9837C', dark: true }, video: '/demo-guest/p-lolas-film.mp4', videoTall: true,
+      theme: { top: '#141414', acc: '#C9837C', dark: true }, video: '/demo-guest/p-lolas-film-v2.mp4', videoTall: true,
       gift: { on: true, title: 'Tacos on me', line: "A Lola's voucher for someone who loves a margarita. Tell us the amount and who it is for.", to: LO_WA, amounts: [300000, 500000, 1000000], max: 3000000 },
       slides: [
         { id: 'ls1', img: lo('tacos'), title: 'Tacos, tequila, good times', line: 'Canggu and Uluwatu', venue: "Lola's Canggu", btn: 'wa' },
@@ -618,7 +618,7 @@ P.kudeta = {
   content: today => {
     const y = year(today);
     return {
-      theme: { top: '#0B0B0B', acc: '#9E1B22', dark: true }, motion: true, oneHome: true, video: '/demo-guest/p-kdt-film.mp4', videoTall: true,
+      theme: { top: '#0B0B0B', acc: '#9E1B22', dark: true }, motion: true, oneHome: true, video: '/demo-guest/p-kdt-film-v2.mp4', videoTall: true,
       gift: { on: true, title: 'A sunset, on you', line: 'Give someone a day at Ku De Ta. Tell us the amount and who it is for.', to: '6285938315117', amounts: [500000, 1000000, 2000000], max: 5000000 },
       slides: [
         { id: 'kd1', img: kd('aerial'), title: 'Your place on Seminyak beach', line: 'Daybeds, lawn and ocean', venue: 'Ku De Ta', btn: 'book', url: KDT_BOOK },
@@ -733,7 +733,7 @@ P.sunset = {
   content: today => {
     const y = year(today);
     return {
-      theme: { top: '#0B1129', acc: '#CDA86B', dark: true, dkbg: '#0B1129' }, motion: true, oneHome: true, video: '/demo-guest/p-sunset-film.mp4', videoTall: true,
+      theme: { top: '#0B1129', acc: '#CDA86B', dark: true, dkbg: '#0B1129' }, motion: true, oneHome: true, video: '/demo-guest/p-sunset-film-v2.mp4', videoTall: true,
       gift: { on: true, title: 'A sunset, on you', line: 'Give someone a day on Seminyak beach. Tell us the amount and who it is for.', to: SB_WA, amounts: [500000, 1000000, 2000000], max: 5000000 },
       slides: [
         { id: 'sb1', img: sb('hut'), title: 'Your spot on Seminyak beach', line: 'Good music, open skies, great food', venue: 'Sunset Beach', btn: 'wa' },

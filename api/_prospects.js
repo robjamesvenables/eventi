@@ -775,13 +775,16 @@ Object.entries(P).forEach(([k, v]) => k !== 'senja' && (v.venues || []).forEach(
 // Real logo (Robbie); WhatsApp from ulucliffhouse.com contact page; no menus yet; member deals made up.
 const ul = n => '/demo-guest/p-ulu-' + n + '.jpg';
 const UL_BOOK = 'https://www.ulucliffhouse.com';
+const bu = n => '/demo-guest/p-burnt-' + n + '.jpg';   // burnt photos from ulucliffhouse.com (Robbie's screenshots)
 const UL_MENU = n => ({ img: '/demo-guest/p-ulu-menu-' + n + '.jpg' });   // retyped in their menu style from Google Maps menu photos (their PDFs are broken)
 P.ulu = {
   brand: 'Ulu Cliffhouse', logo: '/demo-guest/p-ulu-logo.png', icon: '/demo-guest/p-ulu-icon', first: 'Josh', tier: 'member', visits: 6, since: 2025, favourite: 'Ulu Cliffhouse',
   perks: ['10% off your bill, every visit', 'A free cocktail on your birthday', 'Priority daybeds on weekends', 'First word on our big nights'],
   perkIcons: ['pct', 'cake', 'star', 'sparkle'],
   reward: { target: 10, text: 'A clifftop daybed with a bottle of bubbles' },
-  venues: [{ name: 'Ulu Cliffhouse', area: 'Clifftop · Pecatu, Uluwatu', opens: '08:00', closes: '22:00', book: UL_BOOK, wa: '6281139417899', phone: '+62 813 3881 2502', map: 'https://www.google.com/maps/search/?api=1&query=Ulu+Cliffhouse+Bali' }],
+  venues: [{ name: 'Ulu Cliffhouse', area: 'Clifftop · Pecatu, Uluwatu', opens: '08:00', closes: '22:00', book: UL_BOOK, wa: '6281139417899', phone: '+62 813 3881 2502', map: 'https://www.google.com/maps/search/?api=1&query=Ulu+Cliffhouse+Bali' },
+    { name: 'burnt', area: 'Live-fire restaurant at Ulu Cliffhouse', opens: '17:00', closes: '23:00', book: UL_BOOK, wa: '6281139417899', map: 'https://www.google.com/maps/search/?api=1&query=Ulu+Cliffhouse+Bali' }   // Ulu's evening fire restaurant (ulucliffhouse.com/burnt); hours a guess - dinner from sunset
+  ],
   contact: { wa: '6281139417899', phone: '+62 813 3881 2502' },
   acts: [
     { title: 'Off The Record', line: 'Saturday pool party · DJs from 1pm to sunset', every: [6], start: '13:00', end: '19:00', venue: 'Ulu Cliffhouse', ic: 'party' },
@@ -797,11 +800,16 @@ P.ulu = {
         { id: 'ul2', img: ul('lounge'), title: 'Golden hour, front row', line: 'Sunset lounge over the waves', venue: 'Ulu Cliffhouse', btn: 'book', url: UL_BOOK },
         { id: 'ul3', img: ul('deck'), title: 'Down the steps to the sea deck', line: 'Our bar above the reef', venue: 'Ulu Cliffhouse' },
         { id: 'ul4', img: ul('brunch'), title: 'Breakfast from 8am', line: 'Coffee, eggs and ocean views', venue: 'Ulu Cliffhouse', btn: 'book', url: UL_BOOK },
-        { id: 'ul5', img: ul('dinner'), title: 'Dinner under the lanterns', line: 'Wood-fired plates and bubbles', venue: 'Ulu Cliffhouse', btn: 'book', url: UL_BOOK }
+        { id: 'ul5', img: ul('dinner'), title: 'Dinner under the lanterns', line: 'Wood-fired plates and bubbles', venue: 'Ulu Cliffhouse', btn: 'book', url: UL_BOOK },
+        { id: 'ub1', img: bu('fire'), title: 'burnt', line: 'Cooked over wood and charcoal: local seafood, dry-aged meats, seasonal produce', venue: 'burnt', btn: 'book', url: UL_BOOK },
+        { id: 'ub2', img: bu('dining'), title: 'Dining Room & Bar', line: 'The open fire kitchen sits at the centre of the room', venue: 'burnt', btn: 'book', url: UL_BOOK },
+        { id: 'ub3', img: bu('terrace'), title: 'Sunset Terrace', line: 'Watch the sun drop into the Indian Ocean as the flames get to work', venue: 'burnt', btn: 'book', url: UL_BOOK },
+        { id: 'ub4', img: bu('chef'), title: 'The people behind burnt', line: 'Chef Tomás, Bar Manager Dedi and Sous Chef Frendy', venue: 'burnt' }
       ],
       deals: [
         { id: 'uld1', img: ul('pool'), title: 'Off The Record daybeds · from Rp 1.5m min. spend', when: 'Saturdays · 1–7pm', venue: 'Ulu Cliffhouse' },
         { id: 'uld2', img: ul('table'), title: 'Members: golden hour cocktails 2 for 1', when: 'Daily · 5–7pm', venue: 'Ulu Cliffhouse' },
+        { id: 'uld4', img: bu('wine'), title: 'Members: a glass of bubbles at sunset with dinner', when: 'Daily · from 5pm', venue: 'burnt', btn: 'wa' },
         { id: 'uld3', img: ul('breakfast'), title: 'Members: a free coffee with any breakfast', when: 'Weekdays · 8–11am', venue: 'Ulu Cliffhouse' }
       ],
       events: [
@@ -810,8 +818,10 @@ P.ulu = {
         { id: 'ule2', img: ul('disco'), title: 'Sundays at Ulu', line: 'Play all day, dance after dark', date: nextDow(today, 0), time: '12:00', time2: '00:00', venue: 'Ulu Cliffhouse', btn: 'book', url: UL_BOOK },
         { id: 'ule3', img: ul('fireworks'), title: "New Year's Eve on the cliff", line: 'Fireworks over the ocean', date: y + '-12-31', time: '18:00', time2: '02:00', venue: 'Ulu Cliffhouse', btn: 'book', url: UL_BOOK }
       ],
-      gallery: ['aerial', 'pool', 'lounge', 'deck', 'waves', 'table', 'restaurant', 'bar', 'brunch', 'breakfast', 'sandwich', 'dinner', 'yoga', 'dj', 'disco', 'fireworks'].map((n, i) => ({ id: 'ulg' + i, img: ul(n), venue: 'Ulu Cliffhouse' })),
-      places: { 'ulu cliffhouse': { img: ul('aerial'), area: 'Clifftop · Uluwatu', ig: 'ulucliffhouse', menus: [{ name: 'Poolside', pages: ['pool-1', 'pool-2'].map(UL_MENU) }, { name: 'Dinner', pages: ['aftersun-1', 'aftersun-2', 'after'].map(UL_MENU) }, { name: 'Drinks', pages: ['drinks-1', 'drinks-2'].map(UL_MENU) }] } }
+      gallery: ['aerial', 'pool', 'lounge', 'deck', 'waves', 'table', 'restaurant', 'bar', 'brunch', 'breakfast', 'sandwich', 'dinner', 'yoga', 'dj', 'disco', 'fireworks'].map((n, i) => ({ id: 'ulg' + i, img: ul(n), venue: 'Ulu Cliffhouse' }))
+        .concat(['fire', 'steak', 'fish', 'dining', 'terrace', 'fire2', 'plating', 'wine', 'chef'].map((n, i) => ({ id: 'ubg' + i, img: bu(n), venue: 'burnt' }))),
+      places: { 'ulu cliffhouse': { img: ul('aerial'), area: 'Clifftop · Uluwatu', ig: 'ulucliffhouse', menus: [{ name: 'Poolside', pages: ['pool-1', 'pool-2'].map(UL_MENU) }, { name: 'Drinks', pages: ['drinks-1', 'drinks-2'].map(UL_MENU) }] },
+        'burnt': { img: bu('fire2'), area: 'Live-fire dining · sunset terrace', ig: 'ulucliffhouse', other: true, acc: '#C8642A', menus: [{ name: 'Dinner', pages: ['aftersun-1', 'aftersun-2', 'after'].map(UL_MENU) }, { name: 'Drinks', pages: ['drinks-1', 'drinks-2'].map(UL_MENU) }] } }
     };
   }
 };

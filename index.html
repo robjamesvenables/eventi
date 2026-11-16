@@ -24740,10 +24740,10 @@ function gpSecTitleRow(k){
 }
 window.gpSecTitle = function(k){
   const cur = k === 'places' ? (GPE.c.placesTitle || '') : ((GPE.c.others || {}).title || '');
-  appModalShow({ title: 'Heading guests see', sub: 'Leave it empty to show "' + GP_SECT[k][0] + '".',
-    fields: [ { label: 'Heading', placeholder: GP_SECT[k][1], value: cur, optional: true } ],
+  appModalShow({ title: 'Heading guests see', sub: 'Up to 26 letters, so it fits on one line. Leave it empty to show "' + GP_SECT[k][0] + '"' + (GP_SECT[k][0].length > 26 ? ' - that\'s too long, so use a short name, e.g. Explore ' + String(GP_SECT[k][0]).replace(/^Explore /, '').split(' ').filter(w => !/^the$/i.test(w))[0] : '') + '.',
+    fields: [ { label: 'Heading', placeholder: GP_SECT[k][1], value: cur, optional: true, maxlength: 26 } ],
     async onOk([t]){
-      t = String(t || '').replace(/\s+/g, ' ').trim().slice(0, 40);
+      t = String(t || '').replace(/\s+/g, ' ').trim().slice(0, 26);
       if(k === 'places'){ if(t) GPE.c.placesTitle = t; else delete GPE.c.placesTitle; }
       else { GPE.c.others = GPE.c.others || {}; if(t) GPE.c.others.title = t; else delete GPE.c.others.title; }
       gpRender(); await gpSave('Heading saved');

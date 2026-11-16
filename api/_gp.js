@@ -189,8 +189,8 @@ function build(c, ctx){
         rooms: (Array.isArray(o.rooms) ? o.rooms : []).slice(0, 8).map(r => ({ name: str((r || {}).name, 40).trim(), img: img(r) })).filter(r => r.name) }; }).filter(o => o.name);
     if (list.length) others = { bold: ov.bold === true, title: str(ov.title, 40).trim(), list };
   }
-  const placesTitle = str(c.placesTitle, 40).trim();
-  const oh = c.others && typeof c.others === 'object' ? c.others : {}, othersTitle = str(oh.title, 40).trim(), othersBold = oh.bold === true;   // heading and stand-out box for Our other venues   // their own heading over Our places (empty = standard)
+  const placesTitle = str(c.placesTitle, 26).trim();
+  const oh = c.others && typeof c.others === 'object' ? c.others : {}, othersTitle = str(oh.title, 26).trim(), othersBold = oh.bold === true;   // heading and stand-out box for Our other venues   // their own heading over Our places (empty = standard)
   return { order, slides, deals, events, gallery, places, placesTitle, othersTitle, othersBold, theme, gift, others, motion: c.motion === true, oneHome: c.oneHome !== false, film, filmStart, filmTall: !!film && filmTall && !(tp.kind === 'yt'), video, videoPoster, videoTall };
 }
 

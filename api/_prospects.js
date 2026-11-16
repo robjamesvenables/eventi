@@ -710,6 +710,7 @@ P.senja = {
 // Mrs Sippy goes under Our other venues once we have its photos.
 const sb = n => '/demo-guest/p-sunset-' + n + '.jpg';
 const SB_WA = '6281237814448';
+const SB_MENU = (n, k) => Array.from({ length: k }, (_, i) => ({ img: '/demo-guest/p-sunset-menu-' + n + '-' + (i + 1) + '.jpg' }));   // from sunsetbeachbali.com menu pages
 P.sunset = {
   brand: 'Sunset Beach', logo: '/demo-guest/p-sunset-logo.png', icon: '/demo-guest/p-sunset-icon', first: 'Andrew', tier: 'member', visits: 5, since: 2025, favourite: 'Sunset Beach',
   perks: ['10% off your bill, every visit', 'A free cocktail on your birthday', 'Priority sunbeds on weekends', 'First word on our big nights'],
@@ -736,6 +737,7 @@ P.sunset = {
       deals: [
         { id: 'sbd1', img: sb('happyhour'), title: 'Happy hour · 2 for 1', when: 'Mon–Fri · 12–2pm & 7–9pm', venue: 'Sunset Beach' },
         { id: 'sbd2', img: sb('beanbags'), title: 'Members: a free cocktail with any daybed', when: 'Weekdays', venue: 'Sunset Beach', btn: 'wa' },
+        { id: 'sbd4', img: sb('tables'), title: 'Weekday lunch · 3 small plates Rp 195k, 2 courses Rp 295k', when: 'Mon–Fri · 12–3pm', venue: 'Sunset Beach', btn: 'wa' },
         { id: 'sbd3', img: sb('aerial'), title: 'Group bookings · 10+ guests', when: 'Any day · ask us', venue: 'Sunset Beach', btn: 'wa' }
       ],
       events: [
@@ -745,7 +747,9 @@ P.sunset = {
         { id: 'sbe3', img: sb('dusk'), title: "New Year's Eve", line: 'The biggest night on the beach', date: y + '-12-31', time: '18:00', time2: '02:00', venue: 'Sunset Beach', btn: 'wa' }
       ],
       gallery: ['hut', 'sunsetgirls', 'tables', 'spritz', 'palms', 'cocktails2', 'prawns', 'arches', 'band', 'bartender', 'mule', 'umbrella', 'dj', 'beanbags', 'friends2', 'grill', 'waiter', 'aerial', 'signsil', 'dusk', 'happyhour'].map((n, i) => ({ id: 'sbg' + i, img: sb(n), venue: 'Sunset Beach' })),
-      places: { 'sunset beach': { img: sb('palms'), area: 'Seminyak beach', ig: 'sunsetbeachbali' } }
+      places: { 'sunset beach': { img: sb('palms'), area: 'Seminyak beach', ig: 'sunsetbeachbali', menus: [
+        { name: 'Food', pages: SB_MENU('bc-food', 4) }, { name: 'Drinks', pages: SB_MENU('bc-drinks', 10) },
+        { name: 'The Grill', pages: SB_MENU('grill-food', 4).concat(SB_MENU('grill-drinks', 6)) }, { name: 'Lunch deals', pages: SB_MENU('lunch', 2) }] } }
     };
   }
 };

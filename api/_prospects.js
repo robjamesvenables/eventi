@@ -706,9 +706,53 @@ P.senja = {
   }
 };
 
-const CODES = { S3NJAB: 'senja', K8SNGA: 'sangsaka', B6PADL: 'bpa', S8HLTR: 'shelter', T7RNSB: 'trans', '5NKGZJ': 'trans', S4DK7R: 'sundari', M3SNRY: 'masonry', L5UMAB: 'luma', B7RNCH: 'brunch', L7LASQ: 'lolas', K2DETA: 'kudeta', S9LTLK: 'kudeta' };   // L5UMAB = Luma keyring: its own Luma demo (different owners from Sangsaka)   // 5NKGZJ = the printed sample card, shown as Trans for the GM demo
+// Sunset Beach (Seminyak, by Mrs Sippy) - photos and details from Robbie + sunsetbeachbali.com; happy hour is real, other deals made up.
+// Mrs Sippy goes under Our other venues once we have its photos.
+const sb = n => '/demo-guest/p-sunset-' + n + '.jpg';
+const SB_WA = '6281237814448';
+P.sunset = {
+  brand: 'Sunset Beach', logo: '/demo-guest/p-sunset-logo.png', icon: '/demo-guest/p-sunset-icon', first: 'Sam', tier: 'member', visits: 5, since: 2025, favourite: 'Sunset Beach',
+  perks: ['10% off your bill, every visit', 'A free cocktail on your birthday', 'Priority sunbeds on weekends', 'First word on our big nights'],
+  perkIcons: ['pct', 'cake', 'star', 'sparkle'],
+  reward: { target: 10, text: 'A sunset daybed with a bottle of bubbles' },
+  venues: [{ name: 'Sunset Beach', area: 'Jl. Camplung Tanduk 99, Seminyak', opens: '10:00', closes: '22:00', wa: SB_WA, phone: '+62 812 3781 4448', email: 'hello@sunsetbeachbali.com' }],
+  contact: { wa: SB_WA, phone: '+62 812 3781 4448', email: 'hello@sunsetbeachbali.com' },
+  acts: [
+    { title: 'Happy hour', line: '2 for 1 Bali Hai, seltzers and slushies', every: [1, 2, 3, 4, 5], start: '12:00', end: '14:00', venue: 'Sunset Beach', ic: 'drinks' },
+    { title: 'Sunset happy hour', line: '2 for 1 Negronis, espresso martinis, spritz', every: [1, 2, 3, 4, 5], start: '19:00', end: '21:00', venue: 'Sunset Beach', ic: 'drinks' }
+  ],
+  content: today => {
+    const y = year(today);
+    return {
+      theme: { top: '#0B1129', acc: '#E8833A', pg: '#F7F3EC' }, motion: true,
+      gift: { on: true, title: 'A sunset, on you', line: 'Give someone a day on Seminyak beach. Tell us the amount and who it is for.', to: SB_WA, amounts: [500000, 1000000, 2000000], max: 5000000 },
+      slides: [
+        { id: 'sb1', img: sb('lounge'), title: 'Your spot on Seminyak beach', line: 'Good music, open skies, great food', venue: 'Sunset Beach', btn: 'wa' },
+        { id: 'sb2', img: sb('sign'), title: 'Stay for the sunset', line: 'Open every day, 10am to 10pm', venue: 'Sunset Beach', btn: 'wa' },
+        { id: 'sb3', img: sb('dinner'), title: 'Dinner by the sea', line: 'Fire-driven cooking and mezze to share', venue: 'Sunset Beach', btn: 'wa' },
+        { id: 'sb4', img: sb('bar'), title: 'Cocktails at the bar', line: 'Classic margaritas to sunset spritz', venue: 'Sunset Beach', btn: 'wa' },
+        { id: 'sb5', img: sb('friends'), title: 'Bring the crew', line: 'Groups, birthdays and long lunches', venue: 'Sunset Beach', btn: 'wa' }
+      ],
+      deals: [
+        { id: 'sbd1', img: sb('happyhour'), title: 'Happy hour · 2 for 1', when: 'Mon–Fri · 12–2pm & 7–9pm', venue: 'Sunset Beach' },
+        { id: 'sbd2', img: sb('garden'), title: 'Members: a free cocktail with any daybed', when: 'Weekdays', venue: 'Sunset Beach', btn: 'wa' },
+        { id: 'sbd3', img: sb('umbrellas'), title: 'Group bookings · 10+ guests', when: 'Any day · ask us', venue: 'Sunset Beach', btn: 'wa' }
+      ],
+      events: [
+        { id: 'sbe1', img: sb('lounge'), title: 'Sunday Club', line: 'DJs, sunbeds and sunset', date: nextDow(today, 0), time: '12:00', time2: '22:00', venue: 'Sunset Beach', btn: 'wa', hl: true,
+          details: 'Our Sunday session: DJs from lunch, cocktails by the pool and the best sunset in Seminyak.', notes: 'Members skip the queue.' },
+        { id: 'sbe2', img: sb('dinner'), title: 'Christmas at Sunset Beach', line: 'A festive long lunch by the sea', date: y + '-12-25', time: '12:00', time2: '22:00', venue: 'Sunset Beach', btn: 'wa' },
+        { id: 'sbe3', img: sb('sign'), title: "New Year's Eve", line: 'The biggest night on the beach', date: y + '-12-31', time: '18:00', time2: '02:00', venue: 'Sunset Beach', btn: 'wa' }
+      ],
+      gallery: ['lounge', 'sign', 'dinner', 'bar', 'friends', 'garden', 'cocktail', 'umbrellas', 'hut', 'beach', 'happyhour'].map((n, i) => ({ id: 'sbg' + i, img: sb(n), venue: 'Sunset Beach' })),
+      places: { 'sunset beach': { img: sb('lounge'), area: 'Seminyak beach', ig: 'sunsetbeachbali' } }
+    };
+  }
+};
+
+const CODES = { S2NSET: 'sunset', S3NJAB: 'senja', K8SNGA: 'sangsaka', B6PADL: 'bpa', S8HLTR: 'shelter', T7RNSB: 'trans', '5NKGZJ': 'trans', S4DK7R: 'sundari', M3SNRY: 'masonry', L5UMAB: 'luma', B7RNCH: 'brunch', L7LASQ: 'lolas', K2DETA: 'kudeta', S9LTLK: 'kudeta' };   // L5UMAB = Luma keyring: its own Luma demo (different owners from Sangsaka)   // 5NKGZJ = the printed sample card, shown as Trans for the GM demo
 // Mavis Club network: each of the guest's other venues as a logo tile (their colour, logo, how long they've been a member there)
-const KEY_CODE = { senja: 'S3NJAB', sangsaka: 'K8SNGA', bpa: 'B6PADL', shelter: 'S8HLTR', trans: 'T7RNSB', sundari: 'S4DK7R', masonry: 'M3SNRY', luma: 'L5UMAB', brunch: 'B7RNCH', lolas: 'L7LASQ', kudeta: 'K2DETA' };
+const KEY_CODE = { sunset: 'S2NSET', senja: 'S3NJAB', sangsaka: 'K8SNGA', bpa: 'B6PADL', shelter: 'S8HLTR', trans: 'T7RNSB', sundari: 'S4DK7R', masonry: 'M3SNRY', luma: 'L5UMAB', brunch: 'B7RNCH', lolas: 'L7LASQ', kudeta: 'K2DETA' };
 const club = (list, who) => list.map(c => { const v = P[c.key]; if (!v) return null; const t = (v.content('2026-01-01').theme) || {};
   return { name: v.brand, logo: v.logo, top: t.top || '#0F1E2E', area: (v.venues[0] || {}).area || '', since: c.since || '', visits: c.visits || 0,
     href: '/k/' + KEY_CODE[c.key] + '?n=' + encodeURIComponent(String(who || '').split(' ')[0]) }; }).filter(Boolean);

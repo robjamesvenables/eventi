@@ -156,7 +156,7 @@ function build(c, ctx){
     return { name: v.name, area: str(p.area || v.area || '', 30), img: img(p), ig: igName(p.ig), menus, soon: p.soon === true, other: p.other === true, acc: /^#[0-9a-f]{6}$/i.test(p.acc || '') ? p.acc : '' }; });   // acc: an other venue's own brand colour on its page (buttons etc.)   // other: shown under Our other venues (a full place, a different brand)
   // Colours (Guest page > Colours)
   const hex = v => /^#[0-9a-f]{6}$/i.test(v || '') ? v : '';
-  const th = c.theme || {}, theme = { top: hex(th.top), acc: hex(th.acc), pg: hex(th.pg), dark: th.dark === true };
+  const th = c.theme || {}, theme = { top: hex(th.top), acc: hex(th.acc), pg: hex(th.pg), dark: th.dark === true, dkbg: th.dark === true ? hex(th.dkbg) : '' };   // dkbg: dark mode in the brand's own dark (navy...) instead of black
   // Top video: set in the editor (an uploaded MP4, or a YouTube link with a start time); older demo pages set film / video directly
   let film = /^[\w-]{11}$/.test(c.film || '') ? c.film : '', filmStart = Math.max(0, Math.min(600, Math.round(+c.filmStart || 0))),
     video = /^\/[\w\/.-]+\.mp4$/.test(c.video || '') ? c.video : '', videoPoster = '', videoTall = c.videoTall === true;

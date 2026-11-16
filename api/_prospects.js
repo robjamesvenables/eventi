@@ -246,7 +246,7 @@ P.sundari = {
   perkIcons: ['leaf', 'cake', 'star', 'heart'],
   reward: { target: 10, text: 'A 60-minute Balinese massage' },
   venues: [{ name: 'Sundari Wellness', area: 'Seminyak', opens: '09:00', closes: '22:00', wa: SUN_WA, phone: '+62 811 365 563', map: 'https://maps.google.com/?q=SUNDARI%20Wellness%2C%20Jalan%20Petitenget%207%2C%20Seminyak%2C%20Bali' },
-    { name: 'Suenyo Eco Retreat', area: 'Jungle retreat by the Yeh Poh River', wa: SUN_WA }   // same owner; no Suenyo number yet
+    { name: 'Suenyo Eco Retreat', area: 'Pandak Gede, Tabanan', wa: '62811322332', phone: '+62 811 322 332', email: 'dream@suenyo-bali.com' }   // from suenyo-bali.com
   ],
   contact: { wa: SUN_WA, phone: '+62 811 365 563' },
   acts: [],
@@ -280,7 +280,7 @@ P.sundari = {
       ],
       gallery: ['bath', 'cave', 'corridor', 'massage', 'pods', 'couples', 'reception', 'shop', 'room', 'daybed', 'lounge2', 'pedi', 'basins', 'couple', 'jade', 'feet', 'hands2', 'scrub', 'hero', 'lounge', 'balinese', 'bamboo', 'kaya', 'reflex', 'facial', 'hands'].map((n, i) => ({ id: 'ug' + i, img: su(n), venue: 'Sundari Wellness' }))
         .concat(['pool', 'windows', 'bed', 'aerial', 'hammock', 'roof', 'view', 'front'].map((n, i) => ({ id: 'sug' + i, img: '/demo-guest/p-suenyo-' + n + '.jpg', venue: 'Suenyo Eco Retreat' }))),
-      places: { 'suenyo eco retreat': { img: '/demo-guest/p-suenyo-pool.jpg', area: 'Eco retreat · Yeh Poh River', other: true }, 'sundari wellness': { img: su('reception'), area: 'Seminyak', ig: 'sundari.wellness', menus: [{ name: 'Treatments', pages: [1, 2, 3, 4, 5, 6].map(n => ({ img: '/demo-guest/p-sun-menu-' + n + '.jpg' })) }] } }
+      places: { 'suenyo eco retreat': { img: '/demo-guest/p-suenyo-pool.jpg', area: 'Eco retreat · Tabanan', other: true, menus: [{ name: 'Food', pages: ['food-1', 'food-2'].map(n => ({ img: '/demo-guest/p-suenyo-menu-' + n + '.jpg' })) }, { name: 'Drinks', pages: [{ img: '/demo-guest/p-suenyo-menu-drinks.jpg' }] }] }, 'sundari wellness': { img: su('reception'), area: 'Seminyak', ig: 'sundari.wellness', menus: [{ name: 'Treatments', pages: [1, 2, 3, 4, 5, 6].map(n => ({ img: '/demo-guest/p-sun-menu-' + n + '.jpg' })) }] } }
     };
   }
 };

@@ -602,7 +602,7 @@ P.lolas = {
 const kd = n => '/demo-guest/p-kdt-' + n + '.jpg', sl = n => '/demo-guest/p-saltlick-' + n + '.jpg';
 const KDT_BOOK = 'https://www.kudeta.com';
 P.kudeta = {
-  brand: 'Ku De Ta', logo: '/demo-guest/p-kdt-logo.png', first: 'Matt', tier: 'member', visits: 7, since: 2025, favourite: 'Ku De Ta',
+  brand: 'Ku De Ta', logo: '/demo-guest/p-kdt-logo.png', icon: '/demo-guest/p-kdt-icon', first: 'Matt', tier: 'member', visits: 7, since: 2025, favourite: 'Ku De Ta',
   perks: ['10% off your bill, every visit', 'A glass of bubbles on your birthday', 'Priority daybeds on weekends', 'First word on our big nights'],
   perkIcons: ['pct', 'cake', 'star', 'sparkle'],
   reward: { target: 10, text: 'A sunset daybed with a bottle of bubbles' },

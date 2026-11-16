@@ -607,10 +607,10 @@ P.kudeta = {
   perkIcons: ['pct', 'cake', 'star', 'sparkle'],
   reward: { target: 10, text: 'A sunset daybed with a bottle of bubbles' },
   venues: [
-    { name: 'Ku De Ta', area: 'Jl. Kayu Aya 9, Seminyak', opens: '08:00', closes: '00:00', book: KDT_BOOK, phone: '+62 361 736969', email: 'reservations@kudeta.com' },   // from kudeta.com: daily 8am - late
+    { name: 'Ku De Ta', area: 'Jl. Kayu Aya 9, Seminyak', opens: '08:00', closes: '00:00', book: KDT_BOOK, wa: '62361736969', phone: '+62 361 736969', email: 'reservations@kudeta.com' },   // from kudeta.com: daily 8am - late
     { name: 'Saltlick', area: 'Upstairs at Ku De Ta, Jl. Kayu Aya 9', opens: '17:00', closes: '00:00', wa: '6282247972138', phone: '+62 822 4797 2138', email: 'reservations@saltlickbali.com' }   // from saltlickbali.com: 5pm - 12am daily
   ],
-  contact: { ig: 'kudetabali', phone: '+62 361 736969', email: 'reservations@kudeta.com' },
+  contact: { ig: 'kudetabali', wa: '62361736969', phone: '+62 361 736969', email: 'reservations@kudeta.com' },
   acts: [
     { title: 'Sunset sessions', line: 'DJs on the lawn as the sun goes down', every: [0, 1, 2, 3, 4, 5, 6], start: '16:00', end: '20:00', venue: 'Ku De Ta', ic: 'music' },
     { title: 'Weekend brunch', line: 'Long, lazy and by the ocean', every: [0, 6], start: '09:00', end: '13:00', venue: 'Ku De Ta', ic: 'food' }
@@ -619,7 +619,7 @@ P.kudeta = {
     const y = year(today);
     return {
       theme: { top: '#0B0B0B', acc: '#9E1B22', dark: true }, motion: true, oneHome: true, video: '/demo-guest/p-kdt-film.mp4', videoTall: true,
-      gift: { on: true, title: 'A sunset, on you', line: 'Give someone a day at Ku De Ta. Tell us the amount and who it is for.', amounts: [500000, 1000000, 2000000], max: 5000000 },
+      gift: { on: true, title: 'A sunset, on you', line: 'Give someone a day at Ku De Ta. Tell us the amount and who it is for.', to: '62361736969', amounts: [500000, 1000000, 2000000], max: 5000000 },
       slides: [
         { id: 'kd1', img: kd('aerial'), title: 'Your place on Seminyak beach', line: 'Daybeds, lawn and ocean', venue: 'Ku De Ta', btn: 'book', url: KDT_BOOK },
         { id: 'kd2', img: kd('sunset'), title: 'Bali\'s best sunset', line: 'Every night, front row', venue: 'Ku De Ta', btn: 'book', url: KDT_BOOK },

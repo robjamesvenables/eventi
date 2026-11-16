@@ -533,7 +533,7 @@ P.lolas = {
   venues: [
     { name: "Lola's Canggu", area: 'Jl. Subak, Canggu', opens: '08:00', closes: '00:00', wa: LO_WA },
     { name: "Lola's Uluwatu", area: 'Jl. Labuansait, Uluwatu', opens: '12:00', closes: '00:00', wa: LO_WA, phone: '+62 815 7306 1887' },
-    { name: "Lolita's Uluwatu", area: 'Jl. Labuansait, Pecatu, Uluwatu', opens: '12:00', closes: '20:00', wa: LO_WA }   // hours from lolitasbali.com (daily 12-8pm)
+    { name: "Lolita's Uluwatu", area: 'Jl. Labuansait, Pecatu, Uluwatu', opens: '12:00', closes: '20:00', wa: LO_WA, email: 'sociallolas@gmail.com' }   // hours + email from lolitasbali.com (no WhatsApp listed - uses Lola's Uluwatu's)
   ],
   contact: { wa: LO_WA, phone: '+62 815 7306 1887' },
   acts: [

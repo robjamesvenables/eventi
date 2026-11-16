@@ -1529,6 +1529,13 @@ body.vqopen .vq-dim{opacity:1;pointer-events:auto}body.vqopen .vq-sheet{transfor
         var mk = function(dir){ var b = document.createElement('button'); b.className = 'ar ' + (dir < 0 ? 'l' : 'r'); b.setAttribute('aria-label', dir < 0 ? 'Back' : 'More'); b.innerHTML = svg(dir < 0 ? '<path d="m15 18-6-6 6-6"/>' : '<path d="m9 18 6-6-6-6"/>', 20); b.onclick = function(){ row.scrollBy({ left: dir * row.clientWidth * 0.8, behavior: 'smooth' }); }; box.appendChild(b); return b; };
         var l = mk(-1), r = mk(1), upd = function(){ l.style.display = row.scrollLeft > 4 ? '' : 'none'; r.style.display = row.scrollLeft + row.clientWidth < row.scrollWidth - 4 ? '' : 'none'; };
         row.addEventListener('scroll', upd, { passive: true }); window.addEventListener('resize', upd); upd(); setTimeout(upd, 600); setTimeout(upd, 2000);   // again once photos have loaded
+        // mouse: click-and-drag sideways too (a small move still counts as a tap)
+        var dx = null, sx = 0, moved = false;
+        row.addEventListener('pointerdown', function(e){ if (e.pointerType !== 'mouse' || e.button) return; dx = e.clientX; sx = row.scrollLeft; moved = false; });
+        row.addEventListener('dragstart', function(e){ e.preventDefault(); });   // photos would start a browser drag instead
+        window.addEventListener('pointermove', function(e){ if (dx === null) return; var m = e.clientX - dx; if (Math.abs(m) > 6) { moved = true; e.preventDefault(); row.style.scrollSnapType = 'none'; row.style.scrollBehavior = 'auto'; row.scrollLeft = sx - m; } });
+        window.addEventListener('pointerup', function(){ if (dx === null) return; dx = null; row.style.scrollBehavior = ''; row.style.scrollSnapType = ''; });
+        row.addEventListener('click', function(e){ if (moved) { e.preventDefault(); e.stopPropagation(); moved = false; } }, true);
       });
       var sl = document.getElementById('sl'), dots = document.getElementById('dots');
       if (sl && dots) {

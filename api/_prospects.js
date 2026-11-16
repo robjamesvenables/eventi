@@ -775,6 +775,7 @@ Object.entries(P).forEach(([k, v]) => k !== 'senja' && (v.venues || []).forEach(
 // Real logo (Robbie); WhatsApp from ulucliffhouse.com contact page; no menus yet; member deals made up.
 const ul = n => '/demo-guest/p-ulu-' + n + '.jpg';
 const UL_BOOK = 'https://www.ulucliffhouse.com';
+const UL_MENU = n => ({ img: '/demo-guest/p-ulu-menu-' + n + '.jpg' });   // retyped in their menu style from Google Maps menu photos (their PDFs are broken)
 P.ulu = {
   brand: 'Ulu Cliffhouse', logo: '/demo-guest/p-ulu-logo.png', icon: '/demo-guest/p-ulu-icon', first: 'Josh', tier: 'member', visits: 6, since: 2025, favourite: 'Ulu Cliffhouse',
   perks: ['10% off your bill, every visit', 'A free cocktail on your birthday', 'Priority daybeds on weekends', 'First word on our big nights'],
@@ -810,7 +811,7 @@ P.ulu = {
         { id: 'ule3', img: ul('fireworks'), title: "New Year's Eve on the cliff", line: 'Fireworks over the ocean', date: y + '-12-31', time: '18:00', time2: '02:00', venue: 'Ulu Cliffhouse', btn: 'book', url: UL_BOOK }
       ],
       gallery: ['aerial', 'pool', 'lounge', 'deck', 'waves', 'table', 'restaurant', 'bar', 'brunch', 'breakfast', 'sandwich', 'dinner', 'yoga', 'dj', 'disco', 'fireworks'].map((n, i) => ({ id: 'ulg' + i, img: ul(n), venue: 'Ulu Cliffhouse' })),
-      places: { 'ulu cliffhouse': { img: ul('aerial'), area: 'Clifftop · Uluwatu', ig: 'ulucliffhouse' } }
+      places: { 'ulu cliffhouse': { img: ul('aerial'), area: 'Clifftop · Uluwatu', ig: 'ulucliffhouse', menus: [{ name: 'Poolside', pages: ['pool-1', 'pool-2'].map(UL_MENU) }, { name: 'Dinner', pages: ['aftersun-1', 'aftersun-2', 'after'].map(UL_MENU) }, { name: 'Drinks', pages: ['drinks-1', 'drinks-2'].map(UL_MENU) }] } }
     };
   }
 };

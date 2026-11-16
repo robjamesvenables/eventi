@@ -407,7 +407,7 @@ P.masonry = {
         'masonry canggu': { img: ms('room'), area: 'Batu Bolong, Canggu', menus: [{ name: 'Lunch', pages: ['lunch', 'dessert'].map(MS_MENU) }, { name: 'Dinner', pages: ['dinner', 'dessert'].map(MS_MENU) }, { name: 'Drinks', pages: ['drinks'].map(MS_MENU) }] },
         'masonry uluwatu': { img: ms('u-cabbage'), area: 'Uluwatu', menus: [{ name: 'Lunch', pages: ['lunch', 'dessert'].map(MS_MENU_U) }, { name: 'Dinner', pages: ['dinner', 'dessert'].map(MS_MENU_U) }, { name: 'Drinks', pages: ['drinks'].map(MS_MENU_U) }] },
         'masonry japan': { img: ms('japan-wide'), area: 'Niseko, Japan', soon: true },
-        'bar vera': { img: ms('v-front'), area: 'Pererenan', ig: 'bar.vera.bali', other: true }
+        'bar vera': { img: ms('v-front'), area: 'Pererenan', ig: 'bar.vera.bali', other: true, menus: [{ name: 'Food', url: 'https://barverabali.com/wp-content/uploads/2026/08/BV_MENU-FOR-WEBSITE-food-1.pdf' }, { name: 'Lunch', url: 'https://barverabali.com/wp-content/uploads/2026/08/BV_LUNCH-MENU_merged.pdf' }, { name: 'Drinks', url: 'https://barverabali.com/wp-content/uploads/2026/08/BV_MENU-FOR-WEBSITE-drink-1.pdf' }] }   // links to their PDFs until we have the files as pictures
       }
     };
   }

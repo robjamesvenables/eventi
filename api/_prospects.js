@@ -659,9 +659,9 @@ P.senja = {
   perkIcons: ['pct', 'cake', 'star', 'sparkle'],
   reward: { target: 10, text: 'A sunset daybed with a bottle of bubbles' },
   venues: [
-    { name: 'Senja Seminyak', area: 'Beach club · Seminyak', opens: '09:00', closes: '00:00', wa: SJ_WA },
-    { name: 'Senja Uluwatu', area: 'Clifftop · Uluwatu', opens: '11:00', closes: '23:00', wa: SJ_WA },
-    { name: 'Saffron & Salt', area: 'Restaurant · Seminyak', opens: '12:00', closes: '23:00', wa: SJ_WA }
+    { name: 'Senja Seminyak', area: 'Beach club · Seminyak', opens: '09:00', closes: '00:00', wa: SJ_WA, map: 'https://www.google.com/maps/search/?api=1&query=Seminyak+Beach,+Bali' },
+    { name: 'Senja Uluwatu', area: 'Clifftop · Uluwatu', opens: '11:00', closes: '23:00', wa: SJ_WA, map: 'https://www.google.com/maps/search/?api=1&query=Uluwatu,+Bali' },
+    { name: 'Saffron & Salt', area: 'Restaurant · Seminyak', opens: '12:00', closes: '23:00', wa: SJ_WA, map: 'https://www.google.com/maps/search/?api=1&query=Seminyak,+Bali' }
   ],
   contact: { wa: SJ_WA },
   acts: [
@@ -753,6 +753,9 @@ P.sunset = {
     };
   }
 };
+
+// Every demo place gets a map: a Google Maps search for its name and area, unless we set a real link (Senja is made up: its maps point at the area)
+Object.entries(P).forEach(([k, v]) => k !== 'senja' && (v.venues || []).forEach(x => { if (!x.map) x.map = 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(x.name + ', ' + (x.area || '') + ', Bali'); }));
 
 const CODES = { S2NSET: 'sunset', S3NJAB: 'senja', K8SNGA: 'sangsaka', B6PADL: 'bpa', S8HLTR: 'shelter', T7RNSB: 'trans', '5NKGZJ': 'trans', S4DK7R: 'sundari', M3SNRY: 'masonry', L5UMAB: 'luma', B7RNCH: 'brunch', L7LASQ: 'lolas', K2DETA: 'kudeta', S9LTLK: 'kudeta' };   // L5UMAB = Luma keyring: its own Luma demo (different owners from Sangsaka)   // 5NKGZJ = the printed sample card, shown as Trans for the GM demo
 // Mavis Club network: each of the guest's other venues as a logo tile (their colour, logo, how long they've been a member there)

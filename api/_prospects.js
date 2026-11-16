@@ -53,7 +53,7 @@ const P = {
         gift: { on: true, title: 'A night at Shelter', line: 'Give someone a seat by the fire. Tell us the amount and who it is for.', to: '6282340040199', amounts: [500000, 1000000, 2000000], max: 5000000 },
         places: {
           'shelter pererenan': { img: sh('room'), area: 'Pererenan', ig: 'shelter.pererenan', menus: [
-            { name: 'Lunch', url: 'https://www.shelterbali.com/lunch-menu' }, { name: 'Dinner', url: 'https://www.shelterbali.com/dinner-menu' }, { name: 'Drinks', url: 'https://www.shelterbali.com/drink-menu' }] },
+            { name: 'Lunch', pages: [{ img: '/demo-guest/p-shelter-menu-lunch-1.jpg' }, { img: '/demo-guest/p-shelter-menu-lunch-2.jpg' }] }, { name: 'Dinner', pages: [{ img: '/demo-guest/p-shelter-menu-dinner-1.jpg' }] }, { name: 'Drinks', url: 'https://www.shelterbali.com/drink-menu' }] },
           'shelter uluwatu': { img: sh('coals'), area: 'Uluwatu', soon: true }
         }
       };

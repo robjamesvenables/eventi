@@ -711,7 +711,7 @@ P.senja = {
 const sb = n => '/demo-guest/p-sunset-' + n + '.jpg';
 const SB_WA = '6281237814448';
 P.sunset = {
-  brand: 'Sunset Beach', logo: '/demo-guest/p-sunset-logo.png', icon: '/demo-guest/p-sunset-icon', first: 'Sam', tier: 'member', visits: 5, since: 2025, favourite: 'Sunset Beach',
+  brand: 'Sunset Beach', logo: '/demo-guest/p-sunset-logo.png', icon: '/demo-guest/p-sunset-icon', first: 'Andrew', tier: 'member', visits: 5, since: 2025, favourite: 'Sunset Beach',
   perks: ['10% off your bill, every visit', 'A free cocktail on your birthday', 'Priority sunbeds on weekends', 'First word on our big nights'],
   perkIcons: ['pct', 'cake', 'star', 'sparkle'],
   reward: { target: 10, text: 'A sunset daybed with a bottle of bubbles' },

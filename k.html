@@ -384,7 +384,6 @@ html.top-pg .gv{background:#1C1A19;color:#fff}html.top-pg .gv .gvi{background:va
 .vtop{position:relative;height:230px;background:var(--top,#0F1E2E);overflow:hidden}
 .vtop img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
 .vtop .vin{position:absolute;inset:0;display:flex;flex-direction:column;justify-content:space-between;padding:calc(14px + env(safe-area-inset-top,0px)) 16px 16px}
-.vtr{display:flex;justify-content:space-between;align-items:flex-start;gap:8px}.vtop .vmapb{display:inline-flex;align-items:center;gap:5px;background:var(--acc,#0D9488);color:var(--acc-ink,#fff);font:800 13.5px Inter,sans-serif;border-radius:12px;padding:9px 13px 9px 10px;text-decoration:none}
 .vtop .back{align-self:flex-start;display:inline-flex;align-items:center;gap:4px;border:0;background:rgba(15,30,46,.72);color:white;font:800 13.5px Inter,sans-serif;border-radius:12px;padding:9px 12px 9px 8px;cursor:pointer}
 .vtop .vname{background:rgba(15,30,46,.78);color:white;border-radius:16px;padding:12px 14px}
 .vtop .vname{min-width:0}.vtop .vname b{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;overflow-wrap:anywhere;font-size:24px;font-weight:900;letter-spacing:-.5px}.vtop .vname small{display:block;font-size:13px;color:#E2E8F0;font-weight:600;margin-top:2px}
@@ -935,12 +934,7 @@ body.vqopen .vq-dim{opacity:1;pointer-events:auto}body.vqopen .vq-sheet{transfor
           '<span class="det">See details ' + svg('<path d="m9 18 6-6-6-6"/>', 14) + '</span>' + codeBox(x) + (x.btn ? '<div class="go">' + btnHtml(x.btn, x.id) + '</div>' : '') + '</div></div>';
       }).join('') + '</div></div>';
       if (gl.length) S.gallery = galHtml(gl, key);
-      if (!key && d.venues && d.venues.length) S.venues = '<div class="sec"><div class="lab">Find us</div><div class="box">' + d.venues.map(function(v, i){
-        var st = v.open === true ? '<span class="open">Open now</span> · ' + esc(v.label) : v.open === false ? '<span class="closed">' + esc(v.label) + '</span>' : esc(v.label || '');
-        var tag = v.map ? 'a' : 'div', at = v.map ? ' href="' + esc(v.map) + '" target="_blank" rel="noopener"' : '';   // the whole row opens the map when there is one
-        return '<' + tag + ' class="ven"' + at + '><div class="ic" style="background:' + VC[i % VC.length] + '">' + esc(v.name.charAt(0).toUpperCase()) + '</div><div class="n"><b translate="no">' + esc(v.name) + '</b>' + (st ? '<small>' + st + '</small>' : '') + '</div>' +
-          (v.map ? '<span class="vmap" aria-label="Map">' + svg(I.pin, 18) + '<em>Map</em></span>' : '') + '</' + tag + '>';
-      }).join('') + '</div></div>';
+      if (!key && d.venues && d.venues.length) S.venues = findUs(d.venues);
       return (gp.order || ['tonight', 'deals', 'events', 'gallery', 'venues']).map(function(k){ return on[k] ? (S[k] || '') : ''; }).join('');
     };
 
@@ -1031,20 +1025,29 @@ body.vqopen .vq-dim{opacity:1;pointer-events:auto}body.vqopen .vq-sheet{transfor
         var ic = svg(/lesson|price|academy|class|course/i.test(m.name) ? EI.cal : spa ? PI.leaf : drink && !food ? PI.cocktail : food ? PI.food : '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M8 13h8M8 17h5"/>', 18) + '<span>' + esc(m.name) + '</span>';
         return (m.pages && m.pages.length) ? '<a href="#" role="button" data-menu="' + i + '">' + ic + '</a>' : '<a href="' + esc(m.url) + '" target="_blank" rel="noopener">' + ic + '</a>'; }).join('') + '</div>';
     };
+    // Find us: open now + a Map button (the whole row opens the map when there is one)
+    var findUs = function(vs){
+      return '<div class="sec"><div class="lab">Find us</div><div class="box">' + vs.map(function(v, i){
+        var st = v.open === true ? '<span class="open">Open now</span> · ' + esc(v.label) : v.open === false ? '<span class="closed">' + esc(v.label) + '</span>' : esc(v.label || '');
+        var tag = v.map ? 'a' : 'div', at = v.map ? ' href="' + esc(v.map) + '" target="_blank" rel="noopener"' : '';
+        return '<' + tag + ' class="ven"' + at + '><div class="ic" style="background:' + VC[i % VC.length] + '">' + esc(v.name.charAt(0).toUpperCase()) + '</div><div class="n"><b translate="no">' + esc(v.name) + '</b>' + (st ? '<small>' + st + '</small>' : '') + '</div>' +
+          (v.map ? '<span class="vmap" aria-label="Map">' + svg(I.pin, 18) + '<em>Map</em></span>' : '') + '</' + tag + '>';
+      }).join('') + '</div></div>';
+    };
     var placeHtml = function(key){
       var p = placeOf(key) || { name: key }, v = venueOf(key) || {};
       var st = v.open === true ? '<span class="open">Open now</span> · ' + esc(v.label) : v.open === false ? esc(v.label) : '';
       if (st && v.hrs) st += '<br><span class="hrs">' + esc(v.hrs) + '</span>';
       var pacc = /^#[0-9a-f]{6}$/i.test(p.acc || '') ? p.acc : '', pn = pacc ? parseInt(pacc.slice(1), 16) : 0;   // an other venue in its own brand colour
       var pst = pacc ? ' style="--acc:' + pacc + ';--acc-ink:' + ((0.299 * (pn >> 16) + 0.587 * ((pn >> 8) & 255) + 0.114 * (pn & 255)) > 165 ? '#111111' : '#FFFFFF') + '"' : '';
-      var h = '<div class="w"' + pst + '><div class="vtop">' + (p.img ? '<img src="' + esc(p.img) + '" alt="">' : '') + '<div class="vin"><div class="vtr"><button class="back" data-home aria-label="All places">' + svg('<path d="m15 18-6-6 6-6"/>', 18) + 'All places</button>' +
-        (v.map ? '<a class="vmapb" href="' + esc(v.map) + '" target="_blank" rel="noopener">' + svg(I.pin, 16) + 'Map</a>' : '') + '</div>' +
+      var h = '<div class="w"' + pst + '><div class="vtop">' + (p.img ? '<img src="' + esc(p.img) + '" alt="">' : '') + '<div class="vin"><button class="back" data-home aria-label="All places">' + svg('<path d="m15 18-6-6 6-6"/>', 18) + 'All places</button>' +
         '<div class="vname"><b translate="no">' + esc(p.name) + '</b>' + (st ? '<small>' + st + '</small>' : '') + '</div></div></div>';
       h += menuHtml(p);
       var sl = (gp.slides || []).filter(function(x){ return gp.motion ? lc(x.venue || '') === key : at(x, key); });
       if (sl.length) h += '<div class="vsl">' + slidesHtml(sl, false) + '</div>';
       var body = placeSections(key);
       h += body || '<div class="sec"><div class="box" style="padding:18px;text-align:center;color:#64748B;font-size:14px;font-weight:600">Nothing special on here right now - come and see us!</div></div>';
+      if (v.map) h += findUs([v]);   // each place's own Find us, just above its Instagram
       h += igHtml([p]);   // reviews are asked on the main page only - never twice
       return h + foot + '</div>';
     };

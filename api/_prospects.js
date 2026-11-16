@@ -534,7 +534,7 @@ P.lolas = {
   content: today => {
     const y = year(today);
     return {
-      theme: { top: '#F4EFE9', acc: '#FFD0D6', pg: '#F4EFE9' }, video: '/demo-guest/p-lolas-film.mp4', videoTall: true,
+      theme: { top: '#141414', acc: '#FFD0D6', dark: true }, video: '/demo-guest/p-lolas-film.mp4', videoTall: true,
       gift: { on: true, title: 'Tacos on me', line: "A Lola's voucher for someone who loves a margarita. Tell us the amount and who it is for.", to: LO_WA, amounts: [300000, 500000, 1000000], max: 3000000 },
       slides: [
         { id: 'ls1', img: lo('tacos'), title: 'Tacos, tequila, good times', line: 'Canggu and Uluwatu', venue: "Lola's Canggu", btn: 'wa' },

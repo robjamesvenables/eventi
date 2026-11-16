@@ -49,6 +49,7 @@ svg{display:block}
 .brand>div{min-width:0}
 .brand small{display:block;font-size:15px;font-weight:900;letter-spacing:3px;color:#D9B46A;margin-top:4px}
 .top-light .brand small{color:color-mix(in srgb,var(--top,#0F1E2E) 35%,#0F1E2E)}
+html.acc-bright:not(.top-light) .brand small{color:var(--acc)}   /* a bright button colour (e.g. Lola's pink) also colours MEMBERS CLUB; darker ones keep the gold */
 .hi{margin-top:26px;font-size:30px;font-weight:900;letter-spacing:-.8px;line-height:1.1}
 .hg{display:inline-flex;align-items:center;gap:8px;margin-top:14px;background:rgba(255,255,255,.14);border:1.5px solid rgba(255,255,255,.35);color:var(--top-ink,#fff);border-radius:99px;padding:9px 15px;font-weight:800;font-size:14px;text-decoration:none}.hg svg{color:var(--acc,#C9A24A)}
 .top-light .hg{background:rgba(15,30,46,.06);border-color:rgba(15,30,46,.2)}
@@ -758,6 +759,7 @@ body.vqopen .vq-dim{opacity:1;pointer-events:auto}body.vqopen .vq-sheet{transfor
     if (!th.acc) ['--acc', '--acc-ink'].forEach(function(v){ rs.removeProperty(v); });
     if (!th.pg) rs.removeProperty('--pg');
     if (th.acc) { rs.setProperty('--acc', th.acc); rs.setProperty('--acc-ink', light(th.acc) ? '#0F1E2E' : '#FFFFFF'); }
+    document.documentElement.classList.toggle('acc-bright', !!(th.acc && /^#[0-9a-f]{6}$/i.test(th.acc) && (function(n){ return 0.299 * (n >> 16) + 0.587 * (n >> 8 & 255) + 0.114 * (n & 255) > 150; })(parseInt(th.acc.slice(1), 16))));
     document.documentElement.classList.toggle('acc-light', !!(th.acc && !th.dark && /^#[0-9a-f]{6}$/i.test(th.acc) && (function(n){ return 0.299 * (n >> 16) + 0.587 * (n >> 8 & 255) + 0.114 * (n & 255) > 195; })(parseInt(th.acc.slice(1), 16))));   // only really pale colours (pastel pink) - gold etc. stay as they are
     if (th.pg) rs.setProperty('--pg', th.pg);
     if (th.dark) { rs.setProperty('--pg', '#0A0A0A'); if (th.acc) rs.setProperty('--acc-ink', light(th.acc) ? '#111111' : '#FFFFFF'); darkPage(); } else document.documentElement.classList.remove('dkm');

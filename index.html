@@ -24732,7 +24732,9 @@ function gpPlacesHtml(){
     ${msIsMgr() ? '<div class="gp-auto">Add or rename venues in <button onclick="msTiers()">Change venues</button></div>' : ''}</div></div>`;
 }
 // The heading guests see over a section - their own words (empty = the standard heading)
-const GP_SECT = { get places(){ return ['Explore ' + ((typeof myCompany !== 'undefined' && myCompany && myCompany.name) || 'your venue'), 'e.g. Our locations, Find us']; }, others: ['Our other venues', 'e.g. Also by us, Our sister bars'] };
+const GP_PLACES_MAX = 18;   // the name after Explore: 'Explore ' + 18 = 26, one line on a small phone
+const gpExploreDefault = () => { const n = String((typeof myCompany !== 'undefined' && myCompany && myCompany.name) || '').trim(); return n && n.length <= GP_PLACES_MAX ? 'Explore ' + n : 'Explore'; };
+const GP_SECT = { get places(){ return [gpExploreDefault(), 'e.g. Masonry']; }, others: ['Our other venues', 'e.g. Also by us, Our sister bars'] };
 function gpSecTitleRow(k){
   const cur = k === 'places' ? (GPE.c.placesTitle || '') : ((GPE.c.others || {}).title || '');
   return `<div class="gp-it"><div class="x"><b>Heading guests see</b><small>${cur ? gpEsc(cur) : 'Standard: ' + GP_SECT[k][0]}</small></div>
@@ -24740,6 +24742,17 @@ function gpSecTitleRow(k){
 }
 window.gpSecTitle = function(k){
   const cur = k === 'places' ? (GPE.c.placesTitle || '') : ((GPE.c.others || {}).title || '');
+  if(k === 'places'){   // Explore is fixed; they type only the name after it (pre-filled with theirs when it fits)
+    const name = String(cur || gpExploreDefault()).replace(/^Explore\s*/i, '');
+    appModalShow({ title: 'Heading guests see', sub: 'Up to ' + GP_PLACES_MAX + ' letters so it fits on one line. Name too long? Shorten it, or leave it empty to just show Explore.',
+      fields: [ { label: 'Heading', prefix: 'Explore', placeholder: GP_SECT.places[1], value: gpEsc(name), optional: true, maxlength: GP_PLACES_MAX } ],
+      async onOk([t]){
+        t = String(t || '').replace(/\s+/g, ' ').trim().slice(0, GP_PLACES_MAX);
+        GPE.c.placesTitle = t ? 'Explore ' + t : 'Explore';
+        gpRender(); await gpSave('Heading saved');
+      } });
+    return;
+  }
   appModalShow({ title: 'Heading guests see', sub: 'Leave it empty to show "' + GP_SECT[k][0] + '".',
     fields: [ { label: 'Heading', placeholder: GP_SECT[k][1], value: cur, optional: true } ],
     async onOk([t]){
@@ -30620,9 +30633,9 @@ function appModalShow({title, sub='', fields, onOk}){
       ${f.center ? `<input id="appModalField_${i}" class="pin-input" type="text" inputmode="numeric" pattern="[0-9]*" autocomplete="off" data-lpignore="true" data-1p-ignore name="mavis-pin-${i}" maxlength="${f.maxlength||4}" oninput="this.value=this.value.replace(/\\D/g,'')" value="${f.value||''}" placeholder="••••"
         style="display:block;width:100%;max-width:200px;margin:0 auto;padding:12px 14px;border:1.5px solid #E2E8F0;border-radius:12px;background:#F8FAFC;font-family:'Inter',sans-serif;font-size:24px;font-weight:700;color:#0F1E2E;outline:none;box-sizing:border-box;text-align:center;letter-spacing:10px;text-indent:10px"
         onfocus="this.style.borderColor='#0D9488';this.style.background='white'" onblur="this.style.borderColor='#E2E8F0';this.style.background='#F8FAFC'">`
-      : `<input id="appModalField_${i}" type="text" value="${f.value||''}" placeholder="${f.placeholder||''}" ${f.maxlength?`maxlength="${f.maxlength}"`:''}
-        style="width:100%;padding:11px 14px;border:1.5px solid #E2E8F0;border-radius:9px;font-family:'Inter',sans-serif;font-size:16px;color:#0F1E2E;outline:none;box-sizing:border-box"
-        onfocus="this.style.borderColor='#0D9488'" onblur="this.style.borderColor='#E2E8F0'">`}
+      : `${f.prefix ? `<div style="display:flex;align-items:center;gap:10px"><b style="flex:none;font-size:16px;font-weight:800;color:#0F1E2E">${f.prefix}</b>` : ''}<input id="appModalField_${i}" type="text" value="${f.value||''}" placeholder="${f.placeholder||''}" ${f.maxlength?`maxlength="${f.maxlength}"`:''}
+        style="width:100%;min-width:0;padding:11px 14px;border:1.5px solid #E2E8F0;border-radius:9px;font-family:'Inter',sans-serif;font-size:16px;color:#0F1E2E;outline:none;box-sizing:border-box"
+        onfocus="this.style.borderColor='#0D9488'" onblur="this.style.borderColor='#E2E8F0'">${f.prefix ? '</div>' : ''}`}
     </div>`;
   }).join('');
   const modal = document.getElementById('appModal');

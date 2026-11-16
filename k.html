@@ -1522,12 +1522,12 @@ body.vqopen .vq-dim{opacity:1;pointer-events:auto}body.vqopen .vq-sheet{transfor
         if (dr) dr.onclick = function(e){ e.preventDefault(); open('Directions', '<div class="rws">' + rowsHtml((d.venues || []).filter(function(v){ return v.map; }).map(function(v){ return { label: v.name, icon: I.pin, href: v.map }; })) + '</div>'); };
       };
       // Computers: left / right arrows on every sideways row (photos, events, gallery, this week)
-      if (window.matchMedia && matchMedia('(hover:hover) and (pointer:fine)').matches) Array.prototype.forEach.call(document.querySelectorAll('.sl,.evs,.gal,.days'), function(row){
-        if (row.scrollWidth <= row.clientWidth + 4) return;
+      // any computer with a mouse or trackpad (also touch-screen laptops); arrows hide themselves when there's nothing more to see
+      if (window.matchMedia && matchMedia('(any-hover:hover), (any-pointer:fine)').matches) Array.prototype.forEach.call(document.querySelectorAll('.sl,.evs,.gal,.days'), function(row){
         var box = document.createElement('div'); box.className = 'arw'; row.parentNode.insertBefore(box, row); box.appendChild(row);
         var mk = function(dir){ var b = document.createElement('button'); b.className = 'ar ' + (dir < 0 ? 'l' : 'r'); b.setAttribute('aria-label', dir < 0 ? 'Back' : 'More'); b.innerHTML = svg(dir < 0 ? '<path d="m15 18-6-6 6-6"/>' : '<path d="m9 18 6-6-6-6"/>', 20); b.onclick = function(){ row.scrollBy({ left: dir * row.clientWidth * 0.8, behavior: 'smooth' }); }; box.appendChild(b); return b; };
         var l = mk(-1), r = mk(1), upd = function(){ l.style.display = row.scrollLeft > 4 ? '' : 'none'; r.style.display = row.scrollLeft + row.clientWidth < row.scrollWidth - 4 ? '' : 'none'; };
-        row.addEventListener('scroll', upd, { passive: true }); upd();
+        row.addEventListener('scroll', upd, { passive: true }); window.addEventListener('resize', upd); upd(); setTimeout(upd, 600); setTimeout(upd, 2000);   // again once photos have loaded
       });
       var sl = document.getElementById('sl'), dots = document.getElementById('dots');
       if (sl && dots) {

@@ -729,7 +729,7 @@ P.sunset = {
   content: today => {
     const y = year(today);
     return {
-      theme: { top: '#0B1129', acc: '#CDA86B', dark: true, dkbg: '#0B1129' }, motion: true, video: '/demo-guest/p-sunset-film.mp4', videoTall: true,
+      theme: { top: '#0B1129', acc: '#CDA86B', dark: true, dkbg: '#0B1129' }, motion: true, oneHome: true, video: '/demo-guest/p-sunset-film.mp4', videoTall: true,
       gift: { on: true, title: 'A sunset, on you', line: 'Give someone a day on Seminyak beach. Tell us the amount and who it is for.', to: SB_WA, amounts: [500000, 1000000, 2000000], max: 5000000 },
       slides: [
         { id: 'sb1', img: sb('hut'), title: 'Your spot on Seminyak beach', line: 'Good music, open skies, great food', venue: 'Sunset Beach', btn: 'wa' },

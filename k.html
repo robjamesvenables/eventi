@@ -1002,6 +1002,8 @@ body.vqopen .vq-dim{opacity:1;pointer-events:auto}body.vqopen .vq-sheet{transfor
     };
     // ── Screens ──
     var homeHtml = function(){
+      var own = places.filter(function(p){ return !p.other; });
+      if (gp.oneHome && own.length === 1 && !own[0].soon) return oneHomeHtml(own[0]);   // the venue chose: no "Our places" tile, the home page is the place
     var h = '<div class="w">' + topAndCard(gp.motion ? slidesHtml(gp.slides || [], true) : '');
       h += '<div class="sec"><div class="lab">' + esc(gp.placesTitle || 'Our places') + '</div><div class="pgrid">' + places.filter(function(p){ return !p.other; }).map(function(p){
         var v = venueOf(lc(p.name)), st = v ? (v.open === true ? 'Open now' : v.open === false ? v.label : '') : '';
@@ -1049,6 +1051,17 @@ body.vqopen .vq-dim{opacity:1;pointer-events:auto}body.vqopen .vq-sheet{transfor
       h += body || '<div class="sec"><div class="box" style="padding:18px;text-align:center;color:#64748B;font-size:14px;font-weight:600">Nothing special on here right now - come and see us!</div></div>';
       if (v.map) h += findUs([v]);   // each place's own Find us, just above its Instagram
       h += igHtml([p]);   // reviews are asked on the main page only - never twice
+      return h + foot + '</div>';
+    };
+    // One place of their own (+ other venues): the home page is that place - its menus, sections and map - then the other venues below
+    var oneHomeHtml = function(p){
+      var key = lc(p.name), v = venueOf(key) || {};
+      var h = '<div class="w">' + topAndCard(gp.motion ? slidesHtml(gp.slides || [], true) : '');
+      if (p.menus && p.menus.length) h += '<div class="single-menu">' + menuHtml(p) + '</div>';
+      h += placeSections(key);
+      if (v.name) h += findUs([v]);
+      h += hotelsRow + extrasHtml();
+      h += reviewLine(d.venues) + igHtml([p]) + clubRow;
       return h + foot + '</div>';
     };
     var singleHtml = function(){

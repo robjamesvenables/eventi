@@ -646,7 +646,7 @@ P.kudeta = {
         .map((img, i) => ({ id: 'kdg' + i, img, venue: /saltlick/.test(img) ? 'Saltlick' : 'Ku De Ta' })),
       places: {
         'ku de ta': { img: kd('cheers'), area: 'Seminyak beach', ig: 'kudetabali', menus: [{ name: 'Food & drinks', url: 'https://kudeta.com/menu/' }] },   // their menu page (PDFs can't be captured - they scroll in a viewer)
-        'saltlick': { img: sl('terrace'), area: 'Steakhouse · upstairs', ig: 'saltlickbali', other: true, acc: '#D6D1C8', menus: [{ name: 'Food & drinks', url: 'https://saltlickbali.com/wp-content/uploads/2026/09/SL-FULL-MENU-14ASEPT.pdf' }] }
+        'saltlick': { logo: '/demo-guest/p-saltlick-logo.jpg', img: sl('terrace'), area: 'Steakhouse · upstairs', ig: 'saltlickbali', other: true, acc: '#D6D1C8', menus: [{ name: 'Food & drinks', url: 'https://saltlickbali.com/wp-content/uploads/2026/09/SL-FULL-MENU-14ASEPT.pdf' }] }
       }
     };
   }
@@ -821,7 +821,7 @@ P.ulu = {
       gallery: ['aerial', 'pool', 'lounge', 'deck', 'waves', 'table', 'restaurant', 'bar', 'brunch', 'breakfast', 'sandwich', 'dinner', 'yoga', 'dj', 'disco', 'fireworks'].map((n, i) => ({ id: 'ulg' + i, img: ul(n), venue: 'Ulu Cliffhouse' }))
         .concat(['fire', 'steak', 'fish', 'dining', 'terrace', 'fire2', 'plating', 'wine', 'chef'].map((n, i) => ({ id: 'ubg' + i, img: bu(n), venue: 'burnt' }))),
       places: { 'ulu cliffhouse': { img: ul('aerial'), area: 'Clifftop · Uluwatu', ig: 'ulucliffhouse', menus: [{ name: 'Poolside', pages: ['pool-1', 'pool-2'].map(UL_MENU) }, { name: 'Drinks', pages: ['drinks-1', 'drinks-2'].map(UL_MENU) }] },
-        'burnt': { img: bu('fire2'), area: 'Live-fire dining · sunset terrace', ig: 'ulucliffhouse', other: true, acc: '#C8642A', menus: [{ name: 'Dinner', pages: ['aftersun-1', 'aftersun-2', 'after'].map(UL_MENU) }, { name: 'Drinks', pages: ['drinks-1', 'drinks-2'].map(UL_MENU) }] } }
+        'burnt': { logo: '/demo-guest/p-burnt-logo.jpg', img: bu('fire2'), area: 'Live-fire dining · sunset terrace', ig: 'ulucliffhouse', other: true, acc: '#C8642A', menus: [{ name: 'Dinner', pages: ['aftersun-1', 'aftersun-2', 'after'].map(UL_MENU) }, { name: 'Drinks', pages: ['drinks-1', 'drinks-2'].map(UL_MENU) }] } }
     };
   }
 };

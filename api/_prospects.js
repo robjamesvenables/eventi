@@ -789,7 +789,7 @@ P.ulu = {
   content: today => {
     const y = year(today);
     return {
-      theme: { top: '#1E1B18', acc: '#E8C547', dark: true }, motion: true, video: '/demo-guest/p-ulu-film.mp4', videoTall: true,
+      theme: { top: '#1E1B18', acc: '#E8C547', dark: true }, motion: true, video: '/demo-guest/p-ulu-film-v2.mp4', videoTall: true,
       slides: [
         { id: 'ul1', img: ul('pool'), title: 'Your daybed on the cliff', line: 'Pool, palms and the Indian Ocean', venue: 'Ulu Cliffhouse', btn: 'book', url: UL_BOOK },
         { id: 'ul2', img: ul('lounge'), title: 'Golden hour, front row', line: 'Sunset lounge over the waves', venue: 'Ulu Cliffhouse', btn: 'book', url: UL_BOOK },

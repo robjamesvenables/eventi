@@ -346,6 +346,7 @@ const MS_WA = '6285792505028';
 const ms = n => '/demo-guest/p-masonry-' + n + '.jpg';
 const MS_MENU = n => ({ img: '/demo-guest/p-masonry-menu-canggu-' + n + '.jpg' });   // Masonry Canggu menus from masonrybali.com (Robbie's screen capture)
 const MS_MENU_U = n => ({ img: '/demo-guest/p-masonry-menu-uluwatu-' + n + '.jpg' });
+const BV_MENU = n => ({ img: '/demo-guest/p-barvera-menu-' + n + '.jpg' });
 P.masonry = {
   brand: 'Masonry', logo: '/demo-guest/p-masonry-logo.png', icon: '/demo-guest/p-masonry-icon', first: 'Ben', tier: 'member', visits: 9, since: 2024, favourite: 'Masonry Canggu',
   perks: ['10% off your bill at every Masonry', 'A Masonry Old Fashioned on arrival', 'House charcuterie for the table, on us', 'Birthday dessert from the wood oven', 'Priority bookings at all three venues'],
@@ -407,7 +408,7 @@ P.masonry = {
         'masonry canggu': { img: ms('room'), area: 'Batu Bolong, Canggu', menus: [{ name: 'Lunch', pages: ['lunch', 'dessert'].map(MS_MENU) }, { name: 'Dinner', pages: ['dinner', 'dessert'].map(MS_MENU) }, { name: 'Drinks', pages: ['drinks'].map(MS_MENU) }] },
         'masonry uluwatu': { img: ms('u-cabbage'), area: 'Uluwatu', menus: [{ name: 'Lunch', pages: ['lunch', 'dessert'].map(MS_MENU_U) }, { name: 'Dinner', pages: ['dinner', 'dessert'].map(MS_MENU_U) }, { name: 'Drinks', pages: ['drinks'].map(MS_MENU_U) }] },
         'masonry japan': { img: ms('japan-wide'), area: 'Niseko, Japan', soon: true },
-        'bar vera': { img: ms('v-front'), area: 'Pererenan', ig: 'bar.vera.bali', other: true, menus: [{ name: 'Food', url: 'https://barverabali.com/wp-content/uploads/2026/08/BV_MENU-FOR-WEBSITE-food-1.pdf' }, { name: 'Lunch', url: 'https://barverabali.com/wp-content/uploads/2026/08/BV_LUNCH-MENU_merged.pdf' }, { name: 'Drinks', url: 'https://barverabali.com/wp-content/uploads/2026/08/BV_MENU-FOR-WEBSITE-drink-1.pdf' }] }   // links to their PDFs until we have the files as pictures
+        'bar vera': { img: ms('v-front'), area: 'Pererenan', ig: 'bar.vera.bali', other: true, menus: [{ name: 'Lunch', pages: ['lunch-1', 'lunch-2'].map(BV_MENU) }, { name: 'Dinner', pages: ['food-1'].map(BV_MENU) }, { name: 'Drinks', pages: ['drinks-1', 'drinks-2'].map(BV_MENU) }, { name: 'Brunch', pages: ['lunch-3', 'lunch-4'].map(BV_MENU) }] }   // from Bar Vera's PDFs (Robbie sent the files)
       }
     };
   }

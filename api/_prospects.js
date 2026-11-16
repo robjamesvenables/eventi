@@ -59,7 +59,7 @@ const P = {
           'shelter pererenan': { img: sh('room'), area: 'Pererenan', ig: 'shelter.pererenan', menus: [
             { name: 'Lunch', pages: [{ img: '/demo-guest/p-shelter-menu-lunch-1.jpg' }, { img: '/demo-guest/p-shelter-menu-lunch-mains.jpg' }, { img: '/demo-guest/p-shelter-menu-lunch-2.jpg' }] }, { name: 'Dinner', pages: [{ img: '/demo-guest/p-shelter-menu-dinner-1.jpg' }, { img: '/demo-guest/p-shelter-menu-dinner-2.jpg' }, { img: '/demo-guest/p-shelter-menu-dinner-dessert.jpg' }] }, { name: 'Drinks', url: 'https://www.shelterbali.com/drink-menu' }] },
           'shelter uluwatu': { img: sh('coals'), area: 'Uluwatu', soon: true },
-          'nalu gelato': { img: '/demo-guest/p-nalu-front.jpg', area: 'Gelato · Canggu', ig: 'nalu_gelato', other: true }
+          'nalu gelato': { img: '/demo-guest/p-nalu-front.jpg', area: 'Gelato · Canggu', ig: 'nalu_gelato', other: true, menus: [{ name: 'Gelato & coffee', pages: [{ img: '/demo-guest/p-nalu-menu.jpg' }] }] }   // menu retyped from the board in the shop
         }
       };
     }

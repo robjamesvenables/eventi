@@ -771,9 +771,52 @@ P.sunset = {
 // Every demo place gets a map: a Google Maps search for its name and area, unless we set a real link (Senja is made up: its maps point at the area)
 Object.entries(P).forEach(([k, v]) => k !== 'senja' && (v.venues || []).forEach(x => { if (!x.map) x.map = 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(x.name + ', ' + (x.area || '') + ', Bali'); }));
 
-const CODES = { S2NSET: 'sunset', S3NJAB: 'senja', K8SNGA: 'sangsaka', B6PADL: 'bpa', S8HLTR: 'shelter', T7RNSB: 'trans', '5NKGZJ': 'trans', S4DK7R: 'sundari', M3SNRY: 'masonry', L5UMAB: 'luma', B7RNCH: 'brunch', L7LASQ: 'lolas', K2DETA: 'kudeta', S9LTLK: 'kudeta' };   // L5UMAB = Luma keyring: its own Luma demo (different owners from Sangsaka)   // 5NKGZJ = the printed sample card, shown as Trans for the GM demo
+// Ulu Cliffhouse (Uluwatu clifftop beach club) - photos from Robbie's Drive; hours, phone and the Off The Record Saturday party from Time Out / Megatix.
+// Logo is a stand-in; no WhatsApp or menus yet (booking goes to their website); member deals made up.
+const ul = n => '/demo-guest/p-ulu-' + n + '.jpg';
+const UL_BOOK = 'https://www.ulucliffhouse.com';
+P.ulu = {
+  brand: 'Ulu Cliffhouse', logo: '/demo-guest/p-ulu-logo.png', icon: '/demo-guest/p-ulu-icon', first: 'Josh', tier: 'member', visits: 6, since: 2025, favourite: 'Ulu Cliffhouse',
+  perks: ['10% off your bill, every visit', 'A free cocktail on your birthday', 'Priority daybeds on weekends', 'First word on our big nights'],
+  perkIcons: ['pct', 'cake', 'star', 'sparkle'],
+  reward: { target: 10, text: 'A clifftop daybed with a bottle of bubbles' },
+  venues: [{ name: 'Ulu Cliffhouse', area: 'Clifftop · Pecatu, Uluwatu', opens: '08:00', closes: '22:00', book: UL_BOOK, phone: '+62 813 3881 2502', map: 'https://www.google.com/maps/search/?api=1&query=Ulu+Cliffhouse+Bali' }],
+  contact: { phone: '+62 813 3881 2502' },
+  acts: [
+    { title: 'Off The Record', line: 'Saturday pool party · DJs from 1pm to sunset', every: [6], start: '13:00', end: '19:00', venue: 'Ulu Cliffhouse', ic: 'party' },
+    { title: 'Sunrise yoga on the cliff', line: 'Over the ocean', every: [2, 4], start: '08:00', end: '09:00', venue: 'Ulu Cliffhouse', ic: 'star' }
+  ],
+  content: today => {
+    const y = year(today);
+    return {
+      theme: { top: '#1E1B18', acc: '#E8C547', dark: true }, motion: true,
+      slides: [
+        { id: 'ul1', img: ul('pool'), title: 'Your daybed on the cliff', line: 'Pool, palms and the Indian Ocean', venue: 'Ulu Cliffhouse', btn: 'book', url: UL_BOOK },
+        { id: 'ul2', img: ul('lounge'), title: 'Golden hour, front row', line: 'Sunset lounge over the waves', venue: 'Ulu Cliffhouse', btn: 'book', url: UL_BOOK },
+        { id: 'ul3', img: ul('deck'), title: 'Down the steps to the sea deck', line: 'Our bar above the reef', venue: 'Ulu Cliffhouse' },
+        { id: 'ul4', img: ul('brunch'), title: 'Breakfast from 8am', line: 'Coffee, eggs and ocean views', venue: 'Ulu Cliffhouse', btn: 'book', url: UL_BOOK },
+        { id: 'ul5', img: ul('dinner'), title: 'Dinner under the lanterns', line: 'Wood-fired plates and bubbles', venue: 'Ulu Cliffhouse', btn: 'book', url: UL_BOOK }
+      ],
+      deals: [
+        { id: 'uld1', img: ul('pool'), title: 'Off The Record daybeds · from Rp 1.5m min. spend', when: 'Saturdays · 1–7pm', venue: 'Ulu Cliffhouse' },
+        { id: 'uld2', img: ul('table'), title: 'Members: golden hour cocktails 2 for 1', when: 'Daily · 5–7pm', venue: 'Ulu Cliffhouse' },
+        { id: 'uld3', img: ul('breakfast'), title: 'Members: a free coffee with any breakfast', when: 'Weekdays · 8–11am', venue: 'Ulu Cliffhouse' }
+      ],
+      events: [
+        { id: 'ule1', img: ul('dj'), title: 'Off The Record', line: 'Pool party from the afternoon until sunset', date: nextDow(today, 6), time: '13:00', time2: '19:00', venue: 'Ulu Cliffhouse', btn: 'book', url: 'https://megatix.asia/events/off-the-record', hl: true,
+          details: 'Ulu\'s Saturday pool party series: DJs poolside from 1pm until sunset. Daybeds from Rp 1.5m minimum spend, Hex Bar daybeds Rp 2.5m, cabanas Rp 4m.', notes: 'Members get first pick of daybeds.' },
+        { id: 'ule2', img: ul('disco'), title: 'Sundays at Ulu', line: 'Play all day, dance after dark', date: nextDow(today, 0), time: '12:00', time2: '00:00', venue: 'Ulu Cliffhouse', btn: 'book', url: UL_BOOK },
+        { id: 'ule3', img: ul('fireworks'), title: "New Year's Eve on the cliff", line: 'Fireworks over the ocean', date: y + '-12-31', time: '18:00', time2: '02:00', venue: 'Ulu Cliffhouse', btn: 'book', url: UL_BOOK }
+      ],
+      gallery: ['aerial', 'pool', 'lounge', 'deck', 'waves', 'table', 'restaurant', 'bar', 'brunch', 'breakfast', 'sandwich', 'dinner', 'yoga', 'dj', 'disco', 'fireworks'].map((n, i) => ({ id: 'ulg' + i, img: ul(n), venue: 'Ulu Cliffhouse' })),
+      places: { 'ulu cliffhouse': { img: ul('aerial'), area: 'Clifftop · Uluwatu', ig: 'ulucliffhouse' } }
+    };
+  }
+};
+
+const CODES = { U4LUCH: 'ulu', S2NSET: 'sunset', S3NJAB: 'senja', K8SNGA: 'sangsaka', B6PADL: 'bpa', S8HLTR: 'shelter', T7RNSB: 'trans', '5NKGZJ': 'trans', S4DK7R: 'sundari', M3SNRY: 'masonry', L5UMAB: 'luma', B7RNCH: 'brunch', L7LASQ: 'lolas', K2DETA: 'kudeta', S9LTLK: 'kudeta' };   // L5UMAB = Luma keyring: its own Luma demo (different owners from Sangsaka)   // 5NKGZJ = the printed sample card, shown as Trans for the GM demo
 // Mavis Club network: each of the guest's other venues as a logo tile (their colour, logo, how long they've been a member there)
-const KEY_CODE = { sunset: 'S2NSET', senja: 'S3NJAB', sangsaka: 'K8SNGA', bpa: 'B6PADL', shelter: 'S8HLTR', trans: 'T7RNSB', sundari: 'S4DK7R', masonry: 'M3SNRY', luma: 'L5UMAB', brunch: 'B7RNCH', lolas: 'L7LASQ', kudeta: 'K2DETA' };
+const KEY_CODE = { ulu: 'U4LUCH', sunset: 'S2NSET', senja: 'S3NJAB', sangsaka: 'K8SNGA', bpa: 'B6PADL', shelter: 'S8HLTR', trans: 'T7RNSB', sundari: 'S4DK7R', masonry: 'M3SNRY', luma: 'L5UMAB', brunch: 'B7RNCH', lolas: 'L7LASQ', kudeta: 'K2DETA' };
 const club = (list, who) => list.map(c => { const v = P[c.key]; if (!v) return null; const t = (v.content('2026-01-01').theme) || {};
   return { name: v.brand, logo: v.logo, top: t.top || '#0F1E2E', area: (v.venues[0] || {}).area || '', since: c.since || '', visits: c.visits || 0,
     href: '/k/' + KEY_CODE[c.key] + '?n=' + encodeURIComponent(String(who || '').split(' ')[0]) }; }).filter(Boolean);

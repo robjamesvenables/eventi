@@ -344,6 +344,8 @@ P.sangsaka = {
 const MS_BOOK = 'https://www.sevenrooms.com/explore/masonryrestaurantcanggu/reservations/create/search/';
 const MS_WA = '6285792505028';
 const ms = n => '/demo-guest/p-masonry-' + n + '.jpg';
+const MS_MENU = n => ({ img: '/demo-guest/p-masonry-menu-canggu-' + n + '.jpg' });   // Masonry Canggu menus from masonrybali.com (Robbie's screen capture)
+const MS_MENU_U = n => ({ img: '/demo-guest/p-masonry-menu-uluwatu-' + n + '.jpg' });
 P.masonry = {
   brand: 'Masonry', logo: '/demo-guest/p-masonry-logo.png', icon: '/demo-guest/p-masonry-icon', first: 'Ben', tier: 'member', visits: 9, since: 2024, favourite: 'Masonry Canggu',
   perks: ['10% off your bill at every Masonry', 'A Masonry Old Fashioned on arrival', 'House charcuterie for the table, on us', 'Birthday dessert from the wood oven', 'Priority bookings at all three venues'],
@@ -402,8 +404,8 @@ P.masonry = {
         .map((n, i) => ({ id: 'mg' + i, img: ms(n), venue: n.startsWith('u-') ? 'Masonry Uluwatu' : 'Masonry Canggu' }))
         .concat(['v-room', 'v-bouillabaisse', 'v-martini', 'v-grouper', 'v-croquettes', 'v-aperitivo', 'v-risotto', 'v-cigars', 'v-tartare', 'v-cognac', 'v-toast', 'v-redcocktail'].map((n, i) => ({ id: 'mvg' + i, img: ms(n), venue: 'Bar Vera' }))),
       places: {
-        'masonry canggu': { img: ms('room'), area: 'Batu Bolong, Canggu' },
-        'masonry uluwatu': { img: ms('u-cabbage'), area: 'Uluwatu' },
+        'masonry canggu': { img: ms('room'), area: 'Batu Bolong, Canggu', menus: [{ name: 'Lunch', pages: ['lunch', 'dessert'].map(MS_MENU) }, { name: 'Dinner', pages: ['dinner', 'dessert'].map(MS_MENU) }, { name: 'Drinks', pages: ['drinks'].map(MS_MENU) }] },
+        'masonry uluwatu': { img: ms('u-cabbage'), area: 'Uluwatu', menus: [{ name: 'Lunch', pages: ['lunch', 'dessert'].map(MS_MENU_U) }, { name: 'Dinner', pages: ['dinner', 'dessert'].map(MS_MENU_U) }, { name: 'Drinks', pages: ['drinks'].map(MS_MENU_U) }] },
         'masonry japan': { img: ms('japan-wide'), area: 'Niseko, Japan', soon: true },
         'bar vera': { img: ms('v-front'), area: 'Pererenan', ig: 'bar.vera.bali', other: true }
       }

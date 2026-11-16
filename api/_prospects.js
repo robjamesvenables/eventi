@@ -748,8 +748,8 @@ P.sunset = {
       ],
       gallery: ['hut', 'sunsetgirls', 'tables', 'spritz', 'palms', 'cocktails2', 'prawns', 'arches', 'band', 'bartender', 'mule', 'umbrella', 'dj', 'beanbags', 'friends2', 'grill', 'waiter', 'aerial', 'signsil', 'dusk', 'happyhour'].map((n, i) => ({ id: 'sbg' + i, img: sb(n), venue: 'Sunset Beach' })),
       places: { 'sunset beach': { img: sb('palms'), area: 'Seminyak beach', ig: 'sunsetbeachbali', menus: [
-        { name: 'Food', pages: SB_MENU('bc-food', 4) }, { name: 'Drinks', pages: SB_MENU('bc-drinks', 10) },
-        { name: 'The Grill', pages: SB_MENU('grill-food', 4).concat(SB_MENU('grill-drinks', 6)) }, { name: 'Lunch deals', pages: SB_MENU('lunch', 2) }] } }
+        { name: 'Food', pages: SB_MENU('bc-food', 4) }, { name: 'Drinks', pages: SB_MENU('grill-drinks', 6) },   // the Beach Club drinks capture was too small to read; the Grill drinks list is sharper and covers the same
+        { name: 'The Grill', pages: SB_MENU('grill-food', 4) }, { name: 'Lunch deals', pages: SB_MENU('lunch', 2) }] } }
     };
   }
 };

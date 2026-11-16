@@ -191,7 +191,7 @@ function build(c, ctx){
   }
   const placesTitle = str(c.placesTitle, 40).trim();
   const oh = c.others && typeof c.others === 'object' ? c.others : {}, othersTitle = str(oh.title, 40).trim(), othersBold = oh.bold === true;   // heading and stand-out box for Our other venues   // their own heading over Our places (empty = standard)
-  return { order, slides, deals, events, gallery, places, placesTitle, othersTitle, othersBold, theme, gift, others, motion: c.motion === true, oneHome: c.oneHome === true, film, filmStart, filmTall: !!film && filmTall && !(tp.kind === 'yt'), video, videoPoster, videoTall };
+  return { order, slides, deals, events, gallery, places, placesTitle, othersTitle, othersBold, theme, gift, others, motion: c.motion === true, oneHome: c.oneHome !== false, film, filmStart, filmTall: !!film && filmTall && !(tp.kind === 'yt'), video, videoPoster, videoTall };
 }
 
 // The name under the app icon on a guest's phone: phones cut it after about 12 letters ("The Trans Resort Bali" -> "Trans Resort")

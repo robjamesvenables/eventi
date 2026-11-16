@@ -523,7 +523,7 @@ P.brunch = {
   }
 };
 
-const LO_WA = '6281573061887';   // Lola's Uluwatu (Time Out); Canggu number not found yet
+const LO_WA = '6281573061887';   // Lola's Uluwatu (Time Out); Canggu has its own number below
 const lo = n => '/demo-guest/p-lolas-' + n + '.jpg';
 P.lolas = {
   brand: "Lola's", logo: '/demo-guest/p-lolas-logo.png', icon: '/demo-guest/p-lolas-icon', first: 'Jake', tier: 'member', visits: 6, since: 2025, favourite: "Lola's Canggu",
@@ -531,7 +531,7 @@ P.lolas = {
   perkIcons: ['pct', 'cake', 'food', 'star'],
   reward: { target: 10, text: 'Tacos and margaritas for two' },
   venues: [
-    { name: "Lola's Canggu", area: 'Jl. Subak, Canggu', opens: '08:00', closes: '00:00', wa: LO_WA },
+    { name: "Lola's Canggu", area: 'Jl. Subak, Canggu', opens: '08:00', closes: '00:00', wa: '6287861686721', phone: '+62 878 6168 6721' },   // Canggu number from Google (Robbie)
     { name: "Lola's Uluwatu", area: 'Jl. Labuansait, Uluwatu', opens: '12:00', closes: '00:00', wa: LO_WA, phone: '+62 815 7306 1887' },
     { name: "Lolita's Uluwatu", area: 'Jl. Labuansait, Pecatu, Uluwatu', opens: '12:00', closes: '20:00', wa: LO_WA, email: 'sociallolas@gmail.com' }   // hours + email from lolitasbali.com (no WhatsApp listed - uses Lola's Uluwatu's)
   ],

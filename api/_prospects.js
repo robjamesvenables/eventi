@@ -87,7 +87,7 @@ P.trans = {
   ],
   content: today => {
     const y = year(today);
-    return {
+    return { placesTitle: 'Our places',   // Trans keeps its heading as it was
       others: { on: true, list: [{ id: 'sby', name: 'The Trans Luxury Hotel', city: 'Surabaya', img: '/demo-guest/p-sby-beachclub.jpg', line: '28th Sky Beach Club · 27th Sky Lounge · Rooms',
     places: [{ name: '28th Sky Beach Club', img: '/demo-guest/p-sby-beachclub.jpg', line: 'A Bali beach club, 28 floors up', opens: '12:00', closes: '00:00' },
       { name: '27th Sky Lounge', img: '/demo-guest/p-sby-skylounge.jpg', line: 'Cocktails over the city', opens: '12:00', closes: '00:00' },

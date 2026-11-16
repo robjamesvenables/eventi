@@ -2521,7 +2521,7 @@ body:not(.mv-demo) #ms-demoqr-btn{display:none!important}
 .gp-mnpg{display:flex;flex-wrap:wrap;gap:6px;margin-top:7px}.gp-mnpg span{position:relative;width:44px;height:58px;border-radius:6px;overflow:hidden;background:#E2E8F0;flex:none}.gp-mnpg img{width:100%;height:100%;object-fit:cover;display:block}
 .gp-mnpg button{position:absolute;top:2px;right:2px;width:18px;height:18px;border-radius:50%;border:0;background:rgba(15,30,46,.75);color:white;display:flex;align-items:center;justify-content:center;padding:0;cursor:pointer}
 .gp-mnpg .gp-mnplus{margin:0;width:44px;height:58px;border-radius:6px;border:1.5px dashed #94A3B8;color:#0F766E;display:flex;align-items:center;justify-content:center;font:800 20px Inter,sans-serif;cursor:pointer;flex:none}
-.gp-mnadd{display:flex;gap:8px;flex-wrap:wrap}.gp-mnadd label.gp-add{color:#0F766E;font:800 13.5px Inter,sans-serif}.gp-mnadd .gp-add{flex:1 1 40%;text-align:center;cursor:pointer;margin:0}
+.gp-mnadd{display:flex;gap:8px;flex-wrap:wrap}.gp-mnadd .gp-mnlink{color:#475569}.gp-mnadd label.gp-add{color:#0F766E;font:800 13.5px Inter,sans-serif}.gp-mnadd .gp-add{flex:1 1 40%;text-align:center;cursor:pointer;margin:0}
 @media(max-width:360px){#p-membership > .ph .ms-hbtns > button svg{display:none}}
 .dc-sheet .vdf-foot{flex-wrap:wrap}.dc-sheet .vdf-foot button{flex:1 1 30%;justify-content:center}.dc-sheet #dc-send{display:inline-flex;align-items:center;gap:6px;justify-content:center}
 @media(max-width:520px){.dc-sheet #dc-send{flex:1 1 100%;order:-1}}
@@ -24832,10 +24832,10 @@ window.gpPlaceForm = function(name){
           <div class="gp-mnpg">${m.pages.map((pg, j) => `<span><img src="${gpEsc(pageSrc(pg))}" alt=""><button type="button" data-pi="${i}" data-pj="${j}" aria-label="Remove page ${j + 1}">${gpIc(GPI.x, 11)}</button></span>`).join('')}${n < 12 ? `<label class="gp-mnplus" title="Add pages">+<input type="file" accept="image/jpeg,image/png" multiple hidden data-more="${i}"></label>` : ''}</div></div>
           <button type="button" class="gp-mnx" data-rm="${i}" aria-label="Remove menu">${gpIc(GPI.x, 15)}</button></div>`; }
       return `<div class="gp-mn"><i>${sv(m.path ? MNI : LKI)}</i><div class="x"><input class="gp-mnn" data-i="${i}" maxlength="30" value="${gpEsc(m.name || '')}" placeholder="Name, e.g. Food">
-        <small class="old">${m.path ? (m.type === 'pdf' ? 'PDF' : 'Picture') : 'Link'} · please swap this for pictures</small>${m.path ? '' : `<input class="gp-mnu" data-i="${i}" inputmode="url" autocapitalize="off" value="${gpEsc(m.url || '')}">`}</div>
+        <small class="${m.path ? 'old' : ''}">${m.path ? (m.type === 'pdf' ? 'PDF' : 'Picture') + ' · please swap this for pictures' : 'Link to your website · pictures are recommended (they open inside the app)'}</small>${m.path ? '' : `<input class="gp-mnu" data-i="${i}" inputmode="url" autocapitalize="off" placeholder="Paste the link, e.g. yoursite.com/menu" value="${gpEsc(m.url || '')}">`}</div>
         <button type="button" class="gp-mnx" data-rm="${i}" aria-label="Remove menu">${gpIc(GPI.x, 15)}</button></div>`; }).join('') +
-      (menus.length < 4 ? `<div class="gp-mnadd"><label class="gp-add">+ Add a menu (pictures)<input type="file" accept="image/jpeg,image/png" multiple hidden id="gpp-mf"></label></div>` : '') +
-      `<div class="gp-mntip${mnMsg ? ' warn' : ''}">${mnMsg || '<b>Menus are pictures (JPG or PNG).</b> One picture per page, and pick them all at once. Got a PDF? Open it, take a screenshot of each page, then add the screenshots here.'}</div>`;
+      (menus.length < 4 ? `<div class="gp-mnadd"><label class="gp-add">+ Add a menu (pictures)<input type="file" accept="image/jpeg,image/png" multiple hidden id="gpp-mf"></label><button type="button" class="gp-add gp-mnlink" id="gpp-ml">+ Add a menu link</button></div>` : '') +
+      `<div class="gp-mntip${mnMsg ? ' warn' : ''}">${mnMsg || '<b>We recommend pictures (JPG or PNG)</b> - they open straight inside the app. One picture per page, pick them all at once. Got a PDF? Take a screenshot of each page and add those. If your menu lives on your website, you can add a link instead.'}</div>`;
     box.querySelectorAll('.gp-mnn').forEach(x => x.oninput = () => { menus[+x.dataset.i].name = x.value; });
     box.querySelectorAll('.gp-mnu').forEach(x => x.oninput = () => { menus[+x.dataset.i].url = x.value.trim(); });
     const forget = pg => { if(pg && pg.path){ if(added.includes(pg.path)) gpForgetFile(pg); else dropped.push(pg); } };
@@ -24843,6 +24843,7 @@ window.gpPlaceForm = function(name){
     box.querySelectorAll('[data-pi]').forEach(b => b.onclick = () => { const m = menus[+b.dataset.pi]; forget(m.pages.splice(+b.dataset.pj, 1)[0]); if(!m.pages.length) menus.splice(+b.dataset.pi, 1); drawMenus(); });
     box.querySelectorAll('[data-more]').forEach(x => x.onchange = () => { const f = Array.from(x.files || []); x.value = ''; takePics(f, menus[+x.dataset.more], null); });
     const mf = $('gpp-mf'); if(mf) mf.onchange = () => { const f = Array.from(mf.files || []); mf.value = ''; takePics(f, null, mf.closest('label')); };
+    const ml = $('gpp-ml'); if(ml) ml.onclick = () => { menus.push({ id:'mn' + Date.now(), name: menus.length ? 'Drinks' : 'Food & drinks', url:'', at: new Date().toISOString() }); mnMsg = ''; drawMenus(); const u = box.querySelectorAll('.gp-mnu'); if(u.length) u[u.length - 1].focus(); };
   };
   drawMenus();
   const cancel = () => { added.forEach(p => gpForgetFile({ path:p })); s.remove(); };

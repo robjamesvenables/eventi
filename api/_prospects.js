@@ -710,13 +710,16 @@ P.senja = {
 // Mrs Sippy goes under Our other venues once we have its photos.
 const sb = n => '/demo-guest/p-sunset-' + n + '.jpg';
 const SB_WA = '6281237814448';
+const ms2 = n => '/demo-guest/p-sippy-' + n + '.jpg';
 const SB_MENU = (n, k) => Array.from({ length: k }, (_, i) => ({ img: '/demo-guest/p-sunset-menu-' + n + '-' + (i + 1) + '.jpg' }));   // from sunsetbeachbali.com menu pages
 P.sunset = {
   brand: 'Sunset Beach', logo: '/demo-guest/p-sunset-logo.png', icon: '/demo-guest/p-sunset-icon', first: 'Andrew', tier: 'member', visits: 5, since: 2025, favourite: 'Sunset Beach',
   perks: ['10% off your bill, every visit', 'A free cocktail on your birthday', 'Priority sunbeds on weekends', 'First word on our big nights'],
   perkIcons: ['pct', 'cake', 'star', 'sparkle'],
   reward: { target: 10, text: 'A sunset daybed with a bottle of bubbles' },
-  venues: [{ name: 'Sunset Beach', area: 'Jl. Camplung Tanduk 99, Seminyak', opens: '10:00', closes: '22:00', wa: SB_WA, phone: '+62 812 3781 4448', email: 'hello@sunsetbeachbali.com', map: 'https://maps.google.com/?q=Sunset%20Beach%20Bali%2C%20Jl.%20Camplung%20Tanduk%2099%2C%20Seminyak' }],
+  venues: [{ name: 'Sunset Beach', area: 'Jl. Camplung Tanduk 99, Seminyak', opens: '10:00', closes: '22:00', wa: SB_WA, phone: '+62 812 3781 4448', email: 'hello@sunsetbeachbali.com', map: 'https://maps.google.com/?q=Sunset%20Beach%20Bali%2C%20Jl.%20Camplung%20Tanduk%2099%2C%20Seminyak' },
+    { name: 'Mrs Sippy', area: 'Jl. Taman Ganesha, Kerobokan Kelod, Seminyak', opens: '10:00', closes: '21:00', wa: '6282145001007', phone: '+62 821 4500 1007', email: 'reservations@mrssippybali.com', map: 'https://www.google.com/maps/search/?api=1&query=Mrs+Sippy+Bali' }   // from mrssippybali.com
+  ],
   contact: { wa: SB_WA, phone: '+62 812 3781 4448', email: 'hello@sunsetbeachbali.com' },
   acts: [
     { title: 'Happy hour', line: '2 for 1 Bali Hai, seltzers and slushies', every: [1, 2, 3, 4, 5], start: '12:00', end: '14:00', venue: 'Sunset Beach', ic: 'drinks' },
@@ -732,24 +735,30 @@ P.sunset = {
         { id: 'sb2', img: sb('sunsetgirls'), title: 'Stay for the sunset', line: 'Open every day, 10am to 10pm', venue: 'Sunset Beach', btn: 'wa' },
         { id: 'sb3', img: sb('tables'), title: 'Dinner by the sea', line: 'Fire-driven cooking and mezze to share', venue: 'Sunset Beach', btn: 'wa' },
         { id: 'sb4', img: sb('spritz'), title: 'Cocktails at the bar', line: 'Classic margaritas to sunset spritz', venue: 'Sunset Beach', btn: 'wa' },
-        { id: 'sb5', img: sb('arches'), title: 'Bring the crew', line: 'Groups, birthdays and long lunches', venue: 'Sunset Beach', btn: 'wa' }
+        { id: 'sb5', img: sb('arches'), title: 'Bring the crew', line: 'Groups, birthdays and long lunches', venue: 'Sunset Beach', btn: 'wa' },
+        { id: 'sb6', img: ms2('dive'), title: 'Mrs Sippy · Eat, swim, play', line: "Seminyak's saltwater pool club, with the diving board", venue: 'Mrs Sippy', btn: 'wa' },
+        { id: 'sb7', img: ms2('feast'), title: 'Seafood market at Mrs Sippy', line: 'Prawns, lobster and fish off the grill', venue: 'Mrs Sippy', btn: 'wa' }
       ],
       deals: [
         { id: 'sbd1', img: sb('happyhour'), title: 'Happy hour · 2 for 1', when: 'Mon–Fri · 12–2pm & 7–9pm', venue: 'Sunset Beach' },
         { id: 'sbd2', img: sb('beanbags'), title: 'Members: a free cocktail with any daybed', when: 'Weekdays', venue: 'Sunset Beach', btn: 'wa' },
         { id: 'sbd4', img: sb('tables'), title: 'Weekday lunch · 3 small plates Rp 195k, 2 courses Rp 295k', when: 'Mon–Fri · 12–3pm', venue: 'Sunset Beach', btn: 'wa' },
+        { id: 'sbd5', img: ms2('watermelon'), title: 'Members: pool entry included (save Rp150k)', when: 'Weekdays', venue: 'Mrs Sippy', btn: 'wa' },
         { id: 'sbd3', img: sb('aerial'), title: 'Group bookings · 10+ guests', when: 'Any day · ask us', venue: 'Sunset Beach', btn: 'wa' }
       ],
       events: [
         { id: 'sbe1', img: sb('band'), title: 'Sunday Club', line: 'DJs, sunbeds and sunset', date: nextDow(today, 0), time: '12:00', time2: '22:00', venue: 'Sunset Beach', btn: 'wa', hl: true,
           details: 'Our Sunday session: DJs from lunch, cocktails by the pool and the best sunset in Seminyak.', notes: 'Members skip the queue.' },
+        { id: 'sbe4', img: ms2('stage'), title: 'Saturday pool party', line: 'DJs, drinks and the diving board', date: nextDow(today, 6), time: '13:00', time2: '19:00', venue: 'Mrs Sippy', btn: 'wa' },
         { id: 'sbe2', img: sb('grill'), title: 'Christmas at Sunset Beach', line: 'A festive long lunch by the sea', date: y + '-12-25', time: '12:00', time2: '22:00', venue: 'Sunset Beach', btn: 'wa' },
         { id: 'sbe3', img: sb('dusk'), title: "New Year's Eve", line: 'The biggest night on the beach', date: y + '-12-31', time: '18:00', time2: '02:00', venue: 'Sunset Beach', btn: 'wa' }
       ],
-      gallery: ['hut', 'sunsetgirls', 'tables', 'spritz', 'palms', 'cocktails2', 'prawns', 'arches', 'band', 'bartender', 'mule', 'umbrella', 'dj', 'beanbags', 'friends2', 'grill', 'waiter', 'aerial', 'signsil', 'dusk', 'happyhour'].map((n, i) => ({ id: 'sbg' + i, img: sb(n), venue: 'Sunset Beach' })),
+      gallery: ['hut', 'sunsetgirls', 'tables', 'spritz', 'palms', 'cocktails2', 'prawns', 'arches', 'band', 'bartender', 'mule', 'umbrella', 'dj', 'beanbags', 'friends2', 'grill', 'waiter', 'aerial', 'signsil', 'dusk', 'happyhour'].map((n, i) => ({ id: 'sbg' + i, img: sb(n), venue: 'Sunset Beach' }))
+        .concat(['aerial', 'dive', 'pool', 'frozen', 'coconut', 'seafood', 'prawns', 'feast', 'pizza', 'bartender', 'watermelon', 'friends', 'stage'].map((n, i) => ({ id: 'msg' + i, img: ms2(n), venue: 'Mrs Sippy' }))),
       places: { 'sunset beach': { img: sb('palms'), area: 'Seminyak beach', ig: 'sunsetbeachbali', menus: [
         { name: 'Food', pages: SB_MENU('bc-food', 4) }, { name: 'Drinks', pages: SB_MENU('grill-drinks', 6) },   // the Beach Club drinks capture was too small to read; the Grill drinks list is sharper and covers the same
-        { name: 'The Grill', pages: SB_MENU('grill-food', 4) }, { name: 'Lunch deals', pages: SB_MENU('lunch', 2) }] } }
+        { name: 'The Grill', pages: SB_MENU('grill-food', 4) }, { name: 'Lunch deals', pages: SB_MENU('lunch', 2) }] },
+        'mrs sippy': { img: ms2('aerial'), area: 'Pool club · Seminyak', ig: 'mrssippybali', other: true, acc: '#3FB6BD' } }
     };
   }
 };

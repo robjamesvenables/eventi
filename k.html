@@ -1031,7 +1031,9 @@ body.vqopen .vq-dim{opacity:1;pointer-events:auto}body.vqopen .vq-sheet{transfor
       var p = placeOf(key) || { name: key }, v = venueOf(key) || {};
       var st = v.open === true ? '<span class="open">Open now</span> · ' + esc(v.label) : v.open === false ? esc(v.label) : '';
       if (st && v.hrs) st += '<br><span class="hrs">' + esc(v.hrs) + '</span>';
-      var h = '<div class="w"><div class="vtop">' + (p.img ? '<img src="' + esc(p.img) + '" alt="">' : '') + '<div class="vin"><button class="back" data-home aria-label="All places">' + svg('<path d="m15 18-6-6 6-6"/>', 18) + 'All places</button>' +
+      var pacc = /^#[0-9a-f]{6}$/i.test(p.acc || '') ? p.acc : '', pn = pacc ? parseInt(pacc.slice(1), 16) : 0;   // an other venue in its own brand colour
+      var pst = pacc ? ' style="--acc:' + pacc + ';--acc-ink:' + ((0.299 * (pn >> 16) + 0.587 * ((pn >> 8) & 255) + 0.114 * (pn & 255)) > 165 ? '#111111' : '#FFFFFF') + '"' : '';
+      var h = '<div class="w"' + pst + '><div class="vtop">' + (p.img ? '<img src="' + esc(p.img) + '" alt="">' : '') + '<div class="vin"><button class="back" data-home aria-label="All places">' + svg('<path d="m15 18-6-6 6-6"/>', 18) + 'All places</button>' +
         '<div class="vname"><b translate="no">' + esc(p.name) + '</b>' + (st ? '<small>' + st + '</small>' : '') + '</div></div></div>';
       h += menuHtml(p);
       var sl = (gp.slides || []).filter(function(x){ return gp.motion ? lc(x.venue || '') === key : at(x, key); });
@@ -1129,6 +1131,8 @@ body.vqopen .vq-dim{opacity:1;pointer-events:auto}body.vqopen .vq-sheet{transfor
     var show = function(key, push){
       GAL = {}; galN = 0; bigRv = false; curKey = key || '';
       root.innerHTML = (!many ? singleHtml() : key ? placeHtml(key) : homeHtml()) + bookBar(many ? key : '') + sheet + '<div class="lb" id="lb"></div>';
+      var pk = many && key ? (placeOf(key) || {}) : {}, pa = /^#[0-9a-f]{6}$/i.test(pk.acc || '') ? pk.acc : '', pq = pa ? parseInt(pa.slice(1), 16) : 0;   // an other venue's own colour also on its Book / Contact bar
+      if (pa) { root.style.setProperty('--acc', pa); root.style.setProperty('--acc-ink', (0.299 * (pq >> 16) + 0.587 * ((pq >> 8) & 255) + 0.114 * (pq & 255)) > 165 ? '#111111' : '#FFFFFF'); } else { root.style.removeProperty('--acc'); root.style.removeProperty('--acc-ink'); }
       document.body.classList.toggle('inplace', !!key);
       if (push) { try { history.pushState({ place: key }, '', location.pathname + location.search); } catch (e) {} window.scrollTo(0, 0); }
       wire(key);

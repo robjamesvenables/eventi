@@ -263,7 +263,10 @@ P.sundari = {
         { id: 'us4', venue: 'Sundari Wellness', img: su('pods'), title: 'Start with your feet', line: 'Foot ritual in our woven pods', btn: 'wa' },
         { id: 'us5', venue: 'Sundari Wellness', img: su('shop'), title: 'Take Sundari home', line: 'Oils, robes and singing bowls in our shop' },
         { id: 'us6', img: '/demo-guest/p-suenyo-aerial.jpg', title: 'Suenyo Eco Retreat', line: 'Bamboo villas in the jungle, by the Yeh Poh River', venue: 'Suenyo Eco Retreat', btn: 'wa' },
-        { id: 'us7', img: '/demo-guest/p-suenyo-windows.jpg', title: 'Disconnect to reconnect', line: 'Stay a night or two at Suenyo', venue: 'Suenyo Eco Retreat', btn: 'wa' }
+        { id: 'us7', img: '/demo-guest/p-suenyo-windows.jpg', title: 'Disconnect to reconnect', line: 'Stay a night or two at Suenyo', venue: 'Suenyo Eco Retreat', btn: 'wa' },
+        { id: 'us8', img: '/demo-guest/p-suenyo-yoga.jpg', title: 'Yoga above the jungle', line: 'Wellness and rituals at Suenyo', venue: 'Suenyo Eco Retreat', btn: 'wa' },
+        { id: 'us9', img: '/demo-guest/p-suenyo-cultural.jpg', title: 'Balinese cultural workshops', line: 'Ceremonies, rituals and crafts', venue: 'Suenyo Eco Retreat', btn: 'wa' },
+        { id: 'us10', img: '/demo-guest/p-suenyo-proposal.jpg', title: 'Special occasions', line: 'Proposals, birthdays, private dinners', venue: 'Suenyo Eco Retreat', btn: 'wa' }
       ],
       deals: [
         { id: 'ud1', venue: 'Sundari Wellness', img: su('pedi'), title: 'Reflexology add-on for members', when: 'Every day · 9am–5pm', btn: 'wa' },
@@ -279,8 +282,8 @@ P.sundari = {
           details: 'Treatment vouchers for friends and family, ready to send on WhatsApp.' }
       ],
       gallery: ['bath', 'cave', 'corridor', 'massage', 'pods', 'couples', 'reception', 'shop', 'room', 'daybed', 'lounge2', 'pedi', 'basins', 'couple', 'jade', 'feet', 'hands2', 'scrub', 'hero', 'lounge', 'balinese', 'bamboo', 'kaya', 'reflex', 'facial', 'hands'].map((n, i) => ({ id: 'ug' + i, img: su(n), venue: 'Sundari Wellness' }))
-        .concat(['pool', 'windows', 'bed', 'aerial', 'hammock', 'roof', 'view', 'front'].map((n, i) => ({ id: 'sug' + i, img: '/demo-guest/p-suenyo-' + n + '.jpg', venue: 'Suenyo Eco Retreat' }))),
-      places: { 'suenyo eco retreat': { img: '/demo-guest/p-suenyo-pool.jpg', area: 'Eco retreat · Tabanan', other: true, menus: [{ name: 'Food', pages: ['food-1', 'food-2'].map(n => ({ img: '/demo-guest/p-suenyo-menu-' + n + '.jpg' })) }, { name: 'Drinks', pages: [{ img: '/demo-guest/p-suenyo-menu-drinks.jpg' }] }] }, 'sundari wellness': { img: su('reception'), area: 'Seminyak', ig: 'sundari.wellness', menus: [{ name: 'Treatments', pages: [1, 2, 3, 4, 5, 6].map(n => ({ img: '/demo-guest/p-sun-menu-' + n + '.jpg' })) }] } }
+        .concat(['pool', 'windows', 'bed', 'aerial', 'yoga', 'hammock', 'cultural', 'roof', 'proposal', 'view', 'wellness', 'front'].map((n, i) => ({ id: 'sug' + i, img: '/demo-guest/p-suenyo-' + n + '.jpg', venue: 'Suenyo Eco Retreat' }))),
+      places: { 'suenyo eco retreat': { img: '/demo-guest/p-suenyo-pool.jpg', area: 'Eco retreat · Tabanan', other: true, acc: '#23909F', menus: [{ name: 'Food', pages: ['food-1', 'food-2'].map(n => ({ img: '/demo-guest/p-suenyo-menu-' + n + '.jpg' })) }, { name: 'Drinks', pages: [{ img: '/demo-guest/p-suenyo-menu-drinks.jpg' }] }] }, 'sundari wellness': { img: su('reception'), area: 'Seminyak', ig: 'sundari.wellness', menus: [{ name: 'Treatments', pages: [1, 2, 3, 4, 5, 6].map(n => ({ img: '/demo-guest/p-sun-menu-' + n + '.jpg' })) }] } }
     };
   }
 };

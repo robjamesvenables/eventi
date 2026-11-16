@@ -245,7 +245,9 @@ P.sundari = {
   perks: ['10% off every treatment', 'A birthday ritual on us', "Members-only treatment of the month", 'First pick of your favourite therapist'],
   perkIcons: ['leaf', 'cake', 'star', 'heart'],
   reward: { target: 10, text: 'A 60-minute Balinese massage' },
-  venues: [{ name: 'Sundari Wellness', area: 'Seminyak', opens: '09:00', closes: '22:00', wa: SUN_WA, phone: '+62 811 365 563', map: 'https://maps.google.com/?q=SUNDARI%20Wellness%2C%20Jalan%20Petitenget%207%2C%20Seminyak%2C%20Bali' }],
+  venues: [{ name: 'Sundari Wellness', area: 'Seminyak', opens: '09:00', closes: '22:00', wa: SUN_WA, phone: '+62 811 365 563', map: 'https://maps.google.com/?q=SUNDARI%20Wellness%2C%20Jalan%20Petitenget%207%2C%20Seminyak%2C%20Bali' },
+    { name: 'Suenyo Eco Retreat', area: 'Jungle retreat by the Yeh Poh River', wa: SUN_WA }   // same owner; no Suenyo number yet
+  ],
   contact: { wa: SUN_WA, phone: '+62 811 365 563' },
   acts: [],
   content: today => {
@@ -254,27 +256,31 @@ P.sundari = {
       theme: { top: '#1A120D', acc: '#C9925A', dark: true }, motion: true, video: '/demo-guest/p-sun-film.mp4', videoTall: true,
       gift: { on: true, title: 'The gift of a slow afternoon', line: 'A spa voucher for someone who needs it. Tell us the amount and who it is for.', to: SUN_WA, amounts: [500000, 1000000, 2000000], max: 5000000 },
       slides: [
-        { id: 'us0', img: su('bath'), title: 'Flower bath ritual', line: 'Warm water, petals, nowhere to be', btn: 'wa' },
-        { id: 'us1', img: su('cave'), title: 'Your quiet place in Seminyak', line: 'Open every day, 9am to 10pm', btn: 'wa' },
-        { id: 'us2', img: su('massage'), title: 'Balinese massage', line: 'The one everyone comes back for', btn: 'wa' },
-        { id: 'us3', img: su('couples'), title: 'Side by side', line: 'Couples rooms, two therapists', btn: 'wa' },
-        { id: 'us4', img: su('pods'), title: 'Start with your feet', line: 'Foot ritual in our woven pods', btn: 'wa' },
-        { id: 'us5', img: su('shop'), title: 'Take Sundari home', line: 'Oils, robes and singing bowls in our shop' }
+        { id: 'us0', venue: 'Sundari Wellness', img: su('bath'), title: 'Flower bath ritual', line: 'Warm water, petals, nowhere to be', btn: 'wa' },
+        { id: 'us1', venue: 'Sundari Wellness', img: su('cave'), title: 'Your quiet place in Seminyak', line: 'Open every day, 9am to 10pm', btn: 'wa' },
+        { id: 'us2', venue: 'Sundari Wellness', img: su('massage'), title: 'Balinese massage', line: 'The one everyone comes back for', btn: 'wa' },
+        { id: 'us3', venue: 'Sundari Wellness', img: su('couples'), title: 'Side by side', line: 'Couples rooms, two therapists', btn: 'wa' },
+        { id: 'us4', venue: 'Sundari Wellness', img: su('pods'), title: 'Start with your feet', line: 'Foot ritual in our woven pods', btn: 'wa' },
+        { id: 'us5', venue: 'Sundari Wellness', img: su('shop'), title: 'Take Sundari home', line: 'Oils, robes and singing bowls in our shop' },
+        { id: 'us6', img: '/demo-guest/p-suenyo-aerial.jpg', title: 'Suenyo Eco Retreat', line: 'Bamboo villas in the jungle, by the Yeh Poh River', venue: 'Suenyo Eco Retreat', btn: 'wa' },
+        { id: 'us7', img: '/demo-guest/p-suenyo-bed.jpg', title: 'Disconnect to reconnect', line: 'Stay a night or two at Suenyo', venue: 'Suenyo Eco Retreat', btn: 'wa' }
       ],
       deals: [
-        { id: 'ud1', img: su('pedi'), title: 'Reflexology add-on for members', when: 'Every day · 9am–5pm', btn: 'wa' },
-        { id: 'ud2', img: su('daybed'), title: 'Travel recovery after your flight', when: 'Every day', btn: 'wa' },
-        { id: 'ud3', img: su('room'), title: 'Members: 90 minutes for the price of 60', when: 'Mon–Thu · before 2pm', btn: 'wa' },
-        { id: 'ud4', img: su('hands'), title: 'Signature polish with any massage', when: 'Mon–Thu', btn: 'wa' }
+        { id: 'ud1', venue: 'Sundari Wellness', img: su('pedi'), title: 'Reflexology add-on for members', when: 'Every day · 9am–5pm', btn: 'wa' },
+        { id: 'ud2', venue: 'Sundari Wellness', img: su('daybed'), title: 'Travel recovery after your flight', when: 'Every day', btn: 'wa' },
+        { id: 'ud3', venue: 'Sundari Wellness', img: su('room'), title: 'Members: 90 minutes for the price of 60', when: 'Mon–Thu · before 2pm', btn: 'wa' },
+        { id: 'ud4', venue: 'Sundari Wellness', img: su('hands'), title: 'Signature polish with any massage', when: 'Mon–Thu', btn: 'wa' },
+        { id: 'ud5', venue: 'Suenyo Eco Retreat', img: '/demo-guest/p-suenyo-pool.jpg', title: 'Members: 15% off a stay at Suenyo', when: 'Sun–Thu nights', btn: 'wa' }
       ],
       events: [
-        { id: 'ue1', img: su('couples'), title: 'Couples ritual week', line: 'Two therapists, one room, together', date: addDays(today, 6), time: '10:00', time2: '20:00', btn: 'wa', hl: true,
+        { id: 'ue1', venue: 'Sundari Wellness', img: su('couples'), title: 'Couples ritual week', line: 'Two therapists, one room, together', date: addDays(today, 6), time: '10:00', time2: '20:00', btn: 'wa', hl: true,
           details: 'Book a room for two and enjoy the same ritual side by side. Members book first.' },
-        { id: 'ue2', img: su('bamboo'), title: 'Christmas gift vouchers', line: 'The gift that always fits', date: y + '-12-24', btn: 'wa',
+        { id: 'ue2', venue: 'Sundari Wellness', img: su('bamboo'), title: 'Christmas gift vouchers', line: 'The gift that always fits', date: y + '-12-24', btn: 'wa',
           details: 'Treatment vouchers for friends and family, ready to send on WhatsApp.' }
       ],
-      gallery: ['bath', 'cave', 'corridor', 'massage', 'pods', 'couples', 'reception', 'shop', 'room', 'daybed', 'lounge2', 'pedi', 'basins', 'couple', 'jade', 'feet', 'hands2', 'scrub', 'hero', 'lounge', 'balinese', 'bamboo', 'kaya', 'reflex', 'facial', 'hands'].map((n, i) => ({ id: 'ug' + i, img: su(n) })),
-      places: { 'sundari wellness': { img: su('reception'), area: 'Seminyak', ig: 'sundari.wellness', menus: [{ name: 'Treatments', pages: [1, 2, 3, 4, 5, 6].map(n => ({ img: '/demo-guest/p-sun-menu-' + n + '.jpg' })) }] } }
+      gallery: ['bath', 'cave', 'corridor', 'massage', 'pods', 'couples', 'reception', 'shop', 'room', 'daybed', 'lounge2', 'pedi', 'basins', 'couple', 'jade', 'feet', 'hands2', 'scrub', 'hero', 'lounge', 'balinese', 'bamboo', 'kaya', 'reflex', 'facial', 'hands'].map((n, i) => ({ id: 'ug' + i, img: su(n), venue: 'Sundari Wellness' }))
+        .concat(['aerial', 'pool', 'bed', 'view', 'roof', 'front'].map((n, i) => ({ id: 'sug' + i, img: '/demo-guest/p-suenyo-' + n + '.jpg', venue: 'Suenyo Eco Retreat' }))),
+      places: { 'suenyo eco retreat': { img: '/demo-guest/p-suenyo-front.jpg', area: 'Eco retreat · Yeh Poh River', other: true }, 'sundari wellness': { img: su('reception'), area: 'Seminyak', ig: 'sundari.wellness', menus: [{ name: 'Treatments', pages: [1, 2, 3, 4, 5, 6].map(n => ({ img: '/demo-guest/p-sun-menu-' + n + '.jpg' })) }] } }
     };
   }
 };

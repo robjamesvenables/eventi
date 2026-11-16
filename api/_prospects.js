@@ -525,6 +525,7 @@ P.brunch = {
 
 const LO_WA = '6281573061887';   // Lola's Uluwatu (Time Out); Canggu has its own number below
 const lo = n => '/demo-guest/p-lolas-' + n + '.jpg';
+const LO_MENUS = [{ name: 'Food', pages: [1, 2, 3, 4].map(i => ({ img: lo('menu-food-' + i) })) }, { name: 'Drinks', pages: [1, 2, 3, 4].map(i => ({ img: lo('menu-drinks-' + i) })) }];   // lolasbali.com menu pages (same at Canggu and Uluwatu)
 P.lolas = {
   brand: "Lola's", logo: '/demo-guest/p-lolas-logo.png', icon: '/demo-guest/p-lolas-icon', first: 'Jake', tier: 'member', visits: 6, since: 2025, favourite: "Lola's Canggu",
   perks: ['10% off your bill, every visit', 'A free margarita on your birthday', 'Chips and guac on us with any taco plate', "Priority tables on Taco Tuesday"],
@@ -571,8 +572,8 @@ P.lolas = {
         .map((n, i) => ({ id: 'lg' + i, img: lo(n), venue: n === 'margaritas' || n === 'chicken' || n === 'prawns' ? "Lola's Uluwatu" : "Lola's Canggu" }))
         .concat(['margarita', 'tamale', 'salsa', 'fish', 'prawns', 'skewer', 'bartender', 'foam', 'mule', 'tamarindo'].map((n, i) => ({ id: 'lt' + i, img: '/demo-guest/p-lolita-' + n + '.jpg', venue: "Lolita's Uluwatu" }))),
       places: {
-        "lola's canggu": { img: lo('taco'), area: 'Jl. Subak, Canggu', ig: 'lolasbali' },
-        "lola's uluwatu": { img: lo('chicken'), area: 'Jl. Labuansait, Uluwatu', ig: 'lolasbali' },
+        "lola's canggu": { img: lo('taco'), area: 'Jl. Subak, Canggu', ig: 'lolasbali', menus: LO_MENUS },
+        "lola's uluwatu": { img: lo('chicken'), area: 'Jl. Labuansait, Uluwatu', ig: 'lolasbali', menus: LO_MENUS },
         "lolita's uluwatu": { img: '/demo-guest/p-lolita-tamale.jpg', area: 'Above the Race Tracks wave', ig: 'lolitasbali', other: true, menus: [{ name: 'Food', pages: ['food', 'tacos'].map(n => ({ img: '/demo-guest/p-lolita-menu-' + n + '.jpg' })) }, { name: 'Drinks', pages: ['drinks-1', 'drinks-2'].map(n => ({ img: '/demo-guest/p-lolita-menu-' + n + '.jpg' })) }] }
       }
     };

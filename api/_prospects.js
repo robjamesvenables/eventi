@@ -711,6 +711,7 @@ P.senja = {
 const sb = n => '/demo-guest/p-sunset-' + n + '.jpg';
 const SB_WA = '6281237814448';
 const ms2 = n => '/demo-guest/p-sippy-' + n + '.jpg';
+const SIPPY_MENU = n => [1, 2, 3].map(k => ({ img: ms2('menu-' + n + '-' + k) }));   // Mrs Sippy menu PDFs (Sept 2026), each page cut into its 3 columns
 const SB_MENU = (n, k) => Array.from({ length: k }, (_, i) => ({ img: '/demo-guest/p-sunset-menu-' + n + '-' + (i + 1) + '.jpg' }));   // from sunsetbeachbali.com menu pages
 P.sunset = {
   brand: 'Sunset Beach', logo: '/demo-guest/p-sunset-logo.png', icon: '/demo-guest/p-sunset-icon', first: 'Andrew', tier: 'member', visits: 5, since: 2025, favourite: 'Sunset Beach',
@@ -758,7 +759,7 @@ P.sunset = {
       places: { 'sunset beach': { img: sb('palms'), area: 'Seminyak beach', ig: 'sunsetbeachbali', menus: [
         { name: 'Food', pages: SB_MENU('bc-food', 4) }, { name: 'Drinks', pages: SB_MENU('grill-drinks', 6) },   // the Beach Club drinks capture was too small to read; the Grill drinks list is sharper and covers the same
         { name: 'The Grill', pages: SB_MENU('grill-food', 4) }, { name: 'Lunch deals', pages: SB_MENU('lunch', 2) }] },
-        'mrs sippy': { img: ms2('aerial'), area: 'Pool club · Seminyak', ig: 'mrssippybali', other: true, acc: '#3FB6BD' } }
+        'mrs sippy': { img: ms2('aerial'), area: 'Pool club · Seminyak', ig: 'mrssippybali', other: true, acc: '#3FB6BD', menus: [{ name: 'Food', pages: ['food-1', 'food-2'].flatMap(SIPPY_MENU) }, { name: 'Drinks', pages: ['drinks-1', 'drinks-2'].flatMap(SIPPY_MENU) }] } }
     };
   }
 };

@@ -24290,7 +24290,7 @@ function gpRender(){
       ${gpColoursHtml()}
       ${gpTopHtml()}
       <div class="gp-sec${c.off.slides ? ' off' : ''}" data-go="slides"><div class="gp-sh"><div class="n"><b>Highlights</b><small>Big photos at the top of a place's page - offers, new menu, big nights. Guests swipe through them</small></div>${tog('slides')}</div>
-        ${c.off.slides ? '' : `<div class="gp-body">${c.slides.map((it, j) => gpItemHtml('slides', it, j)).join('')}${c.slides.length < 12 ? `<button class="gp-add" onclick="gpForm('slides')">+ Add a highlight</button>` : ''}</div>`}</div>
+        ${c.off.slides ? '' : `<div class="gp-body">${c.slides.map((it, j) => gpItemHtml('slides', it, j)).join('')}${c.slides.length < 12 ? `<button class="gp-add" onclick="gpForm('slides')">+ Add a highlight</button>` : ''}<label style="display:flex;align-items:center;gap:10px;margin-top:10px;font-weight:700;cursor:pointer"><input type="checkbox" style="width:20px;height:20px;margin:0"${c.motion ? ' checked' : ''} onchange="gpMotion(this.checked)"> Also on the home page <span class="gp-opt">moving, under the video</span></label></div>`}</div>
       ${gpCardHtml()}
       <div class="gp-sec" data-go="perks"><div class="gp-sh"><div class="n"><b>Perks and reward</b><small>On every member's card - always shown</small></div></div>
         <div class="gp-body">${gpPerksHtml(mgr)}</div></div>
@@ -24316,13 +24316,17 @@ function gpColoursHtml(){
     return `<div style="margin-top:10px"><div style="font-size:13px;font-weight:800">${name} <span style="font-weight:600;color:#64748B;font-size:12px">· ${sub}</span></div>
       <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:8px;align-items:center">${opts.map(o => `<button aria-label="${o}" title="${o}" onclick="gpColour('${k}','${o}')" style="width:34px;height:34px;border-radius:50%;background:${o};cursor:pointer;border:${o.toUpperCase() === cur ? '3px solid #0D9488;box-shadow:inset 0 0 0 2px #fff' : '1.5px solid #CBD5E1'}"></button>`).join('')}
       <button class="cw-own${opts.map(o => o.toUpperCase()).includes(cur) ? '' : ' on'}" onclick="gpWheel('${k}')">${opts.map(o => o.toUpperCase()).includes(cur) ? CW_IC + 'Your own' : '<i style="background:' + cur + '"></i>' + cur}</button></div></div>`; };
+  const dkRow = () => { const cur = String(t.dkbg || GP_DKBG[0]).toUpperCase(), mine = !GP_DKBG.includes(cur);
+    return `<div style="margin-top:10px"><div style="font-size:13px;font-weight:800">Page background <span style="font-weight:600;color:#64748B;font-size:12px">· dark colours only</span></div>
+      <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:8px;align-items:center">${GP_DKBG.map(o => `<button aria-label="${o}" title="${o}" onclick="gpDkbg('${o}')" style="width:34px;height:34px;border-radius:50%;background:${o};cursor:pointer;border:3px solid ${cur === o ? '#0D9488' : '#E2E8F0'}"></button>`).join('')}
+      <button class="cw-own${mine ? ' on' : ''}" onclick="gpDkbgWheel()">${mine ? '<i style="background:' + cur + '"></i>' + cur : CW_IC + 'Your own'}</button></div></div>`; };
   const dflt = !t.dark && ['top', 'acc', 'pg'].every(k => !t[k] || String(t[k]).toUpperCase() === GP_COL[k][2]);
   const opt = (on, label, sub, click) => `<button onclick="${click}" style="flex:1;min-width:150px;text-align:left;border:2px solid ${on ? '#0D9488' : '#E2E8F0'};background:${on ? '#F0FDFA' : 'white'};border-radius:12px;padding:12px 14px;cursor:pointer;font-family:Inter,sans-serif"><div style="font-size:14px;font-weight:800;color:${on ? '#0F766E' : '#0F1E2E'}">${label}</div><div style="font-size:12px;color:#64748B;font-weight:600;margin-top:2px">${sub}</div></button>`;
   const now = gpThemeNow();
   return `<div class="gp-sec gp-colbox" id="gp-colours" data-go="card"><div class="gp-sh"><span class="gp-cw">${CW_IC.replace(/width="22" height="22"/, 'width="34" height="34"')}</span><div class="n"><b>Colours</b><small>Match your venue's brand</small></div><span class="gp-cnow">${now.map(c => `<i style="background:${c}"></i>`).join('')}</span></div>
     <div class="gp-body" style="gap:8px"><div style="display:flex;gap:8px;flex-wrap:wrap">${opt(dflt && !GPE.custom, 'Mavis colours', 'Navy and teal - nothing to set', "gpColour('reset')")}${opt(!dflt || GPE.custom, 'Our own colours', 'Pick colours to match your venue', 'gpOwnColours()')}</div>
-    <div style="display:flex;gap:8px;flex-wrap:wrap">${opt(!t.dark, 'Light page', 'Light background', 'gpDark(false)')}${opt(!!t.dark, 'Dark page', 'Black background', 'gpDark(true)')}</div>
-    ${!dflt || GPE.custom ? `<div style="display:flex;flex-direction:column;gap:4px">${row('top')}${row('acc')}${t.dark ? '' : row('pg')}<div class="gp-hint">Text changes colour by itself so it stays easy to read.</div></div>` : ''}</div></div>`;
+    <div style="display:flex;gap:8px;flex-wrap:wrap">${opt(!t.dark, 'Light page', 'Light background', 'gpDark(false)')}${opt(!!t.dark, 'Dark page', 'Dark background', 'gpDark(true)')}</div>
+    ${!dflt || GPE.custom ? `<div style="display:flex;flex-direction:column;gap:4px">${row('top')}${row('acc')}${t.dark ? dkRow() : row('pg')}<div class="gp-hint">Text changes colour by itself so it stays easy to read.</div></div>` : ''}</div></div>`;
 }
 // The three colours in use now (banner, buttons & headings, page background) - shown on the Colours box and the Design your page button
 function gpThemeNow(){ const t = (GPE.c && GPE.c.theme) || {}; return ['top', 'acc', 'pg'].map(k => k === 'pg' && t.dark ? '#0A0A0A' : /^#[0-9a-f]{6}$/i.test(t[k] || '') ? t[k] : GP_COL[k][2]); }
@@ -24339,6 +24343,16 @@ window.gpOwnColours = async function(){
   else gpRender();
 };
 // Light or dark page: dark = black page, black banner and gold buttons to start with (they can still pick their own banner and button colours)
+window.gpMotion = async function(on){ if(on) GPE.c.motion = true; else delete GPE.c.motion; gpRender(); await gpSave(on ? 'Highlights move on the home page' : 'Highlights off the home page'); };
+// Dark page background: black or the brand's own dark (navy, forest...). Only dark colours, so the page stays readable.
+const GP_DKBG = ['#141414', '#0B1129', '#10241A', '#2A1A12', '#1E1B18', '#1C1C2A'];
+const gpTooLight = h => { const c = cwHexToRgb(h); return !c || (0.299 * c[0] + 0.587 * c[1] + 0.114 * c[2]) > 70; };
+window.gpDkbg = async function(v){
+  if(v && gpTooLight(v)){ toast('Too light for a dark page - pick a darker colour'); return; }
+  const t = GPE.c.theme || (GPE.c.theme = {}); if(!v || String(v).toUpperCase() === GP_DKBG[0]) delete t.dkbg; else t.dkbg = String(v).toUpperCase();
+  gpRender(); await gpSave('Colours saved'); try{ gpDesignDots(); }catch(e){}
+};
+window.gpDkbgWheel = function(){ mvWheel((GPE.c.theme || {}).dkbg || GP_DKBG[0], hex => gpDkbg(hex), 'Page background'); };
 window.gpDark = async function(on){
   const t = GPE.c.theme || (GPE.c.theme = {});
   if(!!t.dark === !!on) return;
@@ -24781,7 +24795,8 @@ window.gpPlaceForm = function(name){
     <label>Area</label><input id="gpp-area" maxlength="30" value="${gpEsc(it.area || v.area || '')}" placeholder="e.g. Canggu"></div>
     <label style="display:flex;align-items:center;gap:10px;margin-top:12px;font-weight:700;cursor:pointer"><input type="checkbox" id="gpp-soon" style="width:20px;height:20px;margin:0"${it.soon ? ' checked' : ''}> Coming soon <span class="gp-opt">guests see it but can't open it yet</span></label>
     <label style="display:flex;align-items:center;gap:10px;margin-top:10px;font-weight:700;cursor:pointer"><input type="checkbox" id="gpp-other" style="width:20px;height:20px;margin:0"${it.other ? ' checked' : ''}> Show under Our other venues <span class="gp-opt">a different brand, same owners</span></label>
-    <div id="gpp-lgw"${it.other ? '' : ' style="display:none"'}><label>Logo <span class="gp-opt">optional, shows in a circle</span></label><div style="display:flex;align-items:center;gap:12px"><div id="gpp-lg" role="button" tabindex="0" style="width:64px;height:64px;border-radius:50%;flex:none;cursor:pointer;overflow:hidden;display:flex;align-items:center;justify-content:center;border:2px dashed #CBD5E1;background:#F8FAFC">${gpSrc({ path: it.logoPath, img: it.logo }) ? `<img src="${gpEsc(gpSrc({ path: it.logoPath, img: it.logo }))}" alt="" style="width:100%;height:100%;object-fit:cover">` : gpIc(GPI.cam, 20)}</div><div class="gp-hint" style="margin:0">Best: a square logo on its own colour. <a href="#" id="gpp-lgx"${gpSrc({ path: it.logoPath, img: it.logo }) ? '' : ' style="display:none"'}>Remove</a></div></div><input type="file" id="gpp-lgf" accept="image/*" style="display:none"></div>
+    <div id="gpp-lgw"${it.other ? '' : ' style="display:none"'}><label>Logo <span class="gp-opt">optional, shows in a circle</span></label><div style="display:flex;align-items:center;gap:12px"><div id="gpp-lg" role="button" tabindex="0" style="width:64px;height:64px;border-radius:50%;flex:none;cursor:pointer;overflow:hidden;display:flex;align-items:center;justify-content:center;border:2px dashed #CBD5E1;background:#F8FAFC">${gpSrc({ path: it.logoPath, img: it.logo }) ? `<img src="${gpEsc(gpSrc({ path: it.logoPath, img: it.logo }))}" alt="" style="width:100%;height:100%;object-fit:cover">` : gpIc(GPI.cam, 20)}</div><div class="gp-hint" style="margin:0">Best: a square logo on its own colour. <a href="#" id="gpp-lgx"${gpSrc({ path: it.logoPath, img: it.logo }) ? '' : ' style="display:none"'}>Remove</a></div></div><input type="file" id="gpp-lgf" accept="image/*" style="display:none">
+      <label style="margin-top:12px">Colour <span class="gp-opt">for its buttons - empty uses your main colour</span></label><div id="gpp-acc" style="display:flex;flex-wrap:wrap;gap:8px;align-items:center"></div></div>
     <div class="gp-sub">Contact and links${mgr ? '' : ' <small>A manager can change these</small>'}</div>
     ${row(IC.clock, `<em>Opens</em><input id="gpp-o" type="time" value="${gpEsc(v.opens || '')}"${mgr ? '' : ' disabled'}>`)}
     ${row('', `<em>Closes</em><input id="gpp-c" type="time" value="${gpEsc(v.closes || '')}"${mgr ? '' : ' disabled'}>`)}
@@ -24800,6 +24815,13 @@ window.gpPlaceForm = function(name){
   const $ = id => s.querySelector('#' + id), val = id => ($(id) ? $(id).value.trim() : '');
   const ph = $('gpp-ph'), fin = $('gpp-file');
   let lgFile = null, lgDrop = false; const lg = $('gpp-lg'), lgf = $('gpp-lgf'), lgx = $('gpp-lgx');
+  let pacc = /^#[0-9a-f]{6}$/i.test(it.acc || '') ? String(it.acc).toUpperCase() : '';
+  const accBox = () => { const opts = GP_COL.acc[3].map(o => o.toUpperCase()), mine = pacc && !opts.includes(pacc);
+    $('gpp-acc').innerHTML = `<button type="button" data-c="" style="height:34px;padding:0 12px;border-radius:999px;cursor:pointer;font:700 13px Inter,sans-serif;background:#fff;border:3px solid ${pacc ? '#E2E8F0' : '#0D9488'}">Main</button>` +
+      opts.map(o => `<button type="button" data-c="${o}" aria-label="${o}" style="width:34px;height:34px;border-radius:50%;cursor:pointer;background:${o};border:3px solid ${pacc === o ? '#0D9488' : '#E2E8F0'}"></button>`).join('') +
+      `<button type="button" class="cw-own${mine ? ' on' : ''}" data-own="1">${mine ? '<i style="background:' + pacc + '"></i>' + pacc : CW_IC + 'Your own'}</button>`;
+    $('gpp-acc').querySelectorAll('button').forEach(b => b.onclick = () => { if(b.dataset.own) mvWheel(pacc || GP_COL.acc[2], hex => { pacc = String(hex).toUpperCase(); accBox(); }, 'Colour'); else { pacc = b.dataset.c; accBox(); } }); };
+  accBox();
   $('gpp-other').onchange = () => { $('gpp-lgw').style.display = $('gpp-other').checked ? '' : 'none'; };
   lg.onclick = () => lgf.click(); lg.onkeydown = e => { if(e.key === 'Enter') lgf.click(); };
   lgf.onchange = () => { lgFile = lgf.files && lgf.files[0]; if(!lgFile) return; lgDrop = false; lg.innerHTML = `<img src="${URL.createObjectURL(lgFile)}" alt="" style="width:100%;height:100%;object-fit:cover">`; lgx.style.display = ''; };
@@ -24888,6 +24910,7 @@ window.gpPlaceForm = function(name){
     go.disabled = true; go.textContent = 'Saving…';
     try{ if(file){ const old = { path: it.path }; it.path = await gpUpload(file); delete it.img; if(old.path) gpForgetFile(old); } }
     catch(e){ go.disabled = false; go.textContent = 'Save'; toast('Could not upload the photo - check your connection'); return; }
+    if(pacc && $('gpp-other').checked) it.acc = pacc; else delete it.acc;
     try{ if(lgFile || lgDrop){ const old = { path: it.logoPath }; if(lgFile) it.logoPath = await gpUpload(lgFile); else delete it.logoPath; delete it.logo; if(old.path) gpForgetFile(old); } }
     catch(e){ go.disabled = false; go.textContent = 'Save'; toast('Could not upload the logo - check your connection'); return; }
     if(nv){

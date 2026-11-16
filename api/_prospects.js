@@ -607,10 +607,10 @@ P.kudeta = {
   perkIcons: ['pct', 'cake', 'star', 'sparkle'],
   reward: { target: 10, text: 'A sunset daybed with a bottle of bubbles' },
   venues: [
-    { name: 'Ku De Ta', area: 'Seminyak beach', opens: '08:00', closes: '00:00', book: KDT_BOOK },
+    { name: 'Ku De Ta', area: 'Jl. Kayu Aya 9, Seminyak', opens: '08:00', closes: '00:00', book: KDT_BOOK, phone: '+62 361 736969', email: 'reservations@kudeta.com' },   // from kudeta.com: daily 8am - late
     { name: 'Saltlick', area: 'Upstairs at Ku De Ta', opens: '17:00', closes: '23:00', book: KDT_BOOK }
   ],
-  contact: { ig: 'kudetabali' },
+  contact: { ig: 'kudetabali', phone: '+62 361 736969', email: 'reservations@kudeta.com' },
   acts: [
     { title: 'Sunset sessions', line: 'DJs on the lawn as the sun goes down', every: [0, 1, 2, 3, 4, 5, 6], start: '16:00', end: '20:00', venue: 'Ku De Ta', ic: 'music' },
     { title: 'Weekend brunch', line: 'Long, lazy and by the ocean', every: [0, 6], start: '09:00', end: '13:00', venue: 'Ku De Ta', ic: 'food' }
@@ -627,16 +627,17 @@ P.kudeta = {
         { id: 'kd4', img: kd('sushi'), title: 'Sushi with a sea view', line: 'Fresh from the kitchen', venue: 'Ku De Ta', btn: 'book', url: KDT_BOOK },
         { id: 'kd5', img: sl('tbone'), title: 'Saltlick steakhouse', line: 'Dry-aged, cooked over fire', venue: 'Saltlick', btn: 'book', url: KDT_BOOK }
       ],
-      deals: [
-        { id: 'kdd1', img: kd('pool'), title: 'Members: a free cocktail with any daybed', when: 'Weekdays', venue: 'Ku De Ta' },
-        { id: 'kdd2', img: kd('tray'), title: 'Golden hour · 2 for 1 cocktails', when: 'Daily · 4–6pm', venue: 'Ku De Ta' },
-        { id: 'kdd3', img: sl('wagyu'), title: 'Steak night · a free glass of red with any steak', when: 'Tuesdays', venue: 'Saltlick' }
+      deals: [   // real promotions from kudeta.com
+        { id: 'kdd1', img: kd('tray'), title: 'Orange Hour · 4 Aperol Spritz Rp 700k', when: 'Mon–Wed · 12–3pm', venue: 'Ku De Ta' },
+        { id: 'kdd2', img: kd('sunset'), title: 'Sundown Sips · 2 for 1 selected cocktails', when: 'Daily · from 6pm', venue: 'Ku De Ta' },
+        { id: 'kdd3', img: kd('cheers'), title: 'Wine & Waves · 15% off selected bottles', when: 'Daily', venue: 'Ku De Ta' },
+        { id: 'kdd4', img: sl('wagyu'), title: 'Steak night · a free glass of red with any steak', when: 'Tuesdays', venue: 'Saltlick' }
       ],
-      events: [
-        { id: 'kde1', img: kd('friends'), title: 'Sunset party', line: 'Guest DJ on the lawn', date: nextDow(today, 6), time: '15:00', time2: '23:00', venue: 'Ku De Ta', btn: 'book', url: KDT_BOOK, hl: true,
-          details: 'A guest DJ plays the lawn from the afternoon into the night.', notes: 'Members skip the queue at the door.' },
-        { id: 'kde2', img: sl('feast'), title: 'Christmas feast at Saltlick', line: 'A festive menu, cooked over fire', date: y + '-12-25', time: '17:00', time2: '23:00', venue: 'Saltlick', btn: 'book', url: KDT_BOOK },
-        { id: 'kde3', img: kd('sunset'), title: "New Year's Eve", line: 'The biggest night on the beach', date: y + '-12-31', time: '18:00', time2: '02:00', venue: 'Ku De Ta', btn: 'book', url: KDT_BOOK }
+      events: [   // real events from kudeta.com
+        { id: 'kde1', img: kd('friends'), title: 'Sunday Market', line: 'Makers, food and cocktails on the beach', date: nextDow(today, 0), time: '10:00', time2: '16:00', venue: 'Ku De Ta', btn: 'book', url: KDT_BOOK, hl: true,
+          details: 'Every Sunday Ku De Ta turns into a beachfront market: restaurants, artisan makers, local brands, family activities and signature cocktails.', notes: 'Members skip the queue at the door.' },
+        { id: 'kde2', img: kd('brunch'), title: 'Ku De Ta Christmas Lunch', line: 'A long lunch by the ocean', date: y + '-12-25', time: '12:00', time2: '16:00', venue: 'Ku De Ta', btn: 'book', url: KDT_BOOK },
+        { id: 'kde3', img: kd('sunset'), title: "New Year's Eve", line: 'Matt Caseli, Loco, Se/Rio and a special guest · dinner and fireworks', date: y + '-12-31', time: '18:00', time2: '02:00', venue: 'Ku De Ta', btn: 'book', url: KDT_BOOK }
       ],
       gallery: [kd('aerial'), kd('cheers'), kd('sunset'), kd('pool'), kd('friends'), kd('sushi'), kd('tray'), kd('tacos'), kd('share'), kd('pizza'), kd('ceviche'), kd('brunch'), kd('salad'), kd('cake'), sl('tbone'), sl('wagyu'), sl('mule'), sl('cuts')]
         .map((img, i) => ({ id: 'kdg' + i, img, venue: /saltlick/.test(img) ? 'Saltlick' : 'Ku De Ta' })),

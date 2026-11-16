@@ -622,9 +622,66 @@ P.kudeta = {
   }
 };
 
-const CODES = { K8SNGA: 'sangsaka', B6PADL: 'bpa', S8HLTR: 'shelter', T7RNSB: 'trans', '5NKGZJ': 'trans', S4DK7R: 'sundari', M3SNRY: 'masonry', L5UMAB: 'luma', B7RNCH: 'brunch', L7LASQ: 'lolas', K2DETA: 'kudeta', S9LTLK: 'kudeta' };   // L5UMAB = Luma keyring: its own Luma demo (different owners from Sangsaka)   // 5NKGZJ = the printed sample card, shown as Trans for the GM demo
+// Senja Beach Club: a made-up sample venue for the explainer and sales (no real venue's name, logo or numbers).
+// Two of our own places (Seminyak beach club, Uluwatu cliff) plus Saffron & Salt under Our other venues. No WhatsApp or booking link on purpose.
+const sj = n => '/demo-guest/p-senja-' + n + '.jpg';
+const SJ_FOOD = [{ name: 'Food', pages: [{ img: sj('menu-food') }] }, { name: 'Drinks', pages: [{ img: sj('menu-drinks') }] }];
+P.senja = {
+  brand: 'Senja Beach Club', logo: '/demo-guest/p-senja-logo.png', icon: '/demo-guest/p-senja-icon', first: 'Sam', tier: 'member', visits: 6, since: 2025, favourite: 'Senja Seminyak',
+  perks: ['10% off your bill, every visit', 'A free cocktail on your birthday', 'Priority sunbeds on weekends', 'First word on our big nights'],
+  perkIcons: ['pct', 'cake', 'star', 'sparkle'],
+  reward: { target: 10, text: 'A sunset daybed with a bottle of bubbles' },
+  venues: [
+    { name: 'Senja Seminyak', area: 'Beach club · Seminyak', opens: '09:00', closes: '00:00' },
+    { name: 'Senja Uluwatu', area: 'Clifftop · Uluwatu', opens: '11:00', closes: '23:00' },
+    { name: 'Saffron & Salt', area: 'Restaurant · Seminyak', opens: '12:00', closes: '23:00' }
+  ],
+  contact: {},
+  acts: [
+    { title: 'Sunset sessions', line: 'DJs as the sun goes down', every: [0, 1, 2, 3, 4, 5, 6], start: '16:00', end: '20:00', venue: 'Senja Uluwatu', ic: 'music' },
+    { title: 'Pool party', line: 'DJs by the pool all afternoon', every: [0, 6], start: '13:00', end: '19:00', venue: 'Senja Seminyak', ic: 'party' }
+  ],
+  content: today => {
+    const y = year(today);
+    return {
+      theme: { top: '#0F0D0B', acc: '#F0894A', dark: true }, motion: true, film: 'Tk2VLUUiHsc', filmStart: 0,
+      gift: { on: true, title: 'A sunset, on you', line: 'Give someone a day at Senja. Tell us the amount and who it is for.', amounts: [500000, 1000000, 2000000], max: 5000000 },
+      slides: [
+        { id: 'sj1', img: sj('pool'), title: 'Your day by the pool', line: 'Sunbeds, palms and the ocean', venue: 'Senja Seminyak' },
+        { id: 'sj2', img: sj('uluwatu'), title: 'Sunset from the cliff', line: 'An infinity pool over the Indian Ocean', venue: 'Senja Uluwatu' },
+        { id: 'sj3', img: sj('cocktails'), title: 'Cocktails on the sand', line: 'Mango, passionfruit, paloma', venue: 'Senja Seminyak' },
+        { id: 'sj4', img: sj('dj'), title: 'DJs every afternoon', line: 'From lunch till late', venue: 'Senja Seminyak' },
+        { id: 'sj5', img: sj('lanterns'), title: 'Saffron & Salt', line: 'Dinner by lantern light', venue: 'Saffron & Salt' }
+      ],
+      deals: [
+        { id: 'sjd1', img: sj('cheers'), title: 'Golden hour · 2 for 1 cocktails', when: 'Daily · 4–6pm', venue: 'Senja Seminyak' },
+        { id: 'sjd2', img: sj('beach'), title: 'Members: a free cocktail with any daybed', when: 'Weekdays', venue: 'Senja Seminyak' },
+        { id: 'sjd3', img: sj('oysters'), title: 'Oyster hour · Rp 25k each', when: 'Fridays · 5–7pm', venue: 'Senja Uluwatu' },
+        { id: 'sjd4', img: sj('steak'), title: 'Steak night · a free glass of red', when: 'Tuesdays', venue: 'Saffron & Salt' }
+      ],
+      events: [
+        { id: 'sje1', img: sj('djsunset'), title: 'Sunset on the cliff', line: 'Guest DJ from 4pm', date: nextDow(today, 6), time: '16:00', time2: '23:00', venue: 'Senja Uluwatu', hl: true,
+          details: 'A guest DJ plays the cliff from golden hour into the night.', notes: 'Members skip the queue at the door.' },
+        { id: 'sje2', img: sj('crowd'), title: 'Full moon party', line: 'Big night, all night', date: addDays(today, 12), time: '20:00', time2: '03:00', venue: 'Senja Seminyak' },
+        { id: 'sje3', img: sj('lamb'), title: 'Christmas dinner', line: 'A long table, by lantern light', date: y + '-12-25', time: '18:00', time2: '23:00', venue: 'Saffron & Salt' },
+        { id: 'sje4', img: sj('cocktails'), title: "New Year's Eve", line: 'The biggest night on the beach', date: y + '-12-31', time: '18:00', time2: '02:00', venue: 'Senja Seminyak' }
+      ],
+      gallery: [['pool', 'Senja Seminyak'], ['beach', 'Senja Seminyak'], ['cocktails', 'Senja Seminyak'], ['dj', 'Senja Seminyak'], ['mango', 'Senja Seminyak'], ['cheers', 'Senja Seminyak'], ['crowd', 'Senja Seminyak'],
+        ['uluwatu', 'Senja Uluwatu'], ['djsunset', 'Senja Uluwatu'], ['oysters', 'Senja Uluwatu'], ['pina', 'Senja Uluwatu'], ['lemongrass', 'Senja Uluwatu'],
+        ['lanterns', 'Saffron & Salt'], ['steak', 'Saffron & Salt'], ['lamb', 'Saffron & Salt'], ['fish', 'Saffron & Salt'], ['octopus2', 'Saffron & Salt'], ['bread', 'Saffron & Salt'], ['clams', 'Saffron & Salt'], ['green', 'Saffron & Salt']]
+        .map(([n, v], i) => ({ id: 'sjg' + i, img: sj(n), venue: v })),
+      places: {
+        'senja seminyak': { img: sj('beach'), area: 'Beach club · pool', menus: SJ_FOOD },
+        'senja uluwatu': { img: sj('uluwatu'), area: 'Clifftop · sunset', menus: SJ_FOOD },
+        'saffron & salt': { img: sj('lanterns'), area: 'Restaurant · Seminyak', other: true, menus: [{ name: 'Menu', pages: [{ img: '/demo-guest/p-saffron-menu.jpg' }] }] }
+      }
+    };
+  }
+};
+
+const CODES = { S3NJAB: 'senja', K8SNGA: 'sangsaka', B6PADL: 'bpa', S8HLTR: 'shelter', T7RNSB: 'trans', '5NKGZJ': 'trans', S4DK7R: 'sundari', M3SNRY: 'masonry', L5UMAB: 'luma', B7RNCH: 'brunch', L7LASQ: 'lolas', K2DETA: 'kudeta', S9LTLK: 'kudeta' };   // L5UMAB = Luma keyring: its own Luma demo (different owners from Sangsaka)   // 5NKGZJ = the printed sample card, shown as Trans for the GM demo
 // Mavis Club network: each of the guest's other venues as a logo tile (their colour, logo, how long they've been a member there)
-const KEY_CODE = { sangsaka: 'K8SNGA', bpa: 'B6PADL', shelter: 'S8HLTR', trans: 'T7RNSB', sundari: 'S4DK7R', masonry: 'M3SNRY', luma: 'L5UMAB', brunch: 'B7RNCH', lolas: 'L7LASQ', kudeta: 'K2DETA' };
+const KEY_CODE = { senja: 'S3NJAB', sangsaka: 'K8SNGA', bpa: 'B6PADL', shelter: 'S8HLTR', trans: 'T7RNSB', sundari: 'S4DK7R', masonry: 'M3SNRY', luma: 'L5UMAB', brunch: 'B7RNCH', lolas: 'L7LASQ', kudeta: 'K2DETA' };
 const club = (list, who) => list.map(c => { const v = P[c.key]; if (!v) return null; const t = (v.content('2026-01-01').theme) || {};
   return { name: v.brand, logo: v.logo, top: t.top || '#0F1E2E', area: (v.venues[0] || {}).area || '', since: c.since || '', visits: c.visits || 0,
     href: '/k/' + KEY_CODE[c.key] + '?n=' + encodeURIComponent(String(who || '').split(' ')[0]) }; }).filter(Boolean);

@@ -246,7 +246,8 @@ P.sundari = {
   perkIcons: ['leaf', 'cake', 'star', 'heart'],
   reward: { target: 10, text: 'A 60-minute Balinese massage' },
   venues: [{ name: 'Sundari Wellness', area: 'Seminyak', opens: '09:00', closes: '22:00', wa: SUN_WA, phone: '+62 811 365 563', map: 'https://maps.google.com/?q=SUNDARI%20Wellness%2C%20Jalan%20Petitenget%207%2C%20Seminyak%2C%20Bali' },
-    { name: 'Suenyo Eco Retreat', area: 'Pandak Gede, Tabanan', wa: '62811322332', phone: '+62 811 322 332', email: 'dream@suenyo-bali.com' }   // from suenyo-bali.com
+    { name: 'Suenyo Eco Retreat', area: 'Pandak Gede, Tabanan', wa: '62811322332', phone: '+62 811 322 332', email: 'dream@suenyo-bali.com' },   // from suenyo-bali.com
+    { name: 'Villa Navaho', area: 'Bumbak, between Canggu & Seminyak', wa: '6281238144235', phone: '+62 812 3814 4235', email: 'hello@navaho-bali.com' }   // from navaho-bali.com
   ],
   contact: { wa: SUN_WA, phone: '+62 811 365 563' },
   acts: [],
@@ -266,14 +267,20 @@ P.sundari = {
         { id: 'us7', img: '/demo-guest/p-suenyo-windows.jpg', title: 'Disconnect to reconnect', line: 'Stay a night or two at Suenyo', venue: 'Suenyo Eco Retreat', btn: 'wa' },
         { id: 'us8', img: '/demo-guest/p-suenyo-yoga.jpg', title: 'Yoga above the jungle', line: 'Wellness and rituals at Suenyo', venue: 'Suenyo Eco Retreat', btn: 'wa' },
         { id: 'us9', img: '/demo-guest/p-suenyo-cultural.jpg', title: 'Balinese cultural workshops', line: 'Ceremonies, rituals and crafts', venue: 'Suenyo Eco Retreat', btn: 'wa' },
-        { id: 'us10', img: '/demo-guest/p-suenyo-proposal.jpg', title: 'Special occasions', line: 'Proposals, birthdays, private dinners', venue: 'Suenyo Eco Retreat', btn: 'wa' }
+        { id: 'us10', img: '/demo-guest/p-suenyo-proposal.jpg', title: 'Special occasions', line: 'Proposals, birthdays, private dinners', venue: 'Suenyo Eco Retreat', btn: 'wa' },
+        { id: 'un1', img: '/demo-guest/p-navaho-poolnight.jpg', title: 'Villa Navaho', line: 'A private wellness villa, entirely yours', venue: 'Villa Navaho', btn: 'wa' },
+        { id: 'un2', img: '/demo-guest/p-navaho-chef.jpg', title: 'A chef in the house', line: 'Balinese dinners by the pool or on the roof', venue: 'Villa Navaho', btn: 'wa' },
+        { id: 'un3', img: '/demo-guest/p-navaho-massage.jpg', title: 'Massage, without leaving', line: 'A Sundari therapist comes to the villa', venue: 'Villa Navaho', btn: 'wa' },
+        { id: 'un4', img: '/demo-guest/p-navaho-sauna.jpg', title: 'Sauna and cold plunge', line: 'Heat, cold and nowhere to be', venue: 'Villa Navaho', btn: 'wa' },
+        { id: 'un5', img: '/demo-guest/p-navaho-proposal.jpg', title: 'Proposals and birthdays', line: 'Tell us the date, we set the villa', venue: 'Villa Navaho', btn: 'wa' }
       ],
       deals: [
         { id: 'ud1', venue: 'Sundari Wellness', img: su('pedi'), title: 'Reflexology add-on for members', when: 'Every day · 9am–5pm', btn: 'wa' },
         { id: 'ud2', venue: 'Sundari Wellness', img: su('daybed'), title: 'Travel recovery after your flight', when: 'Every day', btn: 'wa' },
         { id: 'ud3', venue: 'Sundari Wellness', img: su('room'), title: 'Members: 90 minutes for the price of 60', when: 'Mon–Thu · before 2pm', btn: 'wa' },
         { id: 'ud4', venue: 'Sundari Wellness', img: su('hands'), title: 'Signature polish with any massage', when: 'Mon–Thu', btn: 'wa' },
-        { id: 'ud5', venue: 'Suenyo Eco Retreat', img: '/demo-guest/p-suenyo-pool.jpg', title: 'Members: 15% off a stay at Suenyo', when: 'Sun–Thu nights', btn: 'wa' }
+        { id: 'ud5', venue: 'Suenyo Eco Retreat', img: '/demo-guest/p-suenyo-pool.jpg', title: 'Members: 15% off a stay at Suenyo', when: 'Sun–Thu nights', btn: 'wa' },
+        { id: 'ud6', venue: 'Villa Navaho', img: '/demo-guest/p-navaho-bath.jpg', title: 'Members: a flower bath ritual with any 2-night stay', when: 'Any night · ask us', btn: 'wa' }
       ],
       events: [
         { id: 'ue1', venue: 'Sundari Wellness', img: su('couples'), title: 'Couples ritual week', line: 'Two therapists, one room, together', date: addDays(today, 6), time: '10:00', time2: '20:00', btn: 'wa', hl: true,
@@ -282,8 +289,9 @@ P.sundari = {
           details: 'Treatment vouchers for friends and family, ready to send on WhatsApp.' }
       ],
       gallery: ['bath', 'cave', 'corridor', 'massage', 'pods', 'couples', 'reception', 'shop', 'room', 'daybed', 'lounge2', 'pedi', 'basins', 'couple', 'jade', 'feet', 'hands2', 'scrub', 'hero', 'lounge', 'balinese', 'bamboo', 'kaya', 'reflex', 'facial', 'hands'].map((n, i) => ({ id: 'ug' + i, img: su(n), venue: 'Sundari Wellness' }))
-        .concat(['pool', 'windows', 'bed', 'aerial', 'yoga', 'hammock', 'cultural', 'roof', 'proposal', 'view', 'wellness', 'front'].map((n, i) => ({ id: 'sug' + i, img: '/demo-guest/p-suenyo-' + n + '.jpg', venue: 'Suenyo Eco Retreat' }))),
-      places: { 'suenyo eco retreat': { img: '/demo-guest/p-suenyo-pool.jpg', area: 'Eco retreat · Tabanan', other: true, acc: '#23909F', menus: [{ name: 'Food', pages: ['food-1', 'food-2'].map(n => ({ img: '/demo-guest/p-suenyo-menu-' + n + '.jpg' })) }, { name: 'Drinks', pages: [{ img: '/demo-guest/p-suenyo-menu-drinks.jpg' }] }] }, 'sundari wellness': { img: su('reception'), area: 'Seminyak', ig: 'sundari.wellness', menus: [{ name: 'Treatments', pages: [1, 2, 3, 4, 5, 6].map(n => ({ img: '/demo-guest/p-sun-menu-' + n + '.jpg' })) }] } }
+        .concat(['pool', 'windows', 'bed', 'aerial', 'yoga', 'hammock', 'cultural', 'roof', 'proposal', 'view', 'wellness', 'front'].map((n, i) => ({ id: 'sug' + i, img: '/demo-guest/p-suenyo-' + n + '.jpg', venue: 'Suenyo Eco Retreat' })))
+        .concat(['poolnight', 'chef', 'living', 'massage', 'dining', 'sauna', 'rooftop', 'proposal', 'bedroom', 'birthday', 'bath', 'pool'].map((n, i) => ({ id: 'nvg' + i, img: '/demo-guest/p-navaho-' + n + '.jpg', venue: 'Villa Navaho' }))),
+      places: { 'villa navaho': { img: '/demo-guest/p-navaho-pool.jpg', area: 'Private wellness villa · Bumbak', other: true, acc: '#A85439' }, 'suenyo eco retreat': { img: '/demo-guest/p-suenyo-pool.jpg', area: 'Eco retreat · Tabanan', other: true, acc: '#23909F', menus: [{ name: 'Food', pages: ['food-1', 'food-2'].map(n => ({ img: '/demo-guest/p-suenyo-menu-' + n + '.jpg' })) }, { name: 'Drinks', pages: [{ img: '/demo-guest/p-suenyo-menu-drinks.jpg' }] }] }, 'sundari wellness': { img: su('reception'), area: 'Seminyak', ig: 'sundari.wellness', menus: [{ name: 'Treatments', pages: [1, 2, 3, 4, 5, 6].map(n => ({ img: '/demo-guest/p-sun-menu-' + n + '.jpg' })) }] } }
     };
   }
 };

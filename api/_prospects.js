@@ -772,7 +772,7 @@ P.sunset = {
 Object.entries(P).forEach(([k, v]) => k !== 'senja' && (v.venues || []).forEach(x => { if (!x.map) x.map = 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(x.name + ', ' + (x.area || '') + ', Bali'); }));
 
 // Ulu Cliffhouse (Uluwatu clifftop beach club) - photos from Robbie's Drive; hours, phone and the Off The Record Saturday party from Time Out / Megatix.
-// Logo is a stand-in; WhatsApp from ulucliffhouse.com contact page; no menus yet; member deals made up.
+// Real logo (Robbie); WhatsApp from ulucliffhouse.com contact page; no menus yet; member deals made up.
 const ul = n => '/demo-guest/p-ulu-' + n + '.jpg';
 const UL_BOOK = 'https://www.ulucliffhouse.com';
 P.ulu = {

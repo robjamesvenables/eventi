@@ -533,7 +533,7 @@ P.lolas = {
   venues: [
     { name: "Lola's Canggu", area: 'Jl. Subak, Canggu', opens: '08:00', closes: '00:00', wa: LO_WA },
     { name: "Lola's Uluwatu", area: 'Jl. Labuansait, Uluwatu', opens: '12:00', closes: '00:00', wa: LO_WA, phone: '+62 815 7306 1887' },
-    { name: "Lolita's Uluwatu", area: 'Above the Race Tracks wave, Uluwatu', opens: '11:00', closes: '22:00', wa: LO_WA }
+    { name: "Lolita's Uluwatu", area: 'Jl. Labuansait, Pecatu, Uluwatu', opens: '12:00', closes: '20:00', wa: LO_WA }   // hours from lolitasbali.com (daily 12-8pm)
   ],
   contact: { wa: LO_WA, phone: '+62 815 7306 1887' },
   acts: [
@@ -573,7 +573,7 @@ P.lolas = {
       places: {
         "lola's canggu": { img: lo('taco'), area: 'Jl. Subak, Canggu', ig: 'lolasbali' },
         "lola's uluwatu": { img: lo('chicken'), area: 'Jl. Labuansait, Uluwatu', ig: 'lolasbali' },
-        "lolita's uluwatu": { img: '/demo-guest/p-lolita-tamale.jpg', area: 'Above the Race Tracks wave', ig: 'lolitasbali', other: true }
+        "lolita's uluwatu": { img: '/demo-guest/p-lolita-tamale.jpg', area: 'Above the Race Tracks wave', ig: 'lolitasbali', other: true, menus: [{ name: 'Food', pages: ['food', 'tacos'].map(n => ({ img: '/demo-guest/p-lolita-menu-' + n + '.jpg' })) }, { name: 'Drinks', pages: ['drinks-1', 'drinks-2'].map(n => ({ img: '/demo-guest/p-lolita-menu-' + n + '.jpg' })) }] }
       }
     };
   }

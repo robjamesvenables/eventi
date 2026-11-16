@@ -772,7 +772,7 @@ P.sunset = {
 Object.entries(P).forEach(([k, v]) => k !== 'senja' && (v.venues || []).forEach(x => { if (!x.map) x.map = 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(x.name + ', ' + (x.area || '') + ', Bali'); }));
 
 // Ulu Cliffhouse (Uluwatu clifftop beach club) - photos from Robbie's Drive; hours, phone and the Off The Record Saturday party from Time Out / Megatix.
-// Logo is a stand-in; no WhatsApp or menus yet (booking goes to their website); member deals made up.
+// Logo is a stand-in; WhatsApp from ulucliffhouse.com contact page; no menus yet; member deals made up.
 const ul = n => '/demo-guest/p-ulu-' + n + '.jpg';
 const UL_BOOK = 'https://www.ulucliffhouse.com';
 P.ulu = {
@@ -780,8 +780,8 @@ P.ulu = {
   perks: ['10% off your bill, every visit', 'A free cocktail on your birthday', 'Priority daybeds on weekends', 'First word on our big nights'],
   perkIcons: ['pct', 'cake', 'star', 'sparkle'],
   reward: { target: 10, text: 'A clifftop daybed with a bottle of bubbles' },
-  venues: [{ name: 'Ulu Cliffhouse', area: 'Clifftop · Pecatu, Uluwatu', opens: '08:00', closes: '22:00', book: UL_BOOK, phone: '+62 813 3881 2502', map: 'https://www.google.com/maps/search/?api=1&query=Ulu+Cliffhouse+Bali' }],
-  contact: { phone: '+62 813 3881 2502' },
+  venues: [{ name: 'Ulu Cliffhouse', area: 'Clifftop · Pecatu, Uluwatu', opens: '08:00', closes: '22:00', book: UL_BOOK, wa: '6281139417899', phone: '+62 813 3881 2502', map: 'https://www.google.com/maps/search/?api=1&query=Ulu+Cliffhouse+Bali' }],
+  contact: { wa: '6281139417899', phone: '+62 813 3881 2502' },
   acts: [
     { title: 'Off The Record', line: 'Saturday pool party · DJs from 1pm to sunset', every: [6], start: '13:00', end: '19:00', venue: 'Ulu Cliffhouse', ic: 'party' },
     { title: 'Sunrise yoga on the cliff', line: 'Over the ocean', every: [2, 4], start: '08:00', end: '09:00', venue: 'Ulu Cliffhouse', ic: 'star' }
@@ -789,7 +789,8 @@ P.ulu = {
   content: today => {
     const y = year(today);
     return {
-      theme: { top: '#1E1B18', acc: '#E8C547', dark: true }, motion: true, video: '/demo-guest/p-ulu-film-v2.mp4', videoTall: true,
+      theme: { top: '#1E1B18', acc: '#E8C547', dark: true }, motion: true,
+      gift: { on: true, title: 'A day on the cliff, on you', line: 'Give someone a daybed at Ulu. Tell us the amount and who it is for.', to: '6281139417899', amounts: [500000, 1000000, 2000000], max: 5000000 }, video: '/demo-guest/p-ulu-film-v2.mp4', videoTall: true,
       slides: [
         { id: 'ul1', img: ul('pool'), title: 'Your daybed on the cliff', line: 'Pool, palms and the Indian Ocean', venue: 'Ulu Cliffhouse', btn: 'book', url: UL_BOOK },
         { id: 'ul2', img: ul('lounge'), title: 'Golden hour, front row', line: 'Sunset lounge over the waves', venue: 'Ulu Cliffhouse', btn: 'book', url: UL_BOOK },

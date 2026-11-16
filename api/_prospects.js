@@ -641,7 +641,7 @@ P.kudeta = {
       gallery: [kd('aerial'), kd('cheers'), kd('sunset'), kd('pool'), kd('friends'), kd('sushi'), kd('tray'), kd('tacos'), kd('share'), kd('pizza'), kd('ceviche'), kd('brunch'), kd('salad'), kd('cake'), sl('tbone'), sl('wagyu'), sl('mule'), sl('cuts')]
         .map((img, i) => ({ id: 'kdg' + i, img, venue: /saltlick/.test(img) ? 'Saltlick' : 'Ku De Ta' })),
       places: {
-        'ku de ta': { img: kd('cheers'), area: 'Seminyak beach', ig: 'kudetabali' },
+        'ku de ta': { img: kd('cheers'), area: 'Seminyak beach', ig: 'kudetabali', menus: [{ name: 'Breakfast', url: 'https://kudeta.com/pdfviewer/breakfast/' }, { name: 'Lunch', url: 'https://kudeta.com/pdfviewer/lunch/' }, { name: 'Dinner', url: 'https://kudeta.com/pdfviewer/dinner/' }, { name: 'Drinks', url: 'https://kudeta.com/pdfviewer/1108/' }] },   // links to kudeta.com menus until we have the PDFs as pictures
         'saltlick': { img: sl('sign'), area: 'Upstairs at Ku De Ta', other: true }
       }
     };

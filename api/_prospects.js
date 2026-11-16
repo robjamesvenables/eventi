@@ -715,7 +715,7 @@ P.sunset = {
   perks: ['10% off your bill, every visit', 'A free cocktail on your birthday', 'Priority sunbeds on weekends', 'First word on our big nights'],
   perkIcons: ['pct', 'cake', 'star', 'sparkle'],
   reward: { target: 10, text: 'A sunset daybed with a bottle of bubbles' },
-  venues: [{ name: 'Sunset Beach', area: 'Jl. Camplung Tanduk 99, Seminyak', opens: '10:00', closes: '22:00', wa: SB_WA, phone: '+62 812 3781 4448', email: 'hello@sunsetbeachbali.com' }],
+  venues: [{ name: 'Sunset Beach', area: 'Jl. Camplung Tanduk 99, Seminyak', opens: '10:00', closes: '22:00', wa: SB_WA, phone: '+62 812 3781 4448', email: 'hello@sunsetbeachbali.com', map: 'https://maps.google.com/?q=Sunset%20Beach%20Bali%2C%20Jl.%20Camplung%20Tanduk%2099%2C%20Seminyak' }],
   contact: { wa: SB_WA, phone: '+62 812 3781 4448', email: 'hello@sunsetbeachbali.com' },
   acts: [
     { title: 'Happy hour', line: '2 for 1 Bali Hai, seltzers and slushies', every: [1, 2, 3, 4, 5], start: '12:00', end: '14:00', venue: 'Sunset Beach', ic: 'drinks' },
@@ -727,25 +727,25 @@ P.sunset = {
       theme: { top: '#0B1129', acc: '#CDA86B', dark: true, dkbg: '#0B1129' }, motion: true,
       gift: { on: true, title: 'A sunset, on you', line: 'Give someone a day on Seminyak beach. Tell us the amount and who it is for.', to: SB_WA, amounts: [500000, 1000000, 2000000], max: 5000000 },
       slides: [
-        { id: 'sb1', img: sb('lounge'), title: 'Your spot on Seminyak beach', line: 'Good music, open skies, great food', venue: 'Sunset Beach', btn: 'wa' },
-        { id: 'sb2', img: sb('sign'), title: 'Stay for the sunset', line: 'Open every day, 10am to 10pm', venue: 'Sunset Beach', btn: 'wa' },
-        { id: 'sb3', img: sb('dinner'), title: 'Dinner by the sea', line: 'Fire-driven cooking and mezze to share', venue: 'Sunset Beach', btn: 'wa' },
-        { id: 'sb4', img: sb('bar'), title: 'Cocktails at the bar', line: 'Classic margaritas to sunset spritz', venue: 'Sunset Beach', btn: 'wa' },
-        { id: 'sb5', img: sb('friends'), title: 'Bring the crew', line: 'Groups, birthdays and long lunches', venue: 'Sunset Beach', btn: 'wa' }
+        { id: 'sb1', img: sb('hut'), title: 'Your spot on Seminyak beach', line: 'Good music, open skies, great food', venue: 'Sunset Beach', btn: 'wa' },
+        { id: 'sb2', img: sb('sunsetgirls'), title: 'Stay for the sunset', line: 'Open every day, 10am to 10pm', venue: 'Sunset Beach', btn: 'wa' },
+        { id: 'sb3', img: sb('tables'), title: 'Dinner by the sea', line: 'Fire-driven cooking and mezze to share', venue: 'Sunset Beach', btn: 'wa' },
+        { id: 'sb4', img: sb('spritz'), title: 'Cocktails at the bar', line: 'Classic margaritas to sunset spritz', venue: 'Sunset Beach', btn: 'wa' },
+        { id: 'sb5', img: sb('arches'), title: 'Bring the crew', line: 'Groups, birthdays and long lunches', venue: 'Sunset Beach', btn: 'wa' }
       ],
       deals: [
         { id: 'sbd1', img: sb('happyhour'), title: 'Happy hour · 2 for 1', when: 'Mon–Fri · 12–2pm & 7–9pm', venue: 'Sunset Beach' },
-        { id: 'sbd2', img: sb('garden'), title: 'Members: a free cocktail with any daybed', when: 'Weekdays', venue: 'Sunset Beach', btn: 'wa' },
-        { id: 'sbd3', img: sb('umbrellas'), title: 'Group bookings · 10+ guests', when: 'Any day · ask us', venue: 'Sunset Beach', btn: 'wa' }
+        { id: 'sbd2', img: sb('beanbags'), title: 'Members: a free cocktail with any daybed', when: 'Weekdays', venue: 'Sunset Beach', btn: 'wa' },
+        { id: 'sbd3', img: sb('aerial'), title: 'Group bookings · 10+ guests', when: 'Any day · ask us', venue: 'Sunset Beach', btn: 'wa' }
       ],
       events: [
-        { id: 'sbe1', img: sb('lounge'), title: 'Sunday Club', line: 'DJs, sunbeds and sunset', date: nextDow(today, 0), time: '12:00', time2: '22:00', venue: 'Sunset Beach', btn: 'wa', hl: true,
+        { id: 'sbe1', img: sb('band'), title: 'Sunday Club', line: 'DJs, sunbeds and sunset', date: nextDow(today, 0), time: '12:00', time2: '22:00', venue: 'Sunset Beach', btn: 'wa', hl: true,
           details: 'Our Sunday session: DJs from lunch, cocktails by the pool and the best sunset in Seminyak.', notes: 'Members skip the queue.' },
-        { id: 'sbe2', img: sb('dinner'), title: 'Christmas at Sunset Beach', line: 'A festive long lunch by the sea', date: y + '-12-25', time: '12:00', time2: '22:00', venue: 'Sunset Beach', btn: 'wa' },
-        { id: 'sbe3', img: sb('sign'), title: "New Year's Eve", line: 'The biggest night on the beach', date: y + '-12-31', time: '18:00', time2: '02:00', venue: 'Sunset Beach', btn: 'wa' }
+        { id: 'sbe2', img: sb('grill'), title: 'Christmas at Sunset Beach', line: 'A festive long lunch by the sea', date: y + '-12-25', time: '12:00', time2: '22:00', venue: 'Sunset Beach', btn: 'wa' },
+        { id: 'sbe3', img: sb('dusk'), title: "New Year's Eve", line: 'The biggest night on the beach', date: y + '-12-31', time: '18:00', time2: '02:00', venue: 'Sunset Beach', btn: 'wa' }
       ],
-      gallery: ['lounge', 'sign', 'dinner', 'bar', 'friends', 'garden', 'cocktail', 'umbrellas', 'hut', 'beach', 'happyhour'].map((n, i) => ({ id: 'sbg' + i, img: sb(n), venue: 'Sunset Beach' })),
-      places: { 'sunset beach': { img: sb('lounge'), area: 'Seminyak beach', ig: 'sunsetbeachbali' } }
+      gallery: ['hut', 'sunsetgirls', 'tables', 'spritz', 'palms', 'cocktails2', 'prawns', 'arches', 'band', 'bartender', 'mule', 'umbrella', 'dj', 'beanbags', 'friends2', 'grill', 'waiter', 'aerial', 'signsil', 'dusk', 'happyhour'].map((n, i) => ({ id: 'sbg' + i, img: sb(n), venue: 'Sunset Beach' })),
+      places: { 'sunset beach': { img: sb('palms'), area: 'Seminyak beach', ig: 'sunsetbeachbali' } }
     };
   }
 };

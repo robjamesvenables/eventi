@@ -352,7 +352,7 @@ P.sangsaka = {
       places: {
         'sangsaka': { img: sg('mural2'), area: 'Kerobokan', ig: 'sangsakabali', menus: [{ name: 'Food', pages: ['food-1', 'food-2', 'food-3'].map(SNG_MENU) }, { name: 'Wine', pages: ['wine-1', 'wine-2', 'wine-3'].map(SNG_MENU) }] },
         'di atas': { img: sg('bordeaux'), area: 'Rooftop bar upstairs', ig: 'sangsakabali', menus: [{ name: 'Cocktails', pages: ['cocktails'].map(SNG_MENU) }, { name: 'Wine', pages: ['wine-1', 'wine-2', 'wine-3'].map(SNG_MENU) }] },
-        'luma': { img: '/demo-guest/p-luma-terrace.jpg', area: 'Batu Bolong, Canggu', ig: 'lumabali', other: true }
+        'luma': { img: '/demo-guest/p-luma-terrace.jpg', area: 'Batu Bolong, Canggu', ig: 'luma.bali', other: true, logo: '/demo-guest/p-luma-logo.png' }
       }
     };
   }
@@ -445,7 +445,7 @@ P.luma = {
     { name: 'Luma', area: 'Batu Bolong, Canggu', opens: '12:00', closes: '23:00', wa: LUMA_WA, phone: '+62 811 3941 4999', map: LUMA_MAP, review: LUMA_MAP },
     { name: 'Bar Luma', area: 'Terrace bar', opens: '16:00', closes: '00:00', wa: LUMA_WA, phone: '+62 811 3941 4999', map: LUMA_MAP }
   ],
-  contact: { wa: LUMA_WA, phone: '+62 811 3941 4999', map: LUMA_MAP, ig: 'lumabali' },
+  contact: { wa: LUMA_WA, phone: '+62 811 3941 4999', map: LUMA_MAP, ig: 'luma.bali' },
   acts: [
     { title: 'Vinyl on the terrace', line: 'DJs spinning records at Bar Luma', every: [5, 6], start: '20:00', end: '00:00', venue: 'Bar Luma', ic: 'music' }
   ],
@@ -477,8 +477,8 @@ P.luma = {
       gallery: ['street', 'room', 'table', 'lamb', 'lounge', 'g-burrata', 'g-prawns', 'g-steak', 'chefs', 'g-arches', 'g-pasta', 'g-oysters', 'terrace', 'wine', 'g-chocolate', 'g-bar', 'g-entrance', 'g-night']
         .map((n, i) => ({ id: 'lg' + i, img: lm(n), venue: ['lounge', 'wine', 'g-bar', 'g-oysters', 'g-night'].indexOf(n) >= 0 ? 'Bar Luma' : 'Luma' })),
       places: {
-        'luma': { img: lm('terrace'), area: 'Batu Bolong, Canggu', ig: 'lumabali', menus: [{ name: 'Food', pages: [1, 2].map(i => ({ img: '/demo-guest/p-luma-menu-food-' + i + '.jpg' })) }, { name: 'Wine', pages: [1, 2, 3].map(i => ({ img: '/demo-guest/p-luma-menu-wine-' + i + '.jpg' })) }, { name: 'Cocktails', pages: Array.from({ length: 3 }, (_, i) => ({ img: '/demo-guest/p-luma-menu-cocktails-' + (i + 1) + '.jpg' })) }] },
-        'bar luma': { img: lm('g-bar'), area: 'Terrace bar', ig: 'lumabali' }
+        'luma': { img: lm('terrace'), area: 'Batu Bolong, Canggu', ig: 'luma.bali', menus: [{ name: 'Food', pages: [1, 2].map(i => ({ img: '/demo-guest/p-luma-menu-food-' + i + '.jpg' })) }, { name: 'Wine', pages: [1, 2, 3].map(i => ({ img: '/demo-guest/p-luma-menu-wine-' + i + '.jpg' })) }, { name: 'Cocktails', pages: Array.from({ length: 3 }, (_, i) => ({ img: '/demo-guest/p-luma-menu-cocktails-' + (i + 1) + '.jpg' })) }] },
+        'bar luma': { img: lm('g-bar'), area: 'Terrace bar', ig: 'luma.bali' }
       }
     };
   }

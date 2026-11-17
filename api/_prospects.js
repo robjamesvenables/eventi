@@ -422,9 +422,9 @@ P.masonry = {
         .map((n, i) => ({ id: 'mg' + i, img: ms(n), venue: n.startsWith('u-') ? 'Masonry Uluwatu' : 'Masonry Canggu' }))
         .concat(['v-room', 'v-bouillabaisse', 'v-martini', 'v-grouper', 'v-croquettes', 'v-aperitivo', 'v-risotto', 'v-cigars', 'v-tartare', 'v-cognac', 'v-toast', 'v-redcocktail'].map((n, i) => ({ id: 'mvg' + i, img: ms(n), venue: 'Bar Vera' }))),
       places: {
-        'masonry canggu': { img: ms('room'), area: 'Batu Bolong, Canggu', menus: [{ name: 'Lunch', pages: ['lunch', 'dessert'].map(MS_MENU) }, { name: 'Dinner', pages: ['dinner', 'dessert'].map(MS_MENU) }, { name: 'Drinks', pages: ['drinks'].map(MS_MENU) }] },
-        'masonry uluwatu': { img: ms('u-cabbage'), area: 'Uluwatu', menus: [{ name: 'Lunch', pages: ['lunch', 'dessert'].map(MS_MENU_U) }, { name: 'Dinner', pages: ['dinner', 'dessert'].map(MS_MENU_U) }, { name: 'Drinks', pages: ['drinks'].map(MS_MENU_U) }] },
-        'masonry japan': { img: ms('japan-wide'), area: 'Niseko, Japan', soon: true },
+        'masonry canggu': { img: ms('room'), area: 'Batu Bolong, Canggu', ig: 'masonry.bali', menus: [{ name: 'Lunch', pages: ['lunch', 'dessert'].map(MS_MENU) }, { name: 'Dinner', pages: ['dinner', 'dessert'].map(MS_MENU) }, { name: 'Drinks', pages: ['drinks'].map(MS_MENU) }] },
+        'masonry uluwatu': { img: ms('u-cabbage'), area: 'Uluwatu', ig: 'masonry.bali', menus: [{ name: 'Lunch', pages: ['lunch', 'dessert'].map(MS_MENU_U) }, { name: 'Dinner', pages: ['dinner', 'dessert'].map(MS_MENU_U) }, { name: 'Drinks', pages: ['drinks'].map(MS_MENU_U) }] },
+        'masonry japan': { img: ms('japan-wide'), area: 'Niseko, Japan', ig: 'masonry.japan', soon: true },
         'bar vera': { img: ms('v-front'), area: 'Pererenan', ig: 'bar.vera.bali', other: true, menus: [{ name: 'Lunch', pages: ['lunch-1', 'lunch-2'].map(BV_MENU) }, { name: 'Dinner', pages: ['food-1'].map(BV_MENU) }, { name: 'Drinks', pages: ['drinks-1', 'drinks-2'].map(BV_MENU) }, { name: 'Brunch', pages: ['lunch-3', 'lunch-4'].map(BV_MENU) }] }   // from Bar Vera's PDFs (Robbie sent the files)
       }
     };

@@ -886,7 +886,7 @@ P.mamasan = {
         'hujan locale': { img: '/demo-guest/p-hl-front.jpg', area: 'Indonesian · Ubud', ig: 'hujan_locale', other: true, logo: '/demo-guest/p-hl-logo.png', acc: '#C8714F',
           menus: [['Lunch', 'lunch', 10], ['Dinner', 'dinner', 8], ['Drinks', 'drinks', 5], ['Wine', 'wine', 3]].map(([name, f, k]) => ({ name, pages: Array.from({ length: k }, (_, i) => ({ img: '/demo-guest/p-hl-menu-' + f + '-' + (i + 1) + '.jpg' })) })) },   // menus from Hujan Locale's own pages (Ctrl+P PDFs), re-set as text
         'honey & smoke': { img: '/demo-guest/p-hs-front.jpg', area: 'Bistro grill & jazz supper club · Ubud', ig: 'honeyandsmoke.co', other: true, logo: '/demo-guest/p-hs-logo.png', acc: '#D6C8AA',
-          menus: [{ name: 'Lunch', url: 'https://honeyandsmoke.co/menus/lunch-menu/' }, { name: 'Dinner', url: 'https://honeyandsmoke.co/menus/dinner-menu/' }, { name: 'Drinks', url: 'https://honeyandsmoke.co/menus/drinks-menu/' }, { name: 'Wine', url: 'https://honeyandsmoke.co/menus/wine-list/' }] },
+          menus: [['Lunch', 'lunch', 9], ['Dinner', 'dinner', 9], ['Drinks', 'drinks', 6], ['Wine', 'wine', 6]].map(([name, f, k]) => ({ name, pages: Array.from({ length: k }, (_, i) => ({ img: '/demo-guest/p-hs-menu-' + f + '-' + (i + 1) + '.jpg' })) })) },
         'billy ho': { img: '/demo-guest/p-bh-front.jpg', area: 'Modern Japanese · Canggu', ig: 'billyho.co', other: true, logo: '/demo-guest/p-bh-logo.png', acc: '#B5694F',
           menus: [{ name: 'Lunch', url: 'https://billyho.co/menus/lunch-menu/' }, { name: 'Dinner', url: 'https://billyho.co/menus/dinner-menu/' }, { name: 'Drinks', url: 'https://billyho.co/menus/drinks-menu/' }, { name: 'Wine', url: 'https://billyho.co/menus/wine-list/' }] } }
     };

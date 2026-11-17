@@ -821,7 +821,8 @@ P.southeast = {
 // Real: hours, WhatsApp, email, Vietnamese lunch specials 12-5pm, upstairs lounge and group dining. Member perks and deals made up.
 const mm = n => '/demo-guest/p-mms-' + n + '.jpg';
 const MM_WA = '6281806126700';
-const HL_WA = '6281353260275';   // Hujan Locale, Ubud (sister venue, from hujanlocale.com)
+const HL_WA = '6281353260275';
+const HS_WA = '6282215151586';   // Honey & Smoke, Ubud (sister venue, from honeyandsmoke.co)   // Hujan Locale, Ubud (sister venue, from hujanlocale.com)
 const MM_MENU = (n, parts) => parts.flatMap(([c, k]) => Array.from({ length: k }, (_, i) => ({ img: '/demo-guest/p-mms-menu-' + n + '-' + c + String.fromCharCode(97 + i) + '.jpg' })));
 P.mamasan = {
   brand: 'Mama San', logo: '/demo-guest/p-mms-logo.png', icon: '/demo-guest/p-mms-icon', first: 'Will', tier: 'member', visits: 5, since: 2025, favourite: 'Mama San',
@@ -831,12 +832,16 @@ P.mamasan = {
   venues: [{ name: 'Mama San', area: 'Jl. Raya Kerobokan No.135, Kerobokan Kelod', opens: '12:00', closes: '22:30', wa: MM_WA, phone: '+62 818 0612 6700', email: 'booking@mamasanbali.com',
     map: 'https://www.google.com/maps/search/?api=1&query=Mama+San+Bali+Jalan+Raya+Kerobokan+135' },
     { name: 'Hujan Locale', area: 'Jl. Sri Wedari No.5, Ubud', opens: '12:00', closes: '22:00', wa: HL_WA, phone: '+62 813 5326 0275', email: 'reservation@hujanlocale.com',
-      map: 'https://www.google.com/maps/search/?api=1&query=Hujan+Locale+Ubud' }],
+      map: 'https://www.google.com/maps/search/?api=1&query=Hujan+Locale+Ubud' },
+    { name: 'Honey & Smoke', area: 'Jl. Monkey Forest No.67B, Ubud', opens: '12:00', closes: '22:00', wa: HS_WA, phone: '+62 822 1515 1586', email: 'reservation@honeyandsmoke.co',
+      map: 'https://www.google.com/maps/search/?api=1&query=Honey+%26+Smoke+Ubud' }],
   contact: { wa: MM_WA, phone: '+62 818 0612 6700', email: 'booking@mamasanbali.com' },
   acts: [
     { title: 'DJs in the Lounge', line: 'Vinyl upstairs into the late evening', every: [5, 6], start: '20:00', end: '00:00', venue: 'Mama San', ic: 'party' },
     { title: 'Vietnamese lunch specials', line: 'Pho, banh mi and Vietnamese coffee', every: [1, 2, 3], start: '12:00', end: '17:00', venue: 'Mama San', ic: 'star' },
-    { title: 'Keroncong live music', line: 'Orkes Bali Classic at Hujan Locale, Ubud', every: [2, 5], start: '19:30', end: '21:30', venue: 'Hujan Locale', ic: 'party' }
+    { title: 'Keroncong live music', line: 'Orkes Bali Classic at Hujan Locale, Ubud', every: [2, 5], start: '19:30', end: '21:30', venue: 'Hujan Locale', ic: 'party' },
+    { title: 'Jazz DJ Nights', line: 'Upstairs in the Supper Club, margaritas at the bar', every: [4, 6], start: '19:00', end: '23:00', venue: 'Honey & Smoke', ic: 'party' },
+    { title: 'Lunch Set Menu', line: 'Plates to share, a main from the grill and an iced tea', every: [0, 1, 2, 3, 4, 5, 6], start: '12:00', end: '17:00', venue: 'Honey & Smoke', ic: 'star' }
   ],
   content: today => {
     const y = year(today);
@@ -862,6 +867,8 @@ P.mamasan = {
           details: 'Upstairs, the Mama San Lounge is one of Seminyak\'s best hideaways, where vinyl-spinning DJs carry the room into the late evening.', notes: 'Members: tell us you are coming and we will hold you a spot.' },
         { id: 'mme2', img: '/demo-guest/p-hl-keroncong.jpg', title: 'Keroncong at Hujan Locale', line: "Indonesia's 500-year-old rhythm, live in Ubud", date: nextDow(today, 5), time: '19:30', time2: '21:30', venue: 'Hujan Locale', btn: 'wa',
           details: 'Every Tuesday and Friday, Orkes Bali Classic brings Keroncong, Indonesia\'s centuries-old rhythm born from Portuguese shores, to Hujan Locale. Come for dinner and stay for the music.', notes: 'These evenings fill quickly, so book ahead.' },
+        { id: 'mme4', img: '/demo-guest/p-hs-jazz.jpg', title: 'Jazz DJ Nights at Honey & Smoke', line: 'Jazz on the decks, margaritas at the bar', date: nextDow(today, 4), time: '19:00', time2: '23:00', venue: 'Honey & Smoke', btn: 'wa',
+          details: 'Every Thursday and Saturday from 7pm, a live DJ takes over the Honey & Smoke speakeasy bar upstairs with an evening of jazz. Classic, Tommy\'s or Chilli Lime Margaritas at IDR 120k++ each.', notes: 'Upstairs seats fill quickly on jazz nights, so book ahead.' },
         { id: 'mme3', img: mm('chandelier'), title: "New Year's Eve at Mama San", line: 'A long dinner and the countdown', date: y + '-12-31', time: '18:00', time2: '01:00', venue: 'Mama San', btn: 'wa' }
       ],
       gallery: ['lounge', 'diners', 'chandelier', 'bar', 'dining', 'table', 'upstairs', 'group', 'hargow', 'lobster', 'pho', 'banhmi', 'laab', 'tuna', 'puri', 'buns', 'fish', 'porkhock', 'duckrice', 'parfait', 'coffee']
@@ -870,7 +877,9 @@ P.mamasan = {
         { name: 'Lunch', pages: Array.from({ length: 12 }, (_, i) => ({ img: '/demo-guest/p-mms-menu-lunchv3-' + (i + 1) + '.jpg' })) }, { name: 'Dinner', pages: Array.from({ length: 12 }, (_, i) => ({ img: '/demo-guest/p-mms-menu-dinnerv3-' + (i + 1) + '.jpg' })) },
         { name: 'Drinks', pages: Array.from({ length: 6 }, (_, i) => ({ img: '/demo-guest/p-mms-menu-drinksv3-' + (i + 1) + '.jpg' })) }, { name: 'Wine', pages: Array.from({ length: 7 }, (_, i) => ({ img: '/demo-guest/p-mms-menu-winev3-' + (i + 1) + '.jpg' })) }] },
         'hujan locale': { img: '/demo-guest/p-hl-front.jpg', area: 'Indonesian · Ubud', ig: 'hujanlocale', other: true, logo: '/demo-guest/p-hl-logo.png', acc: '#C8714F',
-          menus: [{ name: 'Lunch', url: 'https://hujanlocale.com/menus/lunch-menu/' }, { name: 'Dinner', url: 'https://hujanlocale.com/menus/dinner-menu/' }, { name: 'Drinks', url: 'https://hujanlocale.com/menus/drinks-menu/' }, { name: 'Wine', url: 'https://hujanlocale.com/menus/wine-list/' }] } }
+          menus: [{ name: 'Lunch', url: 'https://hujanlocale.com/menus/lunch-menu/' }, { name: 'Dinner', url: 'https://hujanlocale.com/menus/dinner-menu/' }, { name: 'Drinks', url: 'https://hujanlocale.com/menus/drinks-menu/' }, { name: 'Wine', url: 'https://hujanlocale.com/menus/wine-list/' }] },
+        'honey & smoke': { img: '/demo-guest/p-hs-front.jpg', area: 'Bistro grill & jazz supper club · Ubud', ig: 'honeyandsmoke', other: true, logo: '/demo-guest/p-hs-logo.png', acc: '#D6C8AA',
+          menus: [{ name: 'Lunch', url: 'https://honeyandsmoke.co/menus/lunch-menu/' }, { name: 'Dinner', url: 'https://honeyandsmoke.co/menus/dinner-menu/' }, { name: 'Drinks', url: 'https://honeyandsmoke.co/menus/drinks-menu/' }, { name: 'Wine', url: 'https://honeyandsmoke.co/menus/wine-list/' }] } }
     };
   }
 };

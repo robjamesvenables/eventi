@@ -592,7 +592,7 @@ P.lolas = {
       places: {
         "lola's canggu": { img: lo('taco'), area: 'Jl. Subak, Canggu', ig: 'lolasbali', menus: LO_MENUS },
         "lola's uluwatu": { img: lo('chicken'), area: 'Jl. Labuansait, Uluwatu', ig: 'lolasbali', menus: LO_MENUS },
-        "lolita's uluwatu": { img: '/demo-guest/p-lolita-tamale.jpg', area: 'Above the Race Tracks wave', ig: 'lolitasbali', other: true, menus: [{ name: 'Food', pages: ['food', 'tacos'].map(n => ({ img: '/demo-guest/p-lolita-menu-' + n + '.jpg' })) }, { name: 'Drinks', pages: ['drinks-1', 'drinks-2'].map(n => ({ img: '/demo-guest/p-lolita-menu-' + n + '.jpg' })) }] }
+        "lolita's uluwatu": { img: '/demo-guest/p-lolita-tamale.jpg', area: 'Above the Race Tracks wave', ig: 'lolitasbali', other: true, menus: [{ name: 'Food', pages: ['food-1', 'food-2', 'tacos-1', 'tacos-2'].map(n => ({ img: '/demo-guest/p-lolita-menu2-' + n + '.jpg' })) }, { name: 'Drinks', pages: ['drinks-1', 'drinks-2', 'drinks2-1', 'drinks2-2'].map(n => ({ img: '/demo-guest/p-lolita-menu2-' + n + '.jpg' })) }] }
       }
     };
   }

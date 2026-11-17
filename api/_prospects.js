@@ -924,6 +924,53 @@ P.mozaic = {
   }
 };
 
+// Spice by Blake (Monkey Forest Rd, Ubud; founded 2015 by Chef Chris Salans, now led by Chef Blake Thornley, who also leads Mozaic) - photos and video
+// from Robbie's Drive; contact, story and The Smoky Collab from spicebali.com (Robbie's capture, Nov 2026). Menus to come. Member perks and deals made up.
+const sbk = n => '/demo-guest/p-sb-' + n + '.jpg';
+const SPB_WA = '6281234586169';
+P.spiceblake = {
+  brand: 'Spice by Blake', logo: '/demo-guest/p-sb-logo.png', icon: '/demo-guest/p-sb-icon', first: 'Blake', tier: 'member', visits: 4, since: 2025, favourite: 'Spice by Blake',
+  perks: ['10% off your bill, every visit', 'A free cocktail on your birthday', 'First seats at the kitchen counter', 'First taste of new dishes'],
+  perkIcons: ['pct', 'cake', 'star', 'sparkle'],
+  reward: { target: 8, text: "Blake's feast menu for two" },
+  venues: [{ name: 'Spice by Blake', area: 'Jl. Monkey Forest, Ubud', wa: SPB_WA, phone: '+62 812 3458 6169', email: 'info@spicebali.com', map: 'https://www.google.com/maps/search/?api=1&query=Spice+by+Blake+Ubud' },
+    { name: 'Mozaic', area: 'Jl. Raya Sanggingan, Ubud', opens: '18:00', closes: '22:00', wa: MZ_WA, book: MZ_BOOK, phone: '+62 361 975 768', email: 'info@mozaic-bali.com', map: 'https://www.google.com/maps/search/?api=1&query=Mozaic+Restaurant+Ubud' }],
+  contact: { wa: SPB_WA, phone: '+62 812 3458 6169', email: 'info@spicebali.com' },
+  acts: [],
+  content: today => {
+    const y = year(today);
+    return {
+      theme: { top: '#141210', acc: '#D9785B', pg: '#F5F1EA' }, motion: true, oneHome: true, video: '/demo-guest/p-sb-film.mp4', videoTall: true,
+      gift: { on: true, title: 'A night at Spice, on you', line: 'Give someone a table at Spice. Tell us the amount and who it is for.', to: SPB_WA, amounts: [500000, 1000000, 2000000], max: 10000000 },
+      slides: [
+        { id: 'sb1', img: sbk('hero'), title: 'Modern Indonesian in Ubud', line: 'Best Modern Indonesian Restaurant, Exquisite Awards 2025', venue: 'Spice by Blake', btn: 'wa' },
+        { id: 'sb1b', img: sbk('room'), title: 'An open kitchen, a lively bar', line: 'The heat of the grill and the rhythm of the team, right in front of you', venue: 'Spice by Blake', btn: 'wa' },
+        { id: 'sb2', img: sbk('skewers'), title: 'Off the grill', line: 'Sate and skewers over charcoal', venue: 'Spice by Blake', btn: 'wa' },
+        { id: 'sb3', img: sbk('counter'), title: 'Eat at the counter', line: 'Front row to the open kitchen', venue: 'Spice by Blake', btn: 'wa' },
+        { id: 'sb4', img: sbk('cocktails'), title: 'Our cocktails', line: 'Indonesian herbs, spices and tropical fruits', venue: 'Spice by Blake', btn: 'wa' },
+        { id: 'sb5', img: sbk('boat'), title: 'Spice at sea', line: 'Private dining on the water', venue: 'Spice by Blake', btn: 'wa' },
+        { id: 'sb6', img: mz('dining'), title: 'Mozaic · by the same chef', line: 'Fine dining in Ubud since 2001', venue: 'Mozaic', btn: 'book', url: MZ_BOOK }
+      ],
+      deals: [
+        { id: 'sbd1', img: sbk('feast'), title: 'Members: a free cocktail with any sharing feast', when: 'Any day', venue: 'Spice by Blake', btn: 'wa' },
+        { id: 'sbd2', img: sbk('table'), title: 'Group dining · sharing menus for 8+', when: 'Any day · ask us', venue: 'Spice by Blake', btn: 'wa' }
+      ],
+      events: [
+        { id: 'sbe0', img: sbk('smoky'), title: 'The Smoky Collab · Spice × Bola Bali', line: 'Smoked pork ribs and urutan hotdogs, one night only', date: y + '-11-20', time: '16:00', time2: '22:00', venue: 'Spice by Blake', btn: 'wa', hl: true,
+          details: 'For one evening only, Spice by Blake joins forces with Bola Bali for a flavour-packed celebration of fire, smoke and seriously good food: juicy smoky pork ribs, urutan hotdogs and bold flavours made for getting your hands a little messy.', notes: 'Come hungry and bring your favourite people.' },
+        { id: 'sbe1', img: mz('wo-25'), title: '25 Years of Mozaic', line: 'Chef Blake and five guest chefs, eight courses', date: y + '-12-05', time: '18:00', time2: '23:00', venue: 'Mozaic', btn: 'book', url: MZ_BOOK,
+          details: "Chef Blake Thornley and five of Bali's most distinguished chefs cook an eight-course legacy menu at Mozaic, Ubud. IDR 1,800,000++ per person.", notes: 'Reservations are essential.' }
+      ],
+      gallery: ['hero', 'room', 'kitchen', 'counter', 'bar', 'stairs', 'boat', 'blake', 'grill', 'chefs', 'table', 'feast', 'share', 'skewers', 'ribs', 'curry', 'rolls', 'rice', 'fritters', 'prawns', 'salad', 'chicken', 'dessert', 'cocktails', 'spices', 'boatdish', 'plate']
+        .map((n, i) => ({ id: 'sbg' + i, img: sbk(n), venue: 'Spice by Blake' })),
+      places: {
+        'spice by blake': { img: sbk('room'), area: 'Modern Indonesian · Ubud', ig: 'spicebyblakethornley', menus: [{ name: 'Food & drinks', url: 'https://spicebali.com/our-menu/' }] },
+        'mozaic': { img: mz('dining'), area: 'Fine dining · Ubud', ig: 'mozaicbali', other: true, logo: '/demo-guest/p-mz-logo.png', acc: '#1F6B4F', menus: [MZ_MENU('Seasonal', 'seasonal', 2), MZ_MENU('Botanical', 'botanical', 2), MZ_MENU('Wine', 'wine', 12)] }
+      }
+    };
+  }
+};
+
 // Every demo place gets a map: a Google Maps search for its name and area, unless we set a real link (Senja is made up: its maps point at the area)
 Object.entries(P).forEach(([k, v]) => k !== 'senja' && (v.venues || []).forEach(x => { if (!x.map) x.map = 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(x.name + ', ' + (x.area || '') + ', Bali'); }));
 
@@ -982,9 +1029,9 @@ P.ulu = {
   }
 };
 
-const CODES = { U4LUCH: 'ulu', S2NSET: 'sunset', S3NJAB: 'senja', K8SNGA: 'sangsaka', B6PADL: 'bpa', S8HLTR: 'shelter', T7RNSB: 'trans', '5NKGZJ': 'trans', S4DK7R: 'sundari', M3SNRY: 'masonry', L5UMAB: 'luma', B7RNCH: 'brunch', L7LASQ: 'lolas', K2DETA: 'kudeta', S9LTLK: 'kudeta', S3EAST: 'southeast', M6MSAN: 'mamasan', M8ZAIC: 'mozaic' };   // L5UMAB = Luma keyring: its own Luma demo (different owners from Sangsaka)   // 5NKGZJ = the printed sample card, shown as Trans for the GM demo
+const CODES = { U4LUCH: 'ulu', S2NSET: 'sunset', S3NJAB: 'senja', K8SNGA: 'sangsaka', B6PADL: 'bpa', S8HLTR: 'shelter', T7RNSB: 'trans', '5NKGZJ': 'trans', S4DK7R: 'sundari', M3SNRY: 'masonry', L5UMAB: 'luma', B7RNCH: 'brunch', L7LASQ: 'lolas', K2DETA: 'kudeta', S9LTLK: 'kudeta', S3EAST: 'southeast', M6MSAN: 'mamasan', M8ZAIC: 'mozaic', S6PBLK: 'spiceblake' };   // L5UMAB = Luma keyring: its own Luma demo (different owners from Sangsaka)   // 5NKGZJ = the printed sample card, shown as Trans for the GM demo
 // Mavis Club network: each of the guest's other venues as a logo tile (their colour, logo, how long they've been a member there)
-const KEY_CODE = { ulu: 'U4LUCH', sunset: 'S2NSET', senja: 'S3NJAB', sangsaka: 'K8SNGA', bpa: 'B6PADL', shelter: 'S8HLTR', trans: 'T7RNSB', sundari: 'S4DK7R', masonry: 'M3SNRY', luma: 'L5UMAB', brunch: 'B7RNCH', lolas: 'L7LASQ', kudeta: 'K2DETA', southeast: 'S3EAST', mamasan: 'M6MSAN', mozaic: 'M8ZAIC' };
+const KEY_CODE = { ulu: 'U4LUCH', sunset: 'S2NSET', senja: 'S3NJAB', sangsaka: 'K8SNGA', bpa: 'B6PADL', shelter: 'S8HLTR', trans: 'T7RNSB', sundari: 'S4DK7R', masonry: 'M3SNRY', luma: 'L5UMAB', brunch: 'B7RNCH', lolas: 'L7LASQ', kudeta: 'K2DETA', southeast: 'S3EAST', mamasan: 'M6MSAN', mozaic: 'M8ZAIC', spiceblake: 'S6PBLK' };
 const club = (list, who) => list.map(c => { const v = P[c.key]; if (!v) return null; const t = (v.content('2026-01-01').theme) || {};
   return { name: v.brand, logo: v.logo, top: t.top || '#0F1E2E', area: (v.venues[0] || {}).area || '', since: c.since || '', visits: c.visits || 0,
     href: '/k/' + KEY_CODE[c.key] + '?n=' + encodeURIComponent(String(who || '').split(' ')[0]) }; }).filter(Boolean);

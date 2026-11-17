@@ -900,6 +900,8 @@ P.mozaic = {
     { name: 'Tipple Room', area: 'Jl. Raya Sanggingan, Ubud', opens: '17:00', closes: '00:30', wa: MZ_WA, book: MZ_BOOK, phone: '+62 361 975 768', email: 'info@mozaic-bali.com', map: 'https://www.google.com/maps/search/?api=1&query=Mozaic+Restaurant+Ubud' },
     { name: "Chef's Table", area: 'The Workshop, Mozaic', wa: MZ_WA, phone: '+62 361 975 768', email: 'info@mozaic-bali.com', map: 'https://www.google.com/maps/search/?api=1&query=Mozaic+Restaurant+Ubud' },
     { name: 'Romantic Gazebo', area: 'In the garden, Mozaic', wa: MZ_WA, phone: '+62 361 975 768', email: 'info@mozaic-bali.com', map: 'https://www.google.com/maps/search/?api=1&query=Mozaic+Restaurant+Ubud' }
+,
+    { name: 'Spice by Blake', area: 'Jl. Monkey Forest, Ubud', wa: '6281234586169', phone: '+62 812 3458 6169', email: 'info@spicebali.com', map: 'https://www.google.com/maps/search/?api=1&query=Spice+by+Blake+Ubud' }   // sister restaurant, same chef
   ],
   contact: { wa: MZ_WA, phone: '+62 361 975 768', email: 'info@mozaic-bali.com' },
   acts: [
@@ -927,7 +929,9 @@ P.mozaic = {
         { id: 'mze1', img: mz('wo-25'), title: '25 Years of Mozaic', line: 'An eight-course legacy menu with five guest chefs', date: y + '-12-05', time: '18:00', time2: '23:00', venue: 'The Dining Room', btn: 'wa', hl: true,
           details: "Join Chef Blake Thornley and five of Bali's most distinguished chefs for an exclusive anniversary dinner: an eight-course legacy menu celebrating 25 years of Mozaic. Every reservation enters a draw for a two-night retreat at Secret Moon Bali. IDR 1,800,000++ per person.", notes: 'Reservations are essential.' },
         { id: 'mze2', img: mz('wo-xmas'), title: 'Christmas Dinner at Mozaic', line: 'Eight-course festive tasting menu', date: y + '-12-24', time: '18:00', time2: '23:00', venue: 'The Dining Room', btn: 'book', url: MZ_BOOK + '?date=' + y + '-12-24&promotionId=297928',
-          details: 'A special eight-course festive dinner by Chef Blake Thornley, on 24 and 25 December. IDR 1,900,000++ per person, from 6pm.', notes: 'Reservation required.' }
+          details: 'A special eight-course festive dinner by Chef Blake Thornley, on 24 and 25 December. IDR 1,900,000++ per person, from 6pm.', notes: 'Reservation required.' },
+        { id: 'mze3', img: '/demo-guest/p-sb-smoky.jpg', title: 'The Smoky Collab · Spice × Bola Bali', line: 'Smoked pork ribs and urutan hotdogs, one night only', date: y + '-11-20', time: '16:00', time2: '22:00', venue: 'Spice by Blake', btn: 'wa',
+          details: 'For one evening only, Spice by Blake joins forces with Bola Bali for a celebration of fire, smoke and seriously good food: smoky pork ribs, urutan hotdogs and bold flavours.', notes: 'Come hungry and bring your favourite people.' }
       ],
       gallery: ['dining', 'tipple', 'tipple2', 'garden', 'couple', 'gazebo', 'chefstable', 'workshop', 'chef', 'chefpan', 'trout', 'wagyu', 'beef', 'duck', 'yolk', 'caviar', 'fish', 'soup', 'plate', 'dessert', 'cocktails', 'cocktail', 'tea', 'ricefields']
         .map((n, i) => ({ id: 'mzg' + i, img: mz(n), venue: i < 3 ? 'Tipple Room' : i < 6 ? 'Romantic Gazebo' : i < 10 ? "Chef's Table" : 'The Dining Room' })),
@@ -935,7 +939,8 @@ P.mozaic = {
         'the dining room': { img: mz('dining'), area: 'Seasonal tasting menus', ig: 'mozaicbali', menus: [MZ_MENU('Seasonal', 'seasonal', 2), MZ_MENU('Botanical', 'botanical', 2), MZ_MENU('Wine', 'wine', 12)] },
         'tipple room': { img: mz('tipple2'), area: 'Cocktails & canapés', ig: 'mozaicbali', menus: [MZ_MENU('Cocktails', 'cocktails', 2)] },
         "chef's table": { img: mz('chefstable'), area: 'Private dining · the Workshop', ig: 'mozaicbali', menus: [MZ_MENU('Sample menu', 'chefs', 2)] },
-        'romantic gazebo': { img: mz('gazebo'), area: 'Romantica · for two', ig: 'mozaicbali', menus: [MZ_MENU('Romantica', 'romantica', 4)] }
+        'romantic gazebo': { img: mz('gazebo'), area: 'Romantica · for two', ig: 'mozaicbali', menus: [MZ_MENU('Romantica', 'romantica', 4)] },
+        'spice by blake': { img: '/demo-guest/p-sb-room.jpg', area: 'Modern Indonesian · Ubud', ig: 'spicebyblakethornley', other: true, logo: '/demo-guest/p-sb-logo.png', acc: '#D9785B', menus: [{ name: 'Food & drinks', url: 'https://spicebali.com/our-menu/' }] }
       }
     };
   }

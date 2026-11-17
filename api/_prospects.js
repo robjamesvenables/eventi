@@ -837,7 +837,7 @@ P.mamasan = {
     const y = year(today);
     return {
       theme: { top: '#22211C', acc: '#CDA86B', dark: true, dkbg: '#1A1915' }, motion: true, video: '/demo-guest/p-mms-film.mp4', videoTall: true,
-      gift: { on: true, title: 'Dinner at Mama San, on you', line: 'Give someone a night of Southeast Asian sharing plates. Tell us the amount and who it is for.', to: MM_WA, amounts: [500000, 1000000, 2000000], max: 10000000 },
+      gift: { on: true, title: 'Dinner at Mama San, on you', line: 'Give someone a great night out at Mama San. Valid 12 months. Tell us the amount and who it is for.', to: MM_WA, amounts: [500000, 1000000, 1500000, 2000000], max: 10000000 },
       slides: [
         { id: 'mm1', img: mm('wo-flavours'), title: 'Bold New Flavours', line: 'Char siu claypot, Northern Thai hotpot and Malaysian kandar curry', venue: 'Mama San', btn: 'wa' },
         { id: 'mm2', img: mm('wo-lunch'), title: 'Vietnamese Lunch', line: 'Pho, banh mi and pork la lot, every day 12-5pm', venue: 'Mama San', btn: 'wa' },

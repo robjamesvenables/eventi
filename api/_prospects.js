@@ -862,7 +862,7 @@ P.mamasan = {
         .map((n, i) => ({ id: 'mmg' + i, img: mm(n), venue: 'Mama San' })),
       places: { 'mama san': { img: mm('chandelier'), area: 'Southeast Asian · Seminyak', ig: 'mamasanbali', menus: [
         { name: 'Lunch', pages: Array.from({ length: 12 }, (_, i) => ({ img: '/demo-guest/p-mms-menu-lunchv3-' + (i + 1) + '.jpg' })) }, { name: 'Dinner', pages: Array.from({ length: 12 }, (_, i) => ({ img: '/demo-guest/p-mms-menu-dinnerv3-' + (i + 1) + '.jpg' })) },
-        { name: 'Drinks', pages: MM_MENU('drinks', [[1, 2], [2, 3], [3, 2]]) }, { name: 'Wine', pages: Array.from({ length: 7 }, (_, i) => ({ img: '/demo-guest/p-mms-menu-winev3-' + (i + 1) + '.jpg' })) }] } }
+        { name: 'Drinks', pages: Array.from({ length: 6 }, (_, i) => ({ img: '/demo-guest/p-mms-menu-drinksv3-' + (i + 1) + '.jpg' })) }, { name: 'Wine', pages: Array.from({ length: 7 }, (_, i) => ({ img: '/demo-guest/p-mms-menu-winev3-' + (i + 1) + '.jpg' })) }] } }
     };
   }
 };

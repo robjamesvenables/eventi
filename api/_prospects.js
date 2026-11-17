@@ -647,7 +647,7 @@ P.kudeta = {
         .map((img, i) => ({ id: 'kdg' + i, img, venue: /saltlick/.test(img) ? 'Saltlick' : 'Ku De Ta' })),
       places: {
         'ku de ta': { img: kd('cheers'), area: 'Seminyak beach', ig: 'kudetabali', menus: [{ name: 'Food & drinks', url: 'https://kudeta.com/menu/' }] },   // their menu page (PDFs can't be captured - they scroll in a viewer)
-        'saltlick': { logo: '/demo-guest/p-saltlick-logo.jpg', img: sl('terrace'), area: 'Steakhouse · upstairs', ig: 'saltlickbali', other: true, acc: '#D6D1C8', menus: [{ name: 'Food & drinks', url: 'https://saltlickbali.com/wp-content/uploads/2026/09/SL-FULL-MENU-14ASEPT.pdf' }] }
+        'saltlick': { logo: '/demo-guest/p-saltlick-logo.jpg', img: sl('terrace'), area: 'Steakhouse · upstairs', ig: 'saltlickbali', other: true, acc: '#D6D1C8', menus: [['Food', 'food', 16], ['Drinks', 'drinks', 12], ['Wine', 'wine', 14]].map(([name, f, k]) => ({ name, pages: Array.from({ length: k }, (_, i) => ({ img: '/demo-guest/p-saltlick-menu-' + f + '-' + (i + 1) + '.jpg' })) })) }
       }
     };
   }

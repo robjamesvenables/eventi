@@ -816,6 +816,56 @@ P.southeast = {
   }
 };
 
+// Mama San (Kerobokan / Seminyak, Will Meyrick) - photos and video from Robbie's Drive, menus cut from mamasanbali.com captures (Nov 2026).
+// Real: hours, WhatsApp, email, Vietnamese lunch specials 12-5pm, upstairs lounge and group dining. Member perks and deals made up.
+const mm = n => '/demo-guest/p-mms-' + n + '.jpg';
+const MM_WA = '6281806126700';
+const MM_MENU = (n, parts) => parts.flatMap(([c, k]) => Array.from({ length: k }, (_, i) => ({ img: '/demo-guest/p-mms-menu-' + n + '-' + c + String.fromCharCode(97 + i) + '.jpg' })));
+P.mamasan = {
+  brand: 'Mama San', logo: '/demo-guest/p-mms-logo.png', icon: '/demo-guest/p-mms-icon', first: 'Will', tier: 'member', visits: 5, since: 2025, favourite: 'Mama San',
+  perks: ['10% off your bill, every visit', 'A free cocktail on your birthday', 'Priority tables on busy nights', 'First taste of every new menu'],
+  perkIcons: ['pct', 'cake', 'star', 'sparkle'],
+  reward: { target: 10, text: 'The Feed Me menu for two' },
+  venues: [{ name: 'Mama San', area: 'Jl. Raya Kerobokan No.135, Kerobokan Kelod', opens: '12:00', closes: '22:30', wa: MM_WA, phone: '+62 818 0612 6700', email: 'booking@mamasanbali.com',
+    map: 'https://www.google.com/maps/search/?api=1&query=Mama+San+Bali+Jalan+Raya+Kerobokan+135' }],
+  contact: { wa: MM_WA, phone: '+62 818 0612 6700', email: 'booking@mamasanbali.com' },
+  acts: [
+    { title: 'DJs in the Lounge', line: 'Vinyl upstairs into the late evening', every: [5, 6], start: '20:00', end: '00:00', venue: 'Mama San', ic: 'party' },
+    { title: 'Feed Me menu', line: 'Let the kitchen choose for the table', every: [4], start: '17:30', end: '22:30', venue: 'Mama San', ic: 'star' }
+  ],
+  content: today => {
+    const y = year(today);
+    return {
+      theme: { top: '#22211C', acc: '#B5402F', dark: true, dkbg: '#1A1915' }, motion: true, video: '/demo-guest/p-mms-film.mp4', videoTall: true,
+      gift: { on: true, title: 'Dinner at Mama San, on you', line: 'Give someone a night of Southeast Asian sharing plates. Tell us the amount and who it is for.', to: MM_WA, amounts: [500000, 1000000, 2000000], max: 10000000 },
+      slides: [
+        { id: 'mm1', img: mm('lounge'), title: 'Modern Southeast Asian, since 2010', line: 'Thailand, Vietnam, Malaysia, Indonesia and Singapore on one menu', venue: 'Mama San', btn: 'wa' },
+        { id: 'mm2', img: mm('pho'), title: 'Vietnamese lunch specials', line: 'Every day, 12 to 5pm', venue: 'Mama San', btn: 'wa' },
+        { id: 'mm3', img: mm('hargow'), title: 'Dim sum to start', line: 'Har gow, money bags and rendang doughnuts', venue: 'Mama San', btn: 'wa' },
+        { id: 'mm4', img: mm('upstairs'), title: 'The Lounge upstairs', line: 'Vinyl-spinning DJs into the late evening', venue: 'Mama San', btn: 'wa' },
+        { id: 'mm5', img: mm('group'), title: 'Big tables, big nights', line: 'Up to 130 guests across both floors', venue: 'Mama San', btn: 'wa' }
+      ],
+      deals: [
+        { id: 'mmd1', img: mm('banhmi'), title: 'Vietnamese lunch specials', when: 'Every day · 12–5pm', venue: 'Mama San' },
+        { id: 'mmd2', img: mm('coffee'), title: 'Vietnamese coffees from Rp 50k', when: 'Lunch only', venue: 'Mama San' },
+        { id: 'mmd3', img: mm('bar'), title: 'Members: a cocktail on us with the Feed Me menu', when: 'Dinner · from 5:30pm', venue: 'Mama San', btn: 'wa' },
+        { id: 'mmd4', img: mm('table'), title: 'Group dining · set menus and drinks packages', when: 'Any day · ask us', venue: 'Mama San', btn: 'wa' }
+      ],
+      events: [
+        { id: 'mme1', img: mm('lobster'), title: 'Feed Me Friday', line: 'Let the kitchen choose for the table', date: nextDow(today, 5), time: '17:30', time2: '22:30', venue: 'Mama San', btn: 'wa', hl: true,
+          details: 'The Feed Me set menu is the easiest way across the dinner menu: dim sum, salads, curries and plates from the grill, shared at the table.', notes: 'Members: book on WhatsApp for first pick of tables.' },
+        { id: 'mme2', img: mm('upstairs'), title: 'Saturday nights in the Lounge', line: 'DJs on vinyl, cocktails upstairs', date: nextDow(today, 6), time: '20:00', time2: '00:00', venue: 'Mama San', btn: 'wa' },
+        { id: 'mme3', img: mm('chandelier'), title: "New Year's Eve at Mama San", line: 'A long dinner and the countdown', date: y + '-12-31', time: '18:00', time2: '01:00', venue: 'Mama San', btn: 'wa' }
+      ],
+      gallery: ['lounge', 'diners', 'chandelier', 'bar', 'dining', 'table', 'upstairs', 'group', 'hargow', 'lobster', 'pho', 'banhmi', 'laab', 'tuna', 'puri', 'buns', 'fish', 'porkhock', 'duckrice', 'parfait', 'coffee']
+        .map((n, i) => ({ id: 'mmg' + i, img: mm(n), venue: 'Mama San' })),
+      places: { 'mama san': { img: mm('chandelier'), area: 'Southeast Asian · Seminyak', ig: 'mamasanbali', menus: [
+        { name: 'Lunch', pages: MM_MENU('lunch', [[1, 10], [2, 9], [3, 8]]) }, { name: 'Dinner', pages: MM_MENU('dinner', [[1, 8], [2, 9], [3, 8]]) },
+        { name: 'Drinks', pages: MM_MENU('drinks', [[1, 2], [2, 3], [3, 2]]) }, { name: 'Wine', pages: MM_MENU('wine', [[1, 2], [2, 3], [3, 3]]) }] } }
+    };
+  }
+};
+
 // Every demo place gets a map: a Google Maps search for its name and area, unless we set a real link (Senja is made up: its maps point at the area)
 Object.entries(P).forEach(([k, v]) => k !== 'senja' && (v.venues || []).forEach(x => { if (!x.map) x.map = 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(x.name + ', ' + (x.area || '') + ', Bali'); }));
 
@@ -874,9 +924,9 @@ P.ulu = {
   }
 };
 
-const CODES = { U4LUCH: 'ulu', S2NSET: 'sunset', S3NJAB: 'senja', K8SNGA: 'sangsaka', B6PADL: 'bpa', S8HLTR: 'shelter', T7RNSB: 'trans', '5NKGZJ': 'trans', S4DK7R: 'sundari', M3SNRY: 'masonry', L5UMAB: 'luma', B7RNCH: 'brunch', L7LASQ: 'lolas', K2DETA: 'kudeta', S9LTLK: 'kudeta', S3EAST: 'southeast' };   // L5UMAB = Luma keyring: its own Luma demo (different owners from Sangsaka)   // 5NKGZJ = the printed sample card, shown as Trans for the GM demo
+const CODES = { U4LUCH: 'ulu', S2NSET: 'sunset', S3NJAB: 'senja', K8SNGA: 'sangsaka', B6PADL: 'bpa', S8HLTR: 'shelter', T7RNSB: 'trans', '5NKGZJ': 'trans', S4DK7R: 'sundari', M3SNRY: 'masonry', L5UMAB: 'luma', B7RNCH: 'brunch', L7LASQ: 'lolas', K2DETA: 'kudeta', S9LTLK: 'kudeta', S3EAST: 'southeast', M6MSAN: 'mamasan' };   // L5UMAB = Luma keyring: its own Luma demo (different owners from Sangsaka)   // 5NKGZJ = the printed sample card, shown as Trans for the GM demo
 // Mavis Club network: each of the guest's other venues as a logo tile (their colour, logo, how long they've been a member there)
-const KEY_CODE = { ulu: 'U4LUCH', sunset: 'S2NSET', senja: 'S3NJAB', sangsaka: 'K8SNGA', bpa: 'B6PADL', shelter: 'S8HLTR', trans: 'T7RNSB', sundari: 'S4DK7R', masonry: 'M3SNRY', luma: 'L5UMAB', brunch: 'B7RNCH', lolas: 'L7LASQ', kudeta: 'K2DETA', southeast: 'S3EAST' };
+const KEY_CODE = { ulu: 'U4LUCH', sunset: 'S2NSET', senja: 'S3NJAB', sangsaka: 'K8SNGA', bpa: 'B6PADL', shelter: 'S8HLTR', trans: 'T7RNSB', sundari: 'S4DK7R', masonry: 'M3SNRY', luma: 'L5UMAB', brunch: 'B7RNCH', lolas: 'L7LASQ', kudeta: 'K2DETA', southeast: 'S3EAST', mamasan: 'M6MSAN' };
 const club = (list, who) => list.map(c => { const v = P[c.key]; if (!v) return null; const t = (v.content('2026-01-01').theme) || {};
   return { name: v.brand, logo: v.logo, top: t.top || '#0F1E2E', area: (v.venues[0] || {}).area || '', since: c.since || '', visits: c.visits || 0,
     href: '/k/' + KEY_CODE[c.key] + '?n=' + encodeURIComponent(String(who || '').split(' ')[0]) }; }).filter(Boolean);

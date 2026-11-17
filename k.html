@@ -981,6 +981,13 @@ body.vqopen .vq-dim{opacity:1;pointer-events:auto}body.vqopen .vq-sheet{transfor
     };
 
     // ── Follow us on Instagram (each place's own account) ──
+    // Main page: only this brand's own accounts - a sister venue's Instagram shows on its own page (Our other venues), never here
+    var homeIg = function(){
+      var own = (places || []).filter(function(p){ return !p.other && p.ig; });
+      if (own.length) return own;
+      var c = d.contact && d.contact.ig;
+      return c ? [{ ig: c, name: d.brand || '' }] : [];
+    };
     var igHtml = function(list){
       var seen = {}, cnt = {};
       (list || []).forEach(function(p){ if (p.ig) cnt[p.ig] = (cnt[p.ig] || 0) + 1; });
@@ -1027,7 +1034,7 @@ body.vqopen .vq-dim{opacity:1;pointer-events:auto}body.vqopen .vq-sheet{transfor
       h += extrasHtml();
       if (!bold) h += hotelsRow;
       if (on.gallery && (gp.gallery || []).length) h += galHtml(gp.gallery, '');
-      h += reviewLine(d.venues) + igHtml(places) + clubRow;
+      h += reviewLine(d.venues) + igHtml(homeIg()) + clubRow;
       return h + foot + '</div>';
     };
     // Menus for one place: one button each (Food, Drinks...) - opens the venue's own file

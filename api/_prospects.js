@@ -867,6 +867,62 @@ P.mamasan = {
   }
 };
 
+// Mozaic (Ubud, since 2001; Chef Blake Thornley) - photos and video from Robbie's Drive; spaces, hours, contact and What's On from mozaic-bali.com (Robbie's capture, Nov 2026);
+// menus from their own PDFs. Member perks and the members' deals are made up.
+const mz = n => '/demo-guest/p-mz-' + n + '.jpg';
+const MZ_WA = '6282147235550';
+const MZ_MENU = (name, f, k) => ({ name, pages: Array.from({ length: k }, (_, i) => ({ img: '/demo-guest/p-mz-menu-' + f + '-' + (i + 1) + '.jpg' })) });
+P.mozaic = {
+  brand: 'Mozaic', logo: '/demo-guest/p-mz-logo.png', icon: '/demo-guest/p-mz-icon', first: 'Chris', tier: 'member', visits: 3, since: 2025, favourite: 'The Dining Room',
+  perks: ['A glass of champagne in the Tipple Room, every visit', 'A gift from the kitchen on your birthday', 'First pick of tables for special dinners', 'First word on new seasonal menus'],
+  perkIcons: ['star', 'cake', 'pct', 'sparkle'],
+  reward: { target: 6, text: "A seat at the Chef's Table for two" },
+  venues: [
+    { name: 'The Dining Room', area: 'Jl. Raya Sanggingan, Ubud', opens: '18:00', closes: '22:00', wa: MZ_WA, phone: '+62 361 975 768', email: 'info@mozaic-bali.com', map: 'https://www.google.com/maps/search/?api=1&query=Mozaic+Restaurant+Ubud' },
+    { name: 'Tipple Room', area: 'Jl. Raya Sanggingan, Ubud', opens: '17:00', closes: '00:30', wa: MZ_WA, phone: '+62 361 975 768', email: 'info@mozaic-bali.com', map: 'https://www.google.com/maps/search/?api=1&query=Mozaic+Restaurant+Ubud' },
+    { name: "Chef's Table", area: 'The Workshop, Mozaic', wa: MZ_WA, phone: '+62 361 975 768', email: 'info@mozaic-bali.com', map: 'https://www.google.com/maps/search/?api=1&query=Mozaic+Restaurant+Ubud' },
+    { name: 'Romantic Gazebo', area: 'In the garden, Mozaic', wa: MZ_WA, phone: '+62 361 975 768', email: 'info@mozaic-bali.com', map: 'https://www.google.com/maps/search/?api=1&query=Mozaic+Restaurant+Ubud' }
+  ],
+  contact: { wa: MZ_WA, phone: '+62 361 975 768', email: 'info@mozaic-bali.com' },
+  acts: [
+    { title: 'Lunch at Mozaic', line: 'Six courses at the Tipple Room Kitchen, from 1pm', every: [4, 5, 6], start: '13:00', end: '16:00', venue: 'Tipple Room', ic: 'star' }
+  ],
+  content: today => {
+    const y = year(today);
+    return {
+      theme: { top: '#03211A', acc: '#D4AF5A', dark: true, dkbg: '#03211A' }, motion: true, video: '/demo-guest/p-mz-film.mp4', videoTall: true,
+      gift: { on: true, title: 'A night at Mozaic, on you', line: 'Give someone the gastronomic journey. Tell us the amount and who it is for.', to: MZ_WA, amounts: [1000000, 2000000, 5000000], max: 20000000 },
+      slides: [
+        { id: 'mz1', img: mz('dining'), title: 'The gastronomic journey', line: 'Since 2001: begin in the Tipple Room, dine, finish in the garden', venue: 'The Dining Room', btn: 'wa' },
+        { id: 'mz2', img: mz('tipple'), title: 'Start in the Tipple Room', line: 'Canapés, opening bites and crafted cocktails', venue: 'Tipple Room', btn: 'wa' },
+        { id: 'mz3', img: mz('trout'), title: 'Seasonal tasting menu', line: 'Bali produce, with optional wine pairing', venue: 'The Dining Room', btn: 'wa' },
+        { id: 'mz4', img: mz('chefstable'), title: "Chef's Table in the Workshop", line: 'Watch the team cook in front of you', venue: "Chef's Table", btn: 'wa' },
+        { id: 'mz5', img: mz('gazebo'), title: 'Romantica', line: 'A private garden gazebo for two, with champagne and wine pairing', venue: 'Romantic Gazebo', btn: 'wa' },
+        { id: 'mz6', img: mz('chef'), title: 'Chef Blake Thornley', line: 'Leading the Mozaic kitchen', venue: 'The Dining Room' }
+      ],
+      deals: [
+        { id: 'mzd1', img: mz('wo-lunch'), title: 'Lunch at Mozaic · 6 courses from IDR 1,250,000++', when: 'Thu, Fri & Sat · 1pm', venue: 'Tipple Room', btn: 'wa' },
+        { id: 'mzd2', img: mz('cocktails'), title: 'Members: your first cocktail on us in the Tipple Room', when: 'Daily · from 5pm', venue: 'Tipple Room', btn: 'wa' },
+        { id: 'mzd3', img: mz('garden'), title: 'Members: dessert in the garden with any tasting menu', when: 'Daily · from 6pm', venue: 'The Dining Room', btn: 'wa' }
+      ],
+      events: [
+        { id: 'mze1', img: mz('wo-25'), title: '25 Years of Mozaic', line: 'An eight-course legacy menu with five guest chefs', date: y + '-12-05', time: '18:00', time2: '23:00', venue: 'The Dining Room', btn: 'wa', hl: true,
+          details: "Join Chef Blake Thornley and five of Bali's most distinguished chefs for an exclusive anniversary dinner: an eight-course legacy menu celebrating 25 years of Mozaic. Every reservation enters a draw for a two-night retreat at Secret Moon Bali. IDR 1,800,000++ per person.", notes: 'Reservations are essential.' },
+        { id: 'mze2', img: mz('wo-xmas'), title: 'Christmas Dinner at Mozaic', line: 'Eight-course festive tasting menu', date: y + '-12-24', time: '18:00', time2: '23:00', venue: 'The Dining Room', btn: 'wa',
+          details: 'A special eight-course festive dinner by Chef Blake Thornley, on 24 and 25 December. IDR 1,900,000++ per person, from 6pm.', notes: 'Reservation required.' }
+      ],
+      gallery: ['dining', 'tipple', 'tipple2', 'garden', 'couple', 'gazebo', 'chefstable', 'workshop', 'chef', 'chefpan', 'trout', 'wagyu', 'beef', 'duck', 'yolk', 'caviar', 'fish', 'soup', 'plate', 'dessert', 'cocktails', 'cocktail', 'tea', 'ricefields']
+        .map((n, i) => ({ id: 'mzg' + i, img: mz(n), venue: i < 3 ? 'Tipple Room' : i < 6 ? 'Romantic Gazebo' : i < 10 ? "Chef's Table" : 'The Dining Room' })),
+      places: {
+        'the dining room': { img: mz('dining'), area: 'Seasonal tasting menus', ig: 'mozaicbali', menus: [MZ_MENU('Seasonal', 'seasonal', 2), MZ_MENU('Botanical', 'botanical', 2), MZ_MENU('Wine', 'wine', 12)] },
+        'tipple room': { img: mz('tipple2'), area: 'Cocktails & canapés', ig: 'mozaicbali', menus: [MZ_MENU('Cocktails', 'cocktails', 2)] },
+        "chef's table": { img: mz('chefstable'), area: 'Private dining · the Workshop', ig: 'mozaicbali', menus: [MZ_MENU('Sample menu', 'chefs', 2)] },
+        'romantic gazebo': { img: mz('gazebo'), area: 'Romantica · for two', ig: 'mozaicbali', menus: [MZ_MENU('Romantica', 'romantica', 4)] }
+      }
+    };
+  }
+};
+
 // Every demo place gets a map: a Google Maps search for its name and area, unless we set a real link (Senja is made up: its maps point at the area)
 Object.entries(P).forEach(([k, v]) => k !== 'senja' && (v.venues || []).forEach(x => { if (!x.map) x.map = 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(x.name + ', ' + (x.area || '') + ', Bali'); }));
 
@@ -925,9 +981,9 @@ P.ulu = {
   }
 };
 
-const CODES = { U4LUCH: 'ulu', S2NSET: 'sunset', S3NJAB: 'senja', K8SNGA: 'sangsaka', B6PADL: 'bpa', S8HLTR: 'shelter', T7RNSB: 'trans', '5NKGZJ': 'trans', S4DK7R: 'sundari', M3SNRY: 'masonry', L5UMAB: 'luma', B7RNCH: 'brunch', L7LASQ: 'lolas', K2DETA: 'kudeta', S9LTLK: 'kudeta', S3EAST: 'southeast', M6MSAN: 'mamasan' };   // L5UMAB = Luma keyring: its own Luma demo (different owners from Sangsaka)   // 5NKGZJ = the printed sample card, shown as Trans for the GM demo
+const CODES = { U4LUCH: 'ulu', S2NSET: 'sunset', S3NJAB: 'senja', K8SNGA: 'sangsaka', B6PADL: 'bpa', S8HLTR: 'shelter', T7RNSB: 'trans', '5NKGZJ': 'trans', S4DK7R: 'sundari', M3SNRY: 'masonry', L5UMAB: 'luma', B7RNCH: 'brunch', L7LASQ: 'lolas', K2DETA: 'kudeta', S9LTLK: 'kudeta', S3EAST: 'southeast', M6MSAN: 'mamasan', M8ZAIC: 'mozaic' };   // L5UMAB = Luma keyring: its own Luma demo (different owners from Sangsaka)   // 5NKGZJ = the printed sample card, shown as Trans for the GM demo
 // Mavis Club network: each of the guest's other venues as a logo tile (their colour, logo, how long they've been a member there)
-const KEY_CODE = { ulu: 'U4LUCH', sunset: 'S2NSET', senja: 'S3NJAB', sangsaka: 'K8SNGA', bpa: 'B6PADL', shelter: 'S8HLTR', trans: 'T7RNSB', sundari: 'S4DK7R', masonry: 'M3SNRY', luma: 'L5UMAB', brunch: 'B7RNCH', lolas: 'L7LASQ', kudeta: 'K2DETA', southeast: 'S3EAST', mamasan: 'M6MSAN' };
+const KEY_CODE = { ulu: 'U4LUCH', sunset: 'S2NSET', senja: 'S3NJAB', sangsaka: 'K8SNGA', bpa: 'B6PADL', shelter: 'S8HLTR', trans: 'T7RNSB', sundari: 'S4DK7R', masonry: 'M3SNRY', luma: 'L5UMAB', brunch: 'B7RNCH', lolas: 'L7LASQ', kudeta: 'K2DETA', southeast: 'S3EAST', mamasan: 'M6MSAN', mozaic: 'M8ZAIC' };
 const club = (list, who) => list.map(c => { const v = P[c.key]; if (!v) return null; const t = (v.content('2026-01-01').theme) || {};
   return { name: v.brand, logo: v.logo, top: t.top || '#0F1E2E', area: (v.venues[0] || {}).area || '', since: c.since || '', visits: c.visits || 0,
     href: '/k/' + KEY_CODE[c.key] + '?n=' + encodeURIComponent(String(who || '').split(' ')[0]) }; }).filter(Boolean);

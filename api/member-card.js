@@ -93,7 +93,7 @@ const cleanContact = c => { c = c || {}; return { phone: String(c.phone || '').r
 
 // Sales demo keyring (see _prospects.js): the same page a member gets, filled with that venue's own content
 // Sales sample keyrings sent to venues whose demo page isn't made yet: a friendly "being set up" page with their name, never an error
-const PENDING = { S5PCJX: 'Spice Islands', M8ZAIC: 'Mozaic',
+const PENDING = { S5PCJX: 'Spice Islands',
   S6PBLK: 'Spice by Blake', F4VELA: 'La Favela' };
 function prospectCard(pro, code, ov){
   const now = localNow('Asia/Makassar');

@@ -860,8 +860,8 @@ P.mamasan = {
       gallery: ['lounge', 'diners', 'chandelier', 'bar', 'dining', 'table', 'upstairs', 'group', 'hargow', 'lobster', 'pho', 'banhmi', 'laab', 'tuna', 'puri', 'buns', 'fish', 'porkhock', 'duckrice', 'parfait', 'coffee']
         .map((n, i) => ({ id: 'mmg' + i, img: mm(n), venue: 'Mama San' })),
       places: { 'mama san': { img: mm('chandelier'), area: 'Southeast Asian · Seminyak', ig: 'mamasanbali', menus: [
-        { name: 'Lunch', pages: Array.from({ length: 12 }, (_, i) => ({ img: '/demo-guest/p-mms-menu-lunchv3-' + (i + 1) + '.jpg' })) }, { name: 'Dinner', pages: MM_MENU('dinner', [[1, 8], [2, 9], [3, 8]]) },
-        { name: 'Drinks', pages: MM_MENU('drinks', [[1, 2], [2, 3], [3, 2]]) }, { name: 'Wine', pages: MM_MENU('wine', [[1, 2], [2, 3], [3, 3]]) }] } }
+        { name: 'Lunch', pages: Array.from({ length: 12 }, (_, i) => ({ img: '/demo-guest/p-mms-menu-lunchv3-' + (i + 1) + '.jpg' })) }, { name: 'Dinner', pages: Array.from({ length: 12 }, (_, i) => ({ img: '/demo-guest/p-mms-menu-dinnerv3-' + (i + 1) + '.jpg' })) },
+        { name: 'Drinks', pages: MM_MENU('drinks', [[1, 2], [2, 3], [3, 2]]) }, { name: 'Wine', pages: Array.from({ length: 7 }, (_, i) => ({ img: '/demo-guest/p-mms-menu-winev3-' + (i + 1) + '.jpg' })) }] } }
     };
   }
 };

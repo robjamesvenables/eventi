@@ -860,7 +860,7 @@ P.mamasan = {
       gallery: ['lounge', 'diners', 'chandelier', 'bar', 'dining', 'table', 'upstairs', 'group', 'hargow', 'lobster', 'pho', 'banhmi', 'laab', 'tuna', 'puri', 'buns', 'fish', 'porkhock', 'duckrice', 'parfait', 'coffee']
         .map((n, i) => ({ id: 'mmg' + i, img: mm(n), venue: 'Mama San' })),
       places: { 'mama san': { img: mm('chandelier'), area: 'Southeast Asian · Seminyak', ig: 'mamasanbali', menus: [
-        { name: 'Lunch', pages: MM_MENU('lunch', [[1, 10], [2, 9], [3, 8]]) }, { name: 'Dinner', pages: MM_MENU('dinner', [[1, 8], [2, 9], [3, 8]]) },
+        { name: 'Lunch', pages: MM_MENU('lunchv2', [[1, 10], [2, 8], [3, 9]]) }, { name: 'Dinner', pages: MM_MENU('dinner', [[1, 8], [2, 9], [3, 8]]) },
         { name: 'Drinks', pages: MM_MENU('drinks', [[1, 2], [2, 3], [3, 2]]) }, { name: 'Wine', pages: MM_MENU('wine', [[1, 2], [2, 3], [3, 3]]) }] } }
     };
   }

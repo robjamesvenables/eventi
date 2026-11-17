@@ -871,6 +871,7 @@ P.mamasan = {
 // menus from their own PDFs. Member perks and the members' deals are made up.
 const mz = n => '/demo-guest/p-mz-' + n + '.jpg';
 const MZ_WA = '6282147235550';
+const MZ_BOOK = 'https://booking.resdiary.com/widget/Standard/MozaicBali/4947';   // their ResDiary booking (from mozaic-bali.com)
 const MZ_MENU = (name, f, k) => ({ name, pages: Array.from({ length: k }, (_, i) => ({ img: '/demo-guest/p-mz-menu-' + f + '-' + (i + 1) + '.jpg' })) });
 P.mozaic = {
   brand: 'Mozaic', logo: '/demo-guest/p-mz-logo.png', icon: '/demo-guest/p-mz-icon', first: 'Chris', tier: 'member', visits: 3, since: 2025, favourite: 'The Dining Room',
@@ -878,8 +879,8 @@ P.mozaic = {
   perkIcons: ['star', 'cake', 'pct', 'sparkle'],
   reward: { target: 6, text: "A seat at the Chef's Table for two" },
   venues: [
-    { name: 'The Dining Room', area: 'Jl. Raya Sanggingan, Ubud', opens: '18:00', closes: '22:00', wa: MZ_WA, phone: '+62 361 975 768', email: 'info@mozaic-bali.com', map: 'https://www.google.com/maps/search/?api=1&query=Mozaic+Restaurant+Ubud' },
-    { name: 'Tipple Room', area: 'Jl. Raya Sanggingan, Ubud', opens: '17:00', closes: '00:30', wa: MZ_WA, phone: '+62 361 975 768', email: 'info@mozaic-bali.com', map: 'https://www.google.com/maps/search/?api=1&query=Mozaic+Restaurant+Ubud' },
+    { name: 'The Dining Room', area: 'Jl. Raya Sanggingan, Ubud', opens: '18:00', closes: '22:00', wa: MZ_WA, book: MZ_BOOK, phone: '+62 361 975 768', email: 'info@mozaic-bali.com', map: 'https://www.google.com/maps/search/?api=1&query=Mozaic+Restaurant+Ubud' },
+    { name: 'Tipple Room', area: 'Jl. Raya Sanggingan, Ubud', opens: '17:00', closes: '00:30', wa: MZ_WA, book: MZ_BOOK, phone: '+62 361 975 768', email: 'info@mozaic-bali.com', map: 'https://www.google.com/maps/search/?api=1&query=Mozaic+Restaurant+Ubud' },
     { name: "Chef's Table", area: 'The Workshop, Mozaic', wa: MZ_WA, phone: '+62 361 975 768', email: 'info@mozaic-bali.com', map: 'https://www.google.com/maps/search/?api=1&query=Mozaic+Restaurant+Ubud' },
     { name: 'Romantic Gazebo', area: 'In the garden, Mozaic', wa: MZ_WA, phone: '+62 361 975 768', email: 'info@mozaic-bali.com', map: 'https://www.google.com/maps/search/?api=1&query=Mozaic+Restaurant+Ubud' }
   ],
@@ -908,7 +909,7 @@ P.mozaic = {
       events: [
         { id: 'mze1', img: mz('wo-25'), title: '25 Years of Mozaic', line: 'An eight-course legacy menu with five guest chefs', date: y + '-12-05', time: '18:00', time2: '23:00', venue: 'The Dining Room', btn: 'wa', hl: true,
           details: "Join Chef Blake Thornley and five of Bali's most distinguished chefs for an exclusive anniversary dinner: an eight-course legacy menu celebrating 25 years of Mozaic. Every reservation enters a draw for a two-night retreat at Secret Moon Bali. IDR 1,800,000++ per person.", notes: 'Reservations are essential.' },
-        { id: 'mze2', img: mz('wo-xmas'), title: 'Christmas Dinner at Mozaic', line: 'Eight-course festive tasting menu', date: y + '-12-24', time: '18:00', time2: '23:00', venue: 'The Dining Room', btn: 'wa',
+        { id: 'mze2', img: mz('wo-xmas'), title: 'Christmas Dinner at Mozaic', line: 'Eight-course festive tasting menu', date: y + '-12-24', time: '18:00', time2: '23:00', venue: 'The Dining Room', btn: 'book', url: MZ_BOOK + '?date=' + y + '-12-24&promotionId=297928',
           details: 'A special eight-course festive dinner by Chef Blake Thornley, on 24 and 25 December. IDR 1,900,000++ per person, from 6pm.', notes: 'Reservation required.' }
       ],
       gallery: ['dining', 'tipple', 'tipple2', 'garden', 'couple', 'gazebo', 'chefstable', 'workshop', 'chef', 'chefpan', 'trout', 'wagyu', 'beef', 'duck', 'yolk', 'caviar', 'fish', 'soup', 'plate', 'dessert', 'cocktails', 'cocktail', 'tea', 'ricefields']

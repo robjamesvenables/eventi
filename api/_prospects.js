@@ -831,7 +831,7 @@ P.mamasan = {
   contact: { wa: MM_WA, phone: '+62 818 0612 6700', email: 'booking@mamasanbali.com' },
   acts: [
     { title: 'DJs in the Lounge', line: 'Vinyl upstairs into the late evening', every: [5, 6], start: '20:00', end: '00:00', venue: 'Mama San', ic: 'party' },
-    { title: 'Feed Me menu', line: 'Let the kitchen choose for the table', every: [4], start: '17:30', end: '22:30', venue: 'Mama San', ic: 'star' }
+    { title: 'Vietnamese lunch specials', line: 'Pho, banh mi and Vietnamese coffee', every: [1, 2, 3], start: '12:00', end: '17:00', venue: 'Mama San', ic: 'star' }
   ],
   content: today => {
     const y = year(today);
@@ -839,22 +839,22 @@ P.mamasan = {
       theme: { top: '#22211C', acc: '#CDA86B', dark: true, dkbg: '#1A1915' }, motion: true, video: '/demo-guest/p-mms-film.mp4', videoTall: true,
       gift: { on: true, title: 'Dinner at Mama San, on you', line: 'Give someone a night of Southeast Asian sharing plates. Tell us the amount and who it is for.', to: MM_WA, amounts: [500000, 1000000, 2000000], max: 10000000 },
       slides: [
-        { id: 'mm1', img: mm('lounge'), title: 'Modern Southeast Asian, since 2010', line: 'Thailand, Vietnam, Malaysia, Indonesia and Singapore on one menu', venue: 'Mama San', btn: 'wa' },
-        { id: 'mm2', img: mm('pho'), title: 'Vietnamese lunch specials', line: 'Every day, 12 to 5pm', venue: 'Mama San', btn: 'wa' },
-        { id: 'mm3', img: mm('hargow'), title: 'Dim sum to start', line: 'Har gow, money bags and rendang doughnuts', venue: 'Mama San', btn: 'wa' },
-        { id: 'mm4', img: mm('upstairs'), title: 'The Lounge upstairs', line: 'Vinyl-spinning DJs into the late evening', venue: 'Mama San', btn: 'wa' },
-        { id: 'mm5', img: mm('group'), title: 'Big tables, big nights', line: 'Up to 130 guests across both floors', venue: 'Mama San', btn: 'wa' }
+        { id: 'mm1', img: mm('wo-flavours'), title: 'Bold New Flavours', line: 'Char siu claypot, Northern Thai hotpot and Malaysian kandar curry', venue: 'Mama San', btn: 'wa' },
+        { id: 'mm2', img: mm('wo-lunch'), title: 'Vietnamese Lunch', line: 'Pho, banh mi and pork la lot, every day 12-5pm', venue: 'Mama San', btn: 'wa' },
+        { id: 'mm3', img: mm('wo-coffee'), title: 'Vietnamese Coffees', line: 'Phin drip, egg coffee and coconut, daily 12-5pm', venue: 'Mama San' },
+        { id: 'mm4', img: mm('wo-groups'), title: 'Group Dining', line: 'Big tables, big flavours: set menus for 10 to 20 guests', venue: 'Mama San', btn: 'wa' },
+        { id: 'mm5', img: mm('wo-private'), title: 'Private Events', line: 'Launches, weddings, private dinners: the house is yours', venue: 'Mama San', btn: 'wa' },
+        { id: 'mm6', img: mm('upstairs'), title: 'The Lounge upstairs', line: 'Vinyl-spinning DJs into the late evening', venue: 'Mama San', btn: 'wa' }
       ],
       deals: [
         { id: 'mmd1', img: mm('banhmi'), title: 'Vietnamese lunch specials', when: 'Every day · 12–5pm', venue: 'Mama San' },
-        { id: 'mmd2', img: mm('coffee'), title: 'Vietnamese coffees from Rp 50k', when: 'Lunch only', venue: 'Mama San' },
-        { id: 'mmd3', img: mm('bar'), title: 'Members: a cocktail on us with the Feed Me menu', when: 'Dinner · from 5:30pm', venue: 'Mama San', btn: 'wa' },
-        { id: 'mmd4', img: mm('table'), title: 'Group dining · set menus and drinks packages', when: 'Any day · ask us', venue: 'Mama San', btn: 'wa' }
+        { id: 'mmd2', img: mm('coffee'), title: 'Vietnamese coffees from Rp 50k', when: 'Every day · 12–5pm', venue: 'Mama San' },
+        { id: 'mmd3', img: mm('bar'), title: 'Members: a cocktail on us with dinner for two', when: 'Dinner · from 5:30pm', venue: 'Mama San', btn: 'wa' },
+        { id: 'mmd4', img: mm('table'), title: 'Group set menus · 10 to 20 guests', when: 'Lunch and dinner · ask us', venue: 'Mama San', btn: 'wa' }
       ],
       events: [
-        { id: 'mme1', img: mm('lobster'), title: 'Feed Me Friday', line: 'Let the kitchen choose for the table', date: nextDow(today, 5), time: '17:30', time2: '22:30', venue: 'Mama San', btn: 'wa', hl: true,
-          details: 'The Feed Me set menu is the easiest way across the dinner menu: dim sum, salads, curries and plates from the grill, shared at the table.', notes: 'Members: book on WhatsApp for first pick of tables.' },
-        { id: 'mme2', img: mm('upstairs'), title: 'Saturday nights in the Lounge', line: 'DJs on vinyl, cocktails upstairs', date: nextDow(today, 6), time: '20:00', time2: '00:00', venue: 'Mama San', btn: 'wa' },
+        { id: 'mme1', img: mm('upstairs'), title: 'DJs in the Lounge', line: 'Vinyl upstairs into the late evening', date: nextDow(today, 6), time: '20:00', time2: '00:00', venue: 'Mama San', btn: 'wa', hl: true,
+          details: 'Upstairs, the Mama San Lounge is one of Seminyak\'s best hideaways, where vinyl-spinning DJs carry the room into the late evening.', notes: 'Members: tell us you are coming and we will hold you a spot.' },
         { id: 'mme3', img: mm('chandelier'), title: "New Year's Eve at Mama San", line: 'A long dinner and the countdown', date: y + '-12-31', time: '18:00', time2: '01:00', venue: 'Mama San', btn: 'wa' }
       ],
       gallery: ['lounge', 'diners', 'chandelier', 'bar', 'dining', 'table', 'upstairs', 'group', 'hargow', 'lobster', 'pho', 'banhmi', 'laab', 'tuna', 'puri', 'buns', 'fish', 'porkhock', 'duckrice', 'parfait', 'coffee']

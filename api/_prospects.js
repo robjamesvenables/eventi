@@ -532,9 +532,9 @@ P.brunch = {
       gallery: ['banner', 'brekkie', 'lobster', 'dubai', 'waffle', 'avo', 'caramel', 'salmon', 'halloumi', 'shake', 'daiquiri', 'espresso', 'buns', 'burger', 'allday']
         .map((n, i) => ({ id: 'bcg' + i, img: bc(n) })),
       places: {
-        'brunch club berawa': { img: bc('waffle'), area: 'Berawa, Canggu', menus: BC_MENU },
-        'brunch club pererenan': { img: bc('avo'), area: 'Pererenan', menus: BC_MENU },
-        'brunch club legian': { img: bc('halloumi'), area: 'Legian', menus: BC_MENU },
+        'brunch club berawa': { ig: 'brunch_club_bali', img: bc('waffle'), area: 'Berawa, Canggu', menus: BC_MENU },
+        'brunch club pererenan': { ig: 'brunch_club_bali', img: bc('avo'), area: 'Pererenan', menus: BC_MENU },
+        'brunch club legian': { ig: 'brunch_club_bali', img: bc('halloumi'), area: 'Legian', menus: BC_MENU },
         'lemongrass': { img: '/demo-guest/p-lemongrass-front.jpg', area: 'Thai · Legian', ig: 'lemongrass_bali', other: true, menus: [{ name: 'Menu', url: 'https://wearelemongrass.com/starters/' }] }
       }
     };

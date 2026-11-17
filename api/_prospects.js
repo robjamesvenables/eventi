@@ -477,7 +477,7 @@ P.luma = {
       gallery: ['street', 'room', 'table', 'lamb', 'lounge', 'g-burrata', 'g-prawns', 'g-steak', 'chefs', 'g-arches', 'g-pasta', 'g-oysters', 'terrace', 'wine', 'g-chocolate', 'g-bar', 'g-entrance', 'g-night']
         .map((n, i) => ({ id: 'lg' + i, img: lm(n), venue: ['lounge', 'wine', 'g-bar', 'g-oysters', 'g-night'].indexOf(n) >= 0 ? 'Bar Luma' : 'Luma' })),
       places: {
-        'luma': { img: lm('terrace'), area: 'Batu Bolong, Canggu', ig: 'lumabali' },
+        'luma': { img: lm('terrace'), area: 'Batu Bolong, Canggu', ig: 'lumabali', menus: [{ name: 'Food', pages: [1, 2].map(i => ({ img: '/demo-guest/p-luma-menu-food-' + i + '.jpg' })) }] },
         'bar luma': { img: lm('g-bar'), area: 'Terrace bar', ig: 'lumabali' }
       }
     };
@@ -486,6 +486,7 @@ P.luma = {
 
 // Brunch Club (all-day brunch, Berawa / Pererenan / Legian) - photos from their site, hours and phone from public listings;
 // perks, deals and dates made up for the demo. Logo is a stand-in until we get theirs.
+const BC_MENU = [['Food', 'food', 9], ['Porncakes', 'pancakes', 2], ['Drinks', 'drinks', 5], ['Cocktails', 'cocktails', 4]].map(([name, f, k]) => ({ name, pages: Array.from({ length: k }, (_, i) => ({ img: '/demo-guest/p-brunch-menu-' + f + '-' + (i + 1) + '.jpg' })) }));   // from their own PDF menu (Robbie, Nov 2026)
 const bc = n => '/demo-guest/p-brunch-' + n + '.jpg';
 const BC_WA = '6281138312910';
 P.brunch = {
@@ -531,9 +532,9 @@ P.brunch = {
       gallery: ['banner', 'brekkie', 'lobster', 'dubai', 'waffle', 'avo', 'caramel', 'salmon', 'halloumi', 'shake', 'daiquiri', 'espresso', 'buns', 'burger', 'allday']
         .map((n, i) => ({ id: 'bcg' + i, img: bc(n) })),
       places: {
-        'brunch club berawa': { img: bc('waffle'), area: 'Berawa, Canggu' },
-        'brunch club pererenan': { img: bc('avo'), area: 'Pererenan' },
-        'brunch club legian': { img: bc('halloumi'), area: 'Legian' },
+        'brunch club berawa': { img: bc('waffle'), area: 'Berawa, Canggu', menus: BC_MENU },
+        'brunch club pererenan': { img: bc('avo'), area: 'Pererenan', menus: BC_MENU },
+        'brunch club legian': { img: bc('halloumi'), area: 'Legian', menus: BC_MENU },
         'lemongrass': { img: '/demo-guest/p-lemongrass-front.jpg', area: 'Thai · Legian', ig: 'lemongrass_bali', other: true, menus: [{ name: 'Menu', url: 'https://wearelemongrass.com/starters/' }] }
       }
     };

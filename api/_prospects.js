@@ -768,6 +768,54 @@ P.sunset = {
   }
 };
 
+// South + East Brewing Co. (Kerobokan) - photos and video from Robbie's Drive, menus from their May 2026 PDFs, hours/phone from Google.
+// Real: 24 taps, Pizza Day Wednesday 100k, beer flights, Sunday Roast, group/party bookings. Member perks and the birthday deal are made up.
+const se = n => '/demo-guest/p-se-' + n + '.jpg';
+const SE_WA = '6285216000383';
+const SE_MENU = (n, a, b) => Array.from({ length: b - a + 1 }, (_, i) => ({ img: '/demo-guest/p-se-menu-' + n + '-' + (a + i) + '.jpg' }));
+P.southeast = {
+  brand: 'South + East', logo: '/demo-guest/p-se-logo.png', icon: '/demo-guest/p-se-icon', first: 'Jack', tier: 'member', visits: 4, since: 2025, favourite: 'South + East',
+  perks: ['10% off your bill, every visit', 'A free pint on your birthday', 'First pour of every new beer', 'Priority on group bookings'],
+  perkIcons: ['pct', 'cake', 'star', 'sparkle'],
+  reward: { target: 10, text: 'A 6-beer flight and a platter for the table' },
+  venues: [{ name: 'South + East', area: 'Jl. Pengubengan Kauh, Kerobokan Kelod', opens: '12:00', closes: '00:00', wa: SE_WA, phone: '+62 852 1600 0383', email: 'info@southeastbrewing.co',
+    map: 'https://www.google.com/maps/search/?api=1&query=South+%2B+East+Brewing+Co+Kerobokan+Bali' }],
+  contact: { wa: SE_WA, phone: '+62 852 1600 0383', email: 'info@southeastbrewing.co' },
+  acts: [
+    { title: 'Pizza Day', line: 'Any pizza Rp 100k', every: [3], start: '12:00', end: '23:30', venue: 'South + East', ic: 'star' },
+    { title: 'Sunday Roast', line: 'Slow-roast, Yorkshire pudding and gravy', every: [0], start: '12:00', end: '23:30', venue: 'South + East', ic: 'star' }
+  ],
+  content: today => {
+    const y = year(today);
+    return {
+      theme: { top: '#141414', acc: '#EB9B80', dark: true }, motion: true, video: '/demo-guest/p-se-film.mp4',
+      gift: { on: true, title: 'A round on you', line: 'Give someone a night of craft beer and good food. Tell us the amount and who it is for.', to: SE_WA, amounts: [250000, 500000, 1000000], max: 5000000 },
+      slides: [
+        { id: 'se1', img: se('rhinos'), title: '24 taps, rice-field views', line: 'Local and international craft beer, poured fresh', venue: 'South + East', btn: 'wa' },
+        { id: 'se2', img: se('chicken'), title: 'South African meets Indonesian', line: 'Peri-peri chicken, biltong bitterballen and Balinese spice', venue: 'South + East', btn: 'wa' },
+        { id: 'se3', img: se('brekkie'), title: 'Breakfast, all day', line: 'Sourdough, eggs your way and proper coffee', venue: 'South + East', btn: 'wa' },
+        { id: 'se4', img: se('band'), title: 'Live music and DJs', line: 'Good tunes, cold beer, open air', venue: 'South + East', btn: 'wa' },
+        { id: 'se5', img: se('kids'), title: 'Bring the family', line: 'Kids welcome, dogs too', venue: 'South + East', btn: 'wa' },
+        { id: 'se6', img: se('crew'), title: 'Plan your party at South + East', line: 'Birthdays and groups: turn your event into your own bar', venue: 'South + East', btn: 'wa' }
+      ],
+      deals: [
+        { id: 'sed1', img: se('pizzaday'), title: 'Pizza Day · any pizza Rp 100k', when: 'Wednesdays', venue: 'South + East' },
+        { id: 'sed2', img: se('beer'), title: 'Beer flights · 3 for Rp 120k, 6 for Rp 200k', when: 'Every day', venue: 'South + East' },
+        { id: 'sed3', img: se('cans'), title: 'Happy hour on the starred taps', when: 'Ask at the bar', venue: 'South + East' },
+        { id: 'sed4', img: se('cheers'), title: 'Members: a free pint on your birthday week', when: 'Any day', venue: 'South + East', btn: 'wa' }
+      ],
+      events: [
+        { id: 'see1', img: se('lamb'), title: 'Sunday Roast', line: 'Slow-roast, Yorkshire pudding and gravy', date: nextDow(today, 0), time: '12:00', time2: '23:30', venue: 'South + East', btn: 'wa', hl: true,
+          details: 'Our Sunday Roast South + East: slow-roast with roast potatoes, seasonal vegetables and a Yorkshire pudding, with brown gravy.', notes: 'Members: book your table on WhatsApp.' },
+        { id: 'see3', img: se('lads'), title: "New Year's Eve at South + East", line: 'Craft beer, DJs and the countdown', date: y + '-12-31', time: '18:00', time2: '01:00', venue: 'South + East', btn: 'wa' }
+      ],
+      gallery: ['front', 'rhinos', 'cheers', 'crew', 'lads', 'laugh', 'band', 'dj', 'dj2', 'beer', 'cans', 'cocktails', 'mary', 'burger', 'pizza', 'chicken', 'ribs', 'porkbelly', 'lamb', 'brekkie', 'avo', 'friedchicken', 'croquettes', 'wings']
+        .map((n, i) => ({ id: 'seg' + i, img: se(n), venue: 'South + East' })),
+      places: { 'south + east': { img: se('front'), area: 'Craft beer · fusion kitchen', ig: 'southeastbrewing', menus: [{ name: 'Food', pages: SE_MENU('food', 2, 5) }, { name: 'Drinks', pages: SE_MENU('drinks', 2, 8) }] } }
+    };
+  }
+};
+
 // Every demo place gets a map: a Google Maps search for its name and area, unless we set a real link (Senja is made up: its maps point at the area)
 Object.entries(P).forEach(([k, v]) => k !== 'senja' && (v.venues || []).forEach(x => { if (!x.map) x.map = 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(x.name + ', ' + (x.area || '') + ', Bali'); }));
 
@@ -826,9 +874,9 @@ P.ulu = {
   }
 };
 
-const CODES = { U4LUCH: 'ulu', S2NSET: 'sunset', S3NJAB: 'senja', K8SNGA: 'sangsaka', B6PADL: 'bpa', S8HLTR: 'shelter', T7RNSB: 'trans', '5NKGZJ': 'trans', S4DK7R: 'sundari', M3SNRY: 'masonry', L5UMAB: 'luma', B7RNCH: 'brunch', L7LASQ: 'lolas', K2DETA: 'kudeta', S9LTLK: 'kudeta' };   // L5UMAB = Luma keyring: its own Luma demo (different owners from Sangsaka)   // 5NKGZJ = the printed sample card, shown as Trans for the GM demo
+const CODES = { U4LUCH: 'ulu', S2NSET: 'sunset', S3NJAB: 'senja', K8SNGA: 'sangsaka', B6PADL: 'bpa', S8HLTR: 'shelter', T7RNSB: 'trans', '5NKGZJ': 'trans', S4DK7R: 'sundari', M3SNRY: 'masonry', L5UMAB: 'luma', B7RNCH: 'brunch', L7LASQ: 'lolas', K2DETA: 'kudeta', S9LTLK: 'kudeta', S3EAST: 'southeast' };   // L5UMAB = Luma keyring: its own Luma demo (different owners from Sangsaka)   // 5NKGZJ = the printed sample card, shown as Trans for the GM demo
 // Mavis Club network: each of the guest's other venues as a logo tile (their colour, logo, how long they've been a member there)
-const KEY_CODE = { ulu: 'U4LUCH', sunset: 'S2NSET', senja: 'S3NJAB', sangsaka: 'K8SNGA', bpa: 'B6PADL', shelter: 'S8HLTR', trans: 'T7RNSB', sundari: 'S4DK7R', masonry: 'M3SNRY', luma: 'L5UMAB', brunch: 'B7RNCH', lolas: 'L7LASQ', kudeta: 'K2DETA' };
+const KEY_CODE = { ulu: 'U4LUCH', sunset: 'S2NSET', senja: 'S3NJAB', sangsaka: 'K8SNGA', bpa: 'B6PADL', shelter: 'S8HLTR', trans: 'T7RNSB', sundari: 'S4DK7R', masonry: 'M3SNRY', luma: 'L5UMAB', brunch: 'B7RNCH', lolas: 'L7LASQ', kudeta: 'K2DETA', southeast: 'S3EAST' };
 const club = (list, who) => list.map(c => { const v = P[c.key]; if (!v) return null; const t = (v.content('2026-01-01').theme) || {};
   return { name: v.brand, logo: v.logo, top: t.top || '#0F1E2E', area: (v.venues[0] || {}).area || '', since: c.since || '', visits: c.visits || 0,
     href: '/k/' + KEY_CODE[c.key] + '?n=' + encodeURIComponent(String(who || '').split(' ')[0]) }; }).filter(Boolean);

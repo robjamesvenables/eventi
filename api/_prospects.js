@@ -477,7 +477,7 @@ P.luma = {
       gallery: ['street', 'room', 'table', 'lamb', 'lounge', 'g-burrata', 'g-prawns', 'g-steak', 'chefs', 'g-arches', 'g-pasta', 'g-oysters', 'terrace', 'wine', 'g-chocolate', 'g-bar', 'g-entrance', 'g-night']
         .map((n, i) => ({ id: 'lg' + i, img: lm(n), venue: ['lounge', 'wine', 'g-bar', 'g-oysters', 'g-night'].indexOf(n) >= 0 ? 'Bar Luma' : 'Luma' })),
       places: {
-        'luma': { img: lm('terrace'), area: 'Batu Bolong, Canggu', ig: 'lumabali', menus: [{ name: 'Food', pages: [1, 2].map(i => ({ img: '/demo-guest/p-luma-menu-food-' + i + '.jpg' })) }] },
+        'luma': { img: lm('terrace'), area: 'Batu Bolong, Canggu', ig: 'lumabali', menus: [{ name: 'Food', pages: [1, 2].map(i => ({ img: '/demo-guest/p-luma-menu-food-' + i + '.jpg' })) }, { name: 'Wine', pages: [1, 2, 3].map(i => ({ img: '/demo-guest/p-luma-menu-wine-' + i + '.jpg' })) }] },
         'bar luma': { img: lm('g-bar'), area: 'Terrace bar', ig: 'lumabali' }
       }
     };

@@ -890,7 +890,7 @@ P.mozaic = {
   content: today => {
     const y = year(today);
     return {
-      theme: { top: '#03211A', acc: '#1F6B4F', pg: '#F5F1EA' }, motion: true, video: '/demo-guest/p-mz-film.mp4', videoTall: true,
+      theme: { top: '#03211A', acc: '#2F9A6B', dark: true, dkbg: '#03211A' }, motion: true, video: '/demo-guest/p-mz-film.mp4', videoTall: true,
       gift: { on: true, title: 'A night at Mozaic, on you', line: 'Give someone the gastronomic journey. Tell us the amount and who it is for.', to: MZ_WA, amounts: [1000000, 2000000, 5000000], max: 20000000 },
       slides: [
         { id: 'mz1', img: mz('dining'), title: 'The gastronomic journey', line: 'Since 2001: begin in the Tipple Room, dine, finish in the garden', venue: 'The Dining Room', btn: 'wa' },

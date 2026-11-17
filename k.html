@@ -922,8 +922,15 @@ body.vqopen .vq-dim{opacity:1;pointer-events:auto}body.vqopen .vq-sheet{transfor
     var placeSections = function(key, pre){   // pre: something to show just before the gallery (the one-place home's Our other venues)
       var S = {}, f = function(list){ return (list || []).filter(function(x){ return !key || at(x, key); }); };
       var tn = f(d.tonight), wk = f(d.week), dl = f(gp.deals), ev = f(gp.events), gl = f(gp.gallery);
-      if (tn.length || wk.length) S.tonight = (tn.length ? '<div class="sec"><div class="lab">' + (d.kind === 'padel' ? 'Today' : 'Tonight') + '</div>' + tn.map(function(e){
-          return '<div class="tn"><span class="tag">' + (e.time ? 'FROM ' + esc(e.time.split(' - ')[0]).toUpperCase() : 'TONIGHT') + '</span><h3 translate="no">' + esc(e.title) + '</h3><div class="meta">' + esc(key ? e.time : [e.venue, e.time].filter(Boolean).join(' · ')) + '</div>' +
+      // "12pm", "5:30pm", "17:00" -> hours as a number (null if we can't read it)
+      var tHr = function(t){ var m = String(t || '').trim().match(/^(\d{1,2})(?::(\d{2}))?\s*(am|pm)?$/i); if (!m) return null; var h = +m[1] % 24, ap = (m[3] || '').toLowerCase(); if (ap === 'pm' && h < 12) h += 12; if (ap === 'am' && h === 12) h = 0; return h + (+m[2] || 0) / 60; };
+      var nowHr = (function(){ var n = new Date(); return n.getHours() + n.getMinutes() / 60; })();
+      var tnSpan = function(e){ var p = String(e.time || '').split(' - '); var a = tHr(p[0]), b = tHr(p[1]); if (b !== null && a !== null && b <= a) b += 24; return [a, b]; };
+      // Anything starting before 5pm makes it "Today" (a lunch deal isn't "tonight"); on-now items say so
+      var tnDay = d.kind === 'padel' || tn.some(function(e){ var a = tnSpan(e)[0]; return a !== null && a < 17; });
+      if (tn.length || wk.length) S.tonight = (tn.length ? '<div class="sec"><div class="lab">' + (tnDay ? 'Today' : 'Tonight') + '</div>' + tn.map(function(e){
+          var sp = tnSpan(e), on = sp[0] !== null && sp[1] !== null && nowHr >= sp[0] && nowHr < sp[1];
+          return '<div class="tn"><span class="tag">' + (on ? 'ON NOW' : e.time ? 'FROM ' + esc(e.time.split(' - ')[0]).toUpperCase() : (tnDay ? 'TODAY' : 'TONIGHT')) + '</span><h3 translate="no">' + esc(e.title) + '</h3><div class="meta">' + esc(key ? e.time : [e.venue, e.time].filter(Boolean).join(' · ')) + '</div>' +
             (e.sub ? '<div class="sub">' + (e.ic === 'none' ? '' : '<i>' + svg(ACT_IC[e.ic] || (d.kind === 'padel' ? I.ball : I.music), 16) + '</i>') + esc(e.sub) + '</div>' : '') + '</div>';
         }).join('') + '</div>' : '') +
         (wk.length ? '<div class="sec"><div class="lab">This week</div><div class="days">' + wk.map(function(e){

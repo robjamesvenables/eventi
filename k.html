@@ -1610,4 +1610,54 @@ body.vqopen .vq-dim{opacity:1;pointer-events:auto}body.vqopen .vq-sheet{transfor
     show('', false);
   }).catch(function(){ root.innerHTML = '<div class="w">' + head({ brand:'Members Club' }, 'Hello!', '') + '<div class="msg"><h2>Couldn\'t open this page</h2><p>Check your connection and try again.</p></div></div>'; });
 })();
+</script>
+<script>
+// Bali Padel Academy demo only (B6PADL): the first time the app opens, ~20 balls drop from the sky and bounce.
+// Plays once per phone (add ?balls=1 to the link to see it again). Tap anywhere to skip.
+(function(){
+  try {
+    var m = location.pathname.match(/\/k\/([A-Za-z0-9]+)/i); if (!m || m[1].toUpperCase() !== 'B6PADL') return;
+    var again = /[?&]balls=1/.test(location.search), key = 'mvballs:B6PADL';
+    try { if (!again && localStorage.getItem(key)) return; localStorage.setItem(key, '1'); } catch (e) {}
+    if (window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    var cv = document.createElement('canvas'), dpr = Math.min(window.devicePixelRatio || 1, 3);
+    cv.style.cssText = 'position:fixed;inset:0;width:100%;height:100%;z-index:99999;pointer-events:auto;transition:opacity .6s';
+    var W = 0, H = 0, ctx = cv.getContext('2d');
+    var size = function(){ W = innerWidth; H = innerHeight; cv.width = W * dpr; cv.height = H * dpr; ctx.setTransform(dpr, 0, 0, dpr, 0, 0); };
+    var balls = [], N = 20, t0 = 0, done = false;
+    var start = function(){
+      document.body.appendChild(cv); size(); addEventListener('resize', size);
+      for (var i = 0; i < N; i++) {
+        var r = 15 + Math.random() * 9;
+        balls.push({ r: r, x: r + Math.random() * (W - 2 * r), y: -r - Math.random() * H * 0.9, vx: (Math.random() - 0.5) * 2.4, vy: Math.random() * 2, a: Math.random() * 6.28, va: (Math.random() - 0.5) * 0.2 });
+      }
+      cv.addEventListener('click', end); cv.addEventListener('touchstart', end, { passive: true });
+      requestAnimationFrame(step);
+    };
+    var end = function(){ if (done) return; done = true; cv.style.opacity = '0'; setTimeout(function(){ cv.remove(); removeEventListener('resize', size); }, 650); };
+    var draw = function(b){
+      ctx.save(); ctx.translate(b.x, b.y); ctx.rotate(b.a);
+      ctx.beginPath(); ctx.arc(0, 0, b.r, 0, 6.2832); ctx.fillStyle = '#DCEB3A'; ctx.fill();
+      ctx.lineWidth = b.r * 0.13; ctx.strokeStyle = '#FFFFFF';
+      ctx.beginPath(); ctx.arc(-b.r * 1.15, 0, b.r * 0.85, -0.95, 0.95); ctx.stroke();
+      ctx.beginPath(); ctx.arc(b.r * 1.15, 0, b.r * 0.85, Math.PI - 0.95, Math.PI + 0.95); ctx.stroke();
+      ctx.beginPath(); ctx.arc(-b.r * 0.3, -b.r * 0.35, b.r * 0.35, 0, 6.2832); ctx.fillStyle = 'rgba(255,255,255,.18)'; ctx.fill();
+      ctx.restore();
+    };
+    var step = function(ts){
+      if (!t0) t0 = ts; var el = ts - t0;
+      ctx.clearRect(0, 0, W, H);
+      for (var i = 0; i < balls.length; i++) {
+        var b = balls[i];
+        b.vy += 0.55; b.x += b.vx; b.y += b.vy; b.a += b.va + b.vx * 0.02;
+        if (b.y > H - b.r) { b.y = H - b.r; b.vy *= -0.62; b.vx *= 0.96; if (Math.abs(b.vy) < 1.2) b.vy = 0; }
+        if (b.x < b.r) { b.x = b.r; b.vx = Math.abs(b.vx) * 0.8; } if (b.x > W - b.r) { b.x = W - b.r; b.vx = -Math.abs(b.vx) * 0.8; }
+        draw(b);
+      }
+      if (el > 3400) end();
+      if (!done || el < 4200) requestAnimationFrame(step);
+    };
+    if (document.readyState === 'complete') setTimeout(start, 400); else addEventListener('load', function(){ setTimeout(start, 400); });
+  } catch (e) {}
+})();
 </script></body></html>

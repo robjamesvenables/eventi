@@ -163,7 +163,7 @@ P.transsby = {
           { name: 'The Lobby Lounge', img: tr('llroom'), line: 'Coffee, tea and cocktails', opens: '11:00', closes: '19:00' }],
         rooms: [{ name: 'Pool villas', img: tr('villa') }, { name: 'Suites with a view', img: tr('balcony') }, { name: 'Deluxe rooms', img: tr('room') }],
         book: TRANS_BOOK }] },
-      theme: { top: '#FFFFFF', acc: '#9C7633', pg: '#F7F3EC' }, motion: true,   // clean white with their gold (Robbie 19 Nov: not the heavy dark look)
+      theme: { top: '#FFFFFF', acc: '#9C7633', pg: '#F7F3EC' }, motion: true, film: 'PkpiWorGcq4',   // clean white with their gold (Robbie 19 Nov: not the heavy dark look)
       slides: [
         { id: 'ss1', img: sb3('pool-square'), title: 'A beach on the 28th floor', line: 'Australian sand, infinity pool and views to Mount Arjuno', venue: '28th Sky Beach Club' },
         { id: 'ss2', img: sb3('cocktail-sunset'), title: 'The city’s highest beach club', line: 'Sun, sound and social', venue: '28th Sky Beach Club' },
@@ -180,7 +180,12 @@ P.transsby = {
       events: [
         { id: 'se1', img: sb3('suite-sunset'), title: 'The Season Reimagined', line: 'See the full festive programme', date: y + '-12-24', time: '18:00', time2: '23:00', venue: '', btn: 'book', url: SBY_FESTIVE, hl: true,
           details: 'Christmas and New Year at The Trans Luxury Hotel Surabaya. Tap Book now to see the full festive programme.' },
-        { id: 'se2', img: sb3('pool-sunset'), title: "New Year's Eve at the 28th", line: 'Midnight over Surabaya', date: y + '-12-31', time: '20:00', time2: '01:00', venue: '28th Sky Beach Club', btn: 'book', url: SBY_FESTIVE }
+        { id: 'se2', img: sb3('xmas-family'), title: 'Christmas Above the City', line: 'A festive family getaway, with Christmas Eve dinner 27 floors up', date: y + '-12-24', venue: '', btn: 'book', url: SBY_BOOK, hl: true, price: 'Early bird from IDR 2,718,000++ a night',
+          details: 'Stay 24 to 26 December. One night in an Executive Room, Christmas Eve dinner at the Sky Beach Club 27th level for 2 adults and 2 children, breakfast, Kids Club and the infinity pool. Book by 11 December.' },
+        { id: 'se3', img: sb3('holiday'), title: 'The Holiday Stay', line: 'A festive stay with the Christmas Eve buffet at Grand Restaurant', date: y + '-12-24', venue: '', btn: 'book', url: SBY_BOOK, hl: true, price: 'Early bird from IDR 1,898,000++ a night',
+          details: 'Stay 24 to 26 December. One night in a Premier Room, Christmas Eve dinner buffet for 2, breakfast, Kids Club, fitness centre and the infinity pool. Book by 11 December.' },
+        { id: 'se4', img: sb3('newyear'), title: 'New Year Stay', line: 'Welcome 2027 with a night above the city', date: y + '-12-31', venue: '', btn: 'book', url: SBY_BOOK, hl: true, price: 'Early bird from IDR 2,718,000++ a night',
+          details: "Stay 31 December to 1 January. One night in a Premier Room, New Year's Eve dinner at Grand Restaurant for 2, breakfast, Kids Club and the infinity pool. Book by 11 December." }
       ],
       gallery: ['pool-day', 'suite-sunset', 'tea-close', 'cocktail-sunset', 'wedding-flower', 'chinese-fish', 'dive', 'coffee', 'indo-dishes', 'resto-window', 'inroom-view', 'umbrella', 'hightea', 'wedding-aisle', 'room-view', 'grand-resto', 'amenities', 'ballroom'].map((n, i) => ({ id: 'sg' + i, img: sb3(n) })),
       places: {

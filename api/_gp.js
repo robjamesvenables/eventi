@@ -153,7 +153,7 @@ function build(c, ctx){
       if (!pages.length && m.type !== 'pdf' && (m.path || /\.(jpe?g|png|webp)$/i.test(m.img || ''))) { const one = img(m); if (one) pages.push(one); }
       const url = pages.length ? '' : m.path ? img(m) : httpsOk(m.url) ? String(m.url).trim() : (/^\/demo-guest\/[a-z0-9._-]+$/i.test(m.img || '') ? m.img : '');
       return { name: str(m.name, 30) || 'Menu', pages, url }; }).filter(m => m.pages.length || m.url);
-    return { name: v.name, area: str(p.area || v.area || '', 30), img: img(p), ig: igName(p.ig), menus, soon: p.soon === true, other: p.other === true, acc: /^#[0-9a-f]{6}$/i.test(p.acc || '') ? p.acc : '', logo: img({ path: p.logoPath, img: p.logo }) }; });   // acc: an other venue's own brand colour on its page (buttons etc.)   // other: shown under Our other venues (a full place, a different brand)
+    return { name: v.name, area: str(p.area || v.area || '', 30), img: img(p), ig: igName(p.ig), menus, soon: p.soon === true, other: p.other === true, badge: p.other === true ? str(p.badge, 12).trim() : '', app: p.other === true && /^[A-Z0-9]{6}$/.test(String(p.app || '')) ? String(p.app) : '', acc: /^#[0-9a-f]{6}$/i.test(p.acc || '') ? p.acc : '', logo: img({ path: p.logoPath, img: p.logo }) }; });   // acc: an other venue's own brand colour on its page (buttons etc.)   // other: shown under Our other venues (a full place, a different brand)
   // Colours (Guest page > Colours)
   const hex = v => /^#[0-9a-f]{6}$/i.test(v || '') ? v : '';
   const th = c.theme || {}, theme = { top: hex(th.top), acc: hex(th.acc), pg: hex(th.pg), dark: th.dark === true, dkbg: th.dark === true ? hex(th.dkbg) : '' };   // dkbg: dark mode in the brand's own dark (navy...) instead of black
@@ -184,7 +184,7 @@ function build(c, ctx){
     const list = (Array.isArray(ov.list) ? ov.list : []).slice(0, 4).map((o, i) => { o = o || {};
       const n = String(o.book || '').trim(), dg = n.replace(/\D/g, '');
       const book = httpsOk(n) ? n : (!/@/.test(n) && dg.length >= 8 && dg.length <= 16 ? 'https://wa.me/' + dg + '?text=' + encodeURIComponent(who + " I'd love to book a table at " + str(o.name, 60) + ' - could you let me know what you have? Thank you!') : '');
-      return { key: (String(o.id || '').replace(/[^a-z0-9]/gi, '') || 'v' + i).slice(0, 20), app: /^[A-Z0-9]{6}$/.test(String(o.app || '')) ? String(o.app) : '', name: str(o.name, 60).trim(), city: str(o.city, 40).trim(), img: img(o), line: str(o.line, 90).trim(), book,
+      return { key: (String(o.id || '').replace(/[^a-z0-9]/gi, '') || 'v' + i).slice(0, 20), app: /^[A-Z0-9]{6}$/.test(String(o.app || '')) ? String(o.app) : '', name: str(o.name, 60).trim(), city: str(o.city, 12).trim(), img: img(o), line: str(o.line, 90).trim(), book,
         places: (Array.isArray(o.places) ? o.places : []).slice(0, 8).map(p => ({ name: str((p || {}).name, 40).trim(), img: img(p), line: str((p || {}).line, 60).trim(), opens: hm((p || {}).opens), closes: hm((p || {}).closes) })).filter(p => p.name),
         rooms: (Array.isArray(o.rooms) ? o.rooms : []).slice(0, 8).map(r => ({ name: str((r || {}).name, 40).trim(), img: img(r) })).filter(r => r.name),
         // a seasonal programme (e.g. Christmas & New Year brochure link) shown at the top of that hotel's page

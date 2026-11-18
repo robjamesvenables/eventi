@@ -167,12 +167,12 @@ P.transsby = {
       slides: [
         { id: 'ss0', img: sb3('suite-sunset'), title: 'The Season Reimagined', line: 'Christmas & New Year ' + y + ' at The Trans', venue: '', btn: 'book', url: SBY_FESTIVE },
         { id: 'ss1', img: sb3('pool-square'), title: 'A beach on the 28th floor', line: 'Australian sand, infinity pool and views to Mount Arjuno', venue: '28th Sky Beach Club' },
-        { id: 'ss2', img: sb3('dive'), title: 'The city’s highest beach club', line: 'Sun, sound and social', venue: '28th Sky Beach Club' },
+        { id: 'ss2', img: sb3('cocktail-sunset'), title: 'The city’s highest beach club', line: 'Sun, sound and social', venue: '28th Sky Beach Club' },
         { id: 'ss3', img: sb3('hightea'), title: 'Afternoon tea', line: 'Daily, 3 to 5pm', venue: 'Lobby Lounge' },
         { id: 'ss4', img: sb3('grand-resto'), title: 'Grand Restaurant', line: 'Buffet plus Asian and international à la carte', venue: 'Grand Restaurant' },
         { id: 'ss5', img: sb3('room-view'), title: 'Wake up above the city', line: 'Rooms and suites with the whole city below', venue: '', btn: 'book', url: SBY_BOOK },
         { id: 'ss6', img: sb3('inroom-view'), title: 'In-room dining', line: 'Breakfast in bed, with a view', venue: '', btn: 'wa' },
-        { id: 'ss7', img: sb3('ballroom'), title: 'The Grand Ballroom', line: 'Over 1,000 m² for weddings and galas', venue: '', btn: 'wa' }
+        { id: 'ss7', img: sb3('wedding-aisle'), title: 'Weddings and celebrations', line: 'From intimate ceremonies to the Grand Ballroom', venue: '', btn: 'wa' }
       ],
       deals: [
         { id: 'sd1', img: sb3('hightea'), title: 'Afternoon tea', when: 'Daily · 3–5pm', venue: 'Lobby Lounge' },
@@ -183,7 +183,7 @@ P.transsby = {
           details: 'Christmas and New Year at The Trans Luxury Hotel Surabaya. Tap Book now to see the full festive programme.' },
         { id: 'se2', img: sb3('pool-sunset'), title: "New Year's Eve at the 28th", line: 'Midnight over Surabaya', date: y + '-12-31', time: '20:00', time2: '01:00', venue: '28th Sky Beach Club', btn: 'book', url: SBY_FESTIVE }
       ],
-      gallery: ['pool-sunset', 'suite-sunset', 'hightea', 'dive', 'coffee', 'resto-window', 'inroom-view', 'umbrella', 'grand-resto', 'breakfast', 'room-view', 'amenities', 'bedside', 'ballroom', 'lobby'].map((n, i) => ({ id: 'sg' + i, img: sb3(n) })),
+      gallery: ['pool-day', 'suite-sunset', 'tea-close', 'cocktail-sunset', 'wedding-flower', 'chinese-fish', 'dive', 'coffee', 'indo-dishes', 'resto-window', 'inroom-view', 'umbrella', 'hightea', 'wedding-aisle', 'room-view', 'grand-resto', 'amenities', 'ballroom'].map((n, i) => ({ id: 'sg' + i, img: sb3(n) })),
       places: {
         '28th sky beach club': { img: sb3('pool-day'), area: 'Rooftop beach · infinity pool' },
         'the 27th sky lounge & bistro': { img: sb2('skylounge'), area: 'Western menu · city views' },

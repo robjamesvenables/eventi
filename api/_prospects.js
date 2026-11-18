@@ -185,7 +185,7 @@ P.transsby = {
       ],
       gallery: ['pool-sunset', 'suite-sunset', 'hightea', 'dive', 'coffee', 'resto-window', 'inroom-view', 'umbrella', 'grand-resto', 'breakfast', 'room-view', 'amenities', 'bedside', 'ballroom', 'lobby'].map((n, i) => ({ id: 'sg' + i, img: sb3(n) })),
       places: {
-        '28th sky beach club': { img: sb3('pool-sunset'), area: 'Rooftop beach · infinity pool' },
+        '28th sky beach club': { img: sb3('pool-day'), area: 'Rooftop beach · infinity pool' },
         'the 27th sky lounge & bistro': { img: sb2('skylounge'), area: 'Western menu · city views' },
         'grand restaurant': { img: sb3('grand-resto'), area: 'Buffet · Asian and international' },
         'lobby lounge': { img: sb3('coffee'), area: 'Coffee and afternoon tea' }

@@ -139,19 +139,19 @@ P.trans = {
 const sb2 = n => '/demo-guest/p-sby-' + n + '.jpg';
 const SBY_BOOK = 'https://www.transhotelgroup.com/hotel_overview/45';
 const SBY_FESTIVE = 'https://online.fliphtml5.com/TLHSurabaya/FESTIVE-TLHS---THE-SEASON-REIMAGINED/';
-const SBY_MAP = 'https://www.google.com/maps/search/?api=1&query=The+Trans+Luxury+Hotel+Surabaya';
+const SBY_MAP = 'https://www.google.com/maps/search/?api=1&query=The+Trans+Luxury+Hotel+Surabaya+Jl+Ahmad+Yani+260';
 P.transsby = {
   brand: 'The Trans Luxury Hotel Surabaya', logo: '/demo-guest/p-sby-logo.png', icon: '/demo-guest/p-sby-icon', first: 'Alexander', tier: 'member', visits: 4, since: 2026, favourite: '28th Sky Beach Club',
   perks: ['Welcome drink at the 28th Sky Beach Club', 'Late check-out until 2pm, when available', '15% off at The Spa', 'Free Kids Club afternoons'],
   perkIcons: ['cocktail', 'key', 'leaf', 'smile'],
   reward: { target: 10, text: 'One night in the Celebrity Suite' },
-  venues: ['28th Sky Beach Club', '27th Sky Lounge', 'The Lounge'].map(name => ({ name, ...({ '28th Sky Beach Club': { opens: '12:00', closes: '00:00' }, '27th Sky Lounge': { opens: '12:00', closes: '00:00' } }[name] || {}), area: 'Surabaya', map: SBY_MAP })),
+  venues: ['28th Sky Beach Club', 'The 27th Sky Lounge & Bistro', 'Lobby Lounge'].map(name => ({ name, ...({ '28th Sky Beach Club': { opens: '12:00', closes: '00:00' }, 'The 27th Sky Lounge & Bistro': { opens: '12:00', closes: '00:00' } }[name] || {}), area: 'Surabaya', map: SBY_MAP })),
   stay: SBY_BOOK,
-  contact: { phone: '+62 31 3000 8888', wa: '6281118888055', map: SBY_MAP },
+  contact: { phone: '+62 811 1888 8055', wa: '6281118888055', map: SBY_MAP, ig: 'transluxurysurabaya' },
   acts: [
     { title: 'Sunset at the 28th', line: 'DJ by the infinity pool', every: [5, 6], start: '17:00', end: '21:00', venue: '28th Sky Beach Club' },
-    { title: 'Cocktails over the city', line: 'Golden hour, 27 floors up', every: [1, 2, 3, 4, 0], start: '17:30', end: '20:00', venue: '27th Sky Lounge' },
-    { title: 'Coffee in The Lounge', line: 'Artisan coffee and light bites', every: [1, 2, 3, 4, 5, 6, 0], start: '09:00', end: '17:00', venue: 'The Lounge' }
+    { title: 'Cocktails over the city', line: 'Golden hour, 27 floors up', every: [1, 2, 3, 4, 0], start: '17:30', end: '20:00', venue: 'The 27th Sky Lounge & Bistro' },
+    { title: 'High tea in the Lobby Lounge', line: 'Coffee, cakes and afternoon tea', every: [1, 2, 3, 4, 5, 6, 0], start: '09:00', end: '17:00', venue: 'Lobby Lounge' }
   ],
   content: today => {
     const y = year(today);
@@ -165,19 +165,19 @@ P.transsby = {
       theme: { top: '#7A1F1F', acc: '#B8923A', pg: '#F7F3EC' }, motion: true,
       slides: [
         { id: 'ss0', img: sb2('skylounge'), title: 'The Season Reimagined', line: 'Christmas & New Year ' + y + ' at The Trans', venue: '', btn: 'book', url: SBY_FESTIVE },
-        { id: 'ss1', img: sb2('beachclub'), title: 'The highest beach club in Indonesia', line: 'Infinity pool, 28 floors above Surabaya', venue: '28th Sky Beach Club' },
-        { id: 'ss2', img: sb2('skylounge'), title: 'Sky dining on the 27th', line: 'The city lights at your table', venue: '27th Sky Lounge' },
-        { id: 'ss3', img: sb2('lounge'), title: 'The Lounge', line: 'Artisan coffee and cocktails', venue: 'The Lounge' },
+        { id: 'ss1', img: sb2('beachclub'), title: 'A beach on the 28th floor', line: 'Australian sand, infinity pool and views to Mount Arjuno', venue: '28th Sky Beach Club' },
+        { id: 'ss2', img: sb2('skylounge'), title: 'Sky dining on the 27th', line: 'The city lights at your table', venue: 'The 27th Sky Lounge & Bistro' },
+        { id: 'ss3', img: sb2('lounge'), title: 'Lobby Lounge', line: 'Artisan coffee and cocktails', venue: 'Lobby Lounge' },
         { id: 'ss4', img: sb2('room-celebrity'), title: 'The Celebrity Suite', line: 'Panoramic views over the city', venue: '', btn: 'book', url: SBY_BOOK },
         { id: 'ss5', img: sb2('ballroom'), title: 'The Grand Ballroom', line: 'Weddings and galas for up to 1,500 guests', venue: '', btn: 'wa' },
         { id: 'ss6', img: sb2('room-presidential'), title: 'The Presidential Suite', line: 'The top of the house', venue: '', btn: 'book', url: SBY_BOOK }
       ],
       deals: [
         { id: 'sd1', img: sb2('beachclub'), title: 'Sunset hour at the 28th', when: 'Daily · 5–7pm', venue: '28th Sky Beach Club' },
-        { id: 'sd2', img: sb2('lounge'), title: 'Coffee and cake for two', when: 'Daily · 2–5pm', venue: 'The Lounge' }
+        { id: 'sd2', img: sb2('lounge'), title: 'Afternoon high tea', when: 'Daily · 2–5pm', venue: 'Lobby Lounge' }
       ],
       events: [
-        { id: 'se1', img: sb2('skylounge'), title: 'The Season Reimagined', line: 'See the full festive programme', date: y + '-12-24', time: '18:00', time2: '23:00', venue: '27th Sky Lounge', btn: 'book', url: SBY_FESTIVE, hl: true,
+        { id: 'se1', img: sb2('skylounge'), title: 'The Season Reimagined', line: 'See the full festive programme', date: y + '-12-24', time: '18:00', time2: '23:00', venue: 'The 27th Sky Lounge & Bistro', btn: 'book', url: SBY_FESTIVE, hl: true,
           details: 'Christmas and New Year at The Trans Luxury Hotel Surabaya. Tap Book now to see the full festive programme.' },
         { id: 'se2', img: sb2('beachclub'), title: "New Year's Eve at the 28th", line: 'Midnight over Surabaya', date: y + '-12-31', time: '20:00', time2: '01:00', venue: '28th Sky Beach Club', btn: 'wa', disc: 10 },
         { id: 'se3', img: sb2('iconic'), title: 'Wedding showcase', line: 'Meet our wedding team', date: addDays(today, 10), time: '11:00', time2: '15:00', venue: '', btn: 'wa' }
@@ -185,8 +185,8 @@ P.transsby = {
       gallery: ['beachclub', 'skylounge', 'lounge', 'ballroom', 'iconic', 'room-premier', 'room-execclub', 'room-celebrity', 'room-presidential'].map((n, i) => ({ id: 'sg' + i, img: sb2(n) })),
       places: {
         '28th sky beach club': { img: sb2('beachclub'), area: 'Rooftop · infinity pool' },
-        '27th sky lounge': { img: sb2('skylounge'), area: 'Sky dining · executive club' },
-        'the lounge': { img: sb2('lounge'), area: 'Coffee, tea and light bites' }
+        'the 27th sky lounge & bistro': { img: sb2('skylounge'), area: 'Western menu · city views' },
+        'lobby lounge': { img: sb2('lounge'), area: 'Coffee and afternoon high tea' }
       }
     };
   }

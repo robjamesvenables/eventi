@@ -77,7 +77,8 @@ async function fbPush(co, stars, text, venue, m, fid){
   const people = await L.db('profiles?select=id,role,is_owner,active&company_id=eq.' + encodeURIComponent(co));
   // Who: the people picked in Mavis Club > Settings > Guest feedback alerts; nobody picked = all managers
   const st = (await L.db('app_settings?select=value&key=eq.mk_settings&company_id=eq.' + encodeURIComponent(co)).catch(() => []))[0];
-  let pick = []; try { let x = st && st.value; while (typeof x === 'string') x = JSON.parse(x); pick = (x && Array.isArray(x.fbto) ? x.fbto : []).map(String); } catch (e) {}
+  let pick = []; try { let x = st && st.value; while (typeof x === 'string') x = JSON.parse(x); if (x && x.fb && x.fb.on === false) return;   // switched off in Settings
+    pick = (x && Array.isArray(x.fbto) ? x.fbto : []).map(String); } catch (e) {}
   const live = people.filter(p => p.active !== false);
   const ids = (pick.length ? live.filter(p => pick.includes(String(p.id))) : live.filter(p => p.is_owner || ['superadmin', 'director', 'manager'].includes(p.role))).map(p => encodeURIComponent(p.id));
   if (!ids.length) return;

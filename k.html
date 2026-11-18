@@ -530,6 +530,16 @@ body.vqopen .vq-dim{opacity:1;pointer-events:auto}body.vqopen .vq-sheet{transfor
 .gvbuy{display:flex;align-items:center;justify-content:center;gap:8px;border-radius:14px;padding:15px;font-weight:900;font-size:15.5px;text-decoration:none;background:var(--acc,#0D9488);color:var(--acc-ink,#fff)}.gvbuy.wa{background:#25D366;color:#fff}.gvbuy.off{opacity:.4;pointer-events:none}
 </style></head><body><div id="root"><div class="load" aria-label="Opening"><i></i><i></i><i></i></div></div>
 <script>
+// Problems on this page go to the Mavis owner (max 3 per visit, no repeats) so a broken guest page never goes unnoticed
+(function(){ var sent = {}, n = 0;
+  var rep = function(msg){ try { var m = location.pathname.match(/\/k\/([A-Za-z0-9]+)/i); msg = String(msg || '').slice(0, 400);
+    if (!m || !msg || n >= 3 || sent[msg] || /ResizeObserver|Script error\.?$/i.test(msg)) return; sent[msg] = 1; n++;
+    fetch('/api/gp?a=err', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ code: m[1], msg: msg }), keepalive: true }).catch(function(){}); } catch (e) {} };
+  window.addEventListener('error', function(e){ rep((e.message || 'Error') + (e.filename ? ' @' + String(e.filename).split('/').pop() + ':' + e.lineno : '')); });
+  window.addEventListener('unhandledrejection', function(e){ rep('Promise: ' + ((e.reason && (e.reason.message || e.reason)) || 'rejected')); });
+})();
+</script>
+<script>
 (function(){
   var m = location.pathname.match(/\/k\/([A-Za-z0-9]+)/i);
   var code = m ? m[1].toUpperCase() : '';

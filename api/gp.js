@@ -223,6 +223,29 @@ async function find(req, res){
   return L.send(res, 200, { ok: true, n: 1, code: own.code });
 }
 
+// ── A guest page broke on a member's phone: log it for the Owner page (Health) and ping the owner ──
+//    POST /api/gp?a=err { code, msg }   max 20 an hour from one phone/network, nothing personal kept
+async function guestErr(req, res){
+  if (req.method !== 'POST') return res.status(204).end();
+  let b = req.body || {}; if (typeof b === 'string') { try { b = JSON.parse(b); } catch (e) { b = {}; } }
+  const code = fclean(b.code), msg = String(b.msg || '').replace(/\s+/g, ' ').trim().slice(0, 400);
+  if (!code || !msg) return res.status(204).end();
+  const ip = String(req.headers['x-forwarded-for'] || req.headers['x-real-ip'] || '').split(',')[0].trim().slice(0, 60);
+  if (ip) {
+    const key = 'GERR:' + ip, nowMs = Date.now();
+    const att = (await L.db('login_attempts?select=*&username=eq.' + encodeURIComponent(key)).catch(() => []))[0];
+    const live = att && att.locked_until && new Date(att.locked_until).getTime() > nowMs;
+    if (live && att.fails >= 20) return res.status(204).end();
+    await L.db('login_attempts', { method: 'POST', headers: { Prefer: 'resolution=merge-duplicates' },
+      body: { username: key, fails: live ? att.fails + 1 : 1, locked_until: live ? att.locked_until : new Date(nowMs + 3600000).toISOString() } }).catch(() => {});
+  }
+  const k = (await L.db('member_keyrings?select=company_id&code=eq.' + encodeURIComponent(code)).catch(() => []))[0];
+  const demo = !k && require('./_prospects').get(code);
+  if (!k && !demo) return res.status(204).end();
+  await L.db('app_errors', { method: 'POST', body: { company_id: k ? k.company_id : null, username: 'guest ' + code, page: 'guest page', message: msg } }).catch(() => {});
+  await require('./_alert')(k ? k.company_id : null, 'guest page' + (demo ? ' (demo ' + code + ')' : ''));
+  return res.status(204).end();
+}
 module.exports = async (req, res) => {
   try {
     const a = String((req.query && req.query.a) || '');
@@ -246,6 +269,7 @@ module.exports = async (req, res) => {
     if (a === 'offers') return await offers(req, res);
     if (a === 'fb') return await feedback(req, res);
     if (a === 'find') return await find(req, res);
+    if (a === 'err') return await guestErr(req, res);
     if (a === 'roster') return await roster(req, res);
     if (a === 'mf') {   // the guest page saved to a phone's home screen: its own app per venue - their logo, their name, opens on this member's page
       const q = req.query || {}, code = String(q.c || '').toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 16), name = String(q.n || 'Members Club').replace(/[<>"]/g, '').trim().slice(0, 40);

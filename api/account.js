@@ -68,6 +68,7 @@ module.exports = async (req, res) => {
     if (b.action === 'report_error') {
       const msg = String(b.message || '').slice(0, 500);
       if (msg) await L.db('app_errors', { method: 'POST', body: { company_id: me.company_id, username: me.username, page: String(b.page || '').slice(0, 60), message: msg } }).catch(() => {});
+      if (msg && !me.is_owner) await require('./_alert')(me.company_id, 'staff app' + (b.page ? ' (' + String(b.page).slice(0, 30) + ')' : ''));   // ping the owner's phone (max once an hour)
       return L.send(res, 200, { ok: true });
     }
 

@@ -2336,6 +2336,8 @@ body:not(.mv-demo) #ms-demoqr-btn{display:none!important}
   #p-membership > .ph .ms-hbtns .btn,.ms-tiers{padding-left:10px;padding-right:10px;font-size:13px}
   #ms-sheet .vdf-foot button{white-space:nowrap}
 }
+.ms-dlw .ms-dlx{background:#0D9488;border-color:#0D9488;color:#fff;padding:11px 16px;font-size:14px}.ms-dlw .ms-dlx:hover{background:#0B7F75}
+.mks-lock{flex:none;font:900 12px Inter,sans-serif;color:#0D9488;background:#E0F5F2;padding:6px 11px;border-radius:99px}
 .ms-dlw{display:flex;justify-content:flex-end;flex-wrap:wrap;gap:6px;margin:-4px 0 10px}.ms-dlw .ms-dl{white-space:nowrap}
 .ms-dl{display:inline-flex;align-items:center;gap:7px;border:1.5px solid #E2E8F0;background:white;color:#0F1E2E;border-radius:11px;padding:8px 12px;font:700 13px Inter,sans-serif;cursor:pointer}.ms-dl:hover{background:#F8FAFC}
 .ms-xo{display:flex;gap:10px;align-items:flex-start;padding:12px;border:1.5px solid #E2E8F0;border-radius:12px;margin-bottom:8px;cursor:pointer}
@@ -21976,7 +21978,7 @@ function msRender(){
   const chips = [['all', 'All'], ...venues.map(v => [v, v]), ['vip', 'VIP']];
   el.innerHTML = tabs + msKeyBox() + (bonusDue ? `<button class="mkb-due" onclick="msSetTab('insights')"><i>${mkiSvg('crown', 16)}</i><span><b>Set today's member bonus</b><small>Guests can't scratch until you pick a prize</small></span><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg></button>` : '') + `<label class="sop-search ms-search"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#94A3B8" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg><input id="ms-q" placeholder="Search name or phone…" value="${msEsc(MS.q)}" oninput="msSearch(this.value)" autocomplete="off"></label>
     <div class="ms-chips">${chips.map(([id, l]) => `<button class="${MS.filter === id ? 'on' : ''}" onclick="msSetFilter(${msEsc(JSON.stringify(id))})">${msEsc(l)}</button>`).join('')}</div>
-    ${msIsMgr() && (MS.members.length || mkS().imp.on) ? `<div class="ms-dlw">${mkS().imp.on ? `<button class="ms-dl" onclick="msImportOpen()"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15V3M7 8l5-5 5 5M5 21h14"/></svg>Import members</button>` : ''}${MS.members.length ? `<button class="ms-dl" onclick="msExportOpen()"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12M7 10l5 5 5-5M5 21h14"/></svg>Download list for emails</button>` : ''}</div>` : ''}
+    ${msIsMgr() && (MS.members.length || mkS().imp.on) ? `<div class="ms-dlw">${mkS().imp.on ? `<button class="ms-dl" onclick="msImportOpen()"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15V3M7 8l5-5 5 5M5 21h14"/></svg>Import members</button>` : ''}${MS.members.length ? `<button class="ms-dl ms-dlx" onclick="msExportOpen()"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12M7 10l5 5 5-5M5 21h14"/></svg>Download members</button>` : ''}</div>` : ''}
     <div id="ms-list"></div>`;
   msRenderList();
 }
@@ -22296,15 +22298,17 @@ window.msBill = async function(id){
 // ── Mavis Club settings (managers): every switch for the club in one place, saved as you tap ──
 const MK_EMO = ['🍸','🥂','🍹','🍰','🎉','🎂','🌅','🎶','📍','⭐'];
 const MKS_DEF = () => ({ bonus:{ on:false, limit:30 }, stamp:{ on:false, visits:10, reward:'Free cocktail' }, bday:{ treat:false, gift:'Dessert' }, friend:{ on:false, offer:'Welcome cocktail' },
-  levels:{ on:false, gold:10, black:25 }, club:{ on:false }, emoji:{ on:true }, vip:{ on: msDemo() }, welcome:{ on:true }, imp:{ on: msDemo() }, senders:[], fbto:[], eg:'gmail', rest:3 });
-function mkS(){ const d = MKS_DEF(), s = msJson('mk_settings') || {}; Object.keys(d).forEach(k => { if(s[k] == null) return; d[k] = Array.isArray(d[k]) || typeof d[k] !== 'object' ? s[k] : Object.assign(d[k], typeof s[k] === 'object' ? s[k] : {}); }); return d; }
+  levels:{ on:false, gold:10, black:25 }, club:{ on:false }, emoji:{ on:true }, vip:{ on: msDemo() }, welcome:{ on:true }, imp:{ on:false }, blast:{ email:false, wa:false }, senders:[], fbto:[], eg:'gmail', rest:3 });
+function mkS(){ const d = MKS_DEF(), s = msJson('mk_settings') || {}; Object.keys(d).forEach(k => { if(s[k] == null) return; d[k] = Array.isArray(d[k]) || typeof d[k] !== 'object' ? s[k] : Object.assign(d[k], typeof s[k] === 'object' ? s[k] : {}); }); d.welcome.on = true; return d; }   // welcome WhatsApp checks the guest's number: always on
 const msCanSend = () => msIsMgr() || (!!myProfile && mkS().senders.map(String).includes(String(myProfile.id)));
-const msCanMsg = () => msCanSend() || (typeof gpCanEdit === 'function' && gpCanEdit());
+// Blasts are off until a manager turns one on in Settings - no Messages tab until then (18 Nov: keep it simple, nothing to go wrong)
+const msBlastOn = () => { const b = mkS().blast; return !!(b.email || b.wa); };
+const msCanMsg = () => msBlastOn() && (msCanSend() || (typeof gpCanEdit === 'function' && gpCanEdit()));
 window.mksSet = async function(path, val){
   const s = mkS(), [a, b] = path.split('.');
   if(b) s[a][b] = val; else s[a] = val;
   appSettings.mk_settings = JSON.stringify(s);
-  if(MS.tab === 'settings') msSettingsRender();
+  if(MS.tab === 'settings'){ if(a === 'blast') msRender(); else msSettingsRender(); }   // a blast switch adds/removes the Messages tab
   if(await msSetting('mk_settings', s)) toast('Saved ✓'); else toast('Not saved - check your connection');
 };
 const mksSw = (path, on) => `<label class="mks-sw"><input type="checkbox"${on ? ' checked' : ''} onchange="mksSet('${path}', this.checked)"><i></i></label>`;
@@ -22330,16 +22334,28 @@ async function msSettingsRender(){
     </div>` : ''}
     <div class="mks-h">YOUR KEYRING QR</div>
     <div class="mks-card"><div id="mks-vq"><div class="mks-hint">Making your keyring QR…</div></div></div>
+    <div class="mks-h">ALWAYS ON</div>
+    <div class="mks-card">
+      ${mksRow('Welcome WhatsApp', 'Sent when a guest joins, with their member card. It checks their number is real.', '<span class="mks-lock">ON</span>')}
+    </div>
+    <div class="mks-h">EXTRA TOOLS (OFF UNTIL YOU TURN THEM ON)</div>
+    <div class="mks-card">
+      ${mksRow('Email blasts', 'Send one email to many members at once.', mksSw('blast.email', s.blast.email))}
+      ${mksRow('WhatsApp blasts', 'Send a message to members one by one, from your phone.', mksSw('blast.wa', s.blast.wa))}
+      ${mksRow('Import members', 'Add members from a list you already have (Excel or CSV).', mksSw('imp.on', s.imp.on), s.imp.on ? `<button class="mki-btn" style="margin-top:0" onclick="msImportOpen()">Import members</button>` : '')}
+    </div>
+    <div class="mks-hint" style="margin:8px 4px 0">Turn on a blast and a Messages tab appears. Turn it off and it goes away.</div>
     <div class="mks-h">FOR YOUR TEAM</div>
     <div class="mks-card">
       ${mksRow('VIP alert', 'Managers get a phone notification when a VIP checks in.', mksSw('vip.on', s.vip.on))}
-      ${mksRow('Guest feedback alerts', 'When a member gives 1 to 3 stars, these people get a phone notification straight away - so someone can go and see the guest while they\'re still here. Nobody picked = all managers.', '', (Object.keys(MS.staff || {}).length ? `<div class="mks-f"><span>Who gets them</span><div class="vdf-pills mks-pills">${Object.entries(MS.staff || {}).map(([id, n]) => `<button type="button" class="vdf-pill${s.fbto.map(String).includes(String(id)) ? ' on' : ''}" onclick="mksFbTo('${id}')">${msEsc(n)}</button>`).join('')}</div></div>` : '<div class="mks-hint">Add your team in People first - then pick who gets these.</div>'))}
-      ${mksRow('Welcome WhatsApp', 'After a sign-up, staff send the guest a welcome message with their member card - one tap.', mksSw('welcome.on', s.welcome.on))}
-      ${mksRow('Time between messages', 'So guests aren\'t messaged too often. Mavis warns you, and leaves out anyone you messaged more recently than this.', '', `<div class="vdf-pills mks-pills">${[1, 2, 3, 5, 7].map(n => `<button type="button" class="vdf-pill${+s.rest === n ? ' on' : ''}" onclick="mksSet('rest', ${n})">${n} day${n > 1 ? 's' : ''}</button>`).join('')}</div>`)}
+      ${mksRow('Rating alert (3 stars or less)', 'When a guest gives 3 stars or less, the people you pick get a phone alert straight away, so someone can go and see the guest while they\'re still here. Nobody picked = all managers.', '', (Object.keys(MS.staff || {}).length ? `<div class="mks-f"><span>Who gets them</span><div class="vdf-pills mks-pills">${Object.entries(MS.staff || {}).map(([id, n]) => `<button type="button" class="vdf-pill${s.fbto.map(String).includes(String(id)) ? ' on' : ''}" onclick="mksFbTo('${id}')">${msEsc(n)}</button>`).join('')}</div></div>` : '<div class="mks-hint">Add your team in People first - then pick who gets these.</div>'))}
       ${mksRow('Emojis in messages', MK_EMO.join(' '), mksSw('emoji.on', s.emoji.on))}
-      ${mksRow('Import members', 'Bring in a list you already have, from Excel or a CSV file.', mksSw('imp.on', s.imp.on), s.imp.on ? `<button class="mki-btn" style="margin-top:0" onclick="msImportOpen()">Import members</button>` : '')}
+    </div>
+    ${s.blast.email || s.blast.wa ? `<div class="mks-h">BLASTS</div>
+    <div class="mks-card">
+      ${mksRow('Time between messages', 'So guests aren\'t messaged too often. Mavis warns you, and leaves out anyone you messaged more recently than this.', '', `<div class="vdf-pills mks-pills">${[1, 2, 3, 5, 7].map(n => `<button type="button" class="vdf-pill${+s.rest === n ? ' on' : ''}" onclick="mksSet('rest', ${n})">${n} day${n > 1 ? 's' : ''}</button>`).join('')}</div>`)}
       ${mksRow('Who can send messages', 'Managers can always send. Anyone else can ask, and a manager says OK.', '', staff.length ? `<div class="mks-f"><span>Also allowed to send</span><div class="vdf-pills mks-pills">${staff.map(([id, n]) => { const on = s.senders.map(String).includes(String(id)); return `<button type="button" class="vdf-pill${on ? ' on' : ''}" onclick="mksSender('${id}')">${msEsc(n)}</button>`; }).join('')}</div></div>` : '<div class="mks-hint">Your team will show here.</div>')}
-    </div>`;
+    </div>` : ''}`;
   mcVenueQrCard();
 }
 // Mavis Club network: how it works, in 3 steps, who else is in it, and a look at the guest's "My Mavis Club" page
@@ -22513,9 +22529,10 @@ async function msMessagesRender(){
       ${c.status === 'requested' && can ? `<div class="mkm-btns"><button class="mki-btn ghost" onclick="msMsgDecide('${c.id}', false)">No</button><button class="mki-btn" onclick="msMsgDecide('${c.id}', true)">OK, send</button></div>`
         : c.status === 'sending' && !p.done && can ? `<div class="mkm-btns"><button class="mki-btn" onclick="${c.kind === 'email' ? 'msEmailOpen' : 'msQueueOpen'}('${c.id}')">${c.kind === 'email' ? 'Open batches' : 'Carry on'}</button></div>` : ''}
     </div>`; };
-  el.innerHTML = `<div class="mkm-new${can ? ' three' : ''}">
-      <button onclick="msCompose('email')"><i><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-10 6L2 7"/></svg></i><b>${can ? 'New email' : 'Ask to send an email'}</b><small>From your own email, free</small></button>
-      <button onclick="msCompose('wa')"><i class="wa">${vdSvg('wa', 20)}</i><b>${can ? 'New WhatsApp' : 'Ask to send a WhatsApp'}</b><small>One by one, from your phone</small></button>
+  const bl = mkS().blast, nb = (bl.email ? 1 : 0) + (bl.wa ? 1 : 0) + (can ? 1 : 0);
+  el.innerHTML = `<div class="mkm-new${nb === 3 ? ' three' : ''}"${nb === 1 ? ' style="grid-template-columns:1fr"' : ''}>
+      ${bl.email ? `<button onclick="msCompose('email')"><i><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-10 6L2 7"/></svg></i><b>${can ? 'New email' : 'Ask to send an email'}</b><small>From your own email, free</small></button>` : ''}
+      ${bl.wa ? `<button onclick="msCompose('wa')"><i class="wa">${vdSvg('wa', 20)}</i><b>${can ? 'New WhatsApp' : 'Ask to send a WhatsApp'}</b><small>One by one, from your phone</small></button>` : ''}
       ${can ? `<button onclick="msCompose('alert')"><i class="al"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.9 1.9 0 0 0 3.4 0"/></svg></i><b>New notification</b><small>Pops up on their phone, free</small></button>` : ''}</div>
     ${can ? msBatchDue().map(x => `<button class="mke-due" onclick="msEmailOpen('${x.c.id}')"><i><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-10 6L2 7"/></svg></i><span><b>Batch ${x.i + 1} of ${x.n} is ready to send today</b><small>${msEsc(x.c.subject || 'Email')}</small></span><em>Open</em></button>`).join('') : ''}
     ${waiting.length && can ? `<div class="mks-h">WAITING FOR YOUR OK</div><div class="mks-card">${waiting.map(row).join('')}</div>` : ''}

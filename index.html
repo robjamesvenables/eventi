@@ -4121,6 +4121,7 @@ body:not(.mv-mem) #n-membership,body:not(.mv-mem) #home-scan-row{display:none!im
 body.mv-mem #n-membership-soon{display:none!important}
 /* Maintenance: open in the demo company while it's being finished, Coming soon for everyone else */
 body:not(.mv-demo) #n-requests{display:none!important}
+body.req-off #n-requests,body.req-off #n-requests-soon,body.req-off #hcard-requests{display:none!important}
 body.mv-demo #n-requests-soon{display:none!important}
 body.mv-demo #sb-soon-h{display:none!important}   /* nothing left under it in the demo */
 .home-scan-row{margin-top:16px}
@@ -15063,6 +15064,14 @@ function roleApplyMenus(){
     });
   });
   document.body.classList.toggle('mv-buyer', !!myProfile && (myProfile.is_owner || ['superadmin','director'].includes(myProfile.role)));
+  // Maintenance with "Report a problem" switched off: hide it, unless this person's team has jobs sent to it (they still need to see those)
+  try{
+    const reqOff = !!myProfile && typeof reqCanReport === 'function' && !reqCanReport() && !reqCanSort();
+    document.body.classList.toggle('req-off', reqOff);
+    const depts = reqOff ? reqMyDepts() : [];
+    if(reqOff && depts.length && typeof sb !== 'undefined') sb.from('requests').select('id', { count:'exact', head:true }).in('dept', depts).neq('status', 'closed')
+      .then(({ count }) => { if(count > 0) document.body.classList.remove('req-off'); }).catch(() => {});
+  }catch(e){}
   const dcp = document.getElementById('dash-chat-panel'); if(dcp) dcp.classList.toggle('mv-role-off', !rolePageAllowed('chat'));   // no Chat for this role: no chat panel on the dashboard either
   const adminLink = document.getElementById('n-admin');
   if(adminLink) adminLink.style.display = (myProfile && !roleCan('adminconsole')) ? 'none' : '';

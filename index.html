@@ -1597,7 +1597,7 @@ textarea.rf-val{resize:vertical;min-height:72px;line-height:1.5}
   font-size:13.5px;font-weight:500;
   border-left:3px solid var(--gold);
   box-shadow:0 12px 32px rgba(0,0,0,0.25);
-  z-index:9999;display:none;
+  z-index:20000;display:none;   /* above every pop-up window (My Account is 10000) - taps still pass through */
   max-width:min(90vw,420px);text-align:center;
 }
 .toast.on{display:block}
@@ -32612,7 +32612,7 @@ async function pushSubscribe(ask){
     const j = sub.toJSON();
     const { error } = await sb.rpc('push_register', { ep:j.endpoint, key_p256dh:j.keys.p256dh, key_auth:j.keys.auth, agent:navigator.userAgent });
     if(error){ console.warn('[push] could not register', error); if(ask) toast('Notifications are being set up - try again soon'); }
-  }catch(e){ console.warn('[push]', e); if(ask) toast('Could not turn on notifications on this device'); }
+  }catch(e){ console.warn('[push]', e); if(ask){ toast('Could not turn on notifications on this device'); try{ accountApi({ action:'report_error', message:'Turn on notifications failed: ' + String((e && (e.name + ' ' + e.message)) || e).slice(0, 300), page:'account' }); }catch(x){} } }   // the reason lands on the Owner page (Health)
   return pushRefreshState();
 }
 window.pushTurnOn = async function(){

@@ -32602,9 +32602,11 @@ async function pushSubscribe(ask){
     if(Notification.permission !== 'granted'){
       if(!ask) return pushRefreshState();
       const r = await Notification.requestPermission();
+      if(r === 'default' && ask) appConfirmShow({ title:'Allow notifications', msg:'Your browser didn\'t show the question. Click the small lock or bell icon just left of the web address, set Notifications to Allow, then tap Turn on again.', label:'OK', onOk:()=>{} });
       if(r !== 'granted') return pushRefreshState();
     }
-    const reg = await navigator.serviceWorker.ready;
+    // never hang: if the app's background helper isn't ready in 8 seconds, say so instead of doing nothing
+    const reg = await Promise.race([navigator.serviceWorker.ready, new Promise((_, no) => setTimeout(() => no(new Error('service worker not ready')), 8000))]);
     let sub = await reg.pushManager.getSubscription();
     if(!sub) sub = await reg.pushManager.subscribe({ userVisibleOnly:true, applicationServerKey:pushKey(MAVIS_VAPID) });
     const j = sub.toJSON();

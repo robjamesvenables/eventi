@@ -140,7 +140,7 @@ function build(c, ctx){
   // Events switched to "Show in Highlights" go in that place's big photos too (tap -> the details pop-up)
   slides.forEach(s => { if (!s.ev || !events.some(e => e.id === s.ev)) delete s.ev; });   // a slide's See more can go straight to an event - only while that event is still on
   if (on('slides')) events.filter(e => e.hl && e.img).forEach(e => { if (slides.length < 12) slides.push({ id: 'ev-' + e.id, img: e.img, title: e.title, line: e.when, venue: e.venue, btn: null, ev: e.id }); });
-  const gallery = (c.gallery || []).map(g => ({ img: img(g), venue: str(g && g.venue, 40) })).filter(g => g.img).slice(0, Math.min(200, Math.max(1, Math.round(+c.galleryMax) || 60))));   // 60 best photos (Robbie 19 Nov); galleryMax raises it for a venue that asks
+  const gallery = (c.gallery || []).map(g => ({ img: img(g), venue: str(g && g.venue, 40) })).filter(g => g.img).slice(0, Math.min(200, Math.max(1, Math.round(+c.galleryMax) || 60)));   // 60 best photos (Robbie 19 Nov); galleryMax raises it for a venue that asks
   let order = Array.isArray(c.order) ? c.order.filter(k => SECTIONS.includes(k)) : [];
   SECTIONS.forEach(k => { if (!order.includes(k)) order.push(k); });
   order = order.filter(on);

@@ -196,6 +196,16 @@ async function find(req, res){
   let vq = st && st.value; try { while (typeof vq === 'string') vq = JSON.parse(vq); } catch (e) { vq = null; }
   if (!vq || vq.code !== code) return L.send(res, 404, { ok: false });
   await new Promise(r => setTimeout(r, 350));   // a little slower to guess
+  // At most 10 tries an hour from one phone/network, so nobody can run through all 10,000 endings (18 Nov)
+  const ip = String(req.headers['x-forwarded-for'] || req.headers['x-real-ip'] || '').split(',')[0].trim().slice(0, 60);
+  if (ip) {
+    const key = 'FIND:' + ip, nowMs = Date.now();
+    const att = (await L.db('login_attempts?select=*&username=eq.' + encodeURIComponent(key)).catch(() => []))[0];
+    const live = att && att.locked_until && new Date(att.locked_until).getTime() > nowMs;
+    if (live && att.fails >= 10) return L.send(res, 429, { ok: false, reason: 'slow' });
+    await L.db('login_attempts', { method: 'POST', headers: { Prefer: 'resolution=merge-duplicates' },
+      body: { username: key, fails: live ? att.fails + 1 : 1, locked_until: live ? att.locked_until : new Date(nowMs + 3600000).toISOString() } }).catch(() => {});
+  }
   const tail = d4.length === 4 && !full ? d4 : full.slice(-4);   // only members whose number ends the same way
   const ms = await L.db('members?select=id,phone&company_id=eq.' + encodeURIComponent(k.company_id) + '&phone=like.' + encodeURIComponent('*' + tail) + '&limit=1000');
   const hit = d4.length === 4 && !full ? ms.filter(m => String(m.phone || '').replace(/\D/g, '').slice(-4) === d4) : ms.filter(m => fdig(m.phone) === full);

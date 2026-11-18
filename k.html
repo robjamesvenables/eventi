@@ -1156,7 +1156,8 @@ body.vqopen .vq-dim{opacity:1;pointer-events:auto}body.vqopen .vq-sheet{transfor
     var bookRows = function(key){
       var rows = [];
       if (d.stay || d.stayWa || d.stayPhone) rows.push({ grp: 'STAY', label: 'Rooms & villas', icon: I.bed, gold: true, ways: waysOf(d.stay, d.stayWa, d.stayPhone, me + ' I\'d love to book a room - could you let me know what you have? Thank you!') });
-      var vs = (d.venues || []).slice().sort(function(a, b){ return (lc(b.name) === key) - (lc(a.name) === key); });
+      var vs = (d.venues || []).filter(function(v){ var pl = (gp.places || []).find(function(p){ return lc(p.name) === lc(v.name); }); return !(pl && pl.other && pl.app); })   // a linked venue with its own app is booked in that app
+        .slice().sort(function(a, b){ return (lc(b.name) === key) - (lc(a.name) === key); });
       vs.forEach(function(v){ rows.push({ grp: 'BOOK A TABLE', label: v.name, icon: I.food, here: !!key && lc(v.name) === key, ways: waysOf(v.book, v.wa, v.phone, greetAt(v.name)) }); });
       return rows.filter(function(r){ return r.ways.length; }).slice(0, 7);
     };

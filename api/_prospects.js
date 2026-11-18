@@ -76,7 +76,7 @@ P.trans = {
   perks: ['Welcome drink at The 18th Rooftop', 'Late check-out until 2pm, when available', '15% off at the spa', 'Free kids club afternoons'],
   perkIcons: ['cocktail', 'key', 'leaf', 'smile'],
   reward: { target: 10, text: 'One night in a pool villa' },
-  venues: ['The 18th Rooftop Bar', 'The Restaurant', 'The Lobby Lounge'].map(name => ({ name, ...({ 'The 18th Rooftop Bar': { opens: '17:00', closes: '23:00' }, 'The Restaurant': { opens: '06:30', closes: '23:00' }, 'The Lobby Lounge': { opens: '11:00', closes: '19:00' } }[name] || {}), area: 'Seminyak', map: 'https://www.google.com/maps/dir/?api=1&destination=The+Trans+Resort+Bali&destination_place_id=ChIJSdIXcT1H0i0R0vTqmwjznss', review: 'https://search.google.com/local/writereview?placeid=ChIJSdIXcT1H0i0R0vTqmwjznss' })),
+  venues: ['The 18th Rooftop Bar', 'The Restaurant', 'The Lobby Lounge'].map(name => ({ name, ...({ 'The 18th Rooftop Bar': { opens: '17:00', closes: '23:00' }, 'The Restaurant': { opens: '06:30', closes: '23:00' }, 'The Lobby Lounge': { opens: '11:00', closes: '19:00' } }[name] || {}), area: 'Seminyak', map: 'https://www.google.com/maps/dir/?api=1&destination=The+Trans+Resort+Bali&destination_place_id=ChIJSdIXcT1H0i0R0vTqmwjznss', review: 'https://search.google.com/local/writereview?placeid=ChIJSdIXcT1H0i0R0vTqmwjznss' })).concat([{ name: 'The Trans Luxury Hotel Surabaya', area: 'Surabaya', map: 'https://www.google.com/maps/search/?api=1&query=The+Trans+Luxury+Hotel+Surabaya+Jl+Ahmad+Yani+260' }]),
   // Bottom bar: Book = rooms + each outlet (no outlet booking details yet, so they all call reception); Contact = the hotel
   stay: TRANS_BOOK,
   contact: { phone: '+62 361 898 1234', wa: '6281138201212', email: 'reservation.bali@thetranshotel.com', map: 'https://www.google.com/maps/dir/?api=1&destination=The+Trans+Resort+Bali&destination_place_id=ChIJSdIXcT1H0i0R0vTqmwjznss', ig: 'thetransresortbali' },
@@ -88,14 +88,7 @@ P.trans = {
   content: today => {
     const y = year(today);
     return { placesTitle: 'Explore Trans Resort',   // short form: the full name is too long for one line
-      others: { on: true, list: [{ id: 'sby', app: 'T6RSBY', name: 'The Trans Luxury Hotel', city: 'Surabaya', img: '/demo-guest/p-sby-beachclub.jpg', line: '28th Sky Beach Club · 27th Sky Lounge · Rooms',
-    places: [{ name: '28th Sky Beach Club', img: '/demo-guest/p-sby-beachclub.jpg', line: 'A Bali beach club, 28 floors up', opens: '12:00', closes: '00:00' },
-      { name: '27th Sky Lounge', img: '/demo-guest/p-sby-skylounge.jpg', line: 'Cocktails over the city', opens: '12:00', closes: '00:00' },
-      { name: 'The Lounge', img: '/demo-guest/p-sby-lounge.jpg', line: 'Coffee, tea and light bites' }],
-    rooms: [{ name: 'Premier Room', img: '/demo-guest/p-sby-room-premier.jpg' }, { name: 'Executive Club', img: '/demo-guest/p-sby-room-execclub.jpg' },
-      { name: 'Celebrity Suite', img: '/demo-guest/p-sby-room-celebrity.jpg' }, { name: 'Presidential Suite', img: '/demo-guest/p-sby-room-presidential.jpg' }],
-    book: 'https://www.transhotelgroup.com/hotel_overview/45',
-    festive: { label: 'Festive season', title: 'The Season Reimagined', line: 'Christmas & New Year at The Trans Luxury Hotel', img: '/demo-guest/p-sby-skylounge.jpg', url: 'https://online.fliphtml5.com/TLHSurabaya/FESTIVE-TLHS---THE-SEASON-REIMAGINED/', cta: 'See the festive programme' } }] },
+      others: { title: 'Our other hotels' },   // template: Our other venues, heading renamed; the sister hotel is a place ticked 'Show under Our other venues' with a badge and its own app
       theme: { top: '#7A1F1F', acc: '#B8923A', pg: '#F7F3EC' }, motion: true, video: '/demo-guest/p-trans-film.mp4',
       slides: [
         { id: 'ts0', img: tr('nye'), title: "New Year's Eve " + y, line: '', venue: 'The 18th Rooftop Bar', ev: 'te2' },
@@ -126,6 +119,7 @@ P.trans = {
       ],
       gallery: ['pool', 'beach', 'rooftop', '18lounge', '18couple', '18day', '18sunset', 'llroom', 'llcocktails', 'llwelcome', 'llcoffee', 'llmartini', 'llmojito', 'courtyard', 'restoroom', 'lobster', 'steak', 'salmon', 'surfturf', 'chicken', 'oxtail', 'benedict', 'villapool', 'villa', 'room', 'balcony', 'spa', 'lobby', 'lounge', 'dining', 'kids', 'ballroom', 'entrance'].map((n, i) => ({ id: 'tg' + i, img: tr(n), venue: n === 'rooftop' || n === '18lounge' || n === '18couple' || n === '18day' || n === '18sunset' ? 'The 18th Rooftop Bar' : ['dining', 'restoroom', 'lobster', 'steak', 'salmon', 'surfturf', 'chicken', 'oxtail', 'benedict'].includes(n) ? 'The Restaurant' : ['lobby', 'lounge', 'llroom', 'llcocktails', 'llwelcome', 'llcoffee', 'llmartini', 'llmojito'].includes(n) ? 'The Lobby Lounge' : '' })),
       places: {
+        'the trans luxury hotel surabaya': { img: '/demo-guest/p-sby-beachclub.jpg', area: '28th Sky Beach Club · Rooms', other: true, badge: 'Surabaya', app: 'T6RSBY' },
         'the 18th rooftop bar': { img: tr('18lounge'), area: 'Rooftop · sunset views', ig: 'thetransresortbali', menus: [{ name: 'Food & drinks', pages: [{ img: '/demo-guest/p-trans-18th-menu-01.jpg' }, { img: '/demo-guest/p-trans-18th-menu-02.jpg' }, { img: '/demo-guest/p-trans-18th-menu-03.jpg' }, { img: '/demo-guest/p-trans-18th-menu-04.jpg' }, { img: '/demo-guest/p-trans-18th-menu-05.jpg' }, { img: '/demo-guest/p-trans-18th-menu-06.jpg' }, { img: '/demo-guest/p-trans-18th-menu-07.jpg' }, { img: '/demo-guest/p-trans-18th-menu-08.jpg' }, { img: '/demo-guest/p-trans-18th-menu-09.jpg' }, { img: '/demo-guest/p-trans-18th-menu-10.jpg' }] }] },
         'the restaurant': { img: tr('restoroom'), area: 'All-day dining by the pool', ig: 'thetransresortbali', menus: [{ name: 'Food & drinks', pages: [{ img: '/demo-guest/p-trans-restaurant-menu-1.jpg' }, { img: '/demo-guest/p-trans-restaurant-menu-2.jpg' }, { img: '/demo-guest/p-trans-restaurant-menu-3.jpg' }, { img: '/demo-guest/p-trans-restaurant-menu-4.jpg' }, { img: '/demo-guest/p-trans-restaurant-menu-5.jpg' }, { img: '/demo-guest/p-trans-restaurant-menu-6.jpg' }, { img: '/demo-guest/p-trans-restaurant-menu-7.jpg' }, { img: '/demo-guest/p-trans-restaurant-menu-8.jpg' }] }] },
         'the lobby lounge': { img: tr('llroom'), area: 'Coffee, tea and cocktails', ig: 'thetransresortbali', menus: [{ name: 'Food & drinks', pages: [{ img: '/demo-guest/p-trans-lounge-menu-1.jpg' }, { img: '/demo-guest/p-trans-lounge-menu-2.jpg' }, { img: '/demo-guest/p-trans-lounge-menu-3.jpg' }, { img: '/demo-guest/p-trans-lounge-menu-4.jpg' }] }] }
@@ -146,7 +140,7 @@ P.transsby = {
   perks: ['Welcome drink at the 28th Sky Beach Club', 'Late check-out until 2pm, when available', '15% off at the spa', 'Free Kids Club afternoons'],
   perkIcons: ['cocktail', 'key', 'leaf', 'smile'],
   reward: { target: 10, text: 'One night in the Celebrity Suite' },
-  venues: ['28th Sky Beach Club', 'The 27th Sky Lounge & Bistro', 'Grand Restaurant', 'Lobby Lounge'].map(name => ({ name, ...({ '28th Sky Beach Club': { opens: '12:00', closes: '00:00' }, 'The 27th Sky Lounge & Bistro': { opens: '12:00', closes: '00:00' } }[name] || {}), area: 'Surabaya', map: SBY_MAP })),
+  venues: ['28th Sky Beach Club', 'The 27th Sky Lounge & Bistro', 'Grand Restaurant', 'Lobby Lounge'].map(name => ({ name, ...({ '28th Sky Beach Club': { opens: '12:00', closes: '00:00' }, 'The 27th Sky Lounge & Bistro': { opens: '12:00', closes: '00:00' } }[name] || {}), area: 'Surabaya', map: SBY_MAP })).concat([{ name: 'The Trans Resort Bali', area: 'Bali', map: 'https://www.google.com/maps/dir/?api=1&destination=The+Trans+Resort+Bali&destination_place_id=ChIJSdIXcT1H0i0R0vTqmwjznss' }]),
   stay: SBY_BOOK,
   contact: { phone: '+62 811 1888 8055', wa: '6281118888055', map: SBY_MAP, ig: 'transluxurysurabaya' },
   acts: [
@@ -157,12 +151,7 @@ P.transsby = {
   content: today => {
     const y = year(today);
     return { placesTitle: 'Explore The Trans Surabaya',
-      others: { on: true, list: [{ id: 'bali', app: 'T7RNSB', name: 'The Trans Resort', city: 'Bali', img: tr('pool'), line: 'The 18th Rooftop · The Restaurant · Pool villas',
-        places: [{ name: 'The 18th Rooftop Bar', img: tr('18lounge'), line: 'Sunset cocktails over Seminyak', opens: '17:00', closes: '23:00' },
-          { name: 'The Restaurant', img: tr('restoroom'), line: 'All-day dining by the pool', opens: '06:30', closes: '23:00' },
-          { name: 'The Lobby Lounge', img: tr('llroom'), line: 'Coffee, tea and cocktails', opens: '11:00', closes: '19:00' }],
-        rooms: [{ name: 'Pool villas', img: tr('villa') }, { name: 'Suites with a view', img: tr('balcony') }, { name: 'Deluxe rooms', img: tr('room') }],
-        book: TRANS_BOOK }] },
+      others: { title: 'Our other hotels' },   // template: Our other venues, heading renamed; the sister hotel is a place ticked 'Show under Our other venues' with a badge and its own app
       theme: { top: '#FFFFFF', acc: '#9C7633', pg: '#F7F3EC' }, motion: true, video: '/demo-guest/p-sby-film.mp4',   // clean white with their gold (Robbie 19 Nov: not the heavy dark look)
       slides: [],   // Robbie 19 Nov: this hotel is event-led, so the Highlights are all events (each with See more)
       deals: [
@@ -195,6 +184,7 @@ P.transsby = {
       ],
       gallery: ['pool-day', 'suite-sunset', 'tea-close', 'cocktail-sunset', 'wedding-flower', 'chinese-fish', 'dive', 'coffee', 'indo-dishes', 'resto-window', 'inroom-view', 'umbrella', 'hightea', 'wedding-aisle', 'room-view', 'grand-resto', 'amenities', 'ballroom'].map((n, i) => ({ id: 'sg' + i, img: sb3(n) })),
       places: {
+        'the trans resort bali': { img: tr('pool'), area: 'The 18th Rooftop · Pool villas', other: true, badge: 'Bali', app: 'T7RNSB' },
         '28th sky beach club': { img: sb3('pool-day'), area: 'Rooftop beach · infinity pool' },
         'the 27th sky lounge & bistro': { img: sb2('skylounge'), area: 'Western menu · city views' },
         'grand restaurant': { img: sb3('grand-resto'), area: 'Buffet · Asian and international' },

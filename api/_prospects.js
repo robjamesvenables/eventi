@@ -165,7 +165,6 @@ P.transsby = {
         book: TRANS_BOOK }] },
       theme: { top: '#FFFFFF', acc: '#9C7633', pg: '#F7F3EC' }, motion: true,   // clean white with their gold (Robbie 19 Nov: not the heavy dark look)
       slides: [
-        { id: 'ss0', img: sb3('suite-sunset'), title: 'The Season Reimagined', line: 'Christmas & New Year ' + y + ' at The Trans', venue: '', btn: 'book', url: SBY_FESTIVE },
         { id: 'ss1', img: sb3('pool-square'), title: 'A beach on the 28th floor', line: 'Australian sand, infinity pool and views to Mount Arjuno', venue: '28th Sky Beach Club' },
         { id: 'ss2', img: sb3('cocktail-sunset'), title: 'The city’s highest beach club', line: 'Sun, sound and social', venue: '28th Sky Beach Club' },
         { id: 'ss3', img: sb3('hightea'), title: 'Afternoon tea', line: 'Daily, 3 to 5pm', venue: 'Lobby Lounge' },

@@ -24987,8 +24987,8 @@ window.gpGalleryAdd = function(){
 function gpGalleryPick(venue){
   const inp = document.createElement('input'); inp.type = 'file'; inp.accept = 'image/*'; inp.multiple = true;
   inp.onchange = async () => {
-    const files = Array.from(inp.files || []).slice(0, 120 - GPE.c.gallery.length);
-    if(!files.length){ toast('The gallery is full - remove some photos first'); return; }
+    const files = Array.from(inp.files || []).slice(0, Math.max(0, (Math.round(+GPE.c.galleryMax) || 60) - GPE.c.gallery.length));   // 60 best photos; Mavis can raise galleryMax for a venue
+    if(!files.length){ toast('The gallery is full (' + (Math.round(+GPE.c.galleryMax) || 60) + ' photos) - remove some first'); return; }
     toast('Adding ' + files.length + ' photo' + (files.length === 1 ? '' : 's') + '…');
     try{ for(const f of files) GPE.c.gallery.push({ id: gpId(), path: await gpUpload(f), venue }); }
     catch(e){ toast(/too big/.test(e.message || '') ? 'A photo is too big - the limit is 15 MB' : 'Could not upload - check your connection'); }

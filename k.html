@@ -53,6 +53,9 @@ html.acc-bright:not(.top-light) .brand small{color:var(--acc)}   /* a bright but
 .hi{margin-top:26px;font-size:30px;font-weight:900;letter-spacing:-.8px;line-height:1.1}
 .hg{display:inline-flex;align-items:center;gap:8px;margin-top:14px;background:rgba(255,255,255,.14);border:1.5px solid rgba(255,255,255,.35);color:var(--top-ink,#fff);border-radius:99px;padding:9px 15px;font-weight:800;font-size:14px;text-decoration:none}.hg svg{color:var(--acc,#C9A24A)}
 .top-light .hg{background:rgba(15,30,46,.06);border-color:rgba(15,30,46,.2)}
+.bk2{display:inline-flex;align-items:center;gap:6px;max-width:100%;margin:0 0 12px;padding:6px 12px 6px 8px;border-radius:99px;background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.3);color:var(--top-ink,#fff);font:700 13px Inter,sans-serif;text-decoration:none;box-sizing:border-box}
+.bk2 span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.bk2 b{font-weight:800}
+.top-light .bk2{background:rgba(15,30,46,.05);border-color:rgba(15,30,46,.15)}
 .mvtoast{position:fixed;left:16px;right:16px;bottom:calc(96px + env(safe-area-inset-bottom));z-index:99;max-width:488px;margin:0 auto;background:#16A34A;color:#fff;border-radius:16px;padding:13px 15px;font-weight:700;font-size:14px;display:flex;gap:10px;align-items:center;box-shadow:0 10px 26px rgba(0,0,0,.25);transition:opacity .4s}
 .hi-s{margin-top:7px;font-size:14px;color:var(--top-sub,#CBD5E1);line-height:1.45}
 /* card */
@@ -807,6 +810,7 @@ body.vqopen .vq-dim{opacity:1;pointer-events:auto}body.vqopen .vq-sheet{transfor
     var standalone = (window.matchMedia && matchMedia('(display-mode: standalone)').matches) || window.navigator.standalone === true || /[?&]home=1/.test(location.search);
     var homeRow = standalone || /[?&]embed=1/.test(location.search) ? '' : '<button class="addhome" id="addhome" type="button"><i>' + svg('<rect x="6" y="2" width="12" height="20" rx="3"/><path d="M12 7v7M9 11l3 3 3-3"/>', 18) + '</i><span><b>Save to your phone</b><small id="ahtx">No keyring needed to open it</small></span><em class="ahb">Add</em></button>';
     // The group's other hotels (same app, same keyring): a soft panel in the venue's own colour on the main page, each opens its own page
+    var curApp = (location.pathname.match(/\/k\/([A-Za-z0-9]{6})/) || [])[1] || '';
     var hotels = Array.isArray(d.hotels) ? d.hotels.filter(function(x){ return x && x.key && x.name; }) : [];
     var bold = d.hotelsBold === true;   // one simple style for Our other venues (no Visit button); only the older Trans sister-hotel box keeps its own setting
     var stays = hotels.some(function(x){ return x.rooms && x.rooms.length; });   // hotels say "hotels", restaurants and bars say "venues"
@@ -818,9 +822,10 @@ body.vqopen .vq-dim{opacity:1;pointer-events:auto}body.vqopen .vq-sheet{transfor
           (bold ? '<button class="ohgo" type="button" data-go="' + esc(k) + '"><span translate="no">Visit ' + esc(p.name) + '</span>' + svg('<path d="m9 18 6-6-6-6"/>', 18) + '</button>' : ''); }).join('');
     var hotelsRow = hotels.length || othCards ? '<div class="sec"><div class="ohp' + (bold ? ' bold' : '') + '">' + '<div class="lab">' + esc(gp.othersTitle || d.hotelsTitle || (stays ? 'Our other hotels' : 'Our other venues')) + '</div><small class="ohs">Your membership works here too</small>' + othCards + hotels.map(function(x){
         // A linked venue with its own full app (paid add-on): the card opens that whole app, in its own colours, not a mini page
-        if (x.app) return '<a class="pbig ohc" href="/k/' + esc(x.app) + '">' + (x.img ? '<img src="' + esc(x.img) + '" alt="" loading="lazy">' : '') + (x.city ? '<em class="ohpill" translate="no">' + esc(x.city) + '</em>' : '') +
+        var appHref = '/k/' + esc(x.app) + (curApp ? '?from=' + curApp + '&fn=' + encodeURIComponent(d.brand) : '');
+        if (x.app) return '<a class="pbig ohc" href="' + appHref + '">' + (x.img ? '<img src="' + esc(x.img) + '" alt="" loading="lazy">' : '') + (x.city ? '<em class="ohpill" translate="no">' + esc(x.city) + '</em>' : '') +
           '<span><b translate="no">' + esc(x.name) + '</b>' + (x.line ? '<small>' + esc(x.line) + '</small>' : '') + '</span></a>' +
-          (bold ? '<a class="ohgo" href="/k/' + esc(x.app) + '"><span translate="no">Visit ' + esc(x.name) + '</span>' + svg('<path d="m9 18 6-6-6-6"/>', 18) + '</a>' : '');
+          (bold ? '<a class="ohgo" href="' + appHref + '"><span translate="no">Visit ' + esc(x.name) + '</span>' + svg('<path d="m9 18 6-6-6-6"/>', 18) + '</a>' : '');
         return '<button class="pbig ohc" type="button" data-hotel="' + esc(x.key) + '">' + (x.img ? '<img src="' + esc(x.img) + '" alt="" loading="lazy">' : '') + (x.city ? '<em class="ohpill" translate="no">' + esc(x.city) + '</em>' : '') +
           '<span><b translate="no">' + esc(x.name) + '</b>' + (x.line ? '<small>' + esc(x.line) + '</small>' : '') + '</span></button>' +
           (bold ? '<button class="ohgo" type="button" data-hotel="' + esc(x.key) + '"><span translate="no">Visit ' + esc(x.name) + '</span>' + svg('<path d="m9 18 6-6-6-6"/>', 18) + '</button>' : '');
@@ -881,12 +886,16 @@ body.vqopen .vq-dim{opacity:1;pointer-events:auto}body.vqopen .vq-sheet{transfor
         return '<div class="sd' + (goKey ? ' tap' : '') + '"' + (goKey ? ' data-go="' + esc(goKey) + '"' + (x.ev ? ' data-goev="' + esc(x.ev) + '"' : '') + hit(x.id) + ' role="link" tabindex="0"' : '') + '>' + pic(x.img, x.title) + '<div class="ov">' + (x.title ? '<b>' + esc(x.title) + '</b>' : '') + (x.line || where ? '<small>' + esc([x.line, where].filter(Boolean).join(' · ')) + '</small>' : '') + go + '</div></div>';
       }).join('') + '</div>' + (list.length > 1 ? '<div class="dots" id="dots">' + list.map(function(x, i){ return '<i' + (i ? '' : ' class="on"') + '></i>'; }).join('') + '</div>' : '') + '</div>';
     };
-    // Hotel guide: back to the venue's free guest guide (the room / menu QR), without it jumping straight back here
-    var guideBtn = d.guide ? '<a class="hg" href="/g/' + esc(d.guide) + '?stay=1">' + svg('<path d="M3 21h18M5 21V7l7-4 7 4v14M9 9h1M14 9h1M9 13h1M14 13h1M10 21v-4h4v4"/>', 17) + 'Hotel guide</a>' : '';
+    // The guest guide is its own add-on with its own QR (Robbie 19 Nov): no Hotel guide button on the member page
+    var guideBtn = '';
+    // Came from a linked venue's app (e.g. Surabaya -> Bali): a small "Back to ..." pill above the logo, only then
+    var fromApp = (function(){ var q = new URLSearchParams(location.search), c = String(q.get('from') || '').toUpperCase(), n = String(q.get('fn') || '').replace(/[<>"]/g, '').slice(0, 50);
+      return /^[A-Z0-9]{6}$/.test(c) && n ? { code: c, name: n } : null; })();
+    var backPill = fromApp ? '<a class="bk2" href="/k/' + esc(fromApp.code) + '">' + svg('<path d="m15 18-6-6 6-6"/>', 16) + '<span>Back to <b translate="no">' + esc(fromApp.name) + '</b></span></a>' : '';
     // Good morning / afternoon / evening by Bali time (the venue's clock), so it's never wrong on a first visit
     var hi = (function(){ var h = 12; try { h = +new Intl.DateTimeFormat('en-GB', { timeZone: 'Asia/Makassar', hour: '2-digit', hour12: false }).format(new Date()) % 24; } catch (e) { h = new Date().getHours(); }
       return h >= 5 && h < 12 ? 'Good morning' : h >= 12 && h < 18 ? 'Good afternoon' : 'Good evening'; })();
-    var topHtml = function(inner){ return head(d, hi + ',<br><span translate="no">' + esc(String(d.first).split(' ')[0]) + '</span>', 'Good to see you. Here\'s what\'s on.').replace(/<\/div>$/, guideBtn + inner + '</div>'); };
+    var topHtml = function(inner){ return head(d, hi + ',<br><span translate="no">' + esc(String(d.first).split(' ')[0]) + '</span>', 'Good to see you. Here\'s what\'s on.').replace(/<\/div>$/, guideBtn + inner + '</div>').replace('<div class="top">', '<div class="top">' + backPill); };
 
     // ── The member's own things (same at every place) ──
     // Their film plays on its own at the very top (muted, on a loop); 'Sound on' opens it full with sound
@@ -1079,7 +1088,7 @@ body.vqopen .vq-dim{opacity:1;pointer-events:auto}body.vqopen .vq-sheet{transfor
       if (st && v.hrs) st += '<br><span class="hrs">' + esc(v.hrs) + '</span>';
       var pacc = /^#[0-9a-f]{6}$/i.test(p.acc || '') ? p.acc : '', pn = pacc ? parseInt(pacc.slice(1), 16) : 0;   // an other venue in its own brand colour
       var pst = pacc ? ' style="--acc:' + pacc + ';--acc-ink:' + ((0.299 * (pn >> 16) + 0.587 * ((pn >> 8) & 255) + 0.114 * (pn & 255)) > 165 ? '#111111' : '#FFFFFF') + '"' : '';
-      var h = '<div class="w"' + pst + '><div class="vtop">' + (p.img ? '<img src="' + esc(p.img) + '" alt="">' : '') + '<div class="vin"><button class="back" data-home aria-label="All places">' + svg('<path d="m15 18-6-6 6-6"/>', 18) + 'All places</button>' +
+      var h = '<div class="w"' + pst + '><div class="vtop">' + (p.img ? '<img src="' + esc(p.img) + '" alt="">' : '') + '<div class="vin"><button class="back" data-home aria-label="Back">' + svg('<path d="m15 18-6-6 6-6"/>', 18) + (p.other ? '<span translate="no">Back to ' + esc(d.brand) + '</span>' : 'All places') + '</button>' +
         (p.logo ? '<div class="vname lg"><img class="lgv" src="' + esc(p.logo) + '" alt=""><div>' : '<div class="vname">') + '<b translate="no">' + esc(p.name) + '</b>' + (st ? '<small>' + st + '</small>' : '') + (p.logo ? '</div>' : '') + '</div></div></div>';
       h += menuHtml(p);
       var sl = (gp.slides || []).filter(function(x){ return gp.motion ? lc(x.venue || '') === key : at(x, key); });

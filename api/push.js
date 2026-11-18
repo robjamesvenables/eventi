@@ -307,7 +307,7 @@ async function vipPush(me, b, res){
   const v = (await L.db('member_visits?select=venue,created_at&member_id=eq.' + encodeURIComponent(m.id) + '&by_profile=eq.' + encodeURIComponent(me.id) + '&created_at=gte.' + encodeURIComponent(since) + '&order=created_at.desc&limit=1').catch(() => []))[0];
   if (!v) return L.send(res, 200, { ok: true, sent: 0, why: 'no check-in just now' });
   const st = (await L.db('app_settings?select=value&key=eq.mk_settings&company_id=eq.' + encodeURIComponent(me.company_id)).catch(() => []))[0];
-  let on = false; try { let x = st && st.value; while (typeof x === 'string') x = JSON.parse(x); on = !!(x && x.vip && x.vip.on); } catch (e) {}
+  let on = true; try { let x = st && st.value; while (typeof x === 'string') x = JSON.parse(x); on = !(x && x.vip && x.vip.on === false); } catch (e) {}   // on unless switched off
   if (!on) return L.send(res, 200, { ok: true, sent: 0, why: 'VIP alert is off' });
   const people = await L.db('profiles?select=id,role,is_owner,active&company_id=eq.' + encodeURIComponent(me.company_id));
   const mgrs = people.filter(p => p.active !== false && String(p.id) !== String(me.id) && (p.is_owner || ['superadmin', 'director', 'manager'].includes(p.role)));

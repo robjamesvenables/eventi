@@ -163,22 +163,11 @@ P.transsby = {
           { name: 'The Lobby Lounge', img: tr('llroom'), line: 'Coffee, tea and cocktails', opens: '11:00', closes: '19:00' }],
         rooms: [{ name: 'Pool villas', img: tr('villa') }, { name: 'Suites with a view', img: tr('balcony') }, { name: 'Deluxe rooms', img: tr('room') }],
         book: TRANS_BOOK }] },
-      theme: { top: '#FFFFFF', acc: '#9C7633', pg: '#F7F3EC' }, motion: true, film: 'PkpiWorGcq4',   // clean white with their gold (Robbie 19 Nov: not the heavy dark look)
-      slides: [
-        { id: 'ss1', img: sb3('pool-square'), title: 'A beach on the 28th floor', line: 'Australian sand, infinity pool and views to Mount Arjuno', venue: '28th Sky Beach Club' },
-        { id: 'ss2', img: sb3('cocktail-sunset'), title: 'The city’s highest beach club', line: 'Sun, sound and social', venue: '28th Sky Beach Club' },
-        { id: 'ss3', img: sb3('hightea'), title: 'Afternoon tea', line: 'Daily, 3 to 5pm', venue: 'Lobby Lounge' },
-        { id: 'ss4', img: sb3('grand-resto'), title: 'Grand Restaurant', line: 'Buffet plus Asian and international à la carte', venue: 'Grand Restaurant' },
-        { id: 'ss5', img: sb3('room-view'), title: 'Wake up above the city', line: 'Rooms and suites with the whole city below', venue: '', btn: 'book', url: SBY_BOOK },
-        { id: 'ss6', img: sb3('inroom-view'), title: 'In-room dining', line: 'Breakfast in bed, with a view', venue: '', btn: 'wa' },
-        { id: 'ss7', img: sb3('wedding-aisle'), title: 'Weddings and celebrations', line: 'From intimate ceremonies to the Grand Ballroom', venue: '', btn: 'wa' }
-      ],
+      theme: { top: '#FFFFFF', acc: '#9C7633', pg: '#F7F3EC' }, motion: true, video: '/demo-guest/p-sby-film.mp4',   // clean white with their gold (Robbie 19 Nov: not the heavy dark look)
+      slides: [],   // Robbie 19 Nov: this hotel is event-led, so the Highlights are all events (each with See more)
       deals: [
         { id: 'sd1', img: sb3('hightea'), title: 'Afternoon tea', when: 'Daily · 3–5pm', venue: 'Lobby Lounge' },
-        { id: 'sd2', img: sb3('breakfast'), title: 'Breakfast at the Grand Restaurant', when: 'Every morning', venue: 'Grand Restaurant' },
-        { id: 'sd3', img: sb3('gift-lunch'), title: 'Christmas Gift Exchange Lunch', when: 'Buy 1 get 1 free · 1–30 Dec', venue: 'Grand Restaurant' },
-        { id: 'sd4', img: sb3('hampers'), title: 'Festive hampers · 20% off until 10 Dec', when: 'From IDR 688,000++', venue: '' },
-        { id: 'sd5', img: sb3('takehome'), title: 'A Feast to Take Home', when: 'From IDR 388,000++', venue: '' }
+        { id: 'sd2', img: sb3('breakfast'), title: 'Breakfast at the Grand Restaurant', when: 'Every morning', venue: 'Grand Restaurant' }
       ],
       events: [
         { id: 'se1', img: sb3('suite-sunset'), title: 'The Season Reimagined', line: 'See the full festive programme', date: y + '-12-24', time: '18:00', time2: '23:00', venue: '', btn: 'book', url: SBY_FESTIVE, hl: true,
@@ -191,12 +180,18 @@ P.transsby = {
           details: "Stay 31 December to 1 January. One night in a Premier Room, New Year's Eve dinner at Grand Restaurant for 2, breakfast, Kids Club and the infinity pool. Book by 11 December." },
         { id: 'se5', img: sb3('fireworks'), title: 'Fireworks Party & BBQ Dinner', line: 'Count down to midnight with DJ Katty Butterfly', date: y + '-12-31', time: '20:00', time2: '01:00', venue: '28th Sky Beach Club', btn: 'book', url: SBY_FESTIVE, hl: true, price: 'IDR 999,000++ per person',
           details: 'Barbecue dinner by the infinity pool on the 28th level, fireworks over the city at midnight, and DJ Katty Butterfly until 1am.' },
-        { id: 'se6', img: sb3('xmas-sky'), title: 'Christmas Dinner at the Sky Beach Club', line: 'Indoors on the 27th level', date: y + '-12-25', time: '18:00', venue: '28th Sky Beach Club', btn: 'book', url: SBY_FESTIVE, price: 'From IDR 488,000++ per person',
+        { id: 'se6', img: sb3('xmas-sky'), title: 'Christmas Dinner at the Sky Beach Club', line: 'Indoors on the 27th level', date: y + '-12-25', time: '18:00', venue: '28th Sky Beach Club', btn: 'book', url: SBY_FESTIVE, hl: true, price: 'From IDR 488,000++ per person',
           details: 'Christmas dinner indoors on the 27th level, from 6pm, with the city lights below.' },
-        { id: 'se7', img: sb3('xmas-grand'), title: 'Christmas Dinner & Brunch', line: 'Christmas Eve dinner, Christmas Day brunch and dinner', date: y + '-12-24', time: '18:00', time2: '21:00', venue: 'Grand Restaurant', btn: 'book', url: SBY_FESTIVE, price: 'IDR 588,000++ per person',
+        { id: 'se7', img: sb3('xmas-grand'), title: 'Christmas Dinner & Brunch', line: 'Christmas Eve dinner, Christmas Day brunch and dinner', date: y + '-12-24', time: '18:00', time2: '21:00', venue: 'Grand Restaurant', btn: 'book', url: SBY_FESTIVE, hl: true, price: 'IDR 588,000++ per person',
           details: 'Christmas Eve dinner 6 to 9pm. Christmas Day brunch 12 to 3pm and dinner 6 to 9pm. Early bird 30% off until 10 December.' },
-        { id: 'se8', img: sb3('nye-table'), title: "The New Year's Table", line: 'Dinner and countdown at Grand Restaurant', date: y + '-12-31', time: '19:00', time2: '00:00', venue: 'Grand Restaurant', btn: 'book', url: SBY_FESTIVE, price: 'IDR 628,000++ per person',
-          details: "New Year's Eve buffet, seafood, carvery and desserts, then the countdown to midnight. 20% off when you book by 30 November." }
+        { id: 'se8', img: sb3('nye-table'), title: "The New Year's Table", line: 'Dinner and countdown at Grand Restaurant', date: y + '-12-31', time: '19:00', time2: '00:00', venue: 'Grand Restaurant', btn: 'book', url: SBY_FESTIVE, hl: true, price: 'IDR 628,000++ per person',
+          details: "New Year's Eve buffet, seafood, carvery and desserts, then the countdown to midnight. 20% off when you book by 30 November." },
+        { id: 'se9', img: sb3('gift-lunch'), title: 'Christmas Gift Exchange Lunch', line: 'Lunch daily, 1 to 30 December', venue: 'Grand Restaurant', btn: 'wa', hl: true, price: 'IDR 488,000++ per person, buy 1 get 1 free',
+          details: 'A festive lunch with friends or the team, gifts swapped at the table. Daily from 1 to 30 December at Grand Restaurant, 1st level.' },
+        { id: 'se10', img: sb3('hampers'), title: 'Festive hampers', line: 'Treats from our kitchen, beautifully wrapped', venue: '', btn: 'wa', hl: true, price: 'IDR 688,000++',
+          details: 'Cookies, chocolates, nuts and coffee in a Trans gift box. 20% off when you order by 10 December.' },
+        { id: 'se11', img: sb3('takehome'), title: 'A Feast to Take Home', line: 'Christmas dishes for your own table', venue: '', btn: 'wa', hl: true, price: 'From IDR 388,000++',
+          details: 'Salmon Wellington and other festive dishes from our chefs, ready to take home for Christmas.' }
       ],
       gallery: ['pool-day', 'suite-sunset', 'tea-close', 'cocktail-sunset', 'wedding-flower', 'chinese-fish', 'dive', 'coffee', 'indo-dishes', 'resto-window', 'inroom-view', 'umbrella', 'hightea', 'wedding-aisle', 'room-view', 'grand-resto', 'amenities', 'ballroom'].map((n, i) => ({ id: 'sg' + i, img: sb3(n) })),
       places: {

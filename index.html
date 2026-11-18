@@ -7798,6 +7798,7 @@ function whoAmIRender(){
 function setCurrentUserName(firstName){
   firstName = firstName || 'there';
   currentUserFirstName = firstName;
+  if(myProfile){ const full = [myProfile.first_name, myProfile.last_name].filter(Boolean).join(' ').trim(); if(full) announceCurrentUser = full; }
   const greeting = document.getElementById('home-greeting-title');
   if(greeting) greeting.textContent = 'Good to see you, ' + firstName;
   const sbName = document.getElementById('sb-uname');
@@ -18905,7 +18906,7 @@ const announcements = [
 let announceNextId = 10;
 let announceEditId = null;
 
-const announceCurrentUser = 'John';
+let announceCurrentUser = 'John';   // the signed-in person's full name once logged in (set in setCurrentUserName) - 'John' only in the signed-out demo
 const announcePlaceholders = [
   'e.g. "Reminder — staff meeting Friday 3PM in the office."',
   'e.g. "Welcome our new hire starting Monday!"',
@@ -19132,7 +19133,7 @@ function announceRender(){
   const avatarColor = announceAvatarColor;
   const visibleAnnouncements = announcements.slice(0, announceVisibleCount);
   const realHtml = visibleAnnouncements.map((a)=>{
-    const isOwner = a.by === announceCurrentUser;
+    const isOwner = a.by === announceCurrentUser || !myProfile || ['superadmin','director','manager'].includes(myProfile.role) || !!myProfile.is_owner;   // own posts, plus managers can tidy any post
     const newBadge = isToday(a.ts) ? `<span style="display:inline-block;background:#0D9488;color:white;font-size:8.5px;font-weight:800;letter-spacing:0.5px;padding:2px 7px;border-radius:8px;margin-left:6px;position:relative;top:-1.5px;vertical-align:middle">NEW</span>` : '';
     const pinIcon = `<span onclick="event.stopPropagation();announceTogglePin(${a.id})" data-tooltip-below="${a.pinned?'Unpin':'Pin to top'}" style="position:absolute;top:12px;right:${isOwner?'86px':'12px'};z-index:2;width:28px;height:28px;border-radius:50%;background:${a.pinned?'#DC2626':'rgba(255,255,255,0.85)'};display:flex;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 2px 6px rgba(0,0,0,0.15)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="${a.pinned?'white':'#94A3B8'}" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 17v5"/><path d="M9 10.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V7a1 1 0 0 1 1-1 2 2 0 0 0 0-4H8a2 2 0 0 0 0 4 1 1 0 0 1 1 1z"/></svg></span>`;
     const actions = isOwner ? `
@@ -19519,10 +19520,10 @@ window.announceSubmit = async function(){
       const opts = labels.map((label,i)=>({id:i+1, label, votes:[]}));
       const now = new Date();
       const time = 'Today, '+now.getHours()+':'+String(now.getMinutes()).padStart(2,'0');
-      const newPost = {id:announceNextId++, text:q, tag:'Info', link:'', photo:'', pollOptions:opts, color:'#0D9488', tagBg:'#CCFBF1', tagColor:'#065F46', by:'John', time, ts:Date.now()};
+      const newPost = {id:announceNextId++, text:q, tag:'Info', link:'', photo:'', pollOptions:opts, color:'#0D9488', tagBg:'#CCFBF1', tagColor:'#065F46', by:announceCurrentUser, time, ts:Date.now()};
       const insertAt = announcements.findIndex(a => !a.pinned);
       announcements.splice(insertAt === -1 ? announcements.length : insertAt, 0, newPost);
-      const { data, error } = await sb.from('announcements').insert({ text: q, tag: 'Info', by_name: 'John', poll_options: opts }).select().single();
+      const { data, error } = await sb.from('announcements').insert({ text: q, tag: 'Info', by_name: announceCurrentUser, poll_options: opts }).select().single();
       if(error){
         console.warn('Supabase poll insert failed', error);
         toast('Poll shown here, but not saved - check your connection or Supabase setup');
@@ -19558,10 +19559,10 @@ window.announceSubmit = async function(){
     }
     toast('Updated ✓');
   } else {
-    const newPost = {id:announceNextId++, text, link, photo:announcePhotoData, color:'#0D9488', tagBg:'#CCFBF1', tagColor:'#065F46', by:'John', time, ts:Date.now()};
+    const newPost = {id:announceNextId++, text, link, photo:announcePhotoData, color:'#0D9488', tagBg:'#CCFBF1', tagColor:'#065F46', by:announceCurrentUser, time, ts:Date.now()};
     const insertAt = announcements.findIndex(a => !a.pinned);
     announcements.splice(insertAt === -1 ? announcements.length : insertAt, 0, newPost);
-    const { data, error } = await sb.from('announcements').insert({ text, by_name: 'John', photo: announcePhotoData || null, link: link || null }).select().single();
+    const { data, error } = await sb.from('announcements').insert({ text, by_name: announceCurrentUser, photo: announcePhotoData || null, link: link || null }).select().single();
     if(error){
       console.warn('Supabase insert failed', error);
       toast('Posted here, but not saved - check your connection');
@@ -19734,7 +19735,7 @@ function announceInlineRepliesHtml(a){
     : list.length === 0 ? `<div style="font-size:12.5px;color:#94A3B8;font-style:italic">No replies yet — be the first to reply.</div>`
     : list.map(r => {
         const initial = r.by ? r.by.charAt(0).toUpperCase() : '?';
-        const isReplyOwner = r.by === announceCurrentUser;
+        const isReplyOwner = r.by === announceCurrentUser || !myProfile || ['superadmin','director','manager'].includes(myProfile.role) || !!myProfile.is_owner;
         const isEditingThis = announceEditingReplyId === r.id;
         const replyActions = (isReplyOwner && !isEditingThis) ? `
           <span onclick="announceStartEditReply(${a.id},${typeof r.id === 'string' ? `'${r.id}'` : r.id})" data-tooltip="Edit" style="opacity:0.6;cursor:pointer;padding:6px;margin:-6px;display:inline-flex"><svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="2.2"/><circle cx="12" cy="12" r="2.2"/><circle cx="12" cy="19" r="2.2"/></svg></span>
@@ -29694,11 +29695,11 @@ function openAddMoment(){
       if(caption.trim().length < 3){ toast('Caption needs to be at least 3 characters'); return; }
       try{
         const thumb = await appDataUrlToThumb(img);
-        let { data, error } = await sb.from('highlights').insert({ img, thumb, caption, by_name: 'John' }).select().single();
+        let { data, error } = await sb.from('highlights').insert({ img, thumb, caption, by_name: announceCurrentUser }).select().single();
         if(error){
           // 'thumb' column doesn't exist yet (SQL not run) - retry without it rather
           // than losing the highlight entirely.
-          const retry = await sb.from('highlights').insert({ img, caption, by_name: 'John' }).select().single();
+          const retry = await sb.from('highlights').insert({ img, caption, by_name: announceCurrentUser }).select().single();
           data = retry.data; error = retry.error;
         }
         if(error) throw error;
@@ -29707,7 +29708,7 @@ function openAddMoment(){
           img: data.img,
           thumb: data.thumb || data.img,
           caption: data.caption,
-          meta: 'Posted by John \u00b7 Today'
+          meta: 'Posted by ' + announceCurrentUser + ' \u00b7 Today'
         });
         toast('Highlight added \u2713');
         momentsRebuild();

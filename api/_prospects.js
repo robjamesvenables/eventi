@@ -152,7 +152,7 @@ P.transsby = {
     const y = year(today);
     return { placesTitle: 'Explore The Trans Surabaya',
       others: { title: 'Our other hotels' },   // template: Our other venues, heading renamed; the sister hotel is a place ticked 'Show under Our other venues' with a badge and its own app
-      theme: { top: '#FFFFFF', acc: '#9C7633', pg: '#F7F3EC' }, motion: true, video: '/demo-guest/p-sby-film.mp4',   // clean white with their gold (Robbie 19 Nov: not the heavy dark look)
+      theme: { top: '#1C1C1E', acc: '#C9A96E', pg: '#ECE9E4' }, motion: true, video: '/demo-guest/p-sby-film.mp4',   // clean white with their gold (Robbie 19 Nov: not the heavy dark look)
       slides: [],   // Robbie 19 Nov: this hotel is event-led, so the Highlights are all events (each with See more)
       deals: [
         { id: 'sd1', img: sb3('hightea'), title: 'Afternoon tea', when: 'Daily · 3–5pm', venue: 'Lobby Lounge' },

@@ -186,7 +186,9 @@ function build(c, ctx){
       const book = httpsOk(n) ? n : (!/@/.test(n) && dg.length >= 8 && dg.length <= 16 ? 'https://wa.me/' + dg + '?text=' + encodeURIComponent(who + " I'd love to book a table at " + str(o.name, 60) + ' - could you let me know what you have? Thank you!') : '');
       return { key: (String(o.id || '').replace(/[^a-z0-9]/gi, '') || 'v' + i).slice(0, 20), name: str(o.name, 60).trim(), city: str(o.city, 40).trim(), img: img(o), line: str(o.line, 90).trim(), book,
         places: (Array.isArray(o.places) ? o.places : []).slice(0, 8).map(p => ({ name: str((p || {}).name, 40).trim(), img: img(p), line: str((p || {}).line, 60).trim(), opens: hm((p || {}).opens), closes: hm((p || {}).closes) })).filter(p => p.name),
-        rooms: (Array.isArray(o.rooms) ? o.rooms : []).slice(0, 8).map(r => ({ name: str((r || {}).name, 40).trim(), img: img(r) })).filter(r => r.name) }; }).filter(o => o.name);
+        rooms: (Array.isArray(o.rooms) ? o.rooms : []).slice(0, 8).map(r => ({ name: str((r || {}).name, 40).trim(), img: img(r) })).filter(r => r.name),
+        // a seasonal programme (e.g. Christmas & New Year brochure link) shown at the top of that hotel's page
+        festive: o.festive && httpsOk(String(o.festive.url || '').trim()) ? { label: str(o.festive.label, 30).trim(), title: str(o.festive.title, 60).trim(), line: str(o.festive.line, 90).trim(), img: img(o.festive), url: String(o.festive.url).trim(), cta: str(o.festive.cta, 40).trim() } : null }; }).filter(o => o.name);
     if (list.length) others = { bold: ov.bold === true, title: str(ov.title, 40).trim(), list };
   }
   const placesTitle = str(c.placesTitle, 26).trim();   // 'Explore ' + up to 18 letters

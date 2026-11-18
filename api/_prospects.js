@@ -94,7 +94,8 @@ P.trans = {
       { name: 'The Lounge', img: '/demo-guest/p-sby-lounge.jpg', line: 'Coffee, tea and light bites' }],
     rooms: [{ name: 'Premier Room', img: '/demo-guest/p-sby-room-premier.jpg' }, { name: 'Executive Club', img: '/demo-guest/p-sby-room-execclub.jpg' },
       { name: 'Celebrity Suite', img: '/demo-guest/p-sby-room-celebrity.jpg' }, { name: 'Presidential Suite', img: '/demo-guest/p-sby-room-presidential.jpg' }],
-    book: 'https://www.transhotelgroup.com/hotel_overview/45' }] },
+    book: 'https://www.transhotelgroup.com/hotel_overview/45',
+    festive: { label: 'Festive season', title: 'The Season Reimagined', line: 'Christmas & New Year at The Trans Luxury Hotel', img: '/demo-guest/p-sby-skylounge.jpg', url: 'https://online.fliphtml5.com/TLHSurabaya/FESTIVE-TLHS---THE-SEASON-REIMAGINED/', cta: 'See the festive programme' } }] },
       theme: { top: '#7A1F1F', acc: '#B8923A', pg: '#F7F3EC' }, motion: true, video: '/demo-guest/p-trans-film.mp4',
       slides: [
         { id: 'ts0', img: tr('nye'), title: "New Year's Eve " + y, line: '', venue: 'The 18th Rooftop Bar', ev: 'te2' },
@@ -128,6 +129,64 @@ P.trans = {
         'the 18th rooftop bar': { img: tr('18lounge'), area: 'Rooftop · sunset views', ig: 'thetransresortbali', menus: [{ name: 'Food & drinks', pages: [{ img: '/demo-guest/p-trans-18th-menu-01.jpg' }, { img: '/demo-guest/p-trans-18th-menu-02.jpg' }, { img: '/demo-guest/p-trans-18th-menu-03.jpg' }, { img: '/demo-guest/p-trans-18th-menu-04.jpg' }, { img: '/demo-guest/p-trans-18th-menu-05.jpg' }, { img: '/demo-guest/p-trans-18th-menu-06.jpg' }, { img: '/demo-guest/p-trans-18th-menu-07.jpg' }, { img: '/demo-guest/p-trans-18th-menu-08.jpg' }, { img: '/demo-guest/p-trans-18th-menu-09.jpg' }, { img: '/demo-guest/p-trans-18th-menu-10.jpg' }] }] },
         'the restaurant': { img: tr('restoroom'), area: 'All-day dining by the pool', ig: 'thetransresortbali', menus: [{ name: 'Food & drinks', pages: [{ img: '/demo-guest/p-trans-restaurant-menu-1.jpg' }, { img: '/demo-guest/p-trans-restaurant-menu-2.jpg' }, { img: '/demo-guest/p-trans-restaurant-menu-3.jpg' }, { img: '/demo-guest/p-trans-restaurant-menu-4.jpg' }, { img: '/demo-guest/p-trans-restaurant-menu-5.jpg' }, { img: '/demo-guest/p-trans-restaurant-menu-6.jpg' }, { img: '/demo-guest/p-trans-restaurant-menu-7.jpg' }, { img: '/demo-guest/p-trans-restaurant-menu-8.jpg' }] }] },
         'the lobby lounge': { img: tr('llroom'), area: 'Coffee, tea and cocktails', ig: 'thetransresortbali', menus: [{ name: 'Food & drinks', pages: [{ img: '/demo-guest/p-trans-lounge-menu-1.jpg' }, { img: '/demo-guest/p-trans-lounge-menu-2.jpg' }, { img: '/demo-guest/p-trans-lounge-menu-3.jpg' }, { img: '/demo-guest/p-trans-lounge-menu-4.jpg' }] }] }
+      }
+    };
+  }
+};
+
+// The Trans Luxury Hotel Surabaya - the same group shown the other way round: Surabaya is the app, Trans Bali is "Our other hotel"
+// (so on the Zoom with Alex we can show both ways). Facts from transhotelgroup.com + the Aug 2026 opening press; hours where known.
+const sb2 = n => '/demo-guest/p-sby-' + n + '.jpg';
+const SBY_BOOK = 'https://www.transhotelgroup.com/hotel_overview/45';
+const SBY_FESTIVE = 'https://online.fliphtml5.com/TLHSurabaya/FESTIVE-TLHS---THE-SEASON-REIMAGINED/';
+const SBY_MAP = 'https://www.google.com/maps/search/?api=1&query=The+Trans+Luxury+Hotel+Surabaya';
+P.transsby = {
+  brand: 'The Trans Luxury Hotel Surabaya', logo: '/demo-guest/p-sby-logo.png', icon: '/demo-guest/p-sby-icon', first: 'Alexander', tier: 'member', visits: 4, since: 2026, favourite: '28th Sky Beach Club',
+  perks: ['Welcome drink at the 28th Sky Beach Club', 'Late check-out until 2pm, when available', '15% off at The Spa', 'Free Kids Club afternoons'],
+  perkIcons: ['cocktail', 'key', 'leaf', 'smile'],
+  reward: { target: 10, text: 'One night in the Celebrity Suite' },
+  venues: ['28th Sky Beach Club', '27th Sky Lounge', 'The Lounge'].map(name => ({ name, ...({ '28th Sky Beach Club': { opens: '12:00', closes: '00:00' }, '27th Sky Lounge': { opens: '12:00', closes: '00:00' } }[name] || {}), area: 'Surabaya', map: SBY_MAP })),
+  stay: SBY_BOOK,
+  contact: { phone: '+62 31 3000 8888', wa: '6281118888055', map: SBY_MAP },
+  acts: [
+    { title: 'Sunset at the 28th', line: 'DJ by the infinity pool', every: [5, 6], start: '17:00', end: '21:00', venue: '28th Sky Beach Club' },
+    { title: 'Cocktails over the city', line: 'Golden hour, 27 floors up', every: [1, 2, 3, 4, 0], start: '17:30', end: '20:00', venue: '27th Sky Lounge' },
+    { title: 'Coffee in The Lounge', line: 'Artisan coffee and light bites', every: [1, 2, 3, 4, 5, 6, 0], start: '09:00', end: '17:00', venue: 'The Lounge' }
+  ],
+  content: today => {
+    const y = year(today);
+    return { placesTitle: 'Explore The Trans Surabaya',
+      others: { on: true, list: [{ id: 'bali', name: 'The Trans Resort', city: 'Bali', img: tr('pool'), line: 'The 18th Rooftop · The Restaurant · Pool villas',
+        places: [{ name: 'The 18th Rooftop Bar', img: tr('18lounge'), line: 'Sunset cocktails over Seminyak', opens: '17:00', closes: '23:00' },
+          { name: 'The Restaurant', img: tr('restoroom'), line: 'All-day dining by the pool', opens: '06:30', closes: '23:00' },
+          { name: 'The Lobby Lounge', img: tr('llroom'), line: 'Coffee, tea and cocktails', opens: '11:00', closes: '19:00' }],
+        rooms: [{ name: 'Pool villas', img: tr('villa') }, { name: 'Suites with a view', img: tr('balcony') }, { name: 'Deluxe rooms', img: tr('room') }],
+        book: TRANS_BOOK }] },
+      theme: { top: '#7A1F1F', acc: '#B8923A', pg: '#F7F3EC' }, motion: true,
+      slides: [
+        { id: 'ss0', img: sb2('skylounge'), title: 'The Season Reimagined', line: 'Christmas & New Year ' + y + ' at The Trans', venue: '', btn: 'book', url: SBY_FESTIVE },
+        { id: 'ss1', img: sb2('beachclub'), title: 'The highest beach club in Indonesia', line: 'Infinity pool, 28 floors above Surabaya', venue: '28th Sky Beach Club' },
+        { id: 'ss2', img: sb2('skylounge'), title: 'Sky dining on the 27th', line: 'The city lights at your table', venue: '27th Sky Lounge' },
+        { id: 'ss3', img: sb2('lounge'), title: 'The Lounge', line: 'Artisan coffee and cocktails', venue: 'The Lounge' },
+        { id: 'ss4', img: sb2('room-celebrity'), title: 'The Celebrity Suite', line: 'Panoramic views over the city', venue: '', btn: 'book', url: SBY_BOOK },
+        { id: 'ss5', img: sb2('ballroom'), title: 'The Grand Ballroom', line: 'Weddings and galas for up to 1,500 guests', venue: '', btn: 'wa' },
+        { id: 'ss6', img: sb2('room-presidential'), title: 'The Presidential Suite', line: 'The top of the house', venue: '', btn: 'book', url: SBY_BOOK }
+      ],
+      deals: [
+        { id: 'sd1', img: sb2('beachclub'), title: 'Sunset hour at the 28th', when: 'Daily · 5–7pm', venue: '28th Sky Beach Club' },
+        { id: 'sd2', img: sb2('lounge'), title: 'Coffee and cake for two', when: 'Daily · 2–5pm', venue: 'The Lounge' }
+      ],
+      events: [
+        { id: 'se1', img: sb2('skylounge'), title: 'The Season Reimagined', line: 'See the full festive programme', date: y + '-12-24', time: '18:00', time2: '23:00', venue: '27th Sky Lounge', btn: 'book', url: SBY_FESTIVE, hl: true,
+          details: 'Christmas and New Year at The Trans Luxury Hotel Surabaya. Tap Book now to see the full festive programme.' },
+        { id: 'se2', img: sb2('beachclub'), title: "New Year's Eve at the 28th", line: 'Midnight over Surabaya', date: y + '-12-31', time: '20:00', time2: '01:00', venue: '28th Sky Beach Club', btn: 'wa', disc: 10 },
+        { id: 'se3', img: sb2('iconic'), title: 'Wedding showcase', line: 'Meet our wedding team', date: addDays(today, 10), time: '11:00', time2: '15:00', venue: '', btn: 'wa' }
+      ],
+      gallery: ['beachclub', 'skylounge', 'lounge', 'ballroom', 'iconic', 'room-premier', 'room-execclub', 'room-celebrity', 'room-presidential'].map((n, i) => ({ id: 'sg' + i, img: sb2(n) })),
+      places: {
+        '28th sky beach club': { img: sb2('beachclub'), area: 'Rooftop · infinity pool' },
+        '27th sky lounge': { img: sb2('skylounge'), area: 'Sky dining · executive club' },
+        'the lounge': { img: sb2('lounge'), area: 'Coffee, tea and light bites' }
       }
     };
   }
@@ -1060,9 +1119,9 @@ P.ulu = {
   }
 };
 
-const CODES = { U4LUCH: 'ulu', S2NSET: 'sunset', S3NJAB: 'senja', K8SNGA: 'sangsaka', B6PADL: 'bpa', S8HLTR: 'shelter', T7RNSB: 'trans', '5NKGZJ': 'trans', S4DK7R: 'sundari', M3SNRY: 'masonry', L5UMAB: 'luma', B7RNCH: 'brunch', L7LASQ: 'lolas', K2DETA: 'kudeta', S9LTLK: 'kudeta', S3EAST: 'southeast', M6MSAN: 'mamasan', M8ZAIC: 'mozaic', S6PBLK: 'spiceblake' };   // L5UMAB = Luma keyring: its own Luma demo (different owners from Sangsaka)   // 5NKGZJ = the printed sample card, shown as Trans for the GM demo
+const CODES = { U4LUCH: 'ulu', S2NSET: 'sunset', S3NJAB: 'senja', K8SNGA: 'sangsaka', B6PADL: 'bpa', S8HLTR: 'shelter', T7RNSB: 'trans', '5NKGZJ': 'trans', S4DK7R: 'sundari', M3SNRY: 'masonry', L5UMAB: 'luma', B7RNCH: 'brunch', L7LASQ: 'lolas', K2DETA: 'kudeta', S9LTLK: 'kudeta', S3EAST: 'southeast', M6MSAN: 'mamasan', M8ZAIC: 'mozaic', S6PBLK: 'spiceblake', T6RSBY: 'transsby' };   // L5UMAB = Luma keyring: its own Luma demo (different owners from Sangsaka)   // 5NKGZJ = the printed sample card, shown as Trans for the GM demo
 // Mavis Club network: each of the guest's other venues as a logo tile (their colour, logo, how long they've been a member there)
-const KEY_CODE = { ulu: 'U4LUCH', sunset: 'S2NSET', senja: 'S3NJAB', sangsaka: 'K8SNGA', bpa: 'B6PADL', shelter: 'S8HLTR', trans: 'T7RNSB', sundari: 'S4DK7R', masonry: 'M3SNRY', luma: 'L5UMAB', brunch: 'B7RNCH', lolas: 'L7LASQ', kudeta: 'K2DETA', southeast: 'S3EAST', mamasan: 'M6MSAN', mozaic: 'M8ZAIC', spiceblake: 'S6PBLK' };
+const KEY_CODE = { ulu: 'U4LUCH', sunset: 'S2NSET', senja: 'S3NJAB', sangsaka: 'K8SNGA', bpa: 'B6PADL', shelter: 'S8HLTR', trans: 'T7RNSB', sundari: 'S4DK7R', masonry: 'M3SNRY', luma: 'L5UMAB', brunch: 'B7RNCH', lolas: 'L7LASQ', kudeta: 'K2DETA', southeast: 'S3EAST', mamasan: 'M6MSAN', mozaic: 'M8ZAIC', spiceblake: 'S6PBLK', transsby: 'T6RSBY' };
 const club = (list, who) => list.map(c => { const v = P[c.key]; if (!v) return null; const t = (v.content('2026-01-01').theme) || {};
   return { name: v.brand, logo: v.logo, top: t.top || '#0F1E2E', area: (v.venues[0] || {}).area || '', since: c.since || '', visits: c.visits || 0,
     href: '/k/' + KEY_CODE[c.key] + '?n=' + encodeURIComponent(String(who || '').split(' ')[0]) }; }).filter(Boolean);

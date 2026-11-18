@@ -545,7 +545,7 @@ body.vqopen .vq-dim{opacity:1;pointer-events:auto}body.vqopen .vq-sheet{transfor
   var code = m ? m[1].toUpperCase() : '';
   // Sales sample keyrings always open the guest's view, even on a phone signed in to Mavis (Robbie demos with his own phone).
   // Staff can still check these in from the scanner inside the app.
-  var SAMPLES = ['5NKGZJ', 'S8HLTR', 'T7RNSB', 'B6PADL', 'S4DK7R', 'K8SNGA', 'M3SNRY', 'L7LASQ', 'L5UMAB', 'B7RNCH', 'K2DETA', 'S9LTLK', 'S3NJAB', 'S2NSET', 'U4LUCH', 'S3EAST', 'M6MSAN', 'M8ZAIC', 'S6PBLK'];
+  var SAMPLES = ['5NKGZJ', 'S8HLTR', 'T7RNSB', 'B6PADL', 'S4DK7R', 'K8SNGA', 'M3SNRY', 'L7LASQ', 'L5UMAB', 'B7RNCH', 'K2DETA', 'S9LTLK', 'S3NJAB', 'S2NSET', 'U4LUCH', 'S3EAST', 'M6MSAN', 'M8ZAIC', 'S6PBLK', 'T6RSBY'];
   var preview = /[?&]guest=1/.test(location.search) || SAMPLES.indexOf(code) >= 0;   // staff opening the guest's view on purpose
   // Staff signed in to Mavis on this phone: open the member straight in the app (check-in)
   if (!preview) try {
@@ -824,6 +824,8 @@ body.vqopen .vq-dim{opacity:1;pointer-events:auto}body.vqopen .vq-sheet{transfor
           return '<div class="ohcard">' + (p.img ? '<img src="' + esc(p.img) + '" alt="" loading="lazy">' : '') + '<span><b translate="no">' + esc(p.name) + '</b>' + (sub && st ? '<small>' + st + '</small>' : '') + '</span></div>'; }).join('') + '</div>'; };
       return '<div class="ohpg" id="ohpg"><div class="vtop">' + (x.img ? '<img src="' + esc(x.img) + '" alt="">' : '') + '<div class="vin"><button class="back" id="ohb" type="button">' + svg('<path d="m15 18-6-6 6-6"/>', 18) + '<span translate="no">' + esc(d.brand) + '</span></button>' +
         '<div class="vname"><b translate="no">' + esc(x.name + (x.city ? ' ' + x.city : '')) + '</b><small>Your visits here count too</small></div></div></div>' +
+        (x.festive && x.festive.url ? '<div class="sec"><div class="lab">' + esc(x.festive.label || 'Festive season') + '</div><a class="pbig ohfest" href="' + esc(x.festive.url) + '" target="_blank" rel="noopener">' + (x.festive.img ? '<img src="' + esc(x.festive.img) + '" alt="" loading="lazy">' : '') + '<span><b>' + esc(x.festive.title || '') + '</b>' + (x.festive.line ? '<small>' + esc(x.festive.line) + '</small>' : '') + '</span></a>' +
+          '<a class="ohbk" style="margin-top:12px" href="' + esc(x.festive.url) + '" target="_blank" rel="noopener">' + svg('<path d="M12 3l2.6 5.6 6.1.7-4.5 4.2 1.2 6L12 16.6 6.6 19.5l1.2-6L3.3 9.3l6.1-.7z"/>', 20) + esc(x.festive.cta || 'See the festive programme') + '</a></div>' : '') +
         (x.places.length ? '<div class="sec"><div class="lab">Eat &amp; drink</div>' + cards(x.places, true) + '</div>' : '') +
         (x.rooms.length ? '<div class="sec"><div class="lab">Stay</div>' + cards(x.rooms, false) + '</div>' : '') +
         (x.book ? '<div class="sec"><a class="ohbk" href="' + esc(x.book) + '" target="_blank" rel="noopener">' + svg('<rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/>', 20) + (x.rooms.length ? 'Book a room' + (x.city ? ' in ' + esc(x.city) : '') : 'Book a table at ' + esc(x.name)) + '</a></div>' : '') +
@@ -1263,7 +1265,7 @@ body.vqopen .vq-dim{opacity:1;pointer-events:auto}body.vqopen .vq-sheet{transfor
       // Add this app to the phone: they're in first (the wow), then a card slides down from the top. "Not now" and it slides
       // away - back after 3 days, 3 times at most. Never on the same visit as the phone-alerts question. Not on sales demos.
       (function(){
-        var tryIt = SAMPLES.indexOf(code) >= 0 && code !== 'T7RNSB' && code !== '5NKGZJ';   // sales demos (not Trans): shows every visit so Robbie can show it off
+        var tryIt = SAMPLES.indexOf(code) >= 0 && code !== 'T7RNSB' && code !== '5NKGZJ' && code !== 'T6RSBY';   // sales demos (not Trans): shows every visit so Robbie can show it off
         if (window.__mvInShown || window.__mvInWait) return;   // once per visit: not again when they go into a place and come back
         var done = function(){ window.__mvInDone = true; };
         if (embed || standalone || (preview && !tryIt) || (!('vq' in d) && !tryIt) || innerWidth >= 1000) return done();   // 'vq' only comes with real members, never the other sales demos

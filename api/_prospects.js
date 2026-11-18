@@ -88,7 +88,7 @@ P.trans = {
   content: today => {
     const y = year(today);
     return { placesTitle: 'Explore Trans Resort',   // short form: the full name is too long for one line
-      others: { on: true, list: [{ id: 'sby', name: 'The Trans Luxury Hotel', city: 'Surabaya', img: '/demo-guest/p-sby-beachclub.jpg', line: '28th Sky Beach Club · 27th Sky Lounge · Rooms',
+      others: { on: true, list: [{ id: 'sby', app: 'T6RSBY', name: 'The Trans Luxury Hotel', city: 'Surabaya', img: '/demo-guest/p-sby-beachclub.jpg', line: '28th Sky Beach Club · 27th Sky Lounge · Rooms',
     places: [{ name: '28th Sky Beach Club', img: '/demo-guest/p-sby-beachclub.jpg', line: 'A Bali beach club, 28 floors up', opens: '12:00', closes: '00:00' },
       { name: '27th Sky Lounge', img: '/demo-guest/p-sby-skylounge.jpg', line: 'Cocktails over the city', opens: '12:00', closes: '00:00' },
       { name: 'The Lounge', img: '/demo-guest/p-sby-lounge.jpg', line: 'Coffee, tea and light bites' }],
@@ -142,7 +142,7 @@ const SBY_FESTIVE = 'https://online.fliphtml5.com/TLHSurabaya/FESTIVE-TLHS---THE
 const SBY_MAP = 'https://www.google.com/maps/search/?api=1&query=The+Trans+Luxury+Hotel+Surabaya+Jl+Ahmad+Yani+260';
 const sb3 = n => '/demo-guest/p-sby2-' + n + '.jpg';   // the hotel's own Instagram photos (19 Nov)
 P.transsby = {
-  brand: 'The Trans Luxury Hotel Surabaya', logo: '/demo-guest/p-sby-logo-w.png', icon: '/demo-guest/p-sby-icon', first: 'Alexander', tier: 'member', visits: 4, since: 2026, favourite: '28th Sky Beach Club',
+  brand: 'The Trans Luxury Hotel Surabaya', logo: '/demo-guest/p-sby-logo-w.png', icon: '/demo-guest/p-sby-icon', first: 'Alexander', tier: 'member', visits: 6, since: 2025, favourite: '28th Sky Beach Club',
   perks: ['Welcome drink at the 28th Sky Beach Club', 'Late check-out until 2pm, when available', '15% off at the spa', 'Free Kids Club afternoons'],
   perkIcons: ['cocktail', 'key', 'leaf', 'smile'],
   reward: { target: 10, text: 'One night in the Celebrity Suite' },
@@ -157,7 +157,7 @@ P.transsby = {
   content: today => {
     const y = year(today);
     return { placesTitle: 'Explore The Trans Surabaya',
-      others: { on: true, list: [{ id: 'bali', name: 'The Trans Resort', city: 'Bali', img: tr('pool'), line: 'The 18th Rooftop · The Restaurant · Pool villas',
+      others: { on: true, list: [{ id: 'bali', app: 'T7RNSB', name: 'The Trans Resort', city: 'Bali', img: tr('pool'), line: 'The 18th Rooftop · The Restaurant · Pool villas',
         places: [{ name: 'The 18th Rooftop Bar', img: tr('18lounge'), line: 'Sunset cocktails over Seminyak', opens: '17:00', closes: '23:00' },
           { name: 'The Restaurant', img: tr('restoroom'), line: 'All-day dining by the pool', opens: '06:30', closes: '23:00' },
           { name: 'The Lobby Lounge', img: tr('llroom'), line: 'Coffee, tea and cocktails', opens: '11:00', closes: '19:00' }],

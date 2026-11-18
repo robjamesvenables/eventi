@@ -184,7 +184,7 @@ function build(c, ctx){
     const list = (Array.isArray(ov.list) ? ov.list : []).slice(0, 4).map((o, i) => { o = o || {};
       const n = String(o.book || '').trim(), dg = n.replace(/\D/g, '');
       const book = httpsOk(n) ? n : (!/@/.test(n) && dg.length >= 8 && dg.length <= 16 ? 'https://wa.me/' + dg + '?text=' + encodeURIComponent(who + " I'd love to book a table at " + str(o.name, 60) + ' - could you let me know what you have? Thank you!') : '');
-      return { key: (String(o.id || '').replace(/[^a-z0-9]/gi, '') || 'v' + i).slice(0, 20), name: str(o.name, 60).trim(), city: str(o.city, 40).trim(), img: img(o), line: str(o.line, 90).trim(), book,
+      return { key: (String(o.id || '').replace(/[^a-z0-9]/gi, '') || 'v' + i).slice(0, 20), app: /^[A-Z0-9]{6}$/.test(String(o.app || '')) ? String(o.app) : '', name: str(o.name, 60).trim(), city: str(o.city, 40).trim(), img: img(o), line: str(o.line, 90).trim(), book,
         places: (Array.isArray(o.places) ? o.places : []).slice(0, 8).map(p => ({ name: str((p || {}).name, 40).trim(), img: img(p), line: str((p || {}).line, 60).trim(), opens: hm((p || {}).opens), closes: hm((p || {}).closes) })).filter(p => p.name),
         rooms: (Array.isArray(o.rooms) ? o.rooms : []).slice(0, 8).map(r => ({ name: str((r || {}).name, 40).trim(), img: img(r) })).filter(r => r.name),
         // a seasonal programme (e.g. Christmas & New Year brochure link) shown at the top of that hotel's page

@@ -23614,15 +23614,22 @@ function mcGo(view, push){
   if(push !== false && MC.S.view){ MC.stack.push(MC.S.view); MC.depth++; mvBackOpen('mc' + MC.depth, () => mcPop()); }
   MC.S.view = view; mcDraw();
 }
-function mcPop(){ MC.depth = Math.max(0, MC.depth - 1); MC.S.view = MC.stack.pop() || ''; if(MC.S.view === 'pad') MC.S.code = ''; if(!MC.S.view){ if(MC.S.fromScan){ msScanOpen({ title:'Existing member', hint:'Scan their keyring, card or app', no4:true }); setTimeout(() => mcClose(true), 200); return; } return mcClose(true); } mcDraw(); }
+function mcPop(){ MC.depth = Math.max(0, MC.depth - 1); MC.S.view = MC.stack.pop() || ''; if(MC.S.view === 'pad') MC.S.code = ''; if(!MC.S.view){ if(MC.S.fromScan) return mcBackToScan(); return mcClose(true); } mcDraw(); }
 function mcBack(){
-  if(!MC.stack.length){ if(MC.S.fromScan){ msScanOpen({ title:'Existing member', hint:'Scan their keyring, card or app', no4:true }); setTimeout(mcClose, 200); return; } return mcClose(); }
+  if(!MC.stack.length){ if(MC.S.fromScan) return mcBackToScan(); return mcClose(); }
   const id = 'mc' + MC.depth; MC.depth = Math.max(0, MC.depth - 1); MC.S.view = MC.stack.pop(); if(MC.S.view === 'pad') MC.S.code = '';
   mvBackDone(id); mcDraw();
 }
 // Close: take this flow's entries off the phone's history in one go
-function mcClose(){
-  const o = document.getElementById('mc'); if(o) o.style.display = 'none';
+// Back from the 4-digit pad when they came from "Nothing to scan": return to the scanner.
+// The pad stays on screen until the scanner is open again (no flash), and the phone's history is tidied first.
+function mcBackToScan(){
+  const o = document.getElementById('mc');
+  mcClose(true, true);
+  setTimeout(() => { msScanOpen({ title:'Existing member', hint:'Scan their keyring, card or app', no4:true }); setTimeout(() => { if(o) o.style.display = 'none'; }, 150); }, 400);
+}
+function mcClose(x, keep){
+  const o = document.getElementById('mc'); if(o && !keep) o.style.display = 'none';
   const n = mvBackStack.filter(x => /^mc\d+$/.test(x.id)).length;
   for(let i = mvBackStack.length - 1; i >= 0; i--) if(/^mc\d+$/.test(mvBackStack[i].id)) mvBackStack.splice(i, 1);
   if(n > 0){ mvBackSkip++; history.go(-n); MC.closedAt = Date.now(); }
@@ -23632,7 +23639,7 @@ async function mcStart(view, s){
   const wait = 380 - (Date.now() - (MC.closedAt || 0)); if(wait > 0) await new Promise(r => setTimeout(r, wait));   // the phone is still stepping back from the last flow
   if(!MS.loaded) await msLoad();
   MC.S = Object.assign({ view:'' }, s || {}); MC.stack = []; MC.depth = 0;
-  mvBackOpen('mc0', () => mcClose(true));
+  mvBackOpen('mc0', () => { if(MC.S.fromScan && !MC.stack.length) return mcBackToScan(); mcClose(true); });   // phone's own back button too
   mcGo(view, false);
 }
 window.mcNew = () => mcStart('name');

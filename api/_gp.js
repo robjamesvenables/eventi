@@ -125,9 +125,9 @@ function build(c, ctx){
     const old = Object.keys(DEMO_RENAME).find(k => t.includes(k)); const n = old && DEMO_RENAME[old];
     return n && (venues || []).some(x => x.name === n) ? n : ''; };
   // A photo's member badge: its own Member benefit, or the one on the event it opens
-  const slidePerk = s => { if (s.perk) return str(s.perk, 24); const e = s.ev && (c.events || []).find(x => x && x.id === s.ev); return e ? str(e.perk, 24) || (+e.disc ? +e.disc + '% off' : '') : ''; };
+  const slidePerk = s => { if (s.perk) return str(s.perk, 18); const e = s.ev && (c.events || []).find(x => x && x.id === s.ev); return e ? str(e.perk, 18) || (+e.disc ? +e.disc + '% off' : '') : ''; };
   const slides = on('slides') ? (c.slides || []).filter(s => img(s)).slice(0, 12).map(s => ({ id: str(s.id, 40), img: img(s), title: str(s.title, 60), line: str(s.line, 90), venue: str(guessPlace(s), 40), ev: str(s.ev, 40), btn: button(s, s.title || 'what\'s on'), perk: slidePerk(s) })) : [];
-  const deals = (c.deals || []).filter(d => d && d.title).slice(0, 12).map(d => ({ id: str(d.id, 40), img: img(d), title: str(d.title, 60), when: str(d.when, 40), venue: str(d.venue, 40), perk: str(d.perk, 24) }));
+  const deals = (c.deals || []).filter(d => d && d.title).slice(0, 12).map(d => ({ id: str(d.id, 40), img: img(d), title: str(d.title, 60), when: str(d.when, 40), venue: str(d.venue, 40), perk: str(d.perk, 18) }));
   const AGES = { all: 'All ages', '18': '18+ only', '21': '21+ only' };
   const events = (c.events || []).filter(e => e && e.title && (!e.date || e.date >= today) && (!e.from || e.from <= today))
     .sort((a, b) => String(a.date || '9999').localeCompare(String(b.date || '9999'))).slice(0, 12)
@@ -135,7 +135,7 @@ function build(c, ctx){
       return { id: str(e.id, 40), img: img(e), title: str(e.title, 60), line: str(e.line, 90), venue: str(e.venue, 40),
         when: [dateLabel(e.date), t1 && t2 ? t1 + ' – ' + t2 : t1].filter(Boolean).join(' · '), disc: DISC.includes(+e.disc) ? +e.disc : 0, btn: button(e, e.title + (e.date ? ' (' + dateLabel(e.date) + ')' : ''), DISC.includes(+e.disc) ? +e.disc : 0),
         // The details pop-up: what's on, ages, dress code, price, anything else
-        blast: str(e.blast, 1500).replace(/\r/g, '').replace(/\n{3,}/g, '\n\n').trim(), details: str(e.details, 300), age: AGES[e.age] || '', dress: str(e.dress, 60), price: str(e.price, 60), notes: str(e.notes, 200), hl: !!e.hl, perk: str(e.perk, 24),
+        blast: str(e.blast, 1500).replace(/\r/g, '').replace(/\n{3,}/g, '\n\n').trim(), details: str(e.details, 300), age: AGES[e.age] || '', dress: str(e.dress, 60), price: str(e.price, 60), notes: str(e.notes, 200), hl: !!e.hl, perk: str(e.perk, 18),
         // the icons staff chose for each detail, and their own extra details
         ic: ['details', 'age', 'dress', 'price', 'notes'].reduce((o, k) => { const v = String(((e.ic || {})[k]) || ''); if (/^[a-z]{2,10}$/.test(v)) o[k] = v; return o; }, {}),
         more: (Array.isArray(e.more) ? e.more : []).filter(m => m && m.text).slice(0, 6).map(m => ({ ic: /^[a-z]{2,10}$/.test(String(m.ic || '')) ? m.ic : '', label: str(m.label, 30), text: str(m.text, 120) })) }; });

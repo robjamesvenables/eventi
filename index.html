@@ -2665,7 +2665,7 @@ body:not(.mv-demo) #ms-demoqr-btn{display:none!important}
 .mk-tabs button.on{background:white;color:#0F1E2E;box-shadow:0 1px 3px rgba(15,30,46,.12)}
 .mk-tabs.ic button{display:inline-flex;flex-direction:column;align-items:center;gap:3px;padding:7px 18px 6px;white-space:nowrap}
 .mk-tabs.ic svg{width:19px;height:19px;fill:none;stroke:currentColor;stroke-width:2.1;stroke-linecap:round;stroke-linejoin:round}.mk-tabs.ic button.on svg{color:#0D9488}
-@media(max-width:760px){#ms-home .mk-tabs.ic button{padding:7px 2px 6px;font-size:12.5px}}
+@media(max-width:760px){#ms-home .mk-tabs.ic button{padding:7px 2px 6px;font-size:12.5px}#ms-home .mk-tabs.ic.t5 button{font-size:11.5px;min-width:0}}
 .ms-tag.alg{background:#FEE2E2;color:#B91C1C}
 .ms-alg{display:flex;align-items:center;gap:9px;background:#FEE2E2;color:#B91C1C;border-radius:12px;padding:11px 12px;font-size:14px;margin:4px 0 10px}.ms-alg b{margin-right:4px}.ms-alg svg{flex:none}
 .ms-bill{display:flex;align-items:center;gap:8px;background:#F8FAFC;border:1.5px solid #E2E8F0;border-radius:12px;padding:6px 6px 6px 12px;margin:-2px 0 10px}
@@ -22013,7 +22013,7 @@ async function msOpenPage(){
 window.msSetFilter = function(f){ MS.filter = f; msRender(); };
 window.msSearch = function(v){ MS.q = v; msRenderList(); };
 // Tab icons (icon above the word, so 4 tabs still fit a small phone)
-const MS_TAB_IC = { members:'<circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/>', insights:'<path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/>', messages:'<path d="M21 12a8 8 0 0 1-11.6 7.1L4 21l1.9-5.4A8 8 0 1 1 21 12z"/>',
+const MS_TAB_IC = { members:'<circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/>', insights:'<path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/>', messages:'<path d="M21 12a8 8 0 0 1-11.6 7.1L4 21l1.9-5.4A8 8 0 1 1 21 12z"/>', notify:'<path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.9 1.9 0 0 0 3.4 0"/>',
   settings:'<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/>' };
 function msRender(){
   const el = document.getElementById('ms-home'); if(!el) return;
@@ -22026,11 +22026,11 @@ function msRender(){
   if(gpCanEdit()) gpDesignDots();   // the three colours in use, on the Design your page button
   if(!MS.loaded){ el.innerHTML = '<div class="vac-empty">Loading…</div>'; return; }
   if(MS.notReady){ el.innerHTML = '<div class="vac-empty"><b>Members Club is being set up</b><span>Check back soon.</span></div>'; return; }
-  const tl = [['members', 'Members', true], ['insights', 'Stats', msIsMgr()], ['messages', 'Messages', msCanMsg()], ['settings', 'Settings', msIsMgr()]].filter(t => t[2]);
+  const tl = [['members', 'Members', true], ['insights', 'Stats', msIsMgr()], ['notify', 'Notify', msCanSend()], ['messages', 'Messages', msCanMsg()], ['settings', 'Settings', msIsMgr()]].filter(t => t[2]);
   if(!tl.some(t => t[0] === MS.tab)) MS.tab = 'members';
-  const tabs = tl.length > 1 ? `<div class="mk-tabs ic" role="tablist">${tl.map(([k, n]) => `<button class="${MS.tab === k ? 'on' : ''}" onclick="msSetTab('${k}')"><svg viewBox="0 0 24 24" aria-hidden="true">${MS_TAB_IC[k]}</svg>${n}</button>`).join('')}</div>` : '';
+  const tabs = tl.length > 1 ? `<div class="mk-tabs ic${tl.length > 4 ? ' t5' : ''}" role="tablist">${tl.map(([k, n]) => `<button class="${MS.tab === k ? 'on' : ''}" onclick="msSetTab('${k}')"><svg viewBox="0 0 24 24" aria-hidden="true">${MS_TAB_IC[k]}</svg>${n}</button>`).join('')}</div>` : '';
   if(MS.tab === 'insights'){ el.innerHTML = tabs + '<div id="mki"></div>'; msInsights(); return; }
-  if(MS.tab === 'messages'){ el.innerHTML = tabs + '<div id="mkm"></div>'; msMessagesRender(); return; }
+  if(MS.tab === 'messages' || MS.tab === 'notify'){ el.innerHTML = tabs + '<div id="mkm"></div>'; msMessagesRender(); return; }   // Notify = phone notifications, always there; Messages = email/WhatsApp blasts, only when switched on (Robbie 20 Nov)
   if(MS.tab === 'settings'){ el.innerHTML = tabs + '<div id="mks"></div>'; msSettingsRender(); return; }
   const bonusDue = msIsMgr() && mkS().bonus.on && (msJson('mk_bonus') || {}).date !== msToday();
   const used = [...new Set(MS.members.map(m => msStats(m).fav).filter(Boolean))];
@@ -22404,7 +22404,7 @@ async function msSettingsRender(){
       ${mksRow('WhatsApp blasts', 'Send a message to members one by one, from your phone.', mksSw('blast.wa', s.blast.wa))}
       ${mksRow('Import members', 'Add members from a list you already have (Excel or CSV).', mksSw('imp.on', s.imp.on), s.imp.on ? `<button class="mki-btn" style="margin-top:0" onclick="msImportOpen()">Import members</button>` : '')}
     </div>
-    <div class="mks-hint" style="margin:8px 4px 0">Turn on a blast and a Messages tab appears. Turn it off and it goes away.</div>
+    <div class="mks-hint" style="margin:8px 4px 0">Turn on a blast and a Messages tab appears. Turn it off and it goes away. Phone notifications are always in the Notify tab.</div>
     <div class="mks-h">FOR YOUR TEAM</div>
     <div class="mks-card">
       ${mksRow('VIP alert', 'Managers get a phone notification when a VIP checks in.', mksSw('vip.on', s.vip.on))}
@@ -22579,7 +22579,7 @@ const msWhen = iso => { const d = new Date(iso), days = Math.round((new Date().s
 async function msMessagesRender(){
   const el = document.getElementById('mkm'); if(!el) return;
   await msLoadStaff();
-  const l = msMsgs(), can = msCanSend();
+  const al = MS.tab === 'notify', l = msMsgs().filter(c => (c.kind === 'alert') === al), can = msCanSend();
   const audName = k => (msAudList().find(a => a[0] === k) || [k, k])[1];
   const waiting = l.filter(c => c.status === 'requested');
   const row = c => { const p = msMsgProgress(c), t = (MK_TYPES[c.type] || ['Message'])[0];
@@ -22589,12 +22589,12 @@ async function msMessagesRender(){
       ${c.status === 'requested' && can ? `<div class="mkm-btns"><button class="mki-btn ghost" onclick="msMsgDecide('${c.id}', false)">No</button><button class="mki-btn" onclick="msMsgDecide('${c.id}', true)">OK, send</button></div>`
         : c.status === 'sending' && !p.done && can ? `<div class="mkm-btns"><button class="mki-btn" onclick="${c.kind === 'email' ? 'msEmailOpen' : 'msQueueOpen'}('${c.id}')">${c.kind === 'email' ? 'Open batches' : 'Carry on'}</button></div>` : ''}
     </div>`; };
-  const bl = mkS().blast, nb = (bl.email ? 1 : 0) + (bl.wa ? 1 : 0) + (can ? 1 : 0);
+  const bl = al ? { email:false, wa:false } : mkS().blast, ca = al && can, nb = (bl.email ? 1 : 0) + (bl.wa ? 1 : 0) + (ca ? 1 : 0);
   el.innerHTML = `<div class="mkm-new${nb === 3 ? ' three' : ''}"${nb === 1 ? ' style="grid-template-columns:1fr"' : ''}>
       ${bl.email ? `<button onclick="msCompose('email')"><i><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-10 6L2 7"/></svg></i><b>${can ? 'New email' : 'Ask to send an email'}</b><small>From your own email, free</small></button>` : ''}
       ${bl.wa ? `<button onclick="msCompose('wa')"><i class="wa">${vdSvg('wa', 20)}</i><b>${can ? 'New WhatsApp' : 'Ask to send a WhatsApp'}</b><small>One by one, from your phone</small></button>` : ''}
-      ${can ? `<button onclick="msCompose('alert')"><i class="al"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.9 1.9 0 0 0 3.4 0"/></svg></i><b>New notification</b><small>Pops up on their phone, free</small></button>` : ''}</div>
-    ${can ? msBatchDue().map(x => `<button class="mke-due" onclick="msEmailOpen('${x.c.id}')"><i><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-10 6L2 7"/></svg></i><span><b>Batch ${x.i + 1} of ${x.n} is ready to send today</b><small>${msEsc(x.c.subject || 'Email')}</small></span><em>Open</em></button>`).join('') : ''}
+      ${ca ? `<button onclick="msCompose('alert')"><i class="al"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.9 1.9 0 0 0 3.4 0"/></svg></i><b>New notification</b><small>Pops up on their phone, free</small></button>` : ''}</div>
+    ${can && !al ? msBatchDue().map(x => `<button class="mke-due" onclick="msEmailOpen('${x.c.id}')"><i><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-10 6L2 7"/></svg></i><span><b>Batch ${x.i + 1} of ${x.n} is ready to send today</b><small>${msEsc(x.c.subject || 'Email')}</small></span><em>Open</em></button>`).join('') : ''}
     ${waiting.length && can ? `<div class="mks-h">WAITING FOR YOUR OK</div><div class="mks-card">${waiting.map(row).join('')}</div>` : ''}
     <div class="mks-h">SENT</div>
     <div class="mks-card">${l.filter(c => !(can && c.status === 'requested')).map(row).join('') || '<div class="mki-empty">Nothing sent yet</div>'}</div>`;

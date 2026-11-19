@@ -921,7 +921,7 @@ body.vqopen .vq-dim{opacity:1;pointer-events:auto}body.vqopen .vq-sheet{transfor
       var b = d.bookTop; if (!b) return '';
       var go = b.url ? '<a class="pbk-go" href="' + esc(b.url) + '" target="_blank" rel="noopener">' + svg(EI.cal, 22) + esc(b.label || 'Book') + (b.via ? '<small>' + esc(b.via) + '</small>' : '') + '</a>' : '';
       // New or solo players: WhatsApp the front desk (message written for them); no WhatsApp yet -> their Instagram DMs
-      var ig = d.contact && d.contact.ig, soloHref = d.soloWa ? 'https://wa.me/' + d.soloWa + '?text=' + encodeURIComponent('Hi! It\'s ' + (d.first || '') + ' (member). I\'m new / playing solo and would love a game - could you find me players? Day and time: ') : (ig ? 'https://ig.me/m/' + ig : '');
+      var ig = d.contact && d.contact.ig, soloHref = d.soloWa ? 'https://wa.me/' + d.soloWa + '?text=' + encodeURIComponent('Hi! It\'s ' + (d.first || '') + ' (member ' + d.code + '). I\'m new / playing solo and would love a game - could you find me players? Day and time: ') : (ig ? 'https://ig.me/m/' + ig : '');
       var solo = soloHref ? '<a class="pbk-wa" href="' + esc(soloHref) + '" target="_blank" rel="noopener">New or playing solo? <b>We\'ll find you a&nbsp;game&nbsp;→</b></a>' : '';
       return '<div class="pbk">' + go + solo + '</div>';
     };
@@ -1101,7 +1101,7 @@ body.vqopen .vq-dim{opacity:1;pointer-events:auto}body.vqopen .vq-sheet{transfor
         (p.logo ? '<div class="vname lg"><img class="lgv" src="' + esc(p.logo) + '" alt=""><div>' : '<div class="vname">') + '<b translate="no">' + esc(p.name) + '</b>' + (st ? '<small>' + st + '</small>' : '') + (p.logo ? '</div>' : '') + '</div></div></div>';
       h += menuHtml(p);
       // About (back office: one or two lines, up to 4 tags, an optional button - empty link opens WhatsApp)
-      if (p.about) { var awa = String(v.wa || (d.contact && d.contact.wa) || '').replace(/\D/g, ''), ahref = p.aboutUrl || (awa ? 'https://wa.me/' + awa + '?text=' + encodeURIComponent('Hi! I\'d like to ask about ' + p.name) : '');
+      if (p.about) { var awa = String(v.wa || (d.contact && d.contact.wa) || '').replace(/\D/g, ''), ahref = p.aboutUrl || (awa ? 'https://wa.me/' + awa + '?text=' + encodeURIComponent(me + ' I\'d like to ask about ' + p.name + '.') : '');
         h += '<div class="sec"><div class="lab">About</div><div class="box abx"><p>' + esc(p.about) + '</p>' + ((p.tags || []).length ? '<div class="abt">' + p.tags.map(function(t){ return '<span>' + esc(t) + '</span>'; }).join('') + '</div>' : '') +
           (p.aboutBtn && ahref ? '<a class="abb" href="' + esc(ahref) + '" target="_blank" rel="noopener">' + esc(p.aboutBtn) + '</a>' : '') + '</div></div>'; }
       var sl = (gp.slides || []).filter(function(x){ return gp.motion ? lc(x.venue || '') === key : at(x, key); });
@@ -1184,7 +1184,7 @@ body.vqopen .vq-dim{opacity:1;pointer-events:auto}body.vqopen .vq-sheet{transfor
       var c = v ? { phone: v.phone || ct.phone, wa: v.wa || ct.wa, email: v.email || ct.email, map: v.map || ct.map, ig: (placeOf(key) || {}).ig || ct.ig } : ct;   // Instagram: the place's own (Our places > pencil)
       if (c.phone) r.push({ label: 'Call us', icon: I.phone, href: telOf(c.phone) });
       if (c.wa) r.push({ label: 'WhatsApp', icon: I.wa, href: 'https://wa.me/' + c.wa + '?text=' + encodeURIComponent(me) });
-      if (c.email) r.push({ label: 'Email', icon: I.mail, href: 'mailto:' + c.email + '?subject=' + encodeURIComponent('Enquiry from a ' + (d.brand || '') + ' member') });
+      if (c.email) r.push({ label: 'Email', icon: I.mail, href: 'mailto:' + c.email + '?subject=' + encodeURIComponent('Enquiry from a ' + (d.brand || '') + ' member') + '&body=' + encodeURIComponent(me + '\n\n') });
       var maps = (d.venues || []).filter(function(x){ return x.map; }), many = maps.map(function(x){ return x.map; }).filter(function(m, i, a){ return a.indexOf(m) === i; }).length > 1;
       if (v && v.map) r.push({ label: 'Directions', icon: I.pin, href: v.map });
       else if (many) r.push({ label: 'Directions', icon: I.pin, href: '#dir' });   // places in different spots: pick which one

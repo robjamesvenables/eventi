@@ -158,7 +158,7 @@ P.transsby = {
       deals: [   // afternoon tea is already in What's on; stays and dinners are Highlights - nothing repeated
         { id: 'sd1', img: sb3('gift-lunch'), title: 'Christmas Gift Exchange Lunch', when: 'Buy 1 get 1 free · 1–30 Dec', venue: 'Grand Restaurant' },
         { id: 'sd2', img: sb3('hampers'), title: 'Festive hampers · 20% off until 10 Dec', when: 'From IDR 688,000++', venue: 'The Lounge' },
-        { id: 'sd3', img: sb3('takehome'), title: 'A Feast to Take Home', when: 'From IDR 388,000++', venue: 'Grand Restaurant' }
+        { id: 'sd3', perk: '10% off', img: sb3('takehome'), title: 'A Feast to Take Home', when: 'From IDR 388,000++', venue: 'Grand Restaurant' }
       ],
       events: [
         { id: 'se1', img: sb3('suite-sunset'), title: 'The Season Reimagined', line: 'See the full festive programme', date: y + '-12-24', time: '18:00', time2: '23:00', venue: '', btn: 'book', url: SBY_FESTIVE, hl: true,
@@ -169,17 +169,17 @@ P.transsby = {
           details: 'Stay 24 to 26 December. One night in a Premier Room, Christmas Eve dinner buffet for 2, breakfast, Kids Club, fitness centre and the infinity pool. Book by 11 December.' },
         { id: 'se4', img: sb3('newyear'), title: 'New Year Stay', line: 'Welcome 2027 with a night above the city', date: y + '-12-31', venue: '', btn: 'book', url: SBY_BOOK, hl: true, price: 'Early bird from IDR 2,718,000++ a night',
           details: "Stay 31 December to 1 January. One night in a Premier Room, New Year's Eve dinner at Grand Restaurant for 2, breakfast, Kids Club and the infinity pool. Book by 11 December." },
-        { id: 'se5', img: sb3('fireworks'), title: 'Fireworks Party & BBQ Dinner', line: 'Count down to midnight with DJ Katty Butterfly', date: y + '-12-31', time: '20:00', time2: '01:00', venue: '28th Sky Beach Club', btn: 'book', url: SBY_FESTIVE, hl: true, price: 'IDR 999,000++ per person',
+        { id: 'se5', perk: 'Free welcome drink', img: sb3('fireworks'), title: 'Fireworks Party & BBQ Dinner', line: 'Count down to midnight with DJ Katty Butterfly', date: y + '-12-31', time: '20:00', time2: '01:00', venue: '28th Sky Beach Club', btn: 'book', url: SBY_FESTIVE, hl: true, price: 'IDR 999,000++ per person',
           details: 'Barbecue dinner by the infinity pool on the 28th level, fireworks over the city at midnight, and DJ Katty Butterfly until 1am.' },
-        { id: 'se6', img: sb3('xmas-sky'), title: 'Christmas Dinner at the Sky Beach Club', line: 'Indoors on the 27th level', date: y + '-12-25', time: '18:00', venue: '28th Sky Beach Club', btn: 'book', url: SBY_FESTIVE, price: 'From IDR 488,000++ per person',
+        { id: 'se6', perk: '15% off', img: sb3('xmas-sky'), title: 'Christmas Dinner at the Sky Beach Club', line: 'Indoors on the 27th level', date: y + '-12-25', time: '18:00', venue: '28th Sky Beach Club', btn: 'book', url: SBY_FESTIVE, price: 'From IDR 488,000++ per person',
           details: 'Christmas dinner indoors on the 27th level, from 6pm, with the city lights below.' },
-        { id: 'se7', img: sb3('takehome'), title: 'Christmas Dinner & Brunch', line: 'Christmas Eve dinner, Christmas Day brunch and dinner', date: y + '-12-24', time: '18:00', time2: '21:00', venue: 'Grand Restaurant', btn: 'book', url: SBY_FESTIVE, hl: true, price: 'IDR 588,000++ per person',
+        { id: 'se7', perk: '10% off', img: sb3('takehome'), title: 'Christmas Dinner & Brunch', line: 'Christmas Eve dinner, Christmas Day brunch and dinner', date: y + '-12-24', time: '18:00', time2: '21:00', venue: 'Grand Restaurant', btn: 'book', url: SBY_FESTIVE, hl: true, price: 'IDR 588,000++ per person',
           details: 'Christmas Eve dinner 6 to 9pm. Christmas Day brunch 12 to 3pm and dinner 6 to 9pm. Early bird 30% off until 10 December.' },
-        { id: 'se8', img: sb3('nye-table'), title: "The New Year's Table", line: 'Dinner and countdown at Grand Restaurant', date: y + '-12-31', time: '19:00', time2: '00:00', venue: 'Grand Restaurant', btn: 'book', url: SBY_FESTIVE, hl: true, price: 'IDR 628,000++ per person',
+        { id: 'se8', perk: '15% off', img: sb3('nye-table'), title: "The New Year's Table", line: 'Dinner and countdown at Grand Restaurant', date: y + '-12-31', time: '19:00', time2: '00:00', venue: 'Grand Restaurant', btn: 'book', url: SBY_FESTIVE, hl: true, price: 'IDR 628,000++ per person',
           details: "New Year's Eve buffet, seafood, carvery and desserts, then the countdown to midnight. 20% off when you book by 30 November." },
         { id: 'so1', img: sb4('snowy'), title: 'Snowy Family Escape', line: 'Breakfast, Kids Club and Trans Snow World', venue: '', btn: 'book', url: SBY_BOOK, hl: true,
           details: 'A family stay with breakfast at Grand Restaurant, fun access to the Kids Club and Trans Snow World, the indoor snow park one minute away.' },
-        { id: 'so2', img: sb4('executive'), title: 'The Executive Experience', line: 'Breakfast, laundry, massage and the Sky Beach Club', venue: '', btn: 'book', url: SBY_BOOK, hl: true,
+        { id: 'so2', perk: 'Free late check-out', img: sb4('executive'), title: 'The Executive Experience', line: 'Breakfast, laundry, massage and the Sky Beach Club', venue: '', btn: 'book', url: SBY_BOOK, hl: true,
           details: 'For business stays: breakfast at Grand Restaurant, laundry, a massage and the Sky Beach Club experience.' },
         { id: 'so3', img: sb4('weekend'), title: 'Weekend Best Deal', line: 'Breakfast, Kids Club and the Sky Beach Club', venue: '', btn: 'book', url: SBY_BOOK, hl: true,
           details: 'Weekend stays with breakfast at Grand Restaurant, fun access to the Kids Club and the Sky Beach Club experience.' },

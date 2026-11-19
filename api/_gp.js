@@ -104,7 +104,7 @@ function build(c, ctx){
   const waOf = name => { const v = (venues || []).find(x => x.wa && name && x.name.toLowerCase() === String(name).toLowerCase()) || (venues || []).find(x => x.wa); return v ? v.wa : ''; };
   const DISC = [5, 10, 15, 20, 25, 30, 40, 50];
   const button = (it, what0, disc) => {
-    let t = it.btn; const what = what0 + (disc ? ' with my ' + disc + '% member discount' : '');
+    let t = it.btn; const what = what0;   // never the % in the message: front desk checks the member code and sees what they get
     // Member discount on a ticket / booking site: show the member code; no code typed in -> members book by WhatsApp (or a call) instead
     const mcode = String(it.code || '').trim().toUpperCase().replace(/[^A-Z0-9_-]/g, '').slice(0, 30);
     if (disc && (t === 'book' || t === 'tickets') && !mcode) t = 'wa';
@@ -125,7 +125,7 @@ function build(c, ctx){
     const old = Object.keys(DEMO_RENAME).find(k => t.includes(k)); const n = old && DEMO_RENAME[old];
     return n && (venues || []).some(x => x.name === n) ? n : ''; };
   const slides = on('slides') ? (c.slides || []).filter(s => img(s)).slice(0, 12).map(s => ({ id: str(s.id, 40), img: img(s), title: str(s.title, 60), line: str(s.line, 90), venue: str(guessPlace(s), 40), ev: str(s.ev, 40), btn: button(s, s.title || 'what\'s on') })) : [];
-  const deals = (c.deals || []).filter(d => d && d.title).slice(0, 12).map(d => ({ id: str(d.id, 40), img: img(d), title: str(d.title, 60), when: str(d.when, 40), venue: str(d.venue, 40) }));
+  const deals = (c.deals || []).filter(d => d && d.title).slice(0, 12).map(d => ({ id: str(d.id, 40), img: img(d), title: str(d.title, 60), when: str(d.when, 40), venue: str(d.venue, 40), perk: str(d.perk, 24) }));
   const AGES = { all: 'All ages', '18': '18+ only', '21': '21+ only' };
   const events = (c.events || []).filter(e => e && e.title && (!e.date || e.date >= today) && (!e.from || e.from <= today))
     .sort((a, b) => String(a.date || '9999').localeCompare(String(b.date || '9999'))).slice(0, 12)
@@ -133,7 +133,7 @@ function build(c, ctx){
       return { id: str(e.id, 40), img: img(e), title: str(e.title, 60), line: str(e.line, 90), venue: str(e.venue, 40),
         when: [dateLabel(e.date), t1 && t2 ? t1 + ' – ' + t2 : t1].filter(Boolean).join(' · '), disc: DISC.includes(+e.disc) ? +e.disc : 0, btn: button(e, e.title + (e.date ? ' (' + dateLabel(e.date) + ')' : ''), DISC.includes(+e.disc) ? +e.disc : 0),
         // The details pop-up: what's on, ages, dress code, price, anything else
-        blast: str(e.blast, 1500).replace(/\r/g, '').replace(/\n{3,}/g, '\n\n').trim(), details: str(e.details, 300), age: AGES[e.age] || '', dress: str(e.dress, 60), price: str(e.price, 60), notes: str(e.notes, 200), hl: !!e.hl,
+        blast: str(e.blast, 1500).replace(/\r/g, '').replace(/\n{3,}/g, '\n\n').trim(), details: str(e.details, 300), age: AGES[e.age] || '', dress: str(e.dress, 60), price: str(e.price, 60), notes: str(e.notes, 200), hl: !!e.hl, perk: str(e.perk, 24),
         // the icons staff chose for each detail, and their own extra details
         ic: ['details', 'age', 'dress', 'price', 'notes'].reduce((o, k) => { const v = String(((e.ic || {})[k]) || ''); if (/^[a-z]{2,10}$/.test(v)) o[k] = v; return o; }, {}),
         more: (Array.isArray(e.more) ? e.more : []).filter(m => m && m.text).slice(0, 6).map(m => ({ ic: /^[a-z]{2,10}$/.test(String(m.ic || '')) ? m.ic : '', label: str(m.label, 30), text: str(m.text, 120) })) }; });

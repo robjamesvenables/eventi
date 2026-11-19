@@ -13,7 +13,7 @@ const ANON_KEY = process.env.SUPABASE_PUBLISHABLE_KEY || process.env.SUPABASE_AN
 // Nov 2026: their old PIN still signs them in once, then the app makes them choose a password.
 const PIN_ROLES = [];
 const OLD_PIN_ROLES = ['supervisor', 'teammember', 'dailyworker'];
-const ROLE_RANK = { superadmin: 6, director: 5, manager: 4, supervisor: 3, teammember: 2, dailyworker: 1 };
+const ROLE_RANK = { superadmin: 6, director: 5, manager: 4, supervisor: 3, teammember: 2, dailyworker: 1, frontdesk: 1 };
 // Who can manage people: managers and above.
 const MANAGE_MIN_RANK = 4;
 

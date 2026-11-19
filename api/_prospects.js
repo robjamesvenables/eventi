@@ -113,7 +113,7 @@ P.trans = {
       events: [
         { id: 'te1', perk: '10% off', img: tr('ballroom'), title: 'Christmas Eve gala dinner', line: 'Live band and a festive buffet', date: y + '-12-24', time: '19:00', time2: '23:00', venue: 'The Restaurant', btn: 'call', disc: 10, hl: true,
           details: 'A festive buffet in The Restaurant with a live band, carols and Santa for the kids.', dress: 'Smart casual' },
-        { id: 'te2', perk: 'Free welcome drink', img: tr('nye'), title: "New Year's Eve at The 18th", line: 'Fireworks over Seminyak', date: y + '-12-31', time: '20:00', time2: '01:00', venue: 'The 18th Rooftop Bar', btn: 'wa', disc: 15,
+        { id: 'te2', perk: '10% off', img: tr('nye'), title: "New Year's Eve at The 18th", line: 'Fireworks over Seminyak', date: y + '-12-31', time: '20:00', time2: '01:00', venue: 'The 18th Rooftop Bar', btn: 'wa', disc: 15,
           blast: "✨ NEW YEAR'S EVE AT THE 18TH ✨\n\nSay goodbye to " + y + " on the highest rooftop in Seminyak 🥂\n\n📅 Thursday 31 December\n⏰ 8pm till 1am\n📍 The 18th Rooftop Bar, The Trans Resort Bali\n\n🎧 DJ sets all night, live sax at sunset\n🎆 Midnight fireworks over the skyline\n🍾 Free-flow packages from Rp 1.5m\n🍽️ Canapés served from 9pm\n\n👗 Dress code: glam, gold and sparkle\n🔞 18+ only\n\nSpaces are limited, so book early!\nWhatsApp us to reserve your table 💬" },
         { id: 'te3', img: tr('wedding'), title: 'Wedding showcase', line: 'Meet our wedding team', date: addDays(today, 10), time: '11:00', time2: '15:00', venue: 'The Lobby Lounge', btn: 'email' }
       ],
@@ -169,7 +169,7 @@ P.transsby = {
           details: 'Stay 24 to 26 December. One night in a Premier Room, Christmas Eve dinner buffet for 2, breakfast, Kids Club, fitness centre and the infinity pool. Book by 11 December.' },
         { id: 'se4', img: sb3('newyear'), title: 'New Year Stay', line: 'Welcome 2027 with a night above the city', date: y + '-12-31', venue: '', btn: 'book', url: SBY_BOOK, hl: true, price: 'Early bird from IDR 2,718,000++ a night',
           details: "Stay 31 December to 1 January. One night in a Premier Room, New Year's Eve dinner at Grand Restaurant for 2, breakfast, Kids Club and the infinity pool. Book by 11 December." },
-        { id: 'se5', perk: 'Free welcome drink', img: sb3('fireworks'), title: 'Fireworks Party & BBQ Dinner', line: 'Count down to midnight with DJ Katty Butterfly', date: y + '-12-31', time: '20:00', time2: '01:00', venue: '28th Sky Beach Club', btn: 'book', url: SBY_FESTIVE, hl: true, price: 'IDR 999,000++ per person',
+        { id: 'se5', perk: '15% off', img: sb3('fireworks'), title: 'Fireworks Party & BBQ Dinner', line: 'Count down to midnight with DJ Katty Butterfly', date: y + '-12-31', time: '20:00', time2: '01:00', venue: '28th Sky Beach Club', btn: 'book', url: SBY_FESTIVE, hl: true, price: 'IDR 999,000++ per person',
           details: 'Barbecue dinner by the infinity pool on the 28th level, fireworks over the city at midnight, and DJ Katty Butterfly until 1am.' },
         { id: 'se6', perk: '15% off', img: sb3('xmas-sky'), title: 'Christmas Dinner at the Sky Beach Club', line: 'Indoors on the 27th level', date: y + '-12-25', time: '18:00', venue: '28th Sky Beach Club', btn: 'book', url: SBY_FESTIVE, price: 'From IDR 488,000++ per person',
           details: 'Christmas dinner indoors on the 27th level, from 6pm, with the city lights below.' },
@@ -179,7 +179,7 @@ P.transsby = {
           details: "New Year's Eve buffet, seafood, carvery and desserts, then the countdown to midnight. 20% off when you book by 30 November." },
         { id: 'so1', perk: '10% off', img: sb4('snowy'), title: 'Snowy Family Escape', line: 'Breakfast, Kids Club and Trans Snow World', venue: '', btn: 'book', url: SBY_BOOK, hl: true,
           details: 'A family stay with breakfast at Grand Restaurant, fun access to the Kids Club and Trans Snow World, the indoor snow park one minute away.' },
-        { id: 'so2', perk: 'Free late check-out', img: sb4('executive'), title: 'The Executive Experience', line: 'Breakfast, laundry, massage and the Sky Beach Club', venue: '', btn: 'book', url: SBY_BOOK, hl: true,
+        { id: 'so2', perk: '10% off', img: sb4('executive'), title: 'The Executive Experience', line: 'Breakfast, laundry, massage and the Sky Beach Club', venue: '', btn: 'book', url: SBY_BOOK, hl: true,
           details: 'For business stays: breakfast at Grand Restaurant, laundry, a massage and the Sky Beach Club experience.' },
         { id: 'so3', img: sb4('weekend'), title: 'Weekend Best Deal', line: 'Breakfast, Kids Club and the Sky Beach Club', venue: '', btn: 'book', url: SBY_BOOK, hl: true,
           details: 'Weekend stays with breakfast at Grand Restaurant, fun access to the Kids Club and the Sky Beach Club experience.' },

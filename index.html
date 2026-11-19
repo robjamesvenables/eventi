@@ -23288,7 +23288,7 @@ window.msScanOpen = async function(opts){
   o.innerHTML = `<div class="ms-cam"><video id="ms-video" playsinline muted></video><div class="ms-frame"><i></i><i></i><i></i><i></i><span class="ms-line"></span></div>
     <div class="ms-camtop"><b>${msEsc(opts.title || 'Scan a member')}</b><span id="ms-camtxt">${msEsc(opts.hint || 'Point the camera at the QR code')}</span></div>
     <button class="ms-camx" onclick="msScanClose()" title="Close"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.4" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
-    ${opts.no4 ? `<button class="ms-no4" onclick="msScanClose(); setTimeout(() => mcStart('pad', { code:'', viaKey:false }), 300)"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><rect x="3" y="5" width="18" height="14" rx="2.5"/><path d="M7 10h.01M11 10h.01M15 10h.01M7 14h10"/></svg>Nothing to scan? Type their last 4 digits</button>` : ''}
+    ${opts.no4 ? `<button class="ms-no4" onclick="msNo4()"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><rect x="3" y="5" width="18" height="14" rx="2.5"/><path d="M7 10h.01M11 10h.01M15 10h.01M7 14h10"/></svg>Nothing to scan? Type their last 4 digits</button>` : ''}
     <div class="ms-type"><input id="ms-typed" placeholder="Or type the code" autocomplete="off" autocapitalize="characters" maxlength="16"><button onclick="msTyped()">Go</button></div></div>`;
   o.style.display = 'flex';
   mvBackOpen('msscan', () => msScanClose(true));
@@ -23314,6 +23314,14 @@ window.msScanOpen = async function(opts){
   }catch(e){ console.warn(e); if(txt) txt.textContent = 'Camera not available - type the code below'; }
 };
 window.msTyped = function(){ const c = msCode(document.getElementById('ms-typed').value); if(c.length < 4){ toast('Type the code printed on the keyring'); return; } msScanClose(); if(MS.onCode){ const f = MS.onCode; MS.onCode = null; return f(c); } if(!mcScanRoute(c)) msHandleCode(c); };
+// Nothing to scan: go to the 4-digit pad. The scanner stays on screen until the pad is up (no flash of the page behind),
+// and Back on the pad brings the scanner back.
+window.msNo4 = function(){
+  const o = document.getElementById('ms-scan');
+  clearTimeout(MS.raf); if(MS.stream){ MS.stream.getTracks().forEach(t => t.stop()); MS.stream = null; }
+  mvBackDone('msscan');
+  setTimeout(async () => { await mcStart('pad', { code:'', viaKey:false, fromScan:true }); if(o) o.style.display = 'none'; }, 300);
+};
 window.msScanClose = function(fromBack){
   clearTimeout(MS.raf);
   if(MS.stream){ MS.stream.getTracks().forEach(t => t.stop()); MS.stream = null; }
@@ -23606,9 +23614,9 @@ function mcGo(view, push){
   if(push !== false && MC.S.view){ MC.stack.push(MC.S.view); MC.depth++; mvBackOpen('mc' + MC.depth, () => mcPop()); }
   MC.S.view = view; mcDraw();
 }
-function mcPop(){ MC.depth = Math.max(0, MC.depth - 1); MC.S.view = MC.stack.pop() || ''; if(MC.S.view === 'pad') MC.S.code = ''; if(!MC.S.view) return mcClose(true); mcDraw(); }
+function mcPop(){ MC.depth = Math.max(0, MC.depth - 1); MC.S.view = MC.stack.pop() || ''; if(MC.S.view === 'pad') MC.S.code = ''; if(!MC.S.view){ if(MC.S.fromScan){ msScanOpen({ title:'Existing member', hint:'Scan their keyring, card or app', no4:true }); setTimeout(() => mcClose(true), 200); return; } return mcClose(true); } mcDraw(); }
 function mcBack(){
-  if(!MC.stack.length) return mcClose();
+  if(!MC.stack.length){ if(MC.S.fromScan){ msScanOpen({ title:'Existing member', hint:'Scan their keyring, card or app', no4:true }); setTimeout(mcClose, 200); return; } return mcClose(); }
   const id = 'mc' + MC.depth; MC.depth = Math.max(0, MC.depth - 1); MC.S.view = MC.stack.pop(); if(MC.S.view === 'pad') MC.S.code = '';
   mvBackDone(id); mcDraw();
 }

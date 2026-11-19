@@ -135,16 +135,17 @@ const SBY_BOOK = 'https://www.transhotelgroup.com/hotel_overview/45';
 const SBY_FESTIVE = 'https://online.fliphtml5.com/TLHSurabaya/FESTIVE-TLHS---THE-SEASON-REIMAGINED/';
 const SBY_MAP = 'https://www.google.com/maps/search/?api=1&query=The+Trans+Luxury+Hotel+Surabaya+Jl+Ahmad+Yani+260';
 const sb3 = n => '/demo-guest/p-sby2-' + n + '.jpg';   // the hotel's own Instagram photos (19 Nov)
+const sb4 = n => '/demo-guest/p-sby3-' + n + '.jpg';   // photos from the hotel's website (19 Nov)
 P.transsby = {
   brand: 'The Trans Luxury Hotel Surabaya', logo: '/demo-guest/p-sby-logo-w.png', icon: '/demo-guest/p-sby-icon', first: 'Alexander', tier: 'member', visits: 6, since: 2025, favourite: '28th Sky Beach Club',
   perks: ['Welcome drink at the 28th Sky Beach Club', 'Late check-out until 2pm, when available', '15% off at the spa', 'Free Kids Club afternoons'],
   perkIcons: ['cocktail', 'key', 'leaf', 'smile'],
   reward: { target: 10, text: 'One night in the Celebrity Suite' },
-  venues: ['28th Sky Beach Club', 'The 27th Sky Lounge & Bistro', 'Grand Restaurant', 'Lobby Lounge'].map(name => ({ name, ...({ '28th Sky Beach Club': { opens: '12:00', closes: '00:00' }, 'The 27th Sky Lounge & Bistro': { opens: '12:00', closes: '00:00' } }[name] || {}), area: 'Surabaya', map: SBY_MAP })).concat([{ name: 'The Trans Resort Bali', area: 'Bali', map: 'https://www.google.com/maps/dir/?api=1&destination=The+Trans+Resort+Bali&destination_place_id=ChIJSdIXcT1H0i0R0vTqmwjznss' }]),
+  venues: ['28th Sky Beach Club', 'The 27th Sky Lounge & Bistro', 'Grand Restaurant', 'The Lounge', 'The Spa', 'Wet Relaxation Areas', 'Fitness & Movement Zone', 'Beauty Salon', 'Kids Club'].map(name => ({ name, ...({ '28th Sky Beach Club': { opens: '12:00', closes: '00:00' }, 'The 27th Sky Lounge & Bistro': { opens: '12:00', closes: '00:00' }, 'The Spa': { opens: '10:00', closes: '22:00' }, 'Wet Relaxation Areas': { opens: '06:00', closes: '22:00' }, 'Fitness & Movement Zone': { opens: '06:00', closes: '22:00' }, 'Beauty Salon': { opens: '10:00', closes: '22:00' }, 'Kids Club': { opens: '08:00', closes: '20:00' } }[name] || {}), area: 'Surabaya', map: SBY_MAP })).concat([{ name: 'The Trans Resort Bali', area: 'Bali', map: 'https://www.google.com/maps/dir/?api=1&destination=The+Trans+Resort+Bali&destination_place_id=ChIJSdIXcT1H0i0R0vTqmwjznss' }]),
   stay: SBY_BOOK,
   contact: { phone: '+62 811 1888 8055', wa: '6281118888055', map: SBY_MAP, ig: 'transluxurysurabaya' },
   acts: [
-    { title: 'Afternoon tea', line: 'Sweet and savoury tiers, daily', every: [1, 2, 3, 4, 5, 6, 0], start: '15:00', end: '17:00', venue: 'Lobby Lounge' },
+    { title: 'Afternoon tea', line: 'Sweet and savoury tiers, daily', every: [1, 2, 3, 4, 5, 6, 0], start: '15:00', end: '17:00', venue: 'The Lounge' },
     { title: 'Golden hour at the 28th', line: 'Sunset by the infinity pool', every: [1, 2, 3, 4, 5, 6, 0], start: '17:00', end: '19:00', venue: '28th Sky Beach Club' },
     { title: 'Dinner over the city', line: 'Western menu, 27 floors up', every: [4, 5, 6], start: '18:00', end: '22:00', venue: 'The 27th Sky Lounge & Bistro' }
   ],
@@ -154,9 +155,10 @@ P.transsby = {
       others: { title: 'Our other hotels' },   // template: Our other venues, heading renamed; the sister hotel is a place ticked 'Show under Our other venues' with a badge and its own app
       theme: { top: '#1C1C1E', acc: '#C9A96E', pg: '#ECE9E4' }, motion: true, video: '/demo-guest/p-sby-film.mp4',   // clean white with their gold (Robbie 19 Nov: not the heavy dark look)
       slides: [],   // Robbie 19 Nov: this hotel is event-led, so the Highlights are all events (each with See more)
-      deals: [
-        { id: 'sd1', img: sb3('hightea'), title: 'Afternoon tea', when: 'Daily · 3–5pm', venue: 'Lobby Lounge' },
-        { id: 'sd2', img: sb3('breakfast'), title: 'Breakfast at the Grand Restaurant', when: 'Every morning', venue: 'Grand Restaurant' }
+      deals: [   // afternoon tea is already in What's on; stays and dinners are Highlights - nothing repeated
+        { id: 'sd1', img: sb3('gift-lunch'), title: 'Christmas Gift Exchange Lunch', when: 'Buy 1 get 1 free · 1–30 Dec', venue: 'Grand Restaurant' },
+        { id: 'sd2', img: sb3('hampers'), title: 'Festive hampers · 20% off until 10 Dec', when: 'From IDR 688,000++', venue: '' },
+        { id: 'sd3', img: sb3('takehome'), title: 'A Feast to Take Home', when: 'From IDR 388,000++', venue: '' }
       ],
       events: [
         { id: 'se1', img: sb3('suite-sunset'), title: 'The Season Reimagined', line: 'See the full festive programme', date: y + '-12-24', time: '18:00', time2: '23:00', venue: '', btn: 'book', url: SBY_FESTIVE, hl: true,
@@ -169,26 +171,43 @@ P.transsby = {
           details: "Stay 31 December to 1 January. One night in a Premier Room, New Year's Eve dinner at Grand Restaurant for 2, breakfast, Kids Club and the infinity pool. Book by 11 December." },
         { id: 'se5', img: sb3('fireworks'), title: 'Fireworks Party & BBQ Dinner', line: 'Count down to midnight with DJ Katty Butterfly', date: y + '-12-31', time: '20:00', time2: '01:00', venue: '28th Sky Beach Club', btn: 'book', url: SBY_FESTIVE, hl: true, price: 'IDR 999,000++ per person',
           details: 'Barbecue dinner by the infinity pool on the 28th level, fireworks over the city at midnight, and DJ Katty Butterfly until 1am.' },
-        { id: 'se6', img: sb3('xmas-sky'), title: 'Christmas Dinner at the Sky Beach Club', line: 'Indoors on the 27th level', date: y + '-12-25', time: '18:00', venue: '28th Sky Beach Club', btn: 'book', url: SBY_FESTIVE, hl: true, price: 'From IDR 488,000++ per person',
+        { id: 'se6', img: sb3('xmas-sky'), title: 'Christmas Dinner at the Sky Beach Club', line: 'Indoors on the 27th level', date: y + '-12-25', time: '18:00', venue: '28th Sky Beach Club', btn: 'book', url: SBY_FESTIVE, price: 'From IDR 488,000++ per person',
           details: 'Christmas dinner indoors on the 27th level, from 6pm, with the city lights below.' },
         { id: 'se7', img: sb3('xmas-grand'), title: 'Christmas Dinner & Brunch', line: 'Christmas Eve dinner, Christmas Day brunch and dinner', date: y + '-12-24', time: '18:00', time2: '21:00', venue: 'Grand Restaurant', btn: 'book', url: SBY_FESTIVE, hl: true, price: 'IDR 588,000++ per person',
           details: 'Christmas Eve dinner 6 to 9pm. Christmas Day brunch 12 to 3pm and dinner 6 to 9pm. Early bird 30% off until 10 December.' },
         { id: 'se8', img: sb3('nye-table'), title: "The New Year's Table", line: 'Dinner and countdown at Grand Restaurant', date: y + '-12-31', time: '19:00', time2: '00:00', venue: 'Grand Restaurant', btn: 'book', url: SBY_FESTIVE, hl: true, price: 'IDR 628,000++ per person',
           details: "New Year's Eve buffet, seafood, carvery and desserts, then the countdown to midnight. 20% off when you book by 30 November." },
-        { id: 'se9', img: sb3('gift-lunch'), title: 'Christmas Gift Exchange Lunch', line: 'Lunch daily, 1 to 30 December', venue: 'Grand Restaurant', btn: 'wa', hl: true, price: 'IDR 488,000++ per person, buy 1 get 1 free',
-          details: 'A festive lunch with friends or the team, gifts swapped at the table. Daily from 1 to 30 December at Grand Restaurant, 1st level.' },
-        { id: 'se10', img: sb3('hampers'), title: 'Festive hampers', line: 'Treats from our kitchen, beautifully wrapped', venue: '', btn: 'wa', hl: true, price: 'IDR 688,000++',
-          details: 'Cookies, chocolates, nuts and coffee in a Trans gift box. 20% off when you order by 10 December.' },
-        { id: 'se11', img: sb3('takehome'), title: 'A Feast to Take Home', line: 'Christmas dishes for your own table', venue: '', btn: 'wa', hl: true, price: 'From IDR 388,000++',
-          details: 'Salmon Wellington and other festive dishes from our chefs, ready to take home for Christmas.' }
+        { id: 'so1', img: sb4('snowy'), title: 'Snowy Family Escape', line: 'Breakfast, Kids Club and Trans Snow World', venue: '', btn: 'book', url: SBY_BOOK, hl: true,
+          details: 'A family stay with breakfast at Grand Restaurant, fun access to the Kids Club and Trans Snow World, the indoor snow park one minute away.' },
+        { id: 'so2', img: sb4('executive'), title: 'The Executive Experience', line: 'Breakfast, laundry, massage and the Sky Beach Club', venue: '', btn: 'book', url: SBY_BOOK, hl: true,
+          details: 'For business stays: breakfast at Grand Restaurant, laundry, a massage and the Sky Beach Club experience.' },
+        { id: 'so3', img: sb4('weekend'), title: 'Weekend Best Deal', line: 'Breakfast, Kids Club and the Sky Beach Club', venue: '', btn: 'book', url: SBY_BOOK, hl: true,
+          details: 'Weekend stays with breakfast at Grand Restaurant, fun access to the Kids Club and the Sky Beach Club experience.' },
+        { id: 'so4', img: sb4('business'), title: 'Best Value Business Stay', line: 'Work above the city', venue: '', btn: 'book', url: SBY_BOOK, hl: true, price: 'From IDR 1,050,000++ a night',
+          details: 'A great-value room for business travellers, minutes from Trans Icon Mall. Book with the promo code applied automatically.' }
       ],
-      gallery: ['pool-day', 'suite-sunset', 'tea-close', 'cocktail-sunset', 'wedding-flower', 'chinese-fish', 'dive', 'coffee', 'indo-dishes', 'resto-window', 'inroom-view', 'umbrella', 'hightea', 'wedding-aisle', 'room-view', 'grand-resto', 'amenities', 'ballroom'].map((n, i) => ({ id: 'sg' + i, img: sb3(n) })),
+      gallery: [   // the hotel's best ~40, each tagged to its place; untagged = the hotel itself (rooms, ballrooms, weddings)
+        ...[['pool-day', '28th Sky Beach Club'], ['cocktail-sunset', '28th Sky Beach Club'], ['dive', '28th Sky Beach Club'], ['umbrella', '28th Sky Beach Club'],
+          ['tea-close', 'The Lounge'], ['coffee', 'The Lounge'], ['hightea', 'The Lounge'],
+          ['chinese-fish', 'Grand Restaurant'], ['indo-dishes', 'Grand Restaurant'], ['grand-resto', 'Grand Restaurant'], ['resto-window', ''],
+          ['suite-sunset', ''], ['room-view', ''], ['inroom-view', ''], ['amenities', ''], ['wedding-flower', ''], ['wedding-aisle', ''], ['ballroom', '']].map(([n, v]) => ({ img: sb3(n), venue: v })),
+        ...[['pool-cabanas', '28th Sky Beach Club'], ['lounge', 'The Lounge'], ['lounge-stair', 'The Lounge'], ['lounge-bar', 'The Lounge'], ['grand-chandelier', 'Grand Restaurant'],
+          ['spa', 'The Spa'], ['wet', 'Wet Relaxation Areas'], ['gym', 'Fitness & Movement Zone'], ['salon', 'Beauty Salon'], ['kids', 'Kids Club'],
+          ['room-king', ''], ['room-view2', ''], ['suite-living', ''], ['suite-view', ''], ['suite-dining', ''], ['bath-marble', ''],
+          ['ballroom-wedding', ''], ['iconic-ballroom', ''], ['boardroom', '']].map(([n, v]) => ({ img: sb4(n), venue: v })),
+        { img: sb2('skylounge'), venue: 'The 27th Sky Lounge & Bistro' }
+      ].map((g, i) => ({ id: 'sg' + i, ...g })),
       places: {
         'the trans resort bali': { img: tr('pool'), area: 'The 18th Rooftop · Pool villas', other: true, badge: 'Bali', app: 'T7RNSB' },
         '28th sky beach club': { img: sb3('pool-day'), area: 'Rooftop beach · infinity pool' },
         'the 27th sky lounge & bistro': { img: sb2('skylounge'), area: 'Western menu · city views' },
         'grand restaurant': { img: sb3('grand-resto'), area: 'Buffet · Asian and international' },
-        'lobby lounge': { img: sb3('coffee'), area: 'Coffee and afternoon tea' }
+        'the lounge': { img: sb4('lounge'), area: 'Coffee, light bites, drinks' },
+        'the spa': { img: sb4('spa'), area: "Treatments · couple's room", menus: [{ name: 'Treatments', url: 'https://online.fliphtml5.com/TLHSurabaya/The-SPA-Booklet/' }] },
+        'wet relaxation areas': { img: sb4('wet'), area: 'Steam · sauna · jacuzzi' },
+        'fitness & movement zone': { img: sb4('gym'), area: 'Strength · Pilates · yoga' },
+        'beauty salon': { img: sb4('salon'), area: 'Hair, beauty and nails' },
+        'kids club': { img: sb4('kids'), area: 'Play zone for little ones' }
       }
     };
   }

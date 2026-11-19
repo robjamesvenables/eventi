@@ -144,10 +144,21 @@ P.transsby = {
   venues: ['28th Sky Beach Club', 'The 27th Sky Lounge & Bistro', 'Grand Restaurant', 'The Lounge', 'The Spa', 'Wet Relaxation Areas', 'Fitness & Movement Zone', 'Beauty Salon', 'Kids Club'].map(name => ({ name, ...({ '28th Sky Beach Club': { opens: '12:00', closes: '00:00' }, 'The 27th Sky Lounge & Bistro': { opens: '12:00', closes: '00:00' }, 'The Spa': { opens: '10:00', closes: '22:00' }, 'Wet Relaxation Areas': { opens: '06:00', closes: '22:00' }, 'Fitness & Movement Zone': { opens: '06:00', closes: '22:00' }, 'Beauty Salon': { opens: '10:00', closes: '22:00' }, 'Kids Club': { opens: '08:00', closes: '20:00' } }[name] || {}), area: 'Surabaya', map: SBY_MAP })).concat([{ name: 'The Trans Resort Bali', area: 'Bali', map: 'https://www.google.com/maps/dir/?api=1&destination=The+Trans+Resort+Bali&destination_place_id=ChIJSdIXcT1H0i0R0vTqmwjznss' }]),
   stay: SBY_BOOK,
   contact: { phone: '+62 811 1888 8055', wa: '6281118888055', map: SBY_MAP, ig: 'transluxurysurabaya' },
-  acts: [
-    { title: 'Afternoon tea', line: 'Sweet and savoury tiers, daily', every: [1, 2, 3, 4, 5, 6, 0], start: '15:00', end: '17:00', venue: 'The Lounge' },
-    { title: 'Golden hour at the 28th', line: 'Sunset by the infinity pool', every: [1, 2, 3, 4, 5, 6, 0], start: '17:00', end: '19:00', venue: '28th Sky Beach Club' },
-    { title: 'Dinner over the city', line: 'Western menu, 27 floors up', every: [4, 5, 6], start: '18:00', end: '22:00', venue: 'The 27th Sky Lounge & Bistro' }
+  acts: [   // Robbie 20 Nov: varied week, 3 different things each day, spread across the places
+    { title: 'Afternoon tea', line: 'Sweet and savoury tiers', every: [6, 0], start: '15:00', end: '17:00', venue: 'The Lounge' },
+    { title: 'Live piano', line: 'Evening music in The Lounge', every: [2, 4], start: '19:00', end: '21:00', venue: 'The Lounge' },
+    { title: 'Golden hour at the 28th', line: 'Sunset by the infinity pool', every: [1, 2, 4], start: '17:00', end: '19:00', venue: '28th Sky Beach Club' },
+    { title: 'Sunset DJ', line: 'Music by the pool as the city lights up', every: [5, 6], start: '17:00', end: '20:00', venue: '28th Sky Beach Club' },
+    { title: 'Sunday pool party', line: 'Music, drinks and the infinity pool', every: [0], start: '14:00', end: '18:00', venue: '28th Sky Beach Club' },
+    { title: 'Dinner over the city', line: 'Western menu, 27 floors up', every: [4, 5], start: '18:00', end: '22:00', venue: 'The 27th Sky Lounge & Bistro' },
+    { title: 'Wine night', line: 'Wines by the glass, 27 floors up', every: [3], start: '19:00', end: '22:00', venue: 'The 27th Sky Lounge & Bistro' },
+    { title: 'Indonesian night', line: 'Flavours from across the archipelago', every: [2], start: '18:00', end: '22:00', venue: 'Grand Restaurant' },
+    { title: 'Seafood night', line: 'Fresh from the grill', every: [5], start: '18:30', end: '22:00', venue: 'Grand Restaurant' },
+    { title: 'Sunday brunch', line: 'A long, lazy family brunch', every: [0], start: '11:00', end: '15:00', venue: 'Grand Restaurant' },
+    { title: 'Morning yoga', line: 'Start the day stretched and calm', every: [1, 3], start: '07:00', end: '08:00', venue: 'Fitness & Movement Zone' },
+    { title: 'Kids cooking class', line: 'Little chefs, big smiles', every: [6], start: '10:00', end: '11:30', venue: 'Kids Club' },
+    { title: 'Movie afternoon', line: 'Popcorn and a film for the kids', every: [3], start: '15:00', end: '17:00', venue: 'Kids Club' },
+    { title: "Couples' spa day", line: 'Treatments for two', every: [1], start: '10:00', end: '20:00', venue: 'The Spa' }
   ],
   content: today => {
     const y = year(today);

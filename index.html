@@ -2765,6 +2765,8 @@ div.mki-row{cursor:default}.mki-row.done{opacity:.6}
 #ms-flow.r{background:#7C2D12;color:#fff}#ms-flow.r .mf-go{background:#C69A3B;color:#1d1405}
 #ms-flow.tl{background:#0D9488;color:#fff}#ms-flow.tl .mf-go{background:#fff;color:#0F766E}
 #ms-flow.n{background:#0F1E2E;color:#fff}#ms-flow.n .mf-go{background:#fff;color:#0F1E2E}#ms-flow.n .mf-x,#ms-flow.tl .mf-x{background:rgba(255,255,255,.16)}
+#ms-flow .mf-deal{justify-content:space-between;font-size:17px}#ms-flow .mf-deal small{display:block;font-weight:600;font-size:13px;color:#64748B;margin-top:2px}#ms-flow .mf-deal em{font-style:normal;color:#16A34A;white-space:nowrap;font-size:16px;flex:none}
+#mc .mc-deals{width:100%;max-width:428px;margin:16px auto 0;display:flex;flex-direction:column;gap:8px;text-align:left}#mc .mc-deals .mf-card{background:#fff;color:#0F1E2E;border-radius:16px;padding:12px 14px;display:flex;gap:10px;align-items:center;justify-content:space-between;font-weight:800;font-size:15px}#mc .mc-deals small{display:block;font-weight:600;font-size:12px;color:#64748B;margin-top:2px}#mc .mc-deals em{font-style:normal;color:#16A34A;white-space:nowrap;flex:none}#mc .mc-deals .mc-dk{font-size:12px;font-weight:900;letter-spacing:1.5px;opacity:.85;text-align:center}
 #ms-flow .mf-k{font-size:13px;font-weight:900;letter-spacing:1.6px;opacity:.8}
 #ms-flow .mf-form{justify-content:flex-start;padding-top:min(9vh,70px)}
 #ms-flow .mf-in{width:100%;height:68px;border-radius:20px;border:3px solid transparent;padding:0 18px;font-family:inherit;font-weight:800;font-size:22px;color:#0F1E2E;background:#fff;outline:none;margin-top:8px}
@@ -22001,6 +22003,7 @@ function msDemoFreshen(){
 }
 async function msOpenPage(){
   msRender();
+  if(typeof GPE !== 'undefined' && !GPE.loaded && myProfile) gpLoad().catch(() => {});
   await msLoad();
   msRender();
 }
@@ -23156,7 +23159,20 @@ async function msVisit(memberId){
 }
 // ── Waiter flow: after a scan, one big screen at a time so anyone can follow it ──
 // 1 Checked in (green) → 2 Their perks (gold) → 3 Good to know (yellow, only if notes) → Reward (only when earned) → 4 The bill (only if spend is on)
-window.msFlow = function(id, r){
+// Member deals today: every event on today, and every offer, that has a Member benefit (or a member discount).
+// Shown at the end of a check-in and of a new sign-up, so staff know what to take off the bill.
+function msTodayDeals(){
+  let c = (typeof GPE !== 'undefined' && GPE.c) || null; if(!c) return [];
+  const seed = (typeof demoAs === 'function' && demoAs() && DEMO_SEED && DEMO_SEED.content) || null;   // dressed demo: the prospect's benefits if the saved page has none
+  const ben = x => { let b = x.perk || (+x.disc ? +x.disc + '% off' : ''); if(!b && seed){ const sx = [].concat(seed.events || [], seed.deals || []).find(y => y.id === x.id); if(sx) b = sx.perk || (+sx.disc ? +sx.disc + '% off' : ''); } return b; };
+  const today = msToday(), out = [];
+  (c.events || []).filter(e => e && e.title && e.date === today).forEach(e => { const b = ben(e); if(b) out.push({ t:e.title, w:[e.venue, msHm(e.time)].filter(Boolean).join(' · '), b }); });
+  (c.deals || []).filter(d => d && d.title).forEach(d => { const b = ben(d); if(b) out.push({ t:d.title, w:[d.when, d.venue].filter(Boolean).join(' · '), b }); });
+  return out.slice(0, 8);
+}
+function msTodayCards(list){ return list.map(x => `<div class="mf-card mf-deal"><span><b>${msEsc(x.t)}</b>${x.w ? `<small>${msEsc(x.w)}</small>` : ''}</span><em>✓ ${msEsc(x.b)}</em></div>`).join(''); }
+window.msFlow = async function(id, r){
+  if(typeof GPE !== 'undefined' && !GPE.loaded && typeof gpLoad === 'function'){ try{ await Promise.race([gpLoad(), new Promise(ok => setTimeout(ok, 2500))]); }catch(e){} }
   const m = MS.members.find(x => String(x.id) === String(id)); if(!m) return;
   const first = String(m.name || '').trim().split(/\s+/)[0] || 'Guest';
   const venue = (r && r.venue) || msVenue(), s = msStats(m), bd = msBirthdaySoon(m);
@@ -23165,6 +23181,7 @@ window.msFlow = function(id, r){
   const nth = n => n + (n % 100 >= 11 && n % 100 <= 13 ? 'th' : ['th','st','nd','rd'][n % 10] || 'th');
   const steps = ['in'];
   if(perks.length) steps.push('perks');
+  const deals = msTodayDeals(); if(deals.length) steps.push('today');
   if(m.allergy || m.notes) steps.push('know');
   if(rw) steps.push('reward');
   if(msHasSpend() && !((MS.visits[m.id] || []).find(x => x.venue === venue && x.visit_date === msToday()) || {}).spend) steps.push('bill');
@@ -23188,6 +23205,9 @@ window.msFlow = function(id, r){
     } else if(k === 'perks'){
       cls = 'o';
       h = top(first) + `<div class="mf-mid"><div class="mf-big" style="font-size:clamp(30px,9vw,38px)">Their perks</div>${perks.map(p => `<div class="mf-card"><i>⭐</i>${msEsc(p)}</div>`).join('')}</div>`;
+    } else if(k === 'today'){
+      cls = 'tl';
+      h = top(first) + `<div class="mf-mid"><div class="mf-k">TODAY</div><div class="mf-big" style="font-size:clamp(28px,8.5vw,36px)">Member deals today</div>${msTodayCards(deals)}<div class="mf-sub">Take it off the bill before they pay.</div></div>`;
     } else if(k === 'know'){
       cls = 'y';
       h = top(first) + `<div class="mf-mid"><div class="mf-big" style="font-size:clamp(30px,9vw,38px)">Good to know</div>
@@ -23202,7 +23222,7 @@ window.msFlow = function(id, r){
         <div class="mf-amt"><small>Rp</small><span id="mf-amt">${amt ? Number(amt).toLocaleString('id-ID') : ''}</span></div>
         <div class="mf-keys">${['1','2','3','4','5','6','7','8','9','000','0','⌫'].map(x => `<button data-k="${x}">${x}</button>`).join('')}</div></div>`;
     }
-    const btn = k === 'in' ? 'Next →' : k === 'perks' ? 'Done ✓' : k === 'know' ? 'Got it →' : k === 'reward' ? 'Given ✓' : 'Finish';
+    const btn = k === 'in' ? 'Next →' : k === 'perks' ? 'Next →' : k === 'today' ? 'Done ✓' : k === 'know' ? 'Got it →' : k === 'reward' ? 'Given ✓' : 'Finish';
     o.className = cls;
     o.innerHTML = h + `<button class="mf-go" data-a="go">${last && k !== 'bill' && k !== 'reward' ? 'Finish' : btn}</button>${k === 'bill' ? '<button class="mf-skip" data-a="skip">Skip</button>' : ''}`;
   };
@@ -23277,6 +23297,7 @@ const FD = { r:null, code:'', busy:false, err:'' };
 function fdPull(t){ t = String(t || ''); const m = /\(([A-Z0-9]{4,16})\)/i.exec(t) || /member\s+([A-Z0-9]{4,16})\b/i.exec(t) || /\/k\/([A-Z0-9]{4,16})/i.exec(t); return m ? m[1].toUpperCase() : msCode(t); }
 function fdRender(){
   const el = document.getElementById('fd-body'); if(!el) return;
+  if(typeof GPE !== 'undefined' && !GPE.loaded && myProfile) gpLoad().catch(() => {});   // today's member deals, for the end of a check-in
   if(!MS.loaded && !MS.loading && myProfile) msLoad();   // the three buttons use the member list
   const r = FD.r, e = msEsc;
   let h = `<div class="fd-tiles">
@@ -23497,7 +23518,7 @@ const MCV = {
       `</div></div><div class="mc-foot">${S.wa ? `<a class="mc-go" id="mc-signup" style="background:#25D366;color:#fff" target="_blank" rel="noopener" href="${msEsc('https://wa.me/' + mcWa(S.phone) + '?text=' + encodeURIComponent(mcWelcome(S.code)))}">${MCI.wa(20)}Sign up &amp; send their app</a>` : `<button class="mc-go" data-a="signupQR">${MCI.qr}Sign up &amp; show their QR</button>`}</div>` };
   },
   qr:() => ({ c:'w', h:mcTop({ dots:mcDots(7, 6) }) + `<div class="mc-mid"><div class="mc-k" style="color:#0D9488">Turn the screen to the guest</div><div class="mc-big">Scan this with your camera</div><div class="mc-sub" style="color:#64748B">It opens your app, with your card and perks.</div><div class="mc-qr" id="mc-qr"></div></div><div class="mc-foot"><button class="mc-go" data-a="doneQR">Done</button></div>`, after:() => { try{ new QRCode(document.getElementById('mc-qr'), { text:mcLink(MC.S.code), width:400, height:400, colorDark:'#0F1E2E', colorLight:'#FFFFFF', correctLevel:QRCode.CorrectLevel.M }); }catch(e){ document.getElementById('mc-qr').textContent = mcLink(MC.S.code); } } }),
-  done:() => ({ c:'ok', h:mcTop({ back:false, label:'All done' }) + `<div class="mc-mid"><span class="mc-okic">${MCI.tick}</span><div class="mc-big" style="margin-top:12px">${msEsc(mcFirst())} is a member</div><div class="mc-sub">${MC.S.viaQR ? 'Their app is on their phone.' : 'Their app is on its way on WhatsApp.'}</div><div class="mc-sub" style="margin-top:8px;opacity:.8">Checked in for today. Next time: <b>Already a member</b>, last 4 digits <b>${msEsc(mcLast4(MC.S.phone))}</b>.</div></div><div class="mc-foot"><button class="mc-go" style="background:#fff;color:#16A34A" data-a="close">Back to start</button>${MC.S.viaQR ? '' : `<button class="mc-alt" data-a="toQR">WhatsApp didn't arrive? Show their QR</button>`}</div>` }),
+  done:() => ({ c:'ok', h:mcTop({ back:false, label:'All done' }) + `<div class="mc-mid"><span class="mc-okic">${MCI.tick}</span><div class="mc-big" style="margin-top:12px">${msEsc(mcFirst())} is a member</div><div class="mc-sub">${MC.S.viaQR ? 'Their app is on their phone.' : 'Their app is on its way on WhatsApp.'}</div><div class="mc-sub" style="margin-top:8px;opacity:.8">Checked in for today. Next time: <b>Already a member</b>, last 4 digits <b>${msEsc(mcLast4(MC.S.phone))}</b>.</div>${(() => { const d = msTodayDeals(); return d.length ? `<div class="mc-deals"><div class="mc-dk">MEMBER DEALS TODAY</div>${msTodayCards(d)}</div>` : ''; })()}</div><div class="mc-foot"><button class="mc-go" style="background:#fff;color:#16A34A" data-a="close">Back to start</button>${MC.S.viaQR ? '' : `<button class="mc-alt" data-a="toQR">WhatsApp didn't arrive? Show their QR</button>`}</div>` }),
   saveErr:() => ({ c:'n', h:mcTop({ back:false, label:'New member' }) + `<div class="mc-mid"><div class="mc-big">Not saved</div><div class="mc-sub">${msEsc(MC.S.err || 'Please try again.')}</div></div><div class="mc-foot"><button class="mc-go" data-a="retry">Try again</button></div>` }),
 
   // Already a member

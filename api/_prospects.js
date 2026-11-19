@@ -173,7 +173,7 @@ P.transsby = {
           details: 'Barbecue dinner by the infinity pool on the 28th level, fireworks over the city at midnight, and DJ Katty Butterfly until 1am.' },
         { id: 'se6', img: sb3('xmas-sky'), title: 'Christmas Dinner at the Sky Beach Club', line: 'Indoors on the 27th level', date: y + '-12-25', time: '18:00', venue: '28th Sky Beach Club', btn: 'book', url: SBY_FESTIVE, price: 'From IDR 488,000++ per person',
           details: 'Christmas dinner indoors on the 27th level, from 6pm, with the city lights below.' },
-        { id: 'se7', img: sb3('xmas-grand'), title: 'Christmas Dinner & Brunch', line: 'Christmas Eve dinner, Christmas Day brunch and dinner', date: y + '-12-24', time: '18:00', time2: '21:00', venue: 'Grand Restaurant', btn: 'book', url: SBY_FESTIVE, hl: true, price: 'IDR 588,000++ per person',
+        { id: 'se7', img: sb3('takehome'), title: 'Christmas Dinner & Brunch', line: 'Christmas Eve dinner, Christmas Day brunch and dinner', date: y + '-12-24', time: '18:00', time2: '21:00', venue: 'Grand Restaurant', btn: 'book', url: SBY_FESTIVE, hl: true, price: 'IDR 588,000++ per person',
           details: 'Christmas Eve dinner 6 to 9pm. Christmas Day brunch 12 to 3pm and dinner 6 to 9pm. Early bird 30% off until 10 December.' },
         { id: 'se8', img: sb3('nye-table'), title: "The New Year's Table", line: 'Dinner and countdown at Grand Restaurant', date: y + '-12-31', time: '19:00', time2: '00:00', venue: 'Grand Restaurant', btn: 'book', url: SBY_FESTIVE, hl: true, price: 'IDR 628,000++ per person',
           details: "New Year's Eve buffet, seafood, carvery and desserts, then the countdown to midnight. 20% off when you book by 30 November." },
@@ -199,15 +199,15 @@ P.transsby = {
       ].map((g, i) => ({ id: 'sg' + i, ...g })),
       places: {
         'the trans resort bali': { img: tr('pool'), area: 'The 18th Rooftop · Pool villas', other: true, badge: 'Bali', app: 'T7RNSB' },
-        '28th sky beach club': { img: sb3('pool-day'), area: 'Rooftop beach · infinity pool' },
-        'the 27th sky lounge & bistro': { img: sb2('skylounge'), area: 'Western menu · city views' },
-        'grand restaurant': { img: sb3('grand-resto'), area: 'Buffet · Asian and international' },
-        'the lounge': { img: sb4('lounge'), area: 'Coffee, light bites, drinks' },
-        'the spa': { img: sb4('spa'), area: "Treatments · couple's room", menus: [{ name: 'Treatments', url: 'https://online.fliphtml5.com/TLHSurabaya/The-SPA-Booklet/' }] },
-        'wet relaxation areas': { img: sb4('wet'), area: 'Steam · sauna · jacuzzi' },
-        'fitness & movement zone': { img: sb4('gym'), area: 'Strength · Pilates · yoga' },
-        'beauty salon': { img: sb4('salon'), area: 'Hair, beauty and nails' },
-        'kids club': { img: sb4('kids'), area: 'Play zone for little ones' }
+        '28th sky beach club': { img: sb3('pool-day'), area: 'Rooftop beach · infinity pool', about: "The highest beach club in Indonesia, a resort-style escape above the city with an infinity pool and sunset views.", tags: ["Infinity pool", "Sunset views", "28th floor"], aboutBtn: "Book a sunbed" },
+        'the 27th sky lounge & bistro': { img: sb2('skylounge'), area: 'Western menu · city views', about: "An elevated sky dining lounge with crafted cuisine and refined conversations above the Surabaya skyline.", tags: ["Sky dining", "City views", "Western menu"], aboutBtn: "Book a table" },
+        'grand restaurant': { img: sb3('grand-resto'), area: 'Buffet · Asian and international', about: "Inspired by the seasons and guided by our chef, a refined selection of international and Asian cuisine.", tags: ["Breakfast", "Buffet", "Asian", "International"], aboutBtn: "Book a table" },
+        'the lounge': { img: sb4('lounge'), area: 'Coffee, light bites, drinks', about: "A relaxed yet refined social hub at the heart of the hotel, with artisanal coffee, light bites and curated refreshments.", tags: ["Coffee", "Afternoon tea", "Light bites"] },
+        'the spa': { img: sb4('spa'), area: "Treatments · couple's room", menus: [{ name: 'Treatments', url: 'https://online.fliphtml5.com/TLHSurabaya/The-SPA-Booklet/' }], about: "A serene escape with rejuvenating treatments to relax, unwind and restore balance. Three treatment rooms, including a private couple's room.", tags: ["3 treatment rooms", "Couple's room", "Members 15% off"], aboutBtn: "Book a treatment" },
+        'wet relaxation areas': { img: sb4('wet'), area: 'Steam · sauna · jacuzzi', about: "A steam room, sauna and jacuzzi to slow down, release tension and reset your senses.", tags: ["Steam room", "Sauna", "Jacuzzi"] },
+        'fitness & movement zone': { img: sb4('gym'), area: 'Strength · Pilates · yoga', about: "A complete space for strength training, Pilates, yoga and mobility, with views over the city.", tags: ["Strength", "Pilates", "Yoga", "Mobility"] },
+        'beauty salon': { img: sb4('salon'), area: 'Hair, beauty and nails', about: "With Irwan Team Hair Design, Jakarta's pioneering salon, known for signature hair artistry, colouring, treatments, beauty and nails.", tags: ["Hair", "Colouring", "Beauty", "Nails"], aboutBtn: "Book an appointment" },
+        'kids club': { img: sb4('kids'), area: 'Play zone for little ones', about: "Creativity and adventure in every moment, with a soft play castle, ball pit and games.", tags: ["Soft play", "Ball pit", "Games"] }
       }
     };
   }

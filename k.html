@@ -84,6 +84,9 @@ html.acc-bright:not(.top-light) .brand small{color:var(--acc)}   /* a bright but
 .sec{margin:24px 16px 0}
 .lab{display:block;font-size:21px;font-weight:900;letter-spacing:-.4px;color:#0F1E2E;margin:0 2px 10px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .box{background:white;border-radius:18px;box-shadow:0 1px 3px rgba(15,30,46,.07)}
+.abx{padding:18px 18px 16px}.abx p{margin:0;font-size:15.5px;line-height:1.5;color:#1C1C1E;font-weight:500}
+.abt{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}.abt span{background:color-mix(in srgb,var(--acc) 16%,white);color:#3d3428;border-radius:99px;padding:6px 12px;font-size:13px;font-weight:700}
+.abb{display:block;margin-top:16px;background:#1C1C1E;color:#fff;border-radius:14px;padding:14px;text-align:center;font-weight:800;font-size:16px;text-decoration:none}
 .bday{margin:16px 16px 0;background:#0F1E2E;color:white;border-radius:18px;padding:16px;display:flex;gap:14px;align-items:center}
 .bday i{width:46px;height:46px;border-radius:14px;background:#C4973B;color:#2B1D07;display:flex;align-items:center;justify-content:center;flex:none}
 .bday b{font-size:15.5px}.bday p{font-size:12.5px;color:#CBD5E1;margin-top:3px;line-height:1.45}
@@ -1097,10 +1100,14 @@ body.vqopen .vq-dim{opacity:1;pointer-events:auto}body.vqopen .vq-sheet{transfor
       var h = '<div class="w"' + pst + '><div class="vtop">' + (p.img ? '<img src="' + esc(p.img) + '" alt="">' : '') + '<div class="vin"><button class="back" data-home aria-label="Back">' + svg('<path d="m15 18-6-6 6-6"/>', 18) + (p.other ? '<span translate="no">Back to ' + esc(d.brand) + '</span>' : 'All places') + '</button>' +
         (p.logo ? '<div class="vname lg"><img class="lgv" src="' + esc(p.logo) + '" alt=""><div>' : '<div class="vname">') + '<b translate="no">' + esc(p.name) + '</b>' + (st ? '<small>' + st + '</small>' : '') + (p.logo ? '</div>' : '') + '</div></div></div>';
       h += menuHtml(p);
+      // About (back office: one or two lines, up to 4 tags, an optional button - empty link opens WhatsApp)
+      if (p.about) { var awa = String(v.wa || (d.contact && d.contact.wa) || '').replace(/\D/g, ''), ahref = p.aboutUrl || (awa ? 'https://wa.me/' + awa + '?text=' + encodeURIComponent('Hi! I\'d like to ask about ' + p.name) : '');
+        h += '<div class="sec"><div class="lab">About</div><div class="box abx"><p>' + esc(p.about) + '</p>' + ((p.tags || []).length ? '<div class="abt">' + p.tags.map(function(t){ return '<span>' + esc(t) + '</span>'; }).join('') + '</div>' : '') +
+          (p.aboutBtn && ahref ? '<a class="abb" href="' + esc(ahref) + '" target="_blank" rel="noopener">' + esc(p.aboutBtn) + '</a>' : '') + '</div></div>'; }
       var sl = (gp.slides || []).filter(function(x){ return gp.motion ? lc(x.venue || '') === key : at(x, key); });
       if (sl.length) h += '<div class="vsl">' + slidesHtml(sl, false) + '</div>';
       var body = placeSections(key);
-      h += body || '<div class="sec"><div class="box" style="padding:18px;text-align:center;color:#64748B;font-size:14px;font-weight:600">Nothing special on here right now - come and see us!</div></div>';
+      h += body;   // no 'Nothing special on here' message any more - the About box tells guests what the place is (Robbie 19 Nov)
       if (v.map) h += findUs([v]);   // each place's own Find us, just above its Instagram
       h += igHtml([p]);   // reviews are asked on the main page only - never twice
       return h + foot + '</div>';

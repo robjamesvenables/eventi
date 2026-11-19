@@ -24843,6 +24843,13 @@ window.gpPlaceForm = function(name){
     ${row(IC.ig, `<input id="gpp-ig" maxlength="80" value="${gpEsc(it.ig ? '@' + String(it.ig).replace(/^@/, '') : '')}" placeholder="Instagram, e.g. @senjarooftop" autocapitalize="off" autocorrect="off" spellcheck="false">`)}
     ${row(IC.star, `<input id="gpp-rv" inputmode="url" autocapitalize="off" placeholder="Google review link" value="${gpEsc(v.review || '')}"${mgr ? '' : ' disabled'}>`)}
     <div class="gp-hint" style="margin-left:32px">Google review link: in your Google Business Profile tap "Ask for reviews" and copy the link.</div>
+    <div class="gp-sub">About <small>Shows on this place's page - one or two lines</small></div>
+    <textarea id="gpp-about" maxlength="200" rows="3" style="width:100%;box-sizing:border-box;font:inherit;font-size:15px;padding:12px;border:1px solid #E2E8F0;border-radius:12px;resize:vertical" placeholder="e.g. A serene escape with rejuvenating treatments. Three treatment rooms, including a private couple's room.">${gpEsc(it.about || '')}</textarea>
+    <div class="gp-hint" id="gpp-about-n">${String(it.about || '').length} / 200 letters</div>
+    <label style="margin-top:12px">Tags <span class="gp-opt">up to 4 short words, e.g. Massage, Couple's room</span></label>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">${[0, 1, 2, 3].map(i => `<input id="gpp-tg${i}" maxlength="20" value="${gpEsc((it.tags || [])[i] || '')}" placeholder="Tag ${i + 1}">`).join('')}</div>
+    <label style="margin-top:12px">Button <span class="gp-opt">optional, e.g. Book a treatment</span></label><input id="gpp-abtn" maxlength="24" value="${gpEsc(it.aboutBtn || '')}" placeholder="e.g. Book a treatment">
+    <input id="gpp-aurl" inputmode="url" autocapitalize="off" autocorrect="off" spellcheck="false" style="margin-top:8px" value="${gpEsc(it.aboutUrl || '')}" placeholder="Button link - empty opens WhatsApp">
     <div class="gp-sub">Menus <small>Food, drinks... guests tap to open them</small></div>
     <div id="gpp-menus"></div>
     <input type="file" id="gpp-file" accept="image/*" style="display:none"><div class="eb-fbtns"><button class="eb-no">Cancel</button><button class="eb-go">Save</button></div></div>`;
@@ -24859,6 +24866,7 @@ window.gpPlaceForm = function(name){
     $('gpp-acc').querySelectorAll('button').forEach(b => b.onclick = () => { if(b.dataset.own) mvWheel(pacc || GP_COL.acc[2], hex => { pacc = String(hex).toUpperCase(); accBox(); }, 'Colour'); else { pacc = b.dataset.c; accBox(); } }); };
   accBox();
   $('gpp-other').onchange = () => { $('gpp-lgw').style.display = $('gpp-other').checked ? '' : 'none'; };
+  if($('gpp-about')) $('gpp-about').oninput = () => { $('gpp-about-n').textContent = $('gpp-about').value.length + ' / 200 letters'; };
   lg.onclick = () => lgf.click(); lg.onkeydown = e => { if(e.key === 'Enter') lgf.click(); };
   lgf.onchange = () => { lgFile = lgf.files && lgf.files[0]; if(!lgFile) return; lgDrop = false; lg.innerHTML = `<img src="${URL.createObjectURL(lgFile)}" alt="" style="width:100%;height:100%;object-fit:cover">`; lgx.style.display = ''; };
   lgx.onclick = e => { e.preventDefault(); lgFile = null; lgDrop = true; lgf.value = ''; lg.innerHTML = gpIc(GPI.cam, 20); lgx.style.display = 'none'; };
@@ -24933,6 +24941,9 @@ window.gpPlaceForm = function(name){
     it.area = val('gpp-area'); if($('gpp-soon') && $('gpp-soon').checked) it.soon = true; else delete it.soon; if($('gpp-other') && $('gpp-other').checked) it.other = true; else delete it.other;
     { const on = $('gpp-other') && $('gpp-other').checked, bd = val('gpp-badge').slice(0, 12), am = (val('gpp-app').match(/(?:\/k\/|^)([A-Za-z0-9]{6})\/?$/) || [])[1];
       if(on && bd) it.badge = bd; else delete it.badge; if(on && am) it.app = am.toUpperCase(); else delete it.app; }
+    { const ab = ($('gpp-about') ? $('gpp-about').value : '').replace(/\s+/g, ' ').trim().slice(0, 200), tg = [0, 1, 2, 3].map(i => val('gpp-tg' + i).slice(0, 20)).filter(Boolean), bt = val('gpp-abtn').slice(0, 24), bu = val('gpp-aurl');
+      if(bu && !/^https:\/\/\S+$/i.test(bu)){ toast('The button link must start with https://'); return; }
+      if(ab) it.about = ab; else delete it.about; if(tg.length) it.tags = tg; else delete it.tags; if(bt) it.aboutBtn = bt; else delete it.aboutBtn; if(bu) it.aboutUrl = bu; else delete it.aboutUrl; }
     const igv = val('gpp-ig'), igm = /^(?:https?:\/\/)?(?:www\.)?(?:instagram\.com\/)?@?([a-z0-9._]{1,30})\/?(?:\?.*)?$/i.exec(igv);
     if(igv && !igm){ toast('That Instagram name doesn\'t look right - e.g. @senjarooftop'); return; }
     it.ig = igm ? igm[1] : ''; if(!it.ig) delete it.ig;

@@ -157,8 +157,8 @@ P.transsby = {
       slides: [],   // Robbie 19 Nov: this hotel is event-led, so the Highlights are all events (each with See more)
       deals: [   // afternoon tea is already in What's on; stays and dinners are Highlights - nothing repeated
         { id: 'sd1', img: sb3('gift-lunch'), title: 'Christmas Gift Exchange Lunch', when: 'Buy 1 get 1 free · 1–30 Dec', venue: 'Grand Restaurant' },
-        { id: 'sd2', img: sb3('hampers'), title: 'Festive hampers · 20% off until 10 Dec', when: 'From IDR 688,000++', venue: '' },
-        { id: 'sd3', img: sb3('takehome'), title: 'A Feast to Take Home', when: 'From IDR 388,000++', venue: '' }
+        { id: 'sd2', img: sb3('hampers'), title: 'Festive hampers · 20% off until 10 Dec', when: 'From IDR 688,000++', venue: 'The Lounge' },
+        { id: 'sd3', img: sb3('takehome'), title: 'A Feast to Take Home', when: 'From IDR 388,000++', venue: 'Grand Restaurant' }
       ],
       events: [
         { id: 'se1', img: sb3('suite-sunset'), title: 'The Season Reimagined', line: 'See the full festive programme', date: y + '-12-24', time: '18:00', time2: '23:00', venue: '', btn: 'book', url: SBY_FESTIVE, hl: true,

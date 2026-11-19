@@ -23223,7 +23223,7 @@ window.msFlow = async function(id, r){
         <div class="mf-amt"><small>Rp</small><span id="mf-amt">${amt ? Number(amt).toLocaleString('id-ID') : ''}</span></div>
         <div class="mf-keys">${['1','2','3','4','5','6','7','8','9','000','0','⌫'].map(x => `<button data-k="${x}">${x}</button>`).join('')}</div></div>`;
     }
-    const btn = k === 'in' ? 'Next →' : k === 'perks' ? 'Next →' : k === 'today' ? 'Done ✓' : k === 'know' ? 'Got it →' : k === 'reward' ? 'Given ✓' : 'Finish';
+    const btn = k === 'in' ? 'Next →' : k === 'perks' ? 'Next →' : k === 'today' ? 'Next →' : k === 'know' ? 'Got it →' : k === 'reward' ? 'Given ✓' : 'Finish';
     o.className = cls;
     o.innerHTML = h + `<button class="mf-go" data-a="go">${last && k !== 'bill' && k !== 'reward' ? 'Finish' : btn}</button>${k === 'bill' ? '<button class="mf-skip" data-a="skip">Skip</button>' : ''}`;
   };
@@ -23641,9 +23641,9 @@ function mcWire(o){
   o.addEventListener('input', e => {
     const t = e.target;
     if(t.classList.contains('mc-pfi')){
-      let d = mcDigits(t.value); if(/^0/.test(d)) t.dataset.z = '1'; d = d.replace(/^0+/, ''); if(!t.value) t.dataset.z = '';
+      let d = mcDigits(t.value); if(/^0/.test(d)){ t.dataset.z = '1'; d = '62' + d.replace(/^0+/, ''); } if(!t.value) t.dataset.z = '';
       const z = t.dataset.z === '1'; if(t.value !== d) t.value = d;
-      const tip = document.getElementById(t.id + 'tip'); if(tip){ tip.className = 'mc-cc' + (z ? ' warn' : ''); tip.innerHTML = z ? '<b>No 0 at the start.</b> Use the country code instead, e.g. 62 812…' : MC_CCTIP; }
+      const tip = document.getElementById(t.id + 'tip'); if(tip){ tip.className = 'mc-cc' + (z ? ' warn' : ''); tip.innerHTML = z ? '<b>We added 62 for Indonesia.</b> Different country? Change it, e.g. 61 Australia, 44 UK.' : MC_CCTIP; }
       t.parentNode.style.borderColor = '';
     }
     if(t.id === 'mc-lq'){ MC.S.q = t.value; const g = document.getElementById('mc-lgo'); if(g) g.classList.toggle('off', !(MC.S.lmode === 'name' ? MC.S.q.trim() : mcDigits(MC.S.q))); }
@@ -23676,7 +23676,7 @@ function mcWire(o){
     if(a === 'bdNext'){ S.d = mcVal('mc-bd'); S.m = mcVal('mc-bm'); if(!!S.d !== !!S.m){ toast('Pick the day and the month - or tap Skip'); return; } return S.edit ? mcToReady() : mcGo('waq'); }
     if(a === 'bdSkip'){ S.d = ''; S.m = ''; return S.edit ? mcToReady() : mcGo('waq'); }
     if(a === 'waYes' || a === 'waNo'){ S.wa = a === 'waYes'; return mcGo('phone'); }
-    if(a === 'phNext'){ S.phone = '+' + mcDigits(mcVal('mc-ph')); if(mcDigits(S.phone).length < 9){ const f = document.getElementById('mc-ph'); f.focus(); f.parentNode.style.borderColor = '#F87171'; toast('Type their full number, starting with the country code'); return; }
+    if(a === 'phNext'){ S.phone = '+' + mcWa(mcVal('mc-ph')); if(mcDigits(S.phone).length < 9){ const f = document.getElementById('mc-ph'); f.focus(); f.parentNode.style.borderColor = '#F87171'; toast('Type their full number, starting with the country code'); return; }
       // Already on the list with this number? Say so - no second profile
       if(!S.edit){ const n9 = mcDigits(S.phone).slice(-9), dup = MS.members.find(m => mcDigits(m.phone).length >= 9 && mcDigits(m.phone).slice(-9) === n9); if(dup){ S.dup = dup.id; S.dupM = dup; return mcGo('dupe'); } }
       return mcGo('check'); }
@@ -23701,7 +23701,7 @@ function mcWire(o){
     if(a === 'lfindGo'){
       const q = S.q || '';
       if(S.lmode === 'name'){ const n = q.trim().toLowerCase(); if(!n) return; S.lres = MS.members.filter(m => mcSplit(m.name).last.toLowerCase().split(/\s+/).some(w => w.indexOf(n) === 0)); }
-      else { const d = mcWa(q); if(d.length < 4) return; S.lres = MS.members.filter(m => { const x = mcWa(m.phone); return x && (x === d || (d.length >= 7 && x.slice(-d.length) === d)); }); }
+      else { const d = mcWa(q); if(d.length < 4) return; S.lres = MS.members.filter(m => { const x = mcWa(m.phone); return x && (x === d || (d.length >= 4 && x.slice(-d.length) === d)); }); }
       return mcGo('lres');
     }
     if(a === 'lpick'){
@@ -23718,7 +23718,7 @@ function mcWire(o){
     if(a === 'lsecYes') return mcGo('lnum');
     if(a === 'lsecNo') return mcGo('lstop');
     if(a === 'lsave'){
-      const n = '+' + mcDigits(mcVal('mc-ln'));
+      const n = '+' + mcWa(mcVal('mc-ln'));
       if(mcDigits(n).length < 9){ const f = document.getElementById('mc-ln'); f.focus(); f.parentNode.style.borderColor = '#F87171'; toast('Type their full number, starting with the country code'); return; }
       t.disabled = true; t.textContent = 'Saving…';
       const m = mcMem(S.pick), code = await mcFreeCode();

@@ -5,7 +5,20 @@ const tr = n => '/demo-guest/p-trans-' + n + '.jpg';
 const G = {};
 G.trans = {
   brand: 'The Trans Resort Bali', logo: '/demo-guest/p-trans-logo.png', icon: '/demo-guest/p-trans-icon',   // icon: the hotel's own tab / home-screen / link-preview icon (-192.png and -512.png)
-  member: 'T7RNSB',   // member: whose activities show under "Today" (same as the member page)
+  member: 'T7RNSB', nokey: true, short: 'The Trans Resort',   // 19 Nov: same format as Surabaya - photo tiles, floor panel, no keyring box
+  tiles: [
+    { label: 'Beach Pool', ic: 'umb', img: tr('pool'), go: 'open:0' }, { label: '18th Rooftop', ic: 'wine', img: tr('18sunset'), go: 'open:4' }, { label: 'The Restaurant', ic: 'food', img: tr('restoroom'), go: 'open:5' },
+    { label: 'Lobby Lounge', ic: 'cup', img: tr('llroom'), go: 'open:6' }, { label: 'The Spa', ic: 'leaf', img: tr('spa'), go: 'open:3' }, { label: 'Fitness Center', ic: 'gym', img: tr('gym'), go: 'open:2' },
+    { label: "Kids' Club", ic: 'smile', img: tr('kids'), go: 'open:1' }, { label: "What's on", ic: 'cal', img: tr('xmas'), go: '#whatson' }, { label: 'Ask us', ic: 'chat', img: tr('lobby'), go: 'wa' }
+  ],
+  floors: [   // demo levels
+    { lv: '18', title: 'The 18th Rooftop Bar', line: 'Sunset views · Rooftop BBQ on Fridays' },
+    { lv: '3', title: 'The Spa · Fitness Center', line: 'Treatments, gym, yoga rooms, sauna and steam' },
+    { lv: '2', title: 'The Grand Ballroom', line: 'Weddings, events and Christmas Across Asia' },
+    { lv: '1', title: "The Kids' Club", line: 'Arts & crafts, indoor playground, games' },
+    { lv: 'G', title: 'Lobby Lounge · The Restaurant', line: 'Coffee and cocktails · all-day dining' },
+    { lv: 'P', title: 'White Sandy Beach Pool', line: "Kids' pool, waterslide, poolside loungers" }
+  ],   // member: whose activities show under "Today" (same as the member page)
   theme: { top: '#7A1F1F', acc: '#C9A24A', pg: '#F7F3EC' },
   title: 'Welcome to<br>The Trans Resort', sub: 'Everything for your stay, in one place.',
   geo: { lat: -8.6905, lon: 115.1652 },   // live weather and sunset
@@ -42,7 +55,10 @@ G.trans = {
       mem: { label: 'Live in Bali? Gym membership', price: 'IDR 1,000,000++', unit: 'per person', wa: '',   // wa: the gym's own WhatsApp (button shows once it's set)
         items: [{ ic: 'gym', text: 'Gym (Life Fitness) and yoga rooms' }, { ic: 'steam', text: 'Steam room, sauna, plunge pool and whirlpool' }, { ic: 'swim', text: 'Main pool, free towels, free parking' },
           { ic: 'food', hl: '20% off', text: 'restaurants and bars' }, { ic: 'leaf', hl: '20% off', text: 'The Spa' }] } },
-    { name: 'The Spa', img: tr('spa'), opens: '09:00', closes: '21:00', title: 'The Spa', offer: 0, ask: 'Book on WhatsApp' }   // offer: shows that leisure offer inside
+    { name: 'The Spa', img: tr('spa'), opens: '09:00', closes: '21:00', title: 'The Spa', offer: 0, ask: 'Book on WhatsApp' },   // offer: shows that leisure offer inside
+    { name: '18th Rooftop', img: tr('18sunset'), opens: '17:00', closes: '23:00', title: 'The 18th Rooftop Bar', line: 'Sunset drinks above Seminyak', chips: ['Sunset views', 'Cocktails', 'Rooftop BBQ Fridays'], ask: 'Book a table' },
+    { name: 'The Restaurant', img: tr('restoroom'), opens: '06:30', closes: '23:00', title: 'The Restaurant', line: 'All-day dining by the pool', chips: ['Breakfast', 'Lunch', 'Dinner'], ask: 'Book a table' },
+    { name: 'Lobby Lounge', img: tr('llroom'), opens: '11:00', closes: '19:00', title: 'The Lobby Lounge', line: 'Coffee, tea and cocktails', chips: ['Coffee', 'Afternoon tea', 'Cocktails'] }
   ],
   offers: [
     { img: tr('spaoffer'), title: 'A Private Celebration of Love', line: 'Rose-petal Jacuzzi at The Spa', price: 'IDR 4,000,000++ per couple' },

@@ -286,7 +286,7 @@ html.top-pg .gv{background:#1C1A19;color:#fff}html.top-pg .gv .gvi{background:va
 .evl{font-size:14.5px;color:#475569;line-height:1.5;margin-top:8px}
 .ers{margin-top:14px}
 .ev{position:relative}.evdisc{position:absolute;left:10px;top:10px;z-index:1;display:inline-flex;align-items:center;gap:5px;background:#C4973B;color:#fff;font-size:12px;font-weight:900;border-radius:20px;padding:6px 11px;box-shadow:0 2px 8px rgba(0,0,0,.25);white-space:nowrap}
-.evdl{margin-top:10px}.evdl .evdisc{position:static;box-shadow:none}
+.evdl{margin-top:10px}.evdl .evdisc{position:static;box-shadow:none}.evdl.dlb{margin:5px 0 4px}.evdl.dlb .evdisc{font-size:11px;padding:4px 8px}
 .mcode{display:flex;align-items:center;gap:10px;margin-top:12px;background:#FBF6EA;border:1.5px dashed #C4973B;border-radius:12px;padding:9px 10px 9px 12px}
 .mcode div{flex:1;min-width:0;font-size:12.5px;color:#6B5523;font-weight:700;line-height:1.35}.mcode b{display:block;font-size:17px;color:#0F1E2E;letter-spacing:1px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .mcode button{flex:none;border:0;background:#C4973B;color:#fff;font:800 12.5px Inter,sans-serif;border-radius:9px;padding:9px 13px;cursor:pointer}
@@ -799,7 +799,7 @@ body.vqopen .vq-dim{opacity:1;pointer-events:auto}body.vqopen .vq-sheet{transfor
     var btnHtml = function(b, id, cls){ if (!b) return ''; var ic = { wa: I.wa, call: I.phone, email: I.mail }[b.kind];
       return '<a href="' + esc(b.href) + '"' + (/^https/.test(b.href) ? ' target="_blank" rel="noopener"' : '') + ' class="' + (cls || '') + (b.kind === 'wa' ? ' wa' : '') + '"' + hit(id) + '>' + (ic ? svg(ic, 16) : '') + esc(b.label) + '</a>'; };
     // Member discount: a gold badge on the event photo, and (ticket sites) the member code with a Copy button
-    var discBadge = function(x){ return x.disc ? '<span class="evdisc">' + svg(PI.pct, 13) + 'Members ' + x.disc + '% off</span>' : ''; };
+    var discBadge = function(x){ var t = x.perk || (x.disc ? x.disc + '% off' : ''); return t ? '<span class="evdisc">' + svg(PI.pct, 13) + 'Members: ' + esc(t) + '</span>' : ''; };   // the venue's Member benefit, or its member discount
     var codeBox = function(x){ var c = x.disc && x.btn && x.btn.code; return c ? '<div class="mcode"><div>Your member code<b>' + esc(c) + '</b>Use it at checkout</div><button type="button" data-copy="' + esc(c) + '">Copy</button></div>' : ''; };
     var pic = function(src, alt){ return src ? '<img src="' + esc(src) + '" alt="' + esc(alt || '') + '" loading="lazy">' : '<div class="noimg"></div>'; };
     var venueOf = function(key){ return (d.venues || []).find(function(v){ return lc(v.name) === key; }); };
@@ -889,8 +889,8 @@ body.vqopen .vq-dim{opacity:1;pointer-events:auto}body.vqopen .vq-sheet{transfor
         var self = gp.oneHome && (function(){ var own = places.filter(function(p){ return !p.other; }); return own.length === 1 && lc(own[0].name) === lc(x.venue || ''); })();   // one-place home: that place IS the home page - no See more to itself
         var go = home && x.venue && many && !self && placeOf(lc(x.venue)) ? '<span class="more">See more ' + svg('<path d="m9 18 6-6-6-6"/>', 14) + '</span>' : '';   // slides only ever say "See more" (to that place) - booking lives in the Book button
         var goKey = home && x.venue && many && !self && placeOf(lc(x.venue)) ? lc(x.venue) : '';
-        if (x.ev && !goKey) return '<div class="sd tap" data-ev="' + esc(x.ev) + '" role="button" tabindex="0">' + pic(x.img, x.title) + '<div class="ov"><b>' + esc(x.title) + '</b>' + (x.line ? '<small>' + esc(x.line) + '</small>' : '') + '<span class="more">See more ' + svg('<path d="m9 18 6-6-6-6"/>', 14) + '</span></div></div>';
-        return '<div class="sd' + (goKey ? ' tap' : '') + '"' + (goKey ? ' data-go="' + esc(goKey) + '"' + (x.ev ? ' data-goev="' + esc(x.ev) + '"' : '') + hit(x.id) + ' role="link" tabindex="0"' : '') + '>' + pic(x.img, x.title) + '<div class="ov">' + (x.title ? '<b>' + esc(x.title) + '</b>' : '') + (x.line || where ? '<small>' + esc([x.line, where].filter(Boolean).join(' · ')) + '</small>' : '') + go + '</div></div>';
+        if (x.ev && !goKey) return '<div class="sd tap" data-ev="' + esc(x.ev) + '" role="button" tabindex="0">' + discBadge(x) + pic(x.img, x.title) + '<div class="ov"><b>' + esc(x.title) + '</b>' + (x.line ? '<small>' + esc(x.line) + '</small>' : '') + '<span class="more">See more ' + svg('<path d="m9 18 6-6-6-6"/>', 14) + '</span></div></div>';
+        return '<div class="sd' + (goKey ? ' tap' : '') + '"' + (goKey ? ' data-go="' + esc(goKey) + '"' + (x.ev ? ' data-goev="' + esc(x.ev) + '"' : '') + hit(x.id) + ' role="link" tabindex="0"' : '') + '>' + discBadge(x) + pic(x.img, x.title) + '<div class="ov">' + (x.title ? '<b>' + esc(x.title) + '</b>' : '') + (x.line || where ? '<small>' + esc([x.line, where].filter(Boolean).join(' · ')) + '</small>' : '') + go + '</div></div>';
       }).join('') + '</div>' + (list.length > 1 ? '<div class="dots" id="dots">' + list.map(function(x, i){ return '<i' + (i ? '' : ' class="on"') + '></i>'; }).join('') + '</div>' : '') + '</div>';
     };
     // The guest guide is its own add-on with its own QR (Robbie 19 Nov): no Hotel guide button on the member page
@@ -974,7 +974,7 @@ body.vqopen .vq-dim{opacity:1;pointer-events:auto}body.vqopen .vq-sheet{transfor
           return '<div class="day"><div class="d">' + esc(e.day) + '</div><b translate="no">' + esc(e.title) + '</b><small>' + esc(e.sub) + (e.time ? ' · ' + esc(e.time.split(' - ')[0]) : '') + '</small></div>';
         }).join('') + '</div></div>' : '');
       if (dl.length) S.deals = '<div class="sec"><div class="lab">Daily deals</div>' + dl.map(function(x){
-        return '<div class="deal">' + pic(x.img, x.title) + '<div class="x"><b>' + esc(x.title) + '</b>' + (x.when ? '<span class="dw">' + svg('<circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/>', 14) + '<em>' + esc(x.when) + '</em></span>' : '') + (!x.venue && d.venues && d.venues.length > 1 ? '<small>At all our places</small>' : '') + '</div></div>';
+        return '<div class="deal">' + pic(x.img, x.title) + '<div class="x"><b>' + esc(x.title) + '</b>' + (x.perk ? '<div class="evdl dlb">' + discBadge(x) + '</div>' : '') + (x.when ? '<span class="dw">' + svg('<circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/>', 14) + '<em>' + esc(x.when) + '</em></span>' : '') + (!x.venue && d.venues && d.venues.length > 1 ? '<small>At all our places</small>' : '') + '</div></div>';
       }).join('') + '</div>';
       if (ev.length) S.events = '<div class="sec"><div class="lab">Coming up</div><div class="evs">' + ev.map(function(x){
         return '<div class="ev" data-ev="' + esc(x.id) + '" role="button" tabindex="0">' + discBadge(x) + pic(x.img, x.title) + '<div class="x"><div class="wh">' + esc(x.when).toUpperCase() + '</div><b>' + esc(x.title) + '</b>' + (x.line ? '<small>' + esc(x.line) + '</small>' : '') +
@@ -1516,7 +1516,7 @@ body.vqopen .vq-dim{opacity:1;pointer-events:auto}body.vqopen .vq-sheet{transfor
         var row = function(ic, lab, val){ return val ? '<div class="er"><i>' + svg(ic, 18) + '</i><div><small>' + lab + '</small><span>' + esc(val) + '</span></div></div>' : ''; };
         open(x.title, (x.img ? '<img class="evbig" src="' + esc(x.img) + '" alt="">' : '') +
           '<div class="evw">' + esc(x.when) + '</div>' + (x.venue && many ? '<div class="eva">' + svg(I.pin, 15) + '<span translate="no">' + esc(x.venue) + '</span></div>' : '') +
-          (x.line ? '<p class="evl">' + esc(x.line) + '</p>' : '') + (x.disc ? '<div class="evdl">' + discBadge(x) + '</div>' : '') + codeBox(x) +
+          (x.line ? '<p class="evl">' + esc(x.line) + '</p>' : '') + ((x.disc || x.perk) ? '<div class="evdl">' + discBadge(x) + '</div>' : '') + codeBox(x) +
           (x.blast ? '<div class="box evblast">' + esc(x.blast) + '</div>' : '') +   // the venue's own WhatsApp / email message, pasted as it was sent
           '<div class="box ers">' + row(d.kind === 'padel' && !(x.ic || {}).details ? I.ball : ic('details', 'music'), "What's on", x.details) + row(ic('age', 'who'), 'Ages', x.age) + row(ic('dress', 'shirt'), 'Dress code', x.dress) + row(ic('price', 'tag'), 'Price', x.price) + row(ic('notes', 'info'), 'Good to know', x.notes) +
             (x.more || []).map(function(m){ return row(PI[m.ic] || PI.info, m.label, m.text); }).join('') + '</div>' +

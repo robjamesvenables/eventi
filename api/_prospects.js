@@ -1152,4 +1152,4 @@ const seed = (key, today) => { const v = P[key]; if (!v) return null;
     content: Object.assign(v.content(today), { as: key, acts: (v.acts || []).map(a => Object.assign({}, a)) }),
     page: { as: key, venues: v.venues.map(x => Object.assign({}, x)), reward: v.reward ? { visits: v.reward.target, text: v.reward.text } : null, contact: v.contact || {}, stay: v.stay || '', stayWa: v.stayWa || '', stayPhone: v.stayPhone || '' },
     perks: { member: v.perks.slice(), vip: v.perks.slice(), icons: { member: v.perkIcons.slice(), vip: v.perkIcons.slice() } } }; };
-module.exports = { get: code => P[CODES[code]] || null, keyOf: code => CODES[code] || '', nextDow, club, seed };
+module.exports = { get: code => P[CODES[code]] || null, byKey: k => P[k] || null, keyOf: code => CODES[code] || '', nextDow, club, seed };

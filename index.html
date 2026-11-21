@@ -23213,12 +23213,13 @@ window.msFlow = async function(id, r){
   if(m.allergy || m.notes) steps.push('know');
   if(rw) steps.push('reward');
   if(msHasSpend() && !((MS.visits[m.id] || []).find(x => x.venue === venue && x.visit_date === msToday()) || {}).spend) steps.push('bill');
+  if(steps.length > 1) steps.push('done');   // after perks/deals/bill: end on a clear 'checked in' screen (Robbie 21 Nov)
   let o = document.getElementById('ms-flow');
   if(!o){ o = document.createElement('div'); o.id = 'ms-flow'; document.body.appendChild(o); }
   const ic = { x:'<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>' };
-  let at = 0, amt = '', rq = '';
+  let at = 0, amt = '', rq = '', done = {};
   const close = () => { o.style.display = 'none'; mvBackDone('msflow'); msRender(); };
-  const next = () => { at++; if(at >= steps.length){ close(); toast('All done ✓'); return; } draw(); };
+  const next = () => { at++; if(at >= steps.length){ close(); if(steps[steps.length - 1] !== 'done') toast('All done ✓'); return; } draw(); };
   const top = (lab) => `<div class="mf-top"><span class="mf-pl">${msEsc(lab)}</span><div class="mf-dots">${steps.map((_, i) => `<b class="${i <= at ? 'on' : ''}"></b>`).join('')}</div><button class="mf-x" data-a="x" title="Close">${ic.x}</button></div>`;
   const draw = () => {
     if(rq){ o.className = 'w'; o.innerHTML = top(first) + msRqHtml(m, rq) + `<button class="mf-go" data-a="rqBack">Back to check-in</button>`; msRqDraw(rq); return; }
@@ -23245,15 +23246,19 @@ window.msFlow = async function(id, r){
     } else if(k === 'reward'){
       cls = 'r';
       h = top(first) + `<div class="mf-mid"><div style="font-size:84px;line-height:1">🎁</div><div class="mf-big">Reward time!</div><div class="mf-sub">${msEsc(nth(rw.target))} visit. Give ${msEsc(first)}:</div><div class="mf-card"><i>🎉</i>${msEsc(rwText)}</div></div>`;
+    } else if(k === 'done'){
+      cls = 'g';
+      h = top(venue) + `<div class="mf-mid"><div class="mf-tick"><svg width="62%" height="62%" viewBox="0 0 24 24" fill="none" stroke="#10B981" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5l5 5L20 6.5"/></svg></div>
+        <div class="mf-big">Checked in</div><div class="mf-sub" style="font-size:20px;font-weight:800;opacity:1">${msEsc(first)}</div><div class="mf-sub">${amt && done.bill ? 'Bill Rp ' + Number(amt).toLocaleString('id-ID') + ' saved. ' : ''}${done.reward ? 'Reward given. ' : ''}Enjoy their visit!</div></div>`;
     } else if(k === 'bill'){
       cls = 'w';
       h = top(first) + `<div class="mf-mid"><div class="mf-big" style="font-size:clamp(26px,8vw,34px)">How much was the bill?</div>
         <div class="mf-amt"><small>Rp</small><span id="mf-amt">${amt ? Number(amt).toLocaleString('id-ID') : ''}</span></div>
         <div class="mf-keys">${['1','2','3','4','5','6','7','8','9','000','0','⌫'].map(x => `<button data-k="${x}">${x}</button>`).join('')}</div></div>`;
     }
-    const btn = k === 'in' ? 'Next →' : k === 'perks' ? 'Next →' : k === 'today' ? 'Next →' : k === 'know' ? 'Got it →' : k === 'reward' ? 'Given ✓' : 'Finish';
+    const btn = k === 'done' ? 'Done' : k === 'in' ? 'Next →' : k === 'perks' ? 'Next →' : k === 'today' ? 'Next →' : k === 'know' ? 'Got it →' : k === 'reward' ? 'Given ✓' : 'Finish';
     o.className = cls;
-    o.innerHTML = h + `<button class="mf-go" data-a="go">${last && k !== 'bill' && k !== 'reward' ? 'Finish' : btn}</button>${k === 'bill' ? '<button class="mf-skip" data-a="skip">Skip</button>' : ''}`;
+    o.innerHTML = h + `<button class="mf-go" data-a="go">${last && k !== 'bill' && k !== 'reward' && k !== 'done' ? 'Finish' : btn}</button>${k === 'bill' ? '<button class="mf-skip" data-a="skip">Skip</button>' : ''}`;
   };
   o.onclick = async e => {
     const b = e.target.closest('button'); if(!b) return;
@@ -23266,8 +23271,8 @@ window.msFlow = async function(id, r){
     if(a === 'rqBack'){ rq = ''; return draw(); }
     if(a === 'go'){
       const k = steps[at];
-      if(k === 'reward'){ b.disabled = true; const ok = await msRewardSave(m.id); if(!ok){ b.disabled = false; return; } toast('Reward given ✓'); }
-      if(k === 'bill'){ if(!amt){ toast('Type the bill, or tap Skip'); return; } b.disabled = true; const ok = await msSaveSpend(m.id, +amt); if(!ok){ b.disabled = false; return; } toast('Bill saved ✓'); }
+      if(k === 'reward'){ b.disabled = true; const ok = await msRewardSave(m.id); if(!ok){ b.disabled = false; return; } toast('Reward given ✓'); done.reward = 1; }
+      if(k === 'bill'){ if(!amt){ toast('Type the bill, or tap Skip'); return; } b.disabled = true; const ok = await msSaveSpend(m.id, +amt); if(!ok){ b.disabled = false; return; } toast('Bill saved ✓'); done.bill = 1; }
       next();
     }
   };

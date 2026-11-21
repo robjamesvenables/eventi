@@ -166,14 +166,15 @@ button.t:active{transform:scale(.97)}
 .sc .bot.err b{color:#B42318}
 @media (max-width:370px){.call .lg{display:none}}
 @media (prefers-reduced-motion:reduce){.tgt s{animation:none;top:48%}}
-.sv{margin:-16px 14px 6px;position:relative;z-index:3;display:flex;align-items:center;gap:12px;background:#fff;border-radius:18px;padding:12px 12px 12px 14px;box-shadow:0 10px 28px rgba(0,0,0,.14);cursor:pointer;width:calc(100% - 28px);border:0;font:inherit;text-align:left;color:var(--ink)}
-.sv .si{width:44px;height:44px;border-radius:12px;flex:none;object-fit:cover;background:var(--top)}
-.sv b{display:block;font-size:15px;font-weight:800}.sv span{display:block;font-size:12.5px;color:var(--mute);margin-top:1px}
-.sv i{margin-left:auto;flex:none;background:var(--top);color:#fff;font-style:normal;font-weight:800;font-size:13px;padding:9px 13px;border-radius:11px}
-.svo{position:fixed;inset:0;z-index:90;background:rgba(0,0,0,.55);display:flex;align-items:flex-end;justify-content:center}
-.svo .bx{background:#fff;width:100%;max-width:440px;border-radius:24px 24px 0 0;padding:22px 22px calc(24px + env(safe-area-inset-bottom));color:var(--ink)}
-.svo h3{font-size:20px;font-weight:900}.svo ol{margin:14px 0 0 20px;font-size:15px;line-height:1.6}.svo ol b{font-weight:800}
-.svo .ok{margin-top:18px;width:100%;border:0;border-radius:14px;padding:14px;font:inherit;font-weight:800;font-size:15px;background:var(--top);color:#fff}
+#inpop{position:fixed;left:12px;right:12px;top:calc(12px + env(safe-area-inset-top));max-width:440px;margin:0 auto;background:#fff;border-radius:20px;box-shadow:0 14px 40px rgba(15,30,46,.28);padding:14px;transform:translateY(calc(-100% - 40px));transition:transform .45s cubic-bezier(.2,.9,.3,1.15);z-index:2147483001;color:#0F1E2E;font-family:inherit}
+#inpop.on{transform:none}
+#inpop .in-row{display:flex;gap:12px;align-items:center}
+#inpop img{width:52px;height:52px;border-radius:13px;flex:none;object-fit:cover;background:var(--top)}
+#inpop .in-row>div>b{display:block;font-size:16px;font-weight:900}#inpop .in-row>div>span{display:block;font-size:13.5px;color:#64748B;margin-top:2px;line-height:1.35}#inpop span b{color:#0F1E2E}
+#inpop .in-btns{display:flex;gap:10px;margin-top:12px}
+#inpop .in-btns button{flex:1;border:0;border-radius:13px;padding:13px;font-family:inherit;font-weight:900;font-size:15px;cursor:pointer}
+#inpop .in-not{background:#F1F5F9;color:#0F1E2E}#inpop .in-yes{background:var(--top);color:#fff;display:flex;gap:7px;justify-content:center;align-items:center}
+@media (prefers-reduced-motion:reduce){#inpop{transition:none}}
 </style></head><body>
 <div id="root"><div class="msg">Loading…</div></div>
 <div class="dt" id="dt"></div>
@@ -329,18 +330,28 @@ button.t:active{transform:scale(.97)}
       } catch (e) {}
       var standalone = (window.matchMedia && matchMedia('(display-mode: standalone)').matches) || navigator.standalone;
       if (standalone || matchMedia('(min-width:1000px)').matches) return;
-      var top = root.querySelector('.top'); if (!top) return;
-      var b = document.createElement('button'); b.className = 'sv';
-      b.innerHTML = '<img class="si" src="' + esc(d.icon ? d.icon + '-192.png' : (d.logo || '')) + '" alt=""><div><b>Save the guide to your phone</b><span>Opens like an app. Nothing to download.</span></div><i>Save</i>';
-      top.insertAdjacentElement('afterend', b);
-      var ios = /iPhone|iPad|iPod/i.test(navigator.userAgent), share = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px"><path d="M12 15V3M8 7l4-4 4 4"/><path d="M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7"/></svg>';
-      b.onclick = function(){
-        if (window.__gInstall) { var p = window.__gInstall; window.__gInstall = null; p.prompt(); (p.userChoice || Promise.resolve()).then(function(r){ if (r && r.outcome === 'accepted') b.remove(); }); return; }
-        var o = document.createElement('div'); o.className = 'svo';
-        o.innerHTML = '<div class="bx"><h3>Save to your phone</h3><ol>' + (ios ? '<li>Tap <b>Share</b> ' + share + ' at the bottom of Safari</li><li>Scroll down, tap <b>Add to Home Screen</b></li><li>Tap <b>Add</b></li>' : '<li>Tap the <b>⋮</b> menu at the top right</li><li>Tap <b>Add to Home screen</b> or <b>Install app</b></li><li>Tap <b>Install</b></li>') + '</ol><button class="ok">Got it</button></div>';
-        o.onclick = function(e){ if (e.target === o || e.target.className === 'ok') o.remove(); };
-        document.body.appendChild(o);
+      var ios = /iPhone|iPad|iPod/i.test(navigator.userAgent), key = 'mvgin:' + slug, st = { n: 0, t: 0 }, tryIt = /[?&]tryin=1/.test(location.search);
+      try { st = JSON.parse(localStorage.getItem(key) || '{"n":0,"t":0}') || st; } catch (e) {}
+      if (!tryIt && (st.n >= 3 || (st.n > 0 && Date.now() - (st.t || 0) < 3 * 864e5))) return;
+      var save = function(n){ try { localStorage.setItem(key, JSON.stringify({ n: n, t: Date.now() })); } catch (e) {} };
+      var waited = 0, tryShow = function(){   // Android's offer can arrive a few seconds late
+        if (!ios && !window.__gInstall) { waited += 500; if (waited < 6000) return setTimeout(tryShow, 500); return; }   // no offer = already on this phone
+        if (document.getElementById('inpop')) return;
+        var o = document.createElement('div'); o.id = 'inpop'; o.setAttribute('role', 'dialog');
+        o.innerHTML = '<div class="in-row"><img src="' + esc(d.icon ? d.icon + '-192.png' : (d.logo || '')) + '" alt=""><div><b id="in-t">Add the guide to your phone?</b><span id="in-s">Everything for your stay, one tap away. No app store needed.</span></div></div>' +
+          '<div class="in-btns" id="in-b"><button type="button" class="in-not">Not now</button><button type="button" class="in-yes"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><rect x="3" y="3" width="18" height="18" rx="4"/><path d="M12 8v8M8 12h8"/></svg>Add</button></div>';
+        document.body.appendChild(o); requestAnimationFrame(function(){ requestAnimationFrame(function(){ o.classList.add('on'); }); });
+        var shut = function(){ o.classList.remove('on'); setTimeout(function(){ o.remove(); }, 450); };
+        o.querySelector('.in-not').onclick = function(){ save(st.n + 1); shut(); };
+        o.querySelector('.in-yes').onclick = function(){
+          if (window.__gInstall) { var ev = window.__gInstall; window.__gInstall = null; ev.prompt(); (ev.userChoice || Promise.resolve({})).then(function(c){ save(c && c.outcome === 'accepted' ? 3 : st.n + 1); }); shut(); return; }
+          save(st.n + 1);
+          document.getElementById('in-t').textContent = 'Add it in 2 taps';
+          document.getElementById('in-s').innerHTML = 'Tap <b>Share</b> at the bottom of Safari, then <b>Add to Home Screen</b>.';
+          document.getElementById('in-b').style.display = 'none'; setTimeout(shut, 7000);
+        };
       };
+      setTimeout(tryShow, 2500);
     })();
     // Laptop / desktop: the guide in the middle over a blurred hotel photo, the hotel on the left, a QR to open it on a phone on the right
     if (!document.getElementById('dk-bg')) { var bgi = ((d.tiles || [])[0] || (d.open || [])[0] || {}).img || '';

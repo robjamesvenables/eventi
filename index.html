@@ -7,14 +7,14 @@
 <link rel="icon" type="image/png" href="/favicon-v6.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<!-- display=block: wait briefly for Inter instead of flashing the device font first -->
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=block" rel="stylesheet">
+<!-- display=swap: never hide text while the font loads (speed, 21 Nov) -->
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@twemoji/api@17.0.3/dist/twemoji.min.js" integrity="sha384-Y5xukbGJwykbHHkTbLJykYLcBPFxrwipTbEh0puxhkz9CZ90raTPGe2Ks4vCxsYU" crossorigin="anonymous"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.9.3/html2pdf.bundle.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-<script>if(typeof Chart !== 'undefined') Chart.defaults.font.family = "'Inter', sans-serif";</script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.9.3/html2pdf.bundle.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+<script>addEventListener('DOMContentLoaded', function(){ if(typeof Chart !== 'undefined') Chart.defaults.font.family = "'Inter', sans-serif"; });   // PDF/chart/QR libraries load in the background (defer) so they never hold up opening the app</script>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 <link rel="manifest" href="/manifest.json?v=6">
 <meta name="theme-color" content="#0F1E2E">
 <link rel="apple-touch-icon" href="/apple-touch-icon-v6.png">
@@ -7805,7 +7805,7 @@ function authEnterApp(){
     if(myProfile && qp.get('next') === 'chat'){ location.replace('/chat/'); return; }
     // Direct links for demos: /?go=members opens Members Club, /?go=design opens the guest page editor
     if(myProfile && /^(members|design|frontdesk)$/.test(qp.get('go') || '')){
-      const want = qp.get('go');
+      const want = qp.get('go'); window.__mvGo = want;
       history.replaceState(history.state, '', location.pathname + location.hash);
       const go2 = (n) => { const ok = typeof nav === 'function' && typeof msUnlocked === 'function' && msUnlocked(); if(ok){ nav(want === 'frontdesk' ? 'frontdesk' : 'membership'); if(want === 'design' && typeof gpOpen === 'function') setTimeout(() => gpOpen(), 120); } else if(n < 40) setTimeout(() => go2(n + 1), 250); };
       setTimeout(() => go2(0), 300);
@@ -7821,6 +7821,7 @@ function authEnterApp(){
   setTimeout(() => { try{ msOpenFromUrl(); }catch(e){} }, 1000);
   if(!appIsDemoCompany()) appClearDemoState();
   if(myProfile){ try{ accountApi({ action:'seen' }); }catch(e){} }
+  try{ if(myProfile && (appPlan === 'membership' || /^(members|frontdesk)$/.test(window.__mvGo || ''))){ msLoad(); if(typeof gpLoad === 'function') gpLoad(); } }catch(e){}   // members first when that's where they're going
   appLoadAllDataOnce((myProfile && myProfile.user_id) || 'demo');
   const early = document.getElementById('early-app-style'); if(early) early.remove();
   document.getElementById('login').style.display='none';

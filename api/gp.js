@@ -283,6 +283,14 @@ module.exports = async (req, res) => {
         start_url: '/k/' + code + '?home=1', scope: '/k/' + code, display: 'standalone',
         background_color: col, theme_color: col, icons: icons || [{ src: icon, sizes: '192x192', type: /\.png$/.test(icon) ? 'image/png' : undefined, purpose: 'any' }, { src: icon, sizes: '512x512', type: /\.png$/.test(icon) ? 'image/png' : undefined, purpose: 'any' }] }));
     }
+    if (a === 'gmf') {   // the guest guide saved to a phone: its own app (hotel logo, "Guest Guide"), opens straight on the guide
+      const slug = String((req.query && req.query.g) || '').toLowerCase().replace(/[^a-z0-9-]/g, '').slice(0, 30), g = require('./_guides').get(slug);
+      if (!g) return res.status(404).end();
+      const col = /^#[0-9a-f]{6}$/i.test(String((g.theme || {}).top || '')) ? g.theme.top : '#7A1F1F';
+      const icons = g.icon ? [{ src: g.icon + '-192.png', sizes: '192x192', type: 'image/png', purpose: 'any' }, { src: g.icon + '-512.png', sizes: '512x512', type: 'image/png', purpose: 'any' }] : [{ src: '/icon-192-v6.png', sizes: '192x192', type: 'image/png' }, { src: '/icon-512-v6.png', sizes: '512x512', type: 'image/png' }];
+      res.setHeader('Content-Type', 'application/manifest+json'); res.setHeader('Cache-Control', 'public, max-age=300');
+      return res.status(200).send(JSON.stringify({ id: '/g/' + slug, name: String(g.brand || 'Hotel').slice(0, 40) + ' Guest Guide', short_name: 'Guest Guide', start_url: '/g/' + slug + '?home=1', scope: '/g/' + slug, display: 'standalone', background_color: col, theme_color: col, icons }));
+    }
     if (a === 'icon') {   // the venue's own logo as the app icon on the guest's home screen (Mavis icon if they have none)
       const code = String((req.query && req.query.c) || '').toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 16);
       const back = () => { res.setHeader('Cache-Control', 'public, max-age=3600'); res.writeHead(302, { Location: '/icon-512-v6.png' }); res.end(); };

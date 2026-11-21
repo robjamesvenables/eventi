@@ -166,6 +166,14 @@ button.t:active{transform:scale(.97)}
 .sc .bot.err b{color:#B42318}
 @media (max-width:370px){.call .lg{display:none}}
 @media (prefers-reduced-motion:reduce){.tgt s{animation:none;top:48%}}
+.sv{margin:-16px 14px 6px;position:relative;z-index:3;display:flex;align-items:center;gap:12px;background:#fff;border-radius:18px;padding:12px 12px 12px 14px;box-shadow:0 10px 28px rgba(0,0,0,.14);cursor:pointer;width:calc(100% - 28px);border:0;font:inherit;text-align:left;color:var(--ink)}
+.sv .si{width:44px;height:44px;border-radius:12px;flex:none;object-fit:cover;background:var(--top)}
+.sv b{display:block;font-size:15px;font-weight:800}.sv span{display:block;font-size:12.5px;color:var(--mute);margin-top:1px}
+.sv i{margin-left:auto;flex:none;background:var(--top);color:#fff;font-style:normal;font-weight:800;font-size:13px;padding:9px 13px;border-radius:11px}
+.svo{position:fixed;inset:0;z-index:90;background:rgba(0,0,0,.55);display:flex;align-items:flex-end;justify-content:center}
+.svo .bx{background:#fff;width:100%;max-width:440px;border-radius:24px 24px 0 0;padding:22px 22px calc(24px + env(safe-area-inset-bottom));color:var(--ink)}
+.svo h3{font-size:20px;font-weight:900}.svo ol{margin:14px 0 0 20px;font-size:15px;line-height:1.6}.svo ol b{font-weight:800}
+.svo .ok{margin-top:18px;width:100%;border:0;border-radius:14px;padding:14px;font:inherit;font-weight:800;font-size:15px;background:var(--top);color:#fff}
 </style></head><body>
 <div id="root"><div class="msg">Loading…</div></div>
 <div class="dt" id="dt"></div>
@@ -177,6 +185,7 @@ button.t:active{transform:scale(.97)}
 </div>
 <script>
 (function(){
+  window.addEventListener('beforeinstallprompt', function(e){ e.preventDefault(); window.__gInstall = e; });
   var slug = ((/^\/g\//i.test(location.pathname) ? location.pathname.split('/')[2] : (/[?&]g=([^&]+)/.exec(location.search) || [])[1]) || '').toLowerCase().replace(/[^a-z0-9-]/g, '');
   var stay = /[?&]stay=1/.test(location.search);
   var SK = 'mvg:' + slug;
@@ -307,6 +316,32 @@ button.t:active{transform:scale(.97)}
     // Floating WhatsApp to reception, bottom right, on every guide
     if (d.wa) h += '<a class="fwa" href="' + esc(waLink(d.wa, 'Hi! I\'m a guest at ' + d.brand + ' and I need some help, please.')) + '" target="_blank" rel="noopener" aria-label="WhatsApp reception"><svg width="30" height="30" viewBox="0 0 24 24" fill="#fff"><path d="M17.5 14.4c-.3-.1-1.8-.9-2-1s-.5-.1-.7.1-.8 1-1 1.2-.4.2-.7.1a8.2 8.2 0 0 1-4-3.5c-.3-.5.3-.5.9-1.6.1-.2 0-.4 0-.5l-.9-2.2c-.2-.6-.5-.5-.7-.5h-.6a1.2 1.2 0 0 0-.8.4 3.5 3.5 0 0 0-1.1 2.6 6 6 0 0 0 1.3 3.2 13.8 13.8 0 0 0 5.3 4.7c2 .8 2.7.9 3.7.7a3.1 3.1 0 0 0 2.1-1.4 2.5 2.5 0 0 0 .2-1.5c-.1-.1-.3-.2-.6-.3zM12 21.8a9.8 9.8 0 0 1-5-1.4l-.4-.2-3.7 1 1-3.6-.2-.4A9.8 9.8 0 1 1 12 21.8zm8.4-18.2A11.8 11.8 0 0 0 1.8 17.8L.1 24l6.4-1.7A11.8 11.8 0 0 0 12 23.8 11.8 11.8 0 0 0 20.4 3.6z"/></svg></a>';
     root.innerHTML = h;
+    // Save to phone: the guide as its own app on the home screen (their logo, opens straight on the guide)
+    (function(){
+      try {
+        var hd = document.head, mk = function(t, a){ var e = document.createElement(t); for (var k in a) e.setAttribute(k, a[k]); hd.appendChild(e); return e; };
+        var ic = d.icon ? d.icon + '-192.png' : (d.logo || '/icon-192-v6.png');
+        mk('link', { rel: 'manifest', href: '/api/gp?a=gmf&g=' + encodeURIComponent(slug) });
+        mk('link', { rel: 'apple-touch-icon', href: ic });
+        mk('meta', { name: 'apple-mobile-web-app-capable', content: 'yes' }); mk('meta', { name: 'mobile-web-app-capable', content: 'yes' });
+        mk('meta', { name: 'apple-mobile-web-app-title', content: 'Guest Guide' });
+        if ('serviceWorker' in navigator) navigator.serviceWorker.register('/k-sw.js', { scope: '/g/' }).catch(function(){});
+      } catch (e) {}
+      var standalone = (window.matchMedia && matchMedia('(display-mode: standalone)').matches) || navigator.standalone;
+      if (standalone || matchMedia('(min-width:1000px)').matches) return;
+      var top = root.querySelector('.top'); if (!top) return;
+      var b = document.createElement('button'); b.className = 'sv';
+      b.innerHTML = '<img class="si" src="' + esc(d.icon ? d.icon + '-192.png' : (d.logo || '')) + '" alt=""><div><b>Save the guide to your phone</b><span>Opens like an app. Nothing to download.</span></div><i>Save</i>';
+      top.insertAdjacentElement('afterend', b);
+      var ios = /iPhone|iPad|iPod/i.test(navigator.userAgent), share = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px"><path d="M12 15V3M8 7l4-4 4 4"/><path d="M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7"/></svg>';
+      b.onclick = function(){
+        if (window.__gInstall) { var p = window.__gInstall; window.__gInstall = null; p.prompt(); (p.userChoice || Promise.resolve()).then(function(r){ if (r && r.outcome === 'accepted') b.remove(); }); return; }
+        var o = document.createElement('div'); o.className = 'svo';
+        o.innerHTML = '<div class="bx"><h3>Save to your phone</h3><ol>' + (ios ? '<li>Tap <b>Share</b> ' + share + ' at the bottom of Safari</li><li>Scroll down, tap <b>Add to Home Screen</b></li><li>Tap <b>Add</b></li>' : '<li>Tap the <b>⋮</b> menu at the top right</li><li>Tap <b>Add to Home screen</b> or <b>Install app</b></li><li>Tap <b>Install</b></li>') + '</ol><button class="ok">Got it</button></div>';
+        o.onclick = function(e){ if (e.target === o || e.target.className === 'ok') o.remove(); };
+        document.body.appendChild(o);
+      };
+    })();
     // Laptop / desktop: the guide in the middle over a blurred hotel photo, the hotel on the left, a QR to open it on a phone on the right
     if (!document.getElementById('dk-bg')) { var bgi = ((d.tiles || [])[0] || (d.open || [])[0] || {}).img || '';
       var bg = document.createElement('div'); bg.id = 'dk-bg'; if (/^\/[\w\/.-]+\.(jpe?g|png|webp)$/i.test(bgi)) bg.innerHTML = '<i style="background-image:url(\'' + bgi + '\')"></i>';

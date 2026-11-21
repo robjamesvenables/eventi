@@ -2742,7 +2742,8 @@ div.mki-row{cursor:default}.mki-row.done{opacity:.6}
 #ms-flow .mf-dots{display:flex;gap:6px;flex:1;justify-content:center}#ms-flow .mf-dots b{width:24px;height:6px;border-radius:3px;background:currentColor;opacity:.22}#ms-flow .mf-dots b.on{opacity:1}
 #ms-flow .mf-x{width:42px;height:42px;border-radius:50%;border:0;background:rgba(255,255,255,.25);color:inherit;display:grid;place-items:center;cursor:pointer;flex:none}
 #ms-flow .mf-pl{max-width:42%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;opacity:.9}
-#ms-flow .mf-mid{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:10px 24px;gap:14px;width:100%;max-width:460px;margin:0 auto;overflow-y:auto}
+#ms-flow .mf-mid{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;min-height:0;text-align:center;padding:10px 24px;gap:14px;width:100%;max-width:460px;margin:0 auto;overflow-y:auto}
+#ms-flow .mf-mid>*{flex-shrink:0}#ms-flow .mf-mid>:first-child{margin-top:auto}#ms-flow .mf-mid>:last-child{margin-bottom:auto}   /* centred when it fits, scrolls from the top when it doesn't */
 #ms-flow .mf-big{font-size:clamp(32px,10vw,46px);font-weight:900;line-height:1.05;letter-spacing:-1px;overflow-wrap:anywhere}
 #ms-flow .mf-sub{font-size:18px;font-weight:600;line-height:1.35;opacity:.88}
 #ms-flow .mf-pill{background:rgba(255,255,255,.24);padding:8px 16px;border-radius:99px;font-weight:800;font-size:14px;letter-spacing:.6px}
@@ -23213,7 +23214,7 @@ window.msFlow = async function(id, r){
   if(m.allergy || m.notes) steps.push('know');
   if(rw) steps.push('reward');
   if(msHasSpend() && !((MS.visits[m.id] || []).find(x => x.venue === venue && x.visit_date === msToday()) || {}).spend) steps.push('bill');
-  if(steps.length > 1) steps.push('done');   // after perks/deals/bill: end on a clear 'checked in' screen (Robbie 21 Nov)
+  if(r && r.already){ steps.length = 0; steps.push('again'); }   // scanned again the same day: one screen - already in, their perks + today's deals (Robbie 21 Nov)
   let o = document.getElementById('ms-flow');
   if(!o){ o = document.createElement('div'); o.id = 'ms-flow'; document.body.appendChild(o); }
   const ic = { x:'<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>' };
@@ -23246,6 +23247,14 @@ window.msFlow = async function(id, r){
     } else if(k === 'reward'){
       cls = 'r';
       h = top(first) + `<div class="mf-mid"><div style="font-size:84px;line-height:1">🎁</div><div class="mf-big">Reward time!</div><div class="mf-sub">${msEsc(nth(rw.target))} visit. Give ${msEsc(first)}:</div><div class="mf-card"><i>🎉</i>${msEsc(rwText)}</div></div>`;
+    } else if(k === 'again'){
+      cls = 'g';
+      h = top(venue) + `<div class="mf-mid"><div class="mf-tick" style="width:84px;height:84px"><svg width="62%" height="62%" viewBox="0 0 24 24" fill="none" stroke="#10B981" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5l5 5L20 6.5"/></svg></div>
+        <div class="mf-big">${msEsc(first)}</div><div class="mf-pill">${m.tier === 'vip' ? 'VIP' : 'MEMBER'} · ALREADY IN TODAY</div>
+        ${perks.length ? `<div class="mf-k" style="margin-top:16px">THEIR PERKS</div>${perks.map(p => `<div class="mf-card"><i>⭐</i>${msEsc(p)}</div>`).join('')}` : ''}
+        ${deals.length ? `<div class="mf-k" style="margin-top:14px">MEMBER DEALS TODAY</div>${msTodayCards(deals)}` : ''}
+        ${m.allergy ? `<div class="mf-card alg"><i>⚠️</i><span>Allergy: ${msEsc(m.allergy)}</span></div>` : ''}
+        <button class="mf-prof" data-a="prof">Full profile</button></div>`;
     } else if(k === 'done'){
       cls = 'g';
       h = top(venue) + `<div class="mf-mid"><div class="mf-tick"><svg width="62%" height="62%" viewBox="0 0 24 24" fill="none" stroke="#10B981" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5l5 5L20 6.5"/></svg></div>
@@ -23256,9 +23265,9 @@ window.msFlow = async function(id, r){
         <div class="mf-amt"><small>Rp</small><span id="mf-amt">${amt ? Number(amt).toLocaleString('id-ID') : ''}</span></div>
         <div class="mf-keys">${['1','2','3','4','5','6','7','8','9','000','0','⌫'].map(x => `<button data-k="${x}">${x}</button>`).join('')}</div></div>`;
     }
-    const btn = k === 'done' ? 'Done' : k === 'in' ? 'Next →' : k === 'perks' ? 'Next →' : k === 'today' ? 'Next →' : k === 'know' ? 'Got it →' : k === 'reward' ? 'Given ✓' : 'Finish';
+    const btn = k === 'done' || k === 'again' ? 'Done' : k === 'in' ? 'Next →' : k === 'perks' ? 'Next →' : k === 'today' ? 'Next →' : k === 'know' ? 'Got it →' : k === 'reward' ? 'Given ✓' : 'Finish';
     o.className = cls;
-    o.innerHTML = h + `<button class="mf-go" data-a="go">${last && k !== 'bill' && k !== 'reward' && k !== 'done' ? 'Finish' : btn}</button>${k === 'bill' ? '<button class="mf-skip" data-a="skip">Skip</button>' : ''}`;
+    o.innerHTML = h + `<button class="mf-go" data-a="go">${last && k !== 'bill' && k !== 'reward' && k !== 'done' && k !== 'again' ? 'Finish' : btn}</button>${k === 'bill' ? '<button class="mf-skip" data-a="skip">Skip</button>' : ''}`;
   };
   o.onclick = async e => {
     const b = e.target.closest('button'); if(!b) return;

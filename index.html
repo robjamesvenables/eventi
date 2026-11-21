@@ -10,11 +10,11 @@
 <!-- display=swap: never hide text while the font loads (speed, 21 Nov) -->
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@twemoji/api@17.0.3/dist/twemoji.min.js" integrity="sha384-Y5xukbGJwykbHHkTbLJykYLcBPFxrwipTbEh0puxhkz9CZ90raTPGe2Ks4vCxsYU" crossorigin="anonymous"></script>
-<script defer src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.9.3/html2pdf.bundle.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-<script defer src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-<script defer src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-<script>addEventListener('DOMContentLoaded', function(){ if(typeof Chart !== 'undefined') Chart.defaults.font.family = "'Inter', sans-serif"; });   // PDF/chart/QR libraries load in the background (defer) so they never hold up opening the app</script>
-<script defer src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+<script async src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.9.3/html2pdf.bundle.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+<script async src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+<script async src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js" onload="try{Chart.defaults.font.family='\'Inter\', sans-serif'}catch(e){}" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+<!-- PDF/chart/QR libraries load in the background (async) so they never hold up opening the app (speed, 21 Nov) -->
+<script async src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 <link rel="manifest" href="/manifest.json?v=6">
 <meta name="theme-color" content="#0F1E2E">
 <link rel="apple-touch-icon" href="/apple-touch-icon-v6.png">
@@ -7867,7 +7867,7 @@ let appPlan = 'full';
 const MEM_PAGES = ['membership', 'frontdesk', 'admin', 'account', 'profile'];
 async function appLoadPlan(){
   appPlan = 'full';
-  try{ if(myCompany && myCompany.id){ const { data, error } = await sb.from('companies').select('plan').eq('id', myCompany.id).limit(1); if(!error && data && data[0] && data[0].plan === 'membership') appPlan = 'membership'; } }catch(e){}
+  try{ if(myCompany && typeof myCompany.plan !== 'undefined'){ if(myCompany.plan === 'membership') appPlan = 'membership'; } else if(myCompany && myCompany.id){ const { data, error } = await sb.from('companies').select('plan').eq('id', myCompany.id).limit(1); if(!error && data && data[0] && data[0].plan === 'membership') appPlan = 'membership'; } }catch(e){}
   try{ if(/[?&]plan=membership\b/.test(location.search)) appPlan = 'membership'; }catch(e){}   // look only: see the membership-only app (open app.getmavis.co/?plan=membership)
   document.body.classList.toggle('mv-mem', appPlan === 'membership');
 }
@@ -7877,12 +7877,11 @@ async function authApplyProfile(profile, company){
   }
   try { mvClean(profile, 'profiles', ''); if(company) mvClean(company, 'companies', ''); } catch(e){}
   myProfile = profile; myCompany = company || myCompany;
-  await demoDress();
-  await appLoadPlan();
+  await Promise.all([demoDress(), appLoadPlan()]);
   setCurrentUserName(profile.first_name);
   try{ accountApplyAvatar(); }catch(e){}
   authApplyRoleVisibility();
-  try{ await peopleLoadFromSupabase(); }catch(e){ console.warn(e); }
+  peopleLoadFromSupabase().catch(e => console.warn(e));   // the team list fills in on its own - opening the app no longer waits for it
 }
 // Light role check for now: only people whose role has Admin Console switched on see it.
 // Company box: the name can be changed by a Super Admin; the Company ID is permanent.
@@ -8169,19 +8168,20 @@ window.authFinishSetup = async function(token, kind){
 };
 
 // ---- On page load: setup link, saved session, or sign-in screen ----
-window.addEventListener('load', async () => {
+const mvBoot = async () => {   // starts as soon as the page is read - no longer waits for every picture, font and library (speed, 21 Nov)
   const setupToken = new URLSearchParams(location.search).get('setup');
+  const sessP = sb.auth.getSession().catch(() => ({ data:null }));   // ask for the saved login at the same time as the setup check
   const ready = await authCheckReady();
   if(setupToken && ready){ authRunSetup(setupToken); return; }
   if(ready){
     try{
-      const { data } = await sb.auth.getSession();
+      const { data } = await sessP;
       const session = data && data.session;
       if(session){
         const { data: rows } = await sb.from('profiles').select('*').eq('user_id', session.user.id).limit(1);
         const prof = rows && rows[0];
         if(prof && prof.active){
-          const { data: cos } = await sb.from('companies').select('id,code,name,logo,departments').eq('id', prof.company_id).limit(1);
+          const { data: cos } = await sb.from('companies').select('id,code,name,logo,departments,plan').eq('id', prof.company_id).limit(1);
           await authApplyProfile({ ...prof, has_login:true }, cos && cos[0]);
           authEnterApp();
           // Still on an old 6-digit PIN (from before Nov 2026)? Ask for a password now.
@@ -8199,7 +8199,8 @@ window.addEventListener('load', async () => {
     const savedEmail = localStorage.getItem('mavis_logged_in_email');
     if(savedEmail){ setCurrentUserFromEmail(savedEmail); authEnterApp(); }
   }catch(err){}
-});
+};
+if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', mvBoot); else mvBoot();
 
 function toggleProfileMenu(e){
   e.stopPropagation();

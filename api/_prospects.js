@@ -73,8 +73,8 @@ P.trans = {
    // Mavis Club network demo: the other venues this guest belongs to (shown only when switched on)
   guide: 'trans',   // its guest guide (/g/trans): Hotel guide button on the member page
   brand: 'The Trans Resort Bali', logo: '/demo-guest/p-trans-logo.png', icon: '/demo-guest/p-trans-icon', first: 'Alexander', tier: 'member', visits: 6, since: 2025, favourite: 'The 18th',   // icon: home-screen app icon (-192.png and -512.png)
-  perks: ['Welcome drink at The 18th Rooftop', 'Late check-out until 2pm, when available', '15% off at the spa', 'Free kids club afternoons'],
-  perkIcons: ['cocktail', 'key', 'leaf', 'smile'],
+  perks: ['15% off food and drinks', '20% off spa treatments', '10% off in the shop', "Members' happy hour, 5-7pm, Monday to Friday", 'Priority booking and the best tables', 'Late check-out or early check-in, when available', 'Free kids club entry'],
+  perkIcons: ['pct', 'leaf', 'bag', 'cocktail', 'star', 'key', 'smile'],   // same as Surabaya minus the Sky Beach Club sunbeds (Robbie 22 Nov)
   reward: { target: 10, text: 'One night in a pool villa' },
   venues: ['The 18th Rooftop Bar', 'The Restaurant', 'The Lobby Lounge'].map(name => ({ name, ...({ 'The 18th Rooftop Bar': { opens: '17:00', closes: '23:00' }, 'The Restaurant': { opens: '06:30', closes: '23:00' }, 'The Lobby Lounge': { opens: '11:00', closes: '19:00' } }[name] || {}), area: 'Seminyak', map: 'https://www.google.com/maps/dir/?api=1&destination=The+Trans+Resort+Bali&destination_place_id=ChIJSdIXcT1H0i0R0vTqmwjznss', review: 'https://search.google.com/local/writereview?placeid=ChIJSdIXcT1H0i0R0vTqmwjznss' })).concat([{ name: 'The Trans Luxury Hotel Surabaya', area: 'Surabaya', map: 'https://www.google.com/maps/search/?api=1&query=The+Trans+Luxury+Hotel+Surabaya+Jl+Ahmad+Yani+260' }]),
   // Bottom bar: Book = rooms + each outlet (no outlet booking details yet, so they all call reception); Contact = the hotel
@@ -138,8 +138,8 @@ const sb3 = n => '/demo-guest/p-sby2-' + n + '.jpg';   // the hotel's own Instag
 const sb4 = n => '/demo-guest/p-sby3-' + n + '.jpg';   // photos from the hotel's website (19 Nov)
 P.transsby = {
   brand: 'The Trans Luxury Hotel Surabaya', logo: '/demo-guest/p-sby-logo-w.png', icon: '/demo-guest/p-sby-icon', first: 'Alexander', tier: 'member', visits: 6, since: 2025, favourite: '28th Sky Beach Club',
-  perks: ['Welcome drink at the 28th Sky Beach Club', 'Late check-out until 2pm, when available', '15% off at the spa', 'Free Kids Club afternoons'],
-  perkIcons: ['cocktail', 'key', 'leaf', 'smile'],
+  perks: ['15% off food and drinks', '20% off spa treatments', '10% off in the shop', "Members' happy hour, 5-7pm, Monday to Friday", 'Priority booking and the best tables', 'No minimum spend on Sky Beach Club sunbeds', 'Late check-out or early check-in, when available', 'Free Kids Club entry'],
+  perkIcons: ['pct', 'leaf', 'bag', 'cocktail', 'star', 'sun', 'key', 'smile'],   // Robbie 22 Nov: perks that work at the bill or that guests ask for - no welcome drink / birthday
   reward: { target: 10, text: 'One night in the Celebrity Suite' },
   venues: ['28th Sky Beach Club', 'The 27th Sky Lounge & Bistro', 'Grand Restaurant', 'The Lounge', 'The Spa', 'Wet Relaxation Areas', 'Fitness & Movement Zone', 'Beauty Salon', 'Kids Club'].map(name => ({ name, ...({ '28th Sky Beach Club': { opens: '12:00', closes: '00:00' }, 'The 27th Sky Lounge & Bistro': { opens: '12:00', closes: '00:00' }, 'The Spa': { opens: '10:00', closes: '22:00' }, 'Wet Relaxation Areas': { opens: '06:00', closes: '22:00' }, 'Fitness & Movement Zone': { opens: '06:00', closes: '22:00' }, 'Beauty Salon': { opens: '10:00', closes: '22:00' }, 'Kids Club': { opens: '08:00', closes: '20:00' } }[name] || {}), area: 'Surabaya', map: SBY_MAP, review: SBY_MAP })).concat([{ name: 'The Trans Resort Bali', area: 'Bali', map: 'https://www.google.com/maps/dir/?api=1&destination=The+Trans+Resort+Bali&destination_place_id=ChIJSdIXcT1H0i0R0vTqmwjznss' }]),
   stay: SBY_BOOK,

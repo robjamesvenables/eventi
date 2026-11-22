@@ -752,7 +752,7 @@ body.vqopen .vq-dim{opacity:1;pointer-events:auto}body.vqopen .vq-sheet{transfor
   };
   // iPhone save guide (Robbie 22 Nov, testing on Sangsaka first): a big card with numbered steps at the TOP (stays visible above the Share sheet) + an orange arrow at the exact button.
   // Apple has no one-tap install, and links opened inside WhatsApp/Instagram can't be saved at all - so those get "open in Safari" first.
-  window.mvGuideOn = function(code){ return code === 'K8SNGA' || /[?&]tryguide=1/.test(location.search); };
+  window.mvGuideOn = function(code){ return ['K8SNGA', 'T7RNSB', '5NKGZJ', 'T6RSBY'].indexOf(code) >= 0 || /[?&]tryguide=1/.test(location.search); };
   window.mvGuide = function(){
     var u = navigator.userAgent, old = document.getElementById('mvg'); if (old) old.remove();
     var ver = +((/Version\/(\d+)/.exec(u) || [])[1] || 0);
@@ -1369,7 +1369,8 @@ body.vqopen .vq-dim{opacity:1;pointer-events:auto}body.vqopen .vq-sheet{transfor
         var tryIt = SAMPLES.indexOf(code) >= 0 && code !== 'T7RNSB' && code !== '5NKGZJ' && code !== 'T6RSBY';   // sales demos (not Trans): shows every visit so Robbie can show it off
         if (window.__mvInShown || window.__mvInWait) return;   // once per visit: not again when they go into a place and come back
         var done = function(){ window.__mvInDone = true; };
-        if (embed || standalone || (preview && !tryIt) || (!('vq' in d) && !tryIt) || innerWidth >= 1000) return done();   // 'vq' only comes with real members, never the other sales demos
+        var transReal = code === 'T7RNSB' || code === '5NKGZJ' || code === 'T6RSBY';   // Trans demos act like a real guest: card shows, then back after 3 days, 3 times at most (Robbie 22 Nov)
+        if (embed || standalone || (preview && !tryIt && !transReal) || (!('vq' in d) && !tryIt && !transReal) || innerWidth >= 1000) return done();   // 'vq' only comes with real members, never the other sales demos
         if (window.__mvInShown) return;   // once per visit: not again when they go into a place and come back
         var ios = /iphone|ipad|ipod/i.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
         var key = 'mvin:' + code, st = { n: 0, t: 0 };

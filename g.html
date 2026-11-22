@@ -185,6 +185,24 @@ button.t:active{transform:scale(.97)}
 .svo .bx{background:#fff;width:100%;max-width:440px;border-radius:24px 24px 0 0;padding:22px 22px calc(24px + env(safe-area-inset-bottom));color:#0F1E2E}
 .svo h3{font-size:20px;font-weight:900}.svo ol{margin:14px 0 0 20px;font-size:15px;line-height:1.7}.svo ol b{font-weight:800}.svo .tip{font-size:13px;color:#64748B;margin-top:10px}
 .svo .ok{margin-top:18px;width:100%;border:0;border-radius:14px;padding:14px;font:inherit;font-weight:800;font-size:15px;background:var(--top);color:#fff}
+#mvg{position:fixed;inset:0;z-index:100000;background:rgba(0,0,0,.55)}html.mvg-on .fwa,html.mvg-on #inpop{display:none!important}
+#mvg .mvg-card{pointer-events:auto;position:absolute;left:10px;right:10px;top:calc(12px + env(safe-area-inset-top));background:#fff;color:#111;border-radius:22px;padding:16px 14px 14px;box-shadow:0 0 0 4px #FF6B00,0 12px 40px rgba(0,0,0,.5);font-family:-apple-system,"Helvetica Neue",Arial,sans-serif}
+#mvg .mvg-card.low{top:auto;bottom:calc(16px + env(safe-area-inset-bottom))}
+#mvg .mvg-t{display:block;font-size:21px;font-weight:800;text-align:center;margin:2px 34px 10px}
+#mvg .mvg-x{position:absolute;top:10px;right:10px;width:32px;height:32px;border-radius:50%;border:0;background:#F1F1F4;color:#333;font-size:14px}
+#mvg .mvg-s{display:flex;align-items:center;gap:10px;padding:8px 10px;margin-top:6px;border-radius:14px;background:#F4F4F6;min-height:56px}
+#mvg .mvg-s i{flex:none;width:34px;height:34px;border-radius:50%;background:#FF6B00;color:#fff;font-style:normal;font-weight:900;font-size:19px;display:grid;place-items:center}
+#mvg .mvg-w{flex:1;min-width:0;font-size:17px;font-weight:650;line-height:1.2}#mvg .mvg-w em{display:block;font-style:normal;font-size:13px;color:#888;font-weight:500;margin-top:2px}
+#mvg .mvg-p{flex:none;display:flex;align-items:center}
+#mvg .mvg-dots{width:40px;height:40px;border-radius:50%;background:#F7F3EE;color:#111;box-shadow:0 1px 4px rgba(0,0,0,.25);display:grid;place-items:center}#mvg .mvg-cp{color:#0A84FF;background:#fff}
+#mvg .mvg-row{display:flex;align-items:center;gap:7px;background:#E6E3DF;border-radius:10px;padding:8px 11px;font-size:15.5px;font-weight:500;color:#111;white-space:nowrap}
+#mvg .mvg-add{background:#0A84FF;color:#fff;font-weight:700;border-radius:999px;padding:8px 18px;font-size:16px}
+@media (max-width:360px){#mvg .mvg-row{font-size:14px;padding:7px 8px;gap:5px}#mvg .mvg-w{font-size:16px}}
+#mvg small{display:block;margin-top:8px;font-size:13px;color:#777;text-align:center;line-height:1.35}
+#mvg .mvg-arr{position:absolute;bottom:-8px;display:flex;flex-direction:column;align-items:center;animation:mvgb 1s ease-in-out infinite}#mvg .mvg-here{background:#FF6B00;color:#fff;font-weight:900;font-size:16px;padding:7px 12px;border-radius:999px;margin-bottom:2px;white-space:nowrap;box-shadow:0 4px 14px rgba(0,0,0,.3)}
+#mvg .mvg-arr.bc{left:calc(50% - 45px);width:90px}#mvg .mvg-arr.br{right:22px;width:70px}#mvg .mvg-here{display:flex;flex-direction:column;align-items:center;gap:4px;padding:6px 10px 8px!important;border-radius:16px!important;font-size:14px!important;letter-spacing:.04em}#mvg .mvg-rep{width:32px;height:32px;border-radius:50%;background:#fff;color:#0A84FF;display:grid;place-items:center;box-shadow:0 1px 4px rgba(0,0,0,.25)}#mvg .mvg-rep.dots{color:#111}#mvg .mvg-rep svg{width:20px;height:20px}
+#mvg .mvg-arr.tr{bottom:auto;top:2px;right:30px;width:90px;flex-direction:column-reverse;animation:mvgu 1s ease-in-out infinite}#mvg .mvg-arr.tr svg{transform:rotate(180deg)}#mvg .mvg-arr.tr .mvg-here{margin:2px 0 0}
+@keyframes mvgb{50%{transform:translateY(8px)}}@keyframes mvgu{50%{transform:translateY(-8px)}}
 #inpop{position:fixed;left:12px;right:12px;top:calc(12px + env(safe-area-inset-top));max-width:440px;margin:0 auto;background:#fff;border-radius:20px;box-shadow:0 14px 40px rgba(15,30,46,.28);padding:14px;transform:translateY(calc(-100% - 40px));transition:transform .45s cubic-bezier(.2,.9,.3,1.15);z-index:2147483001;color:#0F1E2E;font-family:inherit}
 #inpop.on{transform:none}
 #inpop .in-row{display:flex;gap:12px;align-items:center}
@@ -207,6 +225,39 @@ button.t:active{transform:scale(.97)}
 (function(){
   window.addEventListener('beforeinstallprompt', function(e){ e.preventDefault(); window.__gInstall = e; });
   // Where "Add to Home Screen" lives in whichever browser the guest is in (iPhone can't install with one tap - Apple). One place for every app page.
+  window.mvGuide = function(){
+    var u = navigator.userAgent, old = document.getElementById('mvg'); if (old) old.remove();
+    var ver = +((/Version\/(\d+)/.exec(u) || [])[1] || 0);
+    var I = function(p, s){ return '<svg width="' + (s || 22) + '" height="' + (s || 22) + '" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round">' + p + '</svg>'; };
+    var SH = I('<path d="M12 15V3M8 7l4-4 4 4"/><path d="M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7"/>'), DOTS = I('<circle cx="5" cy="12" r="1.6" fill="currentColor"/><circle cx="12" cy="12" r="1.6" fill="currentColor"/><circle cx="19" cy="12" r="1.6" fill="currentColor"/>'),
+        CP = I('<circle cx="12" cy="12" r="10"/><path d="m15.5 8.5-2 5-5 2 2-5z" fill="currentColor"/>'), PL = I('<rect x="3" y="3" width="18" height="18" rx="4"/><path d="M12 8v8M8 12h8"/>');
+    var inapp = /WhatsApp|FBAN|FBAV|Instagram|Line\//i.test(u);
+    // pictures of the exact button they'll see on the iPhone, so they match pictures rather than read
+    var P = { dots:'<span class="mvg-dots">' + DOTS + '</span>', cp:'<span class="mvg-dots mvg-cp">' + CP + '</span>', chsh:'<span class="mvg-dots mvg-cp">' + SH + '</span>',
+      share:'<span class="mvg-row">' + I('<path d="M12 15V3M8 7l4-4 4 4"/><path d="M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7"/>', 18) + 'Share</span>',
+      shb:'<span class="mvg-dots mvg-cp">' + SH + '</span>',
+      home:'<span class="mvg-row">' + I('<rect x="3" y="3" width="18" height="18" rx="4"/><path d="M12 8v8M8 12h8"/>', 18) + 'Add to Home Screen</span>',
+      add:'<span class="mvg-add">Add</span>' };
+    var steps, at, note = '';   // each step: [words, small line, picture]; at: where the arrow points - 'br' bottom right, 'bc' bottom centre, 'tr' top right
+    if (inapp) { steps = [['Open in Safari', 'tap this, bottom right', P.cp], ['Tap Save to your phone again', '', '']]; at = 'br'; }
+    else if (/CriOS/.test(u)) { steps = [['Tap Share', 'top right of your screen', P.chsh], ['Tap', '', P.home], ['Tap Add', '', P.add]]; at = 'tr'; }
+    else if (ver >= 26) { steps = [['Tap the dots', 'bottom right of your screen', P.dots], ['Tap Share', '', P.share], ['Tap', '', P.home], ['Tap Add', '', P.add]]; at = 'br'; note = 'Can\'t see Add to Home Screen? Scroll down in that menu.'; }
+    else { steps = [['Tap Share', 'bottom of your screen', P.shb], ['Tap', '', P.home], ['Tap Add', '', P.add]]; at = 'bc'; note = 'Can\'t see Add to Home Screen? Scroll down in that menu.'; }
+    // the button they're looking for, drawn the way it looks on the iPhone: Safari's white ⋯ circle, the blue Share icon, or the compass
+    var here = at === 'br' && ver >= 26 && !inapp ? '<span class="mvg-rep dots">' + DOTS + '</span>' : at === 'br' ? '<span class="mvg-rep">' + CP + '</span>' : '<span class="mvg-rep">' + SH + '</span>';
+    var o = document.createElement('div'); o.id = 'mvg';
+    o.innerHTML = '<div class="mvg-card' + (at === 'tr' ? ' low' : '') + '"><button class="mvg-x" type="button" aria-label="Close">✕</button><b class="mvg-t">' + (inapp ? 'Open it in Safari first' : steps.length + ' taps to save it 👇') + '</b>' +
+      steps.map(function(t, i){ return '<div class="mvg-s"><i>' + (i + 1) + '</i><span class="mvg-w">' + t[0] + (t[1] ? '<em>' + t[1] + '</em>' : '') + '</span>' + (t[2] ? '<span class="mvg-p">' + t[2] + '</span>' : '') + '</div>'; }).join('') + (note ? '<small>' + note + '</small>' : '') +
+      '</div>' +
+      '<div class="mvg-arr ' + at + '"><span class="mvg-here">Tap ' + here + '</span><svg width="56" height="92" viewBox="0 0 56 92"><path d="M28 4v74M8 58l20 24 20-24" fill="none" stroke="#FF6B00" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"/></svg></div>';
+    var de = document.documentElement, ov0 = de.style.overflow;
+    var close = function(){ o.remove(); de.classList.remove('mvg-on'); de.style.overflow = ov0; };
+    o.querySelector('.mvg-x').onclick = close;
+    try { window.scrollTo(0, 0); } catch (e) {}   // back to the top so Safari shows its full bottom bar (it hides the buttons while scrolling)
+    de.classList.add('mvg-on'); de.style.overflow = 'hidden';   // page can't scroll (bar stays big) and the WhatsApp button is hidden so nothing sits between the arrow and Safari's button
+    document.body.appendChild(o);
+    if (/[?&]ua=1/.test(location.search)) { var d = document.createElement('div'); d.style.cssText = 'position:fixed;left:8px;right:8px;top:50%;z-index:100001;background:#000;color:#0f0;font:11px monospace;padding:8px;border-radius:8px;word-break:break-all'; d.textContent = u; o.appendChild(d); }
+  };
   window.mvHS = function(){
     var u = navigator.userAgent, ios = /iPhone|iPad|iPod/i.test(u) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
     var SH = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-3px;margin:0 2px"><path d="M12 15V3M8 7l4-4 4 4"/><path d="M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7"/></svg>';
@@ -385,6 +436,7 @@ button.t:active{transform:scale(.97)}
         ft.parentNode.insertBefore(b, ft);
         b.onclick = function(){
           if (window.__gInstall) { var ev = window.__gInstall; window.__gInstall = null; ev.prompt(); return; }
+          if (/iPhone|iPad|iPod/i.test(navigator.userAgent)) return window.mvGuide();   // iPhone: the picture guide
           var hs = window.mvHS();
           var o = document.createElement('div'); o.className = 'svo';
           o.innerHTML = '<div class="bx"><h3>Save to your phone</h3><ol>' + hs.steps.map(function(x){ return '<li>' + x + '</li>'; }).join('') + '</ol>' + (hs.ios ? '<p class="tip">Opened from WhatsApp? Tap the compass icon first to open it in Safari.</p>' : '') + '<button class="ok" type="button">Got it</button></div>';
@@ -393,7 +445,7 @@ button.t:active{transform:scale(.97)}
         };
       })();
       try { st = JSON.parse(localStorage.getItem(key) || '{"n":0,"t":0}') || st; } catch (e) {}
-      if (!tryIt && (st.n >= 3 || (st.n > 0 && Date.now() - (st.t || 0) < 3 * 864e5))) return;
+      if (!tryIt && (st.n >= 3 || (st.n > 0 && Date.now() - (st.t || 0) < 864e5))) return;   // hotel stays are short: ask again the next day, 3 times at most (Robbie 22 Nov)
       var save = function(n){ try { localStorage.setItem(key, JSON.stringify({ n: n, t: Date.now() })); } catch (e) {} };
       var waited = 0, tryShow = function(){   // Android's offer can arrive a few seconds late
         if (!ios && !window.__gInstall) { waited += 500; if (waited < 6000) return setTimeout(tryShow, 500); return; }   // no offer = already on this phone
@@ -407,6 +459,7 @@ button.t:active{transform:scale(.97)}
         o.querySelector('.in-yes').onclick = function(){
           if (window.__gInstall) { var ev = window.__gInstall; window.__gInstall = null; ev.prompt(); (ev.userChoice || Promise.resolve({})).then(function(c){ save(c && c.outcome === 'accepted' ? 3 : st.n + 1); }); shut(); return; }
           save(st.n + 1);
+          if (ios) { shut(); window.mvGuide(); return; }   // iPhone: the picture guide (same as the members app)
           document.getElementById('in-t').textContent = 'Add it in 2 taps';
           document.getElementById('in-s').innerHTML = window.mvHS().short;
           document.getElementById('in-b').style.display = 'none'; setTimeout(shut, 7000);

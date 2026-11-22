@@ -166,6 +166,13 @@ button.t:active{transform:scale(.97)}
 .sc .bot.err b{color:#B42318}
 @media (max-width:370px){.call .lg{display:none}}
 @media (prefers-reduced-motion:reduce){.tgt s{animation:none;top:48%}}
+.svrow{display:flex;align-items:center;gap:12px;width:calc(100% - 32px);margin:18px 16px 0;background:#fff;border:0;border-radius:16px;padding:13px 14px;font:inherit;text-align:left;color:var(--ink);cursor:pointer;box-shadow:0 1px 3px rgba(0,0,0,.06)}
+.svrow i{width:38px;height:38px;border-radius:11px;background:var(--top);color:#fff;display:grid;place-items:center;flex:none}
+.svrow b{display:block;font-size:15px;font-weight:800}.svrow small{display:block;font-size:12.5px;color:var(--mute);margin-top:1px}
+.svo{position:fixed;inset:0;z-index:2147483002;background:rgba(0,0,0,.55);display:flex;align-items:flex-end;justify-content:center}
+.svo .bx{background:#fff;width:100%;max-width:440px;border-radius:24px 24px 0 0;padding:22px 22px calc(24px + env(safe-area-inset-bottom));color:#0F1E2E}
+.svo h3{font-size:20px;font-weight:900}.svo ol{margin:14px 0 0 20px;font-size:15px;line-height:1.7}.svo ol b{font-weight:800}.svo .tip{font-size:13px;color:#64748B;margin-top:10px}
+.svo .ok{margin-top:18px;width:100%;border:0;border-radius:14px;padding:14px;font:inherit;font-weight:800;font-size:15px;background:var(--top);color:#fff}
 #inpop{position:fixed;left:12px;right:12px;top:calc(12px + env(safe-area-inset-top));max-width:440px;margin:0 auto;background:#fff;border-radius:20px;box-shadow:0 14px 40px rgba(15,30,46,.28);padding:14px;transform:translateY(calc(-100% - 40px));transition:transform .45s cubic-bezier(.2,.9,.3,1.15);z-index:2147483001;color:#0F1E2E;font-family:inherit}
 #inpop.on{transform:none}
 #inpop .in-row{display:flex;gap:12px;align-items:center}
@@ -331,6 +338,22 @@ button.t:active{transform:scale(.97)}
       var standalone = (window.matchMedia && matchMedia('(display-mode: standalone)').matches) || navigator.standalone;
       if (standalone || matchMedia('(min-width:1000px)').matches) return;
       var ios = /iPhone|iPad|iPod/i.test(navigator.userAgent), key = 'mvgin:' + slug, st = { n: 0, t: 0 }, tryIt = /[?&]tryin=1/.test(location.search);
+      // Always-there "Save to your phone" row above Powered by Mavis (same as the members app) - for anyone who missed or closed the pop-up (Robbie 22 Nov)
+      (function(){
+        var ft = root.querySelector('.foot'); if (!ft || document.getElementById('svrow')) return;
+        var b = document.createElement('button'); b.type = 'button'; b.id = 'svrow'; b.className = 'svrow';
+        b.innerHTML = '<i><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="2" width="12" height="20" rx="3"/><path d="M12 7v7M9 11l3 3 3-3"/></svg></i><span><b>Save to your phone</b><small>Opens like an app. No app store needed.</small></span>';
+        ft.parentNode.insertBefore(b, ft);
+        b.onclick = function(){
+          if (window.__gInstall) { var ev = window.__gInstall; window.__gInstall = null; ev.prompt(); return; }
+          var sh = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px"><path d="M12 15V3M8 7l4-4 4 4"/><path d="M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7"/></svg>';
+          var safari = ios && !/CriOS|FxiOS|EdgiOS|FBAN|FBAV|Instagram|Line\//.test(navigator.userAgent);
+          var o = document.createElement('div'); o.className = 'svo';
+          o.innerHTML = '<div class="bx"><h3>Save to your phone</h3><ol>' + (ios ? (safari ? '' : '<li>Open this page in <b>Safari</b> first</li>') + '<li>Tap <b>Share</b> ' + sh + ' at the bottom of Safari</li><li>Scroll down, tap <b>Add to Home Screen</b></li><li>Tap <b>Add</b></li>' : '<li>Tap the <b>⋮</b> menu at the top right</li><li>Tap <b>Add to Home screen</b> or <b>Install app</b></li><li>Tap <b>Install</b></li>') + '</ol>' + (ios ? '<p class="tip">Opened from WhatsApp? Tap the Safari compass icon at the bottom first.</p>' : '') + '<button class="ok" type="button">Got it</button></div>';
+          o.onclick = function(e){ if (e.target === o || e.target.className === 'ok') o.remove(); };
+          document.body.appendChild(o);
+        };
+      })();
       try { st = JSON.parse(localStorage.getItem(key) || '{"n":0,"t":0}') || st; } catch (e) {}
       if (!tryIt && (st.n >= 3 || (st.n > 0 && Date.now() - (st.t || 0) < 3 * 864e5))) return;
       var save = function(n){ try { localStorage.setItem(key, JSON.stringify({ n: n, t: Date.now() })); } catch (e) {} };

@@ -24979,9 +24979,12 @@ function gpPerksHtml(mgr){
     ${mgr ? `<button class="gp-big" onclick="msTiers()">${gpIc(GPI.edit, 16)} Change perks and reward</button>` : '<div class="gp-auto">A manager sets the perks and reward.</div>'}`;
 }
 function gpPlacesHtml(){
-  const vs = (msPage().venues || []).filter(v => v && v.name);
+  const pl = GPE.c.places || {};
+  // A venue ticked "Show under Our other venues" (e.g. a sister hotel) is listed there, not here (Robbie 22 Nov)
+  const seedPl = (typeof demoAs === 'function' && demoAs() && typeof DEMO_SEED !== 'undefined' && DEMO_SEED && DEMO_SEED.content && DEMO_SEED.content.places) || {};
+  const vs = (msPage().venues || []).filter(v => v && v.name && !(pl[v.name.toLowerCase()] || {}).other && !(seedPl[v.name.toLowerCase()] || {}).other);
   if(!vs.length) return '';
-  const pl = GPE.c.places || {}, one = vs.length === 1;
+  const one = vs.length === 1;
   return `<div class="gp-sec" data-go="places"><div class="gp-sh"><div class="n"><b>${one ? 'Your place' : 'Our places'}</b><small>Tap the pencil: photo, hours, WhatsApp, email, Instagram, Google reviews and menus</small></div></div>
     <div class="gp-body">${vs.map(v => { const p = pl[v.name.toLowerCase()] || {}, src = gpSrc(p), area = p.area || v.area || '';
       return `<div class="gp-it">${src ? `<img class="th" src="${gpEsc(src)}" alt="">` : '<div class="th" style="display:flex;align-items:center;justify-content:center;color:#94A3B8">' + gpIc(GPI.cam, 20) + '</div>'}

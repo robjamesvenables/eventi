@@ -333,8 +333,8 @@ const su = n => '/demo-guest/p-sun-' + n + '.jpg';
 const SUN_WA = '62811365563';
 P.sundari = {
   brand: 'Sundari Wellness', logo: '/demo-guest/p-sundari-logo.png', icon: '/demo-guest/p-sundari-icon', first: 'Demian', tier: 'member', visits: 4, since: 2025, favourite: 'Sundari Wellness',
-  perks: ['10% off every treatment', 'A birthday ritual on us', "Members-only treatment of the month", 'First pick of your favourite therapist'],
-  perkIcons: ['leaf', 'cake', 'star', 'heart'],
+  perks: ['15% off every treatment', '10% off spa products to take home', 'Free upgrade from 60 to 90 minutes on weekday massages', '10% off gift vouchers', 'Bring a friend: 15% off their treatment too', '10% off couples treatments'],   // Robbie 22 Nov
+  perkIcons: ['pct', 'bag', 'sparkle', 'gift', 'who', 'heart'],
   reward: { target: 10, text: 'A 60-minute Balinese massage' },
   venues: [{ name: 'Sundari Wellness', area: 'Seminyak', opens: '09:00', closes: '22:00', wa: SUN_WA, phone: '+62 811 365 563', map: 'https://maps.google.com/?q=SUNDARI%20Wellness%2C%20Jalan%20Petitenget%207%2C%20Seminyak%2C%20Bali' },
     { name: 'Suenyo Eco Retreat', area: 'Pandak Gede, Tabanan', wa: '62811322332', phone: '+62 811 322 332', email: 'dream@suenyo-bali.com' },   // from suenyo-bali.com

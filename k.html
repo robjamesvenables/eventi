@@ -514,6 +514,22 @@ body.vqopen .vq-dim{opacity:1;pointer-events:auto}body.vqopen .vq-sheet{transfor
 #inpop .in-row>div>b{display:block;font-size:16px;font-weight:900}#inpop .in-row>div>span{display:block;font-size:13.5px;color:#64748B;margin-top:2px;line-height:1.35}#inpop span b{color:#0F1E2E}
 #inpop .in-btns{display:flex;gap:10px;margin-top:12px}
 #inpop .in-btns button{flex:1;border:0;border-radius:13px;padding:13px;font-family:inherit;font-weight:900;font-size:15px;cursor:pointer}
+#mvg{position:fixed;inset:0;z-index:100000;pointer-events:none}
+#mvg .mvg-card{pointer-events:auto;position:absolute;left:12px;right:12px;top:calc(12px + env(safe-area-inset-top));background:#fff;color:#111;border-radius:22px;padding:18px 18px 16px;box-shadow:0 16px 50px rgba(0,0,0,.45);font-family:inherit}
+#mvg .mvg-card.low{top:auto;bottom:calc(16px + env(safe-area-inset-bottom))}
+#mvg .mvg-t{display:block;font-size:19px;font-weight:900;margin:0 34px 10px 2px}
+#mvg .mvg-x{position:absolute;top:12px;right:12px;width:34px;height:34px;border-radius:50%;border:0;background:#F1F1F4;color:#333;font-size:15px}
+#mvg .mvg-s{display:flex;align-items:center;gap:12px;padding:8px 0;font-size:19px;font-weight:700;line-height:1.25}
+#mvg .mvg-s i{flex:none;width:38px;height:38px;border-radius:50%;background:#FF6B00;color:#fff;font-style:normal;font-weight:900;font-size:19px;display:grid;place-items:center}
+#mvg .mvg-k{display:inline-grid;place-items:center;width:34px;height:34px;border-radius:9px;background:#EEF4FF;color:#0A84FF;vertical-align:middle;margin:0 2px}
+#mvg .mvg-s:first-of-type{font-size:23px;padding:6px 0 12px}#mvg .mvg-s:first-of-type i{width:46px;height:46px;font-size:23px}#mvg .mvg-s:first-of-type .mvg-k{width:42px;height:42px}
+#mvg .mvg-s.sm{font-size:15.5px;font-weight:600;color:#555;padding:5px 0}#mvg .mvg-s.sm i{width:28px;height:28px;font-size:14px;background:#FFE3CC;color:#C2410C}#mvg .mvg-s.sm .mvg-k{width:26px;height:26px}#mvg .mvg-s.sm .mvg-k svg{width:16px;height:16px}
+#mvg .mvg-arr.hi{bottom:calc(64px + env(safe-area-inset-bottom))}
+#mvg small{display:block;margin-top:8px;font-size:14px;color:#555;line-height:1.4}#mvg small .mvg-k{width:26px;height:26px}#mvg small .mvg-k svg{width:16px;height:16px}
+#mvg .mvg-arr{position:absolute;bottom:calc(6px + env(safe-area-inset-bottom));animation:mvgb 1s ease-in-out infinite}
+#mvg .mvg-arr.bc{left:calc(50% - 23px)}#mvg .mvg-arr.br{right:22px}
+#mvg .mvg-arr.tr{bottom:auto;top:calc(4px + env(safe-area-inset-top));right:16px;transform:rotate(180deg);animation:mvgt 1s ease-in-out infinite}
+@keyframes mvgb{50%{transform:translateY(8px)}}@keyframes mvgt{0%,100%{transform:rotate(180deg)}50%{transform:rotate(180deg) translateY(8px)}}
 #inpop .in-not{background:#F1F5F9;color:#0F1E2E}#inpop .in-yes{background:var(--acc,#0D9488);color:var(--acc-ink,#fff);display:flex;gap:7px;justify-content:center;align-items:center}
 @media (prefers-reduced-motion:reduce){#inpop{transition:none}}
 
@@ -731,6 +747,30 @@ body.vqopen .vq-dim{opacity:1;pointer-events:auto}body.vqopen .vq-sheet{transfor
     }
     if (/SamsungBrowser/.test(u)) return { up: false, short: 'Tap the <b>☰</b> menu, then <b>Add page to</b> and <b>Home screen</b>.', steps: ['Tap the <b>☰</b> menu at the bottom right', 'Tap <b>Add page to</b>', 'Tap <b>Home screen</b>'], tip: 'Tap the <b>☰</b> menu below,<br>then <b>Add page to → Home screen</b>' };
     return { up: true, short: 'Tap the <b>⋮</b> menu, then <b>Add to Home screen</b>.', steps: ['Tap the <b>⋮</b> menu at the top right', 'Tap <b>Add to Home screen</b> or <b>Install app</b>', 'Tap <b>Install</b> or <b>Add</b>'], tip: 'Tap the <b>⋮</b> menu up here,<br>then <b>Add to Home screen</b>' };
+  };
+  // iPhone save guide (Robbie 22 Nov, testing on Sangsaka first): a big card with numbered steps at the TOP (stays visible above the Share sheet) + an orange arrow at the exact button.
+  // Apple has no one-tap install, and links opened inside WhatsApp/Instagram can't be saved at all - so those get "open in Safari" first.
+  window.mvGuideOn = function(code){ return code === 'K8SNGA' || /[?&]tryguide=1/.test(location.search); };
+  window.mvGuide = function(){
+    var u = navigator.userAgent, old = document.getElementById('mvg'); if (old) old.remove();
+    var ver = +((/Version\/(\d+)/.exec(u) || [])[1] || 0);
+    var I = function(p, s){ return '<svg width="' + (s || 22) + '" height="' + (s || 22) + '" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round">' + p + '</svg>'; };
+    var SH = I('<path d="M12 15V3M8 7l4-4 4 4"/><path d="M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7"/>'), DOTS = I('<circle cx="5" cy="12" r="1.6" fill="currentColor"/><circle cx="12" cy="12" r="1.6" fill="currentColor"/><circle cx="19" cy="12" r="1.6" fill="currentColor"/>'),
+        CP = I('<circle cx="12" cy="12" r="10"/><path d="m15.5 8.5-2 5-5 2 2-5z" fill="currentColor"/>'), PL = I('<rect x="3" y="3" width="18" height="18" rx="4"/><path d="M12 8v8M8 12h8"/>');
+    var k = function(ic){ return '<span class="mvg-k">' + ic + '</span>'; };
+    var steps, at, note = '';   // at: where the arrow points - 'br' bottom right, 'bc' bottom centre, 'tr' top right
+    if (/WhatsApp|FBAN|FBAV|Instagram|Line\//i.test(u)) { steps = ['Tap ' + k(CP) + ' or ' + k(DOTS) + ' to open in <b>Safari</b>', 'Then tap <b>Save to your phone</b> again']; at = 'br'; }
+    else if (/CriOS/.test(u)) { steps = ['Tap ' + k(SH) + ' at the top', 'Tap <b>Add to Home Screen</b>', 'Tap <b>Add</b>']; at = 'tr'; }
+    else if (ver >= 26) { steps = ['Tap ' + k(DOTS) + ' below', 'Tap ' + k(SH) + ' <b>Share</b>', 'Tap <b>Add to Home Screen</b>', 'Tap <b>Add</b>']; at = 'br'; note = 'Can\'t see it? Tap <b>View More</b> or scroll down.'; }
+    else { steps = ['Tap ' + k(SH) + ' below', 'Tap <b>Add to Home Screen</b>', 'Tap <b>Add</b>']; at = 'bc'; note = 'Can\'t see it? Scroll down a little.'; }
+    var o = document.createElement('div'); o.id = 'mvg';
+    o.innerHTML = '<div class="mvg-card' + (at === 'tr' ? ' low' : '') + '"><button class="mvg-x" type="button" aria-label="Close">✕</button><b class="mvg-t">Save it to your phone</b>' +
+      steps.map(function(t, i){ return '<div class="mvg-s' + (i ? ' sm' : '') + '"><i>' + (i + 1) + '</i><span>' + t + '</span></div>'; }).join('') + (note ? '<small>' + note + '</small>' : '') +
+      (at !== 'br' || ver >= 26 ? '<small class="mvg-wa">Opened from WhatsApp? Tap ' + k(CP) + ' first.</small>' : '') + '</div>' +
+      '<div class="mvg-arr ' + at + (ver >= 26 && at === 'br' ? ' hi' : '') + '"><svg width="46" height="72" viewBox="0 0 46 72"><path d="M23 3v56M7 43l16 18 16-18" fill="none" stroke="#FF6B00" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/></svg></div>';
+    o.querySelector('.mvg-x').onclick = function(){ o.remove(); };
+    document.body.appendChild(o);
+    if (/[?&]ua=1/.test(location.search)) { var d = document.createElement('div'); d.style.cssText = 'position:fixed;left:8px;right:8px;top:50%;z-index:100001;background:#000;color:#0f0;font:11px monospace;padding:8px;border-radius:8px;word-break:break-all'; d.textContent = u; o.appendChild(d); }
   };
   // Members' page helper (alerts only - see k-sw.js); never inside the back office preview
   if ('serviceWorker' in navigator && !/[?&]embed=1/.test(location.search)) { try { navigator.serviceWorker.register('/k-sw.js', { scope: '/k/' }).catch(function(){}); } catch (e) {} }
@@ -1337,6 +1377,7 @@ body.vqopen .vq-dim{opacity:1;pointer-events:auto}body.vqopen .vq-sheet{transfor
           o.querySelector('.in-yes').onclick = function(){
             if (window.__mvInstall) { var ev = window.__mvInstall; window.__mvInstall = null; ev.prompt(); (ev.userChoice || Promise.resolve({})).then(function(c){ save(c && c.outcome === 'accepted' ? 3 : st.n + 1); }); shut(); return; }
             save(st.n + 1);   // iPhone: Apple has no one-tap install, so show where to tap
+            if (window.mvGuideOn(code)) { shut(); window.mvGuide(); return; }
             document.getElementById('in-t').textContent = 'Add it in 2 taps';
             document.getElementById('in-s').innerHTML = window.mvHS().short;
             document.getElementById('in-b').style.display = 'none'; setTimeout(shut, 7000);
@@ -1370,6 +1411,7 @@ body.vqopen .vq-dim{opacity:1;pointer-events:auto}body.vqopen .vq-sheet{transfor
       if (ah) ah.onclick = function(){   // same as Mavis: Android installs with a tap; iPhone can't (Apple), so one short line says where to tap
         if (window.__mvInstall) { var ev = window.__mvInstall; window.__mvInstall = null; ev.prompt(); return; }
         var ios = /iphone|ipad|ipod/i.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+        if (ios && window.mvGuideOn(code)) return window.mvGuide();
         // a small dark tip that points at the exact button: Safari's Share (bottom) on iPhone, the ⋮ menu (top right) on Android
         var old = document.getElementById('ahtip'); if (old) old.remove();
         var share = '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-3px;margin:0 2px"><path d="M12 3v12M8 7l4-4 4 4"/><path d="M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7"/></svg>';

@@ -21975,7 +21975,7 @@ const msCode = s => String(s || '').toUpperCase().replace(/.*[?&]MEMBER=/, '').r
 function msPerks(){
   if(demoAs() && !msPageIsDemo()) return JSON.parse(JSON.stringify(DEMO_SEED.perks));
   try{ const v = appSettings && appSettings.member_perks; const p = v ? (typeof v === 'string' ? JSON.parse(v) : v) : null; if(p && (p.member || p.vip)) return { member: p.member || [], vip: p.vip || [], icons: p.icons || {} }; }catch(e){}
-  return { member: ['Welcome drink on your first visit', 'Birthday dessert on us'], vip: ['10% off food at all our venues', 'Birthday dessert on us', 'Skip the queue on busy nights'], icons: { member: ['glass', 'cake'], vip: ['pct', 'cake', 'star'] } };
+  return { member: ['15% off food and drinks'], vip: ['15% off food and drinks'], icons: { member: ['pct'], vip: ['pct'] } };
 }
 function msFace(name, s){
   const w = String(name || '?').trim().split(/\s+/), ini = ((w[0] || '?')[0] + (w[1] ? w[1][0] : '')).toUpperCase();
@@ -23483,7 +23483,7 @@ function msSignUp(code, known, digital){
       go = '';
     } else if(k === 'bday'){
       cls = 'w';
-      h = `<div class="mf-mid mf-form"><div class="mf-k" style="color:#64748B">NICE TO HAVE</div><div class="mf-big">Birthday?</div><div class="mf-sub">For their birthday treat. Day and month only.</div>
+      h = `<div class="mf-mid mf-form"><div class="mf-k" style="color:#64748B">NICE TO HAVE</div><div class="mf-big">Birthday?</div><div class="mf-sub">So we can wish them a happy birthday. Day and month only.</div>
         <div class="mf-bd"><select id="mf-d"><option value="">Day</option>${Array.from({ length:31 }, (_, i) => `<option${String(i + 1) === v.d ? ' selected' : ''}>${i + 1}</option>`).join('')}</select><select id="mf-m"><option value="">Month</option>${months.map((x, i) => `<option value="${i + 1}"${String(i + 1) === v.m ? ' selected' : ''}>${x}</option>`).join('')}</select></div></div>`;
       go = digital ? 'Make their card' : 'Sign up & check in'; alt = '<button class="mf-skip" data-a="skipbd">Skip - no birthday</button>';
     }
@@ -23599,7 +23599,7 @@ const MCV = {
   bday:() => {
     let d = '<option value="">Day</option>'; for(let i = 1; i <= 31; i++) d += `<option${String(i) === MC.S.d ? ' selected' : ''}>${i}</option>`;
     let m = '<option value="">Month</option>'; MC_MONTHS.forEach((x, i) => { m += `<option value="${i + 1}"${String(i + 1) === MC.S.m ? ' selected' : ''}>${x}</option>`; });
-    return { c:'w', h:mcTop({ dots:mcDots(7, 1) }) + `<div class="mc-mid form"><div class="mc-k" style="color:#64748B">Nice to have</div><div class="mc-big">Birthday?</div><div class="mc-sub">For their birthday treat. Day and month only.</div><div class="mc-row2"><select id="mc-bd">${d}</select><select id="mc-bm">${m}</select></div></div><div class="mc-foot"><button class="mc-go" data-a="bdNext">Next</button><button class="mc-skip" data-a="bdSkip">Skip - no birthday</button></div>` };
+    return { c:'w', h:mcTop({ dots:mcDots(7, 1) }) + `<div class="mc-mid form"><div class="mc-k" style="color:#64748B">Nice to have</div><div class="mc-big">Birthday?</div><div class="mc-sub">So we can wish them a happy birthday. Day and month only.</div><div class="mc-row2"><select id="mc-bd">${d}</select><select id="mc-bm">${m}</select></div></div><div class="mc-foot"><button class="mc-go" data-a="bdNext">Next</button><button class="mc-skip" data-a="bdSkip">Skip - no birthday</button></div>` };
   },
   waq:() => ({ c:'w', h:mcTop({ dots:mcDots(7, 2) }) + `<div class="mc-qhead"><div class="mc-big">Do they have WhatsApp?</div></div><div class="mc-tiles"><button class="mc-tile col" style="background:#25D366" data-a="waYes"><span class="ti">${MCI.wa(42, '#fff')}</span><b>Yes, WhatsApp</b></button><button class="mc-tile col" style="background:#64748B" data-a="waNo"><span class="ti">${MCI.nowa}</span><b>No WhatsApp</b></button></div>` }),
   phone:() => ({ c:'n', h:mcTop({ dots:mcDots(7, 3) }) + `<div class="mc-mid form"><div class="mc-k">New member</div><div class="mc-big">${MC.S.wa ? 'Their WhatsApp number?' : 'Their phone number?'}</div><div class="mc-sub">${MC.S.wa ? '<b>Read it back to them.</b> Their app link goes here.' : 'Any mobile. <b>So we can find them with the last 4 digits.</b>'}</div>${mcPf('mc-ph', MC.S.phone)}</div><div class="mc-foot"><button class="mc-go" data-a="phNext">Next</button></div>`, focus:'mc-ph' }),
@@ -23944,7 +23944,7 @@ window.mvIconPick = function(b){
   row.nextElementSibling.querySelectorAll('button').forEach(x => x.onclick = () => { row.dataset.ic = x.dataset.k; b.innerHTML = msIcSvg(x.dataset.k); b.classList.remove('none'); row.nextElementSibling.remove(); });
 };
 function msIcBtn(ic){ return `<button type="button" class="ms-pib${MS_PI[ic] ? '' : ' none'}" title="Choose icon" aria-label="Choose icon" onclick="mvIconPick(this)">${msIcSvg(ic)}</button>`; }
-function msPerkRow(t, ic){ return `<div class="ms-prow" data-icrow${MS_PI[ic] ? ` data-ic="${ic}"` : ''}>${msIcBtn(ic)}<input class="ms-pi" maxlength="40" placeholder="e.g. Welcome drink on your first visit (max 40 letters)" value="${msEsc(t || '')}"><button type="button" class="ms-vx" title="Remove" aria-label="Remove perk" onclick="document.querySelectorAll('.ms-pgrid').forEach(g => g.remove()); const l = this.closest('.ms-plist'); this.closest('.ms-prow').remove(); msPerkAddShow(l)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg></button></div>`; }
+function msPerkRow(t, ic){ return `<div class="ms-prow" data-icrow${MS_PI[ic] ? ` data-ic="${ic}"` : ''}>${msIcBtn(ic)}<input class="ms-pi" maxlength="40" placeholder="e.g. 15% off food and drinks (max 40 letters)" value="${msEsc(t || '')}"><button type="button" class="ms-vx" title="Remove" aria-label="Remove perk" onclick="document.querySelectorAll('.ms-pgrid').forEach(g => g.remove()); const l = this.closest('.ms-plist'); this.closest('.ms-prow').remove(); msPerkAddShow(l)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg></button></div>`; }
 function msPerkAddShow(l){ const b = l && l.nextElementSibling; if(b) b.style.display = l.querySelectorAll('.ms-prow').length >= 8 ? 'none' : ''; }
 window.msPerkAdd = function(btn){ const l = btn.previousElementSibling; l.insertAdjacentHTML('beforeend', msPerkRow('')); const r = l.lastElementChild; mvIconPick(r.querySelector('.ms-pib')); r.querySelector('input').focus(); msPerkAddShow(l); };
 const MS_SV = p => `<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">${p}</svg>`;

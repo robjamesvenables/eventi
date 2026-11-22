@@ -84,6 +84,14 @@ button.t:active{transform:scale(.97)}
 .dx{position:absolute;top:calc(14px + env(safe-area-inset-top));left:14px;width:42px;height:42px;border-radius:50%;border:0;background:rgba(255,255,255,.92);color:var(--ink);display:grid;place-items:center;box-shadow:0 4px 14px rgba(0,0,0,.2)}
 .dt .in{padding:18px 18px 8px}.dt .in h3{font-size:24px}.dt .in .hrs{font-size:15px}.dt .in .chips span{font-size:13px;padding:8px 12px}
 .ln{font-size:14px;color:var(--mute);margin-top:6px}
+.pl{font-size:11px;font-weight:900;letter-spacing:.16em;color:#a99c90;margin:22px 0 10px}
+.pst{display:flex;gap:10px;overflow-x:auto;scroll-snap-type:x mandatory;margin:0 -18px;padding:0 18px 4px;scroll-padding:0 18px;scrollbar-width:none}.pst::-webkit-scrollbar{display:none}
+.pst img{flex:none;width:150px;height:150px;object-fit:cover;border-radius:14px;scroll-snap-align:start;cursor:pointer;background:#ddd}
+.pcd{background:#fff;border-radius:16px;overflow:hidden}
+.ptr,.pkr{display:flex;gap:14px;align-items:center;padding:14px 16px}.ptr+.ptr,.pkr+.pkr{border-top:1px solid #F0EBE4}
+.ptr>b{font-size:15px;font-weight:900;min-width:48px}.ptr div b,.pf b{display:block;font-size:15px;font-weight:800}.ptr span,.pf span{display:block;font-size:13px;color:var(--mute);margin-top:2px}
+.pkr i{flex:none;width:28px;height:28px;border-radius:50%;background:rgba(201,169,110,.16);color:var(--acc);display:grid;place-items:center}.pkr span{font-size:14.5px;font-weight:700}
+.pf i{width:36px;height:36px}
 .ofx{display:block;margin-top:14px;border-radius:16px;overflow:hidden;background:#fff;box-shadow:0 6px 18px rgba(60,20,10,.08);text-decoration:none}
 .ofx img{display:block;width:100%;height:180px;object-fit:cover}.ofx div{padding:12px 14px 14px}.ofx small{display:block;font-size:10.5px;font-weight:900;letter-spacing:.16em;color:var(--acc)}.ofx b{display:block;font-size:16px;font-weight:800;margin-top:2px}.ofx span{display:block;font-size:13px;color:var(--mute);margin-top:2px}.ofx i{display:inline-block;font-style:normal;margin-top:8px;font-size:12.5px;font-weight:900;color:var(--top);background:#FBEDEA;border-radius:8px;padding:4px 8px}
 @media (prefers-reduced-motion:reduce){.dt{transition:none}}
@@ -345,7 +353,7 @@ button.t:active{transform:scale(.97)}
     if (d.wa) h += '<a class="fwa" href="' + esc(waLink(d.wa, 'Hi! I\'m a guest at ' + d.brand + ' and I need some help, please.')) + '" target="_blank" rel="noopener" aria-label="WhatsApp reception"><svg width="30" height="30" viewBox="0 0 24 24" fill="#fff"><path d="M17.5 14.4c-.3-.1-1.8-.9-2-1s-.5-.1-.7.1-.8 1-1 1.2-.4.2-.7.1a8.2 8.2 0 0 1-4-3.5c-.3-.5.3-.5.9-1.6.1-.2 0-.4 0-.5l-.9-2.2c-.2-.6-.5-.5-.7-.5h-.6a1.2 1.2 0 0 0-.8.4 3.5 3.5 0 0 0-1.1 2.6 6 6 0 0 0 1.3 3.2 13.8 13.8 0 0 0 5.3 4.7c2 .8 2.7.9 3.7.7a3.1 3.1 0 0 0 2.1-1.4 2.5 2.5 0 0 0 .2-1.5c-.1-.1-.3-.2-.6-.3zM12 21.8a9.8 9.8 0 0 1-5-1.4l-.4-.2-3.7 1 1-3.6-.2-.4A9.8 9.8 0 1 1 12 21.8zm8.4-18.2A11.8 11.8 0 0 0 1.8 17.8L.1 24l6.4-1.7A11.8 11.8 0 0 0 12 23.8 11.8 11.8 0 0 0 20.4 3.6z"/></svg></a>';
     root.innerHTML = h;
     // Laptop / mouse: a swipe row (Leisure offers) gets left/right arrows - there's no swipe with a mouse (Robbie 22 Nov). Phones unchanged.
-    if (matchMedia('(hover:hover) and (pointer:fine)').matches) [].forEach.call(root.querySelectorAll('.offers'), function(row){
+    var arrows = function(box, sel){ if (matchMedia('(hover:hover) and (pointer:fine)').matches) [].forEach.call(box.querySelectorAll(sel), function(row){
       if (row.parentNode.classList.contains('ofw')) return;
       var w = document.createElement('div'); w.className = 'ofw'; row.parentNode.insertBefore(w, row); w.appendChild(row);
       var mk = function(dir){ var b = document.createElement('button'); b.type = 'button'; b.className = 'ofa ' + (dir < 0 ? 'l' : 'r'); b.setAttribute('aria-label', dir < 0 ? 'Previous' : 'Next');
@@ -353,7 +361,8 @@ button.t:active{transform:scale(.97)}
       var L = mk(-1), R = mk(1);
       var upd = function(){ L.hidden = row.scrollLeft < 30; R.hidden = row.scrollLeft + row.clientWidth >= row.scrollWidth - 30; };
       row.addEventListener('scroll', upd, { passive: true }); setTimeout(upd, 50); upd();
-    });
+    }); };
+    arrows(root, '.offers');
     // Save to phone: the guide as its own app on the home screen (their logo, opens straight on the guide)
     (function(){
       try {
@@ -421,9 +430,20 @@ button.t:active{transform:scale(.97)}
       else if (g.charAt(0) === '#') { var el = document.getElementById(g.slice(1)); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' }); } });
     var dt = document.getElementById('dt');
     var showPlace = function(i){ var c = d.open[i]; if (!c) return;
-      dt.innerHTML = '<div class="dh" style="background-image:url(\'' + esc(c.img) + '\')"><button class="dx" aria-label="Back">' + svg('<path d="m15 18-6-6 6-6"/>', 20) + '</button></div><div class="in">' + inside(c) + '</div><div class="foot">Powered by Mavis</div>';
+      dt.innerHTML = '<div class="dh" style="background-image:url(\'' + esc(c.img) + '\')"><button class="dx" aria-label="Back">' + svg('<path d="m15 18-6-6 6-6"/>', 20) + '</button></div><div class="in">' + inside(c) + more(c) + '</div><div class="foot">Powered by Mavis</div>';
       dt.scrollTop = 0; dt.classList.add('on'); document.body.style.overflow = 'hidden';
-      dt.querySelector('.dx').onclick = function(){ history.back(); }; };
+      dt.querySelector('.dx').onclick = function(){ history.back(); };
+      [].forEach.call(dt.querySelectorAll('.pst img'), function(im){ im.onclick = function(){ dt.querySelector('.dh').style.backgroundImage = 'url(\'' + im.getAttribute('src') + '\')'; dt.scrollTo({ top: 0, behavior: 'smooth' }); }; });
+      arrows(dt, '.pst'); };
+    // Extra sections on a place page (Robbie 22 Nov): a photo strip (3+ photos), today's activities there, good to know, how to find it (text, no map)
+    var more = function(c){ var o = '', nm = String(c.name || c.title || '').toLowerCase();
+      var ph = (c.photos || []).filter(function(u){ return /^\/[\w\/.-]+\.(jpe?g|png|webp)$/i.test(u); });
+      if (ph.length >= 3) o += '<div class="pl">MORE PHOTOS</div><div class="pst">' + ph.map(function(u){ return '<img src="' + esc(u) + '" alt="" loading="lazy">'; }).join('') + '</div>';
+      var ns = [nm, String(c.title || '').toLowerCase()].filter(Boolean), th = today.filter(function(a){ var v = String(a.venue || '').toLowerCase(); return v && ns.some(function(n){ return v.indexOf(n) >= 0 || n.indexOf(v) >= 0; }); });
+      if (th.length) o += '<div class="pl">TODAY HERE</div><div class="pcd">' + th.map(function(a){ return '<div class="ptr"><b>' + esc(nice(a.start)) + '</b><div><b>' + esc(a.title) + '</b>' + (a.line ? '<span>' + esc(a.line) + '</span>' : '') + '</div></div>'; }).join('') + '</div>';
+      if ((c.know || []).length) o += '<div class="pl">GOOD TO KNOW</div><div class="pcd">' + c.know.slice(0, 3).map(function(t){ return '<div class="pkr"><i>' + svg('<path d="M20 6 9 17l-5-5"/>', 15) + '</i><span>' + esc(t) + '</span></div>'; }).join('') + '</div>';
+      if (c.find && c.find.where) o += '<div class="pl">FIND US</div><div class="pcd"><div class="pkr pf"><i>' + svg('<path d="M12 22s7-6.2 7-12a7 7 0 0 0-14 0c0 5.8 7 12 7 12z"/><circle cx="12" cy="10" r="2.5"/>', 17) + '</i><div><b>' + esc(c.find.where) + '</b>' + (c.find.how ? '<span>' + esc(c.find.how) + '</span>' : '') + '</div></div></div>';
+      return o; };
     var hidePlace = function(){ dt.classList.remove('on'); document.body.style.overflow = ''; };
     // The phone's back button closes the place page (not the whole guide)
     window.addEventListener('popstate', function(){ hidePlace(); });

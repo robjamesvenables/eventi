@@ -194,6 +194,22 @@ button.t:active{transform:scale(.97)}
 <script>
 (function(){
   window.addEventListener('beforeinstallprompt', function(e){ e.preventDefault(); window.__gInstall = e; });
+  // Where "Add to Home Screen" lives in whichever browser the guest is in (iPhone can't install with one tap - Apple). One place for every app page.
+  window.mvHS = function(){
+    var u = navigator.userAgent, ios = /iPhone|iPad|iPod/i.test(u) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+    var SH = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-3px;margin:0 2px"><path d="M12 15V3M8 7l4-4 4 4"/><path d="M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7"/></svg>';
+    var inApp = /FBAN|FBAV|Instagram|Line\/|; wv\)|TikTok|musical_ly/i.test(u);
+    if (inApp) return { up: false, short: 'Open this page in your phone\'s browser first, then add it to your Home Screen.', steps: ['Tap the <b>⋯</b> or <b>⋮</b> menu', 'Tap <b>Open in browser</b>', 'Then tap <b>Save to your phone</b> again'], tip: 'Open this page in your browser first<br>(tap <b>⋯</b> then <b>Open in browser</b>)' };
+    if (ios) {
+      if (/CriOS/.test(u)) return { up: true, short: 'Tap <b>Share</b> ' + SH + ' at the top right, then <b>Add to Home Screen</b>.', steps: ['Tap <b>Share</b> ' + SH + ' at the <b>top right</b>, next to the address', 'Tap <b>Add to Home Screen</b>', 'Tap <b>Add</b>'], tip: 'Tap <b>Share</b> ' + SH + ' up here,<br>then <b>Add to Home Screen</b>' };
+      if (/FxiOS/.test(u)) return { up: false, short: 'Tap the <b>☰</b> menu, then <b>Share</b> and <b>Add to Home Screen</b>.', steps: ['Tap the <b>☰</b> menu at the bottom', 'Tap <b>Share</b> ' + SH, 'Tap <b>Add to Home Screen</b>, then <b>Add</b>'], tip: 'Tap the <b>☰</b> menu below, then <b>Share</b><br>and <b>Add to Home Screen</b>' };
+      if (/EdgiOS/.test(u)) return { up: false, short: 'Tap the <b>⋯</b> menu, then <b>Share</b> and <b>Add to Home Screen</b>.', steps: ['Tap the <b>⋯</b> menu at the bottom', 'Tap <b>Share</b> ' + SH, 'Tap <b>Add to Home Screen</b>, then <b>Add</b>'], tip: 'Tap the <b>⋯</b> menu below, then <b>Share</b><br>and <b>Add to Home Screen</b>' };
+      return { up: false, ios: true, short: 'Tap <b>Share</b> ' + SH + ' at the bottom, then <b>Add to Home Screen</b>.', steps: ['Tap <b>Share</b> ' + SH + ' at the <b>bottom</b> (or <b>⋯</b> then Share)', 'Scroll down, tap <b>Add to Home Screen</b>', 'Tap <b>Add</b>'], tip: 'Tap <b>Share</b> ' + SH + ' below,<br>then <b>Add to Home Screen</b>' };
+    }
+    if (/SamsungBrowser/.test(u)) return { up: false, short: 'Tap the <b>☰</b> menu, then <b>Add page to</b> and <b>Home screen</b>.', steps: ['Tap the <b>☰</b> menu at the bottom right', 'Tap <b>Add page to</b>', 'Tap <b>Home screen</b>'], tip: 'Tap the <b>☰</b> menu below,<br>then <b>Add page to → Home screen</b>' };
+    return { up: true, short: 'Tap the <b>⋮</b> menu, then <b>Add to Home screen</b>.', steps: ['Tap the <b>⋮</b> menu at the top right', 'Tap <b>Add to Home screen</b> or <b>Install app</b>', 'Tap <b>Install</b> or <b>Add</b>'], tip: 'Tap the <b>⋮</b> menu up here,<br>then <b>Add to Home screen</b>' };
+  };
+
   var slug = ((/^\/g\//i.test(location.pathname) ? location.pathname.split('/')[2] : (/[?&]g=([^&]+)/.exec(location.search) || [])[1]) || '').toLowerCase().replace(/[^a-z0-9-]/g, '');
   var stay = /[?&]stay=1/.test(location.search);
   var SK = 'mvg:' + slug;
@@ -346,10 +362,9 @@ button.t:active{transform:scale(.97)}
         ft.parentNode.insertBefore(b, ft);
         b.onclick = function(){
           if (window.__gInstall) { var ev = window.__gInstall; window.__gInstall = null; ev.prompt(); return; }
-          var sh = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px"><path d="M12 15V3M8 7l4-4 4 4"/><path d="M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7"/></svg>';
-          var safari = ios && !/CriOS|FxiOS|EdgiOS|FBAN|FBAV|Instagram|Line\//.test(navigator.userAgent);
+          var hs = window.mvHS();
           var o = document.createElement('div'); o.className = 'svo';
-          o.innerHTML = '<div class="bx"><h3>Save to your phone</h3><ol>' + (ios ? (safari ? '' : '<li>Open this page in <b>Safari</b> first</li>') + '<li>Tap <b>Share</b> ' + sh + ' at the bottom of Safari</li><li>Scroll down, tap <b>Add to Home Screen</b></li><li>Tap <b>Add</b></li>' : '<li>Tap the <b>⋮</b> menu at the top right</li><li>Tap <b>Add to Home screen</b> or <b>Install app</b></li><li>Tap <b>Install</b></li>') + '</ol>' + (ios ? '<p class="tip">Opened from WhatsApp? Tap the Safari compass icon at the bottom first.</p>' : '') + '<button class="ok" type="button">Got it</button></div>';
+          o.innerHTML = '<div class="bx"><h3>Save to your phone</h3><ol>' + hs.steps.map(function(x){ return '<li>' + x + '</li>'; }).join('') + '</ol>' + (hs.ios ? '<p class="tip">Opened from WhatsApp? Tap the compass icon first to open it in Safari.</p>' : '') + '<button class="ok" type="button">Got it</button></div>';
           o.onclick = function(e){ if (e.target === o || e.target.className === 'ok') o.remove(); };
           document.body.appendChild(o);
         };
@@ -370,7 +385,7 @@ button.t:active{transform:scale(.97)}
           if (window.__gInstall) { var ev = window.__gInstall; window.__gInstall = null; ev.prompt(); (ev.userChoice || Promise.resolve({})).then(function(c){ save(c && c.outcome === 'accepted' ? 3 : st.n + 1); }); shut(); return; }
           save(st.n + 1);
           document.getElementById('in-t').textContent = 'Add it in 2 taps';
-          document.getElementById('in-s').innerHTML = 'Tap <b>Share</b> at the bottom of Safari, then <b>Add to Home Screen</b>.';
+          document.getElementById('in-s').innerHTML = window.mvHS().short;
           document.getElementById('in-b').style.display = 'none'; setTimeout(shut, 7000);
         };
       };

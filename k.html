@@ -716,6 +716,22 @@ body.vqopen .vq-dim{opacity:1;pointer-events:auto}body.vqopen .vq-sheet{transfor
 
   // Staff preview: a small quiet label in the corner (none inside the editor's live preview)
   window.addEventListener('beforeinstallprompt', function(e){ e.preventDefault(); window.__mvInstall = e; });
+
+  // Where "Add to Home Screen" lives in whichever browser the guest is in (iPhone can't install with one tap - Apple). One place for every app page.
+  window.mvHS = function(){
+    var u = navigator.userAgent, ios = /iPhone|iPad|iPod/i.test(u) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+    var SH = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-3px;margin:0 2px"><path d="M12 15V3M8 7l4-4 4 4"/><path d="M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7"/></svg>';
+    var inApp = /FBAN|FBAV|Instagram|Line\/|; wv\)|TikTok|musical_ly/i.test(u);
+    if (inApp) return { up: false, short: 'Open this page in your phone\'s browser first, then add it to your Home Screen.', steps: ['Tap the <b>⋯</b> or <b>⋮</b> menu', 'Tap <b>Open in browser</b>', 'Then tap <b>Save to your phone</b> again'], tip: 'Open this page in your browser first<br>(tap <b>⋯</b> then <b>Open in browser</b>)' };
+    if (ios) {
+      if (/CriOS/.test(u)) return { up: true, short: 'Tap <b>Share</b> ' + SH + ' at the top right, then <b>Add to Home Screen</b>.', steps: ['Tap <b>Share</b> ' + SH + ' at the <b>top right</b>, next to the address', 'Tap <b>Add to Home Screen</b>', 'Tap <b>Add</b>'], tip: 'Tap <b>Share</b> ' + SH + ' up here,<br>then <b>Add to Home Screen</b>' };
+      if (/FxiOS/.test(u)) return { up: false, short: 'Tap the <b>☰</b> menu, then <b>Share</b> and <b>Add to Home Screen</b>.', steps: ['Tap the <b>☰</b> menu at the bottom', 'Tap <b>Share</b> ' + SH, 'Tap <b>Add to Home Screen</b>, then <b>Add</b>'], tip: 'Tap the <b>☰</b> menu below, then <b>Share</b><br>and <b>Add to Home Screen</b>' };
+      if (/EdgiOS/.test(u)) return { up: false, short: 'Tap the <b>⋯</b> menu, then <b>Share</b> and <b>Add to Home Screen</b>.', steps: ['Tap the <b>⋯</b> menu at the bottom', 'Tap <b>Share</b> ' + SH, 'Tap <b>Add to Home Screen</b>, then <b>Add</b>'], tip: 'Tap the <b>⋯</b> menu below, then <b>Share</b><br>and <b>Add to Home Screen</b>' };
+      return { up: false, ios: true, short: 'Tap <b>Share</b> ' + SH + ' at the bottom, then <b>Add to Home Screen</b>.', steps: ['Tap <b>Share</b> ' + SH + ' at the <b>bottom</b> (or <b>⋯</b> then Share)', 'Scroll down, tap <b>Add to Home Screen</b>', 'Tap <b>Add</b>'], tip: 'Tap <b>Share</b> ' + SH + ' below,<br>then <b>Add to Home Screen</b>' };
+    }
+    if (/SamsungBrowser/.test(u)) return { up: false, short: 'Tap the <b>☰</b> menu, then <b>Add page to</b> and <b>Home screen</b>.', steps: ['Tap the <b>☰</b> menu at the bottom right', 'Tap <b>Add page to</b>', 'Tap <b>Home screen</b>'], tip: 'Tap the <b>☰</b> menu below,<br>then <b>Add page to → Home screen</b>' };
+    return { up: true, short: 'Tap the <b>⋮</b> menu, then <b>Add to Home screen</b>.', steps: ['Tap the <b>⋮</b> menu at the top right', 'Tap <b>Add to Home screen</b> or <b>Install app</b>', 'Tap <b>Install</b> or <b>Add</b>'], tip: 'Tap the <b>⋮</b> menu up here,<br>then <b>Add to Home screen</b>' };
+  };
   // Members' page helper (alerts only - see k-sw.js); never inside the back office preview
   if ('serviceWorker' in navigator && !/[?&]embed=1/.test(location.search)) { try { navigator.serviceWorker.register('/k-sw.js', { scope: '/k/' }).catch(function(){}); } catch (e) {} }
   var VAPID = 'BGfKLEwZ6ZDqoozMUz2jqNJonJni6l-sA2FU8yHkUAm5FnnwHb44ZGBlEolJXr4QSZospqPa1_z-N2dMjTtKCJc';
@@ -1322,7 +1338,7 @@ body.vqopen .vq-dim{opacity:1;pointer-events:auto}body.vqopen .vq-sheet{transfor
             if (window.__mvInstall) { var ev = window.__mvInstall; window.__mvInstall = null; ev.prompt(); (ev.userChoice || Promise.resolve({})).then(function(c){ save(c && c.outcome === 'accepted' ? 3 : st.n + 1); }); shut(); return; }
             save(st.n + 1);   // iPhone: Apple has no one-tap install, so show where to tap
             document.getElementById('in-t').textContent = 'Add it in 2 taps';
-            document.getElementById('in-s').innerHTML = 'Tap <b>Share</b> at the bottom of Safari, then <b>Add to Home Screen</b>.';
+            document.getElementById('in-s').innerHTML = window.mvHS().short;
             document.getElementById('in-b').style.display = 'none'; setTimeout(shut, 7000);
           };
         };
@@ -1357,8 +1373,8 @@ body.vqopen .vq-dim{opacity:1;pointer-events:auto}body.vqopen .vq-sheet{transfor
         // a small dark tip that points at the exact button: Safari's Share (bottom) on iPhone, the ⋮ menu (top right) on Android
         var old = document.getElementById('ahtip'); if (old) old.remove();
         var share = '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block;vertical-align:-3px;margin:0 2px"><path d="M12 3v12M8 7l4-4 4 4"/><path d="M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7"/></svg>';
-        var tip = document.createElement('div'); tip.id = 'ahtip'; tip.className = 'ahtip ' + (ios ? 'down' : 'up');
-        tip.innerHTML = ios ? 'Tap the Share button ' + share + ' below,<br>then <b>Add to Home Screen</b>' : 'Tap the <b>⋮</b> menu up here,<br>then <b>Add to Home screen</b>';
+        var hs = window.mvHS(), tip = document.createElement('div'); tip.id = 'ahtip'; tip.className = 'ahtip ' + (hs.up ? 'up' : 'down');
+        tip.innerHTML = hs.tip;
         tip.onclick = function(){ tip.remove(); }; document.body.appendChild(tip);
         setTimeout(function(){ if (tip.parentNode) tip.remove(); }, 12000);
       };

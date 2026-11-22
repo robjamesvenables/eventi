@@ -11,8 +11,8 @@ const sh = n => '/demo-guest/p-shelter-' + n + '.jpg';
 const P = {
   shelter: {
     brand: 'Shelter', logo: '/demo-guest/p-shelter-logo.png', first: 'Stephen', tier: 'member', visits: 12, since: 2024, favourite: 'Shelter Pererenan',
-    perks: ['Glass of house wine with every dinner', 'First pick of tables for Shelter Sessions', 'Birthday dessert from the fire', 'Skip the wait for Sunday BBQ'],
-    perkIcons: ['glass', 'ticket', 'cake', 'star'],
+    perks: ['15% off food and drinks', "Members' happy hour, 5-7pm, Monday to Friday", 'Priority booking and the best tables', '2-for-1 cocktails on Tuesdays', 'Kids eat free on Sundays', '10% off gift vouchers'],   // Robbie 22 Nov: perks that work at the bill - no birthday / welcome drinks
+    perkIcons: ['pct', 'cocktail', 'star', 'glass', 'smile', 'gift'],
     reward: { target: 15, text: "Chef's fire menu for two" },
     venues: [
       { name: 'Shelter Pererenan', area: 'Pererenan', opens: '12:00', closes: '00:00', map: 'https://maps.app.goo.gl/Z9h6Ns2VTGCUGSeH7', wa: '6282340040199', phone: '+62 823 4004 0199', email: 'info@shelterbali.com', review: 'https://maps.app.goo.gl/Z9h6Ns2VTGCUGSeH7' },
@@ -396,8 +396,8 @@ const SNG_MENU = n => ({ img: '/demo-guest/p-sangsaka-menu-' + n + '.jpg' });   
 P.sangsaka = {
 
   brand: 'Sangsaka', logo: '/demo-guest/p-sangsaka-logo.png', icon: '/demo-guest/p-sangsaka-icon', first: 'Kieran', tier: 'member', visits: 7, since: 2025, favourite: 'Sangsaka',
-  perks: ['15% off your bill, every visit', 'Welcome cocktail upstairs at DI ATAS', "A chef's snack from the kitchen, on the house", 'Birthday dessert from the wood oven', 'First pick of the private dining room'],
-  perkIcons: ['pct', 'cocktail', 'food', 'cake', 'star'],
+  perks: ['15% off food and drinks', "Members' happy hour, 5-7pm, Monday to Friday", 'Priority booking and the best tables', '2-for-1 cocktails on Tuesdays', 'Kids eat free on Sundays', '10% off gift vouchers'],   // Robbie 22 Nov: perks that work at the bill - no birthday / welcome drinks
+  perkIcons: ['pct', 'cocktail', 'star', 'glass', 'smile', 'gift'],
   reward: { target: 10, text: "Chef's sharing menu for two" },
   venues: [
     { name: 'Sangsaka', area: 'Kerobokan', opens: '17:30', closes: '23:00', wa: SNG_WA, phone: '+62 812 3695 9895', email: 'info@sangsakabali.com', map: SNG_MAP, review: SNG_MAP, book: SNG_BOOK },
@@ -457,8 +457,8 @@ const MS_MENU_U = n => ({ img: '/demo-guest/p-masonry-menu-uluwatu-' + n + '.jpg
 const BV_MENU = n => ({ img: '/demo-guest/p-barvera-menu-' + n + '.jpg' });
 P.masonry = {
   brand: 'Masonry', logo: '/demo-guest/p-masonry-logo.png', icon: '/demo-guest/p-masonry-icon', first: 'Ben', tier: 'member', visits: 9, since: 2024, favourite: 'Masonry Canggu',
-  perks: ['10% off your bill at every Masonry', 'A Masonry Old Fashioned on arrival', 'House charcuterie for the table, on us', 'Birthday dessert from the wood oven', 'Priority bookings at all three venues'],
-  perkIcons: ['pct', 'cocktail', 'food', 'cake', 'star'],
+  perks: ['15% off food and drinks', "Members' happy hour, 5-7pm, Monday to Friday", 'Priority booking and the best tables', '2-for-1 cocktails on Tuesdays', 'Kids eat free on Sundays', '10% off gift vouchers'],   // Robbie 22 Nov: perks that work at the bill - no birthday / welcome drinks
+  perkIcons: ['pct', 'cocktail', 'star', 'glass', 'smile', 'gift'],
   reward: { target: 10, text: '48-hour short rib dinner for two' },
   venues: [
     { name: 'Masonry Canggu', area: 'Batu Bolong, Canggu', opens: '12:00', closes: '00:00', wa: MS_WA, phone: '+62 857 9250 5028', book: MS_BOOK },
@@ -529,8 +529,8 @@ const LUMA_WA = '6281139414999';
 const LUMA_MAP = 'https://maps.google.com/?q=Luma+Jl.+Pantai+Batu+Bolong+91+Canggu';
 P.luma = {
   brand: 'Luma', logo: '/demo-guest/p-luma-logo.png', icon: '/demo-guest/p-luma-icon', first: 'Olivia', tier: 'member', visits: 6, since: 2025, favourite: 'Luma',
-  perks: ['10% off your bill, every visit', 'A Negroni on tap at Bar Luma on arrival', 'Bread and olives for the table, on us', 'Birthday dessert from the kitchen', 'First pick of tables for guest chef nights'],
-  perkIcons: ['pct', 'cocktail', 'food', 'cake', 'star'],
+  perks: ['15% off food and drinks', "Members' happy hour, 5-7pm, Monday to Friday", 'Priority booking and the best tables', '2-for-1 cocktails on Tuesdays', 'Kids eat free on Sundays', '10% off gift vouchers'],   // Robbie 22 Nov: perks that work at the bill - no birthday / welcome drinks
+  perkIcons: ['pct', 'cocktail', 'star', 'glass', 'smile', 'gift'],
   reward: { target: 10, text: 'Long lunch for two, wine included' },
   venues: [
     { name: 'Luma', area: 'Batu Bolong, Canggu', opens: '12:00', closes: '23:00', wa: LUMA_WA, phone: '+62 811 3941 4999', map: LUMA_MAP, review: LUMA_MAP },
@@ -582,8 +582,8 @@ const bc = n => '/demo-guest/p-brunch-' + n + '.jpg';
 const BC_WA = '6281138312910';
 P.brunch = {
   brand: 'Brunch Club', logo: '/demo-guest/p-brunch-logo.png', first: 'Helen', tier: 'member', visits: 8, since: 2025, favourite: 'Brunch Club Berawa',
-  perks: ['10% off your bill, every visit', 'A free coffee with every brunch', 'Skip the queue at weekends', 'Birthday porncakes on us', 'First taste of new menu items'],
-  perkIcons: ['pct', 'coffee', 'star', 'cake', 'sparkle'],
+  perks: ['15% off food and drinks', "Members' happy hour, 5-7pm, Monday to Friday", 'Priority booking and the best tables', '2-for-1 cocktails on Tuesdays', 'Kids eat free on Sundays', '10% off gift vouchers'],   // Robbie 22 Nov: perks that work at the bill - no birthday / welcome drinks
+  perkIcons: ['pct', 'cocktail', 'star', 'glass', 'smile', 'gift'],
   reward: { target: 10, text: 'Brunch for two, porncakes included' },
   venues: [
     { name: 'Brunch Club Berawa', area: 'Berawa, Canggu', opens: '08:00', closes: '18:00', wa: BC_WA, phone: '+62 811 3831 2910' },
@@ -637,8 +637,8 @@ const lo = n => '/demo-guest/p-lolas-' + n + '.jpg';
 const LO_MENUS = [{ name: 'Food', pages: [1, 2, 3, 4].map(i => ({ img: lo('menu-food-' + i) })) }, { name: 'Drinks', pages: [1, 2, 3, 4].map(i => ({ img: lo('menu-drinks-' + i) })) }];   // lolasbali.com menu pages (same at Canggu and Uluwatu)
 P.lolas = {
   brand: "Lola's", logo: '/demo-guest/p-lolas-logo.png', icon: '/demo-guest/p-lolas-icon', first: 'Jake', tier: 'member', visits: 6, since: 2025, favourite: "Lola's Canggu",
-  perks: ['10% off your bill, every visit', 'A free margarita on your birthday', 'Chips and guac on us with any taco plate', "Priority tables on Taco Tuesday"],
-  perkIcons: ['pct', 'cake', 'food', 'star'],
+  perks: ['15% off food and drinks', "Members' happy hour, 5-7pm, Monday to Friday", 'Priority booking and the best tables', '2-for-1 cocktails on Tuesdays', 'Kids eat free on Sundays', '10% off gift vouchers'],   // Robbie 22 Nov: perks that work at the bill - no birthday / welcome drinks
+  perkIcons: ['pct', 'cocktail', 'star', 'glass', 'smile', 'gift'],
   reward: { target: 10, text: 'Tacos and margaritas for two' },
   venues: [
     { name: "Lola's Canggu", area: 'Jl. Subak, Canggu', opens: '08:00', closes: '00:00', wa: '6287861686721', phone: '+62 878 6168 6721' },   // Canggu number from Google (Robbie)
@@ -695,8 +695,8 @@ const kd = n => '/demo-guest/p-kdt-' + n + '.jpg', sl = n => '/demo-guest/p-salt
 const KDT_BOOK = 'https://www.kudeta.com';
 P.kudeta = {
   brand: 'Ku De Ta', logo: '/demo-guest/p-kdt-logo.png', icon: '/demo-guest/p-kdt-icon', first: 'Matt', tier: 'member', visits: 7, since: 2025, favourite: 'Ku De Ta',
-  perks: ['10% off your bill, every visit', 'A glass of bubbles on your birthday', 'Priority daybeds on weekends', 'First word on our big nights'],
-  perkIcons: ['pct', 'cake', 'star', 'sparkle'],
+  perks: ['15% off food and drinks', "Members' happy hour, 5-7pm, Monday to Friday", '2-for-1 cocktails on Tuesdays', 'Kids eat free on Sundays', 'No minimum spend on sunbeds'],   // Robbie 22 Nov: perks that work at the bill - no birthday / welcome drinks
+  perkIcons: ['pct', 'cocktail', 'glass', 'smile', 'sun'],
   reward: { target: 10, text: 'A sunset daybed with a bottle of bubbles' },
   venues: [
     { name: 'Ku De Ta', area: 'Jl. Kayu Aya 9, Seminyak', opens: '08:00', closes: '00:00', book: KDT_BOOK, wa: '6285938315117', phone: '+62 361 736969', email: 'reservations@kudeta.com' },   // from kudeta.com: daily 8am - late
@@ -751,8 +751,8 @@ const sj = n => '/demo-guest/p-senja-' + n + '.jpg';
 const SJ_FOOD = [{ name: 'Food', pages: [{ img: sj('menu-food') }] }, { name: 'Drinks', pages: [{ img: sj('menu-drinks') }] }];
 P.senja = {
   brand: 'Senja Beach Club', logo: '/demo-guest/p-senja-logo.png', icon: '/demo-guest/p-senja-icon', first: 'Sam', tier: 'member', visits: 6, since: 2025, favourite: 'Senja Seminyak',
-  perks: ['10% off your bill, every visit', 'A free cocktail on your birthday', 'Priority sunbeds on weekends', 'First word on our big nights'],
-  perkIcons: ['pct', 'cake', 'star', 'sparkle'],
+  perks: ['15% off food and drinks', "Members' happy hour, 5-7pm, Monday to Friday", '2-for-1 cocktails on Tuesdays', 'Kids eat free on Sundays', 'No minimum spend on sunbeds'],   // Robbie 22 Nov: perks that work at the bill - no birthday / welcome drinks
+  perkIcons: ['pct', 'cocktail', 'glass', 'smile', 'sun'],
   reward: { target: 10, text: 'A sunset daybed with a bottle of bubbles' },
   venues: [
     { name: 'Senja Seminyak', area: 'Beach club · Seminyak', opens: '09:00', closes: '00:00', wa: SJ_WA, map: 'https://www.google.com/maps/search/?api=1&query=Seminyak+Beach,+Bali' },
@@ -811,8 +811,8 @@ const SIPPY_MENU = n => [1, 2, 3].map(k => ({ img: ms2('menu-' + n + '-' + k) })
 const SB_MENU = (n, k) => Array.from({ length: k }, (_, i) => ({ img: '/demo-guest/p-sunset-menu-' + n + '-' + (i + 1) + '.jpg' }));   // from sunsetbeachbali.com menu pages
 P.sunset = {
   brand: 'Sunset Beach', logo: '/demo-guest/p-sunset-logo.png', icon: '/demo-guest/p-sunset-icon', first: 'Andrew', tier: 'member', visits: 5, since: 2025, favourite: 'Sunset Beach',
-  perks: ['10% off your bill, every visit', 'A free cocktail on your birthday', 'Priority sunbeds on weekends', 'First word on our big nights'],
-  perkIcons: ['pct', 'cake', 'star', 'sparkle'],
+  perks: ['15% off food and drinks', "Members' happy hour, 5-7pm, Monday to Friday", '2-for-1 cocktails on Tuesdays', 'Kids eat free on Sundays', 'No minimum spend on sunbeds'],   // Robbie 22 Nov: perks that work at the bill - no birthday / welcome drinks
+  perkIcons: ['pct', 'cocktail', 'glass', 'smile', 'sun'],
   reward: { target: 10, text: 'A sunset daybed with a bottle of bubbles' },
   venues: [{ name: 'Sunset Beach', area: 'Jl. Camplung Tanduk 99, Seminyak', opens: '10:00', closes: '22:00', wa: SB_WA, phone: '+62 812 3781 4448', email: 'hello@sunsetbeachbali.com', map: 'https://maps.google.com/?q=Sunset%20Beach%20Bali%2C%20Jl.%20Camplung%20Tanduk%2099%2C%20Seminyak' },
     { name: 'Mrs Sippy', area: 'Jl. Taman Ganesha, Kerobokan Kelod, Seminyak', opens: '10:00', closes: '21:00', wa: '6282145001007', phone: '+62 821 4500 1007', email: 'reservations@mrssippybali.com', map: 'https://www.google.com/maps/search/?api=1&query=Mrs+Sippy+Bali' }   // from mrssippybali.com
@@ -867,8 +867,8 @@ const SE_WA = '6285216000383';
 const SE_MENU = (n, a, b) => Array.from({ length: b - a + 1 }, (_, i) => ({ img: '/demo-guest/p-se-menu-' + n + '-' + (a + i) + '.jpg' }));
 P.southeast = {
   brand: 'South + East', logo: '/demo-guest/p-se-logo.png', icon: '/demo-guest/p-se-icon', first: 'Jack', tier: 'member', visits: 4, since: 2025, favourite: 'South + East',
-  perks: ['10% off your bill, every visit', 'A free pint on your birthday', 'First pour of every new beer', 'Priority on group bookings'],
-  perkIcons: ['pct', 'cake', 'star', 'sparkle'],
+  perks: ['15% off food and drinks', "Members' happy hour, 5-7pm, Monday to Friday", 'Priority booking and the best tables', '2-for-1 cocktails on Tuesdays', 'Kids eat free on Sundays', '10% off gift vouchers'],   // Robbie 22 Nov: perks that work at the bill - no birthday / welcome drinks
+  perkIcons: ['pct', 'cocktail', 'star', 'glass', 'smile', 'gift'],
   reward: { target: 10, text: 'A 6-beer flight and a platter for the table' },
   venues: [{ name: 'South + East', area: 'Jl. Pengubengan Kauh, Kerobokan Kelod', opens: '12:00', closes: '00:00', wa: SE_WA, phone: '+62 852 1600 0383', email: 'info@southeastbrewing.co',
     map: 'https://www.google.com/maps/search/?api=1&query=South+%2B+East+Brewing+Co+Kerobokan+Bali' }],
@@ -918,8 +918,8 @@ const BH_WA = '6287735522232';   // Billy Ho, Canggu (sister venue, from billyho
 const MM_MENU = (n, parts) => parts.flatMap(([c, k]) => Array.from({ length: k }, (_, i) => ({ img: '/demo-guest/p-mms-menu-' + n + '-' + c + String.fromCharCode(97 + i) + '.jpg' })));
 P.mamasan = {
   brand: 'Mama San', logo: '/demo-guest/p-mms-logo.png', icon: '/demo-guest/p-mms-icon', first: 'Will', tier: 'member', visits: 5, since: 2025, favourite: 'Mama San',
-  perks: ['10% off your bill, every visit', 'A free cocktail on your birthday', 'Priority tables on busy nights', 'First taste of every new menu'],
-  perkIcons: ['pct', 'cake', 'star', 'sparkle'],
+  perks: ['15% off food and drinks', "Members' happy hour, 5-7pm, Monday to Friday", 'Priority booking and the best tables', '2-for-1 cocktails on Tuesdays', 'Kids eat free on Sundays', '10% off gift vouchers'],   // Robbie 22 Nov: perks that work at the bill - no birthday / welcome drinks
+  perkIcons: ['pct', 'cocktail', 'star', 'glass', 'smile', 'gift'],
   reward: { target: 10, text: 'The Feed Me menu for two' },
   venues: [{ name: 'Mama San', area: 'Jl. Raya Kerobokan No.135, Kerobokan Kelod', opens: '12:00', closes: '22:30', wa: MM_WA, phone: '+62 818 0612 6700', email: 'booking@mamasanbali.com',
     map: 'https://www.google.com/maps/search/?api=1&query=Mama+San+Bali+Jalan+Raya+Kerobokan+135' },
@@ -992,8 +992,8 @@ const MZ_BOOK = 'https://booking.resdiary.com/widget/Standard/MozaicBali/4947'; 
 const MZ_MENU = (name, f, k) => ({ name, pages: Array.from({ length: k }, (_, i) => ({ img: '/demo-guest/p-mz-menu-' + f + '-' + (i + 1) + '.jpg' })) });
 P.mozaic = {
   brand: 'Mozaic', logo: '/demo-guest/p-mz-logo.png', icon: '/demo-guest/p-mz-icon', first: 'Chris', tier: 'member', visits: 3, since: 2025, favourite: 'The Dining Room',
-  perks: ['A glass of champagne in the Tipple Room, every visit', 'A gift from the kitchen on your birthday', 'First pick of tables for special dinners', 'First word on new seasonal menus'],
-  perkIcons: ['star', 'cake', 'pct', 'sparkle'],
+  perks: ['15% off food and drinks', "Members' happy hour, 5-7pm, Monday to Friday", 'Priority booking and the best tables', '2-for-1 cocktails on Tuesdays', 'Kids eat free on Sundays', '10% off gift vouchers'],   // Robbie 22 Nov: perks that work at the bill - no birthday / welcome drinks
+  perkIcons: ['pct', 'cocktail', 'star', 'glass', 'smile', 'gift'],
   reward: { target: 6, text: "A seat at the Chef's Table for two" },
   venues: [
     { name: 'The Dining Room', area: 'Jl. Raya Sanggingan, Ubud', opens: '18:00', closes: '22:00', wa: MZ_WA, book: MZ_BOOK, phone: '+62 361 975 768', email: 'info@mozaic-bali.com', map: 'https://www.google.com/maps/search/?api=1&query=Mozaic+Restaurant+Ubud' },
@@ -1052,8 +1052,8 @@ const sbk = n => '/demo-guest/p-sb-' + n + '.jpg';
 const SPB_WA = '6281234586169';
 P.spiceblake = {
   brand: 'Spice by Blake', logo: '/demo-guest/p-sb-logo.png', icon: '/demo-guest/p-sb-icon', first: 'Blake', tier: 'member', visits: 4, since: 2025, favourite: 'Spice by Blake',
-  perks: ['10% off your bill, every visit', 'A free cocktail on your birthday', 'First seats at the kitchen counter', 'First taste of new dishes'],
-  perkIcons: ['pct', 'cake', 'star', 'sparkle'],
+  perks: ['15% off food and drinks', "Members' happy hour, 5-7pm, Monday to Friday", 'Priority booking and the best tables', '2-for-1 cocktails on Tuesdays', 'Kids eat free on Sundays', '10% off gift vouchers'],   // Robbie 22 Nov: perks that work at the bill - no birthday / welcome drinks
+  perkIcons: ['pct', 'cocktail', 'star', 'glass', 'smile', 'gift'],
   reward: { target: 8, text: "Blake's feast menu for two" },
   venues: [{ name: 'Spice by Blake', area: 'Jl. Monkey Forest, Ubud', wa: SPB_WA, phone: '+62 812 3458 6169', email: 'info@spicebali.com', map: 'https://www.google.com/maps/search/?api=1&query=Spice+by+Blake+Ubud' },
     { name: 'Mozaic', area: 'Jl. Raya Sanggingan, Ubud', opens: '18:00', closes: '22:00', wa: MZ_WA, book: MZ_BOOK, phone: '+62 361 975 768', email: 'info@mozaic-bali.com', map: 'https://www.google.com/maps/search/?api=1&query=Mozaic+Restaurant+Ubud' }],
@@ -1104,8 +1104,8 @@ const bu = n => '/demo-guest/p-burnt-' + n + '.jpg';   // burnt photos from uluc
 const UL_MENU = n => ({ img: '/demo-guest/p-ulu-menu-' + n + '.jpg' });   // retyped in their menu style from Google Maps menu photos (their PDFs are broken)
 P.ulu = {
   brand: 'Ulu Cliffhouse', logo: '/demo-guest/p-ulu-logo.png', icon: '/demo-guest/p-ulu-icon', first: 'Josh', tier: 'member', visits: 6, since: 2025, favourite: 'Ulu Cliffhouse',
-  perks: ['10% off your bill, every visit', 'A free cocktail on your birthday', 'Priority daybeds on weekends', 'First word on our big nights'],
-  perkIcons: ['pct', 'cake', 'star', 'sparkle'],
+  perks: ['15% off food and drinks', "Members' happy hour, 5-7pm, Monday to Friday", '2-for-1 cocktails on Tuesdays', 'Kids eat free on Sundays', 'No minimum spend on sunbeds'],   // Robbie 22 Nov: perks that work at the bill - no birthday / welcome drinks
+  perkIcons: ['pct', 'cocktail', 'glass', 'smile', 'sun'],
   reward: { target: 10, text: 'A clifftop daybed with a bottle of bubbles' },
   venues: [{ name: 'Ulu Cliffhouse', area: 'Clifftop · Pecatu, Uluwatu', opens: '08:00', closes: '22:00', book: UL_BOOK, wa: '6281139417899', phone: '+62 813 3881 2502', map: 'https://www.google.com/maps/search/?api=1&query=Ulu+Cliffhouse+Bali' },
     { name: 'burnt', area: 'Live-fire restaurant at Ulu Cliffhouse', opens: '17:00', closes: '23:00', book: UL_BOOK, wa: '6281139417899', map: 'https://www.google.com/maps/search/?api=1&query=Ulu+Cliffhouse+Bali' }   // Ulu's evening fire restaurant (ulucliffhouse.com/burnt); hours a guess - dinner from sunset

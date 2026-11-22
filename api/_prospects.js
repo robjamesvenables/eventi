@@ -259,8 +259,8 @@ P.bpa = {
     { icon: 'swap', title: 'How an Americana works', text: 'Sign up alone, we mix the teams. Play short games with different partners. Great for meeting people.' }
   ] },
   brand: 'Bali Padel Academy', logo: '/demo-guest/p-bpa-logo.png', icon: '/demo-guest/p-bpa-icon', first: 'Eric', tier: 'member', visits: 7, since: 2024, favourite: 'Padel Courts',
-  perks: ['Member prices at the restaurant', '15% off in the pro shop', 'Free pool access after your game', 'Kids play free in the play park'],
-  perkIcons: ['food', 'tag', 'sun', 'smile'],
+  perks: ['15% off food and drinks at the restaurant', '15% off in the pro shop', 'Free racket hire', '10% off coaching sessions and clinics', "Members' happy hour after your game, 5-7pm"],
+  perkIcons: ['pct', 'bag', 'tag', 'who', 'cocktail'],   // Robbie 22 Nov: no court-booking perks (Playtomic runs bookings)
   reward: { target: 10, text: 'A free NOX ball tube and smoothie' },
   venues: [
     { name: 'Padel Courts', opens: '06:30', closes: '23:00', book: PT },

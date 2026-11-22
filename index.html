@@ -23245,7 +23245,11 @@ window.msFlow = async function(id, r){
   const m = MS.members.find(x => String(x.id) === String(id)); if(!m) return;
   const first = String(m.name || '').trim().split(/\s+/)[0] || 'Guest';
   const venue = (r && r.venue) || msVenue(), s = msStats(m), bd = msBirthdaySoon(m);
-  const perks = (msPerks()[m.tier === 'vip' ? 'vip' : 'member'] || []).filter(Boolean);
+  // A "first visit" perk only on their first visit, a birthday perk only in their birthday week - so staff don't give them every time (Robbie 22 Nov)
+  const nVis = (MS.visits[m.id] || []).length;
+  const perks = (msPerks()[m.tier === 'vip' ? 'vip' : 'member'] || []).filter(Boolean)
+    .filter(p => !/first\s+visit/i.test(p) || nVis <= 1)
+    .filter(p => !/birthday/i.test(p) || !!bd);
   const rw = msRewardReady(m), rwText = ((msPage() || {}).reward || {}).text || 'Their reward';
   const nth = n => n + (n % 100 >= 11 && n % 100 <= 13 ? 'th' : ['th','st','nd','rd'][n % 10] || 'th');
   const steps = ['in'];

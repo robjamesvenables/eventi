@@ -2836,6 +2836,22 @@ div.mki-row{cursor:default}.mki-row.done{opacity:.6}
 #ms-flow .mf-yn button:first-child{background:#1d1405;color:#fff}
 #ms-flow .mf-alt{display:block;width:calc(100% - 32px);max-width:428px;margin:-6px auto calc(18px + env(safe-area-inset-bottom));height:58px;border-radius:20px;border:2px solid rgba(255,255,255,.55);background:transparent;color:inherit;font-family:inherit;font-weight:800;font-size:17px;cursor:pointer}
 #ms-flow .mf-bk{display:flex;align-items:center;gap:4px;background:none;border:0;color:inherit;font-family:inherit;font-weight:800;font-size:15px;cursor:pointer;padding:8px 4px;opacity:.9;flex:none}
+#ms-flow .mf-gets{gap:8px}#ms-flow .mf-gets .mf-big{margin-bottom:6px}
+#ms-flow .mf-lab{align-self:flex-start;font-size:12px;margin:8px 0 0}
+#ms-flow .mf-card.sm{font-size:16px;padding:12px 14px;border-radius:14px;font-weight:800}#ms-flow .mf-card.sm i{font-size:18px}
+#ms-flow .mf-rw{background:#fff;color:#0F1E2E;border-radius:16px;padding:12px;width:100%;text-align:left;box-shadow:0 4px 14px rgba(0,0,0,.08)}
+#ms-flow .mf-rwr{display:flex;align-items:center;gap:12px}#ms-flow .mf-rw span{flex:1;min-width:0}#ms-flow .mf-rw b{display:block;font-size:18px;line-height:1.2}#ms-flow .mf-rw small{display:block;font-size:14px;font-weight:800;color:#B45309;margin-top:2px}
+#ms-flow .mf-rwi{flex:none;width:42px;height:42px;border-radius:50%;background:#FEF3C7;display:grid;place-items:center;font-style:normal;font-size:21px}
+#ms-flow .mf-give{display:block;width:100%;margin-top:10px;height:50px;border:0;border-radius:12px;background:#1d1405;color:#fff;font:900 17px Inter,sans-serif;cursor:pointer}
+#ms-flow .mf-rw.dn{display:flex;align-items:center;gap:12px;background:#ECFDF5;box-shadow:inset 0 0 0 2.5px #10B981}#ms-flow .mf-rw.dn .mf-rwi{background:#10B981}#ms-flow .mf-rw.dn .mf-rwi svg{width:24px;height:24px}#ms-flow .mf-rw.dn b{color:#047857}#ms-flow .mf-rw.dn small{color:#64748B}
+#ms-flow .mf-un{flex:none;background:none;border:0;font:800 15px Inter,sans-serif;color:#64748B;text-decoration:underline;cursor:pointer;padding:8px 4px}
+#ms-flow .mf-gold{background:#FCD34D;color:#7C2D12}
+#ms-flow .mf-links{display:flex;gap:18px;justify-content:center;flex-wrap:wrap}#ms-flow .mf-links button{background:none;border:0;color:inherit;font:700 14px Inter,sans-serif;text-decoration:underline;opacity:.85;cursor:pointer;padding:6px 2px}
+#ms-flow .mf-stc{background:#fff;color:#0F1E2E;border-radius:20px;padding:14px 16px;width:100%;text-align:left}#ms-flow .mf-stc .mf-k{font-size:12px}#ms-flow .mf-stc p{font-size:16px;font-weight:800;line-height:1.3}
+#ms-flow .mf-st{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin:10px 0 12px;max-width:300px}
+#ms-flow .mf-st b{aspect-ratio:1;border-radius:50%;border:2.5px dashed #CBD5E1;display:grid;place-items:center;font-size:14px;color:#CBD5E1;font-weight:900}
+#ms-flow .mf-st b.on{background:#C69A3B;border:0;color:#fff}#ms-flow .mf-st b.new{background:#10B981;border:0;color:#fff;box-shadow:0 0 0 4px #A7F3D0}#ms-flow .mf-st b.gift{border-style:solid;border-color:#C69A3B;font-size:16px}
+#ms-flow.w .mf-go.mf-save{background:#10B981}#ms-flow.w .mf-skip{color:#475569}
 #ms-flow.w{background:#fff;color:#0F1E2E}#ms-flow.w .mf-go{background:#0D9488;color:#fff}#ms-flow.w .mf-x{background:#F1F5F9}
 /* Members Club at the till (#mc): New member · Already a member · Lost their app - one calm screen at a time */
 #mc{position:fixed;inset:0;z-index:4000;display:none;justify-content:center;background:#0F1E2E;font-family:inherit;-webkit-text-size-adjust:100%}
@@ -22913,8 +22929,7 @@ window.msLinkKey = async function(code, known, id){
   const k = known ? await sb.from('member_keyrings').update({ member_id: m.id }).eq('code', code).select() : await sb.from('member_keyrings').insert({ code, member_id: m.id }).select();
   if(k.error || (!msDemo() && (!k.data || !k.data.length))){ console.warn(k.error); toast('This keyring belongs to another venue'); return; }
   MS.keyrings[m.id] = code; msStockTake();
-  const r = await msVisit(m.id);
-  msSheetClose(); msRender(); setTimeout(() => msFlow(m.id, r || undefined), 60);
+  msSheetClose(); msRender(); setTimeout(() => msArrive(m.id), 60);
   toast('Keyring added for ' + String(m.name).split(' ')[0] + ' ✓');
 };
 
@@ -23312,8 +23327,6 @@ async function msVisit(memberId){
   if(!error){ const m = MS.members.find(x => String(x.id) === String(memberId)); if(m) msVipAlert(m); }
   return { venue, already: !!error };
 }
-// ── Waiter flow: after a scan, one big screen at a time so anyone can follow it ──
-// 1 Checked in (green) → 2 Their perks (gold) → 3 Good to know (yellow, only if notes) → Reward (only when earned) → 4 The bill (only if spend is on)
 // Member deals today: every event on today, and every offer, that has a Member benefit (or a member discount).
 // Shown at the end of a check-in and of a new sign-up, so staff know what to take off the bill.
 function msTodayDeals(){
@@ -23351,102 +23364,185 @@ window.msResendQR = async function(id){
   o.onclick = e => { const b = e.target.closest('button'); if(b && b.dataset.a === 'x'){ o.style.display = 'none'; mvBackDone('msflow'); msRender(); } };
   msRqDraw(code);
 };
+// Every way staff reach a member (scan, typed code, tapped name, new sign-up) comes here (Robbie 23 Nov).
+// Venues that record the bill: nothing is counted until the bill is saved - asking "what do I get?" is free,
+// and each bill saved is one visit (lunch + dinner = 2). Other venues: the scan is the visit, once per area per day.
+const msBillVisit = () => msHasSpend() || !Object.values(MS.visits).some(a => a && a.length);   // a brand-new venue has no visits yet: bill mode too
+window.msArrive = async function(id){
+  if(!MS.loaded) await msLoad();
+  if(msBillVisit()){
+    const m = MS.members.find(x => String(x.id) === String(id));
+    if(m && !(MS.visits[m.id] || []).some(x => x.venue === msVenue() && x.visit_date === msToday())) msVipAlert(m);
+    msRender(); return msFlow(id, { pending:true });
+  }
+  const r = await msVisit(id); msRender();
+  return msFlow(id, r || undefined);
+};
+// Save the bill = the visit. The database allows one visit per area per day for now (more needs Alex's change):
+// a second bill the same day is added to today's visit, so the spend is right but no extra visit counts.
+async function msBillSave(id, n){
+  const venue = msVenue(), day = msToday(), list = (MS.visits[id] = MS.visits[id] || []);
+  const row = { member_id:id, venue, visit_date:day, spend:n, by_profile: myProfile ? myProfile.id : null };
+  const ins = await sb.from('member_visits').insert(row).select();
+  if(!ins.error){ const v = Object.assign({ created_at:new Date().toISOString() }, row, (ins.data && ins.data[0]) || {}); list.unshift(v); return { kind:'new', v }; }
+  if(!/duplicate|unique/i.test(ins.error.message || '')){
+    if(msDemo()){ const v = Object.assign({ created_at:new Date().toISOString(), _local:1 }, row); list.unshift(v); return { kind:'new', v }; }
+    console.warn(ins.error); toast('Bill not saved - please try again'); return null;
+  }
+  let v = list.find(x => x.venue === venue && x.visit_date === day);
+  const old = v && +v.spend > 0 ? +v.spend : 0;
+  const up = await sb.from('member_visits').update({ spend: old + n }).eq('member_id', id).eq('venue', venue).eq('visit_date', day).select();
+  if(up.error || !up.data || !up.data.length){ console.warn(up.error); toast('Bill not saved - please try again'); return null; }
+  if(!v){ v = Object.assign({}, up.data[0]); list.unshift(v); } else v.spend = old + n;
+  return { kind: old ? 'added' : 'first', v, old };
+}
+// "Wrong person or amount? Undo" - takes the visit (or the added bill) back off
+async function msBillUndo(id, res){
+  if(!res || !res.v) return true;
+  const list = MS.visits[id] || [], v = res.v;
+  if(res.kind === 'new'){
+    if(!v._local){
+      const { error } = await sb.from('member_visits').delete().eq('member_id', id).eq('venue', v.venue).eq('visit_date', v.visit_date);
+      if(error && !msDemo()){ console.warn(error); toast('Not undone - please try again'); return false; }
+    }
+    const i = list.indexOf(v); if(i >= 0) list.splice(i, 1);
+    return true;
+  }
+  const back = res.kind === 'added' ? res.old : null;
+  const { error } = await sb.from('member_visits').update({ spend: back }).eq('member_id', id).eq('venue', v.venue).eq('visit_date', v.visit_date);
+  if(error && !msDemo()){ console.warn(error); toast('Not undone - please try again'); return false; }
+  v.spend = back; return true;
+}
+async function msRewardUndo(id){
+  const all = Object.assign({}, msJson('mk_rewards') || {}); all[id] = (all[id] || []).slice(0, -1);
+  appSettings.mk_rewards = JSON.stringify(all);
+  const ok = await msSetting('mk_rewards', all);
+  if(!ok && !msDemo()) toast('Not saved - check your connection');
+  return ok || msDemo();
+}
+// Where they are on the reward card: n of t (t = visits for a reward, set in Membership > Perks, reward and venues)
+function msCardState(m){
+  const rw = (msPage() || {}).reward, t = rw && +rw.visits; if(!t) return null;
+  const given = ((msJson('mk_rewards') || {})[m.id] || []).length, n = (MS.visits[m.id] || []).length - given * t;
+  return { t, n: Math.max(0, n), text: (rw.text || 'Their reward') };
+}
+const msRpFull = n => 'Rp ' + Number(n || 0).toLocaleString('id-ID');
+
+// ── The check-in screens, one big screen at a time so anyone can follow them ──
+// Bill venues: 1 Welcome → 2 What {name} gets (reward on top when ready) → 3 Bill (Save = the visit) → 4 Visit counted / Card full!
+//   "Just checking - Done" on 2, or "Not paying now" on 3, closes with nothing counted.
+// Other venues: 1 Checked in (the scan was the visit) → 2 What {name} gets → Done.
+// Never he / she - the app doesn't know, so it uses their first name (Robbie 23 Nov).
 window.msFlow = async function(id, r){
   if(typeof GPE !== 'undefined' && !GPE.loaded && typeof gpLoad === 'function'){ try{ await Promise.race([gpLoad(), new Promise(ok => setTimeout(ok, 2500))]); }catch(e){} }
   const m = MS.members.find(x => String(x.id) === String(id)); if(!m) return;
-  const first = String(m.name || '').trim().split(/\s+/)[0] || 'Guest';
-  const venue = (r && r.venue) || msVenue(), s = msStats(m), bd = msBirthdaySoon(m);
-  // A "first visit" perk only on their first visit, a birthday perk only in their birthday week - so staff don't give them every time (Robbie 22 Nov)
-  const nVis = (MS.visits[m.id] || []).length;
-  const perks = (msPerks()[m.tier === 'vip' ? 'vip' : 'member'] || []).filter(Boolean)
-    .filter(p => !/first\s+visit/i.test(p) || nVis <= 1)
-    .filter(p => !/birthday/i.test(p) || !!bd);
-  const rw = msRewardReady(m), rwText = ((msPage() || {}).reward || {}).text || 'Their reward';
+  const e = msEsc, first = String(m.name || '').trim().split(/\s+/)[0] || 'Guest';
+  const pend = !!(r && r.pending), venue = (r && r.venue) || msVenue(), bd = msBirthdaySoon(m);
   const nth = n => n + (n % 100 >= 11 && n % 100 <= 13 ? 'th' : ['th','st','nd','rd'][n % 10] || 'th');
-  const steps = ['in'];
-  if(perks.length) steps.push('perks');
-  const deals = msTodayDeals(); if(deals.length) steps.push('today');
-  if(m.allergy || m.notes) steps.push('know');
-  if(rw) steps.push('reward');
-  if(msHasSpend() && !((MS.visits[m.id] || []).find(x => x.venue === venue && x.visit_date === msToday()) || {}).spend) steps.push('bill');
-  if(r && r.already){ steps.length = 0; steps.push('again'); }   // scanned again the same day: one screen - already in, their perks + today's deals (Robbie 21 Nov)
+  const nVis = () => (MS.visits[m.id] || []).length;
+  // A "first visit" perk only on their first visit, a birthday perk only in their birthday week (Robbie 22 Nov)
+  const perks = (msPerks()[m.tier === 'vip' ? 'vip' : 'member'] || []).filter(Boolean)
+    .filter(p => !/first\s+visit/i.test(p) || nVis() <= (pend ? 0 : 1))
+    .filter(p => !/birthday/i.test(p) || !!bd);
+  const deals = msTodayDeals();
+  const steps = pend ? ['in','gets','bill','done'] : ['in','gets'];
   let o = document.getElementById('ms-flow');
   if(!o){ o = document.createElement('div'); o.id = 'ms-flow'; document.body.appendChild(o); }
-  const ic = { x:'<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>' };
-  let at = 0, amt = '', rq = '', done = {};
-  const close = () => { o.style.display = 'none'; mvBackDone('msflow'); msRender(); };
-  const next = () => { at++; if(at >= steps.length){ close(); if(steps[steps.length - 1] !== 'done') toast('All done ✓'); return; } draw(); };
-  const top = (lab) => `<div class="mf-top"><span class="mf-pl">${msEsc(lab)}</span><div class="mf-dots">${steps.map((_, i) => `<b class="${i <= at ? 'on' : ''}"></b>`).join('')}</div><button class="mf-x" data-a="x" title="Close">${ic.x}</button></div>`;
+  const ic = { x:'<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>',
+    tick: c => `<svg width="62%" height="62%" viewBox="0 0 24 24" fill="none" stroke="${c}" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5l5 5L20 6.5"/></svg>` };
+  let at = 0, amt = '', rq = '', given = false, saved = null, busy = false;
+  const close = () => { o.style.display = 'none'; mvBackDone('msflow'); msRender(); if(typeof fdRender === 'function' && document.getElementById('fd-res')) fdRender(); };
+  const top = lab => `<div class="mf-top"><span class="mf-pl">${e(lab)}</span><div class="mf-dots">${steps.map((_, i) => `<b class="${i <= at ? 'on' : ''}"></b>`).join('')}</div><button class="mf-x" data-a="x" title="Close">${ic.x}</button></div>`;
+  const rwBox = () => {
+    const rw = msRewardReady(m), txt = ((msPage() || {}).reward || {}).text || 'Their reward';
+    if(given) return `<div class="mf-k mf-lab">🎁 REWARD</div><div class="mf-rw dn"><i class="mf-rwi">${ic.tick('#fff')}</i><span><b>${e(txt)}</b><small>Given ✓</small></span><button class="mf-un" data-a="ungive">Undo</button></div>`;
+    if(!rw) return '';
+    return `<div class="mf-k mf-lab">🎁 REWARD READY</div><div class="mf-rw"><div class="mf-rwr"><i class="mf-rwi">🎁</i><span><b>${e(txt)}</b><small>Not given yet</small></span></div><button class="mf-give" data-a="give">Mark as given</button></div>`;
+  };
+  const card = () => {
+    const c = msCardState(m); if(!c) return '';
+    if(c.t > 20) return `<div class="mf-stc"><div class="mf-k" style="color:#9A7B45">${e(first.toUpperCase())}'S CARD</div><p>${Math.min(c.n, c.t)} of ${c.t} visits</p></div>`;
+    const dots = Array.from({ length:c.t }, (_, i) => i < c.n - 1 ? '<b class="on">✓</b>' : i === c.n - 1 ? `<b class="new">${i === c.t - 1 ? '🎁' : '✓'}</b>` : i === c.t - 1 ? '<b class="gift">🎁</b>' : `<b>${i + 1}</b>`).join('');
+    const lw = s => s.charAt(0).toLowerCase() + s.slice(1);
+    const msg = c.n >= c.t ? `Tell ${e(first)}: "Next visit, ${e(lw(c.text))} is on us!"` : `${c.t - c.n} more visit${c.t - c.n === 1 ? '' : 's'} to ${e(lw(c.text))}`;
+    return `<div class="mf-stc"><div class="mf-k" style="color:#9A7B45">${e(first.toUpperCase())}'S CARD</div><div class="mf-st">${dots}</div><p>${msg}</p></div>`;
+  };
   const draw = () => {
-    if(rq){ o.className = 'w'; o.innerHTML = top(first) + msRqHtml(m, rq) + `<button class="mf-go" data-a="rqBack">Back to check-in</button>`; msRqDraw(rq); return; }
-    const k = steps[at], last = at === steps.length - 1;
-    let cls = 'g', h = '';
+    if(rq){ o.className = 'w'; o.innerHTML = top(first) + msRqHtml(m, rq) + `<button class="mf-go" data-a="rqBack">Back</button>`; msRqDraw(rq); return; }
+    const k = steps[at]; let cls = 'g', h = '', foot = '';
     if(k === 'in'){
-      cls = r && r.already ? 'gr' : 'g';
-      h = top(venue) + `<div class="mf-mid"><div class="mf-tick"><svg width="62%" height="62%" viewBox="0 0 24 24" fill="none" stroke="${r && r.already ? '#475569' : '#10B981'}" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5l5 5L20 6.5"/></svg></div>
-        <div class="mf-big">${msEsc(first)}</div><div class="mf-pill">${m.tier === 'vip' ? 'VIP' : 'MEMBER'} · ${s.total <= 1 ? 'FIRST VISIT' : nth(s.total).toUpperCase() + ' VISIT'}</div>
-        ${bd ? `<div class="mf-pill">🎂 BIRTHDAY ${bd === 'today' ? 'TODAY' : msEsc(String(bd).toUpperCase())}</div>` : ''}
-        <div class="mf-sub">${r && r.already ? 'Already checked in today.' : 'Checked in.'} ${s.total <= 1 ? 'Say welcome!' : 'Say welcome back!'}</div>
-        <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap"><button class="mf-rq" data-a="prof" style="margin-top:6px"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6"/></svg>Full profile</button><button class="mf-rq" data-a="rq" style="margin-top:6px"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><path d="M14 14h3v3M21 14v7h-7"/></svg>Resend their QR</button></div></div>`;
-    } else if(k === 'perks'){
+      const again = !pend && r && r.already, n = nVis(), rw = msRewardReady(m);
+      cls = again ? 'gr' : 'g';
+      const pill = pend ? (n ? `MEMBER · ${n} VISIT${n === 1 ? '' : 'S'} SO FAR` : 'MEMBER · FIRST VISIT') : again ? 'ALREADY CHECKED IN TODAY' : `MEMBER · ${n <= 1 ? 'FIRST VISIT' : nth(n).toUpperCase() + ' VISIT'}`;
+      h = top(venue) + `<div class="mf-mid"><div class="mf-tick">${ic.tick(again ? '#475569' : '#10B981')}</div>
+        <div class="mf-big">${e(first)}</div><div class="mf-pill">${pill}</div>
+        ${rw && !given ? '<div class="mf-pill mf-gold">🎁 REWARD READY</div>' : ''}
+        ${bd ? `<div class="mf-pill">🎂 BIRTHDAY ${bd === 'today' ? 'TODAY' : e(String(bd).toUpperCase())}</div>` : ''}
+        <div class="mf-sub">${again ? 'No new visit counted.' : pend ? (n ? 'Say welcome back!' : 'Say welcome!') : 'Checked in. ' + (n <= 1 ? 'Say welcome!' : 'Say welcome back!')}</div>
+        <div class="mf-links"><button data-a="prof">Full profile</button><button data-a="rq">Resend their QR</button></div></div>`;
+      foot = `<button class="mf-go" data-a="next">Next →</button><button class="mf-skip" data-a="${pend || again ? 'x' : 'wrong'}">${pend || again ? 'Wrong person? Back' : 'Wrong person? Undo'}</button>`;
+    } else if(k === 'gets'){
       cls = 'o';
-      h = top(first) + `<div class="mf-mid"><div class="mf-big" style="font-size:clamp(30px,9vw,38px)">Their perks</div>${perks.map(p => `<div class="mf-card"><i>⭐</i>${msEsc(p)}</div>`).join('')}</div>`;
-    } else if(k === 'today'){
-      cls = 'tl';
-      h = top(first) + `<div class="mf-mid"><div class="mf-k">TODAY</div><div class="mf-big" style="font-size:clamp(28px,8.5vw,36px)">Member deals today</div>${msTodayCards(deals)}<div class="mf-sub">Take it off the bill before they pay.</div></div>`;
-    } else if(k === 'know'){
-      cls = 'y';
-      h = top(first) + `<div class="mf-mid"><div class="mf-big" style="font-size:clamp(30px,9vw,38px)">Good to know</div>
-        ${m.allergy ? `<div class="mf-card alg"><i>⚠️</i><span>Allergy: ${msEsc(m.allergy)}</span></div>` : ''}
-        ${m.notes ? `<div class="mf-card"><i>📝</i><span>${msEsc(m.notes)}</span></div>` : ''}</div>`;
-    } else if(k === 'reward'){
-      cls = 'r';
-      h = top(first) + `<div class="mf-mid"><div style="font-size:84px;line-height:1">🎁</div><div class="mf-big">Reward time!</div><div class="mf-sub">${msEsc(nth(rw.target))} visit. Give ${msEsc(first)}:</div><div class="mf-card"><i>🎉</i>${msEsc(rwText)}</div></div>`;
-    } else if(k === 'again'){
-      cls = 'g';
-      h = top(venue) + `<div class="mf-mid"><div class="mf-tick" style="width:84px;height:84px"><svg width="62%" height="62%" viewBox="0 0 24 24" fill="none" stroke="#10B981" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5l5 5L20 6.5"/></svg></div>
-        <div class="mf-big">${msEsc(first)}</div><div class="mf-pill">${m.tier === 'vip' ? 'VIP' : 'MEMBER'} · ALREADY IN TODAY</div>
-        ${perks.length ? `<div class="mf-k" style="margin-top:16px">THEIR PERKS</div><div class="pk">${perks.map(p => `<div class="mf-card"><i>⭐</i>${msEsc(p)}</div>`).join('')}</div>` : ''}
-        ${deals.length ? `<div class="mf-k" style="margin-top:14px">MEMBER DEALS TODAY</div><div class="pk">${msTodayCards(deals)}</div>` : ''}
-        ${m.allergy ? `<div class="mf-card alg"><i>⚠️</i><span>Allergy: ${msEsc(m.allergy)}</span></div>` : ''}
-        <button class="mf-rq" data-a="prof"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6"/></svg>Full profile</button></div>`;
-    } else if(k === 'done'){
-      cls = 'g';
-      h = top(venue) + `<div class="mf-mid"><div class="mf-tick"><svg width="62%" height="62%" viewBox="0 0 24 24" fill="none" stroke="#10B981" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5l5 5L20 6.5"/></svg></div>
-        <div class="mf-big">Checked in</div><div class="mf-sub" style="font-size:20px;font-weight:800;opacity:1">${msEsc(first)}</div><div class="mf-sub">${amt && done.bill ? 'Bill Rp ' + Number(amt).toLocaleString('id-ID') + ' saved. ' : ''}${done.reward ? 'Reward given. ' : ''}Enjoy their visit!</div></div>`;
+      const any = msRewardReady(m) || given || perks.length || deals.length;
+      h = top(first) + `<div class="mf-mid mf-gets"><div class="mf-big" style="font-size:clamp(28px,8.5vw,36px)">What ${e(first)} gets</div>
+        ${rwBox()}
+        ${perks.length ? `<div class="mf-k mf-lab">EVERY VISIT</div>${perks.map(p => `<div class="mf-card sm"><i>⭐</i>${e(p)}</div>`).join('')}` : ''}
+        ${deals.length ? `<div class="mf-k mf-lab">TODAY ONLY</div>${msTodayCards(deals).replace(/mf-card mf-deal/g, 'mf-card mf-deal sm')}` : ''}
+        ${any ? '' : '<div class="mf-sub">No perks set up yet. A manager adds them in Membership.</div>'}</div>`;
+      foot = pend ? `<button class="mf-go" data-a="next">Paying now → Bill</button><button class="mf-skip" data-a="x">Just checking - Done</button>` : `<button class="mf-go" data-a="x">Done ✓</button>`;
     } else if(k === 'bill'){
       cls = 'w';
-      h = top(first) + `<div class="mf-mid"><div class="mf-big" style="font-size:clamp(26px,8vw,34px)">How much was the bill?</div>
+      h = top(first) + `<div class="mf-mid"><div class="mf-big" style="font-size:clamp(26px,8vw,34px)">How much was the bill?</div><div class="mf-sub" style="margin-top:-6px;font-size:15px;color:#64748B">After the member discount</div>
         <div class="mf-amt"><small>Rp</small><span id="mf-amt">${amt ? Number(amt).toLocaleString('id-ID') : ''}</span></div>
         <div class="mf-keys">${['1','2','3','4','5','6','7','8','9','000','0','⌫'].map(x => `<button data-k="${x}">${x}</button>`).join('')}</div></div>`;
+      foot = `<button class="mf-go mf-save" data-a="save">Save ✓</button><button class="mf-skip" data-a="x">Not paying now - nothing counted</button>`;
+    } else if(k === 'done'){
+      cls = 'g';
+      const c = msCardState(m), full = c && c.n >= c.t, added = saved && saved.kind === 'added';
+      const head = added ? 'Bill added' : full ? 'Card full!' : 'Visit counted';
+      const sub = added ? `Added to ${e(first)}'s visit today` : full ? `That was visit ${c.t}` : c ? `${e(first)} is on ${c.n} of ${c.t}` : `${e(first)} has ${nVis()} visit${nVis() === 1 ? '' : 's'}`;
+      h = top(first) + `<div class="mf-mid">${full && !added ? '<div style="font-size:84px;line-height:1">🎁</div>' : `<div class="mf-tick" style="width:clamp(96px,28vw,120px);height:clamp(96px,28vw,120px)">${ic.tick('#10B981')}</div>`}
+        <div class="mf-big" style="font-size:clamp(30px,9vw,40px)">${head}</div><div class="mf-sub" style="margin-top:-6px">${sub}</div>
+        ${added ? '' : card()}
+        <div class="mf-sub" style="font-size:15px">Bill ${msRpFull(added ? saved.v.spend : amt)} saved</div></div>`;
+      foot = `<button class="mf-go" data-a="x">Done ✓</button><button class="mf-skip" data-a="undo">Wrong person or amount? Undo</button>`;
     }
-    const btn = k === 'done' || k === 'again' ? 'Done' : k === 'in' ? 'Next →' : k === 'perks' ? 'Next →' : k === 'today' ? 'Next →' : k === 'know' ? 'Got it →' : k === 'reward' ? 'Given ✓' : 'Finish';
-    o.className = cls + (k === 'again' ? ' ag' : '');
-    o.innerHTML = h + (k === 'again' ? '<div class="mf-foot2">' : '') + `<button class="mf-go" data-a="go">${last && k !== 'bill' && k !== 'reward' && k !== 'done' && k !== 'again' ? 'Finish' : btn}</button>${k === 'bill' ? '<button class="mf-skip" data-a="skip">Skip</button>' : ''}` + (k === 'again' ? '</div>' : '');
+    o.className = cls;
+    o.innerHTML = h + foot;
   };
-  o.onclick = async e => {
-    const b = e.target.closest('button'); if(!b) return;
+  o.onclick = async ev => {
+    const b = ev.target.closest('button'); if(!b || busy) return;
     if(b.dataset.k){ const x = b.dataset.k; amt = x === '⌫' ? amt.slice(0, -1) : (amt + x).replace(/^0+/, '').slice(0, 11); const sp = document.getElementById('mf-amt'); if(sp) sp.textContent = amt ? Number(amt).toLocaleString('id-ID') : ''; return; }
     const a = b.dataset.a;
     if(a === 'x') return close();
-    if(a === 'prof'){ close(); return setTimeout(() => msOpenMember(m.id, r), 60); }
-    if(a === 'skip') return next();
-    if(a === 'rq'){ b.disabled = true; const c = await msEnsureCode(m.id); b.disabled = false; if(!c) return; rq = c; return draw(); }
+    if(a === 'next'){ at++; return draw(); }
+    if(a === 'prof'){ close(); return setTimeout(() => msOpenMember(m.id, pend ? undefined : r), 60); }
+    if(a === 'rq'){ busy = true; b.disabled = true; const c = await msEnsureCode(m.id); busy = false; b.disabled = false; if(!c) return; rq = c; return draw(); }
     if(a === 'rqBack'){ rq = ''; return draw(); }
-    if(a === 'go'){
-      const k = steps[at];
-      if(k === 'reward'){ b.disabled = true; const ok = await msRewardSave(m.id); if(!ok){ b.disabled = false; return; } toast('Reward given ✓'); done.reward = 1; }
-      if(k === 'bill'){ if(!amt){ toast('Type the bill, or tap Skip'); return; } b.disabled = true; const ok = await msSaveSpend(m.id, +amt); if(!ok){ b.disabled = false; return; } toast('Bill saved ✓'); done.bill = 1; }
-      next();
+    if(a === 'give'){ busy = true; b.disabled = true; const ok = await msRewardSave(m.id); busy = false; if(!ok){ b.disabled = false; return; } given = true; return draw(); }   // the box turns green - no toast over the next screen
+    if(a === 'ungive'){ busy = true; const ok = await msRewardUndo(m.id); busy = false; if(!ok) return; given = false; return draw(); }
+    if(a === 'wrong'){   // scan-is-the-visit venues: take today's new visit back off
+      busy = true; const v = (MS.visits[m.id] || []).find(x => x.venue === venue && x.visit_date === msToday());
+      const ok = await msBillUndo(m.id, v ? { kind:'new', v } : null); busy = false; if(!ok) return;
+      toast('Undone - nothing counted'); return close();
+    }
+    if(a === 'save'){
+      if(!amt){ toast('Type the bill first'); return; }
+      busy = true; b.disabled = true; b.textContent = 'Saving…';
+      const res = await msBillSave(m.id, +amt); busy = false;
+      if(!res){ b.disabled = false; b.textContent = 'Save ✓'; return; }
+      saved = res; at++; msRender(); return draw();
+    }
+    if(a === 'undo'){
+      busy = true; const ok = await msBillUndo(m.id, saved); busy = false; if(!ok) return;
+      saved = null; at = steps.indexOf('bill'); toast('Undone - nothing counted. Fix the amount, or close.'); msRender(); return draw();
     }
   };
   draw(); o.style.display = 'flex';
   mvBackOpen('msflow', () => { o.style.display = 'none'; msRender(); });
 };
 window.msCheckIn = async function(id){
-  const r = await msVisit(id); if(!r) return;
-  msSheetClose(); setTimeout(() => msFlow(id, r), 60);
-  msRender();
+  msSheetClose(); setTimeout(() => msArrive(id), 60);
 };
 
 // ── Scan (in-app camera, with "type the code" as a back-up) ──
@@ -23548,7 +23644,7 @@ function fdResults(){
     <div class="fd-hint">${l.length === 1 ? '1 match · confirm their name, then tap it' : l.length + ' matches · ask their name, then tap the right one'}</div>`;
 }
 window.fdBy = k => { FD.by = k; FD.q = ''; fdRender(); const i = document.getElementById('fd-q'); if(i) i.focus(); };
-window.fdOpen = id => { FD.sel = id; fdRender(); window.scrollTo(0, 0); };
+window.fdOpen = id => fdCheckIn(id);   // tapping a name works exactly like scanning their keyring (Robbie 23 Nov)
 window.fdBack = () => { FD.sel = null; fdRender(); };
 function fdMemberHtml(id){
   const e = msEsc, m = MS.members.find(x => String(x.id) === String(id)); if(!m) return '';
@@ -23561,8 +23657,8 @@ function fdMemberHtml(id){
     <button type="button" class="fd-in" onclick="fdCheckIn('${m.id}')">✓ Check in</button>`;
 }
 window.fdCheckIn = async id => {
-  const r = await msVisit(id); FD.sel = null; FD.q = ''; fdRender(); msRender();
-  return msFlow(id, r || undefined);   // the same check-in screens as a scan (perks, today's deals, bill)
+  FD.sel = null; FD.q = ''; fdRender();
+  return msArrive(id);   // the same check-in screens as a scan
 };
 async function fdLook(code){
   FD.busy = true; FD.err = ''; FD.r = null; fdRender();
@@ -23584,9 +23680,7 @@ async function msHandleCode(code){
     let m = MS.members.find(x => x.id === data.member_id);
     if(!m){ await msLoad(); m = MS.members.find(x => x.id === data.member_id); }
     if(!m){ toast('That member was removed - sign them up again'); return msSignUp(code, true); }
-    const r = await msVisit(m.id);
-    msRender();
-    return msFlow(m.id, r || undefined);
+    return msArrive(m.id);
   }
   msSignUp(code, !!data);
 }
@@ -23652,10 +23746,9 @@ function msSignUp(code, known, digital){
     else MS.keyrings[m.id] = code;
     MS.members.push(m);
     if(!digital) msStockTake();
-    const r = await msVisit(m.id);
     close(); msRender();
     if(digital && MS.keyrings[m.id] === code) setTimeout(() => dcShow({ name:m.name, tier:m.tier, code, since:m.created_at, phone:m.phone, id:m.id }), 60);
-    else setTimeout(() => msFlow(m.id, r || undefined), 60);
+    else setTimeout(() => msArrive(m.id), 60);
   };
   o.onclick = async e => {
     const b = e.target.closest('button'); if(!b) return;
@@ -23763,7 +23856,7 @@ const MCV = {
       `</div></div><div class="mc-foot">${S.wa ? `<a class="mc-go" id="mc-signup" style="background:#25D366;color:#fff" target="_blank" rel="noopener" href="${msEsc('https://wa.me/' + mcWa(S.phone) + '?text=' + encodeURIComponent(mcWelcome(S.code)))}">${MCI.wa(20)}Sign up &amp; send their app</a>` : `<button class="mc-go" data-a="signupQR">${MCI.qr}Sign up &amp; show their QR</button>`}</div>` };
   },
   qr:() => ({ c:'w', h:mcTop({ dots:mcDots(7, 6) }) + `<div class="mc-mid"><div class="mc-k" style="color:#0D9488">Turn the screen to the guest</div><div class="mc-big">Scan this with your camera</div><div class="mc-sub" style="color:#64748B">It opens your app, with your card and perks.</div><div class="mc-qr" id="mc-qr"></div></div><div class="mc-foot"><button class="mc-go" data-a="doneQR">Done</button></div>`, after:() => { try{ new QRCode(document.getElementById('mc-qr'), { text:mcLink(MC.S.code), width:400, height:400, colorDark:'#0F1E2E', colorLight:'#FFFFFF', correctLevel:QRCode.CorrectLevel.M }); }catch(e){ document.getElementById('mc-qr').textContent = mcLink(MC.S.code); } } }),
-  done:() => ({ c:'ok', h:mcTop({ back:false, label:'All done' }) + `<div class="mc-mid"><span class="mc-okic">${MCI.tick}</span><div class="mc-big" style="margin-top:12px">${msEsc(mcFirst())} is a member</div><div class="mc-sub">${MC.S.viaQR ? 'Their app is on their phone.' : 'Their app is on its way on WhatsApp.'}</div><div class="mc-sub" style="margin-top:8px;opacity:.8">Checked in for today. Next time: <b>Existing member</b>, last 4 digits <b>${msEsc(mcLast4(MC.S.phone))}</b>.</div>${(() => { const pk = ((msPerks() || {}).member || []).filter(Boolean).filter(t => !/birthday/i.test(t)); return pk.length ? `<div class="mc-deals"><div class="mc-dk">THEIR PERKS</div>${pk.map(t => `<div class="mf-card mf-deal mc-pk"><i>⭐</i><span><b>${msEsc(t)}</b></span></div>`).join('')}</div>` : ''; })()}${(() => { const d = msTodayDeals(); return d.length ? `<div class="mc-deals"><div class="mc-dk">MEMBER DEALS TODAY</div>${msTodayCards(d)}</div>` : ''; })()}</div><div class="mc-foot"><button class="mc-go" style="background:#fff;color:#16A34A" data-a="close">Back to start</button>${MC.S.viaQR ? '' : `<button class="mc-alt" data-a="toQR">WhatsApp didn't arrive? Show their QR</button>`}</div>` }),
+  done:() => ({ c:'ok', h:mcTop({ back:false, label:'All done' }) + `<div class="mc-mid"><span class="mc-okic">${MCI.tick}</span><div class="mc-big" style="margin-top:12px">${msEsc(mcFirst())} is a member</div><div class="mc-sub">${MC.S.viaQR ? 'Their app is on their phone.' : 'Their app is on its way on WhatsApp.'}</div><div class="mc-sub" style="margin-top:8px;opacity:.8">${msBillVisit() ? '' : 'Checked in for today. '}Next time: <b>Existing member</b>, last 4 digits <b>${msEsc(mcLast4(MC.S.phone))}</b>.</div>${msBillVisit() ? '' : (() => { const pk = ((msPerks() || {}).member || []).filter(Boolean).filter(t => !/birthday/i.test(t)); return pk.length ? `<div class="mc-deals"><div class="mc-dk">THEIR PERKS</div>${pk.map(t => `<div class="mf-card mf-deal mc-pk"><i>⭐</i><span><b>${msEsc(t)}</b></span></div>`).join('')}</div>` : ''; })() + (() => { const d = msTodayDeals(); return d.length ? `<div class="mc-deals"><div class="mc-dk">MEMBER DEALS TODAY</div>${msTodayCards(d)}</div>` : ''; })()}</div><div class="mc-foot">${msBillVisit() ? `<button class="mc-go" style="background:#fff;color:#16A34A" data-a="toFlow">Next: what ${msEsc(mcFirst())} gets →</button>` : '<button class="mc-go" style="background:#fff;color:#16A34A" data-a="close">Back to start</button>'}${MC.S.viaQR ? '' : `<button class="mc-alt" data-a="toQR">WhatsApp didn't arrive? Show their QR</button>`}</div>` }),
   saveErr:() => ({ c:'n', h:mcTop({ back:false, label:'New member' }) + `<div class="mc-mid"><div class="mc-big">Not saved</div><div class="mc-sub">${msEsc(MC.S.err || 'Please try again.')}</div></div><div class="mc-foot"><button class="mc-go" data-a="retry">Try again</button></div>` }),
 
   // Already a member
@@ -23858,7 +23951,7 @@ const mcVal = id => { const e = document.getElementById(id); return e ? e.value.
 async function mcFreeCode(){ return await dcFreeCode(); }
 function mcCheckIn(m){
   const id = m.id; mcClose();
-  setTimeout(async () => { const r = await msVisit(id); msRender(); msFlow(id, r || undefined); }, 380);
+  setTimeout(() => msArrive(id), 380);
 }
 // Save the new member, their own app link, and today's visit
 async function mcSave(){
@@ -23876,7 +23969,8 @@ async function mcSave(){
       if(k.error || !k.data || !k.data.length) throw k.error || new Error('link not saved');
       S.linked = true; MS.keyrings[S.memberId] = S.code;
     }
-    await msVisit(S.memberId); msRender();
+    if(!msBillVisit()) await msVisit(S.memberId);   // bill venues: their first visit counts when the bill is saved
+    msRender();
     S.saving = false; return true;
   }catch(e){ console.warn('[new member]', e); S.saving = false; S.err = 'Check the internet and try again.'; return false; }
 }
@@ -23921,6 +24015,7 @@ function mcWire(o){
     const a = t.dataset.a;
     if(a === 'back') return mcBack();
     if(a === 'close') return mcClose();
+    if(a === 'toFlow'){ const id = S.memberId; mcClose(); if(id) setTimeout(() => msArrive(id), 380); return; }   // bill venues: straight into the check-in screens, the bill counts visit 1
     // New member
     if(a === 'nameNext'){ S.first = mcVal('mc-f1').replace(/\s+/g, ' '); S.last = mcVal('mc-f2').replace(/\s+/g, ' '); if(!S.first){ document.getElementById('mc-f1').focus(); toast('Type their first name'); return; } return S.edit ? mcToReady() : mcGo('bday'); }
     if(a === 'bdNext'){ S.d = mcVal('mc-bd'); S.m = mcVal('mc-bm'); if(!!S.d !== !!S.m){ toast('Pick the day and the month - or tap Skip'); return; } return S.edit ? mcToReady() : mcGo('waq'); }

@@ -7162,7 +7162,7 @@ function nav(id, pushState=true){
   // Closing a pop-up re-runs nav for the same page - only reset Meeting Notes when you actually arrive
   if(id==='notes'){ if(!window._mnOnPage){ mnGoToday(); mnLoadFromSupabase(); } window._mnOnPage = true; } else { window._mnOnPage = false; document.body.classList.remove('mn-full-open'); if(typeof mnFlush==='function') mnFlush(); }
   if(id==='cal'){calRender();}
-  if(id==='djsched'){djSchedRender();}
+  if(id==='djsched'){djSchedRender();setTimeout(djSchedGoToThisWeek,60);}
   if(id==='home'){initHome(); announceRender(); setTimeout(()=>{ try{ hlInitScroll(); }catch(e){} }, 200);}
   if(id==='quicklinks'){quickLinksRender();}
   if(id==='sandbox'){sandboxRender();}
@@ -11582,6 +11582,20 @@ function djSchedDayCellHtml(stage, d, inMonth, dayName){
   return html;
 }
 
+// Open on THIS week (not the first week of the month), and on phones slide the days so today is first (QA 13a)
+function djSchedGoToThisWeek(){
+  const now = new Date();
+  if(now.getFullYear() !== djSchedYear || now.getMonth() !== djSchedMonth) return;
+  const mon = new Date(now); mon.setDate(now.getDate() - ((now.getDay()+6)%7)); mon.setHours(0,0,0,0);
+  const box = document.getElementById('djw-' + djSchedDateKey(mon));
+  if(!box) return;
+  if(mon.getDate() > 1 || mon.getMonth() === djSchedMonth) box.scrollIntoView({block:'start'});
+  const idx = (now.getDay()+6)%7;
+  box.querySelectorAll('.djsched-week-grid').forEach(function(g){
+    const cell = g.children[idx];
+    if(cell && g.scrollWidth > g.clientWidth + 4) g.scrollLeft = Math.max(0, cell.offsetLeft - g.offsetLeft - 16);
+  });
+}
 function djSchedRenderLegend(){
   const el = document.getElementById('djsched-legend');
   if(!el) return;
@@ -11622,9 +11636,9 @@ function djSchedRender(){
       let out = '';
       weeks.forEach(function(week){
         const weekLabel = week.days[0].toLocaleDateString('en-GB',{day:'numeric',month:'short'})+' – '+week.days[6].toLocaleDateString('en-GB',{day:'numeric',month:'short'});
-        out += '<div style="margin-bottom:28px">';
-        out += '<div style="font-size:13px;font-weight:800;color:#0F1E2E;text-transform:uppercase;letter-spacing:0.8px;margin-bottom:12px;padding:8px 14px;background:#EDE6D8;border-radius:8px">Week of '+weekLabel+'</div>';
         const weekStartKey = djSchedDateKey(week.start);
+        out += '<div style="margin-bottom:28px;scroll-margin-top:70px" id="djw-'+weekStartKey+'">';
+        out += '<div style="font-size:13px;font-weight:800;color:#0F1E2E;text-transform:uppercase;letter-spacing:0.8px;margin-bottom:12px;padding:8px 14px;background:#EDE6D8;border-radius:8px">Week of '+weekLabel+'</div>';
         const activeStages = djStages.filter(function(stage){ return djSchedStageActiveForWeek(stage.id, weekStartKey); });
         activeStages.forEach(function(stage){
           const stageColor = stage.color || '#0F1E2E';

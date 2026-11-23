@@ -5792,7 +5792,7 @@ html:has(#menuDetailOverlay[style*="flex"]),html:has(#menuDetailOverlay[style*="
 
     <div class="page" id="p-stickynotes-board" style="padding:32px 28px 60px">
       <div class="ph">
-        <div class="ph-title" id="sticky-board-title">My Notes</div>
+        <div class="ph-title" id="sticky-board-title">Sticky Notes</div>
         <button class="btn btn-navy" onclick="stickyOpenAdd()">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
           Add Note
@@ -7123,6 +7123,7 @@ function nav(id, pushState=true){
   if(id === 'notetaker'){ if(typeof mvPlus === 'function') mvPlus('notetaker'); if(!document.querySelector('.page.on')) id = 'home'; else return; }
   if(id === 'membership' && !(typeof msUnlocked === 'function' && msUnlocked())){ mvPlus('membership'); return; }   // its own product: an add-on in full Mavis (open in the Mavis Demo company)
   if((id === 'requests' || id === 'request') && typeof appIsDemoCompany === 'function' && !appIsDemoCompany()){ mvSoon('maintenance'); return; }
+  if(id === 'stickynotes'){ id = 'stickynotes-board'; stickyActiveTab = 'mine'; }   // QA 15a: Sticky Notes is just My Notes (no shared Brainstorm)
   if(!rolePageAllowed(id)){
     toast("You don't have access to this page - ask your manager");
     return;
@@ -7189,7 +7190,7 @@ function nav(id, pushState=true){
   if(id==='vacancies'){vacanciesRender();}
   if(id==='analytics'){ analyticsRender(); businessMetricsLoadFromSupabase().then(analyticsRender); }
   if(id==='predictor'){ predictorRender(); }
-  if(id==='stickynotes'){ /* root chooser - no board to render */ }
+  if(id==='stickynotes-board'){ stickyActiveTab = 'mine'; const t=document.getElementById('sticky-board-title'); if(t) t.textContent='Sticky Notes'; stickyRenderBoard(); }
   if(id==='reporting'){reportingRender();}
   if(id==='reporting-calendar'){repcalRender();}
   if(id==='reporting-targets'){reportingTargetsRender();}
@@ -27774,7 +27775,7 @@ function stickySubscribeBrainstormRealtime(){
 
 function stickyOpenBoard(tab){
   stickyActiveTab = tab;
-  document.getElementById('sticky-board-title').textContent = tab === 'brainstorm' ? 'Brainstorm' : 'My Notes';
+  document.getElementById('sticky-board-title').textContent = 'Sticky Notes';
   if(tab === 'brainstorm') stickySubscribeBrainstormRealtime();
   nav('stickynotes-board');
   stickyRenderBoard();

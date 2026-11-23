@@ -900,6 +900,8 @@ select.search-inp{max-width:150px;cursor:pointer}
   transition:transform 0.15s;
 }
 #dash-chat-panel.mv-role-off{display:none!important}
+body.feed-off #announce-wrap,body.feed-off #moments-wrap{display:none!important}
+body.feed-off .home-social-main{display:none}body.feed-off .home-social-row{margin-top:0!important}body.feed-off .home-social-side{width:auto;flex:1;position:static;align-self:stretch}   /* QA 18a: Team Feed & Highlights switched off for this role */
 #chat-float-btn:hover{transform:translateY(-2px) scale(1.03)}
 #chat-float-badge{
   position:absolute;
@@ -15208,6 +15210,7 @@ function roleApplyMenus(){
     if(reqOff && depts.length && typeof sb !== 'undefined') sb.from('requests').select('id', { count:'exact', head:true }).in('dept', depts).neq('status', 'closed')
       .then(({ count }) => { if(count > 0) document.body.classList.remove('req-off'); }).catch(() => {});
   }catch(e){}
+  document.body.classList.toggle('feed-off', !!myProfile && !roleCan('teamfeed'));   // QA 18a: the Admin Console switch now hides Team Feed + Highlights
   const dcp = document.getElementById('dash-chat-panel'); if(dcp) dcp.classList.toggle('mv-role-off', !rolePageAllowed('chat'));   // no Chat for this role: no chat panel on the dashboard either
   const adminLink = document.getElementById('n-admin');
   if(adminLink) adminLink.style.display = (myProfile && !roleCan('adminconsole')) ? 'none' : '';

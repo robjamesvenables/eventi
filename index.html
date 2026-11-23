@@ -3791,6 +3791,12 @@ img.emoji-tw{width:1.15em;height:1.15em;vertical-align:-0.2em;margin:0 1px}
   flex-shrink:0;
 }
 #mobile-topbar button{background:none;border:none;padding:4px;cursor:pointer;display:flex;flex-shrink:0}
+/* My Account: round initial/photo, top right - one tap opens My Account (QA 1a) */
+.me-btn{width:34px;height:34px;border-radius:50%;background:#0F1E2E;color:#fff;font:800 14px/1 inherit;display:flex;align-items:center;justify-content:center;border:2px solid #fff;box-shadow:0 0 0 1.5px #CBD5E1;cursor:pointer;background-size:cover;background-position:center;flex-shrink:0;padding:0}
+#mobile-topbar .me-btn{margin-left:auto;background-color:#0F1E2E;padding:0;width:34px;height:34px}
+#me-float{position:fixed;top:20px;right:14px;z-index:160;width:38px;height:38px;font-size:15px}
+@media (min-width: 861px){#app-content > .body-wrap{padding-right:52px}}
+@media (max-width: 860px){#me-float{display:none}}
 
 /* ── SIDEBAR OVERLAY (mobile only, tap to close) ── */
 #sidebar-overlay{
@@ -5016,7 +5022,9 @@ html:has(#menuDetailOverlay[style*="flex"]),html:has(#menuDetailOverlay[style*="
       <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#0F1E2E" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
     </button>
     <span onclick="nav('home')" style="font-size:18px;font-weight:700;cursor:pointer;display:inline-flex;align-items:center"><svg class="mk-only mk-ic" viewBox="0 0 100 100" aria-hidden="true"><path fill="currentColor" d="M34 30a14 14 0 0 0-6 26.6L23 82h22l-5-25.4A14 14 0 0 0 34 30z"/><g fill="none" stroke="currentColor" stroke-width="9" stroke-linecap="round"><path d="M58 36a20 20 0 0 1 0 28"/><path d="M70 26a34 34 0 0 1 0 48"/><path d="M82 16a48 48 0 0 1 0 68"/></g></svg><span style="color:#0D9488">M</span>avis<span class="mk-only">&nbsp;Key</span><span style="color:#C4973B">.</span></span>
+    <button class="me-btn" id="tb-me" onclick="openMyAccount()" aria-label="My Account" title="My Account">R</button>
   </div>
+  <button class="me-btn" id="me-float" onclick="openMyAccount()" aria-label="My Account" title="My Account">R</button>
 
   <div class="body-wrap">
 
@@ -8447,6 +8455,10 @@ window.accountLogoutAll = function(){
     doLogout();
   }});
 };
+// Top-right My Account buttons copy the sidebar avatar (initial or photo) whenever it changes.
+(function(){ const sync=function(){ const a=document.getElementById('sb-avatar'); if(!a) return; ['tb-me','me-float'].forEach(function(id){ const b=document.getElementById(id); if(!b) return; b.textContent=a.textContent; b.style.backgroundImage=a.style.backgroundImage||''; }); };
+  const go=function(){ const a=document.getElementById('sb-avatar'); if(!a) return; sync(); try{ new MutationObserver(sync).observe(a,{childList:true,characterData:true,subtree:true,attributes:true,attributeFilter:['style']}); }catch(e){} };
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',go); else go(); })();
 // Show the person's own photo on the sidebar avatar (or their first initial).
 function accountApplyAvatar(){
   const a = document.getElementById('sb-avatar'); if(!a || !myProfile) return;

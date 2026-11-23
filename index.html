@@ -8,8 +8,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <!-- display=swap: never hide text while the font loads (speed, 21 Nov) -->
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<script src="https://cdn.jsdelivr.net/npm/@twemoji/api@17.0.3/dist/twemoji.min.js" integrity="sha384-Y5xukbGJwykbHHkTbLJykYLcBPFxrwipTbEh0puxhkz9CZ90raTPGe2Ks4vCxsYU" crossorigin="anonymous"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" media="print" onload="this.media='all'"><noscript><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet"></noscript>
+<script async src="https://cdn.jsdelivr.net/npm/@twemoji/api@17.0.3/dist/twemoji.min.js" integrity="sha384-Y5xukbGJwykbHHkTbLJykYLcBPFxrwipTbEh0puxhkz9CZ90raTPGe2Ks4vCxsYU" crossorigin="anonymous"></script>
 <script async src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.9.3/html2pdf.bundle.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 <script async src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 <script async src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js" onload="try{Chart.defaults.font.family='\'Inter\', sans-serif'}catch(e){}" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
@@ -7951,7 +7951,7 @@ async function authApplyProfile(profile, company){
   setCurrentUserName(profile.first_name);
   try{ accountApplyAvatar(); }catch(e){}
   authApplyRoleVisibility();
-  peopleLoadFromSupabase().catch(e => console.warn(e));   // the team list fills in on its own - opening the app no longer waits for it
+  try{ await peopleLoadFromSupabase(); }catch(e){ console.warn(e); }   // kept waiting for the team list: pages like Scheduling must never show the sample team first
 }
 // Light role check for now: only people whose role has Admin Console switched on see it.
 // Company box: the name can be changed by a Super Admin; the Company ID is permanent.

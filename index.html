@@ -2853,6 +2853,11 @@ div.mki-row{cursor:default}.mki-row.done{opacity:.6}
 #ms-flow .mf-st b.on{background:#C69A3B;border:0;color:#fff}#ms-flow .mf-st b.new{background:#10B981;border:0;color:#fff;box-shadow:0 0 0 4px #A7F3D0}#ms-flow .mf-st b.gift{border-style:solid;border-color:#C69A3B;font-size:16px}
 #ms-flow.w .mf-go.mf-save{background:#10B981}#ms-flow.w .mf-skip{color:#475569}
 #ms-flow .mf-undo{display:block;width:calc(100% - 32px);max-width:428px;margin:0 auto 10px;height:54px;border-radius:18px;border:2.5px solid rgba(255,255,255,.85);background:transparent;color:#fff;font:800 17px Inter,sans-serif;cursor:pointer}
+#ms-flow .mf-q{width:84px;height:84px;border-radius:50%;background:#FCD34D;color:#0F1E2E;display:grid;place-items:center;font-size:48px;font-weight:900}
+#ms-flow .mf-chk{background:#fff;color:#0F1E2E;border-radius:22px;width:100%;padding:4px 18px;text-align:left;box-shadow:0 8px 24px rgba(0,0,0,.25)}
+#ms-flow .mf-chk div{padding:12px 0;border-bottom:1.5px solid #EEF2F6}#ms-flow .mf-chk div:last-child{border:0}
+#ms-flow .mf-chk small{display:block;font-size:12px;font-weight:900;letter-spacing:.12em;color:#64748B}#ms-flow .mf-chk b{display:block;font-size:21px;font-weight:900;margin-top:2px;overflow-wrap:anywhere}#ms-flow .mf-chk b.amt{font-size:clamp(26px,8vw,34px);letter-spacing:-.5px}
+#ms-flow.n .mf-go.mf-yes{background:#10B981;color:#fff}#ms-flow.n .mf-undo{margin:0 auto calc(18px + env(safe-area-inset-bottom))}
 #ms-flow.w{background:#fff;color:#0F1E2E}#ms-flow.w .mf-go{background:#0D9488;color:#fff}#ms-flow.w .mf-x{background:#F1F5F9}
 /* Members Club at the till (#mc): New member · Already a member · Lost their app - one calm screen at a time */
 #mc{position:fixed;inset:0;z-index:4000;display:none;justify-content:center;background:#0F1E2E;font-family:inherit;-webkit-text-size-adjust:100%}
@@ -23446,7 +23451,7 @@ window.msFlow = async function(id, r){
     .filter(p => !/first\s+visit/i.test(p) || nVis() <= (pend ? 0 : 1))
     .filter(p => !/birthday/i.test(p) || !!bd);
   const deals = msTodayDeals();
-  const steps = pend ? ['in','gets','bill','done'] : ['in','gets'];
+  const steps = pend ? ['in','gets','bill','check','done'] : ['in','gets'];
   let o = document.getElementById('ms-flow');
   if(!o){ o = document.createElement('div'); o.id = 'ms-flow'; document.body.appendChild(o); }
   const ic = { x:'<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>',
@@ -23496,7 +23501,14 @@ window.msFlow = async function(id, r){
       h = top(first) + `<div class="mf-mid"><div class="mf-big" style="font-size:clamp(26px,8vw,34px)">How much was the bill?</div>${undone ? '<div class="mf-sub" style="margin-top:-6px;font-size:15px;color:#B45309;font-weight:800">Undone - nothing counted. Type the right amount, or close.</div>' : '<div class="mf-sub" style="margin-top:-6px;font-size:15px;color:#64748B">After the member discount</div>'}
         <div class="mf-amt"><small>Rp</small><span id="mf-amt">${amt ? Number(amt).toLocaleString('id-ID') : ''}</span></div>
         <div class="mf-keys">${['1','2','3','4','5','6','7','8','9','000','0','⌫'].map(x => `<button data-k="${x}">${x}</button>`).join('')}</div></div>`;
-      foot = `<button class="mf-go mf-save" data-a="save">Save ✓</button><button class="mf-skip" data-a="x">Not paying now - nothing counted</button>`;
+      foot = `<button class="mf-go mf-save" data-a="tocheck">Save ✓</button><button class="mf-skip" data-a="x">Not paying now - nothing counted</button>`;
+    } else if(k === 'check'){   // "Is this right?" before anything is saved - instead of an Undo afterwards (Robbie 23 Nov, option A navy)
+      cls = 'n';
+      const c = msCardState(m), today = (MS.visits[m.id] || []).some(x => x.venue === msVenue() && x.visit_date === msToday());
+      const as = today ? 'Added to today\'s visit' : c && c.n < c.t ? `Visit ${c.n + 1} of ${c.t}` : `Visit ${nVis() + 1}`;
+      h = top(first) + `<div class="mf-mid"><div class="mf-q">?</div><div class="mf-big" style="font-size:clamp(32px,9.5vw,42px)">Is this right?</div><div class="mf-sub" style="margin-top:-6px">Check with the bill before you save</div>
+        <div class="mf-chk"><div><small>MEMBER</small><b>${e(m.name || first)}</b></div><div><small>BILL</small><b class="amt">${msRpFull(amt)}</b></div><div><small>COUNTS AS</small><b>${e(as)}</b></div></div></div>`;
+      foot = `<button class="mf-go mf-yes" data-a="save">Yes, save ✓</button><button class="mf-undo" data-a="back">← No, go back</button>`;
     } else if(k === 'done'){
       cls = 'g';
       const c = msCardState(m), full = c && c.n >= c.t, added = saved && saved.kind === 'added';
@@ -23506,7 +23518,7 @@ window.msFlow = async function(id, r){
         <div class="mf-big" style="font-size:clamp(30px,9vw,40px)">${head}</div><div class="mf-sub" style="margin-top:-6px">${sub}</div>
         ${added ? '' : card()}
         <div class="mf-sub" style="font-size:15px">Bill ${msRpFull(added ? saved.v.spend : amt)} saved</div></div>`;
-      foot = `<button class="mf-undo" data-a="undo">↶ Undo this bill</button><button class="mf-go" data-a="x">Done ✓</button>`;
+      foot = `<button class="mf-go" data-a="x">Done ✓</button>`;
     }
     o.className = cls;
     o.innerHTML = h + foot;
@@ -23527,6 +23539,8 @@ window.msFlow = async function(id, r){
       const ok = await msBillUndo(m.id, v ? { kind:'new', v } : null); busy = false; if(!ok) return;
       toast('Undone - nothing counted'); return close();
     }
+    if(a === 'tocheck'){ if(!amt){ toast('Type the bill first'); return; } at = steps.indexOf('check'); return draw(); }
+    if(a === 'back'){ at = steps.indexOf('bill'); return draw(); }
     if(a === 'save'){
       if(!amt){ toast('Type the bill first'); return; }
       busy = true; b.disabled = true; b.textContent = 'Saving…';

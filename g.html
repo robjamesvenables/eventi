@@ -320,13 +320,35 @@ button.t:active{transform:scale(.97)}
   var nice = function(t){ var m = mins(t); if (m == null) return ''; var h = Math.floor(m / 60) % 24, mi = m % 60; return ((h % 12) || 12) + (mi ? ':' + (mi < 10 ? '0' : '') + mi : '') + (h < 12 ? 'am' : 'pm'); };
   var openNow = function(x, hm){ var o = mins(x.opens), c = mins(x.closes), n = mins(hm); if (o == null || c == null) return null; return c > o ? (n >= o && n < c) : (n >= o || n < c); };
   var hours = function(x){ return x.opens && x.closes ? nice(x.opens) + ' – ' + nice(x.closes) : ''; };
-  var waLink = function(num, text){ return 'https://wa.me/' + String(num || '').replace(/\D/g, '') + '?text=' + encodeURIComponent(text); };
+  // A member who opened their member card on this phone writes as a member, not as an anonymous guest (Robbie 23 Nov)
+  var mem = null;
+  var findMember = function(brand){
+    var best = null;
+    try {
+      var mine = store.get();
+      for (var i = 0; i < localStorage.length; i++) {
+        var k = localStorage.key(i); if (!/^mc1:[A-Z0-9]{4,16}$/.test(k)) continue;
+        var c = JSON.parse(localStorage.getItem(k) || 'null'); if (!c || !c.ok || c.blank || c.venue || !c.first) continue;
+        var m = { first: String(c.first).split(' ')[0], code: k.slice(4) };
+        if (c.brand === brand || m.code === mine) return m;   // a card for this hotel (or the keyring scanned here) wins
+        if (!best) best = m;
+      }
+    } catch (e) {}
+    return best;
+  };
+  var memberize = function(text){
+    if (!mem) return text;
+    var t = String(text).replace(/^Hi! I'm (?:staying at|a guest at) .+? and I(?=['\s])/, 'I').replace(/^Hi! /, '');
+    return 'Hi! It\'s ' + mem.first + ' here, one of your members (' + mem.code + '). ' + t;
+  };
+  var waLink = function(num, text){ return 'https://wa.me/' + String(num || '').replace(/\D/g, '') + '?text=' + encodeURIComponent(memberize(text)); };
 
   fetch('/api/gp?a=guide&g=' + encodeURIComponent(slug)).then(function(r){ return r.json(); }).then(function(d){
     if (!d || !d.ok) { root.innerHTML = '<div class="msg">This guide isn\'t available.</div>'; return; }
     var rs = document.documentElement.style, th = d.theme || {};
     if (th.top) rs.setProperty('--top', th.top); if (th.acc) rs.setProperty('--acc', th.acc); if (th.pg) rs.setProperty('--pg', th.pg);
     document.title = d.brand + ' · Guest Guide';
+    mem = findMember(d.brand);
     var now = bali(), ask = function(what){ return d.wa ? waLink(d.wa, 'Hi! I\'m staying at ' + d.brand + ' and I\'d like to know more about ' + what + '.') : ''; };
     var tel = d.phone ? 'tel:' + String(d.phone).replace(/[^\d+]/g, '') : '';
 

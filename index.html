@@ -23450,7 +23450,7 @@ window.msFlow = async function(id, r){
   if(!o){ o = document.createElement('div'); o.id = 'ms-flow'; document.body.appendChild(o); }
   const ic = { x:'<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>',
     tick: c => `<svg width="62%" height="62%" viewBox="0 0 24 24" fill="none" stroke="${c}" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5l5 5L20 6.5"/></svg>` };
-  let at = 0, amt = '', rq = '', given = false, saved = null, busy = false;
+  let at = 0, amt = '', rq = '', given = false, saved = null, busy = false, undone = false;
   const close = () => { o.style.display = 'none'; mvBackDone('msflow'); msRender(); if(typeof fdRender === 'function' && document.getElementById('fd-res')) fdRender(); };
   const top = lab => `<div class="mf-top"><span class="mf-pl">${e(lab)}</span><div class="mf-dots">${steps.map((_, i) => `<b class="${i <= at ? 'on' : ''}"></b>`).join('')}</div><button class="mf-x" data-a="x" title="Close">${ic.x}</button></div>`;
   const rwBox = () => {
@@ -23492,7 +23492,7 @@ window.msFlow = async function(id, r){
       foot = pend ? `<button class="mf-go" data-a="next">Paying now → Bill</button><button class="mf-skip" data-a="x">Just checking - Done</button>` : `<button class="mf-go" data-a="x">Done ✓</button>`;
     } else if(k === 'bill'){
       cls = 'w';
-      h = top(first) + `<div class="mf-mid"><div class="mf-big" style="font-size:clamp(26px,8vw,34px)">How much was the bill?</div><div class="mf-sub" style="margin-top:-6px;font-size:15px;color:#64748B">After the member discount</div>
+      h = top(first) + `<div class="mf-mid"><div class="mf-big" style="font-size:clamp(26px,8vw,34px)">How much was the bill?</div>${undone ? '<div class="mf-sub" style="margin-top:-6px;font-size:15px;color:#B45309;font-weight:800">Undone - nothing counted. Type the right amount, or close.</div>' : '<div class="mf-sub" style="margin-top:-6px;font-size:15px;color:#64748B">After the member discount</div>'}
         <div class="mf-amt"><small>Rp</small><span id="mf-amt">${amt ? Number(amt).toLocaleString('id-ID') : ''}</span></div>
         <div class="mf-keys">${['1','2','3','4','5','6','7','8','9','000','0','⌫'].map(x => `<button data-k="${x}">${x}</button>`).join('')}</div></div>`;
       foot = `<button class="mf-go mf-save" data-a="save">Save ✓</button><button class="mf-skip" data-a="x">Not paying now - nothing counted</button>`;
@@ -23531,11 +23531,11 @@ window.msFlow = async function(id, r){
       busy = true; b.disabled = true; b.textContent = 'Saving…';
       const res = await msBillSave(m.id, +amt); busy = false;
       if(!res){ b.disabled = false; b.textContent = 'Save ✓'; return; }
-      saved = res; at++; msRender(); return draw();
+      saved = res; undone = false; at++; msRender(); return draw();
     }
     if(a === 'undo'){
       busy = true; const ok = await msBillUndo(m.id, saved); busy = false; if(!ok) return;
-      saved = null; at = steps.indexOf('bill'); toast('Undone - nothing counted. Fix the amount, or close.'); msRender(); return draw();
+      saved = null; undone = true; at = steps.indexOf('bill'); msRender(); return draw();   // said on the bill screen, not in a toast over the buttons
     }
   };
   draw(); o.style.display = 'flex';
@@ -23725,7 +23725,7 @@ function msSignUp(code, known, digital){
       cls = 'w';
       h = `<div class="mf-mid mf-form"><div class="mf-k" style="color:#64748B">NICE TO HAVE</div><div class="mf-big">Birthday?</div><div class="mf-sub">So we can wish them a happy birthday. Day and month only.</div>
         <div class="mf-bd"><select id="mf-d"><option value="">Day</option>${Array.from({ length:31 }, (_, i) => `<option${String(i + 1) === v.d ? ' selected' : ''}>${i + 1}</option>`).join('')}</select><select id="mf-m"><option value="">Month</option>${months.map((x, i) => `<option value="${i + 1}"${String(i + 1) === v.m ? ' selected' : ''}>${x}</option>`).join('')}</select></div></div>`;
-      go = digital ? 'Make their card' : 'Sign up & check in'; alt = '<button class="mf-skip" data-a="skipbd">Skip - no birthday</button>';
+      go = digital ? 'Make their card' : msBillVisit() ? 'Sign up' : 'Sign up & check in'; alt = '<button class="mf-skip" data-a="skipbd">Skip - no birthday</button>';
     }
     o.className = cls;
     o.innerHTML = top() + h + (go ? `<button class="mf-go" data-a="go">${go}</button>` : '') + alt;
@@ -23739,7 +23739,7 @@ function msSignUp(code, known, digital){
     const go = o.querySelector('.mf-go'); if(go){ go.disabled = true; go.textContent = 'Saving…'; }
     const row = { name: v.name, phone: v.phone, email: '', birthday: withBd && v.d && v.m ? String(v.m).padStart(2,'0') + '-' + String(v.d).padStart(2,'0') : '', joined_venue: here, tier: 'member', consent: v.offers, created_by: myProfile ? myProfile.id : null };
     const ins = await sb.from('members').insert(row).select('*').single();
-    if(ins.error || !ins.data){ console.warn(ins.error); busy = false; if(go){ go.disabled = false; go.textContent = digital ? 'Make their card' : 'Sign up & check in'; } toast('Not saved - please try again'); return; }
+    if(ins.error || !ins.data){ console.warn(ins.error); busy = false; if(go){ go.disabled = false; go.textContent = digital ? 'Make their card' : msBillVisit() ? 'Sign up' : 'Sign up & check in'; } toast('Not saved - please try again'); return; }
     const m = ins.data;
     const k = known ? await sb.from('member_keyrings').update({ member_id: m.id }).eq('code', code).select() : await sb.from('member_keyrings').insert({ code, member_id: m.id }).select();
     if(k.error || !k.data || !k.data.length){ console.warn(k.error); toast('Member saved, but this keyring belongs to another venue'); }

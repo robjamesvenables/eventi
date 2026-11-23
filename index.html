@@ -7162,7 +7162,7 @@ function nav(id, pushState=true){
   // Closing a pop-up re-runs nav for the same page - only reset Meeting Notes when you actually arrive
   if(id==='notes'){ if(!window._mnOnPage){ mnGoToday(); mnLoadFromSupabase(); } window._mnOnPage = true; } else { window._mnOnPage = false; document.body.classList.remove('mn-full-open'); if(typeof mnFlush==='function') mnFlush(); }
   if(id==='cal'){calRender();}
-  if(id==='djsched'){djSchedRender();setTimeout(djSchedGoToThisWeek,60);}
+  if(id==='djsched'){ if(!djSchedOn()){ nav('home'); return; } djSchedRender();setTimeout(djSchedGoToThisWeek,60);}
   if(id==='home'){initHome(); announceRender(); setTimeout(()=>{ try{ hlInitScroll(); }catch(e){} }, 200);}
   if(id==='quicklinks'){quickLinksRender();}
   if(id==='sandbox'){sandboxRender();}
@@ -15104,7 +15104,7 @@ function adminRenderEditor(){
       ${ADMIN_MODULE_GROUPS.map(g => `
         <div style="margin-top:16px">
           <div style="font-size:11px;font-weight:800;color:#94A3B8;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px">${g.label}</div>
-          ${g.modules.map(m => {
+          ${g.modules.filter(m => m.id !== 'entertainment' || djSchedOn()).map(m => {
             const isOn = !!ADMIN_PERMS[role.id][m.id];
             const toggleCall = locked ? '' : ("adminTogglePerm('" + role.id + "','" + m.id + "')");
             return `<div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid #F8FAFC">
@@ -15174,7 +15174,12 @@ function roleCan(moduleId){
   if(!perms || !(moduleId in perms)) return true;
   return !!perms[moduleId];
 }
+// Entertainment Schedule is hidden for every venue for launch (Robbie 23 Nov - to be redesigned).
+// To switch it on for a venue that asks, add its Company ID here, e.g. ['LUNA'].
+const DJSCHED_ON_FOR = [];
+function djSchedOn(){ return !!(myCompany && DJSCHED_ON_FOR.includes(String(myCompany.code||'').toUpperCase())); }
 function rolePageAllowed(pageId){
+  if(pageId === 'djsched' && !djSchedOn()) return false;
   const m = PAGE_MODULE[pageId];
   return !m || roleCan(m);
 }

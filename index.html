@@ -908,8 +908,11 @@ select.search-inp{max-width:150px;cursor:pointer}
   transition:transform 0.15s;
 }
 #dash-chat-panel.mv-role-off{display:none!important}
-body.feed-off #announce-wrap,body.feed-off #moments-wrap{display:none!important}
-body.feed-off .home-social-main{display:none}body.feed-off .home-social-row{margin-top:0!important}body.feed-off .home-social-side{width:auto;flex:1;position:static;align-self:stretch}   /* QA 18a: Team Feed & Highlights switched off for this role */
+/* Dashboard switches per role (Admin Console): Highlights / Team Feed / Posting / News */
+body.feed-off #announce-wrap,body.hl-off #moments-wrap,body.news-off #newsweather-wrap{display:none!important}
+body.post-off .announce-add-btn,body.post-off #moments-wrap [onclick="openAddMoment()"]{display:none!important}
+body.news-off.chat-off .home-social-side{display:none!important}body.hl-none #moments-wrap{display:none!important}
+body.feed-off .home-social-main{display:none}body.feed-off.hl-off .home-social-row{margin-top:0!important}body.feed-off .home-social-side{width:auto;flex:1;position:static;align-self:stretch}
 #chat-float-btn:hover{transform:translateY(-2px) scale(1.03)}
 #chat-float-badge{
   position:absolute;
@@ -14295,8 +14298,13 @@ const ADMIN_ROLES = [
 ];
 
 const ADMIN_MODULE_GROUPS = [
+  {label:'Dashboard', modules:[
+    {id:'highlights', name:'Highlights', desc:'See the photo highlights at the top of the dashboard'},
+    {id:'teamfeed', name:'Team Feed', desc:'See team updates and polls (and reply)'},
+    {id:'feedpost', name:'Post on Team Feed & Highlights', desc:'Add new posts, polls and highlight photos'},
+    {id:'news', name:'Industry News & Weather', desc:'The news and weather box on the dashboard'},
+  ]},
   {label:'Communication & Content', modules:[
-    {id:'teamfeed', name:'Team Feed & Highlights', desc:'Post and view team updates'},
     {id:'chat', name:'Chat', desc:'Message other team members'},
     {id:'suggestions', name:'Suggestion Box', desc:'Submit anonymous feedback'},
     {id:'vacancies', name:'Job Vacancies', desc:'View and post open roles within the company'},
@@ -14338,6 +14346,8 @@ let ADMIN_PERMS = {
   teammember:  {teamfeed:1,chat:1,suggestions:1,vacancies:1,tasks:1,inventory:1,entertainment:0,calendar:1,sops:1,survey:0,reports:0,directory:0,marketing:0,adminconsole:0,kitchen:1,bar:1,meetings:0,eventsedit:0,requests:0,requestsmanage:0,requestsall:0,ordering:1,orderingapprove:0,orderingbuy:0,sopsedit:0,sopsapprove:0,membership:1,quicklinks:1,quicklinksedit:1},
   dailyworker: {teamfeed:1,chat:1,suggestions:0,vacancies:1,tasks:1,inventory:0,entertainment:0,calendar:0,sops:1,survey:0,reports:0,directory:0,marketing:0,adminconsole:0,kitchen:1,bar:1,meetings:0,eventsedit:0,requests:0,requestsmanage:0,requestsall:0,ordering:1,orderingapprove:0,orderingbuy:0,sopsedit:0,sopsapprove:0,membership:0,quicklinks:0,quicklinksedit:0},
 };
+// Dashboard switches (23 Nov): on for everyone by default, same as before
+Object.keys(ADMIN_PERMS).forEach(r => Object.assign(ADMIN_PERMS[r], { highlights:1, feedpost:1, news:1 }));
 // Front desk: a switch on every role (on for the top three), and its own role that sees nothing else
 ['superadmin','director','manager'].forEach(r => { ADMIN_PERMS[r].frontdesk = 1; }); ['supervisor','teammember','dailyworker'].forEach(r => { ADMIN_PERMS[r].frontdesk = 0; });
 ADMIN_PERMS.frontdesk = Object.fromEntries(Object.keys(ADMIN_PERMS.superadmin).map(k => [k, k === 'frontdesk' ? 1 : 0]));
@@ -15227,7 +15237,12 @@ function roleApplyMenus(){
       .then(({ count }) => { if(count > 0) document.body.classList.remove('req-off'); }).catch(() => {});
   }catch(e){}
   document.body.classList.toggle('fd-only', fdOnly());
-  document.body.classList.toggle('feed-off', !!myProfile && !roleCan('teamfeed'));   // QA 18a: the Admin Console switch now hides Team Feed + Highlights
+  const dashOff = k => !!myProfile && !roleCan(k);   // dashboard switches per role
+  document.body.classList.toggle('feed-off', dashOff('teamfeed'));
+  document.body.classList.toggle('hl-off', dashOff('highlights'));
+  document.body.classList.toggle('post-off', dashOff('feedpost'));
+  document.body.classList.toggle('news-off', dashOff('news'));
+  document.body.classList.toggle('chat-off', !rolePageAllowed('chat'));
   const dcp = document.getElementById('dash-chat-panel'); if(dcp) dcp.classList.toggle('mv-role-off', !rolePageAllowed('chat'));   // no Chat for this role: no chat panel on the dashboard either
   const adminLink = document.getElementById('n-admin');
   if(adminLink) adminLink.style.display = (myProfile && !roleCan('adminconsole')) ? 'none' : '';
@@ -15255,6 +15270,8 @@ function roleLoadSavedPerms(){
   if(!saved) return;
   try{ if(typeof saved === 'string') saved = JSON.parse(saved); }catch(e){ return; }
   Object.keys(ADMIN_PERMS).forEach(r => { if(saved[r]) Object.assign(ADMIN_PERMS[r], saved[r]); });
+  // Saved before the dashboard switches existed: the old 'Team Feed & Highlights' off meant both off
+  Object.keys(ADMIN_PERMS).forEach(r => { const sv = saved[r]; if(sv && sv.teamfeed === 0 && !('highlights' in sv)){ ADMIN_PERMS[r].highlights = 0; ADMIN_PERMS[r].feedpost = 0; } });
   roleApplyNames(saved._names || {});
 }
 // Each company can call the six levels whatever they like ("Team Leader", "Casual Staff"...).
@@ -19110,6 +19127,7 @@ window.chatOpenThread = function(el, name){
 };
 
 function announcePlaceholderHtml(i){
+  if(myProfile && typeof roleCan === 'function' && !roleCan('feedpost')) return i ? '' : '<div style="text-align:center;padding:28px 12px;color:#94A3B8;font-size:13px;font-weight:600">No team posts yet</div>';   // can't post: no "post your own" examples
   return `
     <div class="announce-card" style="border:1.5px dashed #CBD5E1;opacity:0.65">
       <div class="announce-card-body">
@@ -19742,6 +19760,7 @@ window.announceSubmit = async function(){
 };
 
 window.announceAdd = function(){
+  if(myProfile && !roleCan('feedpost')){ toast('Posting is switched off for your role - ask your manager'); return; }
   announceEditId = null;
   announceOpenModal('Post Announcement','','','');
 };
@@ -30001,6 +30020,7 @@ function deleteMoment(idx){
 }
 
 function openAddMoment(){
+  if(myProfile && !roleCan('feedpost')){ toast('Posting is switched off for your role - ask your manager'); return; }
   appModalShow({
     title: 'Add a Highlight',
     okLabel: 'Send',
@@ -30229,7 +30249,9 @@ function momentsRebuild(){
     return;
   }
 
-  const placeholdersNeeded = Math.max(0, 3 - momentsData.length);
+  const canPost = !(myProfile && typeof roleCan === 'function' && !roleCan('feedpost'));
+  const placeholdersNeeded = canPost ? Math.max(0, 3 - momentsData.length) : 0;   // no "Add here" tiles for roles that can't post
+  document.body.classList.toggle('hl-none', !canPost && !momentsData.length);
   const items = momentsData.map((m,i)=>({real:true, idx:i, img: m.thumb || m.img, caption:momentsTwemojiParse(hlTruncateCaption(m.caption)), meta:m.meta}))
     .concat(Array.from({length: placeholdersNeeded}, (_,i)=>({real:false, idx:i})));
 

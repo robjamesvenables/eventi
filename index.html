@@ -2945,11 +2945,11 @@ body.fd-sel #p-frontdesk.page:not(#p-home):not(#p-chat) > .ph.fd-ph{display:none
 .fd-q{display:block;width:100%;margin-top:10px;border:2px solid #0D9488;border-radius:14px;padding:14px 16px;font:600 17px Inter,sans-serif;color:#0F1E2E;background:#fff;outline:0;box-sizing:border-box}
 #fd-res .fd-list{margin-top:10px}.fd-m{width:100%;border:0;background:#fff;cursor:pointer;text-align:left;font-family:inherit;justify-content:flex-start!important}.fd-m:hover{background:#F0FDFA}
 .fd-mn{flex:1;min-width:0;display:flex;flex-direction:column}.fd-mn b{font-size:16px;color:#0F1E2E}.fd-mn small{font-size:13px;color:#64748B;margin-top:1px}
-.fd-tier{flex:none;font-size:11px;font-weight:900;border-radius:999px;padding:4px 10px;background:#FEF3C7;color:#92400E;letter-spacing:.04em}.fd-tier.vip{background:#0F1E2E;color:#E8C77A}
+.fd-tier{flex:none;font-size:11px;font-weight:900;border-radius:999px;padding:4px 10px;background:#FEF3C7;color:#92400E;letter-spacing:.04em}
 .fd-hint{font-size:12.5px;color:#94A3B8;font-weight:700;margin:8px 2px 0}
 .fd-back{border:0;background:none;color:#0D9488;font:800 15px Inter,sans-serif;cursor:pointer;padding:4px 0}
 .fd-h1{font-size:30px;font-weight:900;letter-spacing:-.5px;color:#0F1E2E;margin-top:4px}.fd-h2{font-size:14px;color:#64748B;margin-top:2px}
-.fd-gc{margin-top:16px;border-radius:18px;background:linear-gradient(135deg,#E2C07A,#C4973B);color:#2B1D07;padding:18px 20px;display:flex;flex-direction:column;min-height:150px;max-width:420px}.fd-gc.vip{background:linear-gradient(135deg,#1F2937,#0F1E2E);color:#F3E3B8}
+.fd-gc{margin-top:16px;border-radius:18px;background:linear-gradient(135deg,#E2C07A,#C4973B);color:#2B1D07;padding:18px 20px;display:flex;flex-direction:column;min-height:150px;max-width:420px}
 .fd-gc small{font-size:11px;font-weight:900;letter-spacing:.14em}.fd-gc b{font-size:24px;margin-top:4px}.fd-gc span{margin-top:auto;display:flex;justify-content:space-between;font-weight:700;font-size:14px}.fd-gc em{font-style:normal;font-family:ui-monospace,monospace;font-weight:800}
 .fd-in{display:block;width:100%;margin-top:18px;border:0;border-radius:16px;background:#0D9488;color:#fff;font:900 18px Inter,sans-serif;padding:17px;cursor:pointer}
 .fd-wrap{display:flex;flex-direction:column}
@@ -23505,6 +23505,7 @@ window.msScanClose = function(fromBack){
 const FD = { r:null, code:'', busy:false, err:'', by:'phone', q:'', sel:null };
 function fdPull(t){ t = String(t || ''); const m = /\(([A-Z0-9]{4,16})\)/i.exec(t) || /member\s+([A-Z0-9]{4,16})\b/i.exec(t) || /\/k\/([A-Z0-9]{4,16})/i.exec(t); return m ? m[1].toUpperCase() : msCode(t); }
 // Front desk (Robbie 23 Nov): plain title, Scan + New member side by side, then "Can't scan? Find by" Phone · Code · Surname.
+// One gold Member card for everyone - no VIP for now (Robbie 23 Nov).
 // Phone = last 4 digits (or a pasted full number); staff always confirm the name. Tap a name -> their card, what they get, Check in.
 // Laptop / PC (mouse, wide): the finder sits on top; phones: Scan on top. No setting - it follows the device.
 const fdDigits = t => { let d = String(t || '').replace(/\D/g, ''); if(d.startsWith('62')) d = d.slice(2); return d.replace(/^0+/, ''); };
@@ -23543,7 +23544,7 @@ function fdResults(){
   if(l === null){ box.innerHTML = ''; return; }
   if(!MS.loaded){ box.innerHTML = '<div class="fd-hint">Loading members…</div>'; return; }
   if(!l.length){ box.innerHTML = `<div class="fd-bad">No member found. Try ${FD.by === 'phone' ? 'their code or surname' : FD.by === 'code' ? 'their phone or surname' : 'their phone or code'}.</div>`; return; }
-  box.innerHTML = `<div class="fd-list">${l.map(m => `<button type="button" class="fd-li fd-m" onclick="fdOpen('${m.id}')">${msFace(m.name, 40)}<span class="fd-mn"><b>${e(m.name)}</b><small>${e(fdMask(m.phone))}</small></span><span class="fd-tier${m.tier === 'vip' ? ' vip' : ''}">${m.tier === 'vip' ? 'VIP' : 'Member'}</span></button>`).join('')}</div>
+  box.innerHTML = `<div class="fd-list">${l.map(m => `<button type="button" class="fd-li fd-m" onclick="fdOpen('${m.id}')">${msFace(m.name, 40)}<span class="fd-mn"><b>${e(m.name)}</b><small>${e(fdMask(m.phone))}</small></span><span class="fd-tier">Member</span></button>`).join('')}</div>
     <div class="fd-hint">${l.length === 1 ? '1 match · confirm their name, then tap it' : l.length + ' matches · ask their name, then tap the right one'}</div>`;
 }
 window.fdBy = k => { FD.by = k; FD.q = ''; fdRender(); const i = document.getElementById('fd-q'); if(i) i.focus(); };
@@ -23555,7 +23556,7 @@ function fdMemberHtml(id){
   const perks = (msPerks()[vip ? 'vip' : 'member'] || []).filter(Boolean).filter(p => !/first\s+visit/i.test(p) || st.total <= 1).filter(p => !/birthday/i.test(p) || !!msBirthdaySoon(m));
   return `<button type="button" class="fd-back" onclick="fdBack()">← Back</button>
     <div class="fd-h1">${e(m.name)}</div><div class="fd-h2">${e(fdMask(m.phone))}</div>
-    <div class="fd-gc${vip ? ' vip' : ''}"><small>${vip ? 'VIP MEMBER' : 'MEMBER'}</small><b>${e(m.name)}</b><span>${st.total} visit${st.total === 1 ? '' : 's'}${yr ? ' · since ' + yr : ''}<em>${e(code)}</em></span></div>
+    <div class="fd-gc"><small>MEMBER</small><b>${e(m.name)}</b><span>${st.total} visit${st.total === 1 ? '' : 's'}${yr ? ' · since ' + yr : ''}<em>${e(code)}</em></span></div>
     ${perks.length ? `<h4>WHAT THEY GET TODAY</h4><div class="fd-list">${perks.map(p => `<div class="fd-li"><span>${e(p)}</span><span class="fd-y">✓</span></div>`).join('')}</div>` : ''}
     <button type="button" class="fd-in" onclick="fdCheckIn('${m.id}')">✓ Check in</button>`;
 }

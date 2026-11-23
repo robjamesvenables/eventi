@@ -6031,7 +6031,7 @@ html:has(#menuDetailOverlay[style*="flex"]),html:has(#menuDetailOverlay[style*="
 
       <div class="sec-title" data-en="Active Events" data-id="Acara Aktif">Active Events</div>
       <div class="month-strip" id="month-strip"></div>
-      <div class="ev-grid" id="dash-ev-grid"></div>
+      <div class="ev-grid" id="dash-ev-grid"><div style="grid-column:1/-1;text-align:center;padding:40px 20px;color:#94A3B8;font-size:13px">Loading events…</div></div>
     </div>
     <div class="page" id="p-beo" style="padding:32px 28px 0">
       <div class="beo-wrap">
@@ -13913,7 +13913,12 @@ function pastEventsRender(){
   events.sort((a,b) => b.sortDate.localeCompare(a.sortDate));
 
   if(events.length === 0){
-    container.innerHTML = '<div style="text-align:center;padding:48px;color:#94A3B8;font-size:13px">No events match your search</div>';
+    // nothing finished yet vs nothing matching the search/year (QA 12c)
+    container.innerHTML = pastEventsData.length
+      ? '<div style="text-align:center;padding:48px;color:#94A3B8;font-size:13px">No events match your search</div>'
+      : `<div style="text-align:center;padding:48px 20px;color:#94A3B8;background:white;border:1.5px dashed #E2E8F0;border-radius:12px">
+          <div style="font-size:15px;font-weight:700;color:#0F1E2E;margin-bottom:6px">No past events yet</div>
+          <div style="font-size:13px">Once an event's date has gone by, it moves here automatically - with its plan, guests and notes.</div></div>`;
     return;
   }
 

@@ -22252,7 +22252,9 @@ async function msSetting(k, val){
   appSettings[k] = value; return true;
 }
 // Bills and allergies need two new columns; until they exist they only show in the demo company
-const msHasSpend = () => msDemo() || Object.values(MS.visits).some(a => a.some(x => 'spend' in x));
+// Money is OFF by default: Mavis is for perks, discounts and visits, not payments (Robbie 23 Nov).
+// A venue that wants spend figures turns on "Record the bill amount" in Settings - then staff type the bill and Insights shows money.
+const msHasSpend = () => !!mkS().bill.on;
 const msHasAllergy = () => msDemo() || MS.members.some(m => 'allergy' in m);
 const msSeed = s => String(s).split('').reduce((a, c) => (a * 31 + c.charCodeAt(0)) >>> 0, 7);
 const MS_DEMO_STAFF = ['Wayan', 'Putu', 'Komang', 'Ketut', 'Made', 'Nyoman'];
@@ -22532,7 +22534,7 @@ window.msBill = async function(id){
 // ── Mavis Club settings (managers): every switch for the club in one place, saved as you tap ──
 const MK_EMO = ['🍸','🥂','🍹','🍰','🎉','🎂','🌅','🎶','📍','⭐'];
 const MKS_DEF = () => ({ bonus:{ on:false, limit:30 }, stamp:{ on:false, visits:10, reward:'Free cocktail' }, bday:{ treat:false, gift:'Dessert' }, friend:{ on:false, offer:'Welcome cocktail' },
-  levels:{ on:false, gold:10, black:25 }, club:{ on:false }, emoji:{ on:true }, vip:{ on:true }, welcome:{ on:true }, fb:{ on:true }, imp:{ on:false }, blast:{ email:false, wa:false }, senders:[], fbto:[], eg:'gmail', rest:3 });
+  levels:{ on:false, gold:10, black:25 }, club:{ on:false }, emoji:{ on:true }, vip:{ on:true }, welcome:{ on:true }, fb:{ on:true }, imp:{ on:false }, bill:{ on:false }, blast:{ email:false, wa:false }, senders:[], fbto:[], eg:'gmail', rest:3 });
 function mkS(){ const d = MKS_DEF(), s = msJson('mk_settings') || {}; Object.keys(d).forEach(k => { if(s[k] == null) return; d[k] = Array.isArray(d[k]) || typeof d[k] !== 'object' ? s[k] : Object.assign(d[k], typeof s[k] === 'object' ? s[k] : {}); }); d.welcome.on = true; return d; }   // welcome WhatsApp checks the guest's number: always on
 const msCanSend = () => msIsMgr() || (!!myProfile && mkS().senders.map(String).includes(String(myProfile.id)));
 // Blasts are off until a manager turns one on in Settings - no Messages tab until then (18 Nov: keep it simple, nothing to go wrong)
@@ -22576,6 +22578,7 @@ async function msSettingsRender(){
     <div class="mks-card">
       ${mksRow('Email blasts', 'Send one email to many members at once.', mksSw('blast.email', s.blast.email))}
       ${mksRow('WhatsApp blasts', 'Send a message to members one by one, from your phone.', mksSw('blast.wa', s.blast.wa))}
+      ${mksRow('Record the bill amount', 'Staff type the bill at check-in, so Insights shows what members spend. Off: a visit counts with one tap, no money.', mksSw('bill.on', s.bill.on))}
       ${mksRow('Import members', 'Add members from a list you already have (Excel or CSV).', mksSw('imp.on', s.imp.on), s.imp.on ? `<button class="mki-btn" style="margin-top:0" onclick="msImportOpen()">Import members</button>` : '')}
     </div>
     <div class="mks-hint" style="margin:8px 4px 0">Turn on a blast and a Messages tab appears. Turn it off and it goes away. Phone notifications are always in the Notify tab.</div>
@@ -23298,7 +23301,7 @@ window.msOpenMember = function(id, checked){
       ${msWelcomeHtml(m)}
       <div class="ms-g3"><div><b>${s.total}</b><small>VISITS</small></div><div><b>${s.month}</b><small>THIS MONTH</small></div><div><b class="${s.fav.length > 8 ? 'sm' : ''}">${msEsc(s.fav || '-')}</b><small>FAVOURITE</small></div></div>
       ${perks.length ? `<div class="ms-card"><div class="ms-lab">PERKS · ${m.tier === 'vip' ? 'VIP' : 'MEMBER'}</div>${perks.map(p => `<div class="ms-perk"><i>${ok}</i>${msEsc(p)}</div>`).join('')}</div>` : ''}
-      ${s.recent.length ? `<div class="ms-card"><div class="ms-lab">RECENT VISITS</div>${s.recent.map(v => `<div class="ms-vrow"><b>${msEsc(v.venue || '-')}</b><span>${msEsc(msAgo(v.visit_date))}${v.spend ? ' · ' + msRp(v.spend) : ''}</span></div>`).join('')}</div>` : ''}
+      ${s.recent.length ? `<div class="ms-card"><div class="ms-lab">RECENT VISITS</div>${s.recent.map(v => `<div class="ms-vrow"><b>${msEsc(v.venue || '-')}</b><span>${msEsc(msAgo(v.visit_date))}${msHasSpend() && v.spend ? ' · ' + msRp(v.spend) : ''}</span></div>`).join('')}</div>` : ''}
       ${m.notes ? `<div class="vd-note">${vdSvg('note', 15)}<span>${msEsc(m.notes)}</span></div>` : ''}
     </div>
     <div class="vdf-foot">${wa ? `<a class="mns-cancel ms-wa" href="https://api.whatsapp.com/send?phone=${wa}" target="_blank" rel="noopener">${vdSvg('wa')}WhatsApp</a>` : ''}<button class="mns-cancel" onclick="msEdit('${m.id}')">Edit</button>${checked ? '' : `<button class="mns-go" onclick="msCheckIn('${m.id}')">Check in<span class="ms-ci-v"> at ${msEsc(msVenue())}</span></button>`}</div>`);
@@ -23373,7 +23376,7 @@ window.msResendQR = async function(id){
 // Every way staff reach a member (scan, typed code, tapped name, new sign-up) comes here (Robbie 23 Nov).
 // Venues that record the bill: nothing is counted until the bill is saved - asking "what do I get?" is free,
 // and each bill saved is one visit (lunch + dinner = 2). Other venues: the scan is the visit, once per area per day.
-const msBillVisit = () => msHasSpend() || !Object.values(MS.visits).some(a => a && a.length);   // a brand-new venue has no visits yet: bill mode too
+const msBillVisit = () => true;   // the visit counts at the end of the check-in screens: on "Count the visit", or on saving the bill
 window.msArrive = async function(id){
   if(!MS.loaded) await msLoad();
   if(msBillVisit()){
@@ -23388,7 +23391,7 @@ window.msArrive = async function(id){
 // a second bill the same day is added to today's visit, so the spend is right but no extra visit counts.
 async function msBillSave(id, n){
   const venue = msVenue(), day = msToday(), list = (MS.visits[id] = MS.visits[id] || []);
-  const row = { member_id:id, venue, visit_date:day, spend:n, by_profile: myProfile ? myProfile.id : null };
+  const row = { member_id:id, venue, visit_date:day, by_profile: myProfile ? myProfile.id : null }; if(n != null) row.spend = n;
   const ins = await sb.from('member_visits').insert(row).select();
   if(!ins.error){ const v = Object.assign({ created_at:new Date().toISOString() }, row, (ins.data && ins.data[0]) || {}); list.unshift(v); return { kind:'new', v }; }
   if(!/duplicate|unique/i.test(ins.error.message || '')){
@@ -23396,6 +23399,7 @@ async function msBillSave(id, n){
     console.warn(ins.error); toast('Bill not saved - please try again'); return null;
   }
   let v = list.find(x => x.venue === venue && x.visit_date === day);
+  if(n == null) return { kind:'already', v };   // no money, already a visit here today (one per area per day until Alex's change)
   const old = v && +v.spend > 0 ? +v.spend : 0;
   const up = await sb.from('member_visits').update({ spend: old + n }).eq('member_id', id).eq('venue', venue).eq('visit_date', day).select();
   if(up.error || !up.data || !up.data.length){ console.warn(up.error); toast('Bill not saved - please try again'); return null; }
@@ -23451,7 +23455,7 @@ window.msFlow = async function(id, r){
     .filter(p => !/first\s+visit/i.test(p) || nVis() <= (pend ? 0 : 1))
     .filter(p => !/birthday/i.test(p) || !!bd);
   const deals = msTodayDeals();
-  const steps = pend ? ['in','gets','bill','check','done'] : ['in','gets'];
+  const money = msHasSpend(), steps = pend ? (money ? ['in','gets','bill','check','done'] : ['in','gets','done']) : ['in','gets'];
   let o = document.getElementById('ms-flow');
   if(!o){ o = document.createElement('div'); o.id = 'ms-flow'; document.body.appendChild(o); }
   const ic = { x:'<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>',
@@ -23495,7 +23499,7 @@ window.msFlow = async function(id, r){
         ${perks.length ? `<div class="mf-k mf-lab">EVERY VISIT</div>${perks.map(p => `<div class="mf-card sm"><i>⭐</i>${e(p)}</div>`).join('')}` : ''}
         ${deals.length ? `<div class="mf-k mf-lab">TODAY ONLY</div>${msTodayCards(deals).replace(/mf-card mf-deal/g, 'mf-card mf-deal sm')}` : ''}
         ${any ? '' : '<div class="mf-sub">No perks set up yet. A manager adds them in Membership.</div>'}</div>`;
-      foot = pend ? `<button class="mf-go" data-a="next">Paying now → Bill</button><button class="mf-skip" data-a="x">Just checking - Done</button>` : `<button class="mf-go" data-a="x">Done ✓</button>`;
+      foot = !pend ? `<button class="mf-go" data-a="x">Done ✓</button>` : money ? `<button class="mf-go" data-a="next">Paying now → Bill</button><button class="mf-skip" data-a="x">Just checking - Done</button>` : `<button class="mf-go" data-a="count">Count the visit ✓</button><button class="mf-skip" data-a="x">Just checking - Done</button>`;
     } else if(k === 'bill'){
       cls = 'w';
       h = top(first) + `<div class="mf-mid"><div class="mf-big" style="font-size:clamp(26px,8vw,34px)">How much was the bill?</div>${undone ? '<div class="mf-sub" style="margin-top:-6px;font-size:15px;color:#B45309;font-weight:800">Undone - nothing counted. Type the right amount, or close.</div>' : '<div class="mf-sub" style="margin-top:-6px;font-size:15px;color:#64748B">After the member discount</div>'}
@@ -23511,13 +23515,13 @@ window.msFlow = async function(id, r){
       foot = `<button class="mf-go mf-yes" data-a="save">Yes, save ✓</button><button class="mf-undo" data-a="back">← No, go back</button>`;
     } else if(k === 'done'){
       cls = 'g';
-      const c = msCardState(m), full = c && c.n >= c.t, added = saved && saved.kind === 'added';
-      const head = added ? 'Bill added' : full ? 'Card full!' : 'Visit counted';
-      const sub = added ? `Added to ${e(first)}'s visit today` : full ? `That was visit ${c.t}` : c ? `${e(first)} is on ${c.n} of ${c.t}` : `${e(first)} has ${nVis()} visit${nVis() === 1 ? '' : 's'}`;
-      h = top(first) + `<div class="mf-mid">${full && !added ? '<div style="font-size:84px;line-height:1">🎁</div>' : `<div class="mf-tick" style="width:clamp(96px,28vw,120px);height:clamp(96px,28vw,120px)">${ic.tick('#10B981')}</div>`}
+      const c = msCardState(m), full = c && c.n >= c.t, added = saved && saved.kind === 'added', already = saved && saved.kind === 'already';
+      const head = added ? 'Bill added' : already ? 'Already counted' : full ? 'Card full!' : 'Visit counted';
+      const sub = added ? `Added to ${e(first)}'s visit today` : already ? `${e(first)}'s visit here today is already counted` : full ? `That was visit ${c.t}` : c ? `${e(first)} is on ${c.n} of ${c.t}` : `${e(first)} has ${nVis()} visit${nVis() === 1 ? '' : 's'}`;
+      h = top(first) + `<div class="mf-mid">${full && !added && !already ? '<div style="font-size:84px;line-height:1">🎁</div>' : `<div class="mf-tick" style="width:clamp(96px,28vw,120px);height:clamp(96px,28vw,120px)">${ic.tick('#10B981')}</div>`}
         <div class="mf-big" style="font-size:clamp(30px,9vw,40px)">${head}</div><div class="mf-sub" style="margin-top:-6px">${sub}</div>
         ${added ? '' : card()}
-        <div class="mf-sub" style="font-size:15px">Bill ${msRpFull(added ? saved.v.spend : amt)} saved</div></div>`;
+        ${money && amt ? `<div class="mf-sub" style="font-size:15px">Bill ${msRpFull(added ? saved.v.spend : amt)} saved</div>` : ''}</div>`;
       foot = `<button class="mf-go" data-a="x">Done ✓</button>`;
     }
     o.className = cls;
@@ -23538,6 +23542,12 @@ window.msFlow = async function(id, r){
       busy = true; const v = (MS.visits[m.id] || []).find(x => x.venue === venue && x.visit_date === msToday());
       const ok = await msBillUndo(m.id, v ? { kind:'new', v } : null); busy = false; if(!ok) return;
       toast('Undone - nothing counted'); return close();
+    }
+    if(a === 'count'){   // no-money venues: one tap counts the visit
+      busy = true; b.disabled = true; b.textContent = 'Saving…';
+      const res = await msBillSave(m.id, null); busy = false;
+      if(!res){ b.disabled = false; b.textContent = 'Count the visit ✓'; return; }
+      saved = res; at = steps.indexOf('done'); msRender(); return draw();
     }
     if(a === 'tocheck'){ if(!amt){ toast('Type the bill first'); return; } at = steps.indexOf('check'); return draw(); }
     if(a === 'back'){ at = steps.indexOf('bill'); return draw(); }

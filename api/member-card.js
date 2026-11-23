@@ -124,7 +124,9 @@ function prospectCard(pro, code, ov){
     img: dimg(h.img), line: String(h.line || '').slice(0, 90), book: https(h.book),
     places: (h.places || []).slice(0, 8).map(x => Object.assign({ name: String(x.name || '').slice(0, 40), img: dimg(x.img), line: String(x.line || '').slice(0, 60) }, openState(x, now.hm))),
     rooms: (h.rooms || []).slice(0, 8).map(x => ({ name: String(x.name || '').slice(0, 40), img: dimg(x.img) })) })).filter(h => h.key && h.name);
-  const ourRooms = (Array.isArray(pro.ourRooms) ? pro.ourRooms : []).slice(0, 8).map(r => ({ name: String(r.name || '').slice(0, 40), line: String(r.line || '').slice(0, 90), img: dimg(r.img) })).filter(r => r.name);   // a hotel's own room types (Book / Enquire)
+  const ourRooms = (Array.isArray(pro.ourRooms) ? pro.ourRooms : []).slice(0, 8).map(r => ({ name: String(r.name || '').slice(0, 40), line: String(r.line || '').slice(0, 90), img: dimg(r.img),
+    imgs: (r.imgs || []).slice(0, 20).map(x => ({ img: dimg(x.img), th: dimg(x.th) })).filter(x => x.img), benefits: (r.benefits || []).slice(0, 6).map(b => String(b).slice(0, 80)),
+    details: (r.details || []).slice(0, 10).map(g => [String(g[0] || '').slice(0, 30), (g[1] || []).slice(0, 12).map(x => String(x).slice(0, 80))]) })).filter(r => r.name);   // a hotel's own room types (Book / Enquire)
   const bt = pro.bookTop && https(pro.bookTop.url) ? { url: https(pro.bookTop.url), label: String(pro.bookTop.label || 'Book').slice(0, 30), via: String(pro.bookTop.via || '').slice(0, 30) } : null;
   const coaches = (Array.isArray(pro.coaches) ? pro.coaches : []).slice(0, 12).map(c => ({ name: String(c.name || '').slice(0, 40), ini: String(c.ini || c.name || '?').slice(0, 3), img: dimg(c.img),
     tags: (c.tags || []).slice(0, 4).map(t => String(t).slice(0, 30)), line: String(c.line || '').slice(0, 90), bio: String(c.bio || '').slice(0, 600), book: https(c.book) })).filter(c => c.name);

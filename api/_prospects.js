@@ -145,13 +145,26 @@ P.transsby = {
   stay: SBY_BOOK,
   // Alex 23 Nov: a Rooms section after Explore - Book (hotel booking) or Enquire (WhatsApp to reservations). Names + lines from the hotel's website
   roomsTitle: 'Rooms & Suites',
-  ourRooms: [
-    { name: 'Premier Room', line: 'Effortless comfort in refined contemporary elegance', img: sb2('room-premier') },
-    { name: 'Executive Room', line: 'Spacious comfort with panoramic views', img: sb2('room-execclub') },
-    { name: 'Club Premier Room', line: 'Where elevated comfort meets exclusive privileges', img: sb4('room-view2') },
-    { name: 'Executive Club Room', line: 'An elevated stay with exclusive Club privileges', img: sb4('room-king') },
-    { name: 'Presidential Suite', line: 'An iconic expression of luxury at its finest', img: sb2('room-presidential') }
-  ],
+  ourRooms: (function(){   // details + photos from the hotel's own website (thetranshotelsurabaya.com, 23 Nov), photos in the website's order
+    const det = o => [
+      ['The room', ['Floor-to-ceiling windows', 'Living / sitting area', 'Electric power curtains', 'Air-conditioned', 'Non-smoking'].concat(o.connect ? ['Connecting rooms (some rooms)'] : [])],
+      ['Bed', ['Pillowtop mattress, featherbed and duvet', 'Fresh linen', '1 rollaway bed or crib allowed']],
+      ['Bathroom', ['Luxurious marble bathroom', 'Separate bathtub and shower', 'Bidet and hair dryer', '2 robes, 2 pairs of slippers', 'Acqua di Parma shampoo, conditioner and body wash']],
+      ['Food & drink', ['Complimentary bottled water', 'Complimentary coffee and tea', 'Mini fridge and kettle', 'Instant hot water']],
+      ['Work & entertainment', ['55" Smart TV', 'International channels', 'Free high-speed Wi-Fi', 'Writing desk', 'Dual-voltage outlets', '2 phones']],
+      ['Also in the room', ['Sofa and bed stool', 'In-room safe', 'Iron and ironing board', 'Alarm clock']],
+      ['Services', ['24-hour STAR service', 'Laundry and dry cleaning', '24-hour Fitness Centre']]
+    ].concat(o.access ? [['Accessible rooms', ['Mobility-accessible rooms, with roll-in showers, available']]] : []);
+    const ph = (k, n) => Array.from({ length: n }, (_, i) => k + '-' + (i + 1));
+    const ADP = 'Acqua di Parma luxurious amenities', VIEW = 'Panoramic city view', CLUB = 'Afternoon tea and evening cocktails at The 27th Sky Lounge';
+    return [
+      { name: 'Premier Room', line: 'Effortless comfort in refined contemporary elegance', photos: ph('premier', 10), benefits: [ADP], details: det({ connect: 1, access: 1 }) },
+      { name: 'Executive Room', line: 'Elevated comfort with corner views and enhanced natural light', photos: ph('executive', 8), benefits: [ADP, VIEW], details: det({}) },
+      { name: 'Club Premier Room', line: 'Where elevated comfort meets exclusive privileges', photos: ph('clubpremier', 10), benefits: [ADP, CLUB], details: det({}) },
+      { name: 'Executive Club Room', line: 'Enhanced space and views with exclusive Club privileges', photos: ph('execclub', 10), benefits: [ADP, VIEW, CLUB], details: det({}) },
+      { name: 'Presidential Suite', line: 'An iconic expression of luxury at its finest', photos: ['presidential'], benefits: [ADP, VIEW, 'Club Lounge access'], details: det({ connect: 1 }) }
+    ].map(r => Object.assign(r, { img: '/demo-guest/p-sbyr-' + r.photos[0] + '.jpg', imgs: r.photos.map(n => ({ img: '/demo-guest/p-sbyr-' + n + '.jpg', th: '/demo-guest/p-sbyr-t-' + n + '.jpg' })) }));
+  })(),
   contact: { phone: '+62 811 1888 8055', wa: '6281118888055', map: SBY_MAP, ig: 'transluxurysurabaya' },
   acts: [   // Robbie 20 Nov: varied week, 3 different things each day, spread across the places
     { title: 'Afternoon tea', line: 'Sweet and savoury tiers', every: [6, 0], start: '15:00', end: '17:00', venue: 'The Lounge' },

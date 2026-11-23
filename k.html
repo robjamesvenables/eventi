@@ -444,6 +444,12 @@ a.pbig,a.ohgo{text-decoration:none;box-sizing:border-box}
 .cwre{display:flex;gap:8px;padding:10px 14px 12px}.cwre button{border:0;background:#F1F5F9;border-radius:99px;padding:6px 12px;font:inherit;font-size:13.5px;font-weight:800;color:#0F1E2E;cursor:pointer}.cwre button.on{background:var(--top,#0F1E2E);color:var(--top-ink,#fff)}
 .cwshare{display:flex;align-items:center;justify-content:center;gap:8px;min-height:52px;border-radius:16px;background:var(--acc,#0D9488);color:var(--acc-ink,#fff);font-weight:900;font-size:16px;margin-bottom:6px;cursor:pointer}.cwshare.sent{background:#DCFCE7;color:#15803D}
 .cwnote{text-align:center;font-size:12.5px;color:#64748B;margin-bottom:14px}
+.rmr{display:flex;gap:12px;overflow-x:auto;scroll-snap-type:x mandatory;margin:0 -16px;padding:2px 16px 8px;scrollbar-width:none}.rmr::-webkit-scrollbar{display:none}
+.rmc{flex:none;width:78%;max-width:300px;scroll-snap-align:start;background:#fff;border-radius:20px;overflow:hidden;box-shadow:0 1px 3px rgba(15,30,46,.08);display:flex;flex-direction:column}
+.rmc img{display:block;width:100%;aspect-ratio:4/3;object-fit:cover}.rmb{padding:14px 14px 14px;display:flex;flex-direction:column;flex:1}
+.rmb b{font-size:17px;font-weight:900;letter-spacing:-.3px}.rmb p{margin:4px 0 0;font-size:13px;color:#64748B;line-height:1.4}
+.rmbt{display:flex;gap:8px;margin-top:auto;padding-top:12px}.rmbt a{flex:1;display:flex;align-items:center;justify-content:center;gap:6px;height:42px;border-radius:12px;font-weight:800;font-size:14px;text-decoration:none}
+.rmbt .bk{background:var(--top,#0F1E2E);color:var(--top-ink,#fff)}.rmbt .eq{background:#fff;color:#0F1E2E;border:1.5px solid #CBD5E1}.rmbt .eq svg{color:#16A34A}
 .cch{display:flex;gap:12px;overflow-x:auto;scroll-snap-type:x mandatory;margin:0 -16px;padding:2px 16px 8px;scrollbar-width:none}.cch::-webkit-scrollbar{display:none}
 .cc{flex:none;width:72%;max-width:280px;scroll-snap-align:start;background:#fff;border-radius:20px;padding:16px;box-shadow:0 1px 3px rgba(15,30,46,.08);border:0;text-align:left;font:inherit;color:inherit;cursor:pointer;min-width:0}
 .cc .av,.cbio .av{width:64px;height:64px;border-radius:50%;background:var(--top,#0F1E2E);color:var(--top-ink,#fff);display:grid;place-items:center;font-weight:900;font-size:22px;margin-bottom:12px;object-fit:cover}
@@ -1116,6 +1122,19 @@ body.vqopen .vq-dim{opacity:1;pointer-events:auto}body.vqopen .vq-sheet{transfor
       levels: '<path d="M4 20V14M10 20V9M16 20V12M22 20V4M2 20h21"/>',
       swap: '<path d="M7 4 3 8l4 4M3 8h13a4 4 0 0 1 4 4M17 20l4-4-4-4M21 16H8a4 4 0 0 1-4-4"/>',
       info: '<circle cx="12" cy="12" r="9"/><path d="M12 16v-4M12 8h.01"/>' };
+    // Our rooms: photo, name, one line, then Book (the hotel's booking page) or Enquire (WhatsApp to reservations)
+    var roomsHtml = function(){
+      var rs = d.ourRooms || [];
+      if (!rs.length) return '';
+      var wa = String(d.roomsWa || d.stayWa || (d.contact && d.contact.wa) || '').replace(/\D/g, '');
+      var me = 'Hi, it\'s ' + String(d.first || '').split(' ')[0] + ', member ' + d.code + '.';
+      return '<div class="sec"><div class="lab">' + esc(d.roomsTitle || 'Our rooms') + '</div><div class="rmr">' + rs.map(function(r){
+        var enq = wa ? 'https://wa.me/' + wa + '?text=' + encodeURIComponent(me + ' I\'d like to ask about the ' + r.name + '.') : '';
+        return '<div class="rmc">' + (r.img ? '<img src="' + esc(r.img) + '" alt="" loading="lazy">' : '') + '<div class="rmb"><b translate="no">' + esc(r.name) + '</b>' + (r.line ? '<p>' + esc(r.line) + '</p>' : '') +
+          '<div class="rmbt">' + (d.stay ? '<a class="bk" href="' + esc(d.stay) + '" target="_blank" rel="noopener" data-hit>Book</a>' : '') +
+          (enq ? '<a class="eq" href="' + esc(enq) + '" target="_blank" rel="noopener" data-hit>' + svg(I.wa, 16) + 'Enquire</a>' : '') + '</div></div></div>';
+      }).join('') + '</div></div>';
+    };
     var extrasHtml = function(){
       var h = '';
       if ((d.coaches || []).length) h += '<div class="sec"><div class="lab">Our coaches</div><div class="cch">' + d.coaches.map(function(c, k){
@@ -1140,6 +1159,7 @@ body.vqopen .vq-dim{opacity:1;pointer-events:auto}body.vqopen .vq-sheet{transfor
         return '<button class="pbig" data-go="' + esc(lc(p.name)) + '">' + (p.img ? '<img src="' + esc(p.img) + '" alt="" loading="lazy">' : '<div class="ini">' + esc(String(p.name).charAt(0).toUpperCase()) + '</div>') +
           '<span><b translate="no">' + esc(p.name) + '</b>' + (st ? '<small>' + esc(st) + '</small>' : '') + '</span></button>';   // just the name (+ open / closed when they set hours)
       }).join('') + '</div></div>';
+      h += roomsHtml();   // a hotel's own rooms (Alex 23 Nov): straight after Explore
       if (bold) h += hotelsRow;   // bold: straight after their own places, so it's seen
       h += extrasHtml();
       if (!bold) h += hotelsRow;

@@ -143,6 +143,15 @@ P.transsby = {
   reward: { target: 10, text: 'One night in the Celebrity Suite' },
   venues: ['28th Sky Beach Club', 'The 27th Sky Lounge & Bistro', 'Grand Restaurant', 'The Lounge', 'The Spa', 'Wet Relaxation Areas', 'Fitness & Movement Zone', 'Beauty Salon', 'Kids Club'].map(name => ({ name, ...({ '28th Sky Beach Club': { opens: '12:00', closes: '00:00' }, 'The 27th Sky Lounge & Bistro': { opens: '12:00', closes: '00:00' }, 'The Spa': { opens: '10:00', closes: '22:00' }, 'Wet Relaxation Areas': { opens: '06:00', closes: '22:00' }, 'Fitness & Movement Zone': { opens: '06:00', closes: '22:00' }, 'Beauty Salon': { opens: '10:00', closes: '22:00' }, 'Kids Club': { opens: '08:00', closes: '20:00' } }[name] || {}), area: 'Surabaya', map: SBY_MAP, review: SBY_MAP })).concat([{ name: 'The Trans Resort Bali', area: 'Bali', map: 'https://www.google.com/maps/dir/?api=1&destination=The+Trans+Resort+Bali&destination_place_id=ChIJSdIXcT1H0i0R0vTqmwjznss' }]),
   stay: SBY_BOOK,
+  // Alex 23 Nov: a Rooms section after Explore - Book (hotel booking) or Enquire (WhatsApp to reservations). Names + lines from the hotel's website
+  roomsTitle: 'Our rooms',
+  ourRooms: [
+    { name: 'Premier Room', line: 'Effortless comfort in refined contemporary elegance', img: sb2('room-premier') },
+    { name: 'Executive Room', line: 'Spacious comfort with panoramic views', img: sb2('room-execclub') },
+    { name: 'Club Premier Room', line: 'Where elevated comfort meets exclusive privileges', img: sb4('room-view2') },
+    { name: 'Executive Club Room', line: 'An elevated stay with exclusive Club privileges', img: sb4('room-king') },
+    { name: 'Presidential Suite', line: 'An iconic expression of luxury at its finest', img: sb2('room-presidential') }
+  ],
   contact: { phone: '+62 811 1888 8055', wa: '6281118888055', map: SBY_MAP, ig: 'transluxurysurabaya' },
   acts: [   // Robbie 20 Nov: varied week, 3 different things each day, spread across the places
     { title: 'Afternoon tea', line: 'Sweet and savoury tiers', every: [6, 0], start: '15:00', end: '17:00', venue: 'The Lounge' },

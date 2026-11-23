@@ -882,6 +882,14 @@ select.search-inp{max-width:150px;cursor:pointer}
   pointer-events:auto;
   transform:translateY(0);
 }
+#scroll-top-btn .stb-txt{display:none}
+/* Admin Console fix 2: on phones a small "↑ Top" pill in the middle, shown only while scrolling back up */
+@media(max-width:700px){
+  #scroll-top-btn{left:50%;bottom:22px;width:auto;height:34px;padding:0 14px 0 11px;border-radius:999px;gap:5px;transform:translate(-50%,10px);font:800 12.5px/1 'Inter',sans-serif;color:#fff;box-shadow:0 4px 14px rgba(15,30,46,.3)}
+  #scroll-top-btn.visible{transform:translate(-50%,0)}
+  #scroll-top-btn svg{width:14px;height:14px}
+  #scroll-top-btn .stb-txt{display:inline}
+}
 
 /* Laptop: always keep room for the page scrollbar, so nothing jumps sideways while a page loads */
 @media(min-width:701px) and (pointer:fine){html{scrollbar-gutter:stable}}
@@ -5023,7 +5031,7 @@ html:has(#menuDetailOverlay[style*="flex"]),html:has(#menuDetailOverlay[style*="
   <div id="sidebar-overlay" onclick="toggleSidebar(false)"></div>
 
   <button id="scroll-top-btn" onclick="window.scrollTo({top:0, behavior:'smooth'})" aria-label="Back to top">
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/></svg>
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/></svg><span class="stb-txt">Top</span>
   </button>
 
   <button id="chat-float-btn" onclick="nav('chat')" aria-label="Open Chat">
@@ -7465,8 +7473,12 @@ function updateSkyBanner(){
 window.addEventListener('scroll', () => {
   const btn = document.getElementById('scroll-top-btn');
   if(btn){
-    if(window.scrollY > 400) btn.classList.add('visible');
-    else btn.classList.remove('visible');
+    const y = window.scrollY, up = y < (window._stbLastY || 0);
+    window._stbLastY = y;
+    const phone = window.innerWidth <= 700;
+    if(y > 400 && (!phone || up)) btn.classList.add('visible');   // phones: only while scrolling back up
+    else if(y <= 400 || (phone && y > (window._stbLastShowY || 0) + 4)) btn.classList.remove('visible');
+    if(up) window._stbLastShowY = y;
   }
 });
 
@@ -14366,7 +14378,8 @@ function peopleRender(){
   const fl = document.getElementById('people-filters');
   if(fl){
     const chip = (id, label) => `<button class="pp-chip${peopleFilter===id?' on':''}" onclick="peopleFilter='${id}';peopleRender()"><span>${label}</span> <b>${counts[id]}</b></button>`;
-    fl.innerHTML = chip('all','Everyone') + (real ? chip('active','Active') + chip('needs','Needs login') + (counts.off ? chip('off','Switched off') : '') : '');
+    if(peopleFilter==='active') peopleFilter = 'all';   // Admin Console fix 1: no "Active" box (it confused people next to the team count)
+    fl.innerHTML = chip('all','Everyone') + (real ? chip('needs','Needs login') + (counts.off ? chip('off','Switched off') : '') : '');
   }
   const q = (peopleSearch||'').trim().toLowerCase();
   const list = PEOPLE.filter(p => {

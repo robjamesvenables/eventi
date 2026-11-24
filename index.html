@@ -2866,6 +2866,18 @@ div.mki-row{cursor:default}.mki-row.done{opacity:.6}
 #ms-flow.w .mf-go.mf-save{background:#10B981}#ms-flow.w .mf-skip{color:#475569}
 #ms-flow .mf-undo{display:block;width:calc(100% - 32px);max-width:428px;margin:0 auto 10px;height:54px;border-radius:18px;border:2.5px solid rgba(255,255,255,.85);background:transparent;color:#fff;font:800 17px Inter,sans-serif;cursor:pointer}
 #ms-flow .mf-q{width:84px;height:84px;border-radius:50%;background:#FCD34D;color:#0F1E2E;display:grid;place-items:center;font-size:48px;font-weight:900}
+/* "Add a visit?" pop-up before a visit counts - stops reflex taps (Robbie 24 Nov, option A + star, next star pulses) */
+#ms-flow .mf-ask{position:absolute;inset:0;z-index:5;background:rgba(15,30,46,.82);display:flex;align-items:center;justify-content:center;padding:20px}
+#ms-flow .mf-askb{background:#fff;color:#0F1E2E;border-radius:24px;padding:26px 20px 20px;width:100%;max-width:400px;text-align:center;box-shadow:0 16px 40px rgba(0,0,0,.35)}
+#ms-flow .mf-askb h3{font-size:clamp(22px,6.5vw,26px);font-weight:900;margin:10px 0 4px;line-height:1.2}#ms-flow .mf-askb p{font-size:16px;color:#475569;margin:0}
+#ms-flow .mf-ast{display:grid;justify-content:center;gap:6px;margin:16px 0 20px}
+#ms-flow .mf-ast i{width:28px;height:28px;border-radius:50%;border:2px dashed #CBD5E1;display:flex;align-items:center;justify-content:center}
+#ms-flow .mf-abar{height:12px;border-radius:6px;background:#EEF2F6;margin:18px 0 20px;overflow:hidden}#ms-flow .mf-abar b{display:block;height:100%;background:#C9A227;border-radius:6px}
+#ms-flow .mf-ast i.on,#ms-flow .mf-ast i.now{border:0;background:#C9A227}
+#ms-flow .mf-ast i.now{animation:mfPulse 1s ease-in-out infinite}
+@keyframes mfPulse{0%,100%{opacity:.4;transform:scale(1);box-shadow:0 0 0 0 rgba(201,162,39,0)}50%{opacity:1;transform:scale(1.15);box-shadow:0 0 0 7px rgba(201,162,39,.35)}}
+#ms-flow .mf-asr{display:flex;gap:10px}#ms-flow .mf-asr button{flex:1;border:0;border-radius:16px;padding:17px 10px;font:inherit;font-size:17px;font-weight:900;cursor:pointer}
+#ms-flow .mf-asr .n{background:#F1F5F9;color:#334155}#ms-flow .mf-asr .y{background:#0D9488;color:#fff}
 #ms-flow .mf-chk{background:#fff;color:#0F1E2E;border-radius:22px;width:100%;padding:4px 18px;text-align:left;box-shadow:0 8px 24px rgba(0,0,0,.25)}
 #ms-flow .mf-chk div{padding:12px 0;border-bottom:1.5px solid #EEF2F6}#ms-flow .mf-chk div:last-child{border:0}
 #ms-flow .mf-chk small{display:block;font-size:12px;font-weight:900;letter-spacing:.12em;color:#64748B}#ms-flow .mf-chk b{display:block;font-size:21px;font-weight:900;margin-top:2px;overflow-wrap:anywhere}#ms-flow .mf-chk b.amt{font-size:clamp(26px,8vw,34px);letter-spacing:-.5px}
@@ -23544,7 +23556,7 @@ window.msFlow = async function(id, r){
   if(!o){ o = document.createElement('div'); o.id = 'ms-flow'; document.body.appendChild(o); }
   const ic = { x:'<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>',
     tick: c => `<svg width="62%" height="62%" viewBox="0 0 24 24" fill="none" stroke="${c}" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5l5 5L20 6.5"/></svg>` };
-  let at = 0, amt = '', rq = '', given = false, saved = (r && r.autoSaved) || null, busy = false, undone = false;
+  let ask = false, at = 0, amt = '', rq = '', given = false, saved = (r && r.autoSaved) || null, busy = false, undone = false;
   const close = () => { o.style.display = 'none'; mvBackDone('msflow'); msRender(); if(typeof fdRender === 'function' && document.getElementById('fd-res')) fdRender(); };
   const modeTag = () => pend && cardOn && mode ? `<em class="mf-md">${mode === 'check' ? '🔍 CHECK CARD' : '💳 PAYING'}</em>` : '';
   const top = lab => `<div class="mf-top"><span class="mf-pl">${e(lab)}${modeTag()}</span><div class="mf-dots">${steps.map((_, i) => `<b class="${i <= at ? 'on' : ''}"></b>`).join('')}</div><button class="mf-x" data-a="x" title="Close">${ic.x}</button></div>`;
@@ -23561,6 +23573,15 @@ window.msFlow = async function(id, r){
     const lw = s => s.charAt(0).toLowerCase() + s.slice(1);
     const msg = c.n >= c.t ? `Tell ${e(first)}: "Next visit, ${e(lw(c.text))} is on us!"` : `${c.t - c.n} more visit${c.t - c.n === 1 ? '' : 's'} to ${e(lw(c.text))}`;
     return `<div class="mf-stc"><div class="mf-k" style="color:#9A7B45">${e(first.toUpperCase())}'S CARD</div><div class="mf-st">${dots}</div><p>${msg}</p></div>`;
+  };
+  const askBox = () => {   // "Add a visit for X?" - the next star pulses (Robbie 24 Nov)
+    const st = w => `<svg width="${w}" height="${w}" viewBox="0 0 24 24" fill="CC"><path d="M12 2.5l2.9 6.1 6.6.8-4.9 4.6 1.3 6.6L12 17.3l-5.9 3.3 1.3-6.6L2.5 9.4l6.6-.8z"/></svg>`;
+    const c = msCardState(m), nx = c ? c.n + 1 : nVis() + 1;
+    const per = c && (c.t <= 7 ? c.t : Math.ceil(c.t / 2));   // 2 to 10 visits: one row, or two even rows (Robbie 24 Nov)
+    const row = !c ? '<div style="height:22px"></div>' : c.t <= 10 ? `<div class="mf-ast" style="grid-template-columns:repeat(${per},28px)">${Array.from({ length:c.t }, (_, i) => i < c.n ? `<i class="on">${st(14).replace('CC','#fff')}</i>` : i === c.n ? `<i class="now">${st(14).replace('CC','#fff')}</i>` : '<i></i>').join('')}</div>`
+      : `<div class="mf-abar"><b style="width:${Math.min(100, Math.round(nx / c.t * 100))}%"></b></div>`;
+    return `<div class="mf-ask"><div class="mf-askb">${st(46).replace('CC','#C9A227')}<h3>Add a visit for ${e(first)}?</h3><p>${c && nx <= c.t ? `This will be visit ${nx} of ${c.t}` : `This will be visit ${nx}`}</p>${row}
+      <div class="mf-asr"><button class="n" data-a="askNo">✕ No</button><button class="y" data-a="countYes">✓ Yes, add</button></div></div></div>`;
   };
   const draw = () => {
     if(rq){ o.className = 'w'; o.innerHTML = top(first) + msRqHtml(m, rq) + `<button class="mf-go" data-a="rqBack">Back</button>`; msRqDraw(rq); return; }
@@ -23614,7 +23635,7 @@ window.msFlow = async function(id, r){
       foot = `<button class="mf-go" data-a="x">Done ✓</button>`;
     }
     o.className = cls;
-    o.innerHTML = h + foot;
+    o.innerHTML = h + foot + (ask ? askBox() : '');
   };
   o.onclick = async ev => {
     const b = ev.target.closest('button'); if(!b || busy) return;
@@ -23635,10 +23656,13 @@ window.msFlow = async function(id, r){
       const ok = await msBillUndo(m.id, v ? { kind:'new', v } : null); busy = false; if(!ok) return;
       toast('Undone - nothing counted'); return close();
     }
-    if(a === 'count'){   // no-money venues: one tap counts the visit
+    if(a === 'count'){ ask = true; return draw(); }   // ask first - nothing counted by a reflex tap (Robbie 24 Nov)
+    if(a === 'askNo'){ ask = false; return draw(); }
+    if(a === 'countYes'){   // no-money venues: counts the visit
       busy = true; b.disabled = true; b.textContent = 'Saving…';
       const res = await msBillSave(m.id, null); busy = false;
-      if(!res){ b.disabled = false; b.textContent = 'Count the visit ✓'; return; }
+      if(!res){ b.disabled = false; b.textContent = '✓ Yes, add'; return; }
+      ask = false;
       if(!steps.includes('done')) steps = steps.concat('done'); mode = 'pay';
       saved = res; at = steps.indexOf('done'); msRender(); return draw();
     }
@@ -24310,7 +24334,7 @@ function msPage(){
     }
     if(p) return p; }catch(e){}
   if(typeof appIsDemoCompany === 'function' && appIsDemoCompany() && myProfile){
-    return { venues: GP_DEMO_VENUES.map(v => Object.assign({}, v)), reward:{ visits:50, text:'Dinner for two on us' } };
+    return { venues: GP_DEMO_VENUES.map(v => Object.assign({}, v)), reward:{ visits:10, text:'Dinner for two on us' } };
   }
   return { venues:[], reward:null };
 }
@@ -24421,7 +24445,7 @@ window.msTiers = function(){
       <div class="ms-pl">VIP - members a manager has made VIP</div>
       <div class="ms-plist" id="ms-p-vip">${p.vip.map((t, i) => msPerkRow(t, (p.icons.vip || [])[i])).join('')}</div><button type="button" class="ms-vadd"${p.vip.length >= 8 ? ' style="display:none"' : ''} onclick="msPerkAdd(this)">+ Add a perk</button>
       <div class="ms-gh">REWARD <small>leave empty to hide</small></div>
-      <div class="ms-v2" style="grid-template-columns:96px 1fr"><label class="vdf-f"><span>VISITS</span><input id="ms-rw-n" type="number" inputmode="numeric" min="1" placeholder="e.g. 50" value="${msEsc(rw.visits || '')}"></label>
+      <div class="ms-v2" style="grid-template-columns:96px 1fr"><label class="vdf-f"><span>VISITS</span><input id="ms-rw-n" type="number" inputmode="numeric" min="2" max="10" placeholder="2 to 10" value="${msEsc(rw.visits || '')}"></label>
         <label class="vdf-f"><span>THE REWARD</span><input id="ms-rw-t" maxlength="40" placeholder="e.g. Dinner for two on us" value="${msEsc(rw.text || '')}"></label></div>
       <div class="ms-gh">CONTACT <small>the Contact button on the guest page</small></div>
       <div class="ms-ibox" oninput="msContactPrev()">
@@ -24453,6 +24477,7 @@ window.msTiers = function(){
     if(noIc){ toast('Choose an icon for "' + noIc.t + '"'); noIc.r.scrollIntoView({ block:'center' }); if(!noIc.r.nextElementSibling || !noIc.r.nextElementSibling.classList.contains('ms-pgrid')) mvIconPick(noIc.r.querySelector('.ms-pib')); return; }
     const perks = JSON.stringify({ member: pm.map(x => x.t), vip: pv.map(x => x.t), icons: { member: pm.map(x => x.ic), vip: pv.map(x => x.ic) } });
     const n = parseInt(document.getElementById('ms-rw-n').value, 10), t = document.getElementById('ms-rw-t').value.trim();
+    if(n && (n < 2 || n > 10)){ toast('Visits for a reward: 2 to 10'); return; }   // keeps the card simple (Robbie 24 Nov)
     const venues = [...document.querySelectorAll('#ms-vlist .ms-vbox')].map(b => ({
       name: b.querySelector('.ms-vn').value.trim(), opens: b.querySelector('.ms-vo').value, closes: b.querySelector('.ms-vc').value,
       map: b.querySelector('.ms-vm').value.trim(), book: b.querySelector('.ms-vb').value.trim(), wa: b.querySelector('.ms-vw').value.replace(/\D/g, ''), phone: b.querySelector('.ms-vp').value.trim(), email: b.querySelector('.ms-ve').value.trim(), review: b.querySelector('.ms-vr').value.trim(),

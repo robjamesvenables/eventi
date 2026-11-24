@@ -2866,6 +2866,13 @@ div.mki-row{cursor:default}.mki-row.done{opacity:.6}
 #ms-flow .mf-gets.l2 .mf-li{padding:8px 0}#ms-flow .mf-gets.l2 .mf-li>span b{font-size:17px}
 #ms-flow .mf-gets.l3 .mf-li{padding:6px 0;gap:10px}#ms-flow .mf-gets.l3 .mf-li>span b{font-size:15.5px}#ms-flow .mf-gets.l3 .mf-li>span small{font-size:12.5px}#ms-flow .mf-gets.l3 .mf-li>em{font-size:13px;padding:4px 8px}
 #ms-flow .mf-gets.l3 .mf-big{font-size:26px!important;margin-bottom:0}#ms-flow .mf-gets.l3 .mf-lab{font-size:14px;margin:8px 0 2px}
+/* Small phones: tighter still so the whole list fits above the button - the name is already at the top (Robbie 24 Nov) */
+@media (max-height:760px){#ms-flow .mf-gets.l2 .mf-li{padding:6px 0}#ms-flow .mf-gets.l2 .mf-li>span b{font-size:16px}
+#ms-flow .mf-gets.l3 .mf-big{display:none}#ms-flow .mf-gets.l3>:first-child{margin-top:0}#ms-flow .mf-gets.l3 .mf-lab:first-of-type{margin-top:0}
+#ms-flow .mf-gets.l3 .mf-li{padding:3px 0;gap:8px}#ms-flow .mf-gets.l3 .mf-li>span b{font-size:14px;line-height:1.12}#ms-flow .mf-gets.l3 .mf-lab{margin:4px 0 1px;font-size:13px}#ms-flow .mf-gets.l3{gap:4px}#ms-flow .mf-gets.l3 .mf-li>span small{font-size:12px;margin-top:0}
+#ms-flow .mf-gets.l3 .mf-li>i svg{width:17px;height:17px}#ms-flow .mf-gets.l3 .mf-now{font-size:11px;padding:4px 6px}#ms-flow .mf-gets.l3 .mf-li>em{font-size:12px;padding:3px 7px}}
+/* If it still doesn't fit, a fade above the button shows there's more to scroll */
+#ms-flow .mf-gets.over{-webkit-mask-image:linear-gradient(#000 calc(100% - 36px),transparent);mask-image:linear-gradient(#000 calc(100% - 36px),transparent)}
 #ms-flow .mf-card.sm{font-size:22px;padding:20px 18px;border-radius:18px;font-weight:800}#ms-flow .mf-card.sm i{font-size:28px}
 /* 4 or more perks/deals: smaller cards so it all fits without scrolling (Robbie 24 Nov) */
 #ms-flow .mf-gets:has(.mf-card~.mf-card~.mf-card~.mf-card) .mf-card.sm{font-size:18px;padding:12px 16px;border-radius:14px;gap:10px}#ms-flow .mf-gets:has(.mf-card~.mf-card~.mf-card~.mf-card) .mf-card.sm i{font-size:20px}
@@ -23608,7 +23615,7 @@ window.msFlow = async function(id, r){
     return `<div class="mf-ask"><div class="mf-askb">${st(46).replace('CC','#C9A227')}<h3>Add a visit for ${e(first)}?</h3><p>${c && nx <= c.t ? `This will be visit ${nx} of ${c.t}` : `This will be visit ${nx}`}</p>${row}
       <div class="mf-asr"><button class="n" data-a="askNo">✕ No</button><button class="y" data-a="countYes">✓ Yes, add</button></div></div></div>`;
   };
-  const draw = () => {
+  let draw = () => {
     if(rq){ o.className = 'w'; o.innerHTML = top(first) + msRqHtml(m, rq) + `<button class="mf-go" data-a="rqBack">Back</button>`; msRqDraw(rq); return; }
     const k = steps[at]; let cls = 'g', h = '', foot = '';
     if(k === 'in'){
@@ -23709,6 +23716,8 @@ window.msFlow = async function(id, r){
       saved = null; undone = true; at = steps.indexOf('bill'); msRender(); return draw();   // said on the bill screen, not in a toast over the buttons
     }
   };
+  const markOver = () => { const g = o.querySelector('.mf-gets'); if(g){ const f = () => g.classList.toggle('over', g.scrollHeight - g.scrollTop - g.clientHeight > 4); f(); g.onscroll = f; } };
+  const draw0 = draw; draw = () => { draw0(); requestAnimationFrame(markOver); };
   draw(); o.style.display = 'flex';
   // Today's member deals still loading (slow phone signal)? Fill them in as soon as they arrive (Robbie 24 Nov)
   if(typeof GPE !== 'undefined' && !GPE.loaded && typeof gpLoad === 'function') gpLoad().then(() => { if(o.style.display !== 'none' && !rq){ const d2 = msTodayDeals(); if(d2.length !== deals.length){ deals.splice(0, deals.length, ...d2); draw(); } } }).catch(() => {});

@@ -2955,6 +2955,9 @@ div.mki-row{cursor:default}.mki-row.done{opacity:.6}
 #mc.mc-n .mc-keys button{background:#fff;color:#0F1E2E;box-shadow:0 1px 3px rgba(0,0,0,.12)}#mc.mc-n .mc-boxes span{border:2px solid #CBD5E1}
 #mc .mc-xx{background:rgba(15,30,46,.08)}
 #mc .mc-yn button{font-size:17px;padding:17px 8px}
+/* Keyboard open on a phone: drop the small labels so the boxes stay above it (Robbie 24 Nov) */
+#mc .mc-mid.form:focus-within{padding-top:4px;gap:6px}#mc .mc-mid.form:focus-within .mc-k,#mc .mc-mid.form:focus-within .mc-sub{display:none}#mc .mc-mid.form:focus-within .mc-big{font-size:24px}
+@media (max-height:520px){#mc .mc-top{min-height:40px;padding-top:6px}#mc .mc-in{padding:13px 14px}}
 #mc.mc-n .mc-mem,#mc.mc-sec .mc-mem{border:2px solid #E2E8F0}
 #mc.mc-sec .mc-secic{background:#FEE2E2;color:#DC2626}
 #mc .mc-ask{margin-top:14px;background:rgba(255,255,255,.08);border-radius:16px;padding:14px;font-size:15px;line-height:1.4}#mc .mc-ask b{display:block;font-size:22px;margin-top:4px}
@@ -24079,6 +24082,8 @@ async function mcStart(view, s){
   mcGo(view, false);
 }
 window.mcNew = () => mcStart('name');
+// Keep the box being typed in on screen when the phone keyboard opens
+document.addEventListener('focusin', ev => { const t = ev.target; if(t && t.closest && t.closest('#mc') && /^(INPUT|SELECT|TEXTAREA)$/.test(t.tagName)) setTimeout(() => { try{ t.scrollIntoView({ block:'center', behavior:'smooth' }); }catch(e){} }, 320); });
 window.mcHave = () => mcStart('have');
 window.mcLost = () => mcStart('lfind', { lmode:'phone', q:'' });
 // The venue's keyring QR was scanned (camera on Members Club, or a staff phone opening /k/<venue code>): straight to the 4 digits

@@ -24125,9 +24125,9 @@ window.mcVenueScanned = () => mcStart('pad', { code:'', viaKey:true });
 
 const mcVal = id => { const e = document.getElementById(id); return e ? e.value.trim() : ''; };
 async function mcFreeCode(){ return await dcFreeCode(); }
-function mcCheckIn(m){
-  const id = m.id; mcClose();
-  setTimeout(() => msArrive(id), 380);
+function mcCheckIn(m){   // keep the 4-digit screen up until the check-in screen is open - no flash of Front desk (Robbie 24 Nov)
+  const id = m.id, o = document.getElementById('mc'); mcClose(true, true);
+  setTimeout(async () => { try{ await msArrive(id); } finally { setTimeout(() => { if(o) o.style.display = 'none'; }, 60); } }, 380);
 }
 // Save the new member, their own app link, and today's visit
 async function mcSave(){

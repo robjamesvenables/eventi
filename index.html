@@ -2856,6 +2856,16 @@ div.mki-row{cursor:default}.mki-row.done{opacity:.6}
 #ms-flow .mf-bk{display:flex;align-items:center;gap:4px;background:none;border:0;color:inherit;font-family:inherit;font-weight:800;font-size:15px;cursor:pointer;padding:8px 4px;opacity:.9;flex:none}
 #ms-flow .mf-gets{gap:8px}#ms-flow .mf-gets>:first-child{margin-top:8px}#ms-flow .mf-gets .mf-big{margin-bottom:10px}
 #ms-flow .mf-lab{align-self:flex-start;font-size:18px;font-weight:900;letter-spacing:.1em;margin:14px 0 4px;opacity:1}
+/* Till perks: two simple lists - EVERY VISIT (venue's icons) and ON NOW! (red NOW tag) - sized to fit one screen (Robbie 24 Nov) */
+#ms-flow .mf-list{background:#fff;border-radius:18px;width:100%;padding:2px 16px;box-shadow:0 4px 14px rgba(0,0,0,.08)}
+#ms-flow .mf-li{display:flex;gap:12px;align-items:center;padding:12px 0;border-bottom:1.5px solid #F1F5F9;color:#0F1E2E;text-align:left}#ms-flow .mf-li:last-child{border:0}
+#ms-flow .mf-li>i{font-style:normal;flex:none;width:24px;display:grid;place-items:center;color:#C9A227;font-size:20px}
+#ms-flow .mf-li>span{flex:1;min-width:0}#ms-flow .mf-li>span b{display:block;font-size:20px;font-weight:800;line-height:1.2}#ms-flow .mf-li>span small{display:block;font-size:14px;color:#64748B;font-weight:600;margin-top:2px}
+#ms-flow .mf-li>em{flex:none;max-width:42%;font-style:normal;background:#DCFCE7;color:#15803D;border-radius:10px;padding:5px 9px;font-size:15px;font-weight:900;text-align:center;line-height:1.2}
+#ms-flow .mf-now{flex:none;background:#E11D48;color:#fff;font-size:12px;font-weight:900;letter-spacing:.08em;border-radius:8px;padding:6px 7px}
+#ms-flow .mf-gets.l2 .mf-li{padding:8px 0}#ms-flow .mf-gets.l2 .mf-li>span b{font-size:17px}
+#ms-flow .mf-gets.l3 .mf-li{padding:6px 0;gap:10px}#ms-flow .mf-gets.l3 .mf-li>span b{font-size:15.5px}#ms-flow .mf-gets.l3 .mf-li>span small{font-size:12.5px}#ms-flow .mf-gets.l3 .mf-li>em{font-size:13px;padding:4px 8px}
+#ms-flow .mf-gets.l3 .mf-big{font-size:26px!important;margin-bottom:0}#ms-flow .mf-gets.l3 .mf-lab{font-size:14px;margin:8px 0 2px}
 #ms-flow .mf-card.sm{font-size:22px;padding:20px 18px;border-radius:18px;font-weight:800}#ms-flow .mf-card.sm i{font-size:28px}
 /* 4 or more perks/deals: smaller cards so it all fits without scrolling (Robbie 24 Nov) */
 #ms-flow .mf-gets:has(.mf-card~.mf-card~.mf-card~.mf-card) .mf-card.sm{font-size:18px;padding:12px 16px;border-radius:14px;gap:10px}#ms-flow .mf-gets:has(.mf-card~.mf-card~.mf-card~.mf-card) .mf-card.sm i{font-size:20px}
@@ -23551,7 +23561,9 @@ window.msFlow = async function(id, r){
   const nth = n => n + (n % 100 >= 11 && n % 100 <= 13 ? 'th' : ['th','st','nd','rd'][n % 10] || 'th');
   const nVis = () => (MS.visits[m.id] || []).length;
   // A "first visit" perk only on their first visit, a birthday perk only in their birthday week (Robbie 22 Nov)
-  const perks = (msPerks()[m.tier === 'vip' ? 'vip' : 'member'] || []).filter(Boolean)
+  const pAll = msPerks(), pTier = m.tier === 'vip' ? 'vip' : 'member', pList = pAll[pTier] || [], pIcs = (pAll.icons || {})[pTier] || [];
+  const perkIc = t => { const ic = pIcs[pList.indexOf(t)]; return MS_PI[ic] ? msIcSvg(ic, 20) : '★'; };   // the venue's own icon from the back office
+  const perks = pList.filter(Boolean)
     .filter(p => !/first\s+visit/i.test(p) || nVis() <= (pend ? 0 : 1))
     .filter(p => !/birthday/i.test(p) || !!bd);
   const deals = msTodayDeals();
@@ -23616,10 +23628,11 @@ window.msFlow = async function(id, r){
     } else if(k === 'gets'){
       cls = 'o';
       const any = msRewardReady(m) || given || perks.length || deals.length;
-      h = top(first) + `<div class="mf-mid mf-gets"><div class="mf-big" style="font-size:clamp(28px,8.5vw,36px)">What ${e(first)} gets</div>
+      const nLines = perks.length + deals.length, sz = nLines <= 3 ? 'l1' : nLines <= 7 ? 'l2' : 'l3';   // one screen, no scrolling (Robbie 24 Nov)
+      h = top(first) + `<div class="mf-mid mf-gets ${sz}"><div class="mf-big" style="font-size:clamp(28px,8.5vw,36px)">What ${e(first)} gets</div>
         ${rwBox()}
-        ${perks.length ? `<div class="mf-k mf-lab">EVERY VISIT</div>${perks.map(p => `<div class="mf-card sm"><i>⭐</i>${e(p)}</div>`).join('')}` : ''}
-        ${deals.length ? `<div class="mf-k mf-lab">ON NOW!</div>${msTodayCards(deals).replace(/mf-card mf-deal/g, 'mf-card mf-deal sm')}` : ''}
+        ${perks.length ? `<div class="mf-k mf-lab">EVERY VISIT</div><div class="mf-list">${perks.map(p => `<div class="mf-li"><i>${perkIc(p)}</i><span><b>${e(p)}</b></span></div>`).join('')}</div>` : ''}
+        ${deals.length ? `<div class="mf-k mf-lab">ON NOW!</div><div class="mf-list">${deals.map(x => `<div class="mf-li"><b class="mf-now">NOW</b><span><b>${e(x.t)}</b>${x.w ? `<small>${e(x.w)}</small>` : ''}</span><em>${e(x.b)}</em></div>`).join('')}</div>` : ''}
         ${any ? '' : '<div class="mf-sub">No perks set up yet. A manager adds them in Membership.</div>'}</div>`;
       const after = cardOn ? `<button class="mf-skip" data-a="${money ? 'payAfter' : 'count'}">Paying after all? ${money ? 'Add the bill' : 'Count it'}</button>` : '';
       foot = !pend ? `<button class="mf-go" data-a="x">Done ✓</button>`

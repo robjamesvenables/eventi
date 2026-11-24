@@ -133,7 +133,7 @@ function build(c, ctx){
     .sort((a, b) => String(a.date || '9999').localeCompare(String(b.date || '9999'))).slice(0, 12)
     .map(e => { const t1 = timeLabel(e.time), t2 = timeLabel(e.time2);
       return { id: str(e.id, 40), img: img(e), title: str(e.title, 60), line: str(e.line, 90), venue: str(e.venue, 40),
-        when: [dateLabel(e.date), t1 && t2 ? t1 + ' – ' + t2 : t1].filter(Boolean).join(' · '), disc: DISC.includes(+e.disc) ? +e.disc : 0, btn: button(e, e.title + (e.date ? ' (' + dateLabel(e.date) + ')' : ''), DISC.includes(+e.disc) ? +e.disc : 0),
+        when: [dateLabel(e.date), t1 && t2 ? t1 + ' – ' + t2 : t1].filter(Boolean).join(' · '), disc: DISC.includes(+e.disc) ? +e.disc : 0, btn: button(e, e.title + (e.date ? ' (' + dateLabel(e.date) + ')' : ''), (DISC.includes(+e.disc) ? +e.disc : 0) || (str(e.perk, 18) ? 1 : 0)),   // a Member benefit counts as a member deal too (one box now - Robbie 24 Nov)
         // The details pop-up: what's on, ages, dress code, price, anything else
         blast: str(e.blast, 1500).replace(/\r/g, '').replace(/\n{3,}/g, '\n\n').trim(), details: str(e.details, 300), age: AGES[e.age] || '', dress: str(e.dress, 60), price: str(e.price, 60), notes: str(e.notes, 200), hl: !!e.hl, perk: str(e.perk, 18),
         // the icons staff chose for each detail, and their own extra details

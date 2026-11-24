@@ -2983,7 +2983,8 @@ div.mki-row{cursor:default}.mki-row.done{opacity:.6}
 #p-frontdesk.page:not(#p-home):not(#p-chat) > .ph.fd-ph{background:none!important;box-shadow:none!important;padding:0 0 4px!important;border-radius:0!important;max-width:720px;margin:0 auto 6px!important}
 #p-frontdesk.page:not(#p-home):not(#p-chat) > .ph.fd-ph:before,#p-frontdesk.page:not(#p-home):not(#p-chat) > .ph.fd-ph:after{display:none!important}
 #p-frontdesk.page:not(#p-home):not(#p-chat) > .ph.fd-ph .ph-title{color:#0F1E2E!important;font-size:30px!important;font-weight:900!important;letter-spacing:-.5px}#p-frontdesk.page:not(#p-home):not(#p-chat) > .ph.fd-ph .ph-sub{color:#64748B!important}
-body.fd-sel #p-frontdesk.page:not(#p-home):not(#p-chat) > .ph.fd-ph{display:none!important}
+body.fd-sel #p-frontdesk.page:not(#p-home):not(#p-chat) > .ph.fd-ph,body.fd-search #p-frontdesk.page:not(#p-home):not(#p-chat) > .ph.fd-ph{display:none!important}
+.fd-sbar{display:flex;align-items:center;gap:12px;margin-bottom:10px}.fd-sbar b{font-size:18px;font-weight:900;color:#0F1E2E}.fd-srch .fd-q{margin-top:8px}
 .fd-t>span:last-child{display:flex;flex-direction:column;gap:4px}.fd-t small{font-size:12.5px;font-weight:600;opacity:.75}
 .fd-seg{display:flex;background:#E2E8F0;border-radius:13px;padding:4px;gap:4px}.fd-seg button{flex:1;border:0;background:none;border-radius:10px;padding:11px 0;font:800 15px Inter,sans-serif;color:#475569;cursor:pointer;white-space:nowrap}.fd-seg button.on{background:#0F1E2E;color:#fff}
 .fd-q{display:block;width:100%;margin-top:10px;border:2px solid #0D9488;border-radius:14px;padding:14px 16px;font:600 17px Inter,sans-serif;color:#0F1E2E;background:#fff;outline:0;box-sizing:border-box}
@@ -23710,6 +23711,7 @@ function fdRender(){
   if(!MS.loaded && !MS.loading && myProfile) msLoad().then(() => { if(FD.q) fdResults(); });
   const e = msEsc;
   document.body.classList.toggle('fd-sel', !!FD.sel);
+  document.body.classList.toggle('fd-search', FD.view === 'search');   // Search: no page title, so the box and results sit above the keyboard (Robbie 24 Nov)
   if(FD.sel){ el.innerHTML = fdMemberHtml(FD.sel); return; }
   const hint = { phone:'Last 4 digits of their phone', code:'Their code, e.g. SARAH1', surname:'Their surname' }[FD.by];
   const IC = { card:'<rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20M6 15h4"/>',
@@ -23720,7 +23722,7 @@ function fdRender(){
   const ic = (k, c, n) => `<svg width="${n}" height="${n}" viewBox="0 0 24 24" fill="none" stroke="${c}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${IC[k]}</svg>`;
   const cardOn = msCardOn();
   if(FD.view === 'search'){   // Search: the keyring won't scan - find them, then Paying or Check card on their row
-    el.innerHTML = `<div class="fd-wrap"><button type="button" class="fd-back" onclick="fdSearch(false)">← Back</button><div class="fd-h1" style="margin-bottom:12px">Search</div>
+    el.innerHTML = `<div class="fd-wrap fd-srch"><div class="fd-sbar"><button type="button" class="fd-back" onclick="fdSearch(false)">← Back</button><b>Search a member</b></div>
       <div class="fd-seg">${['phone','code','surname'].map(k => `<button type="button" class="${FD.by === k ? 'on' : ''}" onclick="fdBy('${k}')">${k[0].toUpperCase() + k.slice(1)}</button>`).join('')}</div>
       <input id="fd-q" class="fd-q" placeholder="${hint}" autocomplete="off" value="${e(FD.q)}" ${FD.by === 'phone' ? 'inputmode="tel"' : FD.by === 'code' ? 'autocapitalize="characters"' : 'autocapitalize="words"'}>
       <div id="fd-res"></div></div>`;
@@ -23753,7 +23755,7 @@ function fdResults(){
 }
 window.fdBy = k => { FD.by = k; FD.q = ''; fdRender(); const i = document.getElementById('fd-q'); if(i) i.focus(); };
 window.fdOpen = (id, k) => { msSetMode(k || null); fdCheckIn(id); };   // the same as scanning their keyring, with Paying / Check card picked on the row (Robbie 24 Nov)
-window.fdSearch = on => { FD.view = on ? 'search' : ''; FD.q = ''; fdRender(); };
+window.fdSearch = on => { FD.view = on ? 'search' : ''; FD.q = ''; fdRender(); try{ window.scrollTo(0, 0); }catch(e){} };
 window.fdBack = () => { FD.sel = null; fdRender(); };
 function fdMemberHtml(id){
   const e = msEsc, m = MS.members.find(x => String(x.id) === String(id)); if(!m) return '';

@@ -127,7 +127,7 @@ function build(c, ctx){
   // A photo's member badge: its own Member benefit, or the one on the event it opens
   const slidePerk = s => { if (s.perk) return str(s.perk, 18); const e = s.ev && (c.events || []).find(x => x && x.id === s.ev); return e ? str(e.perk, 18) || (+e.disc ? +e.disc + '% off' : '') : ''; };
   const slides = on('slides') ? (c.slides || []).filter(s => img(s)).slice(0, 12).map(s => ({ id: str(s.id, 40), img: img(s), title: str(s.title, 60), line: str(s.line, 90), venue: str(guessPlace(s), 40), ev: str(s.ev, 40), btn: button(s, s.title || 'what\'s on'), perk: slidePerk(s) })) : [];
-  const deals = (c.deals || []).filter(d => d && d.title).slice(0, 12).map(d => ({ id: str(d.id, 40), img: img(d), title: str(d.title, 60), when: str(d.when, 40), venue: str(d.venue, 40), perk: str(d.perk, 18) }));
+  const deals = (c.deals || []).filter(d => d && d.title && (!d.until || d.until >= today)).slice(0, 12).map(d => ({ id: str(d.id, 40), img: img(d), title: str(d.title, 60), when: str(d.when, 40), venue: str(d.venue, 40), perk: str(d.perk, 18) }));
   const AGES = { all: 'All ages', '18': '18+ only', '21': '21+ only' };
   const events = (c.events || []).filter(e => e && e.title && (!e.date || e.date >= today) && (!e.from || e.from <= today))
     .sort((a, b) => String(a.date || '9999').localeCompare(String(b.date || '9999'))).slice(0, 12)

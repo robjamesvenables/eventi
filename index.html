@@ -23454,7 +23454,7 @@ function msTodayDeals(){
   const ben = x => { let b = x.perk || (+x.disc ? +x.disc + '% off' : ''); if(!b && seed){ const sx = [].concat(seed.events || [], seed.deals || []).find(y => y.id === x.id); if(sx) b = sx.perk || (+sx.disc ? +sx.disc + '% off' : ''); } return b; };
   const today = msToday(), out = [];
   (c.events || []).filter(e => e && e.title && e.date === today).forEach(e => { const b = ben(e); if(b) out.push({ t:e.title, w:[e.venue, msHm(e.time)].filter(Boolean).join(' · '), b }); });
-  (c.deals || []).filter(d => d && d.title).forEach(d => { const b = ben(d); if(b) out.push({ t:d.title, w:[d.when, d.venue].filter(Boolean).join(' · '), b }); });
+  (c.deals || []).filter(d => d && d.title && (!d.until || d.until >= today)).forEach(d => { const b = ben(d); if(b) out.push({ t:d.title, w:[d.when, d.venue].filter(Boolean).join(' · '), b }); });
   return out.slice(0, 8);
 }
 function msTodayCards(list){ return list.map(x => `<div class="mf-card mf-deal"><span><b>${msEsc(x.t)}</b>${x.w ? `<small>${msEsc(x.w)}</small>` : ''}</span><em>✓ ${msEsc(x.b)}</em></div>`).join(''); }
@@ -24946,7 +24946,7 @@ window.gpClose = function(fromBack){
 function gpItemHtml(k, it, i){
   const btn = it.btn && GP_BTN[it.btn] ? `<span class="gp-chip ${GP_BTN[it.btn][1]}">${GP_BTN[it.btn][0]}</span>` : '';
   const sub = k === 'events' ? [gpDate(it.date), it.time, it.venue].filter(Boolean).join(' · ') : k === 'deals' ? [it.when, it.venue].filter(Boolean).join(' · ') : [it.line, it.venue ? 'at ' + it.venue : 'All places'].filter(Boolean).join(' · ');
-  const hide = k === 'events' && it.date ? `<span class="gp-chip">Hides after ${gpEsc(gpDate(it.date))}</span>` : '';
+  const hide = k === 'events' && it.date ? `<span class="gp-chip">Hides after ${gpEsc(gpDate(it.date))}</span>` : k === 'deals' && it.until ? `<span class="gp-chip">${it.until < gpToday() ? 'Ended - not showing' : 'Ends ' + gpEsc(gpDate(it.until))}</span>` : '';
   const from = k === 'events' && it.from && it.from > gpToday() ? `<span class="gp-chip">Shows from ${gpEsc(gpDate(it.from))}</span>` : '';
   const hl = k === 'events' && it.hl ? '<span class="gp-chip">In Highlights</span>' : '';
   // Highlights: the team picks the order (first one shows first in the slideshow)
@@ -25742,7 +25742,7 @@ window.gpForm = function(k, i){
   let f = `<label>Photo${k === 'slides' ? '' : ' (optional)'}</label><div class="gp-ph${gpSrc(it) ? ' has' : ''}" id="gpf-ph" role="button" tabindex="0">${gpSrc(it) ? `<img src="${gpEsc(gpSrc(it))}" alt=""><span>Change photo</span>` : `${gpIc(GPI.cam, 22)}&nbsp; Choose a photo`}</div><div class="gp-hint">Best: a landscape (wide), high-quality photo - the original from your phone or photographer, not a screenshot.</div>`;
   if(k === 'slides') f += `<label>Big words (optional, max 30 letters)</label><input id="gpf-title" maxlength="30" value="${gpEsc(it.title || '')}" placeholder="e.g. 2 for 1 cocktails"><label>Small line (optional, max 36 letters)</label><input id="gpf-line" maxlength="36" value="${gpEsc(it.line || '')}" placeholder="e.g. Every day 5–7pm">${venueSel}<div class="gp-hint">Pick the place it belongs to - the See more button opens that place.</div>
     ${(GPE.c.events || []).filter(e => !e.date || e.date >= gpToday()).length ? `<label>When they tap See more</label><select id="gpf-ev"><option value="">Open that place's page</option>${(GPE.c.events || []).filter(e => !e.date || e.date >= gpToday()).map(e => `<option value="${gpEsc(e.id)}"${e.id === it.ev ? ' selected' : ''}>Go straight to the event: ${gpEsc(e.title)}${e.date ? ' (' + gpEsc(gpDate(e.date)) + ')' : ''}</option>`).join('')}</select><div class="gp-hint">Pick an event to take guests straight to it, with its details open - no scrolling. When the event is over, See more opens the place again by itself.</div>` : ''}`;
-  if(k === 'deals') f += `<label>What's the deal? (max 40 letters)</label><input id="gpf-title" maxlength="40" value="${gpEsc(it.title || '')}" placeholder="e.g. 2 for 1 cocktails"><label>When (max 20 letters)</label><input id="gpf-when" maxlength="20" value="${gpEsc(it.when || '')}" placeholder="e.g. Daily · 5–7pm">${venueSel}`;
+  if(k === 'deals') f += `<label>What's the deal? (max 40 letters)</label><input id="gpf-title" maxlength="40" value="${gpEsc(it.title || '')}" placeholder="e.g. 2 for 1 cocktails"><label>When (max 20 letters)</label><input id="gpf-when" maxlength="20" value="${gpEsc(it.when || '')}" placeholder="e.g. Daily · 5–7pm">${venueSel}<label>Ends on (optional)</label><input id="gpf-until" type="date" value="${gpEsc(it.until || '')}"><div class="gp-hint">The last day of the deal. After that it comes off the guest page and the Front desk by itself. Leave empty if it never ends.</div>`;
   if(k === 'events') f += `<label>Event name (max 30 letters)</label><input id="gpf-title" maxlength="30" value="${gpEsc(it.title || '')}" placeholder="e.g. New Year's Eve"><label>One line about it (optional, max 45 letters)</label><input id="gpf-line" maxlength="45" value="${gpEsc(it.line || '')}" placeholder="e.g. Fireworks, DJs, free-flow from Rp 1.5m">
     <label>Date</label><input id="gpf-date" type="date" value="${gpEsc(it.date || '')}">
     <div class="gp-2"><div><label>Starts (optional)</label><input id="gpf-time" type="time" value="${gpEsc(it.time || '')}"></div><div><label>Finishes (optional)</label><input id="gpf-time2" type="time" value="${gpEsc(it.time2 || '')}"></div></div>${venueSel}
@@ -25808,7 +25808,7 @@ window.gpForm = function(k, i){
     const rec = Object.assign(it, { title: val('gpf-title') });
     if(k === 'slides'){ rec.line = val('gpf-line'); rec.venue = val('gpf-venue'); rec.ev = val('gpf-ev'); if(!rec.ev) delete rec.ev; if(!file && !gpSrc(it)){ toast('Choose a photo first'); return; } }
     if(k === 'events' || k === 'deals'){ rec.perk = val('gpf-perk'); if(!rec.perk) delete rec.perk; }
-    if(k === 'deals'){ rec.when = val('gpf-when'); rec.venue = val('gpf-venue'); if(!rec.title){ toast("Type what the deal is"); return; } }
+    if(k === 'deals'){ rec.when = val('gpf-when'); rec.venue = val('gpf-venue'); rec.until = val('gpf-until'); if(!rec.until) delete rec.until; if(!rec.title){ toast("Type what the deal is"); return; } if(rec.until && rec.until < gpToday()){ toast('That end date has already passed'); return; } }
     if(k === 'events'){ Object.assign(rec, { line: val('gpf-line'), date: val('gpf-date'), time: val('gpf-time'), time2: val('gpf-time2'), venue: val('gpf-venue'), from: val('gpf-from'),
         blast: ($('gpf-blast') ? $('gpf-blast').value.replace(/\s+$/, '') : ''), details: val('gpf-details'), age, dress: val('gpf-dress'), price: val('gpf-price'), notes: val('gpf-notes'), hl: !!($('gpf-hl') && $('gpf-hl').checked) });
       rec.ic = {}; s.querySelectorAll('.gp-dr[data-k]').forEach(r => { if(r.dataset.ic) rec.ic[r.dataset.k] = r.dataset.ic; });

@@ -102,7 +102,7 @@ function prospectCard(pro, code, ov){
     const baseContent = pro.content;   // the demo's own colours always win, so a slip in the editor can't change a prospect's page while it's being shown
     pro = Object.assign({}, pro, { content: ov.content ? (t => { const b = (baseContent && baseContent(t)) || {}, mine = {}; Object.keys((ov.content && ov.content.theme) || {}).forEach(k => { if (/^#[0-9a-f]{6}$/i.test(ov.content.theme[k] || '')) mine[k] = ov.content.theme[k]; }); const c = b.theme ? Object.assign({}, ov.content, { theme: b.theme }) : Object.assign({}, ov.content); if (c.others === undefined && b.others) c.others = b.others; if (b.places) { c.places = Object.assign({}, c.places || {}); Object.keys(b.places).forEach(k => { const sp = b.places[k]; if (!sp || !sp.other) return; const m = Object.assign({}, sp, c.places[k] || {}); ['img', 'app', 'badge', 'area'].forEach(f => { if (!m[f] && sp[f]) m[f] = sp[f]; }); m.other = true; c.places[k] = m; }); }   /* sister venue (e.g. Surabaya on Trans Bali): keep its photo + link to its own app even when the back office saved the page without them (Robbie 22 Nov) */ if (!c.placesTitle && b.placesTitle) c.placesTitle = b.placesTitle; return c; }) : pro.content, acts: ov.content && Array.isArray(ov.content.acts) ? ov.content.acts.filter(a => a && a.title && Array.isArray(a.every)) : pro.acts,
       venues: Array.isArray(pg.venues) && pg.venues.length ? pg.venues.filter(v => v && v.name).slice(0, 12) : pro.venues,
-      contact: pg.contact || pro.contact, stay: pg.stay != null ? pg.stay : pro.stay, stayWa: pg.stayWa != null ? pg.stayWa : pro.stayWa, stayPhone: pg.stayPhone != null ? pg.stayPhone : pro.stayPhone,
+      contact: pg.contact || pro.contact, stay: pg.stay != null ? pg.stay : pro.stay, stayWa: pg.stayWa != null ? pg.stayWa : pro.stayWa, stayPhone: pg.stayPhone != null ? pg.stayPhone : pro.stayPhone, stayPerk: pg.stayPerk != null ? pg.stayPerk : pro.stayPerk,
       reward: pg.reward && pg.reward.visits ? { target: +pg.reward.visits, text: String(pg.reward.text || '') } : pg.reward === null ? null : pro.reward });
     const pk = ov.perks && ov.perks[pro.tier === 'vip' ? 'vip' : 'member'];
     if (Array.isArray(pk)) pro.perks = pk.slice(0, 8).map(x => String(x || '').slice(0, 60)), pro.perkIcons = pro.perks.map((x, i) => { const v = String((((ov.perks.icons || {})[pro.tier === 'vip' ? 'vip' : 'member']) || [])[i] || ''); return /^[a-z]{2,10}$/.test(v) ? v : ''; });
@@ -275,7 +275,7 @@ module.exports = async (req, res) => {
       ok: true, brand, logo, code, vq, first, tier, visits: visits.length, favourite, gp, hotels: oth ? oth.list : [], hotelsBold: oth ? oth.bold : false, hotelsTitle: oth ? oth.title : '',
       since: new Date(m.created_at).getFullYear(), perks, perkIcons, offers: m.consent === true, reviewAsk,
       birthdayWeek: birthdayWeek(m.birthday, now.date),
-      tonight: tonight.slice(0, 12), week: week.slice(0, 40), menus, venues, reward, stay: https(page.stay), stayWa: waOf(page.stayWa), stayPhone: phoneOf(page.stayPhone), contact: cleanContact(page.contact)
+      tonight: tonight.slice(0, 12), week: week.slice(0, 40), menus, venues, reward, stay: https(page.stay), stayWa: waOf(page.stayWa), stayPhone: phoneOf(page.stayPhone), stayPerk: String(page.stayPerk || '').trim().slice(0, 18), contact: cleanContact(page.contact)
     });
   } catch (e) {
     console.error(e);

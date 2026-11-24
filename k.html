@@ -1237,7 +1237,7 @@ body.vqopen .vq-dim{opacity:1;pointer-events:auto}body.vqopen .vq-sheet{transfor
     };
     var bookRows = function(key){
       var rows = [];
-      if (d.stay || d.stayWa || d.stayPhone) rows.push({ grp: 'STAY', label: 'Rooms & villas', icon: I.bed, gold: true, ways: waysOf(d.stay, d.stayWa, d.stayPhone, me + ' I\'d love to book a room - could you let me know what you have? Thank you!') });
+      if (d.stay || d.stayWa || d.stayPhone) rows.push({ grp: 'STAY', label: 'Rooms & villas', icon: I.bed, gold: true, perk: d.stayPerk || '', ways: waysOf(d.stay, d.stayWa, d.stayPhone, me + ' I\'d love to book a room - could you let me know what you have? Thank you!') });
       var vs = (d.venues || []).filter(function(v){ var pl = (gp.places || []).find(function(p){ return lc(p.name) === lc(v.name); }); return !(pl && pl.other && pl.app); })   // a linked venue with its own app is booked in that app
         .slice().sort(function(a, b){ return (lc(b.name) === key) - (lc(a.name) === key); });
       vs.forEach(function(v){ rows.push({ grp: 'BOOK A TABLE', label: v.name, icon: I.food, here: !!key && lc(v.name) === key, ways: waysOf(v.book, v.wa, v.phone, greetAt(v.name)) }); });
@@ -1245,7 +1245,7 @@ body.vqopen .vq-dim{opacity:1;pointer-events:auto}body.vqopen .vq-sheet{transfor
     };
     var bookHtml = function(rows){
       return rows.map(function(r){
-        return '<div class="bkc' + (r.gold ? ' gold' : '') + '"><div class="bkt">' + svg(r.icon, 18) + '<b translate="no">' + esc(r.label) + '</b>' + (r.here ? '<em>You\'re here</em>' : '') + '</div><div class="bkw' + (r.ways.length > 2 ? ' w3' : '') + '" style="grid-template-columns:repeat(' + r.ways.length + ',minmax(0,1fr))">' +
+        return '<div class="bkc' + (r.gold ? ' gold' : '') + '"><div class="bkt">' + svg(r.icon, 18) + '<b translate="no">' + esc(r.label) + '</b>' + (r.here ? '<em>You\'re here</em>' : '') + (r.perk ? '<span class="evdisc"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M3 7l4.5 4L12 4l4.5 7L21 7l-2 11H5z"/></svg>Members: ' + esc(r.perk) + '</span>' : '') + '</div><div class="bkw' + (r.ways.length > 2 ? ' w3' : '') + '" style="grid-template-columns:repeat(' + r.ways.length + ',minmax(0,1fr))">' +
           r.ways.map(function(w){ return '<a href="' + esc(w.href) + '"' + (/^https/.test(w.href) ? ' target="_blank" rel="noopener"' : '') + '>' + svg(w.icon, 17) + '<span>' + w.how + '</span></a>'; }).join('') + '</div></div>';
       }).join('');
     };

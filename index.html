@@ -2867,7 +2867,7 @@ div.mki-row{cursor:default}.mki-row.done{opacity:.6}
 #ms-flow .mf-gets.l3 .mf-li{padding:6px 0;gap:10px}#ms-flow .mf-gets.l3 .mf-li>span b{font-size:15.5px}#ms-flow .mf-gets.l3 .mf-li>span small{font-size:12.5px}#ms-flow .mf-gets.l3 .mf-li>em{font-size:13px;padding:4px 8px}
 #ms-flow .mf-gets.l3 .mf-big{font-size:26px!important;margin-bottom:0}#ms-flow .mf-gets.l3 .mf-lab{font-size:14px;margin:8px 0 2px}
 /* Small phones: tighter still so the whole list fits above the button - the name is already at the top (Robbie 24 Nov) */
-@media (max-height:760px){#ms-flow .mf-gets.l2 .mf-li{padding:6px 0}#ms-flow .mf-gets.l2 .mf-li>span b{font-size:16px}
+@media (max-height:760px){#ms-flow .mf-gets.l2 .mf-li{padding:4px 0}#ms-flow .mf-gets.l2 .mf-big{font-size:28px!important;margin-bottom:0}#ms-flow .mf-gets.l2 .mf-li>span b{font-size:16px}
 #ms-flow .mf-gets.l3 .mf-big{display:none}#ms-flow .mf-gets.l3>:first-child{margin-top:0}#ms-flow .mf-gets.l3 .mf-lab:first-of-type{margin-top:0}
 #ms-flow .mf-gets.l3 .mf-li{padding:3px 0;gap:8px}#ms-flow .mf-gets.l3 .mf-li>span b{font-size:14px;line-height:1.12}#ms-flow .mf-gets.l3 .mf-lab{margin:4px 0 1px;font-size:13px}#ms-flow .mf-gets.l3{gap:4px}#ms-flow .mf-gets.l3 .mf-li>span small{font-size:12px;margin-top:0}
 #ms-flow .mf-gets.l3 .mf-li>i svg{width:17px;height:17px}#ms-flow .mf-gets.l3 .mf-now{font-size:11px;padding:4px 6px}#ms-flow .mf-gets.l3 .mf-li>em{font-size:12px;padding:3px 7px}}
@@ -23570,6 +23570,7 @@ window.msFlow = async function(id, r){
   // A "first visit" perk only on their first visit, a birthday perk only in their birthday week (Robbie 22 Nov)
   const pAll = msPerks(), pTier = m.tier === 'vip' ? 'vip' : 'member', pList = pAll[pTier] || [], pIcs = (pAll.icons || {})[pTier] || [];
   const perkIc = t => { const ic = pIcs[pList.indexOf(t)]; return MS_PI[ic] ? msIcSvg(ic, 20) : '★'; };   // the venue's own icon from the back office
+  const roomPerk = String((msPage() || {}).stayPerk || '').trim();   // Rooms & villas member benefit (Robbie 24 Nov)
   const perks = pList.filter(Boolean)
     .filter(p => !/first\s+visit/i.test(p) || nVis() <= (pend ? 0 : 1))
     .filter(p => !/birthday/i.test(p) || !!bd);
@@ -23634,11 +23635,11 @@ window.msFlow = async function(id, r){
       foot = `<button class="mf-go" data-a="next">Next →</button><button class="mf-skip" data-a="${pend || again ? 'x' : 'wrong'}">${pend || again ? 'Wrong person? Back' : 'Wrong person? Undo'}</button>`;
     } else if(k === 'gets'){
       cls = 'o';
-      const any = msRewardReady(m) || given || perks.length || deals.length;
-      const nLines = perks.length + deals.length, sz = nLines <= 3 ? 'l1' : nLines <= 7 ? 'l2' : 'l3';   // one screen, no scrolling (Robbie 24 Nov)
+      const any = msRewardReady(m) || given || perks.length || roomPerk || deals.length;
+      const nLines = perks.length + (roomPerk ? 1 : 0) + deals.length, sz = nLines <= 3 ? 'l1' : nLines <= 7 ? 'l2' : 'l3';   // one screen, no scrolling (Robbie 24 Nov)
       h = top(first) + `<div class="mf-mid mf-gets ${sz}"><div class="mf-big" style="font-size:clamp(28px,8.5vw,36px)">What ${e(first)} gets</div>
         ${rwBox()}
-        ${perks.length ? `<div class="mf-k mf-lab">EVERY VISIT</div><div class="mf-list">${perks.map(p => `<div class="mf-li"><i>${perkIc(p)}</i><span><b>${e(p)}</b></span></div>`).join('')}</div>` : ''}
+        ${perks.length || roomPerk ? `<div class="mf-k mf-lab">EVERY VISIT</div><div class="mf-list">${perks.map(p => `<div class="mf-li"><i>${perkIc(p)}</i><span><b>${e(p)}</b></span></div>`).join('')}${roomPerk ? `<div class="mf-li"><i>${msIcSvg('bed', 20)}</i><span><b>Rooms: ${e(roomPerk)}</b></span></div>` : ''}</div>` : ''}
         ${deals.length ? `<div class="mf-k mf-lab">ON NOW!</div><div class="mf-list">${deals.map(x => `<div class="mf-li"><b class="mf-now">NOW</b><span><b>${e(x.t)}</b>${x.w ? `<small>${e(x.w)}</small>` : ''}</span><em>${e(x.b)}</em></div>`).join('')}</div>` : ''}
         ${any ? '' : '<div class="mf-sub">No perks set up yet. A manager adds them in Membership.</div>'}</div>`;
       const after = cardOn ? `<button class="mf-skip" data-a="${money ? 'payAfter' : 'count'}">Paying after all? ${money ? 'Add the bill' : 'Count it'}</button>` : '';
@@ -24500,6 +24501,7 @@ window.msTiers = function(){
         <div class="ms-vf"><i>${MS_SV(MS_IC.ext)}</i><input id="ms-r-link" inputmode="url" autocapitalize="off" placeholder="Booking link (optional)" value="${msEsc(pg.stay || '')}"></div>
         <div class="ms-vf"><i>${MS_SV(MS_IC.wa)}</i><input id="ms-r-wa" type="tel" placeholder="WhatsApp (optional)" value="${msEsc(pg.stayWa ? '+' + pg.stayWa : '')}"></div>
         <div class="ms-vf"><i>${MS_SV(MS_IC.phone)}</i><input id="ms-r-phone" type="tel" placeholder="Phone (optional)" value="${msEsc(pg.stayPhone || '')}"></div>
+        <div class="ms-vf"><i>${msIcSvg('tag', 18)}</i><input id="ms-r-perk" maxlength="18" placeholder="Member benefit, e.g. 10% off rooms (optional)" value="${msEsc(pg.stayPerk || '')}"></div>
         <div class="ms-bkp gold" id="ms-r-prev"></div>
       </div>
       <div class="ms-gh">VENUES <small>hours, map and booking</small></div>
@@ -24537,7 +24539,7 @@ window.msTiers = function(){
     if(contact.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(contact.email)){ toast('The contact email doesn\'t look right'); return; }
     if(!okUrl(contact.map)){ toast('The contact map link should start with https://'); return; }
     const stay = fixUrl(gv('ms-r-link')); if(!okUrl(stay)){ toast('The rooms booking link should start with https://'); return; }
-    const page = JSON.stringify(Object.assign({}, msPage(), { venues, contact, stay, stayWa: gv('ms-r-wa').replace(/\D/g, ''), stayPhone: gv('ms-r-phone'), reward: n > 0 ? { visits:n, text:t } : null }));
+    const page = JSON.stringify(Object.assign({}, msPage(), { venues, contact, stay, stayWa: gv('ms-r-wa').replace(/\D/g, ''), stayPhone: gv('ms-r-phone'), stayPerk: gv('ms-r-perk'), reward: n > 0 ? { visits:n, text:t } : null }));
     const btn = document.getElementById('ms-save'); btn.disabled = true; btn.textContent = 'Saving…';
     const [a, b] = await Promise.all([
       sb.from('app_settings').upsert({ key:'member_perks', value: perks }, { onConflict:'company_id,key' }),

@@ -23501,7 +23501,9 @@ async function msBillUndo(id, res){
   const list = MS.visits[id] || [], v = res.v;
   if(res.kind === 'new'){
     if(!v._local){
-      const { error } = await sb.from('member_visits').delete().eq('member_id', id).eq('venue', v.venue).eq('visit_date', v.visit_date);
+      // more than one visit a day is allowed now (till's call, Robbie 24 Nov): take back only this one
+      const q = sb.from('member_visits').delete().eq('member_id', id).eq('venue', v.venue).eq('visit_date', v.visit_date);
+      const { error } = await (v.id ? q.eq('id', v.id) : q);
       if(error && !msDemo()){ console.warn(error); toast('Not undone - please try again'); return false; }
     }
     const i = list.indexOf(v); if(i >= 0) list.splice(i, 1);
@@ -23629,7 +23631,7 @@ window.msFlow = async function(id, r){
     } else if(k === 'check'){   // "Is this right?" before anything is saved - instead of an Undo afterwards (Robbie 23 Nov, option A navy)
       cls = 'n';
       const c = msCardState(m), today = (MS.visits[m.id] || []).some(x => x.venue === msVenue() && x.visit_date === msToday());
-      const as = today ? 'Added to today\'s visit' : c && c.n < c.t ? `Visit ${c.n + 1} of ${c.t}` : `Visit ${nVis() + 1}`;
+      const as = c && c.n < c.t ? `Visit ${c.n + 1} of ${c.t}` : `Visit ${nVis() + 1}`;   // each save is its own visit now
       h = top(first) + `<div class="mf-mid"><div class="mf-q">?</div><div class="mf-big" style="font-size:clamp(32px,9.5vw,42px)">Is this right?</div><div class="mf-sub" style="margin-top:-6px">Check with the bill before you save</div>
         <div class="mf-chk"><div><small>MEMBER</small><b>${e(m.name || first)}</b></div><div><small>BILL</small><b class="amt">${msRpFull(amt)}</b></div><div><small>COUNTS AS</small><b>${e(as)}</b></div></div></div>`;
       foot = `<button class="mf-go mf-yes" data-a="save">Yes, save ✓</button><button class="mf-undo" data-a="back">← No, go back</button>`;

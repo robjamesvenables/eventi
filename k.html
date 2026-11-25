@@ -1316,6 +1316,8 @@ body.vqopen .vq-dim{opacity:1;pointer-events:auto}body.vqopen .vq-sheet{transfor
       unfocus(); el.classList.add('mvon');
       for (var n = el; n && n.parentNode && n !== document.body; n = n.parentNode) Array.prototype.forEach.call(n.parentNode.children, function(x){ if (x !== n && !/^(SCRIPT|STYLE|LINK)$/.test(x.tagName)) x.classList.add('mvdim'); });
     };
+    // Back office preview: scroll only inside the phone - never the editor page around it (Robbie 25 Nov: the screen jumped to the phone)
+    var mvCenter = function(el){ var r = el.getBoundingClientRect(); window.scrollTo(0, Math.max(0, r.top + window.pageYOffset - (window.innerHeight - Math.min(r.height, window.innerHeight)) / 2)); };
     window.__mvGoApply = function(){
       var m = window.__mvGoQ; if (!m) return; window.__mvGoQ = null;
       unfocus(); if (m.clear) return;   // "Show whole page
@@ -1333,17 +1335,17 @@ body.vqopen .vq-dim{opacity:1;pointer-events:auto}body.vqopen .vq-sheet{transfor
       if (key !== curKey || document.getElementById('mvcp')) show(key, false);
       Array.prototype.forEach.call(document.querySelectorAll('.mvnew'), function(x){ x.remove(); });
       if (typeof m.newv === 'string' && !key) { var pg = (m.newOther && document.querySelector('.ohp')) || document.querySelector('.pgrid') || document.querySelector('.ohp'); if (pg) pg.insertAdjacentHTML('beforeend', '<div class="pbig mvnew">' + (m.newv ? '<b translate="no">' + esc(m.newv.slice(0, 30)) + '</b><small>Tap Add to put it here</small>' : '<b>Your new venue</b><small>will show here</small>') + '</div>'); }
-      if (m.sec === 'places' && m.id && !key) { var card = document.querySelector('.pbig[data-go="' + (window.CSS && CSS.escape ? CSS.escape(lc(m.id)) : lc(m.id)) + '"]'); if (card) { card.scrollIntoView({ block: 'center' }); focusOn(card.closest('.sec') || card); return; } }
+      if (m.sec === 'places' && m.id && !key) { var card = document.querySelector('.pbig[data-go="' + (window.CSS && CSS.escape ? CSS.escape(lc(m.id)) : lc(m.id)) + '"]'); if (card) { mvCenter(card); focusOn(card.closest('.sec') || card); return; } }
       var nvEl = document.querySelector('.mvnew');
-      if (nvEl) { nvEl.scrollIntoView({ block: 'center' }); focusOn(nvEl.closest('.sec') || nvEl); return; }
+      if (nvEl) { mvCenter(nvEl); focusOn(nvEl.closest('.sec') || nvEl); return; }
       var el = find();
-      if (GO_VS[m.sec]) { if (!el) { window.scrollTo(0, 0); return; } if (el.classList.contains('vtop')) window.scrollTo(0, 0); else el.scrollIntoView({ block: 'center' }); focusOn(el); return; }
+      if (GO_VS[m.sec]) { if (!el) { window.scrollTo(0, 0); return; } if (el.classList.contains('vtop')) window.scrollTo(0, 0); else mvCenter(el); focusOn(el); return; }
       if (!m.sec) { window.scrollTo(0, 0); return; }   // just the place: its page, from the top
       if (!el && curKey && m.sec !== 'contact' && m.sec !== 'book') { show('', false); el = find(); }   // not on that place's page: try the main page
       if (!el && !curKey && many && m.sec !== 'contact' && m.sec !== 'book') { for (var pi = 0; pi < places.length && !el; pi++) { if (places[pi].soon) continue; show(lc(places[pi].name), false); el = find(); } if (!el) show('', false); }   // only on the places' own pages (deals, events): open the first place that has it
       if (m.sec === 'contact' || m.sec === 'book') { var b = document.getElementById(m.sec === 'book' ? 'bk' : 'cl'); if (b) b.click(); return; }
       if (!el) { window.scrollTo(0, 0); return; }
-      el.scrollIntoView({ block: 'center' });
+      mvCenter(el);
       focusOn(el);
     };
     window.addEventListener('popstate', function(e){ var shx = document.getElementById('sh'); if (shx && shx.classList.contains('on')) { shx.classList.remove('on'); var sc = document.getElementById('shc'); if (sc && sc.querySelector('iframe')) sc.innerHTML = ''; document.body.style.overflow = ''; return; } var lb = document.getElementById('lb'); if (lb && lb.classList.contains('on')) { lb.classList.remove('on'); lb.innerHTML = ''; document.body.style.overflow = ''; return; } if (e.state && e.state.club) { showClub(false); return; } if (e.state && e.state.hotel) { showHotel(e.state.hotel, false); return; } if (many || document.getElementById('mvcp') || document.getElementById('ohpg')) show(e.state && e.state.place ? e.state.place : '', false); window.scrollTo(0, 0); });

@@ -207,7 +207,7 @@ async function find(req, res){
       body: { username: key, fails: live ? att.fails + 1 : 1, locked_until: live ? att.locked_until : new Date(nowMs + 3600000).toISOString() } }).catch(() => {});
   }
   const tail = full.slice(-4);   // only members whose number ends the same way
-  const ms = await L.db('members?select=id,phone&company_id=eq.' + encodeURIComponent(k.company_id) + '&phone=like.' + encodeURIComponent('*' + tail) + '&limit=1000');
+  const ms = await L.db('members?select=id,phone,name&company_id=eq.' + encodeURIComponent(k.company_id) + '&phone=like.' + encodeURIComponent('*' + tail) + '&limit=1000');
   const hit = ms.filter(m => fdig(m.phone) === full);
   if (hit.length !== 1) return L.send(res, 200, { ok: true, n: hit.length });
   const mid = hit[0].id;
@@ -220,7 +220,7 @@ async function find(req, res){
     }
   }
   if (!own) return L.send(res, 500, { ok: false });
-  return L.send(res, 200, { ok: true, n: 1, code: own.code });
+  return L.send(res, 200, { ok: true, n: 1, code: own.code, first: String(hit[0].name || '').trim().split(/\s+/)[0].slice(0, 30) });   // first name only, for "Activated! Welcome, Sarah"
 }
 
 // ── A guest page broke on a member's phone: log it for the Owner page (Health) and ping the owner ──

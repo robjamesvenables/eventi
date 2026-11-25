@@ -3314,7 +3314,7 @@ a.vdd-row:hover{background:#F1F5F9}
 .mv-tag.plus{background:#C4973B;color:#1F1406}
 .mv-tag.big{margin:0;font-size:10.5px;padding:4px 10px;display:inline-block}
 .mv-soon-card .mv-tag.soon{background:#DCFCE7;color:#15803D;border-color:#86EFAC}
-#mks .mks-dc .gp-sec{border:0;border-radius:16px}
+#mks .mks-dc{max-width:760px}#mks .mks-dc .gp-sec{border:0;border-radius:16px}
 #mv-soon-ov{position:fixed;inset:0;background:rgba(15,30,46,.55);z-index:10005;display:none;align-items:center;justify-content:center;padding:20px}
 .mv-soon-card{background:white;border-radius:20px;max-width:420px;width:100%;padding:26px 24px 20px;font-family:Inter,sans-serif;box-shadow:0 30px 70px rgba(0,0,0,.3)}
 .mv-soon-card h3{margin:12px 0 8px;font-size:21px;color:#0F1E2E;letter-spacing:-.3px}
@@ -25246,17 +25246,20 @@ async function dcDraw(cfg, p, k){
   const hint = cfg.line ? (cfg.places.length > 1 ? 'Show this at any of our venues' : 'Show this when you arrive') : '';
   const name = String(p.name || '').trim() || 'Member', code = p.code.split('').join('');
   const codeT = (y, col) => T(code, W / 2 + 3, y, '800', 18, col, .32);
-  if(cfg.style === 'simple'){
-    const on = dcOn(acc), soft = on === '#FFFFFF' ? 'rgba(255,255,255,.78)' : 'rgba(15,30,46,.7)';
+  if(cfg.style === 'simple'){   // one template: colour, logo, name, big QR - centred so there's no empty space (Robbie 25 Nov)
+    const on = dcOn(acc), soft = on === '#FFFFFF' ? 'rgba(255,255,255,.8)' : 'rgba(15,30,46,.72)';
     RR(0, 0, W, H, 0, acc);
-    let y = 48;
-    if(logo){ const [lw, lh] = contain(logo, 190, 74); RR((W - lw) / 2 - 18, y, lw + 36, lh + 28, 20, '#FFFFFF'); x.drawImage(logo, (W - lw) / 2, y + 14, lw, lh); y += lh + 28; }
-    else { T(brand, W / 2 + 2, y + 30, '800', fit(brand, '800', 22, .2, 380, 12), on, .2); y += 60; }
-    T(name, W / 2, y + 52, '800', fit(name, '800', 36, 0, 380, 18), on);
-    T(since, W / 2, y + 84, '600', 14, soft);
-    const qb = qrBox(y + 112, 250, 16);
-    codeT(qb + 26, on);
-    if(hint) T(hint, W / 2, H - 34, '600', 13, soft);
+    let lw = 0, lh = 0; if(logo){ [lw, lh] = contain(logo, 200, 80); }
+    const topH = logo ? lh + 32 : 40, qs = 300, block = topH + 34 + 74 + qs + 44;
+    let y = Math.max(40, (H - 50 - block) / 2);
+    if(logo){ RR((W - lw) / 2 - 20, y, lw + 40, lh + 32, 22, '#FFFFFF'); x.drawImage(logo, (W - lw) / 2, y + 16, lw, lh); }
+    else T(brand, W / 2 + 2, y + 20, '800', fit(brand, '800', 24, .2, 380, 12), on, .2);
+    y += topH + 34;
+    T(name, W / 2, y + 18, '800', fit(name, '800', 40, 0, 390, 18), on);
+    T(since, W / 2, y + 54, '600', 15, soft);
+    const qb = qrBox(y + 80, qs, 18);
+    codeT(qb + 28, on);
+    if(hint) T(hint, W / 2, H - 36, '600', 14, soft);
   } else if(cfg.style === 'photo'){
     RR(0, 0, W, H, 0, '#14100C');
     if(photo) cover(photo, 0, 0, W, 300); else { x.fillStyle = acc; x.fillRect(0, 0, W, 300); }

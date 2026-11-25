@@ -3314,6 +3314,7 @@ a.vdd-row:hover{background:#F1F5F9}
 .mv-tag.plus{background:#C4973B;color:#1F1406}
 .mv-tag.big{margin:0;font-size:10.5px;padding:4px 10px;display:inline-block}
 .mv-soon-card .mv-tag.soon{background:#DCFCE7;color:#15803D;border-color:#86EFAC}
+#mks .mks-dc .gp-sec{border:0;border-radius:16px}
 #mv-soon-ov{position:fixed;inset:0;background:rgba(15,30,46,.55);z-index:10005;display:none;align-items:center;justify-content:center;padding:20px}
 .mv-soon-card{background:white;border-radius:20px;max-width:420px;width:100%;padding:26px 24px 20px;font-family:Inter,sans-serif;box-shadow:0 30px 70px rgba(0,0,0,.3)}
 .mv-soon-card h3{margin:12px 0 8px;font-size:21px;color:#0F1E2E;letter-spacing:-.3px}
@@ -22679,6 +22680,7 @@ function mksRow(title, sub, sw, more){
 async function msSettingsRender(){
   const el = document.getElementById('mks'); if(!el) return;
   await msLoadStaff();
+  if(!GPE.loaded){ try{ await gpLoad(); }catch(e){} }   // the digital member card lives here now (Robbie 25 Nov - was in the middle of Design your page)
   const s = mkS();
   const num = (path, v, min, max) => `<input type="number" class="mks-num" inputmode="numeric" min="${min}" max="${max}" value="${msEsc(v)}" onchange="const n = parseInt(this.value, 10); if(n >= ${min} && n <= ${max}) mksSet('${path}', n); else { toast('Pick a number from ${min} to ${max}'); this.value = ${+v}; }">`;
   const staff = Object.entries(MS.staff || {}).filter(([id]) => !myProfile || String(id) !== String(myProfile.id));
@@ -22690,6 +22692,7 @@ async function msSettingsRender(){
     </div>` : ''}
     <div class="mks-h">YOUR KEYRING QR</div>
     <div class="mks-card"><div id="mks-vq"><div class="mks-hint">Making your keyring QR…</div></div></div>
+    ${GPE.c ? `<div class="mks-h">DIGITAL MEMBER CARD</div><div class="mks-dc">${gpCardHtml()}</div>` : ''}
     <div class="mks-h">ALWAYS ON</div>
     <div class="mks-card">
       ${mksRow('Welcome WhatsApp', 'Sent when a guest joins, with their member card. It checks their number is real.', '<span class="mks-lock">ON</span>')}
@@ -22713,7 +22716,7 @@ async function msSettingsRender(){
       ${mksRow('Time between messages', 'So guests aren\'t messaged too often. Mavis warns you, and leaves out anyone you messaged more recently than this.', '', `<div class="vdf-pills mks-pills">${[1, 2, 3, 5, 7].map(n => `<button type="button" class="vdf-pill${+s.rest === n ? ' on' : ''}" onclick="mksSet('rest', ${n})">${n} day${n > 1 ? 's' : ''}</button>`).join('')}</div>`)}
       ${mksRow('Who can send messages', 'Managers can always send. Anyone else can ask, and a manager says OK.', '', staff.length ? `<div class="mks-f"><span>Also allowed to send</span><div class="vdf-pills mks-pills">${staff.map(([id, n]) => { const on = s.senders.map(String).includes(String(id)); return `<button type="button" class="vdf-pill${on ? ' on' : ''}" onclick="mksSender('${id}')">${msEsc(n)}</button>`; }).join('')}</div></div>` : '<div class="mks-hint">Your team will show here.</div>')}
     </div>` : ''}`;
-  mcVenueQrCard();
+  mcVenueQrCard(); dcPaint();
 }
 // Mavis Club network: how it works, in 3 steps, who else is in it, and a look at the guest's "My Mavis Club" page
 function mksNetwork(){
@@ -25022,7 +25025,6 @@ function gpRender(){
       ${gpTopHtml()}
       <div class="gp-sec${c.off.slides ? ' off' : ''}" data-go="slides"><div class="gp-sh"><div class="n"><b>Highlights</b><small>Big photos at the top of a place's page - offers, new menu, big nights. Guests swipe through them</small></div>${tog('slides')}</div>
         ${c.off.slides ? '<div class="gp-hidn">Hidden from guests - everything is kept. Turn on to show it again.</div>' : ''}${`<div class="gp-body">${c.slides.map((it, j) => gpItemHtml('slides', it, j)).join('')}${c.slides.length < 12 ? `<button class="gp-add" onclick="gpForm('slides')">+ Add a highlight</button>` : ''}</div>`}</div>
-      ${gpCardHtml()}
       <div class="gp-sec" data-go="perks"><div class="gp-sh"><div class="n"><b>Perks and reward</b><small>On every member's card - always shown</small></div></div>
         <div class="gp-body">${gpPerksHtml(mgr)}</div></div>
       ${gpPlacesHtml()}

@@ -22278,8 +22278,12 @@ function msAgo(dateStr){
   return n <= 0 ? 'Today' : n === 1 ? 'Yesterday' : n < 7 ? n + ' days ago' : n < 14 ? '1 week ago' : n < 60 ? Math.floor(n / 7) + ' weeks ago' : d.toLocaleDateString('en-GB', { day:'numeric', month:'short' });
 }
 
-async function msLoad(){
-  if(!myProfile || MS.loading) return;
+function msLoad(){   // one load at a time - a second caller waits for the same one (Robbie 25 Nov: after a refresh the page stayed on Loading)
+  if(!myProfile) return Promise.resolve();
+  if(MS.loading && MS.loadP) return MS.loadP;
+  return (MS.loadP = msLoadRun());
+}
+async function msLoadRun(){
   MS.loading = true;
   try{
     const [m, v, k] = await Promise.all([

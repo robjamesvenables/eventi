@@ -2454,7 +2454,7 @@ body:not(.mv-demo) #ms-demoqr-btn{display:none!important}
 .gp-tab.ex{border-color:#FCD34D;background:#FFFBEB}.gp-tab.ex small{color:#B45309}.gp-tab.ve{border-color:#C7D2FE;background:#EEF2FF}.gp-tab.ve small{color:#4338CA}
 .gp-tab.on.main{background:#0F1E2E;border-color:#0F1E2E}.gp-tab.on.ex{background:#F59E0B;border-color:#F59E0B}.gp-tab.on.ve{background:#4F46E5;border-color:#4F46E5}.gp-tab.on b,.gp-tab.on small{color:#fff}
 .gp-tadd{border:2px dashed;border-radius:14px;padding:9px 14px;font:800 14px Inter,sans-serif;background:#fff;cursor:pointer;display:flex;flex-direction:column;align-items:flex-start;text-align:left}.gp-tadd small{font-size:11.5px;font-weight:600;margin-top:1px}
-.gp-tadd.one{border-color:#94A3B8;color:#334155}.gp-tadd.ex{border-color:#F59E0B;color:#B45309}.gp-tadd.ve{border-color:#6366F1;color:#4338CA}
+.gp-tadd.ve.full{cursor:default;border-style:solid;border-color:#E2E8F0;color:#64748B;background:#F8FAFC}.gp-tadd.one{border-color:#94A3B8;color:#334155}.gp-tadd.ex{border-color:#F59E0B;color:#B45309}.gp-tadd.ve{border-color:#6366F1;color:#4338CA}
 .gp-tnew{display:flex;gap:8px;align-items:center;border:2px solid;border-radius:14px;padding:6px;background:#fff}.gp-tnew.ex{border-color:#F59E0B}.gp-tnew.ve{border-color:#6366F1}
 .gp-tnew input{font:600 15px Inter,sans-serif;padding:9px 10px;border:1.5px solid #CBD5E1;border-radius:10px;width:190px}.gp-tnew button{border:0;border-radius:10px;padding:10px 14px;font:800 13.5px Inter,sans-serif;cursor:pointer}.gp-tnew .no{background:#F1F5F9;color:#334155}.gp-tnew .go{background:#0F1E2E;color:#fff}
 .gp-vs.k-explore{border-color:#FCD34D}.gp-vs.k-venue{border-color:#C7D2FE}.gp-shared{font-weight:800;color:#64748B;font-size:13.5px}
@@ -25003,6 +25003,8 @@ window.gpOpen = async function(){
   if(gone.length && !GPE.missing){ GPE.c.events = GPE.c.events.filter(e => !gone.includes(e)); gone.forEach(gpForgetFile); await gpSave(false); }
   if(before !== GPE.c.events.length) toast(gone.length + ' finished event' + (gone.length === 1 ? '' : 's') + ' taken off');
   await gpSign();
+  // How many venues this client pays for (set by the Mavis owner: Venues paid). Main venue + (paid - 1) other venues. Unknown = no limit.
+  GPE.paid = 0; try{ if(myCompany && myCompany.id && !(myProfile && myProfile.is_owner) && !(typeof appIsDemoCompany === 'function' && appIsDemoCompany())){ const { data, error } = await sb.from('companies').select('venues_paid').eq('id', myCompany.id).limit(1); if(!error && data && data[0] && data[0].venues_paid) GPE.paid = parseInt(data[0].venues_paid, 10) || 0; } }catch(e){}
   GPE.vset = null; GPE.vadd = false; GPE.vstep = ''; GPE.vrm = false; GPE.tab = ''; GPE.tadd = ''; GPE.tshow = false;
   gpRender();
 };
@@ -25609,7 +25611,8 @@ function gpTabsHtml(){
   const q = n => gpEsc(String(n).replace(/\\/g, '\\\\').replace(/'/g, "\\'"));
   const tab = (name, label, cls, small) => `<button type="button" class="gp-tab ${cls}${cur === name ? ' on' : ''}" onclick="gpTab('${q(name)}')"><b>${gpEsc(label)}</b><small>${small}</small></button>`;
   const addBox = k => GPE.tadd === k ? `<div class="gp-tnew ${k === 'venue' ? 've' : 'ex'}"><input id="gp-tnn" maxlength="30" placeholder="${k === 'venue' ? 'Other venue, e.g. Billy Ho' : 'e.g. The Lounge'}" autocomplete="off" oninput="gpVenueTyping(this.value)" onkeydown="if(event.key==='Enter')gpTabAdd();if(event.key==='Escape')gpTabAddCancel()"><button type="button" class="no" onclick="gpTabAddCancel()">Cancel</button><button type="button" class="go" onclick="gpTabAdd()">Add</button></div>`
-    : mgr ? `<button type="button" class="gp-tadd ${k === 'venue' ? 've' : 'ex'}" onclick="gpTabAddOpen('${k}')">${k === 'venue' ? '+ Other venue<small>One full page - add-on</small>' : '+ Add inside<small>A part of ' + gpEsc(L.main ? L.main.name : 'your venue') + ' - included</small>'}</button>` : '';
+    : mgr && k === 'venue' && GPE.paid && L.venues.length >= GPE.paid - 1 ? `<div class="gp-tadd ve full">Ask Mavis to add more<small>Paid for ${GPE.paid - 1} other venue${GPE.paid === 2 ? '' : 's'}</small></div>`   // paid for N venues = main + N-1 others (Robbie 25 Nov)
+    : mgr ? `<button type="button" class="gp-tadd ${k === 'venue' ? 've' : 'ex'}" onclick="gpTabAddOpen('${k}')">${k === 'venue' ? '+ Other venue<small>' + (GPE.paid ? L.venues.length + ' of ' + (GPE.paid - 1) + ' used' : 'One full page - add-on') + '</small>' : '+ Add inside<small>A part of ' + gpEsc(L.main ? L.main.name : 'your venue') + ' - included</small>'}</button>` : '';
   if(!L.main) return mgr ? `<div class="gp-tabs"><div class="gp-trow"><span class="gp-tl">MAIN</span>${GPE.tadd ? addBox('explore') : `<button type="button" class="gp-tadd one" onclick="gpTabAddOpen('explore')">+ Add your venue<small>Its name, e.g. Mama San</small></button>`}</div></div>` : '';
   if(!L.explore.length && !L.venues.length && !GPE.tshow && !GPE.tadd)   // one venue: keep it quiet until they want more (Robbie 25 Nov)
     return `<div class="gp-tabs"><div class="gp-trow"><span class="gp-tl">MAIN</span>${tab('', L.main.name, 'main', 'Main view')}${mgr ? `<button type="button" class="gp-tadd one" onclick="GPE.tshow=true;gpRender()">+ Add a place<small>Another area or venue</small></button>` : ''}</div></div>`;
@@ -25632,6 +25635,7 @@ window.gpTabAdd = async function(){
   const list = (msPage().venues || []).filter(v => v && v.name).map(v => Object.assign({}, v));
   if(list.some(v => v.name.toLowerCase() === nm.toLowerCase())){ toast(nm + ' is already there'); return; }
   if(list.length >= 12){ toast('Up to 12 places'); return; }
+  if(k === 'venue' && GPE.paid && gpPlaceLists().venues.length >= GPE.paid - 1){ toast('Ask Mavis to add more venues'); return; }
   const go = document.querySelector('.gp-tnew .go'); if(go){ if(go.disabled) return; go.disabled = true; go.textContent = 'Adding…'; }
   list.push({ name: nm });
   if(!(await gpVenuesSave(list))){ if(go){ go.disabled = false; go.textContent = 'Add'; } return; }

@@ -182,6 +182,8 @@ html.top-pg .gv{background:#1C1A19;color:#fff}html.top-pg .gv .gvi{background:va
 .bkr em{font-style:normal;font-size:11.5px;font-weight:700;opacity:.75;flex:none}
 .bkr svg:last-child{opacity:.7;flex:none}.bkr svg:first-child{flex:none}
 .mvglow{outline:3px solid var(--acc,#0D9488);outline-offset:4px;border-radius:18px;animation:mvg 2.6s ease}
+/* Back office preview: the section being changed stays sharp with its border, everything else blurs (Robbie 25 Nov) */
+.mvdim{filter:blur(2.5px);transition:filter .3s}.mvon{outline:3px solid var(--acc,#0D9488);outline-offset:4px;border-radius:18px;position:relative;z-index:2}
 @keyframes mvg{0%,70%{outline-color:var(--acc,#0D9488)}100%{outline-color:transparent}}
 .bkr.gold{background:var(--acc,#0D9488);color:var(--acc-ink,#fff)}
 .bkc{background:#fff;border-radius:16px;padding:12px;box-shadow:0 1px 3px rgba(15,30,46,.07)}
@@ -1294,8 +1296,14 @@ body.vqopen .vq-dim{opacity:1;pointer-events:auto}body.vqopen .vq-sheet{transfor
     };
     // Back office preview (laptop): the editor tells this page what you're working on - go to that place, scroll to that section, glow
     var GO_SEL = { video: '#hv,.hv,.slsec,.sl', card: '.card', reward: '.box.rw', perks: '.pass', slides: '.slsec,.sl', deals: '.deal', events: '.ev', gallery: '.gal', tonight: '.tn,.days', venues: '.ven,.pbig', places: '.pbig', ig: '.ig' };
+    var unfocus = function(){ document.querySelectorAll('.mvdim').forEach(function(x){ x.classList.remove('mvdim'); }); document.querySelectorAll('.mvon').forEach(function(x){ x.classList.remove('mvon'); }); };
+    var focusOn = function(el){   // blur everything except this section, all the way up the page
+      unfocus(); el.classList.add('mvon');
+      for (var n = el; n && n.parentNode && n !== document.body; n = n.parentNode) Array.prototype.forEach.call(n.parentNode.children, function(x){ if (x !== n && !/^(SCRIPT|STYLE|LINK)$/.test(x.tagName)) x.classList.add('mvdim'); });
+    };
     window.__mvGoApply = function(){
       var m = window.__mvGoQ; if (!m) return; window.__mvGoQ = null;
+      unfocus(); if (m.clear) return;   // "Show whole page
       var sh = document.getElementById('sh'); if (sh && sh.classList.contains('on')) { sh.classList.remove('on'); document.body.style.overflow = ''; }
       var key = many && m.place ? lc(m.place) : '';
       if (key && !places.some(function(p){ return lc(p.name) === key; })) key = '';
@@ -1314,8 +1322,7 @@ body.vqopen .vq-dim{opacity:1;pointer-events:auto}body.vqopen .vq-sheet{transfor
       if (m.sec === 'contact' || m.sec === 'book') { var b = document.getElementById(m.sec === 'book' ? 'bk' : 'cl'); if (b) b.click(); return; }
       if (!el) { window.scrollTo(0, 0); return; }
       el.scrollIntoView({ block: 'center' });
-      document.querySelectorAll('.mvglow').forEach(function(x){ x.classList.remove('mvglow'); });
-      el.classList.add('mvglow'); setTimeout(function(){ el.classList.remove('mvglow'); }, 2600);
+      focusOn(el);
     };
     window.addEventListener('popstate', function(e){ var shx = document.getElementById('sh'); if (shx && shx.classList.contains('on')) { shx.classList.remove('on'); var sc = document.getElementById('shc'); if (sc && sc.querySelector('iframe')) sc.innerHTML = ''; document.body.style.overflow = ''; return; } var lb = document.getElementById('lb'); if (lb && lb.classList.contains('on')) { lb.classList.remove('on'); lb.innerHTML = ''; document.body.style.overflow = ''; return; } if (e.state && e.state.club) { showClub(false); return; } if (e.state && e.state.hotel) { showHotel(e.state.hotel, false); return; } if (many || document.getElementById('mvcp') || document.getElementById('ohpg')) show(e.state && e.state.place ? e.state.place : '', false); window.scrollTo(0, 0); });
 

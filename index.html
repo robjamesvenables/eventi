@@ -2467,6 +2467,7 @@ body:not(.mv-demo) #ms-demoqr-btn{display:none!important}
 .gp-vf{padding:0 12px 12px;display:flex;flex-direction:column;gap:6px}.gp-vf label{font-size:13px;font-weight:800;color:#334155;margin-top:4px}
 .gp-vf input{width:100%;box-sizing:border-box;font:600 16px Inter,sans-serif;padding:11px 12px;border:1.5px solid #CBD5E1;border-radius:11px;background:#fff}
 .gp-vf2{display:grid;grid-template-columns:1fr 1fr;gap:10px}.gp-vf2>div{display:flex;flex-direction:column;gap:6px}
+.gp-vimg{width:100%;aspect-ratio:16/9;object-fit:cover;border-radius:12px;display:block}.gp-vnoimg{aspect-ratio:16/9;border:2px dashed #CBD5E1;border-radius:12px;display:flex;align-items:center;justify-content:center;color:#64748B;font-weight:800}
 .gp-vbtns{display:grid;grid-template-columns:1fr 2fr;gap:8px;margin-top:8px}.gp-vbtns .gp-vsave{margin-top:0}.gp-vcancel{border:0;border-radius:11px;background:#F1F5F9;color:#334155;font:800 14.5px Inter,sans-serif;padding:12px;cursor:pointer}
 .gp-vx{width:34px;height:34px;border-radius:10px;background:#fff;border:1.5px solid #CBD5E1;color:#334155;display:flex;align-items:center;justify-content:center;flex:none;margin:-6px -4px -6px 0}
 .gp-vsave{margin-top:8px;border:0;border-radius:11px;background:#0F1E2E;color:#fff;font:800 14.5px Inter,sans-serif;padding:12px;cursor:pointer}.gp-vsave:disabled{opacity:.6}
@@ -22736,7 +22737,7 @@ async function msSettingsRender(){
     <div class="mks-card">
       ${mksRow('Email blasts', 'Send one email to many members at once.', mksSw('blast.email', s.blast.email))}
       ${mksRow('WhatsApp blasts', 'Send a message to members one by one, from your phone.', mksSw('blast.wa', s.blast.wa))}
-      ${mksRow('Record the bill amount', 'Staff type the bill at check-in, so Insights shows what members spend. Off: a visit counts with one tap, no money.', mksSw('bill.on', s.bill.on))}
+      ${mksRow('Record the bill amount', 'Staff type the bill at check-in, so Stats shows what members spend. Off: a visit counts with one tap, no money.', mksSw('bill.on', s.bill.on))}
       ${mksRow('Import members', 'Add members from a list you already have (Excel or CSV).', mksSw('imp.on', s.imp.on), s.imp.on ? `<button class="mki-btn" style="margin-top:0" onclick="msImportOpen()">Import members</button>` : '')}
     </div>
     <div class="mks-hint" style="margin:8px 4px 0">Turn on a blast and a Messages tab appears. Turn it off and it goes away. Phone notifications are always in the Notify tab.</div>
@@ -24555,7 +24556,7 @@ window.msTiers = function(){
       <div class="ms-gh">VENUES <small>hours, map and booking</small></div>
       <div id="ms-vlist">${(pg.venues || []).map(msVenueRow).join('')}</div>
       <button type="button" class="ms-vadd" onclick="const l = document.getElementById('ms-vlist'); l.insertAdjacentHTML('beforeend', msVenueRow()); msVenueSum(l.lastElementChild); l.lastElementChild.querySelector('.ms-vn').focus()">+ Add venue</button>
-      <div class="vd-note" style="margin-top:14px">${vdSvg('note', 15)}<span>"Tonight" and "This week" come from your Entertainment Schedule.</span></div>
+      <div class="vd-note" style="margin-top:14px${appPlan === 'membership' ? ';display:none' : ''}">${vdSvg('note', 15)}<span>"Tonight" and "This week" come from your Entertainment Schedule.</span></div>
     </div>
     <div class="vdf-foot"><button class="mns-cancel" onclick="msSheetClose()">Cancel</button><button class="mns-go" id="ms-save">Save</button></div>`);
   msContactPrev(); msRoomsPrev();
@@ -24602,7 +24603,7 @@ window.msTiers = function(){
 // What members see when they scan their keyring (k.html). Saved in the guest_page table (one row per company).
 // Who can edit: managers and up, the Marketing department, and people picked by name in Admin Console.
 const GP_BUCKET = 'shared-files';
-const GP_SECS = { tonight:['Tonight and This week', "Who's playing - DJs, bands, live music"], deals:['Daily deals', 'Happy hours and set menus, with their times'], events:['Coming up', 'Events with a Book or Tickets button - each hides itself after its date'], gallery:['The Signature Collection', 'Only your best shots - the ones that make people want to come'], venues:['Find us', 'Opening hours, map and Book for each venue'] };
+const GP_SECS = { tonight:['Tonight and This week', "Who's playing - DJs, bands, live music"], deals:['Deals', 'Happy hours and set menus, with their times'], events:['Events', 'Events with a Book or Tickets button - each hides itself after its date'], gallery:['Photos', 'Only your best shots - the ones that make people want to come'], venues:['Find us', 'Opening hours, map and Book for each venue'] };
 const GP_ORDER = ['tonight', 'deals', 'events', 'gallery', 'venues'];
 const GPE = { c:null, urls:{}, missing:false, loaded:false };
 const gpEsc = v => String(v == null ? '' : v).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -24724,7 +24725,7 @@ function gpGiftHtml(){
   const g = (GPE.c && GPE.c.gift) || {}, on = !!g.on;
   const to = String(g.to || '').trim(), where = /@/.test(to) ? 'Email ' + to : /\d{6,}/.test(to) ? 'WhatsApp +' + to.replace(/\D/g, '') : 'Your main contact details';
   return `<div class="gp-sec${on ? '' : ' off'}" data-go="gift"><div class="gp-sh"><div class="n"><b>Gift vouchers</b><small>A gift voucher card for members to buy for someone else</small></div>
-    <button class="gp-tog${on ? ' on' : ''}" aria-label="Show gift vouchers" onclick="gpGiftToggle()"><i></i></button></div>
+    ${gpSwHtml(on, 'gpGiftToggle()', 'gift vouchers')}</div>
     ${on ? `<div class="gp-body"><div class="gp-it"><div class="x"><b>${gpEsc(g.title || "A night they'll remember")}</b><small>${gpEsc((g.amounts || [500000, 1000000, 2000000]).map(gpGiftShort).join(' · '))}${g.max ? ' · up to ' + gpGiftShort(g.max) : ''}${g.bonus ? ' · members +' + g.bonus + '%' : ''} · ${gpEsc(where)}</small></div>
       <button class="gp-ib" title="Change" aria-label="Change gift voucher card" onclick="gpGiftEdit()">${gpIc(GPI.edit)}</button></div></div>` : ''}</div>`;
 }
@@ -25051,14 +25052,14 @@ function gpRender(){
     if(k === 'deals' || k === 'events') body = c[k].map((it, j) => inV(it) ? '' : gpItemHtml(k, it, j)).join('') + `<button class="gp-add" onclick="gpForm('${k}')">+ Add ${k === 'deals' ? 'a deal' : 'an event'}</button>`;
     else if(k === 'gallery') body = `<div class="gp-gal">${c.gallery.map((it, j) => inV(it) ? '' : `<div><img src="${gpEsc(gpSrc(it))}" alt=""><button aria-label="Remove photo" onclick="gpRemove('gallery',${j})">${gpIc(GPI.x, 14)}</button><span class="gp-gpl">${gpEsc(it.venue || 'All places')}</span></div>`).join('')}</div><button class="gp-add" onclick="gpGalleryAdd()">+ Add photos</button>`;
     else if(k === 'venues') body = `<div class="gp-auto">Shows the map and opening hours of each venue. You set them in Venues above.</div>`;
-    else if(k === 'tonight') body = (c.acts || []).map((a, j) => inV(a) ? '' : gpActHtml(a, j)).join('') + `<button class="gp-add" onclick="gpActForm()">+ Add who's playing</button><div class="gp-hint" style="margin-top:8px">Guests see it under Tonight on the day, and in This week. DJs booked in the Entertainment Schedule show here too.</div>`;
+    else if(k === 'tonight') body = (c.acts || []).map((a, j) => inV(a) ? '' : gpActHtml(a, j)).join('') + `<button class="gp-add" onclick="gpActForm()">+ Add who's playing</button><div class="gp-hint" style="margin-top:8px">Guests see it under Tonight on the day, and in This week.${appPlan === 'membership' ? '' : ' DJs booked in the Entertainment Schedule show here too.'}</div>`;
     else body = `<div class="gp-auto">Fills itself - nothing to type here.</div>`;
     return `<div class="gp-sec${c.off[k] ? ' off' : ''}" data-go="${k}"><div class="gp-sh"><div class="gp-mv"><button aria-label="Move up" ${i ? '' : 'disabled'} onclick="gpMove('${k}',-1)">${gpIc(GPI.up, 14)}</button><button aria-label="Move down" ${i < c.order.length - 1 ? '' : 'disabled'} onclick="gpMove('${k}',1)">${gpIc(GPI.down, 14)}</button></div>
       <div class="n"><b>${name}</b><small>${sub}</small></div>${tog(k)}</div>${c.off[k] ? '<div class="gp-hidn">Hidden from guests - everything is kept. Turn on to show it again.</div>' : ''}<div class="gp-body">${body}</div></div>`;
   };
   const gpMainColHtml = () => `      ${gpColoursHtml()}
       ${gpTopHtml()}
-      <div class="gp-sec${c.off.slides ? ' off' : ''}" data-go="slides"><div class="gp-sh"><div class="n"><b>Highlights</b><small>Big photos at the top of a place's page - offers, new menu, big nights. Guests swipe through them</small></div>${tog('slides')}</div>
+      <div class="gp-sec${c.off.slides ? ' off' : ''}" data-go="slides"><div class="gp-sh"><div class="n"><b>Highlights</b><small>Big photos guests swipe through at the top of the page - offers, new menu, big nights</small></div>${tog('slides')}</div>
         ${c.off.slides ? '<div class="gp-hidn">Hidden from guests - everything is kept. Turn on to show it again.</div>' : ''}${`<div class="gp-body">${c.slides.map((it, j) => inV(it) ? '' : gpItemHtml('slides', it, j)).join('')}${c.slides.length < 12 ? `<button class="gp-add" onclick="gpForm('slides')">+ Add a highlight</button>` : ''}</div>`}</div>
       <div class="gp-sec" data-go="perks"><div class="gp-sh"><div class="n"><b>Perks and reward</b><small>On every member's card - always shown</small></div></div>
         <div class="gp-body">${gpPerksHtml(mgr)}</div></div>
@@ -25548,12 +25549,14 @@ function gpVenueSteps(name){
   return { photo: !!(p.path || p.img), hours: !!((p.area || v.area) && v.opens && v.closes), book: !!(v.wa || v.book), menus: !!(p.menus || []).length };
 }
 function gpVenueDone(name){ const s = gpVenueSteps(name); return gpVKeys().filter(k => s[k]).length; }
-const GP_VSTEPS = [['photo', 'Photo'], ['hours', 'Area and opening hours'], ['book', 'How guests book'], ['menus', 'Menus']];
+const GP_VSTEPS = [['photo', 'Top photo'], ['hours', 'Area and opening hours'], ['book', 'How guests book'], ['menus', 'Menus']];
 function gpVenueSetupHtml(name){
   const v = (msPage().venues || []).find(x => x.name === name) || {}, p = (GPE.c.places || {})[name.toLowerCase()] || {}, st = gpVenueSteps(name), n = gpVenueDone(name), tot = gpVKeys().length, mgr = msIsMgr(), open = GPE.vstep || '';
   const ck = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>';
   const body = k => {
-    if(k === 'photo') return '';
+    if(k === 'photo'){ const src = gpSrc(p);   // see the photo first, then change it if they want (Robbie 25 Nov)
+      return `<div class="gp-vf">${src ? `<img class="gp-vimg" src="${gpEsc(src)}" alt="">` : '<div class="gp-vnoimg">No photo yet</div>'}<div class="gp-hint">The big picture at the top of its page. Best: a wide photo, not a screenshot.</div>
+        <div class="gp-vbtns"><button type="button" class="gp-vcancel" onclick="gpVenueStepClose()">Close</button><button type="button" class="gp-vsave" onclick="document.getElementById('gp-vs-file').click()">${src ? 'Change photo' : 'Choose a photo'}</button></div></div>`; }
     if(k === 'hours') return mgr ? `<div class="gp-vf"><label>Area</label><input id="gp-vs-area" maxlength="30" value="${gpEsc(p.area || v.area || '')}" placeholder="e.g. Seminyak">
         <div class="gp-vf2"><div><label>Opens</label><input id="gp-vs-o" type="time" value="${gpEsc(v.opens || '')}"></div><div><label>Closes</label><input id="gp-vs-c" type="time" value="${gpEsc(v.closes || '')}"></div></div>
         <div class="gp-vbtns"><button type="button" class="gp-vcancel" onclick="gpVenueStepClose()">Cancel</button><button type="button" class="gp-vsave" onclick="gpVenueStepSave('hours')">Save</button></div></div>` : '<div class="gp-auto">A manager can change this.</div>';
@@ -25637,7 +25640,7 @@ function gpVenueTabHtml(name, secHtml){
     + box('events', 'Events', 'With a Book or Tickets button', list('events', '+ Add an event', "gpForm('events')"))
     + box('gallery', 'Photos', 'Your best shots of ' + gpEsc(name), (gal ? `<div class="gp-gal">${gal}</div>` : '') + `<button class="gp-add" onclick="gpGalleryAdd()">+ Add photos</button>`)
     + (gpTabKind(name) !== 'venue' ? '' : `<div class="gp-sec"><div class="gp-sh"><div class="n"><b>Perks and reward</b><small>Same as ${gpEsc((gpPlaceLists().main || {}).name || 'your main venue')} - one membership</small></div><span class="gp-shared">Shared</span></div></div>
-      <div class="gp-auto" style="background:#FEF3C7;color:#92400E">No Explore places here. Want them? It needs its own app.</div>`);
+      <div class="gp-auto" style="background:#FEF3C7;color:#92400E"><b>Want more?</b> A top video, its own colours, gift vouchers and Explore places come with its own app. Ask Mavis to upgrade.</div>`);
 }
 // The phone shows Explore with a dashed box where the new venue will go (the name fills in as they type)
 function gpGoNew(nm){
@@ -25676,7 +25679,6 @@ const GP_VGO = { photo:'vs-photo', hours:'vs-hours', book:'vs-book', menus:'vs-m
 window.gpVenueStep = function(k){
   const name = GPE.vset; if(!name) return;
   if(k !== 'menus') gpGo(GP_VGO[k], name);
-  if(k === 'photo'){ const f = document.getElementById('gp-vs-file'); if(f) f.click(); return; }
   if(k === 'menus'){ gpPlaceForm(name); gpGo(GP_VGO.menus, name); setTimeout(() => { const m = document.getElementById('gpp-menus'); if(m) m.scrollIntoView({ block:'start' }); }, 60); return; }
   GPE.vstep = GPE.vstep === k ? '' : k; GPE.vrm = false; gpRender();
   const i = document.querySelector('.gp-vst.on input'); if(i) i.focus();
@@ -25684,7 +25686,7 @@ window.gpVenueStep = function(k){
 window.gpVenuePhoto = async function(inp){
   const name = GPE.vset, file = inp.files && inp.files[0]; inp.value = ''; if(!name || !file) return;
   const key = name.toLowerCase(), it = Object.assign({}, (GPE.c.places || {})[key] || {});
-  GPE.vbusy = 'photo'; gpRender();
+  GPE.vbusy = 'photo'; GPE.vstep = ''; gpRender();
   try{ const old = { path: it.path }; it.path = await gpUpload(file); delete it.img; GPE.c.places = GPE.c.places || {}; GPE.c.places[key] = it; GPE.vbusy = ''; gpRender(); if(await gpSave('Photo added - guests see it now') && old.path) gpForgetFile(old); }
   catch(e){ GPE.vbusy = ''; gpRender(); toast(/too big/.test(e && e.message) ? 'That photo is too big - please use one under 15 MB' : 'Could not upload the photo - check your connection'); }
 };
@@ -25735,7 +25737,7 @@ const gpExploreDefault = () => { const n = String((typeof myCompany !== 'undefin
 const GP_SECT = { get places(){ return [gpExploreDefault(), 'e.g. Masonry']; }, others: ['Our other venues', 'e.g. Also by us, Our sister bars'] };
 function gpSecTitleRow(k){
   const cur = k === 'places' ? (GPE.c.placesTitle || '') : ((GPE.c.others || {}).title || '');
-  return `<div class="gp-it"><div class="x"><b>Heading guests see</b><small>${cur ? gpEsc(cur) : 'Standard: ' + GP_SECT[k][0]}</small></div>
+  return `<div class="gp-it"><div class="x"><b>${k === 'places' ? 'Heading over your Explore places' : 'Heading over your Venues'}</b><small>Guests see: ${cur ? gpEsc(cur) : GP_SECT[k][0]}</small></div>
     <button class="gp-ib" title="Change" aria-label="Change the heading" onclick="gpSecTitle('${k}')">${gpIc(GPI.edit)}</button></div>`;
 }
 window.gpSecTitle = function(k){
@@ -25794,11 +25796,11 @@ window.gpPlaceForm = function(name){
     ${row(IC.star, `<input id="gpp-rv" inputmode="url" autocapitalize="off" placeholder="Google review link" value="${gpEsc(v.review || '')}"${mgr ? '' : ' disabled'}>`)}
     <div class="gp-hint" style="margin-left:32px">Google review link: in your Google Business Profile tap "Ask for reviews" and copy the link.</div>
     <div class="gp-sub">About <small>Shows on this place's page - one or two lines</small></div>
-    <textarea id="gpp-about" maxlength="200" rows="3" style="width:100%;box-sizing:border-box;font:inherit;font-size:15px;padding:12px;border:1px solid #E2E8F0;border-radius:12px;resize:vertical" placeholder="e.g. A serene escape with rejuvenating treatments. Three treatment rooms, including a private couple's room.">${gpEsc(it.about || '')}</textarea>
+    <textarea id="gpp-about" maxlength="200" rows="3" style="width:100%;box-sizing:border-box;font:inherit;font-size:15px;padding:12px;border:1px solid #E2E8F0;border-radius:12px;resize:vertical" placeholder="e.g. Our rooftop bar with sunset views, cocktails and a DJ every weekend.">${gpEsc(it.about || '')}</textarea>
     <div class="gp-hint" id="gpp-about-n">${String(it.about || '').length} / 200 letters</div>
-    <label style="margin-top:12px">Tags <span class="gp-opt">up to 4 short words, e.g. Massage, Couple's room</span></label>
+    <label style="margin-top:12px">Tags <span class="gp-opt">up to 4 short words, e.g. Rooftop, Live music</span></label>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">${[0, 1, 2, 3].map(i => `<input id="gpp-tg${i}" maxlength="20" value="${gpEsc((it.tags || [])[i] || '')}" placeholder="Tag ${i + 1}">`).join('')}</div>
-    <label style="margin-top:12px">Button <span class="gp-opt">optional, e.g. Book a treatment</span></label><input id="gpp-abtn" maxlength="24" value="${gpEsc(it.aboutBtn || '')}" placeholder="e.g. Book a treatment">
+    <label style="margin-top:12px">Button <span class="gp-opt">optional, e.g. Book a table</span></label><input id="gpp-abtn" maxlength="24" value="${gpEsc(it.aboutBtn || '')}" placeholder="e.g. Book a table">
     <input id="gpp-aurl" inputmode="url" autocapitalize="off" autocorrect="off" spellcheck="false" style="margin-top:8px" value="${gpEsc(it.aboutUrl || '')}" placeholder="Button link - empty opens WhatsApp">
     <div class="gp-sub">Menus <small>Food, drinks... guests tap to open them</small></div>
     <div id="gpp-menus"></div>
@@ -26044,8 +26046,8 @@ window.gpForm = function(k, i){
     <label>Price</label><div class="gp-dr" data-icrow data-k="price" data-ic="${gpEsc((it.ic || {}).price || 'tag')}">${msIcBtn((it.ic || {}).price || 'tag')}<input id="gpf-price" maxlength="60" value="${gpEsc(it.price || '')}" placeholder="e.g. From Rp 1.5m, free-flow included"></div>
     <label>Anything else</label><div class="gp-dr" data-icrow data-k="notes" data-ic="${gpEsc((it.ic || {}).notes || 'info')}">${msIcBtn((it.ic || {}).notes || 'info')}<textarea id="gpf-notes" maxlength="200" rows="2" placeholder="e.g. Tables for 6+ by WhatsApp">${gpEsc(it.notes || '')}</textarea></div>
     <label>Your own details <span class="gp-opt">tap the icon to choose it</span></label><div id="gpf-more">${(it.more || []).map(gpMoreRow).join('')}</div><button type="button" class="gp-add gp-add-s" id="gpf-moreadd" onclick="gpMoreAdd()">+ Add a detail</button>
-    <label class="gp-tg"><input type="checkbox" id="gpf-hl"${it.hl ? ' checked' : ''}><span><b>Show in Highlights</b><small>Also a big photo at the top of that place's page (needs a photo)</small></span></label>
-    <div class="gp-tip"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 16v-4M12 8h.01"/></svg><span><b>Want it in the top photos on the main page too?</b> Go to Highlights &gt; + Add a highlight, choose its photo and words, then set "When they tap See more" to this event.</span></div>`;
+    <label class="gp-tg"><input type="checkbox" id="gpf-hl"${it.hl ? ' checked' : ''}><span><b>Show in Highlights</b><small>Also a big photo in the swipe-through photos at the top (needs a photo)</small></span></label>
+    `;
   if(k !== 'deals') f += `<label>Button goes to</label><div class="gp-btns gp-3b" id="gpf-btns"><button type="button" data-b="">No button</button><button type="button" data-b="wa">WhatsApp</button><button type="button" data-b="call">Call</button><button type="button" data-b="email">Email</button><button type="button" data-b="book">Booking site</button><button type="button" data-b="tickets">Tickets</button></div>
     <div id="gpf-urlw"><label id="gpf-urll">Link</label><input id="gpf-url" inputmode="url" value="${gpEsc(it.url || '')}" placeholder="https://..."></div>
     <div id="gpf-tow"><label id="gpf-tol">Number</label><input id="gpf-to" value="${gpEsc(it.to || '')}"></div><div class="gp-hint gp-goes" id="gpf-wah"></div>`;

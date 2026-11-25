@@ -1061,6 +1061,8 @@ body.vqopen .vq-dim{opacity:1;pointer-events:auto}body.vqopen .vq-sheet{transfor
       }).join('') + '</div></div>';
       if (gl.length) S.gallery = galHtml(gl, key);
       if (!key && d.venues && d.venues.length) S.venues = findUs(d.venues);
+      // Back office preview: an empty section still shows where it will appear, as a dashed box
+      if ((!key || pre !== undefined) && /[?&]embed=1/.test(location.search)) [['tonight', 'Tonight and This week'], ['deals', 'Deals'], ['events', 'Events'], ['gallery', 'Photos']].forEach(function(x){ if (!S[x[0]]) S[x[0]] = '<div class="sec" data-mvsec="' + x[0] + '"><div class="mvph">' + x[1] + ' will show here</div></div>'; });
       var used = false, out = (gp.order || ['tonight', 'deals', 'events', 'gallery', 'venues']).map(function(k){ var x = on[k] ? (S[k] || '') : ''; if (k === 'gallery' && pre) { used = true; x = pre + x; } return x; }).join('');
       return used || !pre ? out : out + pre;
     };
@@ -1307,7 +1309,7 @@ body.vqopen .vq-dim{opacity:1;pointer-events:auto}body.vqopen .vq-sheet{transfor
     };
     // Back office preview (laptop): the editor tells this page what you're working on - go to that place, scroll to that section, glow
     var GO_VS = { 'vs-photo': ['.vtop'], 'vs-hours': ['[data-mvph="hours"]', '.vtop'], 'vs-book': ['[data-mvph="book"]', '.book'], 'vs-menus': ['[data-mvph="menus"]', '.vmenu'] };
-    var GO_SEL = { video: '#hv,.hv,.slsec,.sl', card: '.card', reward: '.box.rw', perks: '.pass', slides: '.slsec,.sl', deals: '.deal', events: '.ev', gallery: '.gal', tonight: '.tn,.days', venues: '.ven,.pbig', places: '.pbig', ig: '.ig' };
+    var GO_SEL = { video: '#hv,.hv,.slsec,.sl', card: '.card', reward: '.box.rw', perks: '.pass', slides: '.slsec,.sl', deals: '.deal,[data-mvsec="deals"]', events: '.ev,[data-mvsec="events"]', gallery: '.gal,[data-mvsec="gallery"]', tonight: '.tn,.days,[data-mvsec="tonight"]', venues: '.ven', places: '.pbig', ig: '.ig', gift: '.gv', others: '.ohp' };   // each box in the back office -> its own spot on the phone (Robbie 25 Nov)
     var unfocus = function(){ document.querySelectorAll('.mvdim').forEach(function(x){ x.classList.remove('mvdim'); }); document.querySelectorAll('.mvon').forEach(function(x){ x.classList.remove('mvon'); }); };
     var focusOn = function(el){   // blur everything except this section, all the way up the page
       unfocus(); el.classList.add('mvon');

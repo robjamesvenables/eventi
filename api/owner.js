@@ -96,6 +96,8 @@ module.exports = async (req, res) => {
       };
       BILL_FIELDS.forEach(k => { if (b[k] !== undefined) body[k] = clean(b[k], 300) || null; });
       const co = (await L.db('companies', { method: 'POST', body }))[0];
+      // What they get (Membership / Full Mavis) - set separately so creating a client still works before the plan column exists
+      if (['full', 'membership'].includes(b.plan)) { try { await L.db('companies?id=eq.' + co.id, { method: 'PATCH', body: { plan: b.plan } }); co.plan = b.plan; } catch (e) {} }
       const username = await uniqueUsername(code, b.first, b.last);
       const p = (await L.db('profiles', { method: 'POST', body: { company_id: co.id, username, first_name: clean(b.first, 60), last_name: clean(b.last, 60), role: 'superadmin', email: clean(b.email).toLowerCase() } }))[0];
       const token = await makeInvite(p.id, me.id);

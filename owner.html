@@ -425,6 +425,7 @@ function newClient(){
     <div class="hint">Starts everyone's username. Use the company or group, not the venue's brand - it can't be changed later.</div>
     <div class="grid2"><div><label class="lbl">Super Admin first name</label><input class="in" id="nc-first" oninput="ncPreview()"></div><div><label class="lbl">Surname</label><input class="in" id="nc-last" oninput="ncPreview()"></div></div>
     <label class="lbl">Super Admin email</label><input class="in" id="nc-email" type="email" placeholder="name@example.com">
+    <label class="lbl">What they get</label><select class="in" id="nc-plan"><option value="membership" selected>Membership</option><option value="full">Full Mavis</option></select>
     <div class="preview" id="nc-prev" style="display:none"></div>
     <div class="grid2"><div><label class="lbl">Price per venue / month</label><div style="display:flex;gap:6px"><select class="in" id="nc-cur" style="width:90px"><option>IDR</option><option>USD</option></select><input class="in" id="nc-price" inputmode="numeric" value="3,200,000"></div></div>
       <div><label class="lbl">Venues paid for</label><input class="in" id="nc-venues" type="number" min="1" value="1"></div></div>
@@ -446,7 +447,7 @@ let ncConfirmed=false;
 async function createClient(){
   const v=id=>$(id).value.trim(), err=m=>$('nc-err').textContent=m||'';
   const body={ name:v('nc-name'), code:slug(v('nc-code')).replace(/-/g,'').slice(0,12), first:v('nc-first'), last:v('nc-last'), email:v('nc-email'),
-    currency:v('nc-cur'), price:v('nc-price').replace(/[^0-9.]/g,''), venues:v('nc-venues'), trial_days:v('nc-trial'), bill_phone:v('nc-phone'), bill_email:v('nc-email'), bill_attn:(v('nc-first')+' '+v('nc-last')).trim() };
+    currency:v('nc-cur'), price:v('nc-price').replace(/[^0-9.]/g,''), venues:v('nc-venues'), plan:v('nc-plan'), trial_days:v('nc-trial'), bill_phone:v('nc-phone'), bill_email:v('nc-email'), bill_attn:(v('nc-first')+' '+v('nc-last')).trim() };
   if(!body.name||!body.code||!body.first||!body.email) return err('Please fill in the venue name, Company ID, Super Admin first name and email.');
   if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(body.email)) return err("That email doesn't look right.");
   if(!ncConfirmed){ ncConfirmed=true; err(''); $('nc-go').textContent='Yes, create '+body.code; $('nc-go').classList.replace('teal','navy');

@@ -2446,7 +2446,7 @@ body:not(.mv-demo) #ms-demoqr-btn{display:none!important}
 .gp-tab.ex{border-color:#FCD34D;background:#FFFBEB}.gp-tab.ex small{color:#B45309}.gp-tab.ve{border-color:#C7D2FE;background:#EEF2FF}.gp-tab.ve small{color:#4338CA}
 .gp-tab.on.main{background:#0F1E2E;border-color:#0F1E2E}.gp-tab.on.ex{background:#F59E0B;border-color:#F59E0B}.gp-tab.on.ve{background:#4F46E5;border-color:#4F46E5}.gp-tab.on b,.gp-tab.on small{color:#fff}
 .gp-tadd{border:2px dashed;border-radius:14px;padding:9px 14px;font:800 14px Inter,sans-serif;background:#fff;cursor:pointer;display:flex;flex-direction:column;align-items:flex-start;text-align:left}.gp-tadd small{font-size:11.5px;font-weight:600;margin-top:1px}
-.gp-tadd.ex{border-color:#F59E0B;color:#B45309}.gp-tadd.ve{border-color:#6366F1;color:#4338CA}
+.gp-tadd.one{border-color:#94A3B8;color:#334155}.gp-tadd.ex{border-color:#F59E0B;color:#B45309}.gp-tadd.ve{border-color:#6366F1;color:#4338CA}
 .gp-tnew{display:flex;gap:8px;align-items:center;border:2px solid;border-radius:14px;padding:6px;background:#fff}.gp-tnew.ex{border-color:#F59E0B}.gp-tnew.ve{border-color:#6366F1}
 .gp-tnew input{font:600 15px Inter,sans-serif;padding:9px 10px;border:1.5px solid #CBD5E1;border-radius:10px;width:190px}.gp-tnew button{border:0;border-radius:10px;padding:10px 14px;font:800 13.5px Inter,sans-serif;cursor:pointer}.gp-tnew .no{background:#F1F5F9;color:#334155}.gp-tnew .go{background:#0F1E2E;color:#fff}
 .gp-vs.k-explore{border-color:#FCD34D}.gp-vs.k-venue{border-color:#C7D2FE}.gp-shared{font-weight:800;color:#64748B;font-size:13.5px}
@@ -24988,7 +24988,7 @@ window.gpOpen = async function(){
   if(gone.length && !GPE.missing){ GPE.c.events = GPE.c.events.filter(e => !gone.includes(e)); gone.forEach(gpForgetFile); await gpSave(false); }
   if(before !== GPE.c.events.length) toast(gone.length + ' finished event' + (gone.length === 1 ? '' : 's') + ' taken off');
   await gpSign();
-  GPE.vset = null; GPE.vadd = false; GPE.vstep = ''; GPE.vrm = false; GPE.tab = ''; GPE.tadd = '';
+  GPE.vset = null; GPE.vadd = false; GPE.vstep = ''; GPE.vrm = false; GPE.tab = ''; GPE.tadd = ''; GPE.tshow = false;
   gpRender();
 };
 window.gpClose = function(fromBack){
@@ -25042,7 +25042,7 @@ function gpRender(){
   const o = document.getElementById('gp-ed'); if(!o || !GPE.c) return;
   const c = GPE.c, code = gpKeyring(), mgr = msIsMgr();
   const tog = k => gpSwHtml(!c.off[k], `gpToggle('${k}')`, k);
-  const vNames = gpPlaceLists().venues.map(v => v.name), inV = x => !!x && vNames.length > 0 && (x.venues && x.venues.length ? x.venues.every(v => vNames.includes(v)) : vNames.includes(x.venue));   // a Venue's own items live on its tab
+  const vNames = (L0 => L0.explore.concat(L0.venues).map(v => v.name))(gpPlaceLists()), inV = x => !!x && vNames.length > 0 && (x.venues && x.venues.length ? x.venues.every(v => vNames.includes(v)) : vNames.includes(x.venue));   // a Venue's own items live on its tab
   const sec = (k, i) => {
     const [name, sub] = GP_SECS[k];
     let body = '';
@@ -25073,7 +25073,7 @@ function gpRender(){
     ${GPE.missing ? `<div style="max-width:1160px;margin:16px auto 0;padding:0 20px"><div class="gp-auto" style="background:#FFF7ED;color:#9A3412">The guest page needs a one-time setup before changes can be saved. Ask Mavis support.</div></div>` : ''}
     ${gpTabsHtml()}
     <div class="gp-wrap"><div class="gp-col">
-      ${GPE.tab ? gpVenueSetupHtml(GPE.tab) + (gpTabKind(GPE.tab) === 'venue' ? gpVenueTabHtml(GPE.tab) : '') : gpMainColHtml()}
+      ${GPE.tab ? gpVenueSetupHtml(GPE.tab) + gpVenueTabHtml(GPE.tab) : gpMainColHtml()}
     </div>
     <div class="gp-prev"><div class="l">LIVE PREVIEW<button class="gp-all" onclick="gpGoClear()">Show whole page</button></div>${code ? `<iframe id="gp-frame" title="Guest page preview" onload="gpGoSend(400)" src="/k/${encodeURIComponent(code)}?guest=1&embed=1"></iframe>` : '<div class="none">Give a member a keyring to see the preview here.</div>'}</div></div>`;
   if(!o.dataset.go){ o.dataset.go = '1'; o.addEventListener('click', e => { if(e.target.closest('.gp-vs, .gp-vnew')) return; const g = e.target.closest('[data-go]'); if(g && o.contains(g)) gpGo(g.dataset.go); else if(!e.target.closest('.gp-prev, button, a, input, select, textarea, label, .gp-sec, .gp-item, [onclick]') && document.querySelector('.gp-prev.foc')) gpGoClear(); }, true); }
@@ -25583,13 +25583,16 @@ function gpPlaceLists(){
   return { main: own[0] || null, explore: own.slice(1), venues: all.filter(oth) };
 }
 function gpTabKind(name){ const L = gpPlaceLists(); if(!name) return 'main'; if(L.venues.some(v => v.name === name)) return 'venue'; if(L.explore.some(v => v.name === name)) return 'explore'; return 'main'; }
-function gpTabVenue(){ return GPE.tab && gpTabKind(GPE.tab) === 'venue' ? GPE.tab : ''; }
+function gpTabVenue(){ return GPE.tab && gpTabKind(GPE.tab) !== 'main' ? GPE.tab : ''; }   // on an Explore or Venue tab, new things belong to that place
 function gpTabsHtml(){
   const L = gpPlaceLists(), cur = GPE.tab || '', mgr = msIsMgr();
   const q = n => gpEsc(String(n).replace(/\\/g, '\\\\').replace(/'/g, "\\'"));
   const tab = (name, label, cls, small) => `<button type="button" class="gp-tab ${cls}${cur === name ? ' on' : ''}" onclick="gpTab('${q(name)}')"><b>${gpEsc(label)}</b><small>${small}</small></button>`;
   const addBox = k => GPE.tadd === k ? `<div class="gp-tnew ${k === 'venue' ? 've' : 'ex'}"><input id="gp-tnn" maxlength="30" placeholder="${k === 'venue' ? 'e.g. Billy Ho' : 'e.g. The Lounge'}" autocomplete="off" oninput="gpVenueTyping(this.value)" onkeydown="if(event.key==='Enter')gpTabAdd();if(event.key==='Escape')gpTabAddCancel()"><button type="button" class="no" onclick="gpTabAddCancel()">Cancel</button><button type="button" class="go" onclick="gpTabAdd()">Add</button></div>`
     : mgr ? `<button type="button" class="gp-tadd ${k === 'venue' ? 've' : 'ex'}" onclick="gpTabAddOpen('${k}')">${k === 'venue' ? '+ Venue<small>One full page - add-on</small>' : '+ Explore place<small>A part of ' + gpEsc(L.main ? L.main.name : 'your venue') + ' - included</small>'}</button>` : '';
+  if(!L.main) return mgr ? `<div class="gp-tabs"><div class="gp-trow"><span class="gp-tl">MAIN</span>${GPE.tadd ? addBox('explore') : `<button type="button" class="gp-tadd one" onclick="gpTabAddOpen('explore')">+ Add your venue<small>Its name, e.g. Mama San</small></button>`}</div></div>` : '';
+  if(!L.explore.length && !L.venues.length && !GPE.tshow && !GPE.tadd)   // one venue: keep it quiet until they want more (Robbie 25 Nov)
+    return `<div class="gp-tabs"><div class="gp-trow"><span class="gp-tl">MAIN</span>${tab('', L.main.name, 'main', 'Main view')}${mgr ? `<button type="button" class="gp-tadd one" onclick="GPE.tshow=true;gpRender()">+ Add a place<small>Another area or venue</small></button>` : ''}</div></div>`;
   return `<div class="gp-tabs">
     <div class="gp-trow"><span class="gp-tl">MAIN</span>${tab('', L.main ? L.main.name : 'Main', 'main', 'Main view')}</div>
     ${L.main ? `<div class="gp-trow"><span class="gp-tl">EXPLORE</span>${L.explore.map(v => tab(v.name, v.name, 'ex', 'Explore place')).join('')}${addBox('explore')}</div>
@@ -25617,7 +25620,7 @@ window.gpTabAdd = async function(){
   if(k === 'venue') it.other = true; else delete it.other;
   GPE.c.places[key] = it; await gpSave(false);
   GPE.tadd = ''; toast(nm + ' added - now build its page');
-  gpTab(nm); gpPreviewReload();
+  gpTab(gpTabKind(nm) === 'main' ? '' : nm); gpPreviewReload();
 };
 // A Venue tab: its own checklist + its own highlights, tonight, deals, events and photos (everything else is shared with the main venue)
 function gpVenueTabHtml(name, secHtml){
@@ -25631,8 +25634,8 @@ function gpVenueTabHtml(name, secHtml){
     + box('deals', 'Deals', 'Happy hours and set menus', list('deals', '+ Add a deal', "gpForm('deals')"))
     + box('events', 'Events', 'With a Book or Tickets button', list('events', '+ Add an event', "gpForm('events')"))
     + box('gallery', 'Photos', 'Your best shots of ' + gpEsc(name), (gal ? `<div class="gp-gal">${gal}</div>` : '') + `<button class="gp-add" onclick="gpGalleryAdd()">+ Add photos</button>`)
-    + `<div class="gp-sec"><div class="gp-sh"><div class="n"><b>Perks and reward</b><small>Same as ${gpEsc((gpPlaceLists().main || {}).name || 'your main venue')} - one membership</small></div><span class="gp-shared">Shared</span></div></div>
-      <div class="gp-auto" style="background:#FEF3C7;color:#92400E">No Explore places here. Want them? It needs its own app.</div>`;
+    + (gpTabKind(name) !== 'venue' ? '' : `<div class="gp-sec"><div class="gp-sh"><div class="n"><b>Perks and reward</b><small>Same as ${gpEsc((gpPlaceLists().main || {}).name || 'your main venue')} - one membership</small></div><span class="gp-shared">Shared</span></div></div>
+      <div class="gp-auto" style="background:#FEF3C7;color:#92400E">No Explore places here. Want them? It needs its own app.</div>`);
 }
 // The phone shows Explore with a dashed box where the new venue will go (the name fills in as they type)
 function gpGoNew(nm){

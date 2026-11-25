@@ -183,6 +183,10 @@ html.top-pg .gv{background:#1C1A19;color:#fff}html.top-pg .gv .gvi{background:va
 .bkr svg:last-child{opacity:.7;flex:none}.bkr svg:first-child{flex:none}
 .mvglow{outline:3px solid var(--acc,#0D9488);outline-offset:4px;border-radius:18px;animation:mvg 2.6s ease}
 /* Back office preview: the section being changed stays sharp with its border, everything else blurs (Robbie 25 Nov) */
+.vtop.mvnoimg:before{content:'+ Photo';position:absolute;inset:10px;border:2px dashed rgba(255,255,255,.45);border-radius:16px;display:flex;align-items:center;justify-content:center;color:#fff;font:800 15px Inter,sans-serif;padding-bottom:40px;box-sizing:border-box}
+.mvphs{padding:12px 16px 0;display:flex;flex-direction:column;gap:10px}.mvph{border:2px dashed color-mix(in srgb,currentColor 40%,transparent);border-radius:14px;padding:14px;text-align:center;font:800 13.5px Inter,sans-serif;opacity:.75}
+.pbig.mvdash{border:2px dashed var(--acc,#0D9488);background:color-mix(in srgb,var(--acc,#0D9488) 8%,#fff)}.pbig.mvdash .ini{color:var(--acc,#0D9488)}.pbig.mvdash:after{display:none}
+.ohp .pbig.mvnew{margin-top:12px;height:120px}.pbig.mvnew{border:2px dashed var(--acc,#0D9488);background:color-mix(in srgb,var(--acc,#0D9488) 8%,#fff);display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:10px;box-sizing:border-box;color:var(--acc,#0D9488);cursor:default}.pbig.mvnew:after{display:none}.pbig.mvnew b{font-size:15px;font-weight:900;overflow-wrap:anywhere}.pbig.mvnew small{font-size:12px;font-weight:700;margin-top:3px;opacity:.85}
 .mvdim{filter:blur(2.5px) grayscale(.75);opacity:.5;transition:filter .3s,opacity .3s}.mvon{outline:3px solid var(--acc,#0D9488);outline-offset:4px;border-radius:18px;position:relative;z-index:2}
 @keyframes mvg{0%,70%{outline-color:var(--acc,#0D9488)}100%{outline-color:transparent}}
 .bkr.gold{background:var(--acc,#0D9488);color:var(--acc-ink,#fff)}
@@ -900,7 +904,7 @@ body.vqopen .vq-dim{opacity:1;pointer-events:auto}body.vqopen .vq-sheet{transfor
         var badge = p.badge ? '<em class="ohpill" translate="no">' + esc(p.badge) + '</em>' : '', inner = (p.img ? '<img src="' + esc(p.img) + '" alt="" loading="lazy">' : '') + (p.logo && !p.badge ? '<img class="lgb" src="' + esc(p.logo) + '" alt="" loading="lazy">' : '') + badge + '<span><b translate="no">' + esc(p.name) + '</b>' + (st ? '<small>' + esc(st) + '</small>' : '') + '</span>';
         if (p.app) { var ah = '/k/' + esc(p.app) + (curApp ? '?from=' + curApp + '&fn=' + encodeURIComponent(d.brand) : '');
           return '<a class="pbig ohc" href="' + ah + '">' + inner + '</a>' + (bold ? '<a class="ohgo" href="' + ah + '"><span translate="no">Visit ' + esc(p.name) + '</span>' + svg('<path d="m9 18 6-6-6-6"/>', 18) + '</a>' : ''); }
-        return '<button class="pbig ohc" type="button" data-go="' + esc(k) + '">' + inner + '</button>' +
+        return '<button class="pbig ohc' + (/[?&]embed=1/.test(location.search) && !p.img ? ' mvdash' : '') + '" type="button" data-go="' + esc(k) + '">' + inner + '</button>' +
           (bold ? '<button class="ohgo" type="button" data-go="' + esc(k) + '"><span translate="no">Visit ' + esc(p.name) + '</span>' + svg('<path d="m9 18 6-6-6-6"/>', 18) + '</button>' : ''); }).join('');
     var hotelsRow = hotels.length || othCards ? '<div class="sec"><div class="ohp' + (bold ? ' bold' : '') + '">' + '<div class="lab">' + esc(gp.othersTitle || d.hotelsTitle || (stays ? 'Our other hotels' : 'Our other venues')) + '</div><small class="ohs">Your membership works here too</small>' + othCards + hotels.map(function(x){
         // A linked venue with its own full app (paid add-on): the card opens that whole app, in its own colours, not a mini page
@@ -1139,8 +1143,9 @@ body.vqopen .vq-dim{opacity:1;pointer-events:auto}body.vqopen .vq-sheet{transfor
         var v = venueOf(lc(p.name)), st = v ? (v.open === true ? 'Open now' : v.open === false ? v.label : '') : '';
         if (p.soon) return '<div class="pbig soon">' + (p.img ? '<img src="' + esc(p.img) + '" alt="" loading="lazy">' : '<div class="ini">' + esc(String(p.name).charAt(0).toUpperCase()) + '</div>') +
           '<em>Coming soon</em><span><b translate="no">' + esc(p.name) + '</b>' + (p.area ? '<small>' + esc(p.area) + '</small>' : '') + '</span></div>';   // Coming soon: shown, can't be opened yet
-        return '<button class="pbig" data-go="' + esc(lc(p.name)) + '">' + (p.img ? '<img src="' + esc(p.img) + '" alt="" loading="lazy">' : '<div class="ini">' + esc(String(p.name).charAt(0).toUpperCase()) + '</div>') +
-          '<span><b translate="no">' + esc(p.name) + '</b>' + (st ? '<small>' + esc(st) + '</small>' : '') + '</span></button>';   // just the name (+ open / closed when they set hours)
+        var setup = mvEmb && !p.img;   // back office preview: a venue with no photo yet is shown dashed
+        return '<button class="pbig' + (setup ? ' mvdash' : '') + '" data-go="' + esc(lc(p.name)) + '">' + (p.img ? '<img src="' + esc(p.img) + '" alt="" loading="lazy">' : '<div class="ini">' + esc(String(p.name).charAt(0).toUpperCase()) + '</div>') +
+          '<span><b translate="no">' + esc(p.name) + '</b>' + (setup ? '<small>Being set up</small>' : st ? '<small>' + esc(st) + '</small>' : '') + '</span></button>';   // just the name (+ open / closed when they set hours)
       }).join('') + '</div></div>';
       if (bold) h += hotelsRow;   // bold: straight after their own places, so it's seen
       h += extrasHtml();
@@ -1166,14 +1171,20 @@ body.vqopen .vq-dim{opacity:1;pointer-events:auto}body.vqopen .vq-sheet{transfor
           (v.map ? '<span class="vmap" aria-label="Map">' + svg(I.pin, 18) + '<em>Map</em></span>' : '') + '</' + tag + '>';
       }).join('') + '</div></div>';
     };
+    var mvEmb = /[?&]embed=1/.test(location.search);
     var placeHtml = function(key){
       var p = placeOf(key) || { name: key }, v = venueOf(key) || {};
       var st = v.open === true ? '<span class="open">Open now</span> · ' + esc(v.label) : v.open === false ? esc(v.label) : '';
       if (st && v.hrs) st += '<br><span class="hrs">' + esc(v.hrs) + '</span>';
+      if (p.area) st = esc(p.area) + (st ? '<br>' + st : '');   // the area it's in, e.g. Seminyak (Robbie 25 Nov)
+      // Back office preview: dashed boxes for what this venue still needs - they go as each part is filled in
+      var need = !mvEmb ? '' : [!(p.area && v.label) ? ['hours', 'Area and opening hours'] : null, !(v.wa || v.book) ? ['book', 'How guests book'] : null, !(p.menus && p.menus.length) ? ['menus', 'Menus'] : null]
+        .filter(Boolean).map(function(x){ return '<div class="mvph" data-mvph="' + x[0] + '">+ ' + x[1] + '</div>'; }).join('');
       var pacc = /^#[0-9a-f]{6}$/i.test(p.acc || '') ? p.acc : '', pn = pacc ? parseInt(pacc.slice(1), 16) : 0;   // an other venue in its own brand colour
       var pst = pacc ? ' style="--acc:' + pacc + ';--acc-ink:' + ((0.299 * (pn >> 16) + 0.587 * ((pn >> 8) & 255) + 0.114 * (pn & 255)) > 165 ? '#111111' : '#FFFFFF') + '"' : '';
-      var h = '<div class="w"' + pst + '><div class="vtop">' + (p.img ? '<img src="' + esc(p.img) + '" alt="">' : '') + '<div class="vin"><button class="back" data-home aria-label="Back">' + svg('<path d="m15 18-6-6 6-6"/>', 18) + (p.other ? '<span translate="no">Back to ' + esc(d.brand) + '</span>' : 'All places') + '</button>' +
+      var h = '<div class="w"' + pst + '><div class="vtop' + (mvEmb && !p.img ? ' mvnoimg' : '') + '">' + (p.img ? '<img src="' + esc(p.img) + '" alt="">' : '') + '<div class="vin"><button class="back" data-home aria-label="Back">' + svg('<path d="m15 18-6-6 6-6"/>', 18) + (p.other ? '<span translate="no">Back to ' + esc(d.brand) + '</span>' : 'All places') + '</button>' +
         (p.logo ? '<div class="vname lg"><img class="lgv" src="' + esc(p.logo) + '" alt=""><div>' : '<div class="vname">') + '<b translate="no">' + esc(p.name) + '</b>' + (st ? '<small>' + st + '</small>' : '') + (p.logo ? '</div>' : '') + '</div></div></div>';
+      if (need) h += '<div class="mvphs">' + need + '</div>';
       h += menuHtml(p);
       // About (back office: one or two lines, up to 4 tags, an optional button - empty link opens WhatsApp)
       if (p.about) { var awa = String(v.wa || (d.contact && d.contact.wa) || '').replace(/\D/g, ''), ahref = p.aboutUrl || (awa ? 'https://wa.me/' + awa + '?text=' + encodeURIComponent(me + ' I\'d like to ask about ' + p.name + '.') : '');
@@ -1295,6 +1306,7 @@ body.vqopen .vq-dim{opacity:1;pointer-events:auto}body.vqopen .vq-sheet{transfor
       if (window.__mvGoQ) setTimeout(window.__mvGoApply, 30);
     };
     // Back office preview (laptop): the editor tells this page what you're working on - go to that place, scroll to that section, glow
+    var GO_VS = { 'vs-photo': ['.vtop'], 'vs-hours': ['[data-mvph="hours"]', '.vtop'], 'vs-book': ['[data-mvph="book"]', '.book'], 'vs-menus': ['[data-mvph="menus"]', '.vmenu'] };
     var GO_SEL = { video: '#hv,.hv,.slsec,.sl', card: '.card', reward: '.box.rw', perks: '.pass', slides: '.slsec,.sl', deals: '.deal', events: '.ev', gallery: '.gal', tonight: '.tn,.days', venues: '.ven,.pbig', places: '.pbig', ig: '.ig' };
     var unfocus = function(){ document.querySelectorAll('.mvdim').forEach(function(x){ x.classList.remove('mvdim'); }); document.querySelectorAll('.mvon').forEach(function(x){ x.classList.remove('mvon'); }); };
     var focusOn = function(el){   // blur everything except this section, all the way up the page
@@ -1310,12 +1322,19 @@ body.vqopen .vq-dim{opacity:1;pointer-events:auto}body.vqopen .vq-sheet{transfor
       var find = function(){
         if (m.sec === 'contact' || m.sec === 'book') return null;
         var el = m.id && m.sec === 'events' ? document.querySelector('[data-ev="' + (window.CSS && CSS.escape ? CSS.escape(m.id) : m.id) + '"]') : null;
+        if (!el && GO_VS[m.sec]) { for (var gi = 0; gi < GO_VS[m.sec].length && !el; gi++) el = document.querySelector(GO_VS[m.sec][gi]); return el; }
         if (!el && GO_SEL[m.sec]) el = document.querySelector(GO_SEL[m.sec]);
         if (!el) return null;
         return m.id && m.sec === 'events' && el.matches('[data-ev]') ? el : (el.closest('.sec') || el);
       };
       if (key !== curKey || document.getElementById('mvcp')) show(key, false);
+      Array.prototype.forEach.call(document.querySelectorAll('.mvnew'), function(x){ x.remove(); });
+      if (typeof m.newv === 'string' && !key) { var pg = (m.newOther && document.querySelector('.ohp')) || document.querySelector('.pgrid') || document.querySelector('.ohp'); if (pg) pg.insertAdjacentHTML('beforeend', '<div class="pbig mvnew">' + (m.newv ? '<b translate="no">' + esc(m.newv.slice(0, 30)) + '</b><small>Tap Add to put it here</small>' : '<b>Your new venue</b><small>will show here</small>') + '</div>'); }
+      if (m.sec === 'places' && m.id && !key) { var card = document.querySelector('.pbig[data-go="' + (window.CSS && CSS.escape ? CSS.escape(lc(m.id)) : lc(m.id)) + '"]'); if (card) { card.scrollIntoView({ block: 'center' }); focusOn(card.closest('.sec') || card); return; } }
+      var nvEl = document.querySelector('.mvnew');
+      if (nvEl) { nvEl.scrollIntoView({ block: 'center' }); focusOn(nvEl.closest('.sec') || nvEl); return; }
       var el = find();
+      if (GO_VS[m.sec]) { if (!el) { window.scrollTo(0, 0); return; } if (el.classList.contains('vtop')) window.scrollTo(0, 0); else el.scrollIntoView({ block: 'center' }); focusOn(el); return; }
       if (!m.sec) { window.scrollTo(0, 0); return; }   // just the place: its page, from the top
       if (!el && curKey && m.sec !== 'contact' && m.sec !== 'book') { show('', false); el = find(); }   // not on that place's page: try the main page
       if (!el && !curKey && many && m.sec !== 'contact' && m.sec !== 'book') { for (var pi = 0; pi < places.length && !el; pi++) { if (places[pi].soon) continue; show(lc(places[pi].name), false); el = find(); } if (!el) show('', false); }   // only on the places' own pages (deals, events): open the first place that has it

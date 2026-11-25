@@ -24970,6 +24970,21 @@ function gpItemHtml(k, it, i){
     <button class="gp-ib" title="Change" aria-label="Change" onclick="gpForm('${k}',${i})">${gpIc(GPI.edit)}</button>
     <button class="gp-ib del" title="Remove" aria-label="Remove" onclick="gpRemove('${k}',${i})">${gpIc(GPI.x)}</button></div>`;
 }
+// Test venue only (company MSTEST): copy the Mama San sample - photos, places, perks, deals - into this company so we can test freely (Robbie 25 Nov)
+window.gpFillSample = async function(){
+  if(!myCompany || myCompany.code !== 'MSTEST') return;
+  if(!confirm('Fill this test venue with the Mama San sample? It replaces what is in this test venue only.')) return;
+  try{
+    const r = await fetch('/api/gp?a=demo&as=mamasan&d=' + gpToday()); const d = await r.json(); if(!d || !d.ok) throw new Error('no sample');
+    const c = Object.assign({}, d.content); delete c.as;
+    const page = Object.assign({}, msPage(), d.page); delete page.as;
+    GPE.c = gpNorm(c);
+    const saved = await gpSave(false); if(!saved) return;
+    await Promise.all([sb.from('app_settings').upsert({ key:'member_page', value: page }, { onConflict:'company_id,key' }), sb.from('app_settings').upsert({ key:'member_perks', value: d.perks }, { onConflict:'company_id,key' })]);
+    appSettings.member_page = JSON.stringify(page); appSettings.member_perks = JSON.stringify(d.perks);
+    toast('Sample content added ✓'); gpRender(); gpPreviewReload();
+  }catch(e){ console.warn('[sample]', e); toast('Could not add the sample - try again'); }
+};
 function gpRender(){
   const o = document.getElementById('gp-ed'); if(!o || !GPE.c) return;
   const c = GPE.c, code = gpKeyring(), mgr = msIsMgr();
@@ -24990,6 +25005,7 @@ function gpRender(){
       <button class="gp-tb l" onclick="gpNumbers()">${gpIc(GPI.chart)}<span>Numbers</span></button>
       ${code ? `<button class="gp-tb t2" onclick="gpLive()">${gpIc(GPI.eye)}<span>Live view</span></button>` : ''}</div>
     ${mvLapTip('margin:12px 16px 0')}
+    ${myCompany && myCompany.code === 'MSTEST' ? `<div style="max-width:1160px;margin:16px auto 0;padding:0 20px"><div class="gp-auto" style="background:#EEF2FF;color:#3730A3;display:flex;align-items:center;gap:12px;flex-wrap:wrap"><span style="flex:1;min-width:200px"><b>Test venue</b> - only for trying things out. Guests and clients never see it.</span><button style="background:#3730A3;color:#fff;border:0;border-radius:10px;padding:9px 14px;font:inherit;font-weight:800;cursor:pointer" onclick="gpFillSample()">Fill with sample content</button></div></div>` : ''}
     ${GPE.missing ? `<div style="max-width:1160px;margin:16px auto 0;padding:0 20px"><div class="gp-auto" style="background:#FFF7ED;color:#9A3412">The guest page needs a one-time setup before changes can be saved. Ask Mavis support.</div></div>` : ''}
     <div class="gp-wrap"><div class="gp-col">
       ${gpColoursHtml()}

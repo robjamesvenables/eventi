@@ -25186,7 +25186,7 @@ function dcPhotoSrc(c){
 function dcCfg(){
   const c = GPE.c || {}, k = c.card || {}, t = c.theme || {};
   const vs = ((msPage().venues || []).map(v => v && v.name).filter(Boolean));
-  return { style: DC_STYLES.some(s => s[0] === k.style) ? k.style : (dcPhotoSrc(c) ? 'photo' : 'cream'),
+  return { style: 'simple',   // one template for everyone: colour + logo + name + QR (Robbie 25 Nov)
     color: /^#[0-9a-f]{6}$/i.test(k.color || '') ? k.color.toUpperCase() : (/^#[0-9a-f]{6}$/i.test(t.acc || '') ? t.acc.toUpperCase() : '#C4973B'),
     name: dcBrandName(), venues: k.venues !== false, line: k.line !== false,
     logo: k.logo && k.logo.path ? (GPE.urls[k.logo.path] || '') : '', photo: dcPhotoSrc(c),
@@ -25246,7 +25246,18 @@ async function dcDraw(cfg, p, k){
   const hint = cfg.line ? (cfg.places.length > 1 ? 'Show this at any of our venues' : 'Show this when you arrive') : '';
   const name = String(p.name || '').trim() || 'Member', code = p.code.split('').join('');
   const codeT = (y, col) => T(code, W / 2 + 3, y, '800', 18, col, .32);
-  if(cfg.style === 'photo'){
+  if(cfg.style === 'simple'){
+    const on = dcOn(acc), soft = on === '#FFFFFF' ? 'rgba(255,255,255,.78)' : 'rgba(15,30,46,.7)';
+    RR(0, 0, W, H, 0, acc);
+    let y = 48;
+    if(logo){ const [lw, lh] = contain(logo, 190, 74); RR((W - lw) / 2 - 18, y, lw + 36, lh + 28, 20, '#FFFFFF'); x.drawImage(logo, (W - lw) / 2, y + 14, lw, lh); y += lh + 28; }
+    else { T(brand, W / 2 + 2, y + 30, '800', fit(brand, '800', 22, .2, 380, 12), on, .2); y += 60; }
+    T(name, W / 2, y + 52, '800', fit(name, '800', 36, 0, 380, 18), on);
+    T(since, W / 2, y + 84, '600', 14, soft);
+    const qb = qrBox(y + 112, 250, 16);
+    codeT(qb + 26, on);
+    if(hint) T(hint, W / 2, H - 34, '600', 13, soft);
+  } else if(cfg.style === 'photo'){
     RR(0, 0, W, H, 0, '#14100C');
     if(photo) cover(photo, 0, 0, W, 300); else { x.fillStyle = acc; x.fillRect(0, 0, W, 300); }
     // name pill on the photo, with the logo if there is one
@@ -25318,7 +25329,7 @@ function gpCardHtml(){
   if(L && L.path){
     if(L.w < 500) warns.push(`This logo is only ${L.w} px wide - it will look blurry on phones. Please upload one at least 500 px wide.`);
     if(L.white) warns.push('Your logo has a white box behind it, which shows on the dark and colour styles. Ask your designer for a PNG with a see-through background.');
-    logoMsg = L.w < 500 || L.white ? warn(L.w < 500 ? 'Too small - ' + L.w + ' px' : 'White box behind it') : ok('Looks great - ' + L.w + ' px' + (L.clear ? ', see-through background' : ''));
+    logoMsg = L.w < 500 ? warn('Too small - ' + L.w + ' px') : ok('Looks great - ' + L.w + ' px');   // the logo sits on a white badge now, so a white box behind it is fine
   }
   let photoMsg = cfg.photo ? grey('Using a photo from your guest page') : grey('No photo yet');
   if(P && P.path){
@@ -25329,26 +25340,17 @@ function gpCardHtml(){
     <div class="tx">${label}${msg}<div class="dc-ub"><label>${has ? 'Change' : 'Upload'}<input type="file" accept="image/*" hidden onchange="dcUpload('${kind}',this)"></label>${has ? `<button onclick="dcRemove('${kind}')">Remove</button>` : ''}</div></div></div>`;
   const tog = (key, on, label, sub) => `<div class="dc-tg"><span>${label}${sub ? `<small>${sub}</small>` : ''}</span><button class="gp-tog${on ? ' on' : ''}" aria-label="${gpEsc(label)}" onclick="dcSet('${key}',${!on})"><i></i></button></div>`;
   const custom = !DC_SW.includes(cfg.color);
-  return `<div class="gp-sec" id="gp-card-sec"><div class="gp-sh"><div class="n"><b>Digital member card</b><small>For guests with no keyring - staff make it on the Members page and send it on WhatsApp</small></div></div>
+  return `<div class="gp-sec" id="gp-card-sec"><div class="gp-sh"><div class="n"><b>Digital member card</b><small>For guests without a keyring - sent on WhatsApp. Same design for everyone.</small></div></div>
     <div class="gp-body"><div class="dc-grid"><div class="dc-set">
-      <div class="dc-lab">1. Pick a style</div>
-      <div class="dc-styles">${DC_STYLES.map(([id, lab]) => `<button class="dc-st${cfg.style === id ? ' on' : ''}" onclick="dcSet('style','${id}')"><canvas id="dc-th-${id}" width="88" height="156"></canvas>${lab}</button>`).join('')}</div>
-      <div class="dc-lab">2. Your logo and photo</div>
-      <div class="dc-ups">${up('logo', 'Logo', logoMsg, cfg.logo, !!(L && L.path))}${up('photo', 'Card photo', photoMsg + (cfg.style === 'photo' ? '' : '<small>Shows on the Photo style</small>'), cfg.photo, !!(P && P.path))}</div>
-      ${warns.map(w => `<div class="dc-warn">${w}</div>`).join('')}
-      <div class="gp-hint">We check the size, but we can't tell if a picture is blurry - use the original file from your designer, not a screenshot.</div>
-      <div class="dc-lab">3. Your colour</div>
+      <div class="dc-lab">1. Your logo</div>
+      <div class="dc-ups">${up('logo', 'Logo', logoMsg, cfg.logo, !!(L && L.path))}</div>
+      ${warns.filter(w => !/photo|white box/.test(w)).map(w => `<div class="dc-warn">${w}</div>`).join('')}
+      <div class="dc-lab">2. Card colour</div>
       <div class="dc-sw">${DC_SW.map(h => `<button class="c${h === cfg.color ? ' on' : ''}" style="background:${h}" aria-label="${h}" title="${h}" onclick="dcSet('color','${h}')"></button>`).join('')}
         <button class="cw-own${custom ? ' on' : ''}" onclick="dcWheel()">${custom ? `<i style="background:${cfg.color}"></i>` : CW_IC}${custom ? cfg.color : 'Your own'}</button></div>
-      <div class="gp-hint">Colour code ${cfg.color}${k.color ? '' : ' - from your guest page'}. Tap "Your own" for the colour wheel, or type your brand's code.</div>
-      <div class="dc-lab">4. Name on the card</div>
-      <input class="dc-in" id="dc-name" maxlength="40" value="${gpEsc(cfg.name)}" onchange="dcSet('name',this.value)">
-      <div class="dc-lab">5. Extras</div>
-      ${tog('venues', cfg.venues, 'Show our venue names on the card', cfg.places.length > 1 ? (cfg.style === 'photo' ? 'Not on the Photo style - no room' : '') : 'Shows when you have more than one venue')}
-      ${tog('line', cfg.line, 'Line at the bottom: "' + (cfg.places.length > 1 ? 'Show this at any of our venues' : 'Show this when you arrive') + '"')}
     </div>
-    <div class="dc-prev"><canvas id="dc-prev" width="224" height="398"></canvas><small>Preview with a sample name</small>
-      <div class="dc-btns"><button class="dc-b2" onclick="dcTest()">Send a test to me</button><button class="dc-b1" onclick="dcSaveBtn()">Save</button></div></div>
+    <div class="dc-prev"><canvas id="dc-prev" width="224" height="398"></canvas><small>What the guest gets</small>
+      <div class="dc-btns"><button class="dc-b1" onclick="dcSaveBtn()">Save</button></div></div>
     </div></div></div>`;
 }
 let dcPaintN = 0;
@@ -25356,8 +25358,9 @@ async function dcPaint(){
   const prev = document.getElementById('dc-prev'); if(!prev) return;
   const n = ++dcPaintN, cfg = dcCfg(), dpr = Math.min(3, window.devicePixelRatio || 1), p = Object.assign({ since: Date.now() }, DC_SAMPLE);
   const put = (el, cv) => { if(!el || !cv || n !== dcPaintN) return; el.width = cv.width; el.height = cv.height; el.getContext('2d').drawImage(cv, 0, 0); };
-  put(prev, await dcDraw(cfg, p, 224 / 440 * dpr));
-  for(const [id] of DC_STYLES){ if(n !== dcPaintN) return; put(document.getElementById('dc-th-' + id), await dcDraw(Object.assign({}, cfg, { style:id }), p, 88 / 440 * dpr)); }
+  const wOf = (el, d) => Math.max(d, (el && el.getBoundingClientRect().width) || 0);   // draw at the size it's shown, so it's sharp wherever it sits (Settings is wider - Robbie 25 Nov)
+  put(prev, await dcDraw(cfg, p, wOf(prev, 224) / 440 * dpr));
+  for(const [id] of DC_STYLES){ if(n !== dcPaintN) return; const th = document.getElementById('dc-th-' + id); put(th, await dcDraw(Object.assign({}, cfg, { style:id }), p, wOf(th, 88) / 440 * dpr)); }
 }
 function dcRefresh(){ const s = document.getElementById('gp-card-sec'); if(s){ s.outerHTML = gpCardHtml(); dcPaint(); } }
 window.dcSet = async function(key, val){

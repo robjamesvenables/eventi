@@ -2406,7 +2406,9 @@ body:not(.mv-demo) #ms-demoqr-btn{display:none!important}
 .gp-wrap{max-width:1160px;margin:0 auto;padding:20px;display:grid;grid-template-columns:minmax(0,1fr) 400px;gap:22px;align-items:start}
 .gp-col{display:flex;flex-direction:column;gap:12px;min-width:0}
 .gp-sec{background:white;border-radius:16px;border:1.5px solid #EEF1F4;overflow:hidden}
-.gp-sec.off{opacity:.6}
+.gp-sec.off .gp-body{opacity:.45;filter:grayscale(.6)}.gp-sec.off .gp-sh .n{opacity:.7}
+.gp-swl{font-size:13px;font-weight:900;color:#64748B;margin-right:8px;white-space:nowrap}.gp-swl.on{color:#0D9488}
+.gp-hidn{margin:0 14px 10px;background:#FEF3C7;color:#92400E;border-radius:10px;padding:10px 12px;font-size:13.5px;font-weight:700}
 .gp-sh{display:flex;align-items:center;gap:10px;padding:14px 14px 14px 16px}
 .gp-sh .n{flex:1;min-width:0}.gp-sh .n b{display:block;font-size:15.5px;font-weight:800}.gp-sh .n small{display:block;font-size:12.5px;color:#64748B;font-weight:600;margin-top:1px}
 .gp-mv{display:flex;flex-direction:column;gap:2px}
@@ -24818,7 +24820,7 @@ function gpTopHtml(){
   else body = `<div style="display:flex;gap:8px;flex-wrap:wrap"><button class="gp-add" style="flex:1;min-width:150px" onclick="gpTopPick()">+ Upload a video</button><button class="gp-add" style="flex:1;min-width:150px" onclick="gpTopYt()">+ Use a YouTube link</button></div>
       <div class="gp-hint" style="margin-top:8px">Best: a short MP4, under 30 seconds (e.g. exported from CapCut). It starts straight away. YouTube links take a second or two to start.</div>`;
   return `<div class="gp-sec${off ? ' off' : ''}" data-go="video"><div class="gp-sh"><div class="n"><b>Top video</b><small>A short video at the very top of your page. Off: your photos show there</small></div>
-    <button class="gp-tog${off ? '' : ' on'}" aria-label="Show top video" onclick="gpToggle('topvideo')"><i></i></button></div>${off ? '' : `<div class="gp-body">${body}</div>`}</div>`;
+    ${gpSwHtml(!off, "gpToggle('topvideo')", 'top video')}</div>${off ? '<div class="gp-hidn">Hidden from guests - everything is kept. Turn on to show it again.</div>' : ''}<div class="gp-body">${body}</div></div>`;
 }
 window.gpTopPick = function(){
   if(GPE.topBusy) return;
@@ -24893,6 +24895,8 @@ window.gpTopRemove = function(){
     if(await gpSave('Video removed')) [old.path, old.poster].filter(Boolean).forEach(x => gpForgetFile({ path:x }));
   } });
 };
+// Section switch with a plain word next to it: Showing / Hidden. Off keeps everything - it's only hidden from guests (Robbie 25 Nov)
+function gpSwHtml(on, click, name){ return `<span class="gp-swl${on ? ' on' : ''}">${on ? 'Showing' : 'Hidden'}</span><button class="gp-tog${on ? ' on' : ''}" aria-label="Show ${gpEsc(name)}" onclick="${click}"><i></i></button>`; }
 function gpForgetFile(it){ if(it && it.path) sb.storage.from(GP_BUCKET).remove([it.path]).catch(() => {}); }
 function gpKeyring(){ if(demoAs() && DEMO_KEYRING[DEMO_AS]) return DEMO_KEYRING[DEMO_AS]; try{ return Object.values(MS.keyrings || {})[0] || ''; }catch(e){ return ''; } }
 // Laptop: the phone preview follows what you're working on (that place's page, that section, a soft glow); after a save it comes back to the same spot
@@ -24965,7 +24969,7 @@ function gpItemHtml(k, it, i){
 function gpRender(){
   const o = document.getElementById('gp-ed'); if(!o || !GPE.c) return;
   const c = GPE.c, code = gpKeyring(), mgr = msIsMgr();
-  const tog = k => `<button class="gp-tog${c.off[k] ? '' : ' on'}" aria-label="Show ${gpEsc(k)}" onclick="gpToggle('${k}')"><i></i></button>`;
+  const tog = k => gpSwHtml(!c.off[k], `gpToggle('${k}')`, k);
   const sec = (k, i) => {
     const [name, sub] = GP_SECS[k];
     let body = '';
@@ -24975,7 +24979,7 @@ function gpRender(){
     else if(k === 'tonight') body = (c.acts || []).map((a, j) => gpActHtml(a, j)).join('') + `<button class="gp-add" onclick="gpActForm()">+ Add who's playing</button><div class="gp-hint" style="margin-top:8px">Guests see it under Tonight on the day, and in This week. DJs booked in the Entertainment Schedule show here too.</div>`;
     else body = `<div class="gp-auto">Fills itself - nothing to type here.</div>`;
     return `<div class="gp-sec${c.off[k] ? ' off' : ''}" data-go="${k}"><div class="gp-sh"><div class="gp-mv"><button aria-label="Move up" ${i ? '' : 'disabled'} onclick="gpMove('${k}',-1)">${gpIc(GPI.up, 14)}</button><button aria-label="Move down" ${i < c.order.length - 1 ? '' : 'disabled'} onclick="gpMove('${k}',1)">${gpIc(GPI.down, 14)}</button></div>
-      <div class="n"><b>${name}</b><small>${sub}</small></div>${tog(k)}</div>${c.off[k] ? '' : `<div class="gp-body">${body}</div>`}</div>`;
+      <div class="n"><b>${name}</b><small>${sub}</small></div>${tog(k)}</div>${c.off[k] ? '<div class="gp-hidn">Hidden from guests - everything is kept. Turn on to show it again.</div>' : ''}<div class="gp-body">${body}</div></div>`;
   };
   o.innerHTML = `<div class="gp-top"><button class="gp-back" aria-label="Back" onclick="gpClose()">${gpIc(GPI.back, 20)}</button>
       <div class="t"><b>Guest page</b><small>What members see when they scan their keyring</small></div>
@@ -24987,7 +24991,7 @@ function gpRender(){
       ${gpColoursHtml()}
       ${gpTopHtml()}
       <div class="gp-sec${c.off.slides ? ' off' : ''}" data-go="slides"><div class="gp-sh"><div class="n"><b>Highlights</b><small>Big photos at the top of a place's page - offers, new menu, big nights. Guests swipe through them</small></div>${tog('slides')}</div>
-        ${c.off.slides ? '' : `<div class="gp-body">${c.slides.map((it, j) => gpItemHtml('slides', it, j)).join('')}${c.slides.length < 12 ? `<button class="gp-add" onclick="gpForm('slides')">+ Add a highlight</button>` : ''}<label style="display:flex;align-items:center;gap:10px;margin-top:10px;font-weight:700;cursor:pointer"><input type="checkbox" style="width:20px;height:20px;margin:0"${c.motion ? ' checked' : ''} onchange="gpMotion(this.checked)"> Also on the home page <span class="gp-opt">moving, under the video</span></label></div>`}</div>
+        ${c.off.slides ? '<div class="gp-hidn">Hidden from guests - everything is kept. Turn on to show it again.</div>' : ''}${`<div class="gp-body">${c.slides.map((it, j) => gpItemHtml('slides', it, j)).join('')}${c.slides.length < 12 ? `<button class="gp-add" onclick="gpForm('slides')">+ Add a highlight</button>` : ''}<label style="display:flex;align-items:center;gap:10px;margin-top:10px;font-weight:700;cursor:pointer"><input type="checkbox" style="width:20px;height:20px;margin:0"${c.motion ? ' checked' : ''} onchange="gpMotion(this.checked)"> Also on the home page <span class="gp-opt">moving, under the video</span></label></div>`}</div>
       ${gpCardHtml()}
       <div class="gp-sec" data-go="perks"><div class="gp-sh"><div class="n"><b>Perks and reward</b><small>On every member's card - always shown</small></div></div>
         <div class="gp-body">${gpPerksHtml(mgr)}</div></div>

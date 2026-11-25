@@ -24983,6 +24983,13 @@ window.gpFillSample = async function(){
     const saved = await gpSave(false); if(!saved) return;
     await Promise.all([sb.from('app_settings').upsert({ key:'member_page', value: page }, { onConflict:'company_id,key' }), sb.from('app_settings').upsert({ key:'member_perks', value: d.perks }, { onConflict:'company_id,key' })]);
     appSettings.member_page = JSON.stringify(page); appSettings.member_perks = JSON.stringify(d.perks);
+    // A pretend member with a keyring, so the live preview shows straight away (Robbie 25 Nov)
+    if(!gpKeyring()){
+      const m = await sb.from('members').insert({ name:'Sarah Sample', phone:'+62 800 0000 0001', email:'', birthday:'', joined_venue:(page.venues && page.venues[0] && page.venues[0].name) || '', tier:'member', consent:false, created_by:myProfile ? myProfile.id : null }).select('*').single();
+      const code = m.data ? await mcFreeCode() : '';
+      if(code){ const k = await sb.from('member_keyrings').insert({ code, member_id: m.data.id }).select(); if(!k.error){ MS.keyrings = MS.keyrings || {}; MS.keyrings[m.data.id] = code; } }
+      try{ await msLoad(); }catch(e){}
+    }
     toast('Sample content added ✓'); gpRender(); gpPreviewReload();
   }catch(e){ console.warn('[sample]', e); toast('Could not add the sample - try again'); }
 };

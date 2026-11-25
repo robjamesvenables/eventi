@@ -126,7 +126,7 @@ function build(c, ctx){
     return n && (venues || []).some(x => x.name === n) ? n : ''; };
   // A photo's member badge: its own Member benefit, or the one on the event it opens
   const slidePerk = s => { if (s.perk) return str(s.perk, 18); const e = s.ev && (c.events || []).find(x => x && x.id === s.ev); return e ? str(e.perk, 18) || (+e.disc ? +e.disc + '% off' : '') : ''; };
-  const slides = on('slides') ? (c.slides || []).filter(s => img(s)).slice(0, 12).map(s => ({ id: str(s.id, 40), img: img(s), title: str(s.title, 60), line: str(s.line, 90), venue: str(guessPlace(s), 40), ev: str(s.ev, 40), btn: button(s, s.title || 'what\'s on'), perk: slidePerk(s) })) : [];
+  const slides = on('slides') ? (c.slides || []).filter(s => img(s)).slice(0, 12).map(s => ({ id: str(s.id, 40), img: img(s), title: str(s.title, 60), line: str(s.line, 90), venue: str(guessPlace(s), 40), venues: (Array.isArray(s.venues) ? s.venues : [guessPlace(s)]).map(v => str(v, 40)).filter(Boolean).slice(0, 12), ev: str(s.ev, 40), btn: button(s, s.title || 'what\'s on'), perk: slidePerk(s) })) : [];
   const deals = (c.deals || []).filter(d => d && d.title && (!d.until || d.until >= today)).slice(0, 12).map(d => ({ id: str(d.id, 40), img: img(d), title: str(d.title, 60), when: str(d.when, 40), venue: str(d.venue, 40), perk: str(d.perk, 18) }));
   const AGES = { all: 'All ages', '18': '18+ only', '21': '21+ only' };
   const events = (c.events || []).filter(e => e && e.title && (!e.date || e.date >= today) && (!e.from || e.from <= today))
@@ -195,7 +195,8 @@ function build(c, ctx){
   }
   const placesTitle = str(c.placesTitle, 26).trim();   // 'Explore ' + up to 18 letters
   const oh = c.others && typeof c.others === 'object' ? c.others : {}, othersTitle = str(oh.title, 40).trim(), othersBold = oh.bold === true;   // heading and stand-out box for Our other venues   // their own heading over Our places (empty = standard)
-  return { order, slides, deals, events, gallery, places, placesTitle, othersTitle, othersBold, theme, gift, others, motion: c.motion === true, oneHome: c.oneHome !== false, film, filmStart, filmTall: !!film && filmTall && !(tp.kind === 'yt'), video, videoPoster, videoTall };
+  return { order, slides, deals, events, gallery, places, placesTitle, othersTitle, othersBold, theme, gift, others, motion: true,   // highlights always show on the main page now - each one also on the places it's ticked for (Robbie 25 Nov)
+    oneHome: c.oneHome !== false, film, filmStart, filmTall: !!film && filmTall && !(tp.kind === 'yt'), video, videoPoster, videoTall };
 }
 
 // The name under the app icon on a guest's phone: phones cut it after about 12 letters ("The Trans Resort Bali" -> "Trans Resort")

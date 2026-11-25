@@ -2408,6 +2408,10 @@ body:not(.mv-demo) #ms-demoqr-btn{display:none!important}
 .gp-sec{background:white;border-radius:16px;border:1.5px solid #EEF1F4;overflow:hidden}
 .gp-sec.off .gp-body{opacity:.45;filter:grayscale(.6)}.gp-sec.off .gp-sh .n{opacity:.7}
 .gp-swl{font-size:13px;font-weight:900;color:#64748B;margin-right:8px;white-space:nowrap}.gp-swl.on{color:#0D9488}
+.gp-wh{display:flex;flex-direction:column;gap:8px}.gp-whm{display:flex;gap:10px;align-items:center;background:#F0FDFA;border:1.5px solid #99F6E4;border-radius:12px;padding:10px 12px;font-weight:800;color:#0F766E;font-size:15px}.gp-whm small{display:block;font-weight:600;color:#64748B;font-size:12px}
+.gp-whm .ck{width:22px;height:22px;border-radius:6px;background:#99F6E4;display:grid;place-items:center;font-size:13px;font-weight:900;flex:none}
+.gp-who{display:flex!important;gap:10px;align-items:center;border:1.5px solid #E2E8F0;border-radius:12px;padding:10px 12px;font-size:15px;font-weight:700;color:#0F1E2E;cursor:pointer;margin:0!important}.gp-who:has(input:checked){border-color:#0D9488;background:#F0FDFA}
+.gp-who input{width:20px;height:20px;margin:0;accent-color:#0D9488;flex:none}
 .gp-hidn{margin:0 14px 10px;background:#FEF3C7;color:#92400E;border-radius:10px;padding:10px 12px;font-size:13.5px;font-weight:700}
 .gp-sh{display:flex;align-items:center;gap:10px;padding:14px 14px 14px 16px}
 .gp-sh .n{flex:1;min-width:0}.gp-sh .n b{display:block;font-size:15.5px;font-weight:800}.gp-sh .n small{display:block;font-size:12.5px;color:#64748B;font-weight:600;margin-top:1px}
@@ -24902,7 +24906,7 @@ function gpKeyring(){ if(demoAs() && DEMO_KEYRING[DEMO_AS]) return DEMO_KEYRING[
 // Laptop: the phone preview follows what you're working on (that place's page, that section, a soft glow); after a save it comes back to the same spot
 function gpGo(sec, place, id){
   const g = { mv:'go', sec: sec || '', place: place || '', id: id || '' }, k = g.sec + '|' + g.place + '|' + g.id, now = Date.now();
-  GPE.go = g; const pv = document.querySelector('.gp-prev'); if(pv) pv.classList.toggle('foc', !!(g.sec || g.place));
+  GPE.go = g; const pv = document.querySelector('.gp-prev'); if(pv) pv.classList.toggle('foc', !!(g.sec || g.place) && !!document.getElementById('gp-frame'));
   if(GPE.goLast === k && now - (GPE.goAt || 0) < 4000) return;   // already showing that spot: don't flash it again on every tap inside the same box
   GPE.goLast = k; GPE.goAt = now; gpGoSend(0);
 }
@@ -24954,7 +24958,7 @@ window.gpClose = function(fromBack){
 };
 function gpItemHtml(k, it, i){
   const btn = it.btn && GP_BTN[it.btn] ? `<span class="gp-chip ${GP_BTN[it.btn][1]}">${GP_BTN[it.btn][0]}</span>` : '';
-  const sub = k === 'events' ? [gpDate(it.date), it.time, it.venue].filter(Boolean).join(' · ') : k === 'deals' ? [it.when, it.venue].filter(Boolean).join(' · ') : [it.line, it.venue ? 'at ' + it.venue : 'All places'].filter(Boolean).join(' · ');
+  const sub = k === 'events' ? [gpDate(it.date), it.time, it.venue].filter(Boolean).join(' · ') : k === 'deals' ? [it.when, it.venue].filter(Boolean).join(' · ') : [it.line, (it.venues && it.venues.length ? it.venues : it.venue ? [it.venue] : []).length ? 'at ' + (it.venues && it.venues.length ? it.venues : [it.venue]).join(', ') : 'Main page only'].filter(Boolean).join(' · ');
   const hide = k === 'events' && it.date ? `<span class="gp-chip">Hides after ${gpEsc(gpDate(it.date))}</span>` : k === 'deals' && it.until ? `<span class="gp-chip">${it.until < gpToday() ? 'Ended - not showing' : 'Ends ' + gpEsc(gpDate(it.until))}</span>` : '';
   const from = k === 'events' && it.from && it.from > gpToday() ? `<span class="gp-chip">Shows from ${gpEsc(gpDate(it.from))}</span>` : '';
   const hl = k === 'events' && it.hl ? '<span class="gp-chip">In Highlights</span>' : '';
@@ -24991,7 +24995,7 @@ function gpRender(){
       ${gpColoursHtml()}
       ${gpTopHtml()}
       <div class="gp-sec${c.off.slides ? ' off' : ''}" data-go="slides"><div class="gp-sh"><div class="n"><b>Highlights</b><small>Big photos at the top of a place's page - offers, new menu, big nights. Guests swipe through them</small></div>${tog('slides')}</div>
-        ${c.off.slides ? '<div class="gp-hidn">Hidden from guests - everything is kept. Turn on to show it again.</div>' : ''}${`<div class="gp-body">${c.slides.map((it, j) => gpItemHtml('slides', it, j)).join('')}${c.slides.length < 12 ? `<button class="gp-add" onclick="gpForm('slides')">+ Add a highlight</button>` : ''}<label style="display:flex;align-items:center;gap:10px;margin-top:10px;font-weight:700;cursor:pointer"><input type="checkbox" style="width:20px;height:20px;margin:0"${c.motion ? ' checked' : ''} onchange="gpMotion(this.checked)"> Also on the home page <span class="gp-opt">moving, under the video</span></label></div>`}</div>
+        ${c.off.slides ? '<div class="gp-hidn">Hidden from guests - everything is kept. Turn on to show it again.</div>' : ''}${`<div class="gp-body">${c.slides.map((it, j) => gpItemHtml('slides', it, j)).join('')}${c.slides.length < 12 ? `<button class="gp-add" onclick="gpForm('slides')">+ Add a highlight</button>` : ''}</div>`}</div>
       ${gpCardHtml()}
       <div class="gp-sec" data-go="perks"><div class="gp-sh"><div class="n"><b>Perks and reward</b><small>On every member's card - always shown</small></div></div>
         <div class="gp-body">${gpPerksHtml(mgr)}</div></div>
@@ -25749,7 +25753,7 @@ window.gpForm = function(k, i){
   const title = { slides:'highlight', deals:'daily deal', events:'event' }[k];
   const venueSel = `<label>Place</label><select id="gpf-venue"><option value="">All places</option>${venues.map(v => `<option${v === it.venue ? ' selected' : ''}>${gpEsc(v)}</option>`).join('')}</select>`;
   let f = `<label>Photo${k === 'slides' ? '' : ' (optional)'}</label><div class="gp-ph${gpSrc(it) ? ' has' : ''}" id="gpf-ph" role="button" tabindex="0">${gpSrc(it) ? `<img src="${gpEsc(gpSrc(it))}" alt=""><span>Change photo</span>` : `${gpIc(GPI.cam, 22)}&nbsp; Choose a photo`}</div><div class="gp-hint">Best: a landscape (wide), high-quality photo - the original from your phone or photographer, not a screenshot.</div>`;
-  if(k === 'slides') f += `<label>Big words (optional, max 30 letters)</label><input id="gpf-title" maxlength="30" value="${gpEsc(it.title || '')}" placeholder="e.g. 2 for 1 cocktails"><label>Small line (optional, max 36 letters)</label><input id="gpf-line" maxlength="36" value="${gpEsc(it.line || '')}" placeholder="e.g. Every day 5–7pm">${venueSel}<div class="gp-hint">Pick the place it belongs to - the See more button opens that place.</div>
+  if(k === 'slides') f += `<label>Big words (optional, max 30 letters)</label><input id="gpf-title" maxlength="30" value="${gpEsc(it.title || '')}" placeholder="e.g. 2 for 1 cocktails"><label>Small line (optional, max 36 letters)</label><input id="gpf-line" maxlength="36" value="${gpEsc(it.line || '')}" placeholder="e.g. Every day 5–7pm">${venues.length ? `<label>Where does it show?</label><div class="gp-wh"><div class="gp-whm"><span class="ck">✓</span><span>Main page<small>Always - the slideshow under the video</small></span></div>${venues.map(v => `<label class="gp-who"><input type="checkbox" class="gpf-vt" value="${gpEsc(v)}"${(it.venues || (it.venue ? [it.venue] : [])).includes(v) ? ' checked' : ''}><span>${gpEsc(v)}</span></label>`).join('')}</div><div class="gp-hint">Tick each place it should also show on. Tick none and it's on the main page only. See more opens the first one you tick.</div>` : ''}
     ${(GPE.c.events || []).filter(e => !e.date || e.date >= gpToday()).length ? `<label>When they tap See more</label><select id="gpf-ev"><option value="">Open that place's page</option>${(GPE.c.events || []).filter(e => !e.date || e.date >= gpToday()).map(e => `<option value="${gpEsc(e.id)}"${e.id === it.ev ? ' selected' : ''}>Go straight to the event: ${gpEsc(e.title)}${e.date ? ' (' + gpEsc(gpDate(e.date)) + ')' : ''}</option>`).join('')}</select><div class="gp-hint">Pick an event to take guests straight to it, with its details open - no scrolling. When the event is over, See more opens the place again by itself.</div>` : ''}`;
   if(k === 'deals') f += `<label>What's the deal? (max 40 letters)</label><input id="gpf-title" maxlength="40" value="${gpEsc(it.title || '')}" placeholder="e.g. 2 for 1 cocktails"><label>When (max 20 letters)</label><input id="gpf-when" maxlength="20" value="${gpEsc(it.when || '')}" placeholder="e.g. Daily · 5–7pm">${venueSel}<label>Ends on (optional)</label><input id="gpf-until" type="date" value="${gpEsc(it.until || '')}"><div class="gp-hint">The last day of the deal. After that it comes off the guest page and the Front desk by itself. Leave empty if it never ends.</div>`;
   if(k === 'events') f += `<label>Event name (max 30 letters)</label><input id="gpf-title" maxlength="30" value="${gpEsc(it.title || '')}" placeholder="e.g. New Year's Eve"><label>One line about it (optional, max 45 letters)</label><input id="gpf-line" maxlength="45" value="${gpEsc(it.line || '')}" placeholder="e.g. Fireworks, DJs, free-flow from Rp 1.5m">
@@ -25790,7 +25794,7 @@ window.gpForm = function(k, i){
     const talk = btn === 'wa' || btn === 'call' || btn === 'email', to = $('gpf-to');
     $('gpf-tow').style.display = talk ? '' : 'none'; $('gpf-wah').style.display = talk ? '' : 'none';
     if(talk){
-      const pg = msPage(), c = pg.contact || {}, vn = $('gpf-venue') ? $('gpf-venue').value : '', v = (pg.venues || []).find(x => x.name === vn) || {};
+      const pg = msPage(), c = pg.contact || {}, vn = $('gpf-venue') ? $('gpf-venue').value : ((s.querySelector('.gpf-vt:checked') || {}).value || ''), v = (pg.venues || []).find(x => x.name === vn) || {};
       const anyWa = (pg.venues || []).find(x => x.wa), fall = btn === 'wa' ? (v.wa ? ['+' + v.wa, vn] : c.wa ? ['+' + c.wa, 'main contact'] : anyWa ? ['+' + anyWa.wa, anyWa.name] : null)
         : btn === 'call' ? (v.phone ? [v.phone, vn] : c.phone ? [c.phone, 'main contact'] : null) : (v.email ? [v.email, vn] : c.email ? [c.email, 'main contact'] : null);
       $('gpf-tol').textContent = btn === 'wa' ? 'WhatsApp number for this (optional)' : btn === 'call' ? 'Phone number for this (optional)' : 'Email for this (optional)';
@@ -25801,7 +25805,7 @@ window.gpForm = function(k, i){
         : `<span style="color:#B91C1C">Type a ${btn === 'email' ? 'email' : 'number'} above - there isn't one saved yet.</span>`;
     }
   };
-  if($('gpf-to')) $('gpf-to').oninput = showBtn; if($('gpf-venue')) $('gpf-venue').addEventListener('change', showBtn);
+  if($('gpf-to')) $('gpf-to').oninput = showBtn; if($('gpf-venue')) $('gpf-venue').addEventListener('change', showBtn); s.querySelectorAll('.gpf-vt').forEach(x => x.addEventListener('change', showBtn));
   s.querySelectorAll('#gpf-btns button').forEach(b => b.onclick = () => { btn = b.dataset.b; showBtn(); });
   const showDisc = () => { const w = $('gpf-codew'); if(!w) return; w.style.display = $('gpf-perk').value.trim() && (btn === 'book' || btn === 'tickets') ? '' : 'none'; };
   if($('gpf-codew') && $('gpf-perk')){ $('gpf-perk').addEventListener('input', showDisc); s.querySelectorAll('#gpf-btns button').forEach(b => b.addEventListener('click', showDisc)); showDisc(); }
@@ -25815,7 +25819,7 @@ window.gpForm = function(k, i){
     const go = s.querySelector('.eb-go'); if(go.disabled) return;
     const val = id => ($(id) ? $(id).value.trim() : '');
     const rec = Object.assign(it, { title: val('gpf-title') });
-    if(k === 'slides'){ rec.line = val('gpf-line'); rec.venue = val('gpf-venue'); rec.ev = val('gpf-ev'); if(!rec.ev) delete rec.ev; if(!file && !gpSrc(it)){ toast('Choose a photo first'); return; } }
+    if(k === 'slides'){ rec.line = val('gpf-line'); rec.venues = [...s.querySelectorAll('.gpf-vt:checked')].map(x => x.value); rec.venue = rec.venues[0] || ''; /* one highlight, as many places as they tick (Robbie 25 Nov) */ rec.ev = val('gpf-ev'); if(!rec.ev) delete rec.ev; if(!file && !gpSrc(it)){ toast('Choose a photo first'); return; } }
     if(k === 'events' || k === 'deals'){ rec.perk = val('gpf-perk'); if(!rec.perk) delete rec.perk; }
     if(k === 'deals'){ rec.when = val('gpf-when'); rec.venue = val('gpf-venue'); rec.until = val('gpf-until'); if(!rec.until) delete rec.until; if(!rec.title){ toast("Type what the deal is"); return; } if(rec.until && rec.until < gpToday()){ toast('That end date has already passed'); return; } }
     if(k === 'events'){ Object.assign(rec, { line: val('gpf-line'), date: val('gpf-date'), time: val('gpf-time'), time2: val('gpf-time2'), venue: val('gpf-venue'), from: val('gpf-from'),

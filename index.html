@@ -2238,6 +2238,12 @@ body.ms-waiter #ms-stats{display:none!important}
 .gp-aic button.on{border-color:#0D9488;background:#F0FDFA;color:#0D9488}.gp-aic button.on span{background:#0D9488;color:#fff}
 .ms-glab{grid-column:1/-1;font-size:11.5px;font-weight:900;letter-spacing:1.4px;color:#64748B;margin:6px 2px 2px}
 #ms-scan-btn,.ms-tiers{white-space:nowrap}
+#ms-tiers-btn.md2{--md-bg:#0F1E2E;--md-ink:#fff;--md-acc:#0D9488;--md-acc-ink:#fff;display:flex;align-items:center;gap:18px;width:100%;max-width:none;background:var(--md-bg);color:var(--md-ink);border:0;border-radius:18px;padding:18px 20px;box-shadow:0 6px 20px rgba(15,30,46,.14);text-align:left;cursor:pointer;font-family:inherit}
+#ms-tiers-btn.md2:hover{background:var(--md-bg);filter:brightness(1.08)}
+#ms-tiers-btn.md2 .ms-dots{margin:0;flex:none}#ms-tiers-btn.md2 .ms-dots i{width:24px;height:24px;border:2.5px solid #fff;box-shadow:0 0 0 1px rgba(0,0,0,.25)}
+#ms-tiers-btn.md2 .t{flex:1;min-width:0;display:flex;flex-direction:column}#ms-tiers-btn.md2 .t b{font-size:20px;font-weight:900}#ms-tiers-btn.md2 .t small{color:inherit;opacity:.8;font-size:13.5px;font-weight:600;margin-top:2px}
+#ms-tiers-btn.md2 .go{flex:none;display:inline-flex;align-items:center;gap:8px;background:var(--md-acc);color:var(--md-acc-ink);border-radius:12px;padding:12px 18px;font-weight:900;font-size:15px}
+@media(max-width:600px){#ms-tiers-btn.md2{flex-wrap:wrap;gap:12px}#ms-tiers-btn.md2 .go{width:100%;justify-content:center}}
 .ms-design{display:flex;align-items:center;gap:14px;width:100%;max-width:520px;margin:4px 0 18px;background:#0D9488;color:#fff;border:0;border-radius:16px;padding:14px 16px;text-align:left;font-family:inherit;cursor:pointer;box-shadow:0 4px 14px rgba(13,148,136,.28)}
 .ms-design:hover{background:#0F766E}.ms-design .ic{width:46px;height:46px;border-radius:13px;background:rgba(255,255,255,.18);display:flex;align-items:center;justify-content:center;flex:none}
 .ms-design .t{flex:1;min-width:0}.ms-design b{display:block;font-size:17px;font-weight:900}.ms-design small{display:block;font-size:12.5px;opacity:.92;margin-top:2px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.ms-design .ar{flex:none}
@@ -5624,7 +5630,7 @@ html:has(#menuDetailOverlay[style*="flex"]),html:has(#menuDetailOverlay[style*="
         <div class="ms-hbtns"><button class="ms-tiers" id="ms-demoqr-btn" onclick="msDemoQr()">Demo QR codes</button></div>
         <div class="ms-stats" id="ms-stats"></div>
       </div>
-      <button class="ms-design" id="ms-tiers-btn" onclick="gpOpen()"><span class="ic"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M18.4 2.6a2 2 0 0 1 2.9 2.9L12 14.8 9.2 12z"/><path d="M9.2 12C6.7 12 5 13.8 5 16c0 1.5-1 2.6-2.5 3 1.2 1.3 2.9 2 4.9 2 3 0 5.4-2.3 5.4-5.2"/></svg><span class="wb"><svg width="18" height="18" viewBox="0 0 24 24"><path d="M12 12V2a10 10 0 0 1 8.66 5z" fill="#EF4444"/><path d="M12 12l8.66-5a10 10 0 0 1 0 10z" fill="#F59E0B"/><path d="M12 12l8.66 5A10 10 0 0 1 12 22z" fill="#22C55E"/><path d="M12 12v10a10 10 0 0 1-8.66-5z" fill="#06B6D4"/><path d="M12 12l-8.66 5a10 10 0 0 1 0-10z" fill="#3B82F6"/><path d="M12 12L3.34 7A10 10 0 0 1 12 2z" fill="#A855F7"/><circle cx="12" cy="12" r="3.2" fill="white"/></svg></span></span><span class="t"><b>Design your page</b><small>Photos, deals, events and colours</small><span class="ms-dots" id="ms-dots"></span></span><svg class="ar" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg></button>
+      <button class="ms-design md2" id="ms-tiers-btn" onclick="gpOpen()"><span class="ms-dots" id="ms-dots"></span><span class="t"><b>Design your page</b><small>Photos, deals, events and colours</small></span><span class="go">Open the designer <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span></button>
       <div id="ms-home"></div>
       <div style="height:30px"></div>
     </div>
@@ -25116,7 +25122,10 @@ function gpThemeNow(){ const t = (GPE.c && GPE.c.theme) || {}; return ['top', 'a
 async function gpDesignDots(){
   const el = document.getElementById('ms-dots'); if(!el) return;
   if(!GPE.loaded){ try{ await gpLoad(); }catch(e){ return; } }
-  el.innerHTML = gpThemeNow().map(c => `<i style="background:${c}"></i>`).join('') + '<span>Your colours</span>';
+  const th = gpThemeNow(); el.innerHTML = th.map(c => `<i style="background:${c}"></i>`).join('');
+  // The bar wears their own colours: banner behind, button colour on Open the designer (Robbie 25 Nov - option B, no photos)
+  const b = document.getElementById('ms-tiers-btn'), ink = h => { const n = parseInt(String(h).slice(1), 16); return (0.299 * (n >> 16) + 0.587 * ((n >> 8) & 255) + 0.114 * (n & 255)) > 165 ? '#111111' : '#FFFFFF'; };
+  if(b){ b.style.setProperty('--md-bg', th[0]); b.style.setProperty('--md-ink', ink(th[0])); b.style.setProperty('--md-acc', th[1]); b.style.setProperty('--md-acc-ink', ink(th[1])); }
 }
 // "Our own colours": back to the colours they had before (or the demo venue's), else open the pickers
 window.gpOwnColours = async function(){

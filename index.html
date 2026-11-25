@@ -2467,6 +2467,8 @@ body:not(.mv-demo) #ms-demoqr-btn{display:none!important}
 .gp-vf{padding:0 12px 12px;display:flex;flex-direction:column;gap:6px}.gp-vf label{font-size:13px;font-weight:800;color:#334155;margin-top:4px}
 .gp-vf input{width:100%;box-sizing:border-box;font:600 16px Inter,sans-serif;padding:11px 12px;border:1.5px solid #CBD5E1;border-radius:11px;background:#fff}
 .gp-vf2{display:grid;grid-template-columns:1fr 1fr;gap:10px}.gp-vf2>div{display:flex;flex-direction:column;gap:6px}
+.gp-vbtns{display:grid;grid-template-columns:1fr 2fr;gap:8px;margin-top:8px}.gp-vbtns .gp-vsave{margin-top:0}.gp-vcancel{border:0;border-radius:11px;background:#F1F5F9;color:#334155;font:800 14.5px Inter,sans-serif;padding:12px;cursor:pointer}
+.gp-vx{width:34px;height:34px;border-radius:10px;background:#fff;border:1.5px solid #CBD5E1;color:#334155;display:flex;align-items:center;justify-content:center;flex:none;margin:-6px -4px -6px 0}
 .gp-vsave{margin-top:8px;border:0;border-radius:11px;background:#0F1E2E;color:#fff;font:800 14.5px Inter,sans-serif;padding:12px;cursor:pointer}.gp-vsave:disabled{opacity:.6}
 .gp-vready{background:#DCFCE7;color:#15803D;border-radius:12px;padding:14px;text-align:center;font-weight:900;font-size:15px;display:flex;align-items:center;justify-content:center;gap:6px}
 .gp-vmore button{width:100%;text-align:left;border:1.5px solid #E2E8F0;background:#F8FAFC;border-radius:12px;padding:11px 12px;font:800 14px Inter,sans-serif;color:#0F1E2E;cursor:pointer}.gp-vmore small{display:block;font-size:12px;font-weight:600;color:#64748B;margin-top:2px}
@@ -25554,14 +25556,14 @@ function gpVenueSetupHtml(name){
     if(k === 'photo') return '';
     if(k === 'hours') return mgr ? `<div class="gp-vf"><label>Area</label><input id="gp-vs-area" maxlength="30" value="${gpEsc(p.area || v.area || '')}" placeholder="e.g. Seminyak">
         <div class="gp-vf2"><div><label>Opens</label><input id="gp-vs-o" type="time" value="${gpEsc(v.opens || '')}"></div><div><label>Closes</label><input id="gp-vs-c" type="time" value="${gpEsc(v.closes || '')}"></div></div>
-        <button type="button" class="gp-vsave" onclick="gpVenueStepSave('hours')">Save</button></div>` : '<div class="gp-auto">A manager can change this.</div>';
+        <div class="gp-vbtns"><button type="button" class="gp-vcancel" onclick="gpVenueStepClose()">Cancel</button><button type="button" class="gp-vsave" onclick="gpVenueStepSave('hours')">Save</button></div></div>` : '<div class="gp-auto">A manager can change this.</div>';
     if(k === 'book') return mgr ? `<div class="gp-vf"><label>WhatsApp for bookings</label><input id="gp-vs-wa" type="tel" placeholder="e.g. +62 812 3456 7890" value="${gpEsc(v.wa ? '+' + String(v.wa).replace(/\D/g, '') : '')}">
         <label>Booking link <span class="gp-opt">optional</span></label><input id="gp-vs-bk" inputmode="url" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="e.g. https://sevenrooms.com/..." value="${gpEsc(v.book || '')}">
-        <button type="button" class="gp-vsave" onclick="gpVenueStepSave('book')">Save</button></div>` : '<div class="gp-auto">A manager can change this.</div>';
+        <div class="gp-vbtns"><button type="button" class="gp-vcancel" onclick="gpVenueStepClose()">Cancel</button><button type="button" class="gp-vsave" onclick="gpVenueStepSave('book')">Save</button></div></div>` : '<div class="gp-auto">A manager can change this.</div>';
     return '';
   };
   const row = ([k, lab]) => { const done = st[k], on = open === k, busy = GPE.vbusy === k;
-    return `<div class="gp-vst${done ? ' done' : ''}${on || busy ? ' on' : ''}"><button type="button" class="gp-vrow" onclick="gpVenueStep('${k}')"><i>${done ? ck : ''}</i><b>${lab}</b><em>${busy ? 'Uploading…' : on ? 'Filling in…' : done ? 'Done' : 'Add'}</em></button>${on ? body(k) : ''}</div>`; };
+    return `<div class="gp-vst${done ? ' done' : ''}${on || busy ? ' on' : ''}"><button type="button" class="gp-vrow" onclick="gpVenueStep('${k}')"><i>${done ? ck : ''}</i><b>${lab}</b><em>${busy ? 'Uploading…' : on ? '' : done ? 'Done' : 'Add'}</em>${on ? `<span class="gp-vx" role="button" aria-label="Close" onclick="event.stopPropagation();gpVenueStepClose()">${gpIc(GPI.x, 18)}</span>` : ''}</button>${on ? body(k) : ''}</div>`; };
   const esc1 = gpEsc(name.replace(/\\/g, '\\\\').replace(/'/g, "\\'"));
   const kind = GPE.tab === name ? gpTabKind(name) : '';
   return `<div class="gp-sec gp-vs${kind ? ' k-' + kind : ''}"><div class="gp-vhd">${kind ? '' : `<button type="button" class="gp-vback" onclick="gpVenueBack()">${gpIc(GPI.back, 15)}Back</button>`}
@@ -25686,6 +25688,8 @@ window.gpVenuePhoto = async function(inp){
   try{ const old = { path: it.path }; it.path = await gpUpload(file); delete it.img; GPE.c.places = GPE.c.places || {}; GPE.c.places[key] = it; GPE.vbusy = ''; gpRender(); if(await gpSave('Photo added - guests see it now') && old.path) gpForgetFile(old); }
   catch(e){ GPE.vbusy = ''; gpRender(); toast(/too big/.test(e && e.message) ? 'That photo is too big - please use one under 15 MB' : 'Could not upload the photo - check your connection'); }
 };
+// Just looking? Close it without saving (Robbie 25 Nov)
+window.gpVenueStepClose = function(){ GPE.vstep = ''; gpRender(); if(GPE.vset) gpGo('', GPE.vset); };
 window.gpVenueStepSave = async function(k){
   const name = GPE.vset; if(!name || !msIsMgr()) return;
   const val = id => { const x = document.getElementById(id); return x ? x.value.trim() : ''; };

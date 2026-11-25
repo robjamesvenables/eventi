@@ -2440,7 +2440,7 @@ body:not(.mv-demo) #ms-demoqr-btn{display:none!important}
 .gp-add{border:1.5px dashed #CBD5E1;background:white;border-radius:12px;padding:12px;font:800 13.5px Inter,sans-serif;color:#0F766E;cursor:pointer}
 .gp-add:hover{border-color:#0D9488;background:#F0FDFA}
 .gp-tabs{max-width:1160px;margin:16px auto 0;padding:14px 20px;box-sizing:border-box;display:flex;flex-direction:column;gap:10px}
-.gp-trow{display:flex;align-items:center;gap:10px;flex-wrap:wrap}.gp-tl{width:78px;font-size:11.5px;font-weight:900;letter-spacing:1px;color:#94A3B8;flex:none}
+.gp-trow{display:flex;align-items:center;gap:10px;flex-wrap:wrap}.gp-tl{width:130px;line-height:1.3;font-size:11.5px;font-weight:900;letter-spacing:1px;color:#94A3B8;flex:none}
 .gp-tab{display:flex;flex-direction:column;align-items:flex-start;text-align:left;border-radius:14px;padding:9px 16px;border:2px solid #E2E8F0;background:#fff;min-width:150px;cursor:pointer;font-family:inherit}
 .gp-tab b{font-size:15px;font-weight:800;color:#0F1E2E}.gp-tab small{font-size:12px;font-weight:700;margin-top:1px;color:#64748B}
 .gp-tab.ex{border-color:#FCD34D;background:#FFFBEB}.gp-tab.ex small{color:#B45309}.gp-tab.ve{border-color:#C7D2FE;background:#EEF2FF}.gp-tab.ve small{color:#4338CA}
@@ -25570,13 +25570,13 @@ function gpVenueSetupHtml(name){
   const esc1 = gpEsc(name.replace(/\\/g, '\\\\').replace(/'/g, "\\'"));
   const kind = GPE.tab === name ? gpTabKind(name) : '';
   return `<div class="gp-sec gp-vs${kind ? ' k-' + kind : ''}"><div class="gp-vhd">${kind ? '' : `<button type="button" class="gp-vback" onclick="gpVenueBack()">${gpIc(GPI.back, 15)}Back</button>`}
-      <b>${gpEsc(name)}</b><small>${kind === 'venue' ? 'Venue · one full page · ' : kind === 'explore' ? 'Explore place · part of ' + gpEsc((gpPlaceLists().main || {}).name || 'your venue') + ' · ' : ''}${n} of ${tot} done · guests see it as you go</small><div class="gp-vbar"><i style="width:${Math.round(n / tot * 100)}%"></i></div></div>
+      <b>${gpEsc(name)}</b><small>${kind === 'venue' ? 'Other venue · one full page · ' : kind === 'explore' ? 'Inside ' + gpEsc((gpPlaceLists().main || {}).name || 'your venue') + ' · ' : ''}${n} of ${tot} done · guests see it as you go</small><div class="gp-vbar"><i style="width:${Math.round(n / tot * 100)}%"></i></div></div>
     <div class="gp-body">${GP_VSTEPS.filter(x => gpVKeys().includes(x[0])).map(row).join('')}
       ${n === tot ? `<div class="gp-vready">${gpEsc(name)} is ready ${ck}</div>` : ''}
       <input type="file" id="gp-vs-file" accept="image/*" hidden onchange="gpVenuePhoto(this)">
       <div class="gp-vmore"><button type="button" onclick="gpPlaceForm('${esc1}')">More details<small>Phone, email, Instagram, Google reviews, About</small></button></div>
       ${mgr ? (GPE.vrm ? `<div class="gp-vrm"><b>Remove ${gpEsc(name)}?</b><small>It comes off the guest page. Members and their visits are kept.</small><div class="gp-vnb"><button type="button" class="no" onclick="GPE.vrm=false;gpRender()">Keep it</button><button type="button" class="del" onclick="gpVenueRemove()">Yes, remove</button></div></div>`
-        : `<button type="button" class="gp-vdel" onclick="GPE.vrm=true;gpRender()">Remove venue</button>`) : ''}</div></div>`;
+        : `<button type="button" class="gp-vdel" onclick="GPE.vrm=true;gpRender()">Remove ${gpEsc(name)}</button>`) : ''}</div></div>`;
 }
 
 // ── Tabs (Robbie 25 Nov): one tab per place. Main = your main venue (everything, as before). Explore = parts of the main venue
@@ -25593,15 +25593,15 @@ function gpTabsHtml(){
   const L = gpPlaceLists(), cur = GPE.tab || '', mgr = msIsMgr();
   const q = n => gpEsc(String(n).replace(/\\/g, '\\\\').replace(/'/g, "\\'"));
   const tab = (name, label, cls, small) => `<button type="button" class="gp-tab ${cls}${cur === name ? ' on' : ''}" onclick="gpTab('${q(name)}')"><b>${gpEsc(label)}</b><small>${small}</small></button>`;
-  const addBox = k => GPE.tadd === k ? `<div class="gp-tnew ${k === 'venue' ? 've' : 'ex'}"><input id="gp-tnn" maxlength="30" placeholder="${k === 'venue' ? 'e.g. Billy Ho' : 'e.g. The Lounge'}" autocomplete="off" oninput="gpVenueTyping(this.value)" onkeydown="if(event.key==='Enter')gpTabAdd();if(event.key==='Escape')gpTabAddCancel()"><button type="button" class="no" onclick="gpTabAddCancel()">Cancel</button><button type="button" class="go" onclick="gpTabAdd()">Add</button></div>`
-    : mgr ? `<button type="button" class="gp-tadd ${k === 'venue' ? 've' : 'ex'}" onclick="gpTabAddOpen('${k}')">${k === 'venue' ? '+ Venue<small>One full page - add-on</small>' : '+ Explore place<small>A part of ' + gpEsc(L.main ? L.main.name : 'your venue') + ' - included</small>'}</button>` : '';
+  const addBox = k => GPE.tadd === k ? `<div class="gp-tnew ${k === 'venue' ? 've' : 'ex'}"><input id="gp-tnn" maxlength="30" placeholder="${k === 'venue' ? 'Other venue, e.g. Billy Ho' : 'e.g. The Lounge'}" autocomplete="off" oninput="gpVenueTyping(this.value)" onkeydown="if(event.key==='Enter')gpTabAdd();if(event.key==='Escape')gpTabAddCancel()"><button type="button" class="no" onclick="gpTabAddCancel()">Cancel</button><button type="button" class="go" onclick="gpTabAdd()">Add</button></div>`
+    : mgr ? `<button type="button" class="gp-tadd ${k === 'venue' ? 've' : 'ex'}" onclick="gpTabAddOpen('${k}')">${k === 'venue' ? '+ Other venue<small>One full page - add-on</small>' : '+ Add inside<small>A part of ' + gpEsc(L.main ? L.main.name : 'your venue') + ' - included</small>'}</button>` : '';
   if(!L.main) return mgr ? `<div class="gp-tabs"><div class="gp-trow"><span class="gp-tl">MAIN</span>${GPE.tadd ? addBox('explore') : `<button type="button" class="gp-tadd one" onclick="gpTabAddOpen('explore')">+ Add your venue<small>Its name, e.g. Mama San</small></button>`}</div></div>` : '';
   if(!L.explore.length && !L.venues.length && !GPE.tshow && !GPE.tadd)   // one venue: keep it quiet until they want more (Robbie 25 Nov)
     return `<div class="gp-tabs"><div class="gp-trow"><span class="gp-tl">MAIN</span>${tab('', L.main.name, 'main', 'Main view')}${mgr ? `<button type="button" class="gp-tadd one" onclick="GPE.tshow=true;gpRender()">+ Add a place<small>Another area or venue</small></button>` : ''}</div></div>`;
   return `<div class="gp-tabs">
     <div class="gp-trow"><span class="gp-tl">MAIN</span>${tab('', L.main ? L.main.name : 'Main', 'main', 'Main view')}</div>
-    ${L.main ? `<div class="gp-trow"><span class="gp-tl">EXPLORE</span>${L.explore.map(v => tab(v.name, v.name, 'ex', 'Explore place')).join('')}${addBox('explore')}</div>
-    <div class="gp-trow"><span class="gp-tl">VENUES</span>${L.venues.map(v => tab(v.name, v.name, 've', 'Venue')).join('')}${addBox('venue')}</div>` : ''}</div>`;
+    ${L.main ? `<div class="gp-trow"><span class="gp-tl">INSIDE ${gpEsc(L.main.name.toUpperCase())}</span>${L.explore.map(v => tab(v.name, v.name, 'ex', 'Inside ' + gpEsc(L.main.name))).join('')}${addBox('explore')}</div>
+    <div class="gp-trow"><span class="gp-tl">OTHER VENUES</span>${L.venues.map(v => tab(v.name, v.name, 've', 'Other venue')).join('')}${addBox('venue')}</div>` : ''}</div>`;
 }
 window.gpTab = function(name){
   GPE.tab = name || ''; GPE.tadd = ''; GPE.vstep = ''; GPE.vrm = false; GPE.vset = name || null;
@@ -25640,7 +25640,7 @@ function gpVenueTabHtml(name, secHtml){
     + box('events', 'Events', 'With a Book or Tickets button', list('events', '+ Add an event', "gpForm('events')"))
     + box('gallery', 'Photos', 'Your best shots of ' + gpEsc(name), (gal ? `<div class="gp-gal">${gal}</div>` : '') + `<button class="gp-add" onclick="gpGalleryAdd()">+ Add photos</button>`)
     + (gpTabKind(name) !== 'venue' ? '' : `<div class="gp-sec"><div class="gp-sh"><div class="n"><b>Perks and reward</b><small>Same as ${gpEsc((gpPlaceLists().main || {}).name || 'your main venue')} - one membership</small></div><span class="gp-shared">Shared</span></div></div>
-      <div class="gp-auto" style="background:#FEF3C7;color:#92400E"><b>Want more?</b> A top video, its own colours, gift vouchers and Explore places come with its own app. Ask Mavis to upgrade.</div>`);
+      <div class="gp-auto" style="background:#FEF3C7;color:#92400E"><b>Want more?</b> A top video, its own colours, gift vouchers and places inside it come with its own app. Ask Mavis to upgrade.</div>`);
 }
 // The phone shows Explore with a dashed box where the new venue will go (the name fills in as they type)
 function gpGoNew(nm){
@@ -25737,7 +25737,7 @@ const gpExploreDefault = () => { const n = String((typeof myCompany !== 'undefin
 const GP_SECT = { get places(){ return [gpExploreDefault(), 'e.g. Masonry']; }, others: ['Our other venues', 'e.g. Also by us, Our sister bars'] };
 function gpSecTitleRow(k){
   const cur = k === 'places' ? (GPE.c.placesTitle || '') : ((GPE.c.others || {}).title || '');
-  return `<div class="gp-it"><div class="x"><b>${k === 'places' ? 'Heading over your Explore places' : 'Heading over your Venues'}</b><small>Guests see: ${cur ? gpEsc(cur) : GP_SECT[k][0]}</small></div>
+  return `<div class="gp-it"><div class="x"><b>${k === 'places' ? 'Heading over the places inside' : 'Heading over your other venues'}</b><small>Guests see: ${cur ? gpEsc(cur) : GP_SECT[k][0]}</small></div>
     <button class="gp-ib" title="Change" aria-label="Change the heading" onclick="gpSecTitle('${k}')">${gpIc(GPI.edit)}</button></div>`;
 }
 window.gpSecTitle = function(k){

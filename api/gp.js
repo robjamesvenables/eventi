@@ -189,7 +189,7 @@ async function find(req, res){
   if (req.method !== 'POST') return L.send(res, 405, { ok: false });
   let b = req.body || {}; if (typeof b === 'string') { try { b = JSON.parse(b); } catch (e) { b = {}; } }
   const code = fclean(b.c), d4 = String(b.d || '').replace(/\D/g, ''), full = fdig(b.p);
-  if (!code || (d4.length !== 4 && full.length < 8)) return L.send(res, 400, { ok: false });
+  if (!code || full.length < 8) return L.send(res, 400, { ok: false });   // full number only - the last 4 digits alone could be guessed (26 Nov)
   const k = (await L.db('member_keyrings?select=company_id,member_id&code=eq.' + encodeURIComponent(code)))[0];
   if (!k || k.member_id) return L.send(res, 404, { ok: false });
   const st = (await L.db('app_settings?select=value&key=eq.mk_venue_qr&company_id=eq.' + encodeURIComponent(k.company_id)).catch(() => []))[0];
@@ -206,9 +206,9 @@ async function find(req, res){
     await L.db('login_attempts', { method: 'POST', headers: { Prefer: 'resolution=merge-duplicates' },
       body: { username: key, fails: live ? att.fails + 1 : 1, locked_until: live ? att.locked_until : new Date(nowMs + 3600000).toISOString() } }).catch(() => {});
   }
-  const tail = d4.length === 4 && !full ? d4 : full.slice(-4);   // only members whose number ends the same way
+  const tail = full.slice(-4);   // only members whose number ends the same way
   const ms = await L.db('members?select=id,phone&company_id=eq.' + encodeURIComponent(k.company_id) + '&phone=like.' + encodeURIComponent('*' + tail) + '&limit=1000');
-  const hit = d4.length === 4 && !full ? ms.filter(m => String(m.phone || '').replace(/\D/g, '').slice(-4) === d4) : ms.filter(m => fdig(m.phone) === full);
+  const hit = ms.filter(m => fdig(m.phone) === full);
   if (hit.length !== 1) return L.send(res, 200, { ok: true, n: hit.length });
   const mid = hit[0].id;
   let own = (await L.db('member_keyrings?select=code&member_id=eq.' + encodeURIComponent(mid) + '&limit=1'))[0];

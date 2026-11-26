@@ -9,6 +9,8 @@
 //  invoice_update { id, status?, paid_method?, due? }
 //  invoice_delete { id }        (drafts only)
 //  errors_clear
+//  support_open { company_id }  -> Robbie steps into a client's app (only while their Mavis Support switch is on)
+//  support_back                 -> back to his own company
 const L = require('./_lib');
 
 const BILL_FIELDS = ['bill_attn', 'bill_address', 'bill_email', 'bill_phone'];
@@ -24,6 +26,12 @@ async function uniqueUsername(code, first, last){
   let name = base, n = 2;
   while ((await L.db('profiles?select=id&username=eq.' + encodeURIComponent(name))).length) { name = base + '-' + n; n++; }
   return name;
+}
+// Mavis Support switch (Admin Console): on unless the client turned it off
+async function supportOn(co){
+  const r = (await L.db('app_settings?select=value&key=eq.mavis_support&company_id=eq.' + encodeURIComponent(co)).catch(() => []))[0];
+  let v = r ? r.value : null; try { while (typeof v === 'string' && /^["{\[]/.test(v)) v = JSON.parse(v); } catch (e) {}
+  return !(v === '0' || v === 0 || v === false || v === 'off');
 }
 async function getSettings(){
   const rows = await L.db('owner_settings?select=key,value');
@@ -51,16 +59,19 @@ module.exports = async (req, res) => {
     if (b.action === 'overview') {
       const [companies, profiles, invoices, files, errors, settings, enquiries] = await Promise.all([
         L.db('companies?select=*&order=created_at.asc'),
-        L.db('profiles?select=id,company_id,username,first_name,last_name,role,active,user_id,last_login,last_seen,email'),
+        L.db('profiles?select=id,company_id,username,first_name,last_name,role,active,user_id,last_login,last_seen,email,is_owner'),
         L.db('invoices?select=*&order=created_at.desc&limit=500'),
         L.db('shared_files?select=company_id,size_bytes').catch(() => []),
         L.db('app_errors?select=*&order=created_at.desc&limit=200').catch(() => []),
         getSettings(),
         L.db('mavis_enquiries?select=*&order=created_at.desc&limit=300').catch(() => [])
       ]);
+      const home = settings.support_home || me.company_id;
+      const supRows = await L.db('app_settings?select=company_id,value&key=eq.mavis_support').catch(() => []);
+      const supOff = supRows.filter(r => { let v = r.value; try { while (typeof v === 'string' && /^["{\[]/.test(v)) v = JSON.parse(v); } catch (e) {} return v === '0' || v === 0 || v === false || v === 'off'; }).map(r => r.company_id);
       const today = new Date(); today.setHours(0, 0, 0, 0);
       const clients = companies.map(c => {
-        const people = profiles.filter(p => p.company_id === c.id);
+        const people = profiles.filter(p => p.company_id === c.id && !p.is_owner);   // Robbie visiting as Mavis Support isn't their staff
         const active = people.filter(p => p.active !== false);
         const seen = people.map(p => p.last_seen || p.last_login).filter(Boolean).sort().reverse();
         const byRole = {}; active.forEach(p => { byRole[p.role] = (byRole[p.role] || 0) + 1; });
@@ -74,11 +85,12 @@ module.exports = async (req, res) => {
           last_active: seen[0] || null,
           storage_bytes: files.filter(f => f.company_id === c.id).reduce((s, f) => s + (Number(f.size_bytes) || 0), 0),
           superadmins: people.filter(p => p.role === 'superadmin').map(p => ({ id: p.id, name: (p.first_name + ' ' + (p.last_name || '')).trim(), username: p.username, email: p.email, active: p.active !== false, has_login: !!p.user_id, last_active: p.last_seen || p.last_login || null })),
-          is_mine: c.id === me.company_id
+          is_mine: c.id === home,
+          support: !supOff.includes(c.id)
         };
       });
       const safeSettings = Object.assign({}, settings); delete safeSettings.invoice_counter;
-      return L.send(res, 200, { ok: true, clients, invoices, errors, enquiries, settings: safeSettings, me: { name: me.first_name } });
+      return L.send(res, 200, { ok: true, clients, invoices, errors, enquiries, settings: safeSettings, me: { name: me.first_name, in: me.company_id !== home ? me.company_id : null } });
     }
 
     if (b.action === 'create') {
@@ -208,6 +220,21 @@ module.exports = async (req, res) => {
       return L.send(res, 200, { ok: true });
     }
 
+    if (b.action === 'support_open') {
+      const co = clean(b.company_id, 60);
+      const c = (await L.db('companies?select=id,name&id=eq.' + encodeURIComponent(co)))[0];
+      if (!c) return L.send(res, 404, { ok: false, message: 'Client not found.' });
+      const s = await getSettings(), home = s.support_home || me.company_id;
+      if (co !== home && !(await supportOn(co))) return L.send(res, 403, { ok: false, reason: 'locked', message: c.name + ' has switched Mavis Support off.' });
+      if (!s.support_home) await L.db('owner_settings', { method: 'POST', headers: { Prefer: 'resolution=merge-duplicates' }, body: { key: 'support_home', value: me.company_id } });
+      await L.db('profiles?id=eq.' + encodeURIComponent(me.id), { method: 'PATCH', body: { company_id: co } });
+      return L.send(res, 200, { ok: true, name: c.name, home: co === home });
+    }
+    if (b.action === 'support_back') {
+      const s = await getSettings(), home = s.support_home || me.company_id;
+      if (home !== me.company_id) await L.db('profiles?id=eq.' + encodeURIComponent(me.id), { method: 'PATCH', body: { company_id: home } });
+      return L.send(res, 200, { ok: true });
+    }
     if (b.action === 'errors_clear') {
       await L.db('app_errors?id=gt.0', { method: 'DELETE' });
       return L.send(res, 200, { ok: true });

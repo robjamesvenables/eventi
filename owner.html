@@ -125,6 +125,7 @@ tr.click:hover td{background:#F8FAFC}
   .grid2{grid-template-columns:minmax(0,1fr)}
   .drawer{max-width:none}
 }
+.open-app{background:#0D9488;color:#fff;border-color:#0D9488;white-space:nowrap}.open-app.off{background:#F1F5F9;color:#94A3B8;border-color:#E2E8F0}.sup-bar{display:flex;align-items:center;justify-content:space-between;gap:12px;background:#FEF3C7;border:1px solid #FCD34D;color:#92400E;border-radius:12px;padding:10px 14px;margin-bottom:14px;font-size:14px}
 </style>
 </head>
 <body>
@@ -303,21 +304,32 @@ function renderClients(){
   const list = all.filter(c => (clientFilter==='all' || statusOf(c).k===clientFilter) && (!q || (c.name+' '+c.code).toLowerCase().includes(q)));
   const chip = (k,l,n) => `<button class="chip${clientFilter===k?' on':''}" onclick="clientFilter='${k}';renderClients()">${l} ${n}</button>`;
   $('main').innerHTML = `
+    ${D.me && D.me.in ? `<div class="sup-bar"><span>You're still inside <b>${esc((clientById(D.me.in)||{}).name||'a client')}</b>'s app.</span><button class="btn sm" onclick="supportBack()">Back to my own</button></div>` : ''}
     <h1>Clients</h1>
     <div class="sub">Tap a client to manage them. You only see summaries - never their events, chats or sales.</div>
     <div class="toolbar"><input class="search" id="csearch" placeholder="Search by name or Company ID" value="${esc(clientSearch)}" oninput="clientSearch=this.value;renderClientsKeepFocus()">
       ${chip('all','All',all.length)}${chip('active','Active',cnt('active'))}${chip('trial','Trial',cnt('trial'))}${chip('overdue','Overdue',cnt('overdue'))}${chip('paused','Paused',cnt('paused'))}</div>
     ${list.length ? `<div class="tablewrap"><table>
-      <tr><th>CLIENT</th><th>STATUS</th><th>VENUES</th><th>STAFF</th><th>LAST ACTIVE</th><th>PRICE / MONTH</th><th>PAID UNTIL</th><th></th></tr>
+      <tr><th>CLIENT</th><th>STATUS</th><th>VENUES</th><th>STAFF</th><th>LAST ACTIVE</th><th>PRICE / MONTH</th><th>PAID UNTIL</th><th>THEIR APP</th></tr>
       ${list.map(c=>{ const st=statusOf(c); const pu=daysUntil(c.paid_until); return `<tr class="click" onclick="openClient('${c.id}')">
         <td><div class="cl">${avatar(c)}<div><b>${esc(c.name)}</b><small>${esc(c.code)}</small></div></div></td>
         <td><span class="pill ${st.cls}">${st.label}</span></td>
         <td>${c.venues_paid}</td><td>${c.staff}</td>
         <td class="${daysSince(c.last_active)>=7?'warn':'muted'}">${ago(c.last_active)}</td>
         <td>${money(c.price*(c.venues_paid||1), c.currency)}</td>
-        <td class="${pu!=null&&pu<0?'bad':'muted'}">${c.paid_until?day(c.paid_until):'—'}</td><td>›</td></tr>`; }).join('')}
+        <td class="${pu!=null&&pu<0?'bad':'muted'}">${c.paid_until?day(c.paid_until):'—'}</td><td>${openBtn(c)}</td></tr>`; }).join('')}
     </table></div>` : `<div class="card empty" style="text-align:center;padding:30px">${all.length?'Nobody matches that.':'No clients yet - tap <b>+ New client</b> to add your first.'}</div>`}`;
 }
+// Mavis Support (Robbie 26 Nov): lit = their switch is on, tap to go straight into their app; grey = they've locked it
+function openBtn(c){ return c.support ? `<button class="btn sm open-app" onclick="event.stopPropagation();openApp('${c.id}')">Open their app</button>` : `<button class="btn sm open-app off" onclick="event.stopPropagation();toast('${esc(c.name).replace(/'/g,"\\'")} has switched Mavis Support off')" title="Locked by the client">🔒 Locked</button>`; }
+async function openApp(id){
+  const c = clientById(id); toast('Opening ' + (c ? c.name : 'their app') + '…');
+  const d = await api('support_open', { company_id:id });
+  if(!d.ok){ toast(d.message || 'Could not open their app'); return; }
+  try{ localStorage.setItem('mvSupportIn', d.name || ''); localStorage.removeItem('mvPlan'); localStorage.removeItem('mvFd'); }catch(e){}
+  location.href = '/';
+}
+async function supportBack(){ const d = await api('support_back'); if(!d.ok){ toast(d.message || 'Please try again'); return; } try{ localStorage.removeItem('mvSupportIn'); }catch(e){} await load(); renderClients(); toast('Back in your own app ✓'); }
 function renderClientsKeepFocus(){ const pos=$('csearch').selectionStart; renderClients(); const i=$('csearch'); i.focus(); i.setSelectionRange(pos,pos); }
 
 // ---------- ONE CLIENT (side panel) ----------
@@ -333,7 +345,7 @@ function openClient(id){
   bg.innerHTML = `<div class="drawer">
     <div class="dh">${avatar(c,56)}<div style="min-width:0"><div style="font-size:18px;font-weight:800">${esc(c.name)}</div>
       <div style="font-size:12px;color:rgba(255,255,255,.65)">Company ID ${esc(c.code)} · client since ${c.created_at?new Date(c.created_at).toLocaleDateString('en-GB',{month:'short',year:'numeric'}):'—'}</div>
-      <span class="pill ${st.cls}" style="margin-top:6px">${st.label}</span></div>
+      <span class="pill ${st.cls}" style="margin-top:6px">${st.label}</span><div style="margin-top:10px">${openBtn(c)}</div></div>
       <button class="x" onclick="closeDrawer()">×</button></div>
     <div class="db">
       <div class="card" style="padding:14px 16px"><h2>SUPER ADMINS</h2>

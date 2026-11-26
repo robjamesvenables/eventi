@@ -3154,6 +3154,8 @@ body.mv-pre #app .page,body.mv-pre #app .page.on{visibility:hidden!important}
 @keyframes mvgb{50%{transform:translateY(8px)}}@keyframes mvgu{50%{transform:translateY(-8px)}}
 
 .fd-at{display:flex;align-items:center;gap:6px;margin:0 0 10px;color:#0D9488;font:800 13.5px Inter,sans-serif}.fd-at svg{flex:none}.fd-at.sw{background:#E2E8F0;border-radius:12px;padding:4px;color:#475569;gap:4px}.fd-at.sw svg{margin:0 2px 0 6px}.fd-at.sw button{flex:1;border:0;background:none;border-radius:9px;padding:8px 6px;font:800 13px Inter,sans-serif;color:#475569;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.fd-at.sw button.on{background:#0F1E2E;color:#fff}.fd-at.pick{background:#E2E8F0;border-radius:12px;padding:4px 4px 4px 10px;color:#475569}.fd-at.pick select{flex:1;border:0;border-radius:9px;padding:9px 10px;background:#0F1E2E;color:#fff;font:800 14px Inter,sans-serif}
+#mv-sup-bar{position:fixed;left:50%;bottom:calc(12px + env(safe-area-inset-bottom));transform:translateX(-50%);z-index:9000;display:flex;align-items:center;gap:12px;background:#FEF3C7;border:1px solid #FCD34D;color:#92400E;border-radius:999px;padding:8px 8px 8px 16px;font:600 13px Inter,sans-serif;box-shadow:0 8px 24px rgba(0,0,0,.15);max-width:calc(100% - 24px)}#mv-sup-bar button{border:0;background:#92400E;color:#fff;border-radius:999px;padding:8px 14px;font:800 13px Inter,sans-serif;cursor:pointer;white-space:nowrap}
+.cc-sup{flex:0 0 100%;display:flex;align-items:center;justify-content:space-between;gap:12px;border-top:1px solid #F1F5F9;padding-top:12px;margin-top:4px}.cc-sup b{display:block;font-size:14px;color:#0F1E2E}.cc-sup small{display:block;font-size:12.5px;color:#64748B;margin-top:2px}
 body.mv-mem #company-card .cc-card > label{pointer-events:none;cursor:default!important}
 .gp-logo{display:flex;gap:14px;align-items:center}.gp-logo>img,.gp-logo>span{width:64px;height:64px;border-radius:50%;object-fit:cover;flex:none;border:1px solid #E2E8F0;background:#fff}.gp-logo>span{display:grid;place-items:center;background:#0F1E2E;color:#fff;font:900 26px Inter,sans-serif}.gp-logo b{display:block;font-size:14px;font-weight:800}.gp-logo small{display:block;font-size:12px;color:#64748B;margin-top:2px}.gp-logo-b{display:flex;gap:8px;margin-top:8px}.gp-lb{display:inline-block;background:#0F1E2E;color:#fff;border-radius:10px;padding:8px 14px;font:800 13px Inter,sans-serif;cursor:pointer}.gp-lb input{display:none}.gp-lr{border:0;background:#FEE2E2;color:#B91C1C;border-radius:10px;padding:8px 12px;font:800 13px Inter,sans-serif;cursor:pointer}.dc-note{font-size:12.5px;color:#64748B;margin:-2px 0 8px}
 /* Keyboard open on a phone (Robbie 26 Nov): the page shrinks to the space above the keyboard, so typing screens go compact - search results and Next stay in view */
@@ -8180,6 +8182,7 @@ function authEnterApp(){
   }
   nav(fdOnly() ? 'frontdesk' : appPlan === 'membership' ? 'membership' : 'home');   // Front Desk logins always open the scan screen
   requestAnimationFrame(() => document.body.classList.remove('mv-pre'));
+  try{ mvSupportBar(); }catch(e){}
   setTimeout(()=>{ if(typeof evOpenPending==='function') evOpenPending(); }, 400);
 }
 // Bottom-left: full name, then role and company - so it's always clear who's logged in.
@@ -8242,6 +8245,29 @@ async function authApplyProfile(profile, company){
 }
 // Light role check for now: only people whose role has Admin Console switched on see it.
 // Company box: the name can be changed by a Super Admin; the Company ID is permanent.
+// Mavis Support switch (Robbie 26 Nov): on by default - Mavis can open this app to help. Off = private.
+function mvSupportOn(){ try{ let v = appSettings && appSettings.mavis_support; while(typeof v === 'string' && /^["{\[]/.test(v)) v = JSON.parse(v); return !(v === '0' || v === 0 || v === false || v === 'off'); }catch(e){ return true; } }
+window.mvSupportSet = async function(on){
+  const { error } = await sb.from('app_settings').upsert({ key:'mavis_support', value: on ? '1' : '0' }, { onConflict:'company_id,key' });
+  if(error){ toast('Not saved - please try again'); return; }
+  appSettings.mavis_support = on ? '1' : '0'; companyCardRender(); toast(on ? 'Mavis Support on' : 'Mavis Support off - your Mavis is private');
+};
+// Robbie inside a client's app as Mavis Support: a bar to get back to My clients
+function mvSupportBar(){
+  let inName = ''; try{ inName = localStorage.getItem('mvSupportIn') || ''; }catch(e){}
+  const old = document.getElementById('mv-sup-bar'); if(old) old.remove();
+  if(!myProfile || !myProfile.is_owner || !inName) return;
+  const b = document.createElement('div'); b.id = 'mv-sup-bar';
+  b.innerHTML = `<span>Mavis Support · inside <b>${msEsc((myCompany && myCompany.name) || inName)}</b></span><button type="button" onclick="mvSupportBack()">Back to My clients</button>`;
+  document.body.appendChild(b);
+}
+window.mvSupportBack = async function(){
+  try{ const { data } = await sb.auth.getSession(); const t = data && data.session && data.session.access_token;
+    const r = await fetch('/api/owner', { method:'POST', headers:{ 'Content-Type':'application/json', Authorization:'Bearer ' + (t || '') }, body: JSON.stringify({ action:'support_back' }) });
+    const d = await r.json().catch(() => ({})); if(!d.ok){ toast(d.message || 'Please try again'); return; } }catch(e){ toast('Please try again'); return; }
+  try{ localStorage.removeItem('mvSupportIn'); localStorage.removeItem('mvPlan'); localStorage.removeItem('mvFd'); }catch(e){}
+  location.href = '/owner.html';
+};
 function companyCardRender(){
   const el = document.getElementById('company-card'); if(!el) return;
   if(!myProfile || !myCompany || !(myProfile.is_owner || myProfile.role === 'superadmin')){ el.style.display='none'; return; }
@@ -8260,6 +8286,7 @@ function companyCardRender(){
       ${myCompany.logo ? '<button class="btn btn-ghost" style="color:#DC2626" onclick="companyLogoSave(\'\')">Remove logo</button>' : ''}`}
       <button class="btn btn-ghost" onclick="companyRename()">Rename</button>
     </div>
+    ${(() => { const on = mvSupportOn(); return `<div class="cc-sup"><div><b>Mavis Support</b><small>${on ? 'On - Mavis is able to assist you at any time.' : 'Off - your Mavis is private. Mavis can\'t assist you.'}</small></div><button type="button" class="gp-tog${on ? ' on' : ''}" aria-label="Mavis Support" onclick="mvSupportSet(${!on})"><i></i></button></div>`; })()}
   </div>`;
 }
 // Company logo: cropped to a square (shown as a circle, like Instagram), kept small.
@@ -14714,7 +14741,7 @@ async function peopleLoadFromSupabase(){
   if(!myProfile) return;
   const { data, error } = await sb.from('profiles').select('*').eq('company_id', myProfile.company_id).order('first_name');
   if(error){ console.warn('People not loaded', error); if(!appIsDemoCompany()){ PEOPLE = []; try{ peopleRender(); adminConsoleRender(); }catch(e){} } return; }
-  PEOPLE = (data||[]).map(r=>({ id:r.id, firstName:r.first_name, lastName:r.last_name||'', role:r.role, departments:r.departments||[],
+  PEOPLE = (data||[]).filter(r => !r.is_owner || r.id === myProfile.id).map(r=>({ id:r.id, firstName:r.first_name, lastName:r.last_name||'', role:r.role, departments:r.departments||[],
     photo:r.photo||'', username:r.username, email:r.email||'', active:r.active, hasLogin:!!r.user_id, isMe: r.id===myProfile.id }));
   if(myCompany && Array.isArray(myCompany.departments) && myCompany.departments.length) PEOPLE_DEPARTMENTS = myCompany.departments.slice();
   else {

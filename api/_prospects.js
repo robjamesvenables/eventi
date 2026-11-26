@@ -767,7 +767,7 @@ P.senja = {
   content: today => {
     const y = year(today);
     return {
-      theme: { top: '#0F0D0B', acc: '#F0894A', dark: true }, motion: true, film: 'Tk2VLUUiHsc', filmStart: 0,
+      theme: { top: '#141210', acc: '#CDA86B', pg: '#F5F1EA' }, motion: true, film: 'Tk2VLUUiHsc', filmStart: 0,
       gift: { on: true, title: 'A sunset, on you', line: 'Give someone a day at Senja. Tell us the amount and who it is for.', to: SJ_WA, amounts: [500000, 1000000, 2000000], max: 5000000 },
       slides: [
         { id: 'sj1', img: sj('pool'), title: 'Your day by the pool', line: 'Sunbeds, palms and the ocean', venue: 'Senja Seminyak', btn: 'wa' },

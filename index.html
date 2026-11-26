@@ -3158,7 +3158,7 @@ html.kb-open #mc{bottom:auto;top:var(--vv-top,0);height:var(--vv-h,100%)}
 .fd-mn{flex:1;min-width:0;display:flex;flex-direction:column}.fd-mn b{font-size:16px;color:#0F1E2E}.fd-mn small{font-size:13px;color:#64748B;margin-top:1px}
 .fd-tier{flex:none;font-size:11px;font-weight:900;border-radius:999px;padding:4px 10px;background:#FEF3C7;color:#92400E;letter-spacing:.04em}
 .fd-hint{font-size:12.5px;color:#94A3B8;font-weight:700;margin:8px 2px 0}
-.fd-back{border:0;background:none;color:#0D9488;font:800 15px Inter,sans-serif;cursor:pointer;padding:4px 0}
+.fd-back{border:0;background:none;color:#0D9488;font:800 15px Inter,sans-serif;cursor:pointer;padding:4px 0;display:inline-flex;align-items:center;gap:2px;line-height:1}.fd-back svg{flex:none;margin-left:-4px}
 .fd-h1{font-size:30px;font-weight:900;letter-spacing:-.5px;color:#0F1E2E;margin-top:4px}.fd-h2{font-size:14px;color:#64748B;margin-top:2px}
 .fd-gc{margin-top:16px;border-radius:18px;background:linear-gradient(135deg,#E2C07A,#C4973B);color:#2B1D07;padding:18px 20px;display:flex;flex-direction:column;min-height:150px;max-width:420px}
 .fd-gc small{font-size:11px;font-weight:900;letter-spacing:.14em}.fd-gc b{font-size:24px;margin-top:4px}.fd-gc span{margin-top:auto;display:flex;justify-content:space-between;font-weight:700;font-size:14px}.fd-gc em{font-style:normal;font-family:ui-monospace,monospace;font-weight:800}
@@ -23933,7 +23933,7 @@ function fdRender(){
   const ic = (k, c, n) => `<svg width="${n}" height="${n}" viewBox="0 0 24 24" fill="none" stroke="${c}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${IC[k]}</svg>`;
   const cardOn = msCardOn();
   if(FD.view === 'search'){   // Search: the keyring won't scan - find them, then Paying or Check card on their row
-    el.innerHTML = `<div class="fd-wrap fd-srch"><div class="fd-sbar"><button type="button" class="fd-back" onclick="fdSearch(false)">← Back</button><b>Search a member</b></div>
+    el.innerHTML = `<div class="fd-wrap fd-srch"><div class="fd-sbar"><button type="button" class="fd-back" onclick="fdSearch(false)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg>Back</button><b>Search a member</b></div>
       <div class="fd-seg">${['phone','code','surname'].map(k => `<button type="button" class="${FD.by === k ? 'on' : ''}" onclick="fdBy('${k}')">${k[0].toUpperCase() + k.slice(1)}</button>`).join('')}</div>
       <input id="fd-q" class="fd-q" placeholder="${hint}" autocomplete="off" value="${e(FD.q)}" ${FD.by === 'phone' ? 'inputmode="tel"' : FD.by === 'code' ? 'autocapitalize="characters"' : 'autocapitalize="words"'}>
       <div id="fd-res"></div></div>`;
@@ -23950,7 +23950,7 @@ function fdRender(){
       <button class="fd-qr" type="button" onclick="fdShowQr()"><svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="#0D9488" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><path d="M14 14h3v3M21 14v.01M14 21h7v-4"/></svg><span><b>Show QR to guest</b><small>No keyring? They scan this to open their card</small></span></button></div>`;
   }
   const i = document.getElementById('fd-q');
-  if(i){ i.oninput = () => { FD.q = i.value; fdResults(); }; i.onkeydown = ev => { if(ev.key === 'Enter'){ ev.preventDefault(); i.blur(); } };   // Go on the keyboard: close it so every match shows if(FD.view === 'search' && !FD.q) setTimeout(() => i.focus(), 60); }
+  if(i){ i.oninput = () => { FD.q = i.value; fdResults(); }; i.onkeydown = ev => { if(ev.key === 'Enter'){ ev.preventDefault(); i.blur(); } };   /* Go on the keyboard: close it so every match shows */ if(FD.view === 'search' && !FD.q) setTimeout(() => i.focus(), 60); }
   fdResults();
 }
 function fdResults(){
@@ -23973,7 +23973,7 @@ function fdMemberHtml(id){
   const e = msEsc, m = MS.members.find(x => String(x.id) === String(id)); if(!m) return '';
   const vip = m.tier === 'vip', st = msStats(m), code = MS.keyrings[m.id] || '', yr = String(m.created_at || '').slice(0, 4);
   const perks = (msPerks()[vip ? 'vip' : 'member'] || []).filter(Boolean).filter(p => !/first\s+visit/i.test(p) || st.total <= 1).filter(p => !/birthday/i.test(p) || !!msBirthdaySoon(m));
-  return `<button type="button" class="fd-back" onclick="fdBack()">← Back</button>
+  return `<button type="button" class="fd-back" onclick="fdBack()"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg>Back</button>
     <div class="fd-h1">${e(m.name)}</div><div class="fd-h2">${e(fdMask(m.phone))}</div>
     <div class="fd-gc"><small>MEMBER</small><b>${e(m.name)}</b><span>${st.total} visit${st.total === 1 ? '' : 's'}${yr ? ' · since ' + yr : ''}<em>${e(code)}</em></span></div>
     ${perks.length ? `<h4>WHAT THEY GET TODAY</h4><div class="fd-list">${perks.map(p => `<div class="fd-li"><span>${e(p)}</span><span class="fd-y">✓</span></div>`).join('')}</div>` : ''}

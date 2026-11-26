@@ -23797,13 +23797,15 @@ window.msFlow = async function(id, r){
     if(!rw) return '';
     return `<div class="mf-k mf-lab">🎁 REWARD READY</div><div class="mf-rw"><div class="mf-rwr"><i class="mf-rwi">🎁</i><span><b>${e(txt)}</b><small>Not given yet</small></span></div><button class="mf-give" data-a="give">Mark as given</button></div>`;
   };
+  // Up to 7 on one line, 8+ in two even lines - never one left on its own (Robbie 26 Nov). Circles never bigger than today's.
+  const stCols = t => { const per = t <= 7 ? t : Math.ceil(t / 2); return `grid-template-columns:repeat(${per},1fr);max-width:${per < 5 ? per * 58 : 300}px${per > 5 ? ';gap:6px' : ''}`; };
   const card = () => {
     const c = msCardState(m); if(!c) return '';
     if(c.t > 20) return `<div class="mf-stc"><div class="mf-k" style="color:#9A7B45">${e(first.toUpperCase())}'S CARD</div><p>${Math.min(c.n, c.t)} of ${c.t} visits</p></div>`;
     const dots = Array.from({ length:c.t }, (_, i) => i < c.n - 1 ? '<b class="on">✓</b>' : i === c.n - 1 ? `<b class="new">${i === c.t - 1 ? '🎁' : '✓'}</b>` : i === c.t - 1 ? '<b class="gift">🎁</b>' : `<b>${i + 1}</b>`).join('');
     const lw = s => s.charAt(0).toLowerCase() + s.slice(1);
     const msg = c.n >= c.t ? `Tell ${e(first)}: "Next visit, ${e(lw(c.text))} is on us!"` : `${c.t - c.n} more visit${c.t - c.n === 1 ? '' : 's'} to ${e(lw(c.text))}`;
-    return `<div class="mf-stc"><div class="mf-k" style="color:#9A7B45">${e(first.toUpperCase())}'S CARD</div><div class="mf-st">${dots}</div><p>${msg}</p></div>`;
+    return `<div class="mf-stc"><div class="mf-k" style="color:#9A7B45">${e(first.toUpperCase())}'S CARD</div><div class="mf-st" style="${stCols(c.t)}">${dots}</div><p>${msg}</p></div>`;
   };
   const askBox = () => {   // "Add a visit for X?" - the next star pulses (Robbie 24 Nov)
     const st = w => `<svg width="${w}" height="${w}" viewBox="0 0 24 24" fill="CC"><path d="M12 2.5l2.9 6.1 6.6.8-4.9 4.6 1.3 6.6L12 17.3l-5.9 3.3 1.3-6.6L2.5 9.4l6.6-.8z"/></svg>`;

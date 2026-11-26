@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, interactive-widget=resizes-content">
 <title>Mavis</title>
 <link rel="icon" type="image/png" href="/favicon-v6.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -3119,6 +3119,41 @@ body.fd-sel #p-frontdesk.page:not(#p-home):not(#p-chat) > .ph.fd-ph,body.fd-sear
 .fd-t>span:last-child{display:flex;flex-direction:column;gap:4px}.fd-t small{font-size:12.5px;font-weight:600;opacity:.75}
 .fd-seg{display:flex;background:#E2E8F0;border-radius:13px;padding:4px;gap:4px}.fd-seg button{flex:1;border:0;background:none;border-radius:10px;padding:11px 0;font:800 15px Inter,sans-serif;color:#475569;cursor:pointer;white-space:nowrap}.fd-seg button.on{background:#0F1E2E;color:#fff}
 .fd-q{display:block;width:100%;margin-top:10px;border:2px solid #0D9488;border-radius:14px;padding:14px 16px;font:600 17px Inter,sans-serif;color:#0F1E2E;background:#fff;outline:0;box-sizing:border-box}
+
+/* Keyboard open on a phone (Robbie 26 Nov): the page shrinks to the space above the keyboard, so typing screens go compact - search results and Next stay in view */
+@media (max-width:899px) and (max-height:520px){
+  body.fd-search #mobile-topbar{display:none!important}
+  body.fd-search #p-frontdesk{padding-top:8px!important}
+  .fd-sbar{margin-bottom:6px}.fd-sbar b{font-size:16px}
+  .fd-seg{padding:3px}.fd-seg button{padding:7px 0;font-size:14px}
+  .fd-q{padding:9px 14px;margin-top:6px!important;font-size:16px}
+  .fd-hint{margin-top:4px}
+  #mc .mc-top{min-height:36px;padding-top:4px}
+  #mc .mc-mid,#mc .mc-mid.form{padding-top:4px!important;gap:4px}
+  #mc .mc-k,#mc .mc-sub{display:none}
+  #mc .mc-big{font-size:21px!important}
+  #mc .mc-in{padding:10px 14px!important;font-size:17px!important;margin-top:4px}
+  #mc .mc-foot{padding:6px 12px 8px;gap:4px}
+  #mc .mc-go{padding:11px!important;font-size:16px!important}
+}
+
+/* iPhone keyboard: same compact rules, plus the sign-up screen fits the space above the keyboard */
+html.kb-open body.fd-search #mobile-topbar{display:none!important}
+html.kb-open body.fd-search #p-frontdesk{padding-top:8px!important}
+html.kb-open .fd-sbar{margin-bottom:6px}
+html.kb-open .fd-sbar b{font-size:16px}
+html.kb-open .fd-seg{padding:3px}
+html.kb-open .fd-seg button{padding:7px 0;font-size:14px}
+html.kb-open .fd-q{padding:9px 14px;margin-top:6px!important;font-size:16px}
+html.kb-open .fd-hint{margin-top:4px}
+html.kb-open #mc .mc-top{min-height:36px;padding-top:4px}
+html.kb-open #mc .mc-mid,html.kb-open #mc .mc-mid.form{padding-top:4px!important;gap:4px}
+html.kb-open #mc .mc-k,html.kb-open #mc .mc-sub{display:none}
+html.kb-open #mc .mc-big{font-size:21px!important}
+html.kb-open #mc .mc-in{padding:10px 14px!important;font-size:17px!important;margin-top:4px}
+html.kb-open #mc .mc-foot{padding:6px 12px 8px;gap:4px}
+html.kb-open #mc .mc-go{padding:11px!important;font-size:16px!important}
+html.kb-open #mc{bottom:auto;top:var(--vv-top,0);height:var(--vv-h,100%)}
 #fd-res .fd-list{margin-top:10px}.fd-m{width:100%;border:0;background:#fff;cursor:pointer;text-align:left;font-family:inherit;justify-content:flex-start!important}.fd-m:hover{background:#F0FDFA}
 .fd-mn{flex:1;min-width:0;display:flex;flex-direction:column}.fd-mn b{font-size:16px;color:#0F1E2E}.fd-mn small{font-size:13px;color:#64748B;margin-top:1px}
 .fd-tier{flex:none;font-size:11px;font-weight:900;border-radius:999px;padding:4px 10px;background:#FEF3C7;color:#92400E;letter-spacing:.04em}
@@ -23915,7 +23950,7 @@ function fdRender(){
       <button class="fd-qr" type="button" onclick="fdShowQr()"><svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="#0D9488" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><path d="M14 14h3v3M21 14v.01M14 21h7v-4"/></svg><span><b>Show QR to guest</b><small>No keyring? They scan this to open their card</small></span></button></div>`;
   }
   const i = document.getElementById('fd-q');
-  if(i){ i.oninput = () => { FD.q = i.value; fdResults(); }; if(FD.view === 'search' && !FD.q) setTimeout(() => i.focus(), 60); }
+  if(i){ i.oninput = () => { FD.q = i.value; fdResults(); }; i.onkeydown = ev => { if(ev.key === 'Enter'){ ev.preventDefault(); i.blur(); } };   // Go on the keyboard: close it so every match shows if(FD.view === 'search' && !FD.q) setTimeout(() => i.focus(), 60); }
   fdResults();
 }
 function fdResults(){
@@ -34354,8 +34389,14 @@ window.chatInit = function(){
 
 (function(){
   const vv = window.visualViewport; if(!vv) return;
-  const set = () => { document.documentElement.style.setProperty('--vv-h', vv.height + 'px'); document.documentElement.style.setProperty('--vv-top', vv.offsetTop + 'px'); };
+  const set = () => { document.documentElement.style.setProperty('--vv-h', vv.height + 'px'); document.documentElement.style.setProperty('--vv-top', vv.offsetTop + 'px'); document.documentElement.classList.toggle('kb-open', innerWidth < 900 && vv.height < 520 && vv.height < innerHeight * 0.8); };   // iPhone: the page doesn't shrink for the keyboard, so mark it
   vv.addEventListener('resize', set); vv.addEventListener('scroll', set); set();
+})();
+// Keyboard opens -> keep the box being typed in visible (sign-up screens, Front desk search, any form)
+(function(){
+  const keep = () => { const el = document.activeElement; if(!el || !/^(INPUT|TEXTAREA|SELECT)$/.test(el.tagName)) return; if(el.id === 'fd-q'){ try{ window.scrollTo(0, 0); }catch(e){} return; } try{ el.scrollIntoView({ block:'nearest' }); }catch(e){} };
+  window.addEventListener('resize', () => setTimeout(keep, 60));
+  if(window.visualViewport) window.visualViewport.addEventListener('resize', () => setTimeout(keep, 60));
 })();
 // ── Keyboard opening on phones: one smooth move, like WhatsApp ──
 // The phone chat screen follows the visible area above the keyboard, so the header stays put,

@@ -24728,7 +24728,7 @@ window.msTiers = function(){
   if(!msIsSetup()) return;
   const p = msPerks(), pg = msPage(), rw = pg.reward || {}, ct = pg.contact || {};
   const anyCode = Object.values(MS.keyrings || {})[0];
-  msSheet(`<div class="vdf-h"><b>Perks, reward and venues</b><div class="dpt-sub">Shown on the guest page when members scan their keyring</div></div>
+  msSheet(`<div class="vdf-h"><b>Perks and reward</b><div class="dpt-sub">Shown on the guest page when members scan their keyring</div></div>
     <div class="vdf-body">
       ${mvLapTip('margin:0 0 12px')}
       ${anyCode ? `<button type="button" class="ms-prev" onclick="window.open('/k/${encodeURIComponent(anyCode)}?guest=1','_blank')"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>See it as a guest</button>` : ''}
@@ -24740,30 +24740,8 @@ window.msTiers = function(){
       <div class="ms-gh">REWARD <small>leave empty to hide</small></div>
       <div class="ms-v2" style="grid-template-columns:96px 1fr"><label class="vdf-f"><span>VISITS</span><input id="ms-rw-n" type="number" inputmode="numeric" min="2" max="10" placeholder="2 to 10" value="${msEsc(rw.visits || '')}"></label>
         <label class="vdf-f"><span>THE REWARD</span><input id="ms-rw-t" maxlength="40" placeholder="e.g. Dinner for two on us" value="${msEsc(rw.text || '')}"></label></div>
-      <div class="ms-gh">CONTACT <small>the Contact button on the guest page</small></div>
-      <div class="ms-ibox" oninput="msContactPrev()">
-        <div class="ms-vf"><i>${MS_SV(MS_IC.phone)}</i><input id="ms-c-phone" type="tel" placeholder="Main phone (needed)" value="${msEsc(ct.phone || '')}"></div>
-        <div class="ms-vf"><i>${MS_SV(MS_IC.wa)}</i><input id="ms-c-wa" type="tel" placeholder="WhatsApp (optional)" value="${msEsc(ct.wa ? '+' + ct.wa : '')}"></div>
-        <div class="ms-vf"><i>${MS_SV(MS_IC.mail)}</i><input id="ms-c-email" type="email" inputmode="email" autocapitalize="off" placeholder="Email (optional)" value="${msEsc(ct.email || '')}"></div>
-        <div class="ms-vf"><i>${MS_SV(MS_IC.pin)}</i><input id="ms-c-map" inputmode="url" autocapitalize="off" placeholder="Google Maps link (optional)" value="${msEsc(ct.map || '')}"></div>
-        <div class="ms-vf"><i>${MS_SV(MS_IC.ig)}</i><input id="ms-c-ig" autocapitalize="off" placeholder="Instagram name (optional)" value="${msEsc(ct.ig || '')}"></div>
-        <div class="ms-bkp" id="ms-c-prev"></div>
-      </div>
-      <div class="ms-gh">ROOMS &amp; VILLAS <small>hotels only - leave empty if you have no rooms</small></div>
-      <div class="ms-ibox" oninput="msRoomsPrev()">
-        <div class="ms-vf"><i>${MS_SV(MS_IC.ext)}</i><input id="ms-r-link" inputmode="url" autocapitalize="off" placeholder="Booking link (optional)" value="${msEsc(pg.stay || '')}"></div>
-        <div class="ms-vf"><i>${MS_SV(MS_IC.wa)}</i><input id="ms-r-wa" type="tel" placeholder="WhatsApp (optional)" value="${msEsc(pg.stayWa ? '+' + pg.stayWa : '')}"></div>
-        <div class="ms-vf"><i>${MS_SV(MS_IC.phone)}</i><input id="ms-r-phone" type="tel" placeholder="Phone (optional)" value="${msEsc(pg.stayPhone || '')}"></div>
-        <div class="ms-vf"><i>${msIcSvg('tag', 18)}</i><input id="ms-r-perk" maxlength="18" placeholder="Member benefit, e.g. 10% off rooms (optional)" value="${msEsc(pg.stayPerk || '')}"></div>
-        <div class="ms-bkp gold" id="ms-r-prev"></div>
-      </div>
-      <div class="ms-gh">VENUES <small>hours, map and booking</small></div>
-      <div id="ms-vlist">${(pg.venues || []).map(msVenueRow).join('')}</div>
-      <button type="button" class="ms-vadd" onclick="const l = document.getElementById('ms-vlist'); l.insertAdjacentHTML('beforeend', msVenueRow()); msVenueSum(l.lastElementChild); l.lastElementChild.querySelector('.ms-vn').focus()">+ Add venue</button>
-      <div class="vd-note" style="margin-top:14px${appPlan === 'membership' ? ';display:none' : ''}">${vdSvg('note', 15)}<span>"Tonight" and "This week" come from your Entertainment Schedule.</span></div>
     </div>
     <div class="vdf-foot"><button class="mns-cancel" onclick="msSheetClose()">Cancel</button><button class="mns-go" id="ms-save">Save</button></div>`);
-  msContactPrev(); msRoomsPrev();
   document.getElementById('ms-save').addEventListener('click', async () => {
     const rows = id => [...document.querySelectorAll('#' + id + ' .ms-prow')].map(r => ({ t: r.querySelector('.ms-pi').value.trim(), ic: r.dataset.ic || '', r })).filter(x => x.t).slice(0, 8);
     const pm = rows('ms-p-member'), pv = rows('ms-p-vip');
@@ -24772,27 +24750,7 @@ window.msTiers = function(){
     const perks = JSON.stringify({ member: pm.map(x => x.t), vip: pv.map(x => x.t), icons: { member: pm.map(x => x.ic), vip: pv.map(x => x.ic) } });
     const n = parseInt(document.getElementById('ms-rw-n').value, 10), t = document.getElementById('ms-rw-t').value.trim();
     if(n && (n < 2 || n > 10)){ toast('Visits for a reward: 2 to 10'); return; }   // keeps the card simple (Robbie 24 Nov)
-    const venues = [...document.querySelectorAll('#ms-vlist .ms-vbox')].map(b => ({
-      name: b.querySelector('.ms-vn').value.trim(), opens: b.querySelector('.ms-vo').value, closes: b.querySelector('.ms-vc').value,
-      map: b.querySelector('.ms-vm').value.trim(), book: b.querySelector('.ms-vb').value.trim(), wa: b.querySelector('.ms-vw').value.replace(/\D/g, ''), phone: b.querySelector('.ms-vp').value.trim(), email: b.querySelector('.ms-ve').value.trim(), review: b.querySelector('.ms-vr').value.trim(),
-      own: b.querySelector('.ms-seg .on').dataset.own === '1'
-    })).filter(v => v.name);
-    const badMail = venues.find(v => v.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.email));
-    if(badMail){ toast('The email for ' + badMail.name + ' doesn\'t look right'); return; }
-    venues.forEach(v => { if(!v.email) delete v.email; if(v.review && !/^https?:\/\//i.test(v.review)) v.review = 'https://' + v.review; if(!v.review) delete v.review; });
-    const badRv = venues.find(v => v.review && !/^https:\/\/[^\s]+\.[^\s]+/i.test(v.review));
-    if(badRv){ toast('The Google review link for ' + badRv.name + ' should start with https://'); return; }
-    const bad = venues.find(v => v.map && !/^https?:\/\//i.test(v.map));
-    if(bad){ toast('The map link for ' + bad.name + ' should start with https://'); return; }
-    const fixUrl = u => u && !/^https?:\/\//i.test(u) ? 'https://' + u : u, okUrl = u => !u || /^https:\/\/[^\s]+\.[^\s]+/i.test(u);
-    venues.forEach(v => { v.book = fixUrl(v.book); if(!v.book) delete v.book; if(!v.own) delete v.own; delete v.ig; });
-    const badBk = venues.find(v => !okUrl(v.book)); if(badBk){ toast('The booking link for ' + badBk.name + ' should start with https://'); return; }
-    const gv = id => document.getElementById(id).value.trim();
-    const contact = { phone: gv('ms-c-phone'), wa: gv('ms-c-wa').replace(/\D/g, ''), email: gv('ms-c-email'), map: fixUrl(gv('ms-c-map')), ig: gv('ms-c-ig').replace(/^@/, '').replace(/^https?:\/\/(www\.)?instagram\.com\//i, '').replace(/[/?].*$/, '') };
-    if(contact.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(contact.email)){ toast('The contact email doesn\'t look right'); return; }
-    if(!okUrl(contact.map)){ toast('The contact map link should start with https://'); return; }
-    const stay = fixUrl(gv('ms-r-link')); if(!okUrl(stay)){ toast('The rooms booking link should start with https://'); return; }
-    const page = JSON.stringify(Object.assign({}, msPage(), { venues, contact, stay, stayWa: gv('ms-r-wa').replace(/\D/g, ''), stayPhone: gv('ms-r-phone'), stayPerk: gv('ms-r-perk'), reward: n > 0 ? { visits:n, text:t } : null }));
+    const page = JSON.stringify(Object.assign({}, msPage(), { reward: n > 0 ? { visits:n, text:t } : null }));   // contact, rooms and venues live on the Design your page boxes now (Robbie 26 Nov)
     const btn = document.getElementById('ms-save'); btn.disabled = true; btn.textContent = 'Saving…';
     const [a, b] = await Promise.all([
       sb.from('app_settings').upsert({ key:'member_perks', value: perks }, { onConflict:'company_id,key' }),
@@ -25272,6 +25230,7 @@ function gpRender(){
         ${c.off.slides ? '<div class="gp-hidn">Hidden from guests - everything is kept. Turn on to show it again.</div>' : ''}${`<div class="gp-body">${c.slides.map((it, j) => inV(it) ? '' : gpItemHtml('slides', it, j)).join('')}${c.slides.length < 12 ? `<button class="gp-add" onclick="gpForm('slides')">+ Add a highlight</button>` : ''}</div>`}</div>
       <div class="gp-sec" data-go="perks"><div class="gp-sh"><div class="n"><b>Perks and reward</b><small>On every member's card - always shown</small></div></div>
         <div class="gp-body">${gpPerksHtml(mgr)}</div></div>
+      ${gpContactHtml(mgr)}
       ${gpPlacesHtml()}
       ${gpGiftHtml()}
       ${gpOthersHtml()}
@@ -25289,6 +25248,7 @@ function gpRender(){
     </div>
     <div class="gp-prev"><div class="l">LIVE PREVIEW<button class="gp-all" onclick="gpGoClear()">Show whole page</button></div>${code ? `<iframe id="gp-frame" title="Guest page preview" onload="gpGoSend(400)" src="/k/${encodeURIComponent(code)}?guest=1&embed=1"></iframe>` : '<div class="none">Give a member a keyring to see the preview here.</div>'}</div></div>`;
   if(!o.dataset.go){ o.dataset.go = '1'; o.addEventListener('click', e => { if(e.target.closest('.gp-vs, .gp-vnew')) return; const g = e.target.closest('[data-go]'); if(g && o.contains(g)) gpGo(g.dataset.go); else if(!e.target.closest('.gp-prev, button, a, input, select, textarea, label, .gp-sec, .gp-item, [onclick]') && document.querySelector('.gp-prev.foc')) gpGoClear(); }, true); }
+  if(document.getElementById('ms-c-prev')) msContactPrev(); if(document.getElementById('ms-r-prev')) msRoomsPrev();
   dcPaint();
 }
 
@@ -25734,6 +25694,51 @@ async function dcShow(d){
 }
 
 // Our places: a photo and area for each venue - guests tap one to see only that place
+// Contact and Rooms: their own boxes on the page (they used to hide in the Perks pop-up - Robbie 26 Nov). What's typed is kept until Save, even if the page redraws.
+function gpContactHtml(mgr){
+  if(!mgr) return '';
+  const pg = msPage(), ct = Object.assign({}, pg.contact || {}), d = GPE.ctDraft || {};
+  const v = (id, saved) => msEsc(id in d ? d[id] : (saved || ''));
+  const f = (ic, id, attrs, ph, saved) => `<div class="ms-vf"><i>${ic}</i><input id="${id}" ${attrs} placeholder="${ph}" value="${v(id, saved)}"></div>`;
+  const keep = `oninput="GPE.ctDraft = Object.assign(GPE.ctDraft || {}, { [event.target.id]: event.target.value });`;
+  return `<div class="gp-sec" data-go="contact"><div class="gp-sh"><div class="n"><b>Contact</b><small>The Contact button on the guest page</small></div></div>
+    <div class="gp-body"><div class="ms-ibox" ${keep} msContactPrev()">
+      ${f(MS_SV(MS_IC.phone), 'ms-c-phone', 'type="tel"', 'Main phone (needed)', ct.phone)}
+      ${f(MS_SV(MS_IC.wa), 'ms-c-wa', 'type="tel"', 'WhatsApp (optional)', ct.wa ? '+' + ct.wa : '')}
+      ${f(MS_SV(MS_IC.mail), 'ms-c-email', 'type="email" inputmode="email" autocapitalize="off"', 'Email (optional)', ct.email)}
+      ${f(MS_SV(MS_IC.pin), 'ms-c-map', 'inputmode="url" autocapitalize="off"', 'Google Maps link (optional)', ct.map)}
+      ${f(MS_SV(MS_IC.ig), 'ms-c-ig', 'autocapitalize="off"', 'Instagram name (optional)', ct.ig)}
+      <div class="ms-bkp" id="ms-c-prev"></div></div>
+      <button class="gp-big" onclick="gpContactSave()">Save contact</button></div></div>
+    <div class="gp-sec" data-go="book"><div class="gp-sh"><div class="n"><b>Rooms &amp; villas</b><small>Hotels only - leave empty if you have no rooms</small></div></div>
+    <div class="gp-body"><div class="ms-ibox" ${keep} msRoomsPrev()">
+      ${f(MS_SV(MS_IC.ext), 'ms-r-link', 'inputmode="url" autocapitalize="off"', 'Booking link (optional)', pg.stay)}
+      ${f(MS_SV(MS_IC.wa), 'ms-r-wa', 'type="tel"', 'WhatsApp (optional)', pg.stayWa ? '+' + pg.stayWa : '')}
+      ${f(MS_SV(MS_IC.phone), 'ms-r-phone', 'type="tel"', 'Phone (optional)', pg.stayPhone)}
+      ${f(msIcSvg('tag', 18), 'ms-r-perk', 'maxlength="18"', 'Member benefit, e.g. 10% off rooms (optional)', pg.stayPerk)}
+      <div class="ms-bkp gold" id="ms-r-prev"></div></div>
+      <button class="gp-big" onclick="gpRoomsSave()">Save rooms</button></div></div>`;
+}
+async function gpPageSave(patch, clear){
+  const page = JSON.stringify(Object.assign({}, msPage(), patch));
+  const r = await sb.from('app_settings').upsert({ key:'member_page', value: page }, { onConflict:'company_id,key' });
+  if(r.error){ console.warn(r.error); toast('Not saved - please try again'); return; }
+  appSettings.member_page = page; if(GPE.ctDraft) clear.forEach(id => delete GPE.ctDraft[id]);
+  toast('Saved ✓'); gpRender(); gpPreviewReload();
+}
+const gpFixUrl = u => u && !/^https?:\/\//i.test(u) ? 'https://' + u : u, gpOkUrl = u => !u || /^https:\/\/[^\s]+\.[^\s]+/i.test(u);
+window.gpContactSave = function(){
+  const gv = id => (document.getElementById(id) || {}).value?.trim() || '';
+  const contact = { phone: gv('ms-c-phone'), wa: gv('ms-c-wa').replace(/\D/g, ''), email: gv('ms-c-email'), map: gpFixUrl(gv('ms-c-map')), ig: gv('ms-c-ig').replace(/^@/, '').replace(/^https?:\/\/(www\.)?instagram\.com\//i, '').replace(/[/?].*$/, '') };
+  if(contact.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(contact.email)){ toast('The email doesn\'t look right'); return; }
+  if(!gpOkUrl(contact.map)){ toast('The map link should start with https://'); return; }
+  gpPageSave({ contact }, ['ms-c-phone', 'ms-c-wa', 'ms-c-email', 'ms-c-map', 'ms-c-ig']);
+};
+window.gpRoomsSave = function(){
+  const gv = id => (document.getElementById(id) || {}).value?.trim() || '';
+  const stay = gpFixUrl(gv('ms-r-link')); if(!gpOkUrl(stay)){ toast('The rooms booking link should start with https://'); return; }
+  gpPageSave({ stay, stayWa: gv('ms-r-wa').replace(/\D/g, ''), stayPhone: gv('ms-r-phone'), stayPerk: gv('ms-r-perk') }, ['ms-r-link', 'ms-r-wa', 'ms-r-phone', 'ms-r-perk']);
+};
 // Perks and reward at a glance, with a big button to change them
 function gpPerksHtml(mgr){
   const p = msPerks(), rw = (msPage().reward || {});

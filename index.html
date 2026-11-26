@@ -3154,6 +3154,8 @@ body.mv-pre #app .page,body.mv-pre #app .page.on{visibility:hidden!important}
 @keyframes mvgb{50%{transform:translateY(8px)}}@keyframes mvgu{50%{transform:translateY(-8px)}}
 
 .fd-at{display:flex;align-items:center;gap:6px;margin:0 0 10px;color:#0D9488;font:800 13.5px Inter,sans-serif}.fd-at svg{flex:none}.fd-at.sw{background:#E2E8F0;border-radius:12px;padding:4px;color:#475569;gap:4px}.fd-at.sw svg{margin:0 2px 0 6px}.fd-at.sw button{flex:1;border:0;background:none;border-radius:9px;padding:8px 6px;font:800 13px Inter,sans-serif;color:#475569;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.fd-at.sw button.on{background:#0F1E2E;color:#fff}.fd-at.pick{background:#E2E8F0;border-radius:12px;padding:4px 4px 4px 10px;color:#475569}.fd-at.pick select{flex:1;border:0;border-radius:9px;padding:9px 10px;background:#0F1E2E;color:#fff;font:800 14px Inter,sans-serif}
+body.mv-mem #company-card .cc-card > label{pointer-events:none;cursor:default!important}
+.gp-logo{display:flex;gap:14px;align-items:center}.gp-logo>img,.gp-logo>span{width:64px;height:64px;border-radius:50%;object-fit:cover;flex:none;border:1px solid #E2E8F0;background:#fff}.gp-logo>span{display:grid;place-items:center;background:#0F1E2E;color:#fff;font:900 26px Inter,sans-serif}.gp-logo b{display:block;font-size:14px;font-weight:800}.gp-logo small{display:block;font-size:12px;color:#64748B;margin-top:2px}.gp-logo-b{display:flex;gap:8px;margin-top:8px}.gp-lb{display:inline-block;background:#0F1E2E;color:#fff;border-radius:10px;padding:8px 14px;font:800 13px Inter,sans-serif;cursor:pointer}.gp-lb input{display:none}.gp-lr{border:0;background:#FEE2E2;color:#B91C1C;border-radius:10px;padding:8px 12px;font:800 13px Inter,sans-serif;cursor:pointer}.dc-note{font-size:12.5px;color:#64748B;margin:-2px 0 8px}
 /* Keyboard open on a phone (Robbie 26 Nov): the page shrinks to the space above the keyboard, so typing screens go compact - search results and Next stay in view */
 @media (max-width:899px) and (max-height:520px){
   body.fd-search #mobile-topbar{display:none!important}
@@ -8254,8 +8256,8 @@ function companyCardRender(){
     </div>
     <div class="cc-idm"><div><small>Company ID · starts everyone's username</small><b>${esc(myCompany.code||'')}</b></div><span>Need a different ID? Contact Mavis</span></div>
     <div class="cc-btns" style="display:flex;gap:8px;flex-wrap:wrap">
-      <label class="btn btn-ghost" style="cursor:pointer">${myCompany.logo ? 'Change logo' : 'Add logo'}<input type="file" accept="image/*" style="display:none" onchange="companyLogoPicked(this)"></label>
-      ${myCompany.logo ? '<button class="btn btn-ghost" style="color:#DC2626" onclick="companyLogoSave(\'\')">Remove logo</button>' : ''}
+      ${appPlan === 'membership' ? '' : `<label class="btn btn-ghost" style="cursor:pointer">${myCompany.logo ? 'Change logo' : 'Add logo'}<input type="file" accept="image/*" style="display:none" onchange="companyLogoPicked(this)"></label>
+      ${myCompany.logo ? '<button class="btn btn-ghost" style="color:#DC2626" onclick="companyLogoSave(\'\')">Remove logo</button>' : ''}`}
       <button class="btn btn-ghost" onclick="companyRename()">Rename</button>
     </div>
   </div>`;
@@ -8284,6 +8286,7 @@ window.companyLogoSave = async function(logo){
   if(!d.ok){ toast(d.message || 'Logo not saved - please try again'); return; }
   myCompany.logo = d.company.logo || null;
   companyCardRender(); companyLogoApply();
+  try{ if(document.getElementById('gp-logo-sec')){ gpRender(); gpPreviewReload(); } }catch(e){}
   toast(logo ? 'Logo updated ✓' : 'Logo removed');
 };
 // Show the company logo on the home header and the top-right venue badge.
@@ -25230,7 +25233,8 @@ function gpRender(){
     return `<div class="gp-sec${c.off[k] ? ' off' : ''}" data-go="${k}"><div class="gp-sh"><div class="gp-mv"><button aria-label="Move up" ${i ? '' : 'disabled'} onclick="gpMove('${k}',-1)">${gpIc(GPI.up, 14)}</button><button aria-label="Move down" ${i < c.order.length - 1 ? '' : 'disabled'} onclick="gpMove('${k}',1)">${gpIc(GPI.down, 14)}</button></div>
       <div class="n"><b>${name}</b><small>${sub}</small></div>${tog(k)}</div>${c.off[k] ? '<div class="gp-hidn">Hidden from guests - everything is kept. Turn on to show it again.</div>' : ''}<div class="gp-body">${body}</div></div>`;
   };
-  const gpMainColHtml = () => `      ${gpColoursHtml()}
+  const gpMainColHtml = () => `      ${gpLogoHtml()}
+      ${gpColoursHtml()}
       ${gpTopHtml()}
       <div class="gp-sec${c.off.slides ? ' off' : ''}" data-go="slides"><div class="gp-sh"><div class="n"><b>Highlights</b><small>Big photos guests swipe through at the top of the page - offers, new menu, big nights</small></div>${tog('slides')}</div>
         ${c.off.slides ? '<div class="gp-hidn">Hidden from guests - everything is kept. Turn on to show it again.</div>' : ''}${`<div class="gp-body">${c.slides.map((it, j) => inV(it) ? '' : gpItemHtml('slides', it, j)).join('')}${c.slides.length < 12 ? `<button class="gp-add" onclick="gpForm('slides')">+ Add a highlight</button>` : ''}</div>`}</div>
@@ -25262,6 +25266,14 @@ const GP_COL = {
   acc: ['Buttons & headings', 'Book buttons and small headings', '#0D9488', ['#0D9488','#B7862C','#DB2777','#EA580C','#2563EB','#16A34A','#111111','#7C3AED']],
   pg:  ['Page background', 'Behind everything', '#F5F4F0', ['#F5F4F0','#FFFFFF','#FDF2F8','#F0FDF4','#EFF6FF','#F5F5F4','#FFF7ED','#F1F5F9']]
 };
+// Your logo (Robbie 26 Nov): one logo for everything - the app's opening screen, the digital card, Show QR to guest, the staff app. Set here (marketing), not in Admin Console.
+function gpLogoHtml(){
+  const L = (myCompany && myCompany.logo) || '', nm = (myCompany && myCompany.name) || 'Your venue';
+  return `<div class="gp-sec" id="gp-logo-sec" data-go="card"><div class="gp-sh"><div class="n"><b>Your logo</b><small>On the app's opening screen, the digital member card and Show QR to guest</small></div></div>
+    <div class="gp-body"><div class="gp-logo">${L ? `<img src="${gpEsc(L)}" alt="">` : `<span>${gpEsc(nm.charAt(0).toUpperCase())}</span>`}
+      <div><b>${L ? 'Your logo is on' : 'No logo yet'}</b><small>${L ? 'Square works best - it shows in a circle.' : 'Until you add one, guests see the first letter of your name.'}</small>
+      <div class="gp-logo-b"><label class="gp-lb">${L ? 'Change logo' : 'Add logo'}<input type="file" accept="image/*" onchange="companyLogoPicked(this)"></label>${L ? '<button type="button" class="gp-lr" onclick="companyLogoSave(\'\')">Remove</button>' : ''}</div></div></div></div></div>`;
+}
 function gpColoursHtml(){
   const t = GPE.c.theme || {};
   const row = k => { const [name, sub, def, opts] = GP_COL[k], cur = (t[k] || def).toUpperCase();
@@ -25411,7 +25423,7 @@ function dcCfg(){
   return { style: 'simple',   // one template for everyone: colour + logo + name + QR (Robbie 25 Nov)
     color: /^#[0-9a-f]{6}$/i.test(k.color || '') ? k.color.toUpperCase() : (/^#[0-9a-f]{6}$/i.test(t.acc || '') ? t.acc.toUpperCase() : '#C4973B'),
     name: dcBrandName(), venues: k.venues !== false, line: k.line !== false,
-    logo: k.logo && k.logo.path ? (GPE.urls[k.logo.path] || '') : '', photo: dcPhotoSrc(c),
+    logo: (myCompany && myCompany.logo) || (k.logo && k.logo.path ? (GPE.urls[k.logo.path] || '') : ''), photo: dcPhotoSrc(c),   // the venue's one logo (Design your page)
     places: vs.length ? vs : msVenues() };
 }
 // Load the card set-up (staff who never open the guest page editor need it too)
@@ -25567,10 +25579,8 @@ function gpCardHtml(){
   const custom = !DC_SW.includes(cfg.color);
   return `<div class="gp-sec" id="gp-card-sec"><div class="gp-sh"><div class="n"><b>Digital member card</b><small>For guests without a keyring - sent on WhatsApp. Same design for everyone.</small></div></div>
     <div class="gp-body"><div class="dc-grid"><div class="dc-set">
-      <div class="dc-lab">1. Your logo</div>
-      <div class="dc-ups">${up('logo', 'Logo', logoMsg, cfg.logo, !!(L && L.path))}</div>
-      ${warns.filter(w => !/photo|white box/.test(w)).map(w => `<div class="dc-warn">${w}</div>`).join('')}
-      <div class="dc-lab">2. Card colour</div>
+      <div class="dc-lab">Card colour</div>
+      <div class="dc-note">Your logo comes from <b>Design your page</b> - change it there.</div>
       <div class="dc-sw">${DC_SW.map(h => `<button class="c${h === cfg.color ? ' on' : ''}" style="background:${h}" aria-label="${h}" title="${h}" onclick="dcSet('color','${h}')"></button>`).join('')}
         <button class="cw-own${custom ? ' on' : ''}" onclick="dcWheel()">${custom ? `<i style="background:${cfg.color}"></i>` : CW_IC}${custom ? cfg.color : 'Your own'}</button></div>
     </div>

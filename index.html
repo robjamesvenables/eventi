@@ -3153,6 +3153,7 @@ body.mv-pre #app .page,body.mv-pre #app .page.on{visibility:hidden!important}
 #mvg .mvg-arr.tr{bottom:auto;top:2px;right:30px;width:90px;flex-direction:column-reverse;animation:mvgu 1s ease-in-out infinite}#mvg .mvg-arr.tr svg{transform:rotate(180deg)}#mvg .mvg-arr.tr .mvg-here{margin:2px 0 0}
 @keyframes mvgb{50%{transform:translateY(8px)}}@keyframes mvgu{50%{transform:translateY(-8px)}}
 
+.fd-at{display:flex;align-items:center;gap:6px;margin:0 0 10px;color:#0D9488;font:800 13.5px Inter,sans-serif}.fd-at svg{flex:none}.fd-at.sw{background:#E2E8F0;border-radius:12px;padding:4px;color:#475569;gap:4px}.fd-at.sw svg{margin:0 2px 0 6px}.fd-at.sw button{flex:1;border:0;background:none;border-radius:9px;padding:8px 6px;font:800 13px Inter,sans-serif;color:#475569;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.fd-at.sw button.on{background:#0F1E2E;color:#fff}.fd-at.pick{background:#E2E8F0;border-radius:12px;padding:4px 4px 4px 10px;color:#475569}.fd-at.pick select{flex:1;border:0;border-radius:9px;padding:9px 10px;background:#0F1E2E;color:#fff;font:800 14px Inter,sans-serif}
 /* Keyboard open on a phone (Robbie 26 Nov): the page shrinks to the space above the keyboard, so typing screens go compact - search results and Next stay in view */
 @media (max-width:899px) and (max-height:520px){
   body.fd-search #mobile-topbar{display:none!important}
@@ -14852,6 +14853,7 @@ function peopleEditClick(personId){ peopleOpenForm(personId); }
 // Opens the person panel (side panel on computers, bottom sheet on phones).
 function peopleOpenForm(personId){
   peopleEditingId = personId || null;
+  if(appPlan === 'membership' && typeof GPE !== 'undefined' && !GPE.loaded) gpLoad().then(() => { const w = document.getElementById('people-venue-wrap'); if(w && !w.innerHTML.trim()){ const p0 = personId ? PEOPLE.find(x => String(x.id) === String(personId)) : { role:'frontdesk' }; w.innerHTML = peopleVenueCard(p0 || {}); } }).catch(() => {});
   peopleRenameAsked = false;
   const esc = v => String(v==null?'':v).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const p = personId ? PEOPLE.find(x=>String(x.id)===String(personId)) : {firstName:'',lastName:'',role:appPlan === 'membership' ? 'frontdesk' : 'teammember',departments:[],photo:'',email:''};
@@ -14914,6 +14916,7 @@ function peopleOpenForm(personId){
           ${onlySuper ? '<div style="font-size:12px;font-weight:700;color:#B45309;margin-top:10px">🔒 ' + (p.isMe ? 'You\'re' : esc(p.firstName) + ' is') + ' the only Super Admin, so this role can\'t change. Make someone else a Super Admin first.</div>' : ''}`; })()}
         <div id="people-role-desc" style="font-size:12px;color:#64748B;margin-top:10px">${esc(role.desc||'')} · logs in with a ${isPinRole(p.role)?'6-digit PIN':'password'}</div>
       </div>
+      <div id="people-venue-wrap">${peopleVenueCard(p)}</div>
       <div class="pp-card">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
           <div class="pp-card-t" style="margin:0">DEPARTMENTS</div>
@@ -15270,6 +15273,8 @@ async function peopleSaveForm(){
       if(saveBtn){ saveBtn.disabled = false; saveBtn.textContent = 'Save'; }
     }
     if(!d || !d.ok){ toast((d && d.message) || ('Not saved: ' + (d && (d.reason==='cannot give that role' || d.reason==='higher role') ? 'you can only manage people below your own role.' : ((d && d.reason) || 'please try again')))); return; }
+    try{ const vs = document.getElementById('people-form-venue'), pid = editingId || (d.profile && d.profile.id);
+      if(vs && pid){ const map = Object.assign({}, msStaffVenues()); map[pid] = vs.value; await msSetting('mk_staff_venue', map); } }catch(e){ console.warn(e); }   /* Works at (Other venues) */
     peopleCloseForm();
     await peopleLoadFromSupabase();
     if(!wasNew && d.profile && d.renamed){
@@ -22340,7 +22345,7 @@ const msEsc = v => String(v == null ? '' : v).replace(/&/g,'&amp;').replace(/</g
 const msIsMgr = () => !myProfile || myProfile.is_owner || ['superadmin','director','manager'].includes(myProfile.role);
 // Membership-only clients: 3 roles - Super Admin runs everything (page, perks, logins), Manager gets the 3-star alerts + sees members and stats, Staff scans (Robbie 26 Nov)
 const msIsSetup = () => (typeof appPlan !== 'undefined' && appPlan === 'membership') ? (!myProfile || myProfile.is_owner || myProfile.role === 'superadmin') : msIsMgr();
-const msVenue = () => { if(typeof demoAs === 'function' && demoAs()){ const n = msVenues(); return n[0] || ''; } try{ const v = VENUES.find(x => x.id === currentVenue) || VENUES[0]; return v ? v.name : ''; }catch(e){ return ''; } };
+const msVenue = () => { if(typeof demoAs === 'function' && demoAs()){ const n = msVenues(); return n[0] || ''; } try{ const mine = msMyVenue(); if(mine) return mine; }catch(e){} try{ const v = VENUES.find(x => x.id === currentVenue) || VENUES[0]; return v ? v.name : ''; }catch(e){ return ''; } };
 const msVenues = () => { if(typeof demoAs === 'function' && demoAs()) return (msPage().venues || []).map(v => v && v.name).filter(Boolean);   // demo dressed as a prospect: their places
   try{ return VENUES.map(v => v.name); }catch(e){ return []; } };
 const msToday = () => { const d = new Date(); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); };
@@ -23955,9 +23960,39 @@ function fdMatches(){
   else { const t = q.toLowerCase(); if(t.length < 2) return null; list = MS.members.filter(m => { const n = String(m.name || '').toLowerCase(); return t.includes(' ') ? n.includes(t) : n.split(/\s+/).some(w => w.startsWith(t)); }); }
   return list.slice(0, 25);
 }
+
+// ── Other venues: which venue each staff member works at (Robbie 26 Nov) - only for Stats/visit lists ──
+// Set in Admin Console (Works at). Front desk staff default to the main venue; managers default to "both" and pick on Front desk.
+function msOtherVenueNames(){ try{ if(typeof GPE === 'undefined' || !GPE.loaded || !GPE.c) return []; return gpPlaceLists().venues.map(v => v.name); }catch(e){ return []; } }
+function msBaseVenue(){ try{ const v = VENUES.find(x => x.id === currentVenue) || VENUES[0]; return v ? v.name : ''; }catch(e){ return ''; } }
+function msStaffVenues(){ return msJson('mk_staff_venue') || {}; }
+function msWorksAt(p){ const v = msStaffVenues()[p && p.id]; return v === undefined ? (p && p.role === 'frontdesk' ? '' : '*') : v; }   // '' main · '*' both · or an Other venue's name
+function msMyVenue(){
+  if(!myProfile || appPlan !== 'membership') return '';
+  const others = msOtherVenueNames(); if(!others.length) return '';
+  const v = msWorksAt(myProfile);
+  if(v === '*'){ let at = ''; try{ at = localStorage.getItem('mvAt') || ''; }catch(e){} return others.includes(at) ? at : ''; }
+  return others.includes(v) ? v : '';
+}
+window.fdAt = function(name){ try{ if(others0().includes(name)) localStorage.setItem('mvAt', name); else localStorage.removeItem('mvAt'); }catch(e){} fdRender(); };
+function others0(){ return msOtherVenueNames(); }
+function fdVenueBar(){
+  const others = msOtherVenueNames(); if(!others.length || appPlan !== 'membership' || !myProfile) return '';
+  const pin = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-6.2-7-11a7 7 0 0 1 14 0c0 4.8-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/></svg>';
+  const here = msVenue(), all = [msBaseVenue()].concat(others);
+  if(msWorksAt(myProfile) !== '*') return `<div class="fd-at">${pin}<span>${msEsc(here)}</span></div>`;
+  if(all.length === 2) return `<div class="fd-at sw">${pin}${all.map(n => `<button type="button" class="${n === here ? 'on' : ''}" onclick="fdAt(${msEsc(JSON.stringify(n))})">${msEsc(n)}</button>`).join('')}</div>`;
+  return `<label class="fd-at pick">${pin}<span>At</span><select onchange="fdAt(this.value)">${all.map(n => `<option value="${msEsc(n)}"${n === here ? ' selected' : ''}>${msEsc(n)}</option>`).join('')}</select></label>`;   // 3+ venues: a drop-down, names never cut off
+}
+function peopleVenueCard(p){
+  const others = msOtherVenueNames(); if(appPlan !== 'membership' || !others.length) return '';
+  const cur = msWorksAt(p), opt = (v, n) => `<option value="${msEsc(v)}"${cur === v ? ' selected' : ''}>${msEsc(n)}</option>`;
+  return `<div class="pp-card"><div class="pp-card-t">WORKS AT</div><select class="pp-in" id="people-form-venue">${opt('', msBaseVenue())}${others.map(n => opt(n, n)).join('')}${opt('*', 'Both - picks on Front desk')}</select>
+    <div style="font-size:12px;color:#64748B;margin-top:8px">Visits they count are saved at this venue, so Stats show each venue.</div></div>`;
+}
 function fdRender(){
   const el = document.getElementById('fd-body'); if(!el) return;
-  if(typeof GPE !== 'undefined' && !GPE.loaded && myProfile) gpLoad().catch(() => {});   // today's member deals, for the end of a check-in
+  if(typeof GPE !== 'undefined' && !GPE.loaded && myProfile && !FD.gpWait){ FD.gpWait = true; gpLoad().then(() => { if(msOtherVenueNames().length) fdRender(); }).catch(() => {}); }   // today's member deals, for the end of a check-in (+ the venue bar)
   if(!MS.loaded && !MS.loading && myProfile) msLoad().then(() => { if(FD.q) fdResults(); });
   const e = msEsc;
   document.body.classList.toggle('fd-sel', !!FD.sel);
@@ -23979,7 +24014,7 @@ function fdRender(){
   } else {
     // Front desk (Robbie 24 Nov): big gold Paying, then Check card · New member · Search. No reward card = Scan · New member · Search.
     const scan = k => `msSetMode('${k}');msScanOpen({ title:'${k === 'pay' ? 'Paying' : cardOn ? 'Check card' : 'Scan a member'}', hint:'Scan their keyring, card or app', no4:true })`;
-    el.innerHTML = `<div class="fd-wrap">
+    el.innerHTML = `<div class="fd-wrap">${fdVenueBar()}
       <button class="fd-pay" type="button" onclick="${scan(cardOn ? 'pay' : 'check')}">${ic(cardOn ? 'card' : 'scan', '#1d1405', 54)}<span><b>${cardOn ? 'Paying' : 'Scan'}</b><small>${cardOn ? 'Scan · counts a visit' : 'Keyring, card or app'}</small></span></button>
       <div class="fd-row3" style="grid-template-columns:repeat(${cardOn ? 3 : 2},minmax(0,1fr))">
         ${cardOn ? `<button class="fd-s c" type="button" onclick="${scan('check')}">${ic('gift', '#fff', 30)}<b>Check card</b></button>` : ''}

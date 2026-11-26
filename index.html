@@ -25911,7 +25911,7 @@ const GP_VGO = { photo:'vs-photo', hours:'vs-hours', book:'vs-book', menus:'vs-m
 window.gpVenueStep = function(k){
   const name = GPE.vset; if(!name) return;
   if(k !== 'menus') gpGo(GP_VGO[k], name);
-  if(k === 'menus'){ gpPlaceForm(name); gpGo(GP_VGO.menus, name); setTimeout(() => { const m = document.getElementById('gpp-menus'); if(m) m.scrollIntoView({ block:'start' }); }, 60); return; }
+  if(k === 'menus'){ gpPlaceForm(name, 'menus'); gpGo(GP_VGO.menus, name); setTimeout(() => { const m = document.getElementById('gpp-menus'); if(m) m.scrollIntoView({ block:'start' }); }, 60); return; }
   GPE.vstep = GPE.vstep === k ? '' : k; GPE.vrm = false; gpRender();
   const i = document.querySelector('.gp-vst.on input'); if(i) i.focus();
 };
@@ -25995,7 +25995,7 @@ window.gpSecTitle = function(k){
     } });
 };
 // One place, everything in one form: photo, area, Instagram, hours, map, WhatsApp, phone, email, Google review link
-window.gpPlaceForm = function(name){
+window.gpPlaceForm = function(name, mode){   // mode 'menus': just the menus (from the checklist); otherwise More details without what the checklist already asks
   document.querySelectorAll('.eb-sheet').forEach(x => x.remove());
   gpGo('', name);
   const key = name.toLowerCase(), v = Object.assign({}, (msPage().venues || []).find(x => x.name === name) || {}), it = Object.assign({}, (GPE.c.places || {})[key] || {});
@@ -26041,6 +26041,13 @@ window.gpPlaceForm = function(name){
   s.addEventListener('mousedown', e => { if(e.target === s) s.remove(); });
   document.body.appendChild(s);
   const $ = id => s.querySelector('#' + id), val = id => ($(id) ? $(id).value.trim() : '');
+  // Each thing is asked once (Robbie 26 Nov): photo, area, hours, booking WhatsApp and menus live in the venue's checklist, so More details only has the extras.
+  // The boxes stay (hidden) so Save keeps what's there.
+  { const fm = s.querySelector('.eb-form'), hide = x => { if(x) x.style.display = 'none'; }, menus = $('gpp-menus'), msub = menus && menus.previousElementSibling;
+    if(mode === 'menus'){ [...fm.children].forEach(x => { if(!x.matches('h3, .eb-fbtns') && x !== menus && x !== msub) hide(x); }); fm.querySelector('h3').textContent = 'Menus · ' + name; }
+    else { hide($('gpp-ph') && $('gpp-ph').parentElement); hide($('gpp-o') && $('gpp-o').closest('.gp-pf')); hide($('gpp-c') && $('gpp-c').closest('.gp-pf'));
+      const wa = $('gpp-wa') && $('gpp-wa').closest('.gp-pf'); hide(wa); if(wa && wa.nextElementSibling && wa.nextElementSibling.classList.contains('gp-pfh')) hide(wa.nextElementSibling);
+      hide(menus); hide(msub); } }
   const ph = $('gpp-ph'), fin = $('gpp-file');
   let lgFile = null, lgDrop = false; const lg = $('gpp-lg'), lgf = $('gpp-lgf'), lgx = $('gpp-lgx');
   let pacc = /^#[0-9a-f]{6}$/i.test(it.acc || '') ? String(it.acc).toUpperCase() : '';

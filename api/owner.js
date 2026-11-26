@@ -230,6 +230,24 @@ module.exports = async (req, res) => {
       await L.db('profiles?id=eq.' + encodeURIComponent(me.id), { method: 'PATCH', body: { company_id: co } });
       return L.send(res, 200, { ok: true, name: c.name, home: co === home });
     }
+    // Their venues by name (My clients): tick = shows, untick = hidden from their app and back office, kept so it comes back when ticked again (Robbie 26 Nov)
+    if (b.action === 'venues' || b.action === 'venues_set') {
+      const co = clean(b.company_id, 60), enc = encodeURIComponent(co);
+      const [rows, gps] = await Promise.all([L.db('app_settings?select=value&company_id=eq.' + enc + '&key=eq.member_page'), L.db('guest_page?select=content&company_id=eq.' + enc).catch(() => [])]);
+      const parse = v => { try { while (typeof v === 'string') v = JSON.parse(v); } catch (e) { v = null; } return v && typeof v === 'object' ? v : {}; };
+      const page = parse(rows[0] && rows[0].value), pl = ((gps[0] && gps[0].content) || {}).places || {};
+      const all = (Array.isArray(page.venues) ? page.venues : []).filter(v => v && v.name).map(v => String(v.name));
+      if (b.action === 'venues_set') {
+        if (!rows.length) return L.send(res, 404, { ok: false, message: 'No venues set up yet.' });
+        const keep = all.filter(n => !(pl[n.toLowerCase()] || {}).other)[0];   // the main venue always stays
+        const hidden = (Array.isArray(b.hidden) ? b.hidden : []).map(x => String(x).toLowerCase()).filter(x => all.some(n => n.toLowerCase() === x) && (!keep || x !== keep.toLowerCase()));
+        page.hidden = hidden; if (!hidden.length) delete page.hidden;
+        await L.db('app_settings?company_id=eq.' + enc + '&key=eq.member_page', { method: 'PATCH', body: { value: JSON.stringify(page) } });
+      }
+      const hid = (Array.isArray(page.hidden) ? page.hidden : []).map(x => String(x).toLowerCase());
+      const own = all.filter(n => !(pl[n.toLowerCase()] || {}).other);
+      return L.send(res, 200, { ok: true, venues: all.map(n => ({ name: n, main: n === own[0], other: !!(pl[n.toLowerCase()] || {}).other, on: !hid.includes(n.toLowerCase()) })) });
+    }
     if (b.action === 'support_back') {
       const s = await getSettings(), home = s.support_home || me.company_id;
       if (home !== me.company_id) await L.db('profiles?id=eq.' + encodeURIComponent(me.id), { method: 'PATCH', body: { company_id: home } });

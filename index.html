@@ -25813,7 +25813,8 @@ function gpVenueSetupHtml(name){
 //    (included, small page: photo, hours, booking, menus). Venues = a full page of its own (add-on), same template as the main one,
 //    no Explore places of its own. Tap a tab: the left side and the phone show only that place.
 function gpPlaceLists(){
-  const pl = GPE.c.places || {}, all = (msPage().venues || []).filter(v => v && v.name), oth = v => !!(pl[v.name.toLowerCase()] || {}).other;
+  const hid = (Array.isArray(msPage().hidden) ? msPage().hidden : []).map(x => String(x).toLowerCase());   // switched off by Mavis in My clients: kept, not shown (Robbie 26 Nov)
+  const pl = GPE.c.places || {}, all = (msPage().venues || []).filter(v => v && v.name && !hid.includes(v.name.toLowerCase())), oth = v => !!(pl[v.name.toLowerCase()] || {}).other;
   const own = all.filter(v => !oth(v));
   return { main: own[0] || null, explore: own.slice(1), venues: all.filter(oth) };
 }
@@ -25824,8 +25825,8 @@ function gpTabsHtml(){
   const q = n => gpEsc(String(n).replace(/\\/g, '\\\\').replace(/'/g, "\\'"));
   const tab = (name, label, cls, small) => `<button type="button" class="gp-tab ${cls}${cur === name ? ' on' : ''}" onclick="gpTab('${q(name)}')"><b>${gpEsc(label)}</b><small>${small}</small></button>`;
   const addBox = k => GPE.tadd === k ? `<div class="gp-tnew ${k === 'venue' ? 've' : 'ex'}"><input id="gp-tnn" maxlength="30" placeholder="${k === 'venue' ? 'Other venue, e.g. Billy Ho' : 'e.g. The Lounge'}" autocomplete="off" oninput="gpVenueTyping(this.value)" onkeydown="if(event.key==='Enter')gpTabAdd();if(event.key==='Escape')gpTabAddCancel()"><button type="button" class="no" onclick="gpTabAddCancel()">Cancel</button><button type="button" class="go" onclick="gpTabAdd()">Add</button></div>`
-    : mgr && k === 'venue' && GPE.paid && L.venues.length >= GPE.paid - 1 ? `<div class="gp-tadd ve full">Ask Mavis to add more<small>Paid for ${GPE.paid - 1} other venue${GPE.paid === 2 ? '' : 's'}</small></div>`   // paid for N venues = main + N-1 others (Robbie 25 Nov)
-    : mgr ? `<button type="button" class="gp-tadd ${k === 'venue' ? 've' : 'ex'}" onclick="gpTabAddOpen('${k}')">${k === 'venue' ? '+ Other venue<small>' + (GPE.paid ? L.venues.length + ' of ' + (GPE.paid - 1) + ' used' : 'One full page - add-on') + '</small>' : '+ Add inside<small>A part of ' + gpEsc(L.main ? L.main.name : 'your venue') + ' - included</small>'}</button>` : '';
+    : mgr && k === 'venue' && GPE.paid && L.venues.length >= GPE.paid - 1 ? `<div class="gp-tadd ve full">Want another venue?<small>Message us - we'll set it up</small></div>`   // paid for N venues = main + N-1 others (Robbie 25 Nov)
+    : mgr ? `<button type="button" class="gp-tadd ${k === 'venue' ? 've' : 'ex'}" onclick="gpTabAddOpen('${k}')">${k === 'venue' ? '+ Other venue<small>One full page</small>' : '+ Add inside<small>A part of ' + gpEsc(L.main ? L.main.name : 'your venue') + ' - included</small>'}</button>` : '';
   if(!L.main) return mgr ? `<div class="gp-tabs"><div class="gp-trow"><span class="gp-tl">MAIN</span>${GPE.tadd ? addBox('explore') : `<button type="button" class="gp-tadd one" onclick="gpTabAddOpen('explore')">+ Add your venue<small>Its name, e.g. Mama San</small></button>`}</div></div>` : '';
   if(!L.explore.length && !L.venues.length && !GPE.tshow && !GPE.tadd)   // one venue: keep it quiet until they want more (Robbie 25 Nov)
     return `<div class="gp-tabs"><div class="gp-trow"><span class="gp-tl">MAIN</span>${tab('', L.main.name, 'main', 'Main view')}${mgr ? `<button type="button" class="gp-tadd one" onclick="GPE.tshow=true;gpRender()">+ Add a place<small>Another area or venue</small></button>` : ''}</div></div>`;

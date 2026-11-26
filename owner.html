@@ -94,6 +94,13 @@ tr.click:hover td{background:#F8FAFC}
 .db{padding:14px;display:flex;flex-direction:column;gap:12px;overflow:auto;flex:1}
 .row{display:flex;justify-content:space-between;align-items:center;gap:10px;font-size:13px;padding:8px 0;border-bottom:1px solid #F1F5F9}
 .row:last-child{border:none}
+#cv-ven .cvh{font-size:11px;font-weight:800;letter-spacing:.08em;color:#64748B;margin:10px 0 2px}
+.cvv{display:flex;align-items:center;gap:12px;background:#fff;border:1.5px solid #E2E8F0;border-radius:12px;padding:11px 14px;margin-top:8px;font-size:14px;color:#94A3B8;cursor:pointer}
+.cvv.on{border-color:#0D9488;color:#0F1E2E}.cvv.main{cursor:default}
+.cvv input{position:absolute;opacity:0;pointer-events:none}
+.cvv .ck{width:22px;height:22px;border-radius:6px;border:2px solid #CBD5E1;flex:none;display:grid;place-items:center;background:#fff}
+.cvv.on .ck{background:#0D9488;border-color:#0D9488}.cvv.on .ck:after{content:'✓';color:#fff;font-size:13px;font-weight:900}
+.cvv b{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.cvv small{color:#64748B;font-weight:600;font-size:12px;flex:none}
 .row .in{padding:7px 10px;width:auto;max-width:170px;text-align:right}
 .stepper{display:flex;align-items:center;gap:8px}
 .stepper button{width:30px;height:30px;border-radius:8px;background:#F1F5F9;border:none;font-weight:800;cursor:pointer}
@@ -334,6 +341,17 @@ function renderClientsKeepFocus(){ const pos=$('csearch').selectionStart; render
 
 // ---------- ONE CLIENT (side panel) ----------
 function closeDrawer(){ const d=$('drawer-bg'); if(d) d.remove(); }
+// Their venues by name: untick one and it's hidden from their app and back office - kept, so ticking it again brings it all back (Robbie 26 Nov)
+async function venLoad(id, hidden){
+  const box = $('cv-ven'); if(!box || box.dataset.co !== id) return;
+  const d = await api(hidden ? 'venues_set' : 'venues', Object.assign({company_id:id}, hidden ? {hidden} : {}));
+  const b2 = $('cv-ven'); if(!b2 || b2.dataset.co !== id) return;
+  if(!d.ok){ if(hidden) toast(d.message || 'Not saved - please try again'); return; }
+  if(hidden) toast('Saved ✓');
+  const v = d.venues || []; if(v.length < 2){ b2.innerHTML = ''; return; }
+  b2.innerHTML = `<div class="cvh">THEIR VENUES</div>` + v.map(x => `<label class="cvv${x.on?' on':''}${x.main?' main':''}"><input type="checkbox" ${x.on?'checked':''} ${x.main?'disabled':''} data-n="${esc(x.name)}" onchange="venSave('${id}')"><span class="ck"></span><b>${esc(x.name)}</b><small>${x.main?'Main - always on':x.on?'':'Hidden - kept'}</small></label>`).join('');
+}
+function venSave(id){ const hidden = [...document.querySelectorAll('#cv-ven input:not(:checked)')].map(i => i.dataset.n); venLoad(id, hidden); }
 function openClient(id){
   const c = clientById(id); if(!c) return;
   closeDrawer();
@@ -342,6 +360,7 @@ function openClient(id){
   const bg = document.createElement('div'); bg.className='bg'; bg.id='drawer-bg';
   bg.addEventListener('click', e=>{ if(e.target===bg) closeDrawer(); });
   const invs = D.invoices.filter(i=>i.company_id===c.id).slice(0,5);
+  setTimeout(() => venLoad(c.id), 0);
   bg.innerHTML = `<div class="drawer">
     <div class="dh">${avatar(c,56)}<div style="min-width:0"><div style="font-size:18px;font-weight:800">${esc(c.name)}</div>
       <div style="font-size:12px;color:rgba(255,255,255,.65)">Company ID ${esc(c.code)} · client since ${c.created_at?new Date(c.created_at).toLocaleDateString('en-GB',{month:'short',year:'numeric'}):'—'}</div>
@@ -358,6 +377,7 @@ function openClient(id){
         <div class="row">Status<select class="in" onchange="saveClient('${c.id}',{status:this.value})">${['active','trial','paused'].map(s=>`<option value="${s}" ${c.status===s?'selected':''}>${s[0].toUpperCase()+s.slice(1)}</option>`).join('')}</select></div>
         ${c.status==='trial'?`<div class="row">Trial ends<input class="in" type="date" value="${c.trial_ends||''}" onchange="saveClient('${c.id}',{trial_ends:this.value})"></div>`:''}
         <div class="row">Venues paid for<div class="stepper"><button onclick="saveClient('${c.id}',{venues_paid:${(c.venues_paid||1)-1}})">−</button><b>${c.venues_paid||1}</b><button onclick="saveClient('${c.id}',{venues_paid:${(c.venues_paid||1)+1}})">+</button></div></div>
+        <div id="cv-ven" data-co="${c.id}"></div>
         <div class="row">Price per venue / month<span style="display:flex;gap:6px"><select class="in" style="max-width:80px" onchange="saveClient('${c.id}',{currency:this.value})"><option ${c.currency==='IDR'?'selected':''}>IDR</option><option ${c.currency==='USD'?'selected':''}>USD</option></select><input class="in" inputmode="numeric" value="${Number(c.price).toLocaleString('en-US')}" oninput="var d=this.value.replace(/[^0-9]/g,'');this.value=d?Number(d).toLocaleString('en-US'):''" onchange="saveClient('${c.id}',{price:this.value.replace(/[^0-9.]/g,'')})"></span></div>
         <div class="row">Monthly total<b>${money(c.price*(c.venues_paid||1), c.currency)}</b></div>
         <div class="row">Paid until<span style="display:flex;gap:8px;align-items:center"><input class="in" type="date" value="${c.paid_until||''}" onchange="saveClient('${c.id}',{paid_until:this.value})"><button class="btn teal sm" onclick="newInvoice('${c.id}')">Make invoice</button></span></div>

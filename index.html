@@ -24343,6 +24343,21 @@ const MCV = {
 
 // ── Drawing, steps and the phone's back button ──
 let mcLast = '';
+// Laptops and tablets with a keyboard: the number keys (top row or number pad) work the on-screen keypads too - 4 digits and the bill (Robbie 26 Nov)
+document.addEventListener('keydown', e => {
+  if(e.ctrlKey || e.metaKey || e.altKey) return;
+  const ae = document.activeElement; if(ae && (/^(INPUT|TEXTAREA|SELECT)$/.test(ae.tagName) || ae.isContentEditable)) return;
+  const vis = el => !!(el && el.getClientRects().length), d = /^[0-9]$/.test(e.key) ? e.key : /^Numpad[0-9]$/.test(e.code || '') ? e.code.slice(-1) : '', del = e.key === 'Backspace' || e.key === 'Delete';
+  const mcK = document.querySelector('#mc .mc-keys');
+  if(e.key === 'Enter'){ const mc = document.getElementById('mc'), go = vis(mc) && !vis(mcK) ? mc.querySelector('.mc-go:not(.off)') : null; if(go && vis(go)){ e.preventDefault(); go.click(); return; } }   // Enter = the big button (Next, Done)
+  if(vis(mcK)){ const b = d ? mcK.querySelector('[data-k="' + d + '"]') : del ? mcK.querySelector('[data-k="<"]') : null;
+    if(b){ e.preventDefault(); b.classList.add('hit'); setTimeout(() => b.classList.remove('hit'), 140); b.dispatchEvent(new CustomEvent('mckey', { bubbles:true })); } return; }
+  const mfK = document.querySelector('#ms-flow .mf-keys');
+  if(vis(mfK)){ const b = d ? mfK.querySelector('[data-k="' + d + '"]') : del ? mfK.querySelector('[data-k="⌫"]') : null;
+    if(b){ e.preventDefault(); b.click(); return; }
+  }
+  if(e.key === 'Enter'){ const f = document.getElementById('ms-flow'); if(vis(f) && !f.querySelector('.mf-ask')){ const g = f.querySelector('.mf-go'); if(g && vis(g)){ e.preventDefault(); g.click(); } } }   // never on the "Add a visit?" question - that one is always a tap
+});
 function mcEl(){ let o = document.getElementById('mc'); if(!o){ o = document.createElement('div'); o.id = 'mc'; o.setAttribute('aria-live', 'polite'); document.body.appendChild(o); mcWire(o); } return o; }
 function mcDraw(){
   const o = mcEl(), v = MCV[MC.S.view]();

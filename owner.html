@@ -642,10 +642,12 @@ async function invPDFBlob(i){
     await Promise.all([...doc.images].map(im => im.complete ? 0 : new Promise(r => { im.onload = im.onerror = r; })));
     await new Promise(r => setTimeout(r, 150));
     const el = doc.body.firstElementChild;
+    el.style.minHeight = '1060px'; el.style.display = 'flex'; el.style.flexDirection = 'column'; if(el.lastElementChild) el.lastElementChild.style.marginTop = 'auto';   // fills the A4 page, thank-you line at the bottom
     const w = Math.ceil(el.getBoundingClientRect().width), hgt = Math.ceil(el.getBoundingClientRect().height);
-    const blob = await f.contentWindow.html2pdf().set({ margin:0, filename:i.number + '.pdf', image:{ type:'jpeg', quality:0.95 },
+    // A proper A4 page with a white border all round, like any normal invoice (Robbie 26 Nov)
+    const blob = await f.contentWindow.html2pdf().set({ margin:15, filename:i.number + '.pdf', image:{ type:'jpeg', quality:0.95 },
       html2canvas:{ scale:2, useCORS:true, x:0, y:0, width:w, height:hgt, scrollX:0, scrollY:0, windowWidth:720, windowHeight:hgt },
-      jsPDF:{ unit:'px', format:[w, hgt], orientation:'portrait', hotfixes:['px_scaling'] } }).from(el).outputPdf('blob');
+      jsPDF:{ unit:'mm', format:'a4', orientation:'portrait' }, pagebreak:{ mode:'avoid-all' } }).from(el).outputPdf('blob');
     return new Blob([await blob.arrayBuffer()], { type:'application/pdf' });   // copy out before the hidden page is removed
   } finally { f.remove(); }
 }

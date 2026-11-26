@@ -3121,6 +3121,7 @@ body.fd-sel #p-frontdesk.page:not(#p-home):not(#p-chat) > .ph.fd-ph,body.fd-sear
 .fd-seg{display:flex;background:#E2E8F0;border-radius:13px;padding:4px;gap:4px}.fd-seg button{flex:1;border:0;background:none;border-radius:10px;padding:11px 0;font:800 15px Inter,sans-serif;color:#475569;cursor:pointer;white-space:nowrap}.fd-seg button.on{background:#0F1E2E;color:#fff}
 .fd-q{display:block;width:100%;margin-top:10px;border:2px solid #0D9488;border-radius:14px;padding:14px 16px;font:600 17px Inter,sans-serif;color:#0F1E2E;background:#fff;outline:0;box-sizing:border-box}
 
+body.mv-pre #app .page,body.mv-pre #app .page.on{visibility:hidden!important}
 /* Staff "add to your phone" drop-down + iPhone guide (same as the guest app) */
 #clpop{position:fixed;left:12px;right:12px;top:calc(12px + env(safe-area-inset-top));max-width:440px;margin:0 auto;background:#fff;border-radius:20px;box-shadow:0 14px 40px rgba(15,30,46,.28);padding:14px;transform:translateY(calc(-100% - 40px));transition:transform .45s cubic-bezier(.2,.9,.3,1.15);z-index:99999;color:#0F1E2E;font-family:Inter,sans-serif}
 #clpop.on{transform:none}#clpop .in-row{display:flex;gap:12px;align-items:center}
@@ -4925,6 +4926,7 @@ html:has(#menuDetailOverlay[style*="flex"]),html:has(#menuDetailOverlay[style*="
 </script>
 </head>
 <body>
+<script>/* Membership-only clients open straight into their own screen - no flash of full Mavis first (Robbie 26 Nov) */try{if(localStorage.getItem('mvPlan')==='membership'){document.body.classList.add('mv-mem','mv-pre');if(localStorage.getItem('mvFd')==='1')document.body.classList.add('fd-only');setTimeout(function(){document.body.classList.remove('mv-pre')},6000);}}catch(e){}</script>
 
 <script>
   // ── Install reminder icon ── small warning icon next to the "Good morning, John" greeting
@@ -8173,6 +8175,7 @@ function authEnterApp(){
     try{ ordApplyVisibility(); ordStart(); }catch(e){}
   }
   nav(fdOnly() ? 'frontdesk' : appPlan === 'membership' ? 'membership' : 'home');   // Front Desk logins always open the scan screen
+  requestAnimationFrame(() => document.body.classList.remove('mv-pre'));
   setTimeout(()=>{ if(typeof evOpenPending==='function') evOpenPending(); }, 400);
 }
 // Bottom-left: full name, then role and company - so it's always clear who's logged in.
@@ -8445,7 +8448,7 @@ async function doLogin(){
   }
 }
 async function doLogout(){
-  try{ localStorage.removeItem('mavis_logged_in_email'); }catch(err){}
+  try{ localStorage.removeItem('mavis_logged_in_email'); localStorage.removeItem('mvPlan'); localStorage.removeItem('mvFd'); }catch(err){}
   try{ await sb.auth.signOut(); }catch(err){}
   myProfile = null;
   // Start completely fresh, so the next person to log in on this device never sees the
@@ -32440,7 +32443,7 @@ function installAppClick(){
 // Same drop-down as the guest app, after logging in on a phone. Android: one tap. iPhone: the step-by-step guide.
 function clubAppSetup(){
   const club = appPlan === 'membership';
-  try{ if(club) localStorage.setItem('mvPlan', 'membership'); else localStorage.removeItem('mvPlan'); }catch(e){}
+  try{ if(club){ localStorage.setItem('mvPlan', 'membership'); localStorage.setItem('mvFd', fdOnly() ? '1' : '0'); } else { localStorage.removeItem('mvPlan'); localStorage.removeItem('mvFd'); } }catch(e){}
   const mf = document.querySelector('link[rel=manifest]'), ti = document.querySelector('link[rel=apple-touch-icon]'), tt = document.querySelector('meta[name=apple-mobile-web-app-title]');
   const want = club ? ['/manifest-club.json?v=1', '/club-apple-180.png', 'Mavis Club'] : ['/manifest.json?v=6', '/apple-touch-icon-v6.png', 'Mavis'];
   if(mf && mf.getAttribute('href') !== want[0]) mf.setAttribute('href', want[0]);

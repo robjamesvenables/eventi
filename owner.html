@@ -546,7 +546,7 @@ function newInvoice(cid){
   modal(`<h3>New invoice</h3><div class="hint">Saved as a draft - you can check it before sending.</div>
     <label class="lbl">Client</label><select class="in" id="ni-c" onchange="niFill()">${clients.map(c=>`<option value="${c.id}" ${c.id===c0.id?'selected':''}>${esc(c.name)}</option>`).join('')}</select>
     <label class="lbl">For (period)</label><input class="in" id="ni-period" value="${esc(nextMonthLabel())}">
-    <div class="grid2"><div style="display:none"><label class="lbl">Venues</label><input class="in" id="ni-qty" type="number" min="1" oninput="niTotal()"></div><div><label class="lbl">Monthly price</label><input class="in" id="ni-price" inputmode="numeric" oninput="niTotal()"></div></div>
+    <div><div style="display:none"><label class="lbl">Venues</label><input class="in" id="ni-qty" type="number" min="1" oninput="niTotal()"></div><div><label class="lbl">Monthly price</label><input class="in" id="ni-price" inputmode="numeric" oninput="niTotal()"></div></div>
     <label class="lbl">Due date</label><input class="in" id="ni-due" type="date" value="${due}">
     <div class="preview" id="ni-total"></div>
     <div class="foot"><button class="btn" onclick="closeModal()">Cancel</button><button class="btn teal" onclick="createInvoice()">Create invoice</button></div>`);
@@ -755,6 +755,34 @@ document.addEventListener('keydown',e=>{ if(e.key==='Escape'){ if($('modal-bg'))
   const { data } = await sb.auth.getSession();
   if(!data || !data.session){ showLogin(); return; }
   await load();
+})();
+</script>
+<script>
+// Mavis-style drop-downs on My clients (Robbie 26 Nov): the real <select> stays hidden underneath, so values and onchange work exactly as before
+(function(){
+  const css = `.msel{position:relative;min-width:90px;vertical-align:middle}.msel>select{position:absolute;opacity:0;pointer-events:none;width:1px;height:1px;left:0;top:0}
+.msel-b{width:100%;display:flex;align-items:center;justify-content:space-between;gap:10px;background:#fff;border:1.5px solid #E2E8F0;border-radius:12px;padding:9px 12px;font:700 14px Inter,sans-serif;color:#0F1E2E;cursor:pointer;text-align:left}
+.msel-b span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.msel-b:hover,.msel.open .msel-b{border-color:#0D9488}.msel-b svg{flex:none;color:#64748B;transition:transform .15s}.msel.open .msel-b svg{transform:rotate(180deg)}
+.msel-l{position:absolute;right:0;top:calc(100% + 6px);min-width:100%;max-height:300px;overflow:auto;background:#fff;border-radius:14px;box-shadow:0 14px 40px rgba(15,30,46,.18);border:1px solid #E2E8F0;padding:6px;z-index:60;display:none}
+.msel.open .msel-l{display:block}.msel-o{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;font:600 14px Inter,sans-serif;color:#0F1E2E;cursor:pointer;white-space:nowrap}
+.msel-o:hover{background:#F1F5F9}.msel-o.on{color:#0F766E;font-weight:800}.msel-o i{width:18px;display:grid;place-items:center;color:#0D9488;font-style:normal}`;
+  const st = document.createElement('style'); st.textContent = css; document.head.appendChild(st);
+  const chev = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>';
+  const wrap = sel => {
+    if(sel.closest('.msel') || sel.multiple) return;
+    const w = document.createElement('span'); w.className = 'msel';
+    w.style.display = sel.closest('.row') ? 'inline-block' : 'block'; const fix = sel.style.maxWidth || sel.style.width; if(fix){ w.style.width = fix; w.style.flex = 'none'; }
+    sel.parentNode.insertBefore(w, sel); w.appendChild(sel);
+    const b = document.createElement('button'); b.type = 'button'; b.className = 'msel-b'; const l = document.createElement('div'); l.className = 'msel-l'; w.append(b, l);
+    const draw = () => { const o = sel.options[sel.selectedIndex]; b.innerHTML = '<span></span>' + chev; b.firstChild.textContent = o ? o.textContent : '';
+      l.innerHTML = ''; [...sel.options].forEach((x, i) => { const d = document.createElement('div'); d.className = 'msel-o' + (i === sel.selectedIndex ? ' on' : ''); d.dataset.i = i; d.innerHTML = '<i>' + (i === sel.selectedIndex ? '✓' : '') + '</i>'; d.appendChild(document.createTextNode(x.textContent)); l.appendChild(d); }); };
+    draw(); sel.addEventListener('change', draw);
+    b.onclick = e => { e.stopPropagation(); draw(); document.querySelectorAll('.msel.open').forEach(x => x !== w && x.classList.remove('open')); w.classList.toggle('open'); };
+    l.onclick = e => { e.stopPropagation(); const o = e.target.closest('.msel-o'); if(!o) return; w.classList.remove('open'); if(+o.dataset.i === sel.selectedIndex) return; sel.selectedIndex = +o.dataset.i; draw(); sel.dispatchEvent(new Event('change', { bubbles:true })); };
+  };
+  document.addEventListener('click', () => document.querySelectorAll('.msel.open').forEach(x => x.classList.remove('open')));
+  const scan = () => document.querySelectorAll('select:not([data-native])').forEach(wrap);
+  new MutationObserver(scan).observe(document.body, { childList:true, subtree:true }); scan();
 })();
 </script>
 </body></html>

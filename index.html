@@ -26285,13 +26285,21 @@ window.gpForm = function(k, i){
       <div class="gp-tip"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 16v-4M12 8h.01"/></svg><span><b>Using a ticket website</b> (Megatix, Ticketmaster, Eventbrite...)? First make a member discount code on that website, then type the exact same code here. If you're not sure how, ask the ticket company. Leave this empty and members will book by WhatsApp instead.</span></div></div>`;
   if(k === 'events') f += `<label>Show it from (optional)</label><input id="gpf-from" type="date" value="${gpEsc(it.from || '')}"><div class="gp-hint">Leave empty to show it straight away. It disappears by itself after the event.</div>`;
   const s = document.createElement('div'); s.className = 'eb-sheet';
-  s.innerHTML = `<div class="eb-form"><h3>${edit ? 'Change' : 'Add a'} ${title}</h3><p class="sub">Shows on the guest page as soon as you save</p>${f}<input type="file" id="gpf-file" accept="image/*" style="display:none"><div class="eb-fbtns"><button class="eb-no">Cancel</button><button class="eb-go">Save</button></div></div>`;
+  s.innerHTML = `<div class="eb-form"><h3>${edit ? 'Change' : /^[aeiou]/i.test(title) ? 'Add an' : 'Add a'} ${title}</h3><p class="sub">Shows on the guest page as soon as you save</p>${f}<input type="file" id="gpf-file" accept="image/*" style="display:none"><div class="eb-fbtns"><button class="eb-no">Cancel</button><button class="eb-go">Save</button></div></div>`;
   s.addEventListener('mousedown', e => { if(e.target === s) s.remove(); });
   document.body.appendChild(s);
   const $ = id => s.querySelector('#' + id);
   const ph = $('gpf-ph'), fin = $('gpf-file');
+  // Adding a new one: the phone shows a dashed "new one goes here" box in its real spot, filling in as they type (Robbie 26 Nov)
+  const nwk = !edit && ['slides', 'deals', 'events'].includes(k);
+  let niImg = '';
+  const niSend = () => { if(!nwk || !document.body.contains(s)) return; const v = id => ($(id) ? $(id).value.trim() : '');
+    GPE.go = Object.assign({ mv:'go', sec:k, place: it.venue || '', id:'' }, GPE.go && !GPE.go.clear ? GPE.go : {}, { newi: { k, t: v('gpf-title'), s: v('gpf-line') || v('gpf-when'), i: niImg } }); gpGoSend(0); };
+  if(nwk){ let niT = 0; ['gpf-title', 'gpf-line', 'gpf-when'].forEach(id => { if($(id)) $(id).addEventListener('input', () => { clearTimeout(niT); niT = setTimeout(niSend, 200); }); });
+    const rm = s.remove.bind(s); s.remove = () => { rm(); if(GPE.go && GPE.go.newi){ GPE.go = Object.assign({}, GPE.go); delete GPE.go.newi; gpGoSend(0); } };
+    setTimeout(niSend, 350); }
   ph.onclick = () => fin.click(); ph.onkeydown = e => { if(e.key === 'Enter') fin.click(); };
-  fin.onchange = () => { file = fin.files && fin.files[0]; if(!file) return; ph.classList.add('has'); ph.innerHTML = `<img src="${URL.createObjectURL(file)}" alt=""><span>Change photo</span>`; };
+  fin.onchange = () => { file = fin.files && fin.files[0]; if(!file) return; const u = URL.createObjectURL(file); ph.classList.add('has'); ph.innerHTML = `<img src="${u}" alt=""><span>Change photo</span>`; niImg = u; niSend(); };
   const showBtn = () => {
     if(!$('gpf-btns')) return;
     s.querySelectorAll('#gpf-btns button').forEach(b => b.classList.toggle('on', b.dataset.b === btn));

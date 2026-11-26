@@ -26281,7 +26281,7 @@ window.gpForm = function(k, i){
     <label>Your own details <span class="gp-opt">tap the icon to choose it</span></label><div id="gpf-more">${(it.more || []).map(gpMoreRow).join('')}</div><button type="button" class="gp-add gp-add-s" id="gpf-moreadd" onclick="gpMoreAdd()">+ Add a detail</button>
     <label class="gp-tg"><input type="checkbox" id="gpf-hl"${it.hl ? ' checked' : ''}><span><b>Show in Highlights</b><small>Also a big photo in the swipe-through photos at the top (needs a photo)</small></span></label>
     `;
-  if(k !== 'deals') f += `<label>Button goes to</label><div class="gp-btns gp-3b" id="gpf-btns"><button type="button" data-b="">No button</button><button type="button" data-b="wa">WhatsApp</button><button type="button" data-b="call">Call</button><button type="button" data-b="email">Email</button><button type="button" data-b="book">Booking site</button><button type="button" data-b="tickets">Tickets</button></div>
+  if(k === 'events') f += `<label>Button goes to</label><div class="gp-btns gp-3b" id="gpf-btns"><button type="button" data-b="">No button</button><button type="button" data-b="wa">WhatsApp</button><button type="button" data-b="call">Call</button><button type="button" data-b="email">Email</button><button type="button" data-b="book">Booking site</button><button type="button" data-b="tickets">Tickets</button></div>
     <div id="gpf-urlw"><label id="gpf-urll">Link</label><input id="gpf-url" inputmode="url" value="${gpEsc(it.url || '')}" placeholder="https://..."></div>
     <div id="gpf-tow"><label id="gpf-tol">Number</label><input id="gpf-to" value="${gpEsc(it.to || '')}"></div><div class="gp-hint gp-goes" id="gpf-wah"></div>`;
   // One box for the member deal on events and deals - was two (a % list + this), which confused staff (Robbie 24 Nov)
@@ -26363,7 +26363,8 @@ window.gpForm = function(k, i){
       ['time2', 'blast', 'details', 'age', 'dress', 'price', 'notes', 'disc', 'code'].forEach(x => { if(!rec[x]) delete rec[x]; }); if(!rec.hl) delete rec.hl;
       if(rec.hl && !file && !gpSrc(it)){ toast('Add a photo to show it in Highlights'); return; }
       if(!rec.title){ toast('Type the event name'); return; } if(!rec.date){ toast('Pick the date - it hides itself after that day'); return; } if(rec.date < gpToday()){ toast('That date has already passed'); return; } }
-    if(k !== 'deals'){
+    if(k === 'slides'){ delete rec.btn; delete rec.url; delete rec.to; }   // highlights only ever say See more - their old button never showed (Robbie 26 Nov)
+    else if(k !== 'deals'){
       rec.btn = btn; rec.url = btn === 'book' || btn === 'tickets' ? val('gpf-url') : '';
       if(rec.url && !/^https?:\/\//i.test(rec.url)) rec.url = 'https://' + rec.url;
       if((btn === 'book' || btn === 'tickets') && !/^https:\/\/[^\s]+\.[^\s]+/i.test(rec.url)){ toast('Paste the full link, e.g. https://megatix.co.id/...'); return; }

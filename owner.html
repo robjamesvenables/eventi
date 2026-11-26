@@ -96,7 +96,7 @@ tr.click:hover td{background:#F8FAFC}
 .row:last-child{border:none}
 #cv-ven .cvh{font-size:11px;font-weight:800;letter-spacing:.08em;color:#64748B;margin:10px 0 2px}
 .cvv{display:flex;align-items:center;gap:12px;background:#fff;border:1.5px solid #E2E8F0;border-radius:12px;padding:11px 14px;margin-top:8px;font-size:14px;color:#94A3B8;cursor:pointer}
-.cvv.on{border-color:#0D9488;color:#0F1E2E}.cvv.main{cursor:default}
+.cvv.on{border-color:#0D9488;color:#0F1E2E}.cvv.mn{cursor:default}
 .cvv input{position:absolute;opacity:0;pointer-events:none}
 .cvv .ck{width:22px;height:22px;border-radius:6px;border:2px solid #CBD5E1;flex:none;display:grid;place-items:center;background:#fff}
 .cvv.on .ck{background:#0D9488;border-color:#0D9488}.cvv.on .ck:after{content:'✓';color:#fff;font-size:13px;font-weight:900}
@@ -104,6 +104,12 @@ tr.click:hover td{background:#F8FAFC}
 .row .in{padding:7px 10px;width:auto;max-width:170px;text-align:right}
 .stepper{display:flex;align-items:center;gap:8px}
 .stepper button{width:30px;height:30px;border-radius:8px;background:#F1F5F9;border:none;font-weight:800;cursor:pointer}
+.billdue{background:#FFF7ED;color:#9A3412;border-radius:10px;padding:10px 12px;font-size:13px;font-weight:700;margin:6px 0 2px}
+.nb{padding:14px 16px}.nbh{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}.nbh h2{margin:0}.nbh h2 small{font-weight:600;color:var(--ink3);letter-spacing:0;margin-left:4px}
+.nbt{display:flex;gap:6px}.nbt button{border:1px solid #E2E8F0;background:#fff;border-radius:8px;padding:5px 10px;font:700 12.5px inherit;font-family:inherit;cursor:pointer;color:#0F1E2E}
+.nbe{margin-top:10px;min-height:160px;background:#FFFBEB;border:1px solid #FDE68A;border-radius:10px;padding:12px 14px;font-size:15px;line-height:1.5;color:#3F2A0A;outline:none;overflow-wrap:anywhere}
+.nbe:focus{border-color:#F59E0B;box-shadow:0 0 0 3px #FEF3C7}.nbe:empty:before{content:attr(data-ph);color:#B45309;opacity:.6}
+.nbe h3{font-size:17px;margin:6px 0 2px}.nbe ul{margin:4px 0;padding-left:20px}.nbs{font-size:12px;color:var(--ink3);margin-top:6px;min-height:14px}
 .note{width:100%;min-height:90px;background:#FFFBEB;border:1px solid #FDE68A;border-radius:10px;padding:10px 12px;font-size:14px;color:#78350F;resize:vertical;outline:none}
 .modal-bg{position:fixed;inset:0;background:rgba(15,30,46,.55);z-index:30;display:flex;align-items:center;justify-content:center;padding:16px}
 .modal{background:white;border-radius:16px;width:100%;max-width:520px;max-height:92vh;overflow:auto;padding:22px}
@@ -285,7 +291,7 @@ function renderHome(){
     <div class="sub">${new Date().toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'long'})} · everything across all your clients</div>
     <div class="kpis">
       <div class="kpi"><div class="n">${live.length}</div><div class="l">Clients${trials?' · '+trials+' on trial':''}</div></div>
-      <div class="kpi"><div class="n">${venues}</div><div class="l">Venues paid for</div></div>
+      <div class="kpi"><div class="n">${venues}</div><div class="l">Venues</div></div>
       <div class="kpi"><div class="n">${staff}</div><div class="l">Staff using Mavis</div></div>
       <div class="kpi money"><div class="n">${moneyShort(t.billed)}</div><div class="l">${new Date().toLocaleDateString('en-GB',{month:'long'})} · ${moneyShort(t.paid)} paid, ${moneyShort(t.due)} due</div><div class="bar"><span style="width:${pct}%"></span></div></div>
     </div>
@@ -349,9 +355,20 @@ async function venLoad(id, hidden){
   if(!d.ok){ if(hidden) toast(d.message || 'Not saved - please try again'); return; }
   if(hidden) toast('Saved ✓');
   const v = d.venues || []; if(v.length < 2){ b2.innerHTML = ''; return; }
-  b2.innerHTML = `<div class="cvh">THEIR VENUES</div>` + v.map(x => `<label class="cvv${x.on?' on':''}${x.main?' main':''}"><input type="checkbox" ${x.on?'checked':''} ${x.main?'disabled':''} data-n="${esc(x.name)}" onchange="venSave('${id}')"><span class="ck"></span><b>${esc(x.name)}</b><small>${x.main?'Main - always on':x.on?'':'Hidden - kept'}</small></label>`).join('');
+  b2.innerHTML = `<div class="cvh">THEIR VENUES</div>` + v.map(x => `<label class="cvv${x.on?' on':''}${x.main?' mn':''}"><input type="checkbox" ${x.on?'checked':''} ${x.main?'disabled':''} data-n="${esc(x.name)}" onchange="venSave('${id}')"><span class="ck"></span><b>${esc(x.name)}</b><small>${x.main?'Main - always on':x.on?'':'Hidden - kept'}</small></label>`).join('');
 }
 function venSave(id){ const hidden = [...document.querySelectorAll('#cv-ven input:not(:checked)')].map(i => i.dataset.n); venLoad(id, hidden); }
+// Your notes per client: a little admin space - meetings, who to speak to, the deal agreed. Bold, titles and lists (Robbie 26 Nov)
+function noteClean(html){ const t = document.createElement('template'); t.innerHTML = String(html || '');
+  const ok = { B:1, STRONG:1, I:1, EM:1, U:1, BR:1, DIV:1, P:1, UL:1, OL:1, LI:1, H3:1 };
+  const walk = n => { [...n.childNodes].forEach(x => { if(x.nodeType === 1){ if(!ok[x.tagName]){ x.replaceWith(...(/^(SCRIPT|STYLE|IFRAME|OBJECT)$/.test(x.tagName) ? [] : [...x.childNodes])); return walk(n); } [...x.attributes].forEach(a => x.removeAttribute(a.name)); walk(x); } else if(x.nodeType !== 3) x.remove(); }); };
+  walk(t.content); return t.innerHTML; }
+function noteHtml(v){ v = String(v || ''); return /^\s*</.test(v) ? noteClean(v) : esc(v).replace(/\n/g, '<br>'); }   // older notes were plain text
+let noteT = 0;
+function noteDirty(id){ const s = $('cv-ns'); if(s) s.textContent = 'Typing…'; clearTimeout(noteT); noteT = setTimeout(() => noteSave(id), 1500); }
+async function noteSave(id){ clearTimeout(noteT); const e = $('cv-notes'); if(!e) return; const v = noteClean(e.innerHTML).slice(0, 20000), c = clientById(id); if(!c || (c.notes || '') === v){ const s = $('cv-ns'); if(s && s.textContent) s.textContent = 'Saved ✓'; return; }
+  const d = await api('update', { company_id:id, notes:v }); const s = $('cv-ns');
+  if(!d.ok){ if(s) s.textContent = 'Not saved - check your connection'; return; } c.notes = v; if(s) s.textContent = 'Saved ✓'; }
 function openClient(id){
   const c = clientById(id); if(!c) return;
   closeDrawer();
@@ -376,12 +393,15 @@ function openClient(id){
         <div class="row">What they get<select class="in" onchange="saveClient('${c.id}',{plan:this.value})"><option value="full" ${c.plan!=='membership'?'selected':''}>Full Mavis</option><option value="membership" ${c.plan==='membership'?'selected':''}>Membership only</option></select></div>
         <div class="row">Status<select class="in" onchange="saveClient('${c.id}',{status:this.value})">${['active','trial','paused'].map(s=>`<option value="${s}" ${c.status===s?'selected':''}>${s[0].toUpperCase()+s.slice(1)}</option>`).join('')}</select></div>
         ${c.status==='trial'?`<div class="row">Trial ends<input class="in" type="date" value="${c.trial_ends||''}" onchange="saveClient('${c.id}',{trial_ends:this.value})"></div>`:''}
-        <div class="row">Venues paid for<div class="stepper"><button onclick="saveClient('${c.id}',{venues_paid:${(c.venues_paid||1)-1}})">−</button><b>${c.venues_paid||1}</b><button onclick="saveClient('${c.id}',{venues_paid:${(c.venues_paid||1)+1}})">+</button></div></div>
+        <div class="row">Venues<div class="stepper"><button onclick="saveClient('${c.id}',{venues_paid:${(c.venues_paid||1)-1}})">−</button><b>${c.venues_paid||1}</b><button onclick="saveClient('${c.id}',{venues_paid:${(c.venues_paid||1)+1}})">+</button></div></div>
         <div id="cv-ven" data-co="${c.id}"></div>
         <div class="row">Monthly price<span style="display:flex;gap:6px"><select class="in" style="max-width:80px" onchange="saveClient('${c.id}',{currency:this.value})"><option ${c.currency==='IDR'?'selected':''}>IDR</option><option ${c.currency==='USD'?'selected':''}>USD</option></select><input class="in" inputmode="numeric" value="${Number(c.price).toLocaleString('en-US')}" oninput="var d=this.value.replace(/[^0-9]/g,'');this.value=d?Number(d).toLocaleString('en-US'):''" onchange="saveClient('${c.id}',{price:this.value.replace(/[^0-9.]/g,'')})"></span></div>
         
         <div class="row">Paid until<span style="display:flex;gap:8px;align-items:center"><input class="in" type="date" value="${c.paid_until||''}" onchange="saveClient('${c.id}',{paid_until:this.value})"><button class="btn teal sm" onclick="newInvoice('${c.id}')">Make invoice</button></span></div>
+        ${(()=>{ const pu=daysUntil(c.paid_until); return pu!=null&&pu<=7&&c.status!=='paused' ? `<div class="billdue">⏰ ${pu<0?'Paid until '+day(c.paid_until)+' - next month\'s bill is overdue':'Paid until '+day(c.paid_until)+' - time to send next month\'s bill'}</div>` : ''; })()}
       </div>
+      <div class="card nb"><div class="nbh"><h2>YOUR NOTES <small>only you see these</small></h2><div class="nbt"><button type="button" title="Bold" onmousedown="event.preventDefault();document.execCommand('bold')"><b>B</b></button><button type="button" title="Heading" onmousedown="event.preventDefault();document.execCommand('formatBlock',false,'h3')">Title</button><button type="button" title="List" onmousedown="event.preventDefault();document.execCommand('insertUnorderedList')">• List</button><button type="button" title="Normal text" onmousedown="event.preventDefault();document.execCommand('formatBlock',false,'div')">Aa</button></div></div>
+        <div class="nbe" id="cv-notes" contenteditable="true" data-ph="e.g. Masonry - Ben (owner) +62 ... Price agreed: 12m a month fixed for now. Wants: bookings + keyrings for 3 venues." oninput="noteDirty('${c.id}')" onblur="noteSave('${c.id}')">${noteHtml(c.notes)}</div><div class="nbs" id="cv-ns"></div></div>
       <div class="card" style="padding:14px 16px"><h2>USAGE</h2>
         <div class="row">Staff<span class="muted">${c.staff} · ${Object.entries(c.by_role).map(([r,n])=>n+' '+(roleNames[r]||r)).join(', ')||'—'}</span></div>
         <div class="row">Active today<span class="muted">${c.active_today}</span></div>
@@ -394,8 +414,6 @@ function openClient(id){
       <div class="card" style="padding:14px 16px"><h2>BILL TO</h2>
         ${[['bill_attn','Contact name'],['bill_email','Email'],['bill_phone','WhatsApp number'],['bill_address','Address']].map(([k,l])=>`<label class="lbl" style="margin-top:8px">${l}</label><input class="in" value="${esc(c[k])}" onchange="saveClient('${c.id}',{${k}:this.value},true)">`).join('')}
       </div>
-      <div><h2 style="font-size:12px;letter-spacing:.08em;color:var(--ink3);margin:4px 2px 8px">YOUR NOTES (only you see these)</h2>
-        <textarea class="note" placeholder="e.g. Called 12 Oct - wants Inventory. Owner prefers WhatsApp." onchange="saveClient('${c.id}',{notes:this.value},true)">${esc(c.notes)}</textarea></div>
       <div style="display:flex;gap:8px;flex-wrap:wrap;padding-bottom:20px">
         <button class="btn" onclick="renameClient('${c.id}')">Rename</button>
         ${c.status==='paused' ? `<button class="btn teal" onclick="pauseClient('${c.id}',false)">Resume client</button>` : `<button class="btn red" onclick="pauseClient('${c.id}',true)">Pause client</button>`}
@@ -460,7 +478,7 @@ function newClient(){
     <label class="lbl">What they get</label><select class="in" id="nc-plan"><option value="membership" selected>Membership</option><option value="full">Full Mavis</option></select>
     <div class="preview" id="nc-prev" style="display:none"></div>
     <div class="grid2"><div><label class="lbl">Monthly price</label><div style="display:flex;gap:6px"><select class="in" id="nc-cur" style="width:90px"><option>IDR</option><option>USD</option></select><input class="in" id="nc-price" inputmode="numeric" placeholder="e.g. 5,000,000" oninput="var d=this.value.replace(/[^0-9]/g,'');this.value=d?Number(d).toLocaleString('en-US'):''"></div></div>
-      <div><label class="lbl">Venues paid for</label><input class="in" id="nc-venues" type="number" min="1" value="1"></div></div>
+      <div><label class="lbl">Venues</label><input class="in" id="nc-venues" type="number" min="1" value="1"></div></div>
     <div class="grid2"><div><label class="lbl">Free trial</label><select class="in" id="nc-trial"><option value="0" selected>No trial - paying now</option><option value="7">7 days</option><option value="14">14 days</option><option value="30">30 days</option></select></div>
       <div><label class="lbl">Their WhatsApp (for invoices)</label><input class="in" id="nc-phone" placeholder="+62…"></div></div>
     <div class="err" id="nc-err"></div>

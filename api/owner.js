@@ -130,7 +130,7 @@ module.exports = async (req, res) => {
         patch.status = b.status;
       }
       ['trial_ends', 'paid_until'].forEach(k => { if (b[k] !== undefined) patch[k] = b[k] ? String(b[k]).slice(0, 10) : null; });
-      if (b.notes !== undefined) patch.notes = String(b.notes || '').slice(0, 4000);
+      if (b.notes !== undefined) patch.notes = String(b.notes || '').slice(0, 20000);
       if (b.plan !== undefined) { if (!['full', 'membership'].includes(b.plan)) return L.send(res, 400, { ok: false, reason: 'bad plan' }); patch.plan = b.plan; }
       BILL_FIELDS.forEach(k => { if (b[k] !== undefined) patch[k] = clean(b[k], 300) || null; });
       const updated = (await L.db('companies?id=eq.' + co.id, { method: 'PATCH', body: patch }))[0];

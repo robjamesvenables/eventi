@@ -607,7 +607,7 @@ function openInvoice(id){
   bg.innerHTML=`<div style="width:100%;max-width:760px;margin:10px auto">
     <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:12px;background:white;padding:12px;border-radius:12px">
       <b style="font-size:16px">${esc(i.number)}</b><span class="pill ${s.cls}">${s.label}</span><span style="margin-left:auto"></span>
-      ${s.k!=='void'?`<button class="btn sm" onclick="invPDF('${id}')">⬇ PDF</button><button class="btn sm" onclick="invEmail('${id}')">✉ Email</button><button class="btn teal sm" onclick="invWhatsApp('${id}')">Send on WhatsApp</button>`:''}
+      ${s.k!=='void'?`<button class="btn teal sm" onclick="invPDF('${id}')">⬇ Download PDF</button>${s.k==='draft'?`<button class="btn sm" onclick="invSentNow('${id}')">Mark as sent</button>`:''}`:''}
       ${['draft','sent','overdue'].includes(s.k)?`<button class="btn navy sm" onclick="markPaid('${id}')">Mark paid</button>`:''}
       ${s.k==='draft'?`<button class="btn red sm" onclick="deleteInvoice('${id}')">Delete</button>`:''}
       ${['sent','overdue'].includes(s.k)?`<button class="btn sm" onclick="cancelInvoice('${id}')">Cancel invoice</button>`:''}
@@ -623,6 +623,7 @@ function cancelInvoice(id){
     <div class="foot"><button class="btn" onclick="closeModal()">Keep it</button><button class="btn red" onclick="closeModal();setInvStatus('${id}','void','Invoice cancelled').then(()=>closeInvoice())">Cancel invoice</button></div>`);
 }
 async function deleteInvoice(id){ const d=await api('invoice_delete',{id}); if(!d.ok){ toast(d.message||'Not deleted'); return; } closeInvoice(); await load(); toast('Draft deleted'); }
+async function invSentNow(id){ const i=D.invoices.find(x=>x.id===id); if(!i) return; await invMarkSent(i); toast('Marked as sent ✓'); openInvoice(id); }
 async function invMarkSent(i){ if(i.status==='draft'){ await api('invoice_update',{id:i.id,status:'sent'}); await load(); } }
 // The PDF is made inside its own hidden, invoice-sized page, so the size of your screen, scrolling or
 // window layout can never shift or cut it off.
@@ -652,8 +653,7 @@ async function invPDF(id){
   const i=D.invoices.find(x=>x.id===id); toast('Making PDF…');
   try{
     const blob=await invPDFBlob(i); const file=new File([blob], i.number+'.pdf', {type:'application/pdf'});
-    if(navigator.canShare && navigator.canShare({files:[file]}) && /Android|iPhone|iPad/i.test(navigator.userAgent)){ await navigator.share({files:[file], title:i.number}); }
-    else { const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=i.number+'.pdf'; document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(a.href),3000); toast('PDF saved ✓'); }
+    { const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=i.number+'.pdf'; document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(a.href),3000); toast('PDF saved ✓'); }
   }catch(e){ if(e&&e.name==='AbortError') return; console.warn(e); toast('Could not make the PDF - try again'); }
 }
 function invText(i){

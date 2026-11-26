@@ -8295,8 +8295,8 @@ function companyCardRender(){
     <div class="cc-btns" style="display:flex;gap:8px;flex-wrap:wrap">
       ${appPlan === 'membership' ? '' : `<label class="btn btn-ghost" style="cursor:pointer">${myCompany.logo ? 'Change logo' : 'Add logo'}<input type="file" accept="image/*" style="display:none" onchange="companyLogoPicked(this)"></label>
       ${myCompany.logo ? '<button class="btn btn-ghost" style="color:#DC2626" onclick="companyLogoSave(\'\')">Remove logo</button>' : ''}`}
-      <button class="btn btn-ghost" onclick="companyRename()">Rename</button>
-    </div>
+      ${appPlan === 'membership' ? '' : '<button class="btn btn-ghost" onclick="companyRename()">Rename</button>'}
+    </div>${appPlan === 'membership' ? '<div style="font-size:12.5px;color:#64748B;margin-top:8px">This is the name guests see. Want it changed? Contact Mavis.</div>' : ''}
     ${(() => { const on = mvSupportOn(); return `<div class="cc-sup"><div><b>Mavis Support</b><small>${on ? 'On - Mavis is able to assist you at any time.' : 'Off - your Mavis is private. Mavis can\'t assist you.'}</small></div><button type="button" class="gp-tog${on ? ' on' : ''}" aria-label="Mavis Support" onclick="mvSupportSet(${!on})"><i></i></button></div>`; })()}
   </div>`;
 }
@@ -24008,7 +24008,8 @@ function fdMatches(){
 // ── Other venues: which venue each staff member works at (Robbie 26 Nov) - only for Stats/visit lists ──
 // Set in Admin Console (Works at). Front desk staff default to the main venue; managers default to "both" and pick on Front desk.
 function msOtherVenueNames(){ try{ if(typeof GPE === 'undefined' || !GPE.loaded || !GPE.c) return []; return gpPlaceLists().venues.map(v => v.name); }catch(e){ return []; } }
-function msBaseVenue(){ try{ const v = VENUES.find(x => x.id === currentVenue) || VENUES[0]; return v ? v.name : ''; }catch(e){ return ''; } }
+function msBaseVenue(){ try{ if(appPlan === 'membership' && myCompany && myCompany.name) return myCompany.name;   // one name everywhere: the one Mavis set in My clients (Robbie 26 Nov)
+  const v = VENUES.find(x => x.id === currentVenue) || VENUES[0]; return v ? v.name : ''; }catch(e){ return ''; } }
 function msStaffVenues(){ return msJson('mk_staff_venue') || {}; }
 function msWorksAt(p){ const v = msStaffVenues()[p && p.id]; return v === undefined ? (p && p.role === 'frontdesk' ? '' : '*') : v; }   // '' main · '*' both · or an Other venue's name
 function msMyVenue(){
@@ -25852,7 +25853,7 @@ function gpTabsHtml(){
   const addBox = k => GPE.tadd === k ? `<div class="gp-tnew ${k === 'venue' ? 've' : 'ex'}"><input id="gp-tnn" maxlength="30" placeholder="${k === 'venue' ? 'Other venue, e.g. Billy Ho' : 'e.g. The Lounge'}" autocomplete="off" oninput="gpVenueTyping(this.value)" onkeydown="if(event.key==='Enter')gpTabAdd();if(event.key==='Escape')gpTabAddCancel()"><button type="button" class="no" onclick="gpTabAddCancel()">Cancel</button><button type="button" class="go" onclick="gpTabAdd()">Add</button></div>`
     : mgr && k === 'venue' && GPE.paid && L.venues.length >= GPE.paid - 1 ? `<div class="gp-tadd ve full">Want another venue?<small>Message us - we'll set it up</small></div>`   // paid for N venues = main + N-1 others (Robbie 25 Nov)
     : mgr ? `<button type="button" class="gp-tadd ${k === 'venue' ? 've' : 'ex'}" onclick="gpTabAddOpen('${k}')">${k === 'venue' ? '+ Other venue<small>One full page</small>' : '+ Add inside<small>A part of ' + gpEsc(L.main ? L.main.name : 'your venue') + ' - included</small>'}</button>` : '';
-  if(!L.main) return mgr ? `<div class="gp-tabs"><div class="gp-trow"><span class="gp-tl">MAIN</span>${GPE.tadd ? addBox('explore') : `<button type="button" class="gp-tadd one" onclick="gpTabAddOpen('explore')">+ Add your venue<small>Its name, e.g. Mama San</small></button>`}</div></div>` : '';
+  if(!L.main) return mgr ? `<div class="gp-tabs"><div class="gp-trow"><span class="gp-tl">MAIN</span>${GPE.tadd ? addBox('explore') : (appPlan === 'membership' && myCompany && myCompany.name ? `<button type="button" class="gp-tadd one" onclick="gpMainAdd()">+ Start ${gpEsc(myCompany.name)}<small>Your main venue - set by Mavis</small></button>` : `<button type="button" class="gp-tadd one" onclick="gpTabAddOpen('explore')">+ Add your venue<small>Its name, e.g. Mama San</small></button>`)}</div></div>` : '';
   if(!L.explore.length && !L.venues.length && !GPE.tshow && !GPE.tadd)   // one venue: keep it quiet until they want more (Robbie 25 Nov)
     return `<div class="gp-tabs"><div class="gp-trow"><span class="gp-tl">MAIN</span>${tab('', L.main.name, 'main', 'Main view')}${mgr ? `<button type="button" class="gp-tadd one" onclick="GPE.tshow=true;gpRender()">+ Add a place<small>Another area or venue</small></button>` : ''}</div></div>`;
   return `<div class="gp-tabs">
@@ -25864,6 +25865,15 @@ window.gpTab = function(name){
   GPE.tab = name || ''; GPE.tadd = ''; GPE.vstep = ''; GPE.vrm = false; GPE.vset = name || null;
   gpRender(); window.scrollTo(0, 0); const ed = document.getElementById('gp-ed'); if(ed) ed.scrollTop = 0;
   if(name) gpGo('', name); else { gpGoClear(); GPE.go = { mv:'go', sec:'', place:'', id:'' }; gpGoSend(0); GPE.go = null; }
+};
+// The main venue is always named exactly as Mavis set the client up - the same name on the guest page and the till (Robbie 26 Nov)
+window.gpMainAdd = async function(){
+  const nm = String((myCompany && myCompany.name) || '').trim(); if(!nm) return;
+  const list = (msPage().venues || []).filter(v => v && v.name).map(v => Object.assign({}, v));
+  if(!list.some(v => v.name.toLowerCase() === nm.toLowerCase())) list.unshift({ name: nm });
+  if(!(await gpVenuesSave(list))) return;
+  GPE.c.places = GPE.c.places || {}; const key = nm.toLowerCase(), it = Object.assign({}, GPE.c.places[key] || {}); delete it.other; GPE.c.places[key] = it; await gpSave(false);
+  toast(nm + ' is ready - now build its page'); gpTab(''); gpPreviewReload();
 };
 window.gpTabAddOpen = function(k){ GPE.tadd = k; gpRender(); const i = document.getElementById('gp-tnn'); if(i) i.focus(); if(k === 'explore') gpGoNew(''); };
 window.gpTabAddCancel = function(){ clearTimeout(GPE.vtyT); GPE.tadd = ''; gpRender(); gpTab(GPE.tab); };

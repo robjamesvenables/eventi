@@ -2468,6 +2468,7 @@ body:not(.mv-demo) #ms-demoqr-btn{display:none!important}
 .gp-vs.k-explore{border-color:#FCD34D}.gp-vs.k-venue{border-color:#C7D2FE}.gp-shared{font-weight:800;color:#64748B;font-size:13.5px}
 .gp-livebig{padding:12px 22px!important;font-size:16px!important;font-weight:900!important;letter-spacing:.3px;box-shadow:0 0 0 4px rgba(20,184,166,.28)}
 @media(max-width:600px){.gp-tl{width:100%}.gp-tab{min-width:0;flex:1 1 40%}.gp-tabs{padding:12px 16px}}
+.gp-moreb{display:none}.gp-moreb.on{display:block}.gp-moret{margin-top:14px}.gp-moret span{font-weight:600;color:#64748B}
 .gp-vnew{border:1.5px solid #0D9488;border-radius:14px;padding:14px;background:#fff;box-shadow:0 8px 24px rgba(15,30,46,.1);display:flex;flex-direction:column;gap:10px}.gp-vnew b{font-size:15px;font-weight:800}
 .gp-vnew input{width:100%;box-sizing:border-box;font:600 16px Inter,sans-serif;padding:12px;border:1.5px solid #CBD5E1;border-radius:12px}.gp-vnew input:focus{outline:0;border-color:#0D9488;box-shadow:0 0 0 3px #CCFBF1}
 .gp-vnb{display:flex;justify-content:flex-end;gap:8px}.gp-vnb button{border:0;border-radius:10px;padding:11px 18px;font:800 14px Inter,sans-serif;cursor:pointer}.gp-vnb .no{background:#F1F5F9;color:#334155}.gp-vnb .go{background:#0F1E2E;color:#fff}.gp-vnb .del{background:#DC2626;color:#fff}.gp-vnb button:disabled{opacity:.6}
@@ -26295,6 +26296,14 @@ window.gpForm = function(k, i){
   document.body.appendChild(s);
   const $ = id => s.querySelector('#' + id);
   const ph = $('gpf-ph'), fin = $('gpf-file');
+  // Events: just the basics up front - line-up, dress code, price, ages and the rest wait behind "+ More details" (Robbie 26 Nov)
+  if(k === 'events'){ const fm = s.querySelector('.eb-form'), kids = [...fm.children], a = kids.findIndex(x => x.classList.contains('gp-sub')), z = kids.findIndex(x => x.matches('label.gp-tg'));
+    if(a >= 0 && z > a){ const box = document.createElement('div'); box.className = 'gp-moreb'; kids.slice(a, z).forEach(x => box.appendChild(x));
+      const fr = $('gpf-from'); if(fr){ const l = fr.previousElementSibling, h = fr.nextElementSibling; [l, fr, h].forEach(x => x && box.appendChild(x)); }
+      const has = () => ['gpf-blast', 'gpf-details', 'gpf-dress', 'gpf-price', 'gpf-notes', 'gpf-from'].some(id => $(id) && $(id).value.trim()) || (it.more || []).length || it.age;   // checked once the form is filled in
+      const btn = document.createElement('button'); btn.type = 'button'; btn.className = 'gp-add gp-moret'; btn.innerHTML = '+ More details <span>(optional) - line-up, dress code, price, ages…</span>';
+      btn.onclick = () => { box.classList.add('on'); btn.remove(); box.scrollIntoView({ behavior:'smooth', block:'start' }); };
+      const foot = fm.querySelector('.eb-fbtns'); foot.before(box); box.before(btn); setTimeout(() => { if(has()){ box.classList.add('on'); btn.remove(); } }, 0); } }
   // Adding a new one: the phone shows a dashed "new one goes here" box in its real spot, filling in as they type (Robbie 26 Nov)
   const nwk = !edit && ['slides', 'deals', 'events'].includes(k);
   let niImg = '';

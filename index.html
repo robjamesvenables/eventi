@@ -5720,6 +5720,7 @@ html:has(#menuDetailOverlay[style*="flex"]),html:has(#menuDetailOverlay[style*="
         <div class="ms-stats" id="ms-stats"></div>
       </div>
       <button class="ms-design md2" id="ms-tiers-btn" onclick="gpOpen()"><span class="mdi"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22a10 10 0 1 1 10-10c0 2.8-2.2 4-4 4h-2a2 2 0 0 0-1.5 3.3A1.6 1.6 0 0 1 12 22z"/><circle cx="7.5" cy="10.5" r="1.3"/><circle cx="11" cy="7" r="1.3"/><circle cx="16" cy="8.5" r="1.3"/></svg></span><span id="ms-dots" hidden></span><span class="t"><b>Design your page</b><small>Photos, deals, events and colours</small></span><span class="go">Open the designer <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span></button>
+      <script>/* the venue's own colours from last time, before anything loads (no Mavis-blue flash) */try{var t=JSON.parse(localStorage.getItem('mvMdTheme:last')||'null'),b=document.getElementById('ms-tiers-btn');if(t&&b){var k=function(h){var n=parseInt(String(h).slice(1),16);return(0.299*(n>>16)+0.587*((n>>8)&255)+0.114*(n&255))>165?'#111111':'#FFFFFF'};b.style.setProperty('--md-bg',t[0]);b.style.setProperty('--md-ink',k(t[0]));b.style.setProperty('--md-acc',t[1]);b.style.setProperty('--md-acc-ink',k(t[1]));}}catch(e){}</script>
       <div id="ms-home"></div>
       <div style="height:30px"></div>
     </div>
@@ -25323,8 +25324,14 @@ function gpColoursHtml(){
 function gpThemeNow(){ const t = (GPE.c && GPE.c.theme) || {}; return ['top', 'acc', 'pg'].map(k => k === 'pg' && t.dark ? '#0A0A0A' : /^#[0-9a-f]{6}$/i.test(t[k] || '') ? t[k] : GP_COL[k][2]); }
 async function gpDesignDots(){
   const el = document.getElementById('ms-dots'); if(!el) return;
-  if(!GPE.loaded){ try{ await gpLoad(); }catch(e){ return; } }
-  const th = gpThemeNow();   // no colour dots any more - they looked like buttons (Robbie 25 Nov); the bar itself wears the colours
+  const key = 'mvMdTheme:' + ((myCompany && myCompany.id) || '');
+  const paint = th => { const b = document.getElementById('ms-tiers-btn'), ink = h => { const n = parseInt(String(h).slice(1), 16); return (0.299 * (n >> 16) + 0.587 * ((n >> 8) & 255) + 0.114 * (n & 255)) > 165 ? '#111111' : '#FFFFFF'; };
+    if(b && th && th[0] && th[1]){ b.style.setProperty('--md-bg', th[0]); b.style.setProperty('--md-ink', ink(th[0])); b.style.setProperty('--md-acc', th[1]); b.style.setProperty('--md-acc-ink', ink(th[1])); } };
+  if(!GPE.loaded){   // refresh: wear the colours this phone saw last time straight away - no flash of Mavis blue (Robbie 26 Nov)
+    try{ paint(JSON.parse(localStorage.getItem(key) || 'null')); }catch(e){}
+    try{ await gpLoad(); }catch(e){ return; }
+  }
+  const th = gpThemeNow(); try{ localStorage.setItem(key, JSON.stringify([th[0], th[1]])); localStorage.setItem('mvMdTheme:last', JSON.stringify([th[0], th[1]])); }catch(e){}   // no colour dots any more - they looked like buttons (Robbie 25 Nov); the bar itself wears the colours
   // The bar wears their own colours: banner behind, button colour on Open the designer (Robbie 25 Nov - option B, no photos)
   const b = document.getElementById('ms-tiers-btn'), ink = h => { const n = parseInt(String(h).slice(1), 16); return (0.299 * (n >> 16) + 0.587 * ((n >> 8) & 255) + 0.114 * (n & 255)) > 165 ? '#111111' : '#FFFFFF'; };
   if(b){ b.style.setProperty('--md-bg', th[0]); b.style.setProperty('--md-ink', ink(th[0])); b.style.setProperty('--md-acc', th[1]); b.style.setProperty('--md-acc-ink', ink(th[1])); }

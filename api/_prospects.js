@@ -900,6 +900,10 @@ P.southeast = {
       events: [
         { id: 'see1', img: se('lamb'), title: 'Sunday Roast', line: 'Slow-roast, Yorkshire pudding and gravy', date: nextDow(today, 0), time: '12:00', time2: '23:30', venue: 'South + East', btn: 'wa', hl: true,
           details: 'Our Sunday Roast South + East: slow-roast with roast potatoes, seasonal vegetables and a Yorkshire pudding, with brown gravy.', notes: 'Members: book your table on WhatsApp.' },
+        { id: 'see5', img: se('marapu'), title: 'Live band: Marapu', line: '5 Years of Craft · early bird free-flow Rp 400k', date: y + '-12-05', time: '19:00', time2: '21:00', venue: 'South + East', btn: 'wa', hl: true,
+          details: 'Marapu live at South + East to celebrate 5 Years of Craft. Early bird free-flow ticket Rp 400k, 7-9pm.', notes: 'Message us on WhatsApp for tickets.' },
+        { id: 'see6', img: se('tattoo'), title: 'IOI Flash Tattoo', line: 'Tattoo + beer Rp 250k · limited spots', date: y + '-12-05', venue: 'South + East', btn: 'wa',
+          details: 'IOI Flash Tattoo at South + East for 5 Years of Craft. A flash tattoo and a beer for Rp 250k. Limited spots.', notes: 'Book your tattoo on WhatsApp.' },
         { id: 'see3', img: se('lads'), title: "New Year's Eve at South + East", line: 'Craft beer, DJs and the countdown', date: y + '-12-31', time: '18:00', time2: '01:00', venue: 'South + East', btn: 'wa' }
       ],
       gallery: ['front', 'rhinos', 'cheers', 'crew', 'lads', 'laugh', 'band', 'dj', 'dj2', 'beer', 'cans', 'cocktails', 'mary', 'burger', 'pizza', 'chicken', 'ribs', 'porkbelly', 'lamb', 'brekkie', 'avo', 'friedchicken', 'croquettes', 'wings']

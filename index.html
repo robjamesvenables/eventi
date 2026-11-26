@@ -3122,6 +3122,7 @@ body.fd-sel #p-frontdesk.page:not(#p-home):not(#p-chat) > .ph.fd-ph,body.fd-sear
 .fd-q{display:block;width:100%;margin-top:10px;border:2px solid #0D9488;border-radius:14px;padding:14px 16px;font:600 17px Inter,sans-serif;color:#0F1E2E;background:#fff;outline:0;box-sizing:border-box}
 
 body.mv-pre #app .page,body.mv-pre #app .page.on{visibility:hidden!important}
+.ms-tag.vip{display:none!important}.gp-pks.one{grid-template-columns:1fr!important}
 /* Staff "add to your phone" drop-down + iPhone guide (same as the guest app) */
 #clpop{position:fixed;left:12px;right:12px;top:calc(12px + env(safe-area-inset-top));max-width:440px;margin:0 auto;background:#fff;border-radius:20px;box-shadow:0 14px 40px rgba(15,30,46,.28);padding:14px;transform:translateY(calc(-100% - 40px));transition:transform .45s cubic-bezier(.2,.9,.3,1.15);z-index:99999;color:#0F1E2E;font-family:Inter,sans-serif}
 #clpop.on{transform:none}#clpop .in-row{display:flex;gap:12px;align-items:center}
@@ -22434,13 +22435,16 @@ window.msSearch = function(v){ MS.q = v; msRenderList(); };
 // Tab icons (icon above the word, so 4 tabs still fit a small phone)
 const MS_TAB_IC = { members:'<circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/>', insights:'<path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/>', messages:'<path d="M21 12a8 8 0 0 1-11.6 7.1L4 21l1.9-5.4A8 8 0 1 1 21 12z"/>', notify:'<path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.9 1.9 0 0 0 3.4 0"/>',
   settings:'<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/>' };
+// VIP isn't built yet (after launch): hide every VIP option, count and badge until it is (Robbie 26 Nov). Flip to true to bring it all back.
+const MS_VIP = false;
+function msIsVip(m){ return MS_VIP && !!m && m.tier === 'vip'; }
 function msRender(){
   const el = document.getElementById('ms-home'); if(!el) return;
   const mon = msToday().slice(0, 7);
   const visitsMonth = Object.values(MS.visits).reduce((n, a) => n + a.filter(x => String(x.visit_date).startsWith(mon)).length, 0);
-  const vip = MS.members.filter(m => m.tier === 'vip').length;
+  const vip = MS.members.filter(m => msIsVip(m)).length;
   document.body.classList.toggle('ms-waiter', !msIsMgr());   // waiters: just the two big buttons and the members list
-  document.getElementById('ms-stats').innerHTML = `<div class="ms-st"><b>${MS.members.length}</b><small>MEMBERS</small></div><div class="ms-st"><b style="color:#5EEAD4">${visitsMonth}</b><small>VISITS THIS MONTH</small></div><div class="ms-st"><b style="color:#E9C46A">${vip}</b><small>VIP</small></div>`;
+  document.getElementById('ms-stats').innerHTML = `<div class="ms-st"><b>${MS.members.length}</b><small>MEMBERS</small></div><div class="ms-st"><b style="color:#5EEAD4">${visitsMonth}</b><small>VISITS THIS MONTH</small></div>${MS_VIP ? `<div class="ms-st"><b style="color:#E9C46A">${vip}</b><small>VIP</small></div>` : ''}`;
   const tiersBtn = document.getElementById('ms-tiers-btn'); if(tiersBtn) tiersBtn.style.display = gpCanEdit() ? '' : 'none';
   const sbGp = document.getElementById('mvm-guest'); if(sbGp) sbGp.classList.toggle('mv-noedit', !gpCanEdit());
   if(gpCanEdit()) gpDesignDots();   // the three colours in use, on the Design your page button
@@ -22455,7 +22459,7 @@ function msRender(){
   const bonusDue = msIsMgr() && mkS().bonus.on && (msJson('mk_bonus') || {}).date !== msToday();
   const used = [...new Set(MS.members.map(m => msStats(m).fav).filter(Boolean))];
   const venues = msVenues().filter(v => used.includes(v));
-  const chips = [['all', 'All'], ...venues.map(v => [v, v]), ['vip', 'VIP']];
+  const chips = [['all', 'All'], ...venues.map(v => [v, v])].concat(MS_VIP ? [['vip', 'VIP']] : []);
   el.innerHTML = tabs + msKeyBox() + (bonusDue ? `<button class="mkb-due" onclick="msSetTab('insights')"><i>${mkiSvg('crown', 16)}</i><span><b>Set today's member bonus</b><small>Guests can't scratch until you pick a prize</small></span><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg></button>` : '') + `<label class="sop-search ms-search"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#94A3B8" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg><input id="ms-q" placeholder="Search name or phone…" value="${msEsc(MS.q)}" oninput="msSearch(this.value)" autocomplete="off"></label>
     <div class="ms-chips">${chips.map(([id, l]) => `<button class="${MS.filter === id ? 'on' : ''}" onclick="msSetFilter(${msEsc(JSON.stringify(id))})">${msEsc(l)}</button>`).join('')}</div>
     ${msIsMgr() && (MS.members.length || mkS().imp.on) ? `<div class="ms-dlw">${mkS().imp.on ? `<button class="ms-dl" onclick="msImportOpen()"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15V3M7 8l5-5 5 5M5 21h14"/></svg>Import members</button>` : ''}${MS.members.length ? `<button class="ms-dl ms-dlx" onclick="msExportOpen()"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12M7 10l5 5 5-5M5 21h14"/></svg>Download members</button>` : ''}</div>` : ''}
@@ -22466,7 +22470,7 @@ function msRenderList(){
   const el = document.getElementById('ms-list'); if(!el) return;
   const q = String(MS.q || '').trim().toLowerCase();
   let rows = MS.members.map(m => ({ m, s: msStats(m) }));
-  if(MS.filter === 'vip') rows = rows.filter(r => r.m.tier === 'vip');
+  if(MS.filter === 'vip') rows = rows.filter(r => r.msIsVip(m));
   else if(MS.filter !== 'all') rows = rows.filter(r => r.s.fav === MS.filter);
   if(q) rows = rows.filter(r => (r.m.name + ' ' + r.m.phone + ' ' + (MS.keyrings[r.m.id] || '')).toLowerCase().includes(q));
   rows.sort((a, b) => b.s.total - a.s.total || a.m.name.localeCompare(b.m.name));
@@ -22480,7 +22484,7 @@ function msRenderList(){
   const firstOther = grp ? rows.findIndex(r => !inToday(r)) : -1;
   el.innerHTML = `<div class="ms-grid">${rows.map(({ m, s }, ix) => { const bd = msBirthdaySoon(m);
     const head = grp && ix === 0 ? '<div class="ms-glab">IN TODAY</div>' : grp && ix === firstOther ? '<div class="ms-glab">ALL MEMBERS</div>' : '';
-    return head + `<button class="ms-row" onclick="msOpenMember('${m.id}')">${msFace(m.name, 42)}<span class="ms-nm"><b>${msEsc(m.name)}${m.tier === 'vip' ? '<span class="ms-tag vip">VIP</span>' : ''}${isNew(m) && MS.keyrings[m.id] ? '<span class="ms-tag new">NEW</span>' : ''}${MS.keyrings[m.id] ? '' : '<span class="ms-tag nok">NO KEYRING YET</span>'}${msAlgTag(m)}${bd ? '<span class="ms-tag bd" title="Birthday soon"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px"><path d="M20 21v-8a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8"/><path d="M4 16s.5-1 2-1 2.5 2 4 2 2.5-2 4-2 2.5 2 4 2 2-1 2-1"/><path d="M2 21h20M7 8v3M12 8v3M17 8v3"/><path d="M7 4h.01M12 4h.01M17 4h.01"/></svg></span>' : ''}</b>
+    return head + `<button class="ms-row" onclick="msOpenMember('${m.id}')">${msFace(m.name, 42)}<span class="ms-nm"><b>${msEsc(m.name)}${msIsVip(m) ? '<span class="ms-tag vip">VIP</span>' : ''}${isNew(m) && MS.keyrings[m.id] ? '<span class="ms-tag new">NEW</span>' : ''}${MS.keyrings[m.id] ? '' : '<span class="ms-tag nok">NO KEYRING YET</span>'}${msAlgTag(m)}${bd ? '<span class="ms-tag bd" title="Birthday soon"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px"><path d="M20 21v-8a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8"/><path d="M4 16s.5-1 2-1 2.5 2 4 2 2.5-2 4-2 2.5 2 4 2 2-1 2-1"/><path d="M2 21h20M7 8v3M12 8v3M17 8v3"/><path d="M7 4h.01M12 4h.01M17 4h.01"/></svg></span>' : ''}</b>
       <small>${s.last ? msEsc(msAgo(s.last.visit_date) + (s.last.venue ? ' · ' + s.last.venue : '')) : 'No visits yet'}</small></span><span class="ms-v"><b>${s.total}</b><small>VISIT${s.total === 1 ? '' : 'S'}</small></span></button>`; }).join('')}</div>`;
 }
 
@@ -22512,7 +22516,7 @@ function msStaffName(id){
 function msDemoFill(){
   if(!msDemo() || MS.demoFilled) return;
   MS.demoFilled = true;
-  const vip = new Set(MS.members.filter(m => m.tier === 'vip').map(m => m.id));
+  const vip = new Set(MS.members.filter(m => msIsVip(m)).map(m => m.id));
   Object.entries(MS.visits).forEach(([id, list]) => list.forEach(x => {
     const s = msSeed(id + x.visit_date + x.venue);
     if(!x.by_profile) x.by_profile = 'demo:' + MS_DEMO_STAFF[s % MS_DEMO_STAFF.length];
@@ -22594,7 +22598,7 @@ async function msInsights(){
   const tod = all.filter(x => x.visit_date === today).sort((a, b) => String(b.created_at).localeCompare(String(a.created_at)));
   const todRows = tod.map(x => { const m = MS.members.find(y => String(y.id) === String(x.mid)); if(!m) return ''; const bd = msBirthdaySoon(m);
     const t = x.created_at ? new Date(x.created_at).toLocaleTimeString('en-GB', { hour:'2-digit', minute:'2-digit' }) : '';
-    return `<button class="mki-row" onclick="msOpenMember('${m.id}')">${msFace(m.name, 36)}<span class="mki-nm"><b>${msEsc(m.name)}${m.tier === 'vip' ? '<span class="ms-tag vip">VIP</span>' : ''}${bd === 'today' ? '<span class="ms-tag bd">BIRTHDAY</span>' : ''}${msAlgTag(m)}</b><small>${msEsc([x.venue, t].filter(Boolean).join(' · '))}${m.notes ? ' · ' + msEsc(String(m.notes).slice(0, 40)) : ''}</small></span>${spendOn && x.spend ? `<span class="mki-v">${msRp(x.spend)}</span>` : ''}</button>`; }).join('');
+    return `<button class="mki-row" onclick="msOpenMember('${m.id}')">${msFace(m.name, 36)}<span class="mki-nm"><b>${msEsc(m.name)}${msIsVip(m) ? '<span class="ms-tag vip">VIP</span>' : ''}${bd === 'today' ? '<span class="ms-tag bd">BIRTHDAY</span>' : ''}${msAlgTag(m)}</b><small>${msEsc([x.venue, t].filter(Boolean).join(' · '))}${m.notes ? ' · ' + msEsc(String(m.notes).slice(0, 40)) : ''}</small></span>${spendOn && x.spend ? `<span class="mki-v">${msRp(x.spend)}</span>` : ''}</button>`; }).join('');
   const cToday = mkiCard('door', 'In today', tod.length ? tod.length + ' member' + (tod.length === 1 ? '' : 's') + ' checked in' : '', tod.length ? `<div class="mki-list">${todRows}</div>` : '<div class="mki-empty">Nobody has checked in yet today</div>');
 
   // Win back: 30+ days since last visit, most loyal first
@@ -22606,7 +22610,7 @@ async function msInsights(){
     .sort((a, b) => ((a.sentAgo != null && a.sentAgo < 14) - (b.sentAgo != null && b.sentAgo < 14)) || b.s.total - a.s.total);
   const wbShow = MS.wbAll ? lapsed : lapsed.slice(0, 6);
   const wbRows = wbShow.map(({ m, s, sentAgo }) => { const can = m.consent === true && String(m.phone || '').replace(/\D/g, '').length >= 7; const recent = sentAgo != null && sentAgo < 14;
-    return `<div class="mki-row${recent ? ' done' : ''}"><button class="mki-who" onclick="msOpenMember('${m.id}')">${msFace(m.name, 36)}<span class="mki-nm"><b>${msEsc(m.name)}${m.tier === 'vip' ? '<span class="ms-tag vip">VIP</span>' : ''}</b><small>Last in ${msEsc(msAgo(s.last.visit_date).toLowerCase())} · ${s.total} visit${s.total === 1 ? '' : 's'}${recent ? ' · messaged ' + (sentAgo === 0 ? 'today' : sentAgo === 1 ? 'yesterday' : sentAgo + ' days ago') : ''}</small></span></button>
+    return `<div class="mki-row${recent ? ' done' : ''}"><button class="mki-who" onclick="msOpenMember('${m.id}')">${msFace(m.name, 36)}<span class="mki-nm"><b>${msEsc(m.name)}${msIsVip(m) ? '<span class="ms-tag vip">VIP</span>' : ''}</b><small>Last in ${msEsc(msAgo(s.last.visit_date).toLowerCase())} · ${s.total} visit${s.total === 1 ? '' : 's'}${recent ? ' · messaged ' + (sentAgo === 0 ? 'today' : sentAgo === 1 ? 'yesterday' : sentAgo + ' days ago') : ''}</small></span></button>
       ${can ? `<button class="mki-wa${recent ? ' again' : ''}" onclick="msWinBack('${m.id}')">${vdSvg('wa')}<span>${recent ? 'Again' : 'WhatsApp'}</span></button>` : '<span class="mki-no" title="Said no to offers, or no number">No offers</span>'}</div>`; }).join('');
   const cWin = mkiCard('back', 'Win them back', lapsed.length ? lapsed.length + ' member' + (lapsed.length === 1 ? ' hasn\'t' : 's haven\'t') + ' been in for 30+ days' : '',
     lapsed.length ? `<div class="mki-list">${wbRows}</div>${lapsed.length > 6 ? `<button class="mki-more" onclick="MS.wbAll=!MS.wbAll;msInsights()">${MS.wbAll ? 'Show fewer' : 'Show all ' + lapsed.length}</button>` : ''}` : '<div class="mki-empty">Everyone has been in during the last 30 days</div>',
@@ -22619,7 +22623,7 @@ async function msInsights(){
     .sort((a, b) => bySpend ? (b.sp - a.sp || b.s.total - a.s.total) : (b.s.total - a.s.total || b.sp - a.sp)).slice(0, 20);
   const topShow = MS.topAll ? top : top.slice(0, 10);
   const topSeg = spendOn ? `<div class="mki-seg"><button class="${bySpend ? '' : 'on'}" onclick="MS.topBy='visits';msInsights()">Most visits</button><button class="${bySpend ? 'on' : ''}" onclick="MS.topBy='spend';msInsights()">Most spent</button></div>` : '';
-  const cTop = mkiCard('crown', 'Top 20 members', bySpend ? 'Most spent, all time · from the bills typed in' : 'Most visits, all time', topSeg + (top.length ? `<div class="mki-list">${topShow.map(({ m, s, sp }, i) => `<button class="mki-row" onclick="msOpenMember('${m.id}')"><span class="mki-rk${i < 3 ? ' m' + (i + 1) : ''}">${i + 1}</span>${msFace(m.name, 32)}<span class="mki-nm"><b>${msEsc(m.name)}${m.tier === 'vip' ? '<span class="ms-tag vip">VIP</span>' : ''}</b><small>${msEsc(s.fav || '')}${s.month ? ' · ' + s.month + ' this month' : ''}</small></span><span class="mki-v">${bySpend ? `<b class="sp">${msRp(sp)}</b><small>${s.total} visit${s.total === 1 ? '' : 's'}</small>` : `<b>${s.total}</b>${spendOn && sp ? `<small>${msRp(sp)}</small>` : ''}`}</span></button>`).join('')}</div>${top.length > 10 ? `<button class="mki-more" onclick="MS.topAll=!MS.topAll;msInsights()">${MS.topAll ? 'Show top 10' : 'Show all 20'}</button>` : ''}` : `<div class="mki-empty">${bySpend ? 'No bills typed in yet' : 'No visits yet'}</div>`));
+  const cTop = mkiCard('crown', 'Top 20 members', bySpend ? 'Most spent, all time · from the bills typed in' : 'Most visits, all time', topSeg + (top.length ? `<div class="mki-list">${topShow.map(({ m, s, sp }, i) => `<button class="mki-row" onclick="msOpenMember('${m.id}')"><span class="mki-rk${i < 3 ? ' m' + (i + 1) : ''}">${i + 1}</span>${msFace(m.name, 32)}<span class="mki-nm"><b>${msEsc(m.name)}${msIsVip(m) ? '<span class="ms-tag vip">VIP</span>' : ''}</b><small>${msEsc(s.fav || '')}${s.month ? ' · ' + s.month + ' this month' : ''}</small></span><span class="mki-v">${bySpend ? `<b class="sp">${msRp(sp)}</b><small>${s.total} visit${s.total === 1 ? '' : 's'}</small>` : `<b>${s.total}</b>${spendOn && sp ? `<small>${msRp(sp)}</small>` : ''}`}</span></button>`).join('')}</div>${top.length > 10 ? `<button class="mki-more" onclick="MS.topAll=!MS.topAll;msInsights()">${MS.topAll ? 'Show top 10' : 'Show all 20'}</button>` : ''}` : `<div class="mki-empty">${bySpend ? 'No bills typed in yet' : 'No visits yet'}</div>`));
 
   // Staff this month: sign-ups and check-ins
   const st = {};
@@ -22644,7 +22648,7 @@ async function msInsights(){
 
   // Birthdays in the next 7 days
   const bds = MS.members.map(m => ({ m, d: msBirthdaySoon(m) })).filter(r => r.d).sort((a, b) => (a.d === 'today' ? -1 : 0) - (b.d === 'today' ? -1 : 0));
-  const cBd = mkiCard('cake', 'Birthdays this week', '', bds.length ? `<div class="mki-list">${bds.map(({ m, d }) => `<button class="mki-row" onclick="msOpenMember('${m.id}')">${msFace(m.name, 32)}<span class="mki-nm"><b>${msEsc(m.name)}${m.tier === 'vip' ? '<span class="ms-tag vip">VIP</span>' : ''}</b><small>${d === 'today' ? 'Today!' : msEsc(d)}</small></span>${String(m.phone || '').replace(/\D/g, '').length >= 7 ? `<span class="mki-bdw" onclick="event.stopPropagation();msBdWish('${m.id}')">🎂 Send wishes</span>` : ''}</button>`).join('')}</div>` : '<div class="mki-empty">No birthdays in the next 7 days</div>');
+  const cBd = mkiCard('cake', 'Birthdays this week', '', bds.length ? `<div class="mki-list">${bds.map(({ m, d }) => `<button class="mki-row" onclick="msOpenMember('${m.id}')">${msFace(m.name, 32)}<span class="mki-nm"><b>${msEsc(m.name)}${msIsVip(m) ? '<span class="ms-tag vip">VIP</span>' : ''}</b><small>${d === 'today' ? 'Today!' : msEsc(d)}</small></span>${String(m.phone || '').replace(/\D/g, '').length >= 7 ? `<span class="mki-bdw" onclick="event.stopPropagation();msBdWish('${m.id}')">🎂 Send wishes</span>` : ''}</button>`).join('')}</div>` : '<div class="mki-empty">No birthdays in the next 7 days</div>');
 
   // Keyrings left (staff count them once, every keyring sign-up takes one off)
   const stock = msJson('mk_stock'), left = stock && stock.left != null ? +stock.left : null, low = left != null && left <= MS_KLOW;
@@ -22848,7 +22852,7 @@ async function msSettingsRender(){
     <div class="mks-hint" style="margin:8px 4px 0">Turn on a blast and a Messages tab appears. Turn it off and it goes away. Phone notifications are always in the Notify tab.</div>
     <div class="mks-h">FOR YOUR TEAM</div>
     <div class="mks-card">
-      ${mksRow('VIP alert', 'Managers get a phone notification when a VIP checks in.', mksSw('vip.on', s.vip.on))}
+      ${MS_VIP ? mksRow('VIP alert', 'Managers get a phone notification when a VIP checks in.', mksSw('vip.on', s.vip.on)) : ''}
       ${mksRow('Rating alert (3 stars or less)', 'When a guest gives 3 stars or less, the people you pick get a phone alert straight away, so someone can go and see the guest while they\'re still here. Nobody picked = all managers.', mksSw('fb.on', s.fb.on), !s.fb.on ? '' : (Object.keys(MS.staff || {}).length ? `<div class="mks-f"><span>Who gets them</span><div class="vdf-pills mks-pills">${Object.entries(MS.staff || {}).map(([id, n]) => `<button type="button" class="vdf-pill${s.fbto.map(String).includes(String(id)) ? ' on' : ''}" onclick="mksFbTo('${id}')">${msEsc(n)}</button>`).join('')}</div></div>` : '<div class="mks-hint">Add your team in People first - then pick who gets these.</div>'))}
       ${mksRow('Emojis in messages', MK_EMO.join(' '), mksSw('emoji.on', s.emoji.on))}
     </div>
@@ -22920,7 +22924,7 @@ function msAud(key, kind){
   const t0 = new Date(), lm = new Date(t0.getFullYear(), t0.getMonth() - 1, 1), lmon = lm.getFullYear() + '-' + String(lm.getMonth() + 1).padStart(2, '0');
   const cut = new Date(); cut.setDate(cut.getDate() - 30); const cutS = cut.toISOString().slice(0, 10);
   let list = MS.members.slice();
-  if(key === 'vip') list = list.filter(m => m.tier === 'vip');
+  if(key === 'vip') list = list.filter(m => msIsVip(m));
   else if(key === 'top5') list = list.map(m => ({ m, n: (MS.visits[m.id] || []).filter(x => String(x.visit_date).startsWith(lmon)).length })).filter(r => r.n).sort((a, b) => b.n - a.n).slice(0, 5).map(r => r.m);
   else if(key === 'lapsed') list = list.filter(m => { const s = msStats(m); return s.last && s.last.visit_date < cutS; });
   else if(key === 'bday') list = list.filter(m => /^\d{2}-\d{2}$/.test(m.birthday || '') && m.birthday.slice(0, 2) === mm);
@@ -22960,7 +22964,7 @@ function msRecentWarn(ids){
 }
 function msAudList(){
   const v = [...new Set(MS.members.map(m => msStats(m).fav).filter(Boolean))];
-  return [['all', 'Everyone'], ['vip', 'VIPs'], ['top5', 'Top 5 last month'], ['lapsed', 'Not in for 30+ days'], ['bday', 'Birthdays this month'], ...v.map(n => ['v:' + n, n + ' regulars'])];
+  return [['all', 'Everyone']].concat(MS_VIP ? [['vip', 'VIPs']] : []).concat([['top5', 'Top 5 last month'], ['lapsed', 'Not in for 30+ days'], ['bday', 'Birthdays this month'], ...v.map(n => ['v:' + n, n + ' regulars'])]);
 }
 function msMsgs(){
   let l = msJson('mk_msgs'); if(Array.isArray(l)) return l;
@@ -23143,7 +23147,7 @@ window.msQueueOpen = function(id){
   const p = msMsgProgress(c), m = MS.members.find(x => left[0] && String(x.id) === String(left[0]));
   const msgFor = mm => msFill(c.body, mm);
   const o = msSheet(`<div class="vdf-h"><b>${msEsc((MK_TYPES[c.type] || ['WhatsApp'])[0])}</b><div class="dpt-sub">${p.n} of ${p.total} sent</div><div class="mkq-bar"><i style="width:${Math.round(p.n / Math.max(1, p.total) * 100)}%"></i></div></div>
-    <div class="vdf-body">${m ? `<div class="mkq-who">${msFace(m.name, 52)}<div><b>${msEsc(m.name)}${m.tier === 'vip' ? '<span class="ms-tag vip">VIP</span>' : ''}</b><small>${msEsc(m.phone || '')}</small></div></div>
+    <div class="vdf-body">${m ? `<div class="mkq-who">${msFace(m.name, 52)}<div><b>${msEsc(m.name)}${msIsVip(m) ? '<span class="ms-tag vip">VIP</span>' : ''}</b><small>${msEsc(m.phone || '')}</small></div></div>
       <div class="mkq-msg">${msEsc(msgFor(m)).replace(/\n/g, '<br>')}</div>
       ${left.length > 1 ? `<div class="mkq-next">Next: ${left.slice(1, 4).map(x => { const y = MS.members.find(z => String(z.id) === String(x)); return y ? msEsc(String(y.name).split(' ')[0]) : ''; }).filter(Boolean).join(', ')}${left.length > 4 ? ' and ' + (left.length - 4) + ' more' : ''}</div>` : ''}`
       : `<div class="mkg"><i><svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></i><h2>All done ✓</h2><p>Everyone in this list has had it. Nobody gets it twice.</p></div>`}</div>
@@ -23291,7 +23295,7 @@ window.msImportOpen = function(){
 
 // ── VIP alert: managers' phones buzz when a VIP checks in ──
 async function msVipAlert(m){
-  if(m.tier !== 'vip' || !mkS().vip.on) return;
+  if(!msIsVip(m) || !mkS().vip.on) return;
   try{ const { data } = await sb.auth.getSession(); const token = data && data.session && data.session.access_token; if(token) authApi('push', { body:{ mk_vip: m.id, venue: msVenue() }, token }).catch(() => {}); }catch(e){}
 }
 
@@ -23312,7 +23316,7 @@ function msReportData(from, to){
   // per member
   const pm = {}; all.forEach(x => { const p = pm[x.mid] = pm[x.mid] || { id:x.mid, visits:0, spend:0, places:{}, last:'' }; p.visits++; p.spend += +x.spend || 0; p.places[x.venue] = (p.places[x.venue] || 0) + 1; if(String(x.visit_date) > p.last) p.last = String(x.visit_date); });
   const people = Object.values(pm).map(p => { const m = mById[p.id] || {}; const fav = Object.entries(p.places).sort((a, b) => b[1] - a[1])[0];
-    return Object.assign(p, { name: m.name || 'A member', tier: m.tier === 'vip' ? 'VIP' : 'Member', fav: fav ? fav[0] : '', nPlaces: Object.keys(p.places).length, isNew: inR(String(m.created_at || '').slice(0, 10)) }); });
+    return Object.assign(p, { name: m.name || 'A member', tier: msIsVip(m) ? 'VIP' : 'Member', fav: fav ? fav[0] : '', nPlaces: Object.keys(p.places).length, isNew: inR(String(m.created_at || '').slice(0, 10)) }); });
   const leaders = people.slice().sort((a, b) => b.visits - a.visits || b.spend - a.spend).slice(0, 10);
   const spenders = people.slice().sort((a, b) => b.spend - a.spend || b.visits - a.visits).slice(0, 10);
   const bands = MS_SPEND_BANDS.map(([lo, hi, label]) => [label, people.filter(p => p.spend >= lo && p.spend < hi).length]);
@@ -23350,8 +23354,8 @@ function msReportData(from, to){
     venues, top: leaders.slice(0, 5).map(p => [p.name, p.visits]), leaders, spenders, bands, perDay, dow, times, hours, hasTimes: hrs.length > 0,
     vip: grp(vipP), mem: grp(memP), multi, team, best: bestStaff ? [bestStaff.name, bestStaff.signups] : null,
     fb: { n: fb.length, avg: fb.length ? Math.round(fb.reduce((n, f) => n + f.stars, 0) / fb.length * 10) / 10 : null, stars },
-    newList: nw.slice().sort((a, b) => String(b.created_at).localeCompare(String(a.created_at))).map(m => ({ name: m.name || 'A member', at: String(m.created_at || '').slice(0, 10), by: msStaffName(m.created_by), place: m.joined_venue || '', tier: m.tier === 'vip' ? 'VIP' : 'Member', offers: m.consent === true })),
-    total: MS.members.length, vipTotal: MS.members.filter(m => m.tier === 'vip').length, offersYes: MS.members.filter(m => m.consent === true).length, lapsed, bdays, today };
+    newList: nw.slice().sort((a, b) => String(b.created_at).localeCompare(String(a.created_at))).map(m => ({ name: m.name || 'A member', at: String(m.created_at || '').slice(0, 10), by: msStaffName(m.created_by), place: m.joined_venue || '', tier: msIsVip(m) ? 'VIP' : 'Member', offers: m.consent === true })),
+    total: MS.members.length, vipTotal: MS.members.filter(m => msIsVip(m)).length, offersYes: MS.members.filter(m => m.consent === true).length, lapsed, bdays, today };
 }
 function msReportRange(kind, f, t){
   const d = new Date(); d.setHours(12, 0, 0, 0); const y = msYmd(d);
@@ -23381,7 +23385,7 @@ window.msReport = async function(kind, f, t){
       <div class="mki-kpis mkr-k"><div><small>VISITS</small><b>${r.visits}</b><span>${ch(r.visits, prev.visits)}</span></div><div><small>NEW MEMBERS</small><b>${r.newM}</b><span>${ch(r.newM, prev.newM)}</span></div><div><small>CAME BACK</small><b>${r.back}%</b><span>had been before</span></div>${sp ? `<div><small>SPEND</small><b>${msRpShort(r.spend)}</b><span>${ch(r.spend, prev.spend)}</span></div>` : ''}</div>
       <div class="ms-card"><div class="ms-lab">TOP 5 MEMBERS</div>${r.top.map(([nm, v], i) => `<div class="ms-vrow"><b>${i + 1}. ${msEsc(nm)}</b><span>${v} visit${v === 1 ? '' : 's'}</span></div>`).join('') || '<div class="ms-vrow"><span>No visits</span></div>'}</div>
       <div class="ms-card"><div class="ms-lab">PLACES</div>${r.venues.map(v => `<div class="ms-vrow"><b>${msEsc(v.name)}</b><span>${v.visits} visit${v.visits === 1 ? '' : 's'}</span></div>`).join('') || '<div class="ms-vrow"><span>No visits</span></div>'}</div>
-      <div class="mkr-more">The PDF has everything: revenue, top 10, spend groups, places, busiest days and times, VIPs, team and guest ratings.</div>
+      <div class="mkr-more">The PDF has everything: revenue, top 10, spend groups, places, busiest days and times, ${MS_VIP ? 'VIPs, ' : ''}team and guest ratings.</div>
     </div>
     <div class="vdf-foot"><button class="mns-cancel" onclick="msReportCsv()">CSV</button><button class="mns-go" style="flex:1" onclick="msReportPdf()">Download PDF</button></div>`);
 };
@@ -23412,8 +23416,8 @@ function msReportHtml(x){
   const p2 = page(2, `<div class="bd"><div class="box"><h2>Leaderboard · most visits</h2>${lb(r.leaders)}</div>
     ${sp ? `<div class="two"><div class="box"><h2>Top spenders</h2>${r.spenders.filter(p => p.spend).length ? r.spenders.filter(p => p.spend).slice(0, 5).map((p, i) => `<div class="row"><i class="rk${i < 3 ? ' g' : ''}">${i + 1}</i><b>${e(p.name)}</b><span>${msRpShort(p.spend)}</span></div>`).join('') : none}</div>
     <div class="box"><h2>How much members spent</h2>${r.came ? bar(r.bands) + `<p class="note">${r.bands.slice(3).reduce((n, b) => n + b[1], 0)} member${r.bands.slice(3).reduce((n, b) => n + b[1], 0) === 1 ? '' : 's'} spent over Rp 2.5m in these dates.</p>` : none}</div></div>` : ''}
-    <div class="box"><h2>VIPs and members</h2><table><thead><tr><th></th><th class="n">Came in</th><th class="n">Visits</th>${sp ? '<th class="n">Spend</th><th class="n">Avg per visit</th>' : ''}</tr></thead><tbody>
-      ${[['VIP', r.vip], ['Member', r.mem]].map(([l, g]) => `<tr><td><b>${l}</b></td><td class="n">${g.people}</td><td class="n">${g.visits}</td>${sp ? `<td class="n">${msRpShort(g.spend)}</td><td class="n">${g.visits ? msRpShort(Math.round(g.spend / g.visits)) : '–'}</td>` : ''}</tr>`).join('')}</tbody></table></div></div>`);
+    <div class="box"><h2>${MS_VIP ? 'VIPs and members' : 'Members'}</h2><table><thead><tr><th></th><th class="n">Came in</th><th class="n">Visits</th>${sp ? '<th class="n">Spend</th><th class="n">Avg per visit</th>' : ''}</tr></thead><tbody>
+      ${(MS_VIP ? [['VIP', r.vip], ['Member', r.mem]] : [['Member', r.mem]]).map(([l, g]) => `<tr><td><b>${l}</b></td><td class="n">${g.people}</td><td class="n">${g.visits}</td>${sp ? `<td class="n">${msRpShort(g.spend)}</td><td class="n">${g.visits ? msRpShort(Math.round(g.spend / g.visits)) : '–'}</td>` : ''}</tr>`).join('')}</tbody></table></div></div>`);
   const p3 = page(3, `<div class="bd"><div class="box"><h2>Places</h2>${r.venues.length ? `<table><thead><tr><th>Place</th><th class="n">Visits</th><th class="n">Members</th>${sp ? '<th class="n">Spend</th><th class="n">Avg per visit</th>' : ''}<th class="n">Share</th></tr></thead><tbody>${r.venues.map(v => `<tr><td><b>${e(v.name)}</b></td><td class="n">${v.visits}</td><td class="n">${v.members}</td>${sp ? `<td class="n">${msRpShort(v.spend)}</td><td class="n">${msRpShort(v.avg)}</td>` : ''}<td class="n">${Math.round(v.visits / Math.max(1, r.visits) * 100)}%</td></tr>`).join('')}</tbody></table>
     <div class="sh">${r.venues.map((v, i) => `<i style="flex:${v.visits};background:${['#C4973B', '#0F1E2E', '#6B8F9E', '#D9B97A', '#3E5468', '#A8B6C2'][i % 6]}"></i>`).join('')}</div><div class="lgd">${r.venues.map((v, i) => `<span><i style="background:${['#C4973B', '#0F1E2E', '#6B8F9E', '#D9B97A', '#3E5468', '#A8B6C2'][i % 6]}"></i>${e(v.name)}</span>`).join('')}</div>` : none}
     <p class="note">${r.multi} member${r.multi === 1 ? '' : 's'} visited more than one place.</p></div>
@@ -23422,7 +23426,7 @@ function msReportHtml(x){
   const p4 = page(4, `<div class="bd"><div class="two"><div class="box"><h2>Team</h2>${r.team.length ? `<table><thead><tr><th>Name</th><th class="n">Sign-ups</th><th class="n">Check-ins</th></tr></thead><tbody>${r.team.slice(0, 8).map(t => `<tr><td><b>${e(t.name)}</b></td><td class="n">${t.signups}</td><td class="n">${t.checkins}</td></tr>`).join('')}</tbody></table>` : none}
     ${r.best ? `<div class="star"><small>STAR OF THE ${per === 'week' ? 'WEEK' : 'PERIOD'}</small><b>${e(r.best[0])}</b><span>${r.best[1]} new member${r.best[1] === 1 ? '' : 's'} signed up</span></div>` : ''}</div>
     <div class="box"><h2>Guest ratings</h2>${r.fb.n ? `<div class="avg"><b>${r.fb.avg}</b><span>${'★'.repeat(Math.round(r.fb.avg))}<i>${'★'.repeat(5 - Math.round(r.fb.avg))}</i></span><small>from ${r.fb.n} rating${r.fb.n === 1 ? '' : 's'}</small></div>${bar(r.fb.stars.map(([s, n]) => [s + ' ★', n]))}<p class="note">1–3 stars go privately to managers. 4–5 stars are asked for a Google review.</p>` : '<p class="none">No ratings in these dates</p>'}</div></div>
-    <div class="box"><h2>The club today</h2><div class="k k4 sm"><div><small>All members</small><b>${r.total}</b><em class="nn">${r.vipTotal} VIP</em></div><div><small>Happy to get offers</small><b>${r.total ? Math.round(r.offersYes / r.total * 100) : 0}%</b><em class="nn">${r.offersYes} members</em></div><div><small>Not in for 30+ days</small><b>${r.lapsed}</b><em class="nn">worth a message</em></div><div><small>Birthdays next 30 days</small><b>${r.bdays}</b><em class="nn">a treat brings them in</em></div></div></div>
+    <div class="box"><h2>The club today</h2><div class="k k4 sm"><div><small>All members</small><b>${r.total}</b>${MS_VIP ? `<em class="nn">${r.vipTotal} VIP</em>` : ''}</div><div><small>Happy to get offers</small><b>${r.total ? Math.round(r.offersYes / r.total * 100) : 0}%</b><em class="nn">${r.offersYes} members</em></div><div><small>Not in for 30+ days</small><b>${r.lapsed}</b><em class="nn">worth a message</em></div><div><small>Birthdays next 30 days</small><b>${r.bdays}</b><em class="nn">a treat brings them in</em></div></div></div>
     <div class="box"><h2>New members${r.newList.length > 12 ? ' · latest 12 of ' + r.newList.length : ''}</h2>${r.newList.length ? `<table><thead><tr><th>Member</th><th>Joined</th><th>Signed up by</th><th>Place</th><th>Offers</th></tr></thead><tbody>${r.newList.slice(0, 12).map(m => `<tr><td><b>${e(m.name)}</b>${m.tier === 'VIP' ? ' <span class="tg v">VIP</span>' : ''}</td><td>${msRepDate(m.at)}</td><td>${e(m.by || '–')}</td><td>${e(m.place || '–')}</td><td>${m.offers ? 'Yes' : 'No'}</td></tr>`).join('')}</tbody></table>` : none}</div></div>`);
   return `<!doctype html><html><head><meta charset="utf-8"><title>${e(co + ' - ' + x.title)}</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
@@ -23469,10 +23473,10 @@ window.msReportCsv = function(){
     .concat([[], ['PLACES'], ['Place', 'Visits', 'Members'].concat(sp ? ['Spend (Rp)', 'Average per visit (Rp)'] : [])], r.venues.map(v => [v.name, v.visits, v.members].concat(sp ? [v.spend, v.avg] : [])))
     .concat([[], ['VISITS EACH DAY'], ['Date', 'Visits']], r.perDay, [[], ['BUSIEST DAYS'], ['Day', 'Visits']], r.dow)
     .concat(r.hasTimes ? [[], ['BUSIEST TIMES'], ['Time', 'Visits']].concat(r.times) : [])
-    .concat([[], ['VIPS AND MEMBERS'], ['Level', 'Came in', 'Visits'].concat(sp ? ['Spend (Rp)'] : []), ['VIP', r.vip.people, r.vip.visits].concat(sp ? [r.vip.spend] : []), ['Member', r.mem.people, r.mem.visits].concat(sp ? [r.mem.spend] : [])])
+    .concat([[], [MS_VIP ? 'VIPS AND MEMBERS' : 'MEMBERS'], ['Level', 'Came in', 'Visits'].concat(sp ? ['Spend (Rp)'] : []), ...(MS_VIP ? [['VIP', r.vip.people, r.vip.visits].concat(sp ? [r.vip.spend] : [])] : []), ['Member', r.mem.people, r.mem.visits].concat(sp ? [r.mem.spend] : [])])
     .concat([[], ['TEAM'], ['Name', 'Sign-ups', 'Check-ins']], r.team.map(t => [t.name, t.signups, t.checkins]))
     .concat([[], ['GUEST RATINGS'], ['Average', r.fb.avg == null ? '' : r.fb.avg], ['Ratings', r.fb.n]], r.fb.stars.map(([s, n]) => [s + ' stars', n]))
-    .concat([[], ['THE CLUB TODAY'], ['All members', r.total], ['VIP members', r.vipTotal], ['Happy to get offers', r.offersYes], ['Not in for 30+ days', r.lapsed], ['Birthdays next 30 days', r.bdays]]);
+    .concat([[], ['THE CLUB TODAY'], ['All members', r.total], ...(MS_VIP ? [['VIP members', r.vipTotal]] : []), ['Happy to get offers', r.offersYes], ['Not in for 30+ days', r.lapsed], ['Birthdays next 30 days', r.bdays]]);
   const cell = v => { v = String(v == null ? '' : v); return /[",\n]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v; };
   const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob(['﻿' + L.map(rw => rw.map(cell).join(',')).join('\r\n')], { type:'text/csv;charset=utf-8' }));
   a.download = x.title.replace(/[^\w\- ]+/g, '').trim().replace(/\s+/g, '-').toLowerCase() + '.csv'; document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1000);
@@ -23496,7 +23500,7 @@ window.msExportOpen = function(){
     <div class="vdf-body">
       <label class="ms-xo"><input type="radio" name="msx" value="yes" checked><span><b>Happy to get offers - with an email</b><small>${yes} member${yes === 1 ? '' : 's'}. Use this for bulk emails.</small></span></label>
       <label class="ms-xo"><input type="radio" name="msx" value="all"><span><b>Everyone</b><small>${all} member${all === 1 ? '' : 's'}, including those who said no to offers</small></span></label>
-      <label class="ms-xo"><input type="radio" name="msx" value="vip"><span><b>VIP only</b><small>${(n => n + ' member' + (n === 1 ? '' : 's'))(MS.members.filter(m => m.tier === 'vip').length)}</small></span></label>
+      ${MS_VIP ? `<label class="ms-xo"><input type="radio" name="msx" value="vip"><span><b>VIP only</b><small>${(n => n + ' member' + (n === 1 ? '' : 's'))(MS.members.filter(m => msIsVip(m)).length)}</small></span></label>` : ''}
       <div class="vd-note" style="margin-top:12px">${vdSvg('note', 15)}<span>Only email members who said yes to offers. Keep this file private - it has names, emails and phone numbers.</span></div>
     </div>
     <div class="vdf-foot"><button class="mns-cancel" onclick="msSheetClose()">Cancel</button><button class="mns-go" onclick="msExport()">Download</button></div>`);
@@ -23505,14 +23509,14 @@ window.msExport = function(){
   const pick = (document.querySelector('input[name="msx"]:checked') || {}).value || 'yes';
   let list = MS.members.slice();
   if(pick === 'yes') list = list.filter(m => m.consent === true && m.email);
-  if(pick === 'vip') list = list.filter(m => m.tier === 'vip');
+  if(pick === 'vip') list = list.filter(m => msIsVip(m));
   if(!list.length){ toast(pick === 'yes' ? 'No members with an email who said yes to offers yet' : 'Nobody to download'); return; }
   const MON = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
   const bday = b => /^\d{2}-\d{2}$/.test(b || '') ? (+b.slice(3)) + ' ' + MON[+b.slice(0, 2) - 1] : '';
   const cell = v => { v = String(v == null ? '' : v); if(/^[=+\-@]/.test(v) && !/^\+?[\d\s().-]+$/.test(v)) v = "'" + v; return /[",\n]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v; };   // safe in Excel
   const head = ['First name', 'Last name', 'Email', 'Phone', 'Birthday', 'Tier', 'Visits', 'Last visit', 'Favourite place', 'Member since', 'Keyring', 'Happy to get offers'];
   const rows = list.sort((a, b) => a.name.localeCompare(b.name)).map(m => { const s = msStats(m), parts = String(m.name || '').trim().split(/\s+/);
-    return [parts[0] || '', parts.slice(1).join(' '), m.email || '', m.phone || '', bday(m.birthday), m.tier === 'vip' ? 'VIP' : 'Member', s.total, s.last ? s.last.visit_date : '', s.fav || '', String(m.created_at || '').slice(0, 10), MS.keyrings[m.id] || '', m.consent === true ? 'Yes' : 'No']; });
+    return [parts[0] || '', parts.slice(1).join(' '), m.email || '', m.phone || '', bday(m.birthday), msIsVip(m) ? 'VIP' : 'Member', s.total, s.last ? s.last.visit_date : '', s.fav || '', String(m.created_at || '').slice(0, 10), MS.keyrings[m.id] || '', m.consent === true ? 'Yes' : 'No']; });
   const csv = '\ufeff' + [head].concat(rows).map(r => r.map(cell).join(',')).join('\r\n');
   const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([csv], { type:'text/csv;charset=utf-8' }));
   a.download = 'members-' + msToday() + '.csv'; document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1000);
@@ -23549,14 +23553,14 @@ window.msOpenMember = function(id, checked){
   const m = MS.members.find(x => String(x.id) === String(id)); if(!m) return;
   // Already in today at this venue? Say so instead of offering Check in again
   if(!checked){ const v = msVenue(), d = msToday(); if((MS.visits[m.id] || []).some(x => x.venue === v && x.visit_date === d)) checked = { venue:v, already:true }; }
-  const s = msStats(m), bd = msBirthdaySoon(m), perks = msPerks()[m.tier === 'vip' ? 'vip' : 'member'];
+  const s = msStats(m), bd = msBirthdaySoon(m), perks = msPerks()[msIsVip(m) ? 'vip' : 'member'];
   const code = MS.keyrings[m.id];
   const since = new Date(m.created_at).toLocaleDateString('en-GB', { month:'short', year:'numeric' });
   const wa = String(m.phone || '').replace(/\D/g, '');
   const ok = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>';
   const o = msSheet(`
     <button class="vdd-x ms-x" onclick="msSheetClose()" title="Close"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
-    <div class="ms-hero">${bd ? `<span class="ms-bd"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px"><path d="M20 21v-8a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8"/><path d="M4 16s.5-1 2-1 2.5 2 4 2 2.5-2 4-2 2.5 2 4 2 2-1 2-1"/><path d="M2 21h20M7 8v3M12 8v3M17 8v3"/><path d="M7 4h.01M12 4h.01M17 4h.01"/></svg> Birthday ${bd === 'today' ? 'today!' : msEsc(bd)}</span>` : ''}${msFace(m.name, 64)}<h2>${msEsc(m.name)}</h2><p>Member since ${msEsc(since)}${code ? ' · keyring ' + msEsc(code) : ''}</p>${code ? `<button class="ms-gv" onclick="window.open('/k/${encodeURIComponent(code)}?guest=1','_blank')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>Guest view</button>` : ''} <button class="ms-gv" onclick="msCardOpen('${m.id}')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="2" width="12" height="20" rx="2.5"/><path d="M10 6h4"/></svg>Digital card</button><button class="ms-gv" onclick="msResendQR('${m.id}')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><path d="M14 14h3v3M21 14v7h-7"/></svg>Resend their QR</button><span class="ms-tier ${m.tier === 'vip' ? 'vip' : ''}">${m.tier === 'vip' ? 'VIP' : 'MEMBER'}</span></div>
+    <div class="ms-hero">${bd ? `<span class="ms-bd"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px"><path d="M20 21v-8a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8"/><path d="M4 16s.5-1 2-1 2.5 2 4 2 2.5-2 4-2 2.5 2 4 2 2-1 2-1"/><path d="M2 21h20M7 8v3M12 8v3M17 8v3"/><path d="M7 4h.01M12 4h.01M17 4h.01"/></svg> Birthday ${bd === 'today' ? 'today!' : msEsc(bd)}</span>` : ''}${msFace(m.name, 64)}<h2>${msEsc(m.name)}</h2><p>Member since ${msEsc(since)}${code ? ' · keyring ' + msEsc(code) : ''}</p>${code ? `<button class="ms-gv" onclick="window.open('/k/${encodeURIComponent(code)}?guest=1','_blank')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>Guest view</button>` : ''} <button class="ms-gv" onclick="msCardOpen('${m.id}')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="2" width="12" height="20" rx="2.5"/><path d="M10 6h4"/></svg>Digital card</button><button class="ms-gv" onclick="msResendQR('${m.id}')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><path d="M14 14h3v3M21 14v7h-7"/></svg>Resend their QR</button><span class="ms-tier ${msIsVip(m) ? 'vip' : ''}">${msIsVip(m) ? 'VIP' : 'MEMBER'}</span></div>
     <div class="vdf-body">
       ${m.allergy ? `<div class="ms-alg">${mkiSvg('warn', 17)}<span><b>Allergy</b> ${msEsc(m.allergy)}</span></div>` : ''}
       ${(r => r ? `<div class="ms-rwd"><i>${mkiSvg('gift', 20)}</i><div><b>Reward ready</b><small>${msEsc(String(m.name || '').split(' ')[0])} has reached ${r.target} visits. Give them their reward, then tap the button.</small></div><button onclick="msRewardGive('${m.id}')">Reward given</button></div>` : '')(msRewardReady(m))}
@@ -23564,7 +23568,7 @@ window.msOpenMember = function(id, checked){
       ${checked && msHasSpend() ? (tv => tv && tv.spend ? `<div class="ms-bill saved" id="ms-billbox"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg><span>Bill <b>${msRp(tv.spend)}</b> saved</span></div>` : `<div class="ms-bill" id="ms-billbox"><span>Their bill</span><input id="ms-bill" inputmode="numeric" placeholder="Rp - optional" autocomplete="off" onkeydown="if(event.key==='Enter') msBill('${m.id}')"><button onclick="msBill('${m.id}')">Save</button></div>`)((MS.visits[m.id] || []).find(x => x.venue === checked.venue && x.visit_date === msToday())) : ''}
       ${msWelcomeHtml(m)}
       <div class="ms-g3"><div><b>${s.total}</b><small>VISITS</small></div><div><b>${s.month}</b><small>THIS MONTH</small></div><div><b class="${s.fav.length > 8 ? 'sm' : ''}">${msEsc(s.fav || '-')}</b><small>FAVOURITE</small></div></div>
-      ${perks.length ? `<div class="ms-card"><div class="ms-lab">PERKS · ${m.tier === 'vip' ? 'VIP' : 'MEMBER'}</div>${perks.map(p => `<div class="ms-perk"><i>${ok}</i>${msEsc(p)}</div>`).join('')}</div>` : ''}
+      ${perks.length ? `<div class="ms-card"><div class="ms-lab">PERKS · ${msIsVip(m) ? 'VIP' : 'MEMBER'}</div>${perks.map(p => `<div class="ms-perk"><i>${ok}</i>${msEsc(p)}</div>`).join('')}</div>` : ''}
       ${s.recent.length ? `<div class="ms-card"><div class="ms-lab">RECENT VISITS</div>${s.recent.map(v => `<div class="ms-vrow"><b>${msEsc(v.venue || '-')}</b><span>${msEsc(msAgo(v.visit_date))}${msHasSpend() && v.spend ? ' · ' + msRp(v.spend) : ''}</span></div>`).join('')}</div>` : ''}
       ${m.notes ? `<div class="vd-note">${vdSvg('note', 15)}<span>${msEsc(m.notes)}</span></div>` : ''}
     </div>
@@ -23722,7 +23726,7 @@ window.msFlow = async function(id, r){
   const nth = n => n + (n % 100 >= 11 && n % 100 <= 13 ? 'th' : ['th','st','nd','rd'][n % 10] || 'th');
   const nVis = () => (MS.visits[m.id] || []).length;
   // A "first visit" perk only on their first visit, a birthday perk only in their birthday week (Robbie 22 Nov)
-  const pAll = msPerks(), pTier = m.tier === 'vip' ? 'vip' : 'member', pList = pAll[pTier] || [], pIcs = (pAll.icons || {})[pTier] || [];
+  const pAll = msPerks(), pTier = msIsVip(m) ? 'vip' : 'member', pList = pAll[pTier] || [], pIcs = (pAll.icons || {})[pTier] || [];
   const perkIc = t => { const ic = pIcs[pList.indexOf(t)]; return MS_PI[ic] ? msIcSvg(ic, 20) : '★'; };   // the venue's own icon from the back office
   const roomPerk = String((msPage() || {}).stayPerk || '').trim();   // Rooms & villas member benefit (Robbie 24 Nov)
   const perks = pList.filter(Boolean)
@@ -24006,7 +24010,7 @@ window.fdSearch = on => { FD.view = on ? 'search' : ''; FD.q = ''; fdRender(); t
 window.fdBack = () => { FD.sel = null; fdRender(); };
 function fdMemberHtml(id){
   const e = msEsc, m = MS.members.find(x => String(x.id) === String(id)); if(!m) return '';
-  const vip = m.tier === 'vip', st = msStats(m), code = MS.keyrings[m.id] || '', yr = String(m.created_at || '').slice(0, 4);
+  const vip = msIsVip(m), st = msStats(m), code = MS.keyrings[m.id] || '', yr = String(m.created_at || '').slice(0, 4);
   const perks = (msPerks()[vip ? 'vip' : 'member'] || []).filter(Boolean).filter(p => !/first\s+visit/i.test(p) || st.total <= 1).filter(p => !/birthday/i.test(p) || !!msBirthdaySoon(m));
   return `<button type="button" class="fd-back" onclick="fdBack()"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg>Back</button>
     <div class="fd-h1">${e(m.name)}</div><div class="fd-h2">${e(fdMask(m.phone))}</div>
@@ -24182,7 +24186,7 @@ function mcWelcome(code){
 }
 function mcMemRow(m, a, sub){
   const n = mcSplit(m.name), ini = ((n.first.charAt(0) || '') + (n.last.charAt(0) || '')).toUpperCase() || '?';
-  return `<button class="mc-mem" data-a="${a}" data-id="${msEsc(m.id)}"><span class="av">${msEsc(ini)}</span><span><b>${msEsc(sub === 'full' ? m.name : n.first + (n.last ? ' ' + n.last.charAt(0) + '.' : ''))}</b><span>${msEsc(sub === 'full' ? 'Phone ends ' + mcLast4(m.phone) + ' · ' + (m.tier === 'vip' ? 'VIP' : 'Member') : (m.tier === 'vip' ? 'VIP' : 'Member') + ' · ' + (MS.visits[m.id] || []).length + ' visits')}</span></span></button>`;
+  return `<button class="mc-mem" data-a="${a}" data-id="${msEsc(m.id)}"><span class="av">${msEsc(ini)}</span><span><b>${msEsc(sub === 'full' ? m.name : n.first + (n.last ? ' ' + n.last.charAt(0) + '.' : ''))}</b><span>${msEsc(sub === 'full' ? 'Phone ends ' + mcLast4(m.phone) + ' · ' + (msIsVip(m) ? 'VIP' : 'Member') : (msIsVip(m) ? 'VIP' : 'Member') + ' · ' + (MS.visits[m.id] || []).length + ' visits')}</span></span></button>`;
 }
 function mcPad(){
   const b = (MC.S.code || '').split(''); let bx = '';
@@ -24510,7 +24514,7 @@ window.msEdit = function(id){
         <label class="vdf-f"><span>WHATSAPP NUMBER</span><input id="ms-phone" type="tel" value="${msEsc(m.phone)}"></label>
         <div class="vdf-two"><div class="vdf-f"><span>BIRTHDAY</span><div class="ms-bdpick"><select id="ms-bd-d"><option value="">Day</option>${Array.from({ length:31 }, (_, i) => `<option${i + 1 === bdd ? ' selected' : ''}>${i + 1}</option>`).join('')}</select><select id="ms-bd-m"><option value="">Month</option>${months.map((x, i) => `<option value="${i + 1}"${i + 1 === bm ? ' selected' : ''}>${x}</option>`).join('')}</select></div></div>
           <label class="vdf-f"><span>EMAIL</span><input id="ms-email" type="email" value="${msEsc(m.email)}"></label></div>
-        ${msIsMgr() ? `<div class="vdf-f"><span>TIER</span><div class="vdf-pills"><button type="button" class="vdf-pill ms-tr${m.tier !== 'vip' ? ' on' : ''}" data-t="member">Member</button><button type="button" class="vdf-pill ms-tr${m.tier === 'vip' ? ' on' : ''}" data-t="vip">VIP</button></div></div>` : ''}
+        ${msIsMgr() && MS_VIP ? `<div class="vdf-f"><span>TIER</span><div class="vdf-pills"><button type="button" class="vdf-pill ms-tr${!msIsVip(m) ? ' on' : ''}" data-t="member">Member</button><button type="button" class="vdf-pill ms-tr${msIsVip(m) ? ' on' : ''}" data-t="vip">VIP</button></div></div>` : ''}
         ${msHasAllergy() ? `<label class="vdf-f"><span>ALLERGIES</span><input id="ms-alg" maxlength="60" placeholder="e.g. Peanuts - leave empty if none" value="${msEsc(m.allergy)}"></label>` : ''}
         <label class="vdf-f"><span>NOTES</span><textarea id="ms-notes" rows="3" placeholder="e.g. Likes the corner table on the terrace">${msEsc(m.notes)}</textarea></label>
         <label class="ms-consent"><input type="checkbox" id="ms-consent"${m.consent === true ? ' checked' : ''}><span><b>Happy to get offers</b> - untick if they ask you to stop</span></label>
@@ -24662,8 +24666,8 @@ window.msTiers = function(){
       <div class="ms-gh">PERKS <small>the extras members get</small></div>
       <div class="ms-pl">MEMBERS - everyone with a keyring</div>
       <div class="ms-plist" id="ms-p-member">${p.member.map((t, i) => msPerkRow(t, (p.icons.member || [])[i])).join('')}</div><button type="button" class="ms-vadd"${p.member.length >= 8 ? ' style="display:none"' : ''} onclick="msPerkAdd(this)">+ Add a perk</button>
-      <div class="ms-pl">VIP - members a manager has made VIP</div>
-      <div class="ms-plist" id="ms-p-vip">${p.vip.map((t, i) => msPerkRow(t, (p.icons.vip || [])[i])).join('')}</div><button type="button" class="ms-vadd"${p.vip.length >= 8 ? ' style="display:none"' : ''} onclick="msPerkAdd(this)">+ Add a perk</button>
+      ${MS_VIP ? `<div class="ms-pl">VIP - members a manager has made VIP</div>
+      <div class="ms-plist" id="ms-p-vip">${p.vip.map((t, i) => msPerkRow(t, (p.icons.vip || [])[i])).join('')}</div><button type="button" class="ms-vadd"${p.vip.length >= 8 ? ' style="display:none"' : ''} onclick="msPerkAdd(this)">+ Add a perk</button>` : ''}
       <div class="ms-gh">REWARD <small>leave empty to hide</small></div>
       <div class="ms-v2" style="grid-template-columns:96px 1fr"><label class="vdf-f"><span>VISITS</span><input id="ms-rw-n" type="number" inputmode="numeric" min="2" max="10" placeholder="2 to 10" value="${msEsc(rw.visits || '')}"></label>
         <label class="vdf-f"><span>THE REWARD</span><input id="ms-rw-t" maxlength="40" placeholder="e.g. Dinner for two on us" value="${msEsc(rw.text || '')}"></label></div>
@@ -25651,7 +25655,7 @@ async function dcShow(d){
 function gpPerksHtml(mgr){
   const p = msPerks(), rw = (msPage().reward || {});
   const list = (k, lab) => `<div class="gp-pk"><div class="gp-pkl">${lab}</div>${(p[k] || []).length ? p[k].map((t, i) => `<div class="gp-pkr"><i>${msIcSvg(((p.icons || {})[k] || [])[i] || 'gift', 15)}</i>${gpEsc(t)}</div>`).join('') : '<div class="gp-pkr" style="color:#94A3B8">None yet</div>'}</div>`;
-  return `<div class="gp-pks">${list('member', 'MEMBERS')}${list('vip', 'VIP')}</div>
+  return `<div class="gp-pks${MS_VIP ? '' : ' one'}">${list('member', 'MEMBERS')}${MS_VIP ? list('vip', 'VIP') : ''}</div>
     <div class="gp-pkw"><i>${msIcSvg('gift', 15)}</i><span>${rw.visits ? 'Reward after ' + gpEsc(rw.visits) + ' visits: <b>' + gpEsc(rw.text || 'a treat') + '</b>' : 'No reward set'}</span></div>
     ${mgr ? `<button class="gp-big" onclick="msTiers()">${gpIc(GPI.edit, 16)} Change perks and reward</button>` : '<div class="gp-auto">A manager sets the perks and reward.</div>'}`;
 }

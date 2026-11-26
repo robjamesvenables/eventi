@@ -8568,7 +8568,8 @@ const mvBoot = async () => {   // starts as soon as the page is read - no longer
         const { data: rows } = await sb.from('profiles').select('*').eq('user_id', session.user.id).limit(1);
         const prof = rows && rows[0];
         if(prof && prof.active){
-          const { data: cos } = await sb.from('companies').select('id,code,name,logo,departments,plan').eq('id', prof.company_id).limit(1);
+          let { data: cos, error: coErr } = await sb.from('companies').select('id,code,name,logo,departments,plan').eq('id', prof.company_id).limit(1);
+          if(coErr || !cos || !cos.length) ({ data: cos } = await sb.from('companies').select('id,code,name,logo,departments').eq('id', prof.company_id).limit(1));   // no 'plan' column yet (go-live step): still load the venue, or the app opens with no venue after a refresh
           await authApplyProfile({ ...prof, has_login:true }, cos && cos[0]);
           authEnterApp();
           // Still on an old 6-digit PIN (from before Nov 2026)? Ask for a password now.

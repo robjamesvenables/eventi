@@ -309,10 +309,11 @@ P.bpa = {
         { id: 'bs4', img: bp('rec-icebath'), title: 'Sauna & ice bath', line: 'Recover after your game, over the rice fields', venue: 'Recovery Area' }
       ],
       deals: [
+        { id: 'bd8', img: bp('bj-hygo'), title: 'Hygo fruity electrolytes · only at Bandeja', when: 'Every day', venue: 'Bandeja' },
         { id: 'bd5', img: bp('morning-benefits'), title: 'Morning Club · 20% off breakfast', when: 'Every day · 6:30 - 8:30am', venue: 'Bandeja' },
         { id: 'bd6', img: bp('shop-stickers'), title: 'Free BPA stickers with every purchase', when: 'Every day', venue: 'BPA Pro Shop' },
         { id: 'bd7', img: bp('shop-shoe-at10-turquoise'), title: 'New NOX shoes · members 15% off', when: 'This month', venue: 'BPA Pro Shop' },
-        { id: 'bd1', img: bp('lounge'), title: 'Smoothie hour · 2 for 1', when: 'Mon - Fri · 5 - 7pm', venue: 'Bandeja' },
+        { id: 'bd1', img: bp('bj-granita'), title: 'Smoothie hour · 2 for 1', when: 'Mon - Fri · 5 - 7pm', venue: 'Bandeja' },
         { id: 'bd2', img: bp('nox'), title: 'NOX rackets · members 15% off', when: 'This week', venue: 'BPA Pro Shop' },
         { id: 'bd3', img: bp('pool'), title: 'Kids play free while you play', when: 'Every day', venue: 'Kids Area' },
         { id: 'bd4', img: bp('rec-sauna'), title: 'Members: free sauna after any lesson', when: 'Every day', venue: 'Recovery Area' }
@@ -324,11 +325,12 @@ P.bpa = {
       ],
       gallery: ['building', 'courts', 'lounge', 'events', 'pool', 'nox'].map((n, i) => ({ id: 'bg' + i, img: bp(n), venue: '' }))
         .concat(['rec-view', 'rec-sauna', 'rec-icebath'].map((n, i) => ({ id: 'br' + i, img: bp(n), venue: 'Recovery Area' })))
-        .concat(['play1', 'play2', 'play3', 'play4', 'people1', 'people2', 'winners'].map((n, i) => ({ id: 'bp' + i, img: bp(n), venue: 'Padel Courts' }))),
+        .concat(['play1', 'play2', 'play3', 'play4', 'people1', 'people2', 'winners'].map((n, i) => ({ id: 'bp' + i, img: bp(n), venue: 'Padel Courts' })))
+        .concat(['poke', 'salmon-breakfast', 'sandwich', 'quinoa', 'chicken-bowl', 'curry', 'schnitzel', 'pesto', 'kaiserschmarrn', 'satay', 'chef', 'coffee', 'aperol', 'granita', 'matcha', 'bread', 'hygo'].map((n, i) => ({ id: 'bj' + i, img: bp('bj-' + n), venue: 'Bandeja' }))),
       gift: { on: true, title: 'Give someone padel', line: 'A coaching session, clinic or starter pack. Tell us the amount and who it is for. Use it on coaching, courts or the pro shop - pay the difference if it is more.', to: '6281717107000', amounts: [1500000, 3000000, 5000000], max: 5000000 },
       places: {
         'padel courts': { img: bp('courts'), area: '7 panoramic courts · NOX Stadium', ig: 'balipadelacademy', menus: [{ name: 'Lessons & prices', pages: [{ img: '/demo-guest/p-bpa-lessons.jpg' }] }] },
-        'bandeja': { img: bp('lounge'), logo: bp('bandeja-logo'), area: 'Restaurant · Canggu', ig: 'bandeja.restaurant.bali', other: true, menus: [{ name: 'Morning Club', pages: [{ img: bp('morning-benefits') }] }] },
+        'bandeja': { img: bp('bj-poke'), logo: bp('bandeja-logo'), area: 'Restaurant · Canggu', ig: 'bandeja.restaurant.bali', other: true, menus: [{ name: 'Morning Club', pages: [{ img: bp('morning-benefits') }] }] },
         'bpa pro shop': { img: bp('shop-bandeja-tee'), area: 'BPA clothing, NOX rackets and gear · also on Tokopedia and Shopee', ig: 'balipadelacademy', menus: [{ name: 'New in', pages: [{ img: bp('shop-bandeja-tee') }, { img: bp('shop-tee-retro') }, { img: bp('shop-weekend-pink') }, { img: bp('shop-weekend-beige') }, { img: bp('shop-stickers') }] },
           { name: 'T-shirts', pages: [{ img: bp('shop-tee-phoenix-black') }, { img: bp('shop-tee-phoenix-orange') }, { img: bp('shop-tee-7am7pm') }, { img: bp('shop-tee-bandeja-brown') }, { img: bp('shop-tee-bandeja-cream') }, { img: bp('shop-tee-crop-green') }, { img: bp('shop-tee-crop-black') }, { img: bp('shop-tee-noxcup-black') }, { img: bp('shop-tee-blue') }, { img: bp('shop-tee-red') }] },
           { name: 'Shoes', pages: [{ img: bp('shop-shoe-at10-turquoise') }, { img: bp('shop-shoe-ml10-blue') }, { img: bp('shop-shoe-at10-lux') }, { img: bp('shop-shoe-nerbo-white') }, { img: bp('shop-shoe-at10-purple') }] },

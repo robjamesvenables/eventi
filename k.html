@@ -1159,7 +1159,7 @@ body:has(#sh.on) #inpop.on,body:has(#lb.on) #inpop.on{transform:translateY(calc(
       var own = places.filter(function(p){ return !p.other; });
       if (gp.oneHome && own.length === 1 && !own[0].soon) return oneHomeHtml(own[0]);   // the venue chose: no "Our places" tile, the home page is the place
     var h = '<div class="w">' + topAndCard(gp.motion ? slidesHtml(gp.slides || [], true) : '');
-      h += '<div class="sec"><div class="lab">' + esc(gp.placesTitle || (d.brand && String(d.brand).length <= 18 ? 'Explore ' + d.brand : 'Explore')) + '</div><div class="pgrid">' + places.filter(function(p){ return !p.other; }).map(function(p){
+      h += '<div class="sec"><div class="lab">' + esc(String(gp.placesTitle || (d.brand && String(d.brand).length <= 16 ? 'Inside ' + d.brand : 'Inside')).replace(/^Explore\b/i, 'Inside')) + '</div><div class="pgrid">' + places.filter(function(p){ return !p.other; }).map(function(p){
         var v = venueOf(lc(p.name)), st = v ? (v.open === true ? 'Open now' : v.open === false ? v.label : '') : '';
         if (p.soon) return '<div class="pbig soon">' + (p.img ? '<img src="' + esc(p.img) + '" alt="" loading="lazy">' : '<div class="ini">' + esc(String(p.name).charAt(0).toUpperCase()) + '</div>') +
           '<em>Coming soon</em><span><b translate="no">' + esc(p.name) + '</b>' + (p.area ? '<small>' + esc(p.area) + '</small>' : '') + '</span></div>';   // Coming soon: shown, can't be opened yet
@@ -1167,9 +1167,8 @@ body:has(#sh.on) #inpop.on,body:has(#lb.on) #inpop.on{transform:translateY(calc(
         return '<button class="pbig' + (setup ? ' mvdash' : '') + '" data-go="' + esc(lc(p.name)) + '">' + (p.img ? '<img src="' + esc(p.img) + '" alt="" loading="lazy">' : '<div class="ini">' + esc(String(p.name).charAt(0).toUpperCase()) + '</div>') +
           '<span><b translate="no">' + esc(p.name) + '</b>' + (setup ? '<small>Being set up</small>' : st ? '<small>' + esc(st) + '</small>' : '') + '</span></button>';   // just the name (+ open / closed when they set hours)
       }).join('') + '</div></div>';
-      if (bold) h += hotelsRow;   // bold: straight after their own places, so it's seen
+      h += hotelsRow;   // Robbie 27 Nov: Our other venues straight after Inside, for every app
       h += extrasHtml();
-      if (!bold) h += hotelsRow;
       if (on.gallery && (gp.gallery || []).length) h += galHtml(gp.gallery, '');
       h += reviewLine(d.venues) + igHtml(homeIg()) + clubRow;
       return h + foot + '</div>';

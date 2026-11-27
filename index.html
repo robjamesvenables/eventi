@@ -26000,8 +26000,8 @@ window.gpVenueRemove = async function(){
   if(await gpSave(name + ' removed') && it){ gpForgetFile(it); if(it.logoPath) gpForgetFile({ path: it.logoPath }); (it.menus || []).forEach(m => { gpForgetFile(m); (m.pages || []).forEach(gpForgetFile); }); }
 };
 // The heading guests see over a section - their own words (empty = the standard heading)
-const GP_PLACES_MAX = 18;   // the name after Explore: 'Explore ' + 18 = 26, one line on a small phone
-const gpExploreDefault = () => { const n = String((typeof myCompany !== 'undefined' && myCompany && myCompany.name) || '').trim(); return n && n.length <= GP_PLACES_MAX ? 'Explore ' + n : 'Explore'; };
+const GP_PLACES_MAX = 16;   // the name after Inside: 'Inside ' + 16 = 23, one line on a small phone (25 was cut off), one line on a small phone
+const gpExploreDefault = () => { const n = String((typeof myCompany !== 'undefined' && myCompany && myCompany.name) || '').trim(); return n && n.length <= GP_PLACES_MAX ? 'Inside ' + n : 'Inside'; };
 const GP_SECT = { get places(){ return [gpExploreDefault(), 'e.g. Masonry']; }, others: ['Our other venues', 'e.g. Also by us, Our sister bars'] };
 function gpSecTitleRow(k){
   const cur = k === 'places' ? (GPE.c.placesTitle || '') : ((GPE.c.others || {}).title || '');
@@ -26011,12 +26011,12 @@ function gpSecTitleRow(k){
 window.gpSecTitle = function(k){
   const cur = k === 'places' ? (GPE.c.placesTitle || '') : ((GPE.c.others || {}).title || '');
   if(k === 'places'){   // Explore is fixed; they type only the name after it (pre-filled with theirs when it fits)
-    const name = String(cur || gpExploreDefault()).replace(/^Explore\s*/i, '');
-    appModalShow({ title: 'Heading guests see', sub: 'Up to ' + GP_PLACES_MAX + ' letters so it fits on one line. Name too long? Shorten it, or leave it empty to just show Explore.',
-      fields: [ { label: 'Heading', prefix: 'Explore', placeholder: GP_SECT.places[1], value: gpEsc(name), optional: true, maxlength: GP_PLACES_MAX } ],
+    const name = String(cur || gpExploreDefault()).replace(/^(Explore|Inside)\s*/i, '');
+    appModalShow({ title: 'Heading guests see', sub: 'Up to ' + GP_PLACES_MAX + ' letters so it fits on one line. Name too long? Shorten it, or leave it empty to just show Inside.',
+      fields: [ { label: 'Heading', prefix: 'Inside', placeholder: GP_SECT.places[1], value: gpEsc(name), optional: true, maxlength: GP_PLACES_MAX } ],
       async onOk([t]){
         t = String(t || '').replace(/\s+/g, ' ').trim().slice(0, GP_PLACES_MAX);
-        GPE.c.placesTitle = t ? 'Explore ' + t : 'Explore';
+        GPE.c.placesTitle = t ? 'Inside ' + t : 'Inside';
         gpRender(); await gpSave('Heading saved');
       } });
     return;

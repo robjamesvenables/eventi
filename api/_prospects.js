@@ -338,6 +338,7 @@ P.bpa = {
       ],
       gallery: ['building', 'courts', 'lounge', 'events', 'pool', 'nox'].map((n, i) => ({ id: 'bg' + i, img: bp(n), venue: '' }))
         .concat(['rec-view', 'rec-sauna', 'rec-icebath'].map((n, i) => ({ id: 'br' + i, img: bp(n), venue: 'Recovery Area' }))),
+      gift: { on: true, title: 'Give someone padel', line: 'A coaching session, clinic or starter pack. Tell us the amount and who it is for. Use it on coaching, courts or the pro shop - pay the difference if it is more.', to: '6281717107000', amounts: [1500000, 3000000, 5000000], max: 5000000 },
       places: {
         'padel courts': { img: bp('courts'), area: '7 panoramic courts · NOX Stadium', ig: 'balipadelacademy', menus: [{ name: 'Lessons & prices', pages: [{ img: '/demo-guest/p-bpa-lessons.jpg' }] }] },
         'restaurant': { img: bp('events'), area: 'All-day food, coffee and smoothies', ig: 'balipadelacademy' },

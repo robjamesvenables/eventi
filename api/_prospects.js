@@ -311,6 +311,7 @@ P.bpa = {
       deals: [
         { id: 'bd5', img: bp('morning-benefits'), title: 'Morning Club · 20% off breakfast', when: 'Every day · 6:30 - 8:30am', venue: 'Bandeja' },
         { id: 'bd6', img: bp('shop-stickers'), title: 'Free BPA stickers with every purchase', when: 'Every day', venue: 'BPA Pro Shop' },
+        { id: 'bd7', img: bp('shop-shoe-at10-turquoise'), title: 'New NOX shoes · members 15% off', when: 'This month', venue: 'BPA Pro Shop' },
         { id: 'bd1', img: bp('lounge'), title: 'Smoothie hour · 2 for 1', when: 'Mon - Fri · 5 - 7pm', venue: 'Bandeja' },
         { id: 'bd2', img: bp('nox'), title: 'NOX rackets · members 15% off', when: 'This week', venue: 'BPA Pro Shop' },
         { id: 'bd3', img: bp('pool'), title: 'Kids play free while you play', when: 'Every day', venue: 'Kids Area' },
@@ -328,7 +329,11 @@ P.bpa = {
       places: {
         'padel courts': { img: bp('courts'), area: '7 panoramic courts · NOX Stadium', ig: 'balipadelacademy', menus: [{ name: 'Lessons & prices', pages: [{ img: '/demo-guest/p-bpa-lessons.jpg' }] }] },
         'bandeja': { img: bp('lounge'), logo: bp('bandeja-logo'), area: 'Our restaurant · weekly specials', ig: 'bandeja.restaurant.bali', menus: [{ name: 'Morning Club', pages: [{ img: bp('morning-benefits') }] }] },
-        'bpa pro shop': { img: bp('shop-bandeja-tee'), area: 'BPA clothing, NOX rackets and gear · also on Tokopedia and Shopee', ig: 'balipadelacademy', menus: [{ name: 'New in', pages: [{ img: bp('shop-bandeja-tee') }, { img: bp('shop-weekend-pink') }, { img: bp('shop-weekend-beige') }, { img: bp('shop-stickers') }, { img: bp('shop-online') }] }] },
+        'bpa pro shop': { img: bp('shop-bandeja-tee'), area: 'BPA clothing, NOX rackets and gear · also on Tokopedia and Shopee', ig: 'balipadelacademy', menus: [{ name: 'New in', pages: [{ img: bp('shop-bandeja-tee') }, { img: bp('shop-tee-retro') }, { img: bp('shop-weekend-pink') }, { img: bp('shop-weekend-beige') }, { img: bp('shop-stickers') }] },
+          { name: 'T-shirts', pages: [{ img: bp('shop-tee-phoenix-black') }, { img: bp('shop-tee-phoenix-orange') }, { img: bp('shop-tee-7am7pm') }, { img: bp('shop-tee-bandeja-brown') }, { img: bp('shop-tee-bandeja-cream') }, { img: bp('shop-tee-crop-green') }, { img: bp('shop-tee-crop-black') }, { img: bp('shop-tee-noxcup-black') }, { img: bp('shop-tee-blue') }, { img: bp('shop-tee-red') }] },
+          { name: 'Shoes', pages: [{ img: bp('shop-shoe-at10-turquoise') }, { img: bp('shop-shoe-ml10-blue') }, { img: bp('shop-shoe-at10-lux') }, { img: bp('shop-shoe-nerbo-white') }, { img: bp('shop-shoe-at10-purple') }] },
+          { name: 'Rackets', pages: [{ img: bp('shop-racket-vk10') }] },
+          { name: 'Shop online', pages: [{ img: bp('shop-online') }] }] },
         'infinity pool': { img: bp('pool'), area: 'Swim after your game' },
         'kids area': { img: bp('building'), area: 'Kids academy · ages 5 - 14', menus: [{ name: 'Kids academy', pages: [{ img: '/demo-guest/p-bpa-lessons.jpg' }] }] },
         'recovery area': { img: bp('rec-view'), area: 'Sauna and ice bath over the rice fields' }
